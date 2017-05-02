@@ -15,65 +15,7 @@
         "BuildConfiguration": "Release"
       },
       "Definitions": [
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
-            "PB_DockerOS": "debian.8",
-            "REPO_ID": "579f8fb0fedca9aeeb399132",
-            "REPO_USER": "dotnet",
-            "REPO_SERVER": "azure-apt-cat.cloudapp.net"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Debian 8.2",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
-            "PB_DockerOS": "ubuntu.14.04",
-            "REPO_ID": "562fbfe0b2d7d0e0a43780c4",
-            "REPO_USER": "dotnet",
-            "REPO_SERVER": "azure-apt-cat.cloudapp.net",
-            "CLI_NUGET_FEED_URL": "https://dotnet.myget.org/F/cli-deps/api/v2/package",
-            "CLI_NUGET_SYMBOLS_FEED_URL": "https://dotnet.myget.org/F/cli-deps/symbols/api/v2/package"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
-            "PB_DockerOS": "ubuntu.16.04",
-            "REPO_ID": "575f40f3797ef7280505232f",
-            "REPO_USER": "dotnet",
-            "REPO_SERVER": "azure-apt-cat.cloudapp.net"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Linux",
-          "Parameters": {
-            "PB_DockerOS": "ubuntu.16.10",
-            "REPO_ID": "575f40f3797ef7280505232f",
-            "REPO_USER": "dotnet",
-            "REPO_SERVER": "azure-apt-cat.cloudapp.net"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.10",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
+         {
           "Name": "Core-Setup-OSX-x64",
           "Parameters": {
             "PB_PortableBuild": "-portable"
@@ -93,18 +35,6 @@
           "ReportingParameters": {
             "SubType": "PortableBuild",
             "OperatingSystem": "RedHat 7",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x64",
-          "Parameters": {
-            "PB_PortableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType": "PortableBuild",
             "Type": "build/product/",
             "Platform": "x64"
           }
@@ -159,6 +89,32 @@
             "Platform": "arm64"
           }
         }
+      ]
+    },
+    {
+      "Name": "Trusted-Finalize-Release",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "BuildConfiguration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Core-Setup-Signing-Windows-x64",
+          "Parameters": {
+            "PB_PortableBuild": "-portable"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
       ]
     }
   ]

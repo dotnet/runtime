@@ -87,44 +87,8 @@ fi
 #  VSO
 [ ! -z "$BUILD_BUILDID" ] && DOTNET_BUILD_CONTAINER_NAME="${BUILD_BUILDID}-${BUILD_BUILDNUMBER}"
 
-# Executes a command and retries if it fails.
-# NOTE: This function is the exact copy from init-docker.sh.
-# Reason for not invoking init.docker.sh directly is since that script 
-# also performs cleanup, which we do not want in this case.
-execute() {
-    local count=0
-    local retries=5
-    local waitFactor=6
-    until "$@"; do
-        local exit=$?
-        count=$(( $count + 1 ))
-        if [ $count -lt $retries ]; then
-            local wait=$(( waitFactor ** (( count - 1 )) ))
-            echo "Retry $count/$retries exited $exit, retrying in $wait seconds..."
-            sleep $wait
-        else    
-            say_err "Retry $count/$retries exited $exit, no more retries left."
-            return $exit
-        fi
-    done
-
-    return 0
-}
-
-# Build the docker container (will be fast if it is already built)
-echo "Building Docker Container using Dockerfile: $DOCKERFILE"
-
-# Get the name of Docker image.
-image=$(grep -i "^FROM " "$DOCKERFILE/Dockerfile" | awk '{ print $2 }')
-
-# Explicitly pull the base image with retry logic. 
-# This eliminates intermittent failures during docker build caused by failing to retrieve the base image.
-if [ ! -z "$image" ]; then
-    echo "Pulling Docker image $image"
-    execute docker pull $image
-fi
-
-docker build --build-arg USER_ID=$(id -u) -t $DOTNET_BUILD_CONTAINER_TAG $DOCKERFILE
+#Build the docker image
+"$DIR/dockerbuild.sh" -t $DOTNET_BUILD_CONTAINER_TAG -d $DOCKERFILE
 
 # Run the build in the container
 echo "Launching build in Docker Container"
