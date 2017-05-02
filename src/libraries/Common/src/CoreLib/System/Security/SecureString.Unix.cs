@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -142,6 +143,41 @@ namespace System.Security
             _buffer.Write((ulong)(index * sizeof(char)), c);
         }
 
+        internal unsafe IntPtr MarshalToBSTR()
+        {
+            int length = _decryptedLength;
+            IntPtr ptr = IntPtr.Zero;
+            IntPtr result = IntPtr.Zero;
+            byte* bufferPtr = null;
+            
+            try
+            {
+                _buffer.AcquirePointer(ref bufferPtr);
+                int resultByteLength = (length + 1) * sizeof(char);
+
+                ptr = PInvokeMarshal.AllocBSTR(length);
+
+                Buffer.MemoryCopy(bufferPtr, (byte*)ptr, resultByteLength, length * sizeof(char));
+
+                result = ptr;
+            }
+            finally
+            {
+                // If we failed for any reason, free the new buffer
+                if (result == IntPtr.Zero && ptr != IntPtr.Zero)
+                {
+                    RuntimeImports.RhZeroMemory(ptr, (UIntPtr)(length * sizeof(char)));
+                    PInvokeMarshal.FreeBSTR(ptr);
+                }
+
+                if (bufferPtr != null)
+                {
+                    _buffer.ReleasePointer();
+                }
+            }
+            return result;
+        }
+
         internal unsafe IntPtr MarshalToStringCore(bool globalAlloc, bool unicode)
         {
             int length = _decryptedLength;
@@ -179,7 +215,7 @@ namespace System.Security
                 // release the string if we had one.
                 if (stringPtr != IntPtr.Zero && result == IntPtr.Zero)
                 {
-                    UnmanagedBuffer.ZeroMemory((byte*)stringPtr, (ulong)(length * sizeof(char)));
+                    RuntimeImports.RhZeroMemory(stringPtr, (UIntPtr)(length * sizeof(char)));
                     MarshalFree(stringPtr, globalAlloc);
                 }
 
@@ -241,7 +277,7 @@ namespace System.Security
                 try
                 {
                     AcquirePointer(ref ptr);
-                    ZeroMemory(ptr, ByteLength);
+                    RuntimeImports.RhZeroMemory((IntPtr)ptr, (UIntPtr)ByteLength);
                 }
                 finally
                 {
@@ -284,12 +320,6 @@ namespace System.Security
                 Marshal.FreeHGlobal(handle);
                 return true;
             }
-
-            internal static unsafe void ZeroMemory(byte* ptr, ulong len)
-            {
-                for (ulong i = 0; i < len; i++) *ptr++ = 0;
-            }
         }
-
     }
 }

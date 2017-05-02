@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -25,7 +26,7 @@ namespace System.Security
 
         override protected bool ReleaseHandle()
         {
-            Interop.NtDll.ZeroMemory(handle, (UIntPtr)(Interop.OleAut32.SysStringLen(handle) * sizeof(char)));
+            RuntimeImports.RhZeroMemory(handle, (UIntPtr)(Interop.OleAut32.SysStringLen(handle) * sizeof(char)));
             Interop.OleAut32.SysFreeString(handle);
             return true;
         }
@@ -36,7 +37,7 @@ namespace System.Security
             try
             {
                 AcquirePointer(ref bufferPtr);
-                Interop.NtDll.ZeroMemory((IntPtr)bufferPtr, (UIntPtr)(Interop.OleAut32.SysStringLen((IntPtr)bufferPtr) * sizeof(char)));
+                RuntimeImports.RhZeroMemory((IntPtr)bufferPtr, (UIntPtr)(Interop.OleAut32.SysStringLen((IntPtr)bufferPtr) * sizeof(char)));
             }
             finally
             {
