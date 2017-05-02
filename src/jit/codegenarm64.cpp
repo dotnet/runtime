@@ -2460,93 +2460,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
         case GT_STOREIND:
-        {
-            GenTree*                 data             = treeNode->gtOp.gtOp2;
-            GenTree*                 addr             = treeNode->gtOp.gtOp1;
-            GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode, data);
-            if (writeBarrierForm != GCInfo::WBF_NoBarrier)
-            {
-                // data and addr must be in registers.
-                // Consume both registers so that any copies of interfering
-                // registers are taken care of.
-                genConsumeOperands(treeNode->AsOp());
-
-#if NOGC_WRITE_BARRIERS
-                // At this point, we should not have any interference.
-                // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
-                //  as that is where 'addr' must go.
-                noway_assert(data->gtRegNum != REG_WRITE_BARRIER_DST_BYREF);
-
-                // 'addr' goes into x14 (REG_WRITE_BARRIER_DST_BYREF)
-                if (addr->gtRegNum != REG_WRITE_BARRIER_DST_BYREF)
-                {
-                    inst_RV_RV(INS_mov, REG_WRITE_BARRIER_DST_BYREF, addr->gtRegNum, addr->TypeGet());
-                }
-
-                // 'data'  goes into x15 (REG_WRITE_BARRIER)
-                if (data->gtRegNum != REG_WRITE_BARRIER)
-                {
-                    inst_RV_RV(INS_mov, REG_WRITE_BARRIER, data->gtRegNum, data->TypeGet());
-                }
-#else
-                // At this point, we should not have any interference.
-                // That is, 'data' must not be in REG_ARG_0,
-                //  as that is where 'addr' must go.
-                noway_assert(data->gtRegNum != REG_ARG_0);
-
-                // addr goes in REG_ARG_0
-                if (addr->gtRegNum != REG_ARG_0)
-                {
-                    inst_RV_RV(INS_mov, REG_ARG_0, addr->gtRegNum, addr->TypeGet());
-                }
-
-                // data goes in REG_ARG_1
-                if (data->gtRegNum != REG_ARG_1)
-                {
-                    inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
-                }
-#endif // NOGC_WRITE_BARRIERS
-
-                genGCWriteBarrier(treeNode, writeBarrierForm);
-            }
-            else // A normal store, not a WriteBarrier store
-            {
-                bool     reverseOps  = ((treeNode->gtFlags & GTF_REVERSE_OPS) != 0);
-                bool     dataIsUnary = false;
-                GenTree* nonRMWsrc   = nullptr;
-                // We must consume the operands in the proper execution order,
-                // so that liveness is updated appropriately.
-                if (!reverseOps)
-                {
-                    genConsumeAddress(addr);
-                }
-
-                if (!data->isContained())
-                {
-                    genConsumeRegs(data);
-                }
-
-                if (reverseOps)
-                {
-                    genConsumeAddress(addr);
-                }
-
-                regNumber dataReg = REG_NA;
-                if (data->isContainedIntOrIImmed())
-                {
-                    assert(data->IsIntegralConst(0));
-                    dataReg = REG_ZR;
-                }
-                else // data is not contained, so evaluate it into a register
-                {
-                    assert(!data->isContained());
-                    dataReg = data->gtRegNum;
-                }
-
-                emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(treeNode), dataReg, treeNode->AsIndir());
-            }
-        }
-        break;
+            genCodeForStoreInd(treeNode->AsStoreInd());
+            break;
 
         case GT_COPY:
             // This is handled at the time we call genConsumeReg() on the GT_COPY
@@ -4102,6 +4017,104 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 
     genProduceReg(lea);
 }
+
+//------------------------------------------------------------------------
+// genCodeForStoreInd: Produce code for a GT_STOREIND node.
+//
+// Arguments:
+//    tree - the GT_STOREIND node
+//
+void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
+{
+    GenTree*  data       = tree->Data();
+    GenTree*  addr       = tree->Addr();
+    var_types targetType = tree->TypeGet();
+    emitter*  emit       = getEmitter();
+
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    if (writeBarrierForm != GCInfo::WBF_NoBarrier)
+    {
+        // data and addr must be in registers.
+        // Consume both registers so that any copies of interfering
+        // registers are taken care of.
+        genConsumeOperands(tree);
+
+#if NOGC_WRITE_BARRIERS
+        // At this point, we should not have any interference.
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST_BYREF,
+        //  as that is where 'addr' must go.
+        noway_assert(data->gtRegNum != REG_WRITE_BARRIER_DST_BYREF);
+
+        // 'addr' goes into x14 (REG_WRITE_BARRIER_DST_BYREF)
+        if (addr->gtRegNum != REG_WRITE_BARRIER_DST_BYREF)
+        {
+            inst_RV_RV(INS_mov, REG_WRITE_BARRIER_DST_BYREF, addr->gtRegNum, addr->TypeGet());
+        }
+
+        // 'data'  goes into x15 (REG_WRITE_BARRIER)
+        if (data->gtRegNum != REG_WRITE_BARRIER)
+        {
+            inst_RV_RV(INS_mov, REG_WRITE_BARRIER, data->gtRegNum, data->TypeGet());
+        }
+#else
+        // At this point, we should not have any interference.
+        // That is, 'data' must not be in REG_ARG_0,
+        //  as that is where 'addr' must go.
+        noway_assert(data->gtRegNum != REG_ARG_0);
+
+        // addr goes in REG_ARG_0
+        if (addr->gtRegNum != REG_ARG_0)
+        {
+            inst_RV_RV(INS_mov, REG_ARG_0, addr->gtRegNum, addr->TypeGet());
+        }
+
+        // data goes in REG_ARG_1
+        if (data->gtRegNum != REG_ARG_1)
+        {
+            inst_RV_RV(INS_mov, REG_ARG_1, data->gtRegNum, data->TypeGet());
+        }
+#endif // NOGC_WRITE_BARRIERS
+
+        genGCWriteBarrier(tree, writeBarrierForm);
+    }
+    else // A normal store, not a WriteBarrier store
+    {
+        bool     reverseOps  = ((tree->gtFlags & GTF_REVERSE_OPS) != 0);
+        bool     dataIsUnary = false;
+        GenTree* nonRMWsrc   = nullptr;
+        // We must consume the operands in the proper execution order,
+        // so that liveness is updated appropriately.
+        if (!reverseOps)
+        {
+            genConsumeAddress(addr);
+        }
+
+        if (!data->isContained())
+        {
+            genConsumeRegs(data);
+        }
+
+        if (reverseOps)
+        {
+            genConsumeAddress(addr);
+        }
+
+        regNumber dataReg = REG_NA;
+        if (data->isContainedIntOrIImmed())
+        {
+            assert(data->IsIntegralConst(0));
+            dataReg = REG_ZR;
+        }
+        else // data is not contained, so evaluate it into a register
+        {
+            assert(!data->isContained());
+            dataReg = data->gtRegNum;
+        }
+
+        emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), dataReg, tree);
+    }
+}
+
 
 //-------------------------------------------------------------------------------------------
 // genSetRegToCond:  Set a register 'dstReg' to the appropriate one or zero value
