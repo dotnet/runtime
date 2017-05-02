@@ -50,8 +50,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _sharedLibraryExtension = sharedLibraryExtension;
             _sharedLibraryPrefix = sharedLibraryPrefix;
             _projectName = Path.GetFileName(_projectDirectory);
-            _projectJson = Path.Combine(_projectDirectory, "project.json");
-            _projectLockJson = Path.Combine(_projectDirectory, "project.lock.json");
+            _projectJson = Path.Combine(_projectDirectory, $"{_projectName}.csproj");
+            _projectLockJson = Path.Combine(_projectDirectory, "obj", "project.assets.json");
 
             _outputDirectory = outputDirectory ?? Path.Combine(_projectDirectory, "bin");
             if (Directory.Exists(_outputDirectory))
