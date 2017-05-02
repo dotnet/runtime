@@ -206,7 +206,7 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "latest",
-        "msbuildArchitecture": "x86",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -233,7 +233,7 @@
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "latest",
-        "msbuildArchitecture": "x86",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -394,8 +394,8 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -455,6 +455,33 @@
     },
     {
       "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Cleanup VSTS Agent",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "$(PB_SourcesDirectory)\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
+        "platform": "$(PB_TargetArchitecture)",
+        "configuration": "$(BuildConfiguration)",
+        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": ""
+      }
+    },
+    {
+      "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Perform Cleanup Tasks",
@@ -483,33 +510,6 @@
         "ArtifactName": "Build Logs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": false,
-      "displayName": "Cleanup VSTS Agent",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
       }
     }
   ],
