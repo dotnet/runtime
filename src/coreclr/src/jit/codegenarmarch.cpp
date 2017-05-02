@@ -541,7 +541,8 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
-    assert(targetType != TYP_STRUCT); // Any TYP_STRUCT register args should have been removed by fgMorphMultiregStructArg
+    assert(targetType !=
+           TYP_STRUCT); // Any TYP_STRUCT register args should have been removed by fgMorphMultiregStructArg
 
     // We have a normal non-Struct targetType
 
