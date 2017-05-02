@@ -25,7 +25,7 @@ if(-Not (Test-Path "$CommonScript"))
 } 
 . "$CommonScript"
 
-$CompressionRoot = Join-Path $RepoRoot "src\pkg\packaging"
+$PackagingRoot = Join-Path $RepoRoot "src\pkg\packaging"
 
 function RunCandleForBundle
 {
@@ -33,11 +33,11 @@ function RunCandleForBundle
     pushd "$WixRoot"
 
     Write-Host Running candle for bundle..
-    $AuthWsxRoot =  Join-Path $CompressionRoot "windows\sharedframework"
+    $AuthWsxRoot =  Join-Path $PackagingRoot "windows\sharedframework"
     $SharedFrameworkComponentVersion = $SharedFrameworkNugetVersion.Replace('-', '_');
 
     .\candle.exe -nologo `
-        -dMicrosoftEula="$CompressionRoot\osx\sharedframework\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\osx\sharedframework\resources\en.lproj\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$DotnetMSIVersion" `
         -dDisplayVersion="$DotnetCLIVersion" `
@@ -71,7 +71,7 @@ function RunLightForBundle
     pushd "$WixRoot"
 
     Write-Host Running light for bundle..
-    $AuthWsxRoot =  Join-Path $CompressionRoot "windows\sharedframework"
+    $AuthWsxRoot =  Join-Path $PackagingRoot "windows\sharedframework"
 
     .\light.exe -nologo `
         -cultures:en-us `
