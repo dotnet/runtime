@@ -40,11 +40,12 @@ namespace Microsoft.DotNet.Build.Tasks
                     string[] tfms = match.Groups[1].Value.Split(';');
                     foreach (string framework in tfms)
                     {
+                        Console.WriteLine("OSGroup: " + OSGroup);
                         if (OSGroup == "Windows_NT"
                             || framework.StartsWith("netstandard")
                             || framework.StartsWith("netcoreapp"))
                         {
-                            args.Add($"--framework {framework} {dir}");
+                            args.Add($"--framework {framework} {projectJsonPath}");
                         }
                     }
                 }
