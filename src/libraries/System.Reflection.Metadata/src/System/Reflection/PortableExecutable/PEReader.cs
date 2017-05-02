@@ -736,12 +736,6 @@ namespace System.Reflection.PortableExecutable
                 return false;
             }
 
-            if (data.Age != 1)
-            {
-                // not a portable code view:
-                return false;
-            }
-
             var id = new BlobContentId(data.Guid, codeViewEntry.Stamp);
            
             // The interpretation os the path in the CodeView needs to be platform agnostic,
