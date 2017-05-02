@@ -15,12 +15,63 @@ namespace System.Net.Tests
     {
         readonly byte[] buffer = new byte[1];
 
+        #region Write
+
+        [Fact]
+        public void Write_BufferIsNull_ThrowsArgumentNullException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                Assert.Throws<ArgumentNullException>("buffer", () => stream.Write(null, 0, 1));
+            }
+        }
+
+        [Fact]
+        public void Write_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.Write(buffer, -1, buffer.Length));
+            }
+        }
+
+        [Fact]
+        public void Write_CountIsNegative_ThrowsArgumentOutOfRangeException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.Write(buffer, 0, -1));
+            }
+        }
+
+        [Fact]
+        public void Write_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.Write(buffer, 0, buffer.Length + 1));
+            }
+        }
+
+        [Fact]
+        public void Write_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.Write(buffer, int.MaxValue, int.MaxValue));
+            }
+        }
+
+        #endregion
+
+        #region WriteAsync
+
         [Fact]
         public void WriteAsync_BufferIsNull_ThrowsArgumentNullException()
         {
             using (Stream stream = GetRequestStream())
             {
-                Assert.Throws<ArgumentNullException>(() => { Task t = stream.WriteAsync(null, 0, 1); });
+                Assert.Throws<ArgumentNullException>("buffer", () => { Task t = stream.WriteAsync(null, 0, 1); });
             }
         }
 
@@ -29,7 +80,7 @@ namespace System.Net.Tests
         {
             using (Stream stream = GetRequestStream())
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => { Task t = stream.WriteAsync(buffer, -1, buffer.Length); });
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => { Task t = stream.WriteAsync(buffer, -1, buffer.Length); });
             }
         }
 
@@ -38,7 +89,7 @@ namespace System.Net.Tests
         {
             using (Stream stream = GetRequestStream())
             {
-                Assert.Throws<ArgumentOutOfRangeException>(() => { Task t = stream.WriteAsync(buffer, 0, -1); });
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => { Task t = stream.WriteAsync(buffer, 0, -1); });
             }
         }
 
@@ -47,19 +98,7 @@ namespace System.Net.Tests
         {
             using (Stream stream = GetRequestStream())
             {
-                // TODO: #18787
-                if (PlatformDetection.IsFullFramework)
-                {
-                    // In .NET Framework, the request stream is a System.Net.ConnectStream
-                    // which throws ArgumentOutOfRangeException in this case.
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { Task t = stream.WriteAsync(buffer, 0, buffer.Length+1); });
-                }
-                else
-                {
-                    // In .NET Core, the request stream is a System.IO.MemoryStream
-                    // which throws ArgumentException in this case.
-                    Assert.Throws<ArgumentException>(() => { Task t = stream.WriteAsync(buffer, 0, buffer.Length+1); });
-                }
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => { Task t = stream.WriteAsync(buffer, 0, buffer.Length + 1); });
             }
         }
 
@@ -68,20 +107,7 @@ namespace System.Net.Tests
         {
             using (Stream stream = GetRequestStream())
             {
-                // TODO: #18787
-                if (PlatformDetection.IsFullFramework)
-                {
-                    // In .NET Framework, the request stream is a System.Net.ConnectStream
-                    // which throws ArgumentOutOfRangeException in this case.
-                    Assert.Throws<ArgumentOutOfRangeException>(() => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
-
-                }
-                else
-                {
-                    // In .NET Core, the request stream is a System.IO.MemoryStream
-                    // which throws ArgumentException in this case.
-                    Assert.Throws<ArgumentException>(() => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
-                }
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
             }
         }
 
@@ -106,6 +132,69 @@ namespace System.Net.Tests
                 Assert.True(t.IsCanceled);
             }
         }
+
+        #endregion
+
+        #region BeginWrite
+
+        [Fact]
+        public void BeginWriteAsync_BufferIsNull_ThrowsArgumentNullException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                Assert.Throws<ArgumentNullException>("buffer", () => stream.BeginWrite(null, 0, 1, null, null));
+            }
+        }
+
+        [Fact]
+        public void BeginWriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.BeginWrite(buffer, -1, buffer.Length, null, null));
+            }
+        }
+
+        [Fact]
+        public void BeginWriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.BeginWrite(buffer, 0, -1, null, null));
+            }
+        }
+
+        [Fact]
+        public void BeginWriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.BeginWrite(buffer, 0, buffer.Length + 1, null, null));
+            }
+        }
+
+        [Fact]
+        public void BeginWriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.BeginWrite(buffer, int.MaxValue, int.MaxValue, null, null));
+            }
+        }
+
+        [Fact]
+        public void BeginWriteAsync_ValidParameters_TaskRanToCompletion()
+        {
+            using (Stream stream = GetRequestStream())
+            {
+                object state = new object();
+                IAsyncResult result = stream.BeginWrite(buffer, 0, buffer.Length, null, state);
+                stream.EndWrite(result);
+                Assert.True(result.IsCompleted);
+            }
+        }
+
+        #endregion
 
         [Fact]
         public void FlushAsync_TaskRanToCompletion()
