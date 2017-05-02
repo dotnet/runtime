@@ -138,7 +138,7 @@
   </Target>
 
   <!-- Prepares all items for cross-gen and replaces package file items with their cross-gen'ed equivalents -->
-  <Target Name="PrepareForCrossGen" Condition="'$(NuGetRuntimeIdentifier)' != ''" DependsOnTargets="GetFilesFromPackages">
+  <Target Name="PrepareForCrossGen" Condition="'$(NuGetRuntimeIdentifier)' != '' AND '$(DisableCrossgen)' != 'true'" DependsOnTargets="GetFilesFromPackages">
     <PropertyGroup>
       <_crossGenIntermediatePath>$(IntermediateOutputPath)/crossgen</_crossGenIntermediatePath>
     </PropertyGroup>
@@ -164,7 +164,10 @@
     </ItemGroup>
     
     <PropertyGroup>
-      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '%3B')</_crossgenPlatformAssemblies>
+      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
+           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
+      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
+      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
     </PropertyGroup>
   </Target>
 
