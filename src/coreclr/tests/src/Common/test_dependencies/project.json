@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25302-01",
-    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-preview2-25302-01",
-    "System.Memory": "4.4.0-preview2-25302-01",
-    "System.Runtime.CompilerServices.Unsafe": "4.4.0-preview2-25302-01",
-    "System.Security.Permissions": "4.4.0-preview2-25302-01"
+    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25302-03",
+    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-preview2-25302-03",
+    "System.Memory": "4.4.0-preview2-25302-03",
+    "System.Runtime.CompilerServices.Unsafe": "4.4.0-preview2-25302-03",
+    "System.Security.Permissions": "4.4.0-preview2-25302-03"
   },
   "frameworks": {
     "netcoreapp2.0": {
