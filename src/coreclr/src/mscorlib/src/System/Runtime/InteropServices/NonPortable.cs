@@ -171,11 +171,6 @@ namespace System.Runtime.InteropServices
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
-
-        public static void ZeroFreeBSTR(System.IntPtr s)
-        {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
-        }
     }
 
     public class DispatchWrapper
