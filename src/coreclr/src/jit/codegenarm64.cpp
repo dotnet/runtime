@@ -2440,24 +2440,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_RETURNTRAP:
-        {
-            // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
-            // based on the contents of 'data'
-
-            GenTree* data = treeNode->gtOp.gtOp1;
-            genConsumeRegs(data);
-            emit->emitIns_R_I(INS_cmp, EA_4BYTE, data->gtRegNum, 0);
-
-            BasicBlock* skipLabel = genCreateTempLabel();
-
-            emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
-            inst_JMP(jmpEqual, skipLabel);
-            // emit the call to the EE-helper that stops for GC (or other reasons)
-
-            genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
-            genDefineTempLabel(skipLabel);
-        }
-        break;
+            genCodeForReturnTrap(treeNode->AsOp());
+            break;
 
         case GT_STOREIND:
             genCodeForStoreInd(treeNode->AsStoreInd());
@@ -4016,6 +4000,33 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     }
 
     genProduceReg(lea);
+}
+
+//------------------------------------------------------------------------
+// genCodeForReturnTrap: Produce code for a GT_RETURNTRAP node.
+//
+// Arguments:
+//    tree - the GT_RETURNTRAP node
+//
+void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
+{
+    assert(tree->OperGet() == GT_RETURNTRAP);
+
+    // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
+    // based on the contents of 'data'
+
+    GenTree* data = tree->gtOp1;
+    genConsumeRegs(data);
+    getEmitter()->emitIns_R_I(INS_cmp, EA_4BYTE, data->gtRegNum, 0);
+
+    BasicBlock* skipLabel = genCreateTempLabel();
+
+    emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
+    inst_JMP(jmpEqual, skipLabel);
+    // emit the call to the EE-helper that stops for GC (or other reasons)
+
+    genEmitHelperCall(CORINFO_HELP_STOP_FOR_GC, 0, EA_UNKNOWN);
+    genDefineTempLabel(skipLabel);
 }
 
 //------------------------------------------------------------------------

@@ -174,6 +174,8 @@ void genCodeForStoreLclFld(GenTreeLclFld* tree);
 
 void genCodeForStoreLclVar(GenTreeLclVar* tree);
 
+void genCodeForReturnTrap(GenTreeOp* tree);
+
 void genCodeForStoreInd(GenTreeStoreInd* tree);
 
 void genCodeForCpObj(GenTreeObj* cpObjNode);
