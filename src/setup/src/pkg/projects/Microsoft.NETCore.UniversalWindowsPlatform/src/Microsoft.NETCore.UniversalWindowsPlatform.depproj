@@ -87,6 +87,19 @@
     </ItemGroup>
     <Error Text="Unexpected System package(s) @(_secondarySystemPackages)" Condition="'@(_secondarySystemPackages)' != ''" />
 
+    <ItemGroup>
+      <!-- pick up any src our sources directory from packages contributing files -->
+      <_sourcePaths Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\sources')" />
+      <_sourcePaths Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\src')" />
+
+      <!-- include all source from those directories -->
+      <_sourceFile Condition="'%(_sourcePaths.Identity)' != ''" Include="%(_sourcePaths.Identity)\**\*.*" />
+      <FilesToPackage Include="@(_sourceFile)">
+        <TargetPath>src\%(RecursiveDir)%(FileName)%(Extension)</TargetPath>
+        <IsSourceCodeFile>true</IsSourceCodeFile>
+      </FilesToPackage>
+    </ItemGroup>
+
     <Message Importance="low" Text="%(FilesToPackage.PackagePath) -> @(FilesToPackage)" />
   </Target>
 
