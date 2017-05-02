@@ -304,7 +304,7 @@
       },
       "inputs": {
         "solution": "$(PB_SourcesDirectory)\\sign.proj",
-        "platform": "",
+        "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignMsiAndCab $(PB_CommonMSBuildArgs) $(MsbuildSigningArguments)",
         "clean": "false",
@@ -357,7 +357,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\src\\pkg\\packaging\\dir.proj",
+        "solution": "$(PB_SourcesDirectory)\\sign.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignEngine $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\signengine.log",
@@ -411,10 +411,10 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\signing\\sign.proj",
-        "platform": "",
+        "solution": "$(PB_SourcesDirectory)\\sign.proj",
+        "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignBundle $(MsbuildSigningArguments)",
+        "msbuildArguments": "/t:SignBundle $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\signbundle.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
