@@ -35,11 +35,10 @@ namespace System.Resources
     [Serializable]
     public class ResourceSet : IDisposable, IEnumerable
     {
-        [NonSerialized]
-        protected IResourceReader Reader;
+        [NonSerialized] protected IResourceReader Reader;
+        internal Hashtable Table;
 
-        private Dictionary<object, object> _table;
-        private Dictionary<object, object> _caseInsensitiveTable;  // For case-insensitive lookups.
+        private Hashtable _caseInsensitiveTable;  // For case-insensitive lookups.
 
         protected ResourceSet()
         {
@@ -88,7 +87,7 @@ namespace System.Resources
 
         private void CommonInit()
         {
-            _table = new Dictionary<object, object>();
+            Table = new Hashtable();
         }
 
         // Closes and releases any resources used by this ResourceSet, if any.
@@ -112,7 +111,7 @@ namespace System.Resources
             }
             Reader = null;
             _caseInsensitiveTable = null;
-            _table = null;
+            Table = null;
         }
 
         public void Dispose()
@@ -149,7 +148,7 @@ namespace System.Resources
 
         private IDictionaryEnumerator GetEnumeratorHelper()
         {
-            Dictionary<object, object> copyOfTable = _table;  // Avoid a race with Dispose
+            Hashtable copyOfTable = Table;  // Avoid a race with Dispose
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
             return copyOfTable.GetEnumerator();
@@ -227,7 +226,7 @@ namespace System.Resources
             while (en.MoveNext())
             {
                 Object value = en.Value;
-                _table.Add(en.Key, value);
+                Table.Add(en.Key, value);
             }
             // While technically possible to close the Reader here, don't close it
             // to help with some WinRes lifetime issues.
@@ -236,10 +235,10 @@ namespace System.Resources
         private Object GetObjectInternal(String name)
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
-            Dictionary<object, object> copyOfTable = _table;  // Avoid a race with Dispose
+            Hashtable copyOfTable = Table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
@@ -249,15 +248,15 @@ namespace System.Resources
 
         private Object GetCaseInsensitiveObjectInternal(String name)
         {
-            Dictionary<object, object> copyOfTable = _table;  // Avoid a race with Dispose
+            Hashtable copyOfTable = Table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            Dictionary<object, object> caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
+            Hashtable caseTable = _caseInsensitiveTable;  // Avoid a race condition with Close
             if (caseTable == null)
             {
-                caseTable = new Dictionary<object, object>(CaseInsensitiveStringObjectComparer.Instance);
+                caseTable = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
                 IDictionaryEnumerator en = copyOfTable.GetEnumerator();
                 while (en.MoveNext())
@@ -268,26 +267,6 @@ namespace System.Resources
             }
 
             return caseTable[name];
-        }
-
-        /// <summary>
-        /// Adapter for StringComparer.OrdinalIgnoreCase to allow it to be used with Dictionary
-        /// </summary>
-        private class CaseInsensitiveStringObjectComparer : IEqualityComparer<object>
-        {
-            public static CaseInsensitiveStringObjectComparer Instance { get; } = new CaseInsensitiveStringObjectComparer();
-
-            private CaseInsensitiveStringObjectComparer() { }
-
-            public new bool Equals(object x, object y)
-            {
-                return ((IEqualityComparer)StringComparer.OrdinalIgnoreCase).Equals(x, y);
-            }
-
-            public int GetHashCode(object obj)
-            {
-                return ((IEqualityComparer)StringComparer.OrdinalIgnoreCase).GetHashCode(obj);
-            }
         }
     }
 }
