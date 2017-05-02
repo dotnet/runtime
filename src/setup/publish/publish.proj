@@ -106,12 +106,11 @@
     
     <Message Text="Pushing CoreHost packages to $(NuGetFeedUrl)" />
     <PropertyGroup>
-      <NuGetPushCommand>$(NuGetToolPath) push -Source $(NuGetFeedUrl) -ApiKey $(NuGetApiKey) -Timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
-      <NuGetPushSymbolsCommand>$(NuGetToolPath) push -Source $(NuGetSymbolsFeedUrl) -ApiKey $(NuGetApiKey) -Timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
+      <NuGetPushCommand>$(DotnetSdkToolCommand) nuget push --source $(NuGetFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
+      <NuGetPushSymbolsCommand>$(DotnetSdkToolCommand) nuget push --source $(NuGetSymbolsFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
     </PropertyGroup>
 
       <!-- ToDo: look at moving this to an msbuild task so that we can include retry logic, parallelize it, and hide the api key -->
-      <!-- ToDo: may not be able to take a dependency on NuGet -->
     <Exec Command="$(NuGetPushCommand) %(_DownloadedStandardPackages.Identity)" />
 
     <Message Condition="'@(_DownloadedSymbolsPackages)' != ''" Text="Pushing CoreHost symbols packages to $(NuGetSymbolsFeedUrl)" />
