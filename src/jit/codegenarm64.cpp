@@ -2345,95 +2345,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LE:
         case GT_GE:
         case GT_GT:
-        {
-            // TODO-ARM64-CQ: Check if we can use the currently set flags.
-            // TODO-ARM64-CQ: Check for the case where we can simply transfer the carry bit to a register
-            //         (signed < or >= where targetReg != REG_NA)
-
-            GenTreeOp* tree    = treeNode->AsOp();
-            GenTreePtr op1     = tree->gtOp1;
-            GenTreePtr op2     = tree->gtOp2;
-            var_types  op1Type = op1->TypeGet();
-            var_types  op2Type = op2->TypeGet();
-
-            assert(!op1->isUsedFromMemory());
-            assert(!op2->isUsedFromMemory());
-
-            genConsumeOperands(tree);
-
-            emitAttr cmpSize = EA_UNKNOWN;
-
-            if (varTypeIsFloating(op1Type))
-            {
-                assert(varTypeIsFloating(op2Type));
-                assert(!op1->isContained());
-                assert(op1Type == op2Type);
-                cmpSize = EA_ATTR(genTypeSize(op1Type));
-
-                if (op2->IsIntegralConst(0))
-                {
-                    emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
-                }
-                else
-                {
-                    assert(!op2->isContained());
-                    emit->emitIns_R_R(INS_fcmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
-                }
-            }
-            else
-            {
-                assert(!varTypeIsFloating(op2Type));
-                // We don't support swapping op1 and op2 to generate cmp reg, imm
-                assert(!op1->isContainedIntOrIImmed());
-
-                // TODO-ARM64-CQ: the second register argument of a CMP can be sign/zero
-                // extended as part of the instruction (using "CMP (extended register)").
-                // We should use that if possible, swapping operands
-                // (and reversing the condition) if necessary.
-                unsigned op1Size = genTypeSize(op1Type);
-                unsigned op2Size = genTypeSize(op2Type);
-
-                if ((op1Size < 4) || (op1Size < op2Size))
-                {
-                    // We need to sign/zero extend op1 up to 32 or 64 bits.
-                    instruction ins = ins_Move_Extend(op1Type, true);
-                    inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
-                }
-
-                if (!op2->isContainedIntOrIImmed())
-                {
-                    if ((op2Size < 4) || (op2Size < op1Size))
-                    {
-                        // We need to sign/zero extend op2 up to 32 or 64 bits.
-                        instruction ins = ins_Move_Extend(op2Type, true);
-                        inst_RV_RV(ins, op2->gtRegNum, op2->gtRegNum);
-                    }
-                }
-                cmpSize = EA_4BYTE;
-                if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
-                {
-                    cmpSize = EA_8BYTE;
-                }
-
-                if (op2->isContainedIntOrIImmed())
-                {
-                    GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-                    emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
-                }
-                else
-                {
-                    emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
-                }
-            }
-
-            // Are we evaluating this into a register?
-            if (targetReg != REG_NA)
-            {
-                genSetRegToCond(targetReg, tree);
-                genProduceReg(tree);
-            }
-        }
-        break;
+            genCodeForCompare(treeNode->AsOp());
+            break;
 
         case GT_JTRUE:
             genCodeForJumpTrue(treeNode);
@@ -4387,6 +4300,104 @@ void CodeGen::genCkfinite(GenTreePtr treeNode)
         emit->emitIns_R_R(ins_Copy(targetType), emitTypeSize(treeNode), treeNode->gtRegNum, fpReg);
     }
     genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForCompare(GenTreeOp* tree)
+{
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    // TODO-ARM64-CQ: Check if we can use the currently set flags.
+    // TODO-ARM64-CQ: Check for the case where we can simply transfer the carry bit to a register
+    //         (signed < or >= where targetReg != REG_NA)
+
+    GenTreePtr op1     = tree->gtOp1;
+    GenTreePtr op2     = tree->gtOp2;
+    var_types  op1Type = op1->TypeGet();
+    var_types  op2Type = op2->TypeGet();
+
+    assert(!op1->isUsedFromMemory());
+    assert(!op2->isUsedFromMemory());
+
+    genConsumeOperands(tree);
+
+    emitAttr cmpSize = EA_UNKNOWN;
+
+    if (varTypeIsFloating(op1Type))
+    {
+        assert(varTypeIsFloating(op2Type));
+        assert(!op1->isContained());
+        assert(op1Type == op2Type);
+        cmpSize = EA_ATTR(genTypeSize(op1Type));
+
+        if (op2->IsIntegralConst(0))
+        {
+            emit->emitIns_R_F(INS_fcmp, cmpSize, op1->gtRegNum, 0.0);
+        }
+        else
+        {
+            assert(!op2->isContained());
+            emit->emitIns_R_R(INS_fcmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+        }
+    }
+    else
+    {
+        assert(!varTypeIsFloating(op2Type));
+        // We don't support swapping op1 and op2 to generate cmp reg, imm
+        assert(!op1->isContainedIntOrIImmed());
+
+        // TODO-ARM64-CQ: the second register argument of a CMP can be sign/zero
+        // extended as part of the instruction (using "CMP (extended register)").
+        // We should use that if possible, swapping operands
+        // (and reversing the condition) if necessary.
+        unsigned op1Size = genTypeSize(op1Type);
+        unsigned op2Size = genTypeSize(op2Type);
+
+        if ((op1Size < 4) || (op1Size < op2Size))
+        {
+            // We need to sign/zero extend op1 up to 32 or 64 bits.
+            instruction ins = ins_Move_Extend(op1Type, true);
+            inst_RV_RV(ins, op1->gtRegNum, op1->gtRegNum);
+        }
+
+        if (!op2->isContainedIntOrIImmed())
+        {
+            if ((op2Size < 4) || (op2Size < op1Size))
+            {
+                // We need to sign/zero extend op2 up to 32 or 64 bits.
+                instruction ins = ins_Move_Extend(op2Type, true);
+                inst_RV_RV(ins, op2->gtRegNum, op2->gtRegNum);
+            }
+        }
+        cmpSize = EA_4BYTE;
+        if ((op1Size == EA_8BYTE) || (op2Size == EA_8BYTE))
+        {
+            cmpSize = EA_8BYTE;
+        }
+
+        if (op2->isContainedIntOrIImmed())
+        {
+            GenTreeIntConCommon* intConst = op2->AsIntConCommon();
+            emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
+        }
+        else
+        {
+            emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+        }
+    }
+
+    // Are we evaluating this into a register?
+    if (targetReg != REG_NA)
+    {
+        genSetRegToCond(targetReg, tree);
+        genProduceReg(tree);
+    }
 }
 
 int CodeGenInterface::genSPtoFPdelta()

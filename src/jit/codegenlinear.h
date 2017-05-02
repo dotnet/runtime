@@ -42,6 +42,8 @@ void genIntToFloatCast(GenTreePtr treeNode);
 
 void genCkfinite(GenTreePtr treeNode);
 
+void genCodeForCompare(GenTreeOp* tree);
+
 void genIntrinsic(GenTreePtr treeNode);
 
 void genPutArgStk(GenTreePutArgStk* treeNode);
