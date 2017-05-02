@@ -80,6 +80,11 @@ internal interface TestType_PublicInterfaceService_Implements_Internal : TestTyp
     string Echo2(string message);
 }
 
+public interface TypeType_GenericMethod
+{
+    T Echo<T>(T messages);
+}
+
 // Negative -- demonstrates trying to use a class for the interface type for the proxy
 public class TestType_ConcreteClass
 {
