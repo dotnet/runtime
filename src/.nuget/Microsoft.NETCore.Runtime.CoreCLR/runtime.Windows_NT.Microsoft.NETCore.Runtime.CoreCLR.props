@@ -44,7 +44,7 @@
     <LongNameFile Include="$(BinDir)$(CrossTargetComponentFolder)\mscordaccore.dll;
                            $(BinDir)$(CrossTargetComponentFolder)\sos.dll"
                   Condition="'$(HasCrossTargetComponents)'=='true'">
-      <TargetPath>tools\$(CrossTargetComponentFolder)_$(PackagePlatform)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)</TargetPath>
+      <TargetPath>tools\$(CrossTargetComponentFolder)_$(Platform)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)</TargetPath>
     </LongNameFile>
   </ItemGroup>
 </Project>
