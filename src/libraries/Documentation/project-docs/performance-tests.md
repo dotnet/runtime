@@ -22,7 +22,7 @@ Running the tests
 ### Windows
 Performance test files (if present) are stored within a library's ```tests/Performance``` directory and contain test methods that are all marked with a perf-specific *Benchmark* attribute. The performance tests will only be run if the ```performance``` property is set to ```true```.
 
-To build and run the tests using msbuild for a project, run ```msbuild /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Windows_NT``` from the tests directory. If the v5.0 assemblies aren't installed on your system, an error will be raised and no tests will be run.
+To build and run the tests using msbuild for a project, run ```msbuild /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Windows_NT``` from the Performance directory with Admin privileges. If the v5.0 assemblies aren't installed on your system, an error will be raised and no tests will be run.
 
 Note: Because build.cmd runs tests concurrently, it's not recommended that you execute the perf tests using it.
 
