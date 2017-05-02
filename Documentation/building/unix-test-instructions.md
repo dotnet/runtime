@@ -6,7 +6,7 @@ CoreCLR tests
 
 **Building**
 
-Build CoreCLR and CoreFX. Refer to building instructions in the respective repository.
+Build CoreCLR on [Windows](https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md) & [Unix](https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md), and CoreFX on [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md).
 
 To build only the tests, on the Windows machine:
 
@@ -18,7 +18,6 @@ The following instructions assume that on the Unix machine:
 - The CoreCLR repo is cloned at `~/coreclr`
 - The CoreFX repo is cloned at `~/corefx`
 - The Windows clone of the CoreCLR repo is mounted at `/media/coreclr`
-- The Windows clone of the CoreFX repo is mounted at `/media/corefx`
 
 Tests currently need to be built on Windows and copied over to the Unix machine for testing. Copy the test build over to the Unix machine:
 
@@ -35,7 +34,7 @@ Run tests (`Debug` may be replaced with `Release` or `Checked`, depending on whi
 >     --testRootDir=~/test/Windows_NT.x64.Debug
 >     --testNativeBinDir=~/coreclr/bin/obj/Linux.x64.Debug/tests
 >     --coreClrBinDir=~/coreclr/bin/Product/Linux.x64.Debug
->     --mscorlibDir=/media/coreclr/bin/Product/Linux.x64.Debug
+>     --mscorlibDir=~/coreclr/bin/Product/Linux.x64.Debug
 >     --coreFxBinDir=~/corefx/bin/runtime/netcoreapp-Linux-Debug-x64
 > ```
 
