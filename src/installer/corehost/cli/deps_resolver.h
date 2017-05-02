@@ -110,10 +110,6 @@ public:
         return m_deps_file;
     }
 
-    const std::unordered_set<pal::string_t>& get_api_sets() const
-    {
-        return m_api_set_paths;
-    }
 private:
 
     static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
