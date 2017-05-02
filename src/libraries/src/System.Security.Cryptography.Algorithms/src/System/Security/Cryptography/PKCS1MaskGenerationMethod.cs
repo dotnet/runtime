@@ -9,16 +9,16 @@ namespace System.Security.Cryptography
     public class PKCS1MaskGenerationMethod : MaskGenerationMethod
     {
         private string _hashNameValue;
-        
+        private const string DefaultHash = "SHA1";
         public PKCS1MaskGenerationMethod()
         {
-            _hashNameValue = "SHA1";
+            _hashNameValue = DefaultHash;
         }
 
         public string HashName
         {
             get { return _hashNameValue; }
-            set { _hashNameValue = value ?? "SHA1"; }
+            set { _hashNameValue = value ?? DefaultHash; }
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "CryptoConfig.CreateFromName may return platform-dependent objects, so this implementation is limited to SHA-1 for now")]
