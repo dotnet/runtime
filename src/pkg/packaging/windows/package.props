@@ -9,5 +9,6 @@
     <MsiArch>$(TargetArchitecture)</MsiArch>
     <MsiArch Condition="'$(TargetArchitecture)' == 'arm'">x86</MsiArch>
     <MsiArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</MsiArch>    
+    <InsigniaCmd>$(WixToolsDir)\insignia.exe</InsigniaCmd>
   </PropertyGroup>
 </Project>

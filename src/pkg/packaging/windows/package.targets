@@ -107,4 +107,13 @@
 
      <Exec Command="powershell -NoProfile -NoLogo $(SharedFxBundleScript) $(BundleParameters)" />
   </Target>
+
+  <Target Name="ExtractEngineBundle">
+      <Exec Command="$(InsigniaCmd) -ib $(PackagesOutDir)$(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerEngine)" />
+  </Target>
+
+  <Target Name="ReattachEngineToBundle">
+      <Exec Command="$(InsigniaCmd) -ab $(PackagesOutDir)$(CombinedInstallerEngine) $(PackagesOutDir)$(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerFile)" />
+  </Target>
+
 </Project>
