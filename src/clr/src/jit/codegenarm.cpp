@@ -486,43 +486,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_STORE_LCL_FLD:
-        {
-            noway_assert(targetType != TYP_STRUCT);
-
-            // record the offset
-            unsigned offset = treeNode->gtLclFld.gtLclOffs;
-
-            // We must have a stack store with GT_STORE_LCL_FLD
-            noway_assert(!treeNode->InReg());
-            noway_assert(targetReg == REG_NA);
-
-            GenTreeLclVarCommon* varNode = treeNode->AsLclVarCommon();
-            unsigned             varNum  = varNode->gtLclNum;
-            assert(varNum < compiler->lvaCount);
-            LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
-
-            // Ensure that lclVar nodes are typed correctly.
-            assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
-
-            GenTreePtr  data = treeNode->gtOp.gtOp1->gtEffectiveVal();
-            instruction ins  = ins_Store(targetType);
-            emitAttr    attr = emitTypeSize(targetType);
-            if (data->isContainedIntOrIImmed())
-            {
-                assert(data->IsIntegralConst(0));
-                NYI_ARM("st.lclFld contained operand");
-            }
-            else
-            {
-                assert(!data->isContained());
-                genConsumeReg(data);
-                emit->emitIns_S_R(ins, attr, data->gtRegNum, varNum, offset);
-            }
-
-            genUpdateLife(varNode);
-            varDsc->lvRegNum = REG_STK;
-        }
-        break;
+            genCodeForStoreLclFld(treeNode->AsLclFld());
+            break;
 
         case GT_STORE_LCL_VAR:
         {
@@ -1586,6 +1551,53 @@ void CodeGen::genCodeForShiftLong(GenTreePtr tree)
     }
 
     genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genCodeForStoreLclFld: Produce code for a GT_STORE_LCL_FLD node.
+//
+// Arguments:
+//    tree - the GT_STORE_LCL_FLD node
+//
+void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
+{
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    noway_assert(targetType != TYP_STRUCT);
+
+    // record the offset
+    unsigned offset = tree->gtLclOffs;
+
+    // We must have a stack store with GT_STORE_LCL_FLD
+    noway_assert(!tree->InReg());
+    noway_assert(targetReg == REG_NA);
+
+    unsigned varNum = tree->gtLclNum;
+    assert(varNum < compiler->lvaCount);
+    LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
+
+    // Ensure that lclVar nodes are typed correctly.
+    assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
+
+    GenTreePtr  data = tree->gtOp1->gtEffectiveVal();
+    instruction ins  = ins_Store(targetType);
+    emitAttr    attr = emitTypeSize(targetType);
+    if (data->isContainedIntOrIImmed())
+    {
+        assert(data->IsIntegralConst(0));
+        NYI_ARM("st.lclFld contained operand");
+    }
+    else
+    {
+        assert(!data->isContained());
+        genConsumeReg(data);
+        emit->emitIns_S_R(ins, attr, data->gtRegNum, varNum, offset);
+    }
+
+    genUpdateLife(tree);
+    varDsc->lvRegNum = REG_STK;
 }
 
 //------------------------------------------------------------------------

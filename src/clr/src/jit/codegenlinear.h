@@ -168,6 +168,8 @@ void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 
 void genCodeForLclFld(GenTreeLclFld* tree);
 
+void genCodeForStoreLclFld(GenTreeLclFld* tree);
+
 void genCodeForCpObj(GenTreeObj* cpObjNode);
 
 void genCodeForCpBlk(GenTreeBlk* cpBlkNode);
