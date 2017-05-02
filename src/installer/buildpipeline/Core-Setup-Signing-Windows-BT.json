@@ -403,7 +403,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Sign Bundle",
+      "displayName": "Sign engine",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
@@ -411,10 +411,10 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "build_projects\\signing\\sign.proj",
-        "platform": "",
+        "solution": "$(PB_SourcesDirectory)\\src\\pkg\\packaging\\dir.proj",
+        "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignBundle $(MsbuildSigningArguments)",
+        "msbuildArguments": "/t:SignEngine $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\signengine.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -457,7 +457,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Sign engine",
+      "displayName": "Sign Bundle",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
@@ -465,10 +465,10 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\src\\pkg\\packaging\\dir.proj",
-        "platform": "$(PB_TargetArchitecture)",
+        "solution": "build_projects\\signing\\sign.proj",
+        "platform": "",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignEngine $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\signengine.log",
+        "msbuildArguments": "/t:SignBundle $(MsbuildSigningArguments)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
