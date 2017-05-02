@@ -20,9 +20,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private string _targetRID;
         private string _buildRID;
+        private string _mnaVersion;
 
         public string BuildRID => _buildRID;
         public string TargetRID => _targetRID;
+        public string MicrosoftNETCoreAppVersion => _mnaVersion;
         public string RepoRoot => _repoRoot;
         public string Artifacts => _artifacts;
         public string HostArtifacts => _hostArtifacts;
@@ -45,6 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
             _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
+            _mnaVersion = Environment.GetEnvironmentVariable("MNA_VERSION");
 
             _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Debug", "Tools", "dotnetcli");
             if (!Directory.Exists(_dotnetSDK))
