@@ -6,13 +6,13 @@
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>
   <ItemGroup>
-    <Dependency Include="runtime.win7-x64.runtime.native.System.Data.SqlClient.sni">
+    <Dependency Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni">
       <Version>$(SniPackageVersion)</Version>
     </Dependency>
-    <Dependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
+    <Dependency Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni">
       <Version>$(SniPackageVersion)</Version>
     </Dependency>
-    <Dependency Include="runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni">
+    <Dependency Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni">
       <Version>$(SniPackageVersion)</Version>
     </Dependency>
   </ItemGroup>

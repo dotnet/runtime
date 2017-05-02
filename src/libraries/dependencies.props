@@ -29,7 +29,7 @@
     <NETStandardPackageVersion>2.0.0-preview2-25301-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
-    <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
+    <SniPackageVersion>4.4.0-preview2-25302-01</SniPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
