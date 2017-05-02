@@ -251,7 +251,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 if (rsa is RSACng && PlatformDetection.IsFullFramework)
                     Assert.Throws<ArgumentException>(() => rsa.ImportParameters(imported));
                 else
-                    Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
+                    Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
         }
 
@@ -268,7 +268,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 if (rsa is RSACng && PlatformDetection.IsFullFramework)
                     Assert.Throws<ArgumentException>(() => rsa.ImportParameters(imported));
                 else
-                    Assert.Throws<CryptographicException>(() => rsa.ImportParameters(imported));
+                    Assert.ThrowsAny<CryptographicException>(() => rsa.ImportParameters(imported));
             }
         }
 
