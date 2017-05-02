@@ -141,6 +141,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_intern	    (MonoString *str);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoString*
 mono_string_new		    (MonoDomain *domain, const char *text);
 
