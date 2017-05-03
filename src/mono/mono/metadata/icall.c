@@ -7091,12 +7091,10 @@ ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
 #endif /* PLATFORM_NO_DRIVEINFO */
 
 ICALL_EXPORT gpointer
-ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method)
+ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
-	MonoError error;
-	gpointer result = mono_compile_method_checked (method, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	error_init (error);
+	return mono_compile_method_checked (method, error);
 }
 
 ICALL_EXPORT MonoStringHandle

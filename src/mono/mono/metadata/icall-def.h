@@ -766,7 +766,7 @@ ICALL(RFH_1, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirec
 ICALL(RFH_2, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
-ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPointer)
+HANDLES(ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPointer))
 
 ICALL_TYPE(RT, "System.RuntimeType", RT_1)
 HANDLES(ICALL(RT_1, "CreateInstanceInternal", ves_icall_System_Activator_CreateInstanceInternal))
