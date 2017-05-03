@@ -77,6 +77,8 @@
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 
+#define CORELIB_NAME _X("System.Private.CoreLib.dll")
+
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
 
