@@ -36,12 +36,8 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <!-- workaround https://github.com/dotnet/coreclr/issues/9884
-      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win8-arm'">x86_arm</_crossDir>
-      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win10-arm64'">x64_arm</_crossDir>
-       -->
-      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win8-arm'">/x86_AnyCPU</_crossDir>
-      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win10-arm64'">/x64_AnyCPU</_crossDir>
+      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win8-arm'">/x86_arm</_crossDir>
+      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win10-arm64'">/x64_arm64</_crossDir>
     </PropertyGroup>
 
     <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
