@@ -84,7 +84,7 @@ platformList.each { platform ->
     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
     if (!(os == 'Windows_NT' && architecture == 'arm')) {
-        Utilities.addMSTestResults(newJob, '**/*-testResults.xml')
+        Utilities.addMSTestResults(newJob, '**/*-testResults.trx')
     }
 
     if (os == 'Ubuntu16.04' && architecture == 'arm') {

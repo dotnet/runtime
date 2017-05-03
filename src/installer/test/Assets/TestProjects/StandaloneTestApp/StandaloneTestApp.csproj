@@ -2,12 +2,9 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>StandaloneTestApp</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>StandaloneTestApp</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.4;portable-net451+win8</PackageTargetFallback>
-    <RuntimeIdentifiers>$(TestTargetRid)</RuntimeIdentifiers>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
