@@ -18,6 +18,7 @@ namespace Microsoft.XmlSerializer.Generator
     using System.Runtime.Versioning;
     using System.Collections.Generic;
     using System.Xml;
+    using System.Xml.Serialization;
 
     internal class XmlSerializationWriterCodeGen : XmlSerializationCodeGen
     {
@@ -402,7 +403,7 @@ namespace Microsoft.XmlSerializer.Generator
                 if (xmlnsMember >= 0)
                 {
                     MemberMapping member = mapping.Members[xmlnsMember];
-                    string source = "((" + typeof(XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
+                    string source = "((" + typeof(System.Xml.Serialization.XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
 
                     Writer.Write("if (pLength > ");
                     Writer.Write(xmlnsMember.ToString(CultureInfo.InvariantCulture));

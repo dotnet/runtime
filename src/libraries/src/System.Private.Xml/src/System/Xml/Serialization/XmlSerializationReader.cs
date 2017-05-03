@@ -2147,6 +2147,7 @@ namespace System.Xml.Serialization
 #endif
     }
 
+#if !XMLSERIALIZERGENERATOR
     ///<internalonly/>
     public delegate void XmlSerializationFixupCallback(object fixup);
 
@@ -2156,4 +2157,5 @@ namespace System.Xml.Serialization
 
     ///<internalonly/>
     public delegate object XmlSerializationReadCallback();
+#endif
 }

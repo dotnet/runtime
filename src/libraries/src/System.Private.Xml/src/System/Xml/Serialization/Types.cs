@@ -22,6 +22,7 @@ namespace System.Xml.Serialization
     using System.Diagnostics;
     using System.Linq;
     using System.Xml.Extensions;
+    using System.Xml.Serialization;
 
     // These classes provide a higher level view on reflection specific to 
     // Xml serialization, for example:
