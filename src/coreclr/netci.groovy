@@ -1634,7 +1634,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     }
 
                     // Unzip the Windows test binaries first. Exit with 0
-                    buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x86.${configuration} || exit 0"
+                    buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
 
                     // Unpack the corefx binaries
                     buildCommands += "mkdir ./bin/CoreFxBinDir"
@@ -1654,7 +1654,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     --${arm_abi} \\
                     --linuxCodeName=${linuxCodeName} \\
                     --buildConfig=${lowerConfiguration} \\
-                    --testRootDir=./bin/tests/Windows_NT.x86.${configuration} \\
+                    --testRootDir=./bin/tests/Windows_NT.x64.${configuration} \\
                     --coreFxBinDir=./bin/CoreFxBinDir \\
                     --testDirFile=./tests/testsRunningInsideARM.txt"""
 
@@ -1963,7 +1963,7 @@ combinedScenarios.each { scenario ->
                                     def WindowTestsName = projectFolder + '/' +
                                                           Utilities.getFullJobName(project,
                                                                                    getJobName(lowerConfiguration,
-                                                                                              'x86' ,
+                                                                                              'x64' ,
                                                                                               'windows_nt',
                                                                                               'default',
                                                                                               true),
@@ -1971,9 +1971,9 @@ combinedScenarios.each { scenario ->
                                     def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
                                                        Utilities.getFolderName(branch)
 
-                                    // Copy the Windows test binaries
+                                    // Copy the Windows test binaries and the Corefx build binaries
                                     copyArtifacts(WindowTestsName) {
-                                        includePatterns('bin/tests/tests.zip')
+                                        excludePatterns('**/testResults.xml', '**/*.ni.dll')
                                         buildSelector {
                                             latestSuccessful(true)
                                         }
