@@ -42,6 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(privateParams.Exponent, publicParams.Exponent);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")]
         [Fact]
         public static void PaddedExport()
         {
@@ -69,6 +70,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(ref diminishedDPParameters, ref exported);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
         [Fact]
         public static void LargeKeyImportExport()
         {
@@ -98,6 +100,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
         [Fact]
         public static void UnusualExponentImportExport()
         {
@@ -143,6 +146,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Null(exportedPublic.D);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
         [Fact]
         public static void ImportReset()
         {
@@ -191,6 +195,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
         [Fact]
         public static void MultiExport()
         {
