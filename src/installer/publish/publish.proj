@@ -6,9 +6,11 @@
   <UsingTask TaskName="GetAzureBlobList" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
-  <!-- ToDo: Update versions repo -->
   <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;FinalizeBuildInAzure;PublishCoreHostPackagesToFeed" />
+          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;" />
+          
+  <Target Name="PublishFinalOutput"
+          DependsOnTargets="FinalizeBuildInAzure;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
 
   <Target Name="PublishToAzure"
           DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers">
