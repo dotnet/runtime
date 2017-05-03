@@ -51,9 +51,6 @@
     <Compile Include="$(SourceDir)\System\Xml\Serialization\indentedWriter.cs">
       <Link>System\Xml\Serialization\indentedWriter.cs</Link>
     </Compile>
-    <Compile Include="$(SourceDir)\System\Xml\Serialization\IXmlSerializable.cs">
-      <Link>System\Xml\Serialization\IXmlSerializable.cs</Link>
-    </Compile>
     <Compile Include="$(SourceDir)\System\Xml\Serialization\IXmlTextParser.cs">
       <Link>System\Xml\Serialization\IXmlTextParser.cs</Link>
     </Compile>
