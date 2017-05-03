@@ -260,17 +260,6 @@ binary_arith_op(TransformData *td, int mint_op)
 }
 
 static void
-binary_int_op(TransformData *td, int mint_op)
-{
-	int op = mint_op + td->sp [-1].type - STACK_TYPE_I4;
-	CHECK_STACK(td, 2);
-	if (td->sp [-1].type != td->sp [-2].type)
-		g_warning("%s.%s: int type mismatch", td->method->klass->name, td->method->name);
-	ADD_CODE(td, op);
-	--td->sp;
-}
-
-static void
 shift_op(TransformData *td, int mint_op)
 {
 	int op = mint_op + td->sp [-2].type - STACK_TYPE_I4;
@@ -1615,23 +1604,23 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			++td.ip;
 			break;
 		case CEE_REM:
-			binary_int_op (&td, MINT_REM_I4);
+			binary_arith_op (&td, MINT_REM_I4);
 			++td.ip;
 			break;
 		case CEE_REM_UN:
-			binary_int_op (&td, MINT_REM_UN_I4);
+			binary_arith_op (&td, MINT_REM_UN_I4);
 			++td.ip;
 			break;
 		case CEE_AND:
-			binary_int_op (&td, MINT_AND_I4);
+			binary_arith_op (&td, MINT_AND_I4);
 			++td.ip;
 			break;
 		case CEE_OR:
-			binary_int_op (&td, MINT_OR_I4);
+			binary_arith_op (&td, MINT_OR_I4);
 			++td.ip;
 			break;
 		case CEE_XOR:
-			binary_int_op (&td, MINT_XOR_I4);
+			binary_arith_op (&td, MINT_XOR_I4);
 			++td.ip;
 			break;
 		case CEE_SHL:
