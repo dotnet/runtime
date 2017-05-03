@@ -3074,4 +3074,19 @@ public:
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
 
+// The identifier for ARM32-specific PC-relative address
+// computation corresponds to the following instruction
+// sequence:
+//  l0: movw rX, #imm_lo  // 4 byte
+//  l4: movt rX, #imm_hi  // 4 byte
+//  l8: add  rX, pc <- after this instruction rX = relocTarget
+//
+// Program counter at l8 is address of l8 + 4
+// Address of relocated movw/movt is l0
+// So, imm should be calculated as the following:
+//  imm = relocTarget - (l8 + 4) = relocTarget - (l0 + 8 + 4) = relocTarget - (l_0 + 12)
+// So, the value of offset correction is 12
+//
+#define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
+
 #endif // _COR_INFO_H_

@@ -2174,6 +2174,11 @@ public:
                               WORD  slotNum   = 0,  /* IN */
                               INT32 addlDelta = 0); /* IN */
 
+#ifdef _TARGET_ARM_
+    void emitHandlePCRelativeMov32(void* location, /* IN */
+                                   void* target);  /* IN */
+#endif
+
     void emitRecordCallSite(ULONG                 instrOffset,   /* IN */
                             CORINFO_SIG_INFO*     callSig,       /* IN */
                             CORINFO_METHOD_HANDLE methodHandle); /* IN */
