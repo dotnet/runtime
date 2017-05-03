@@ -20,7 +20,7 @@
     <NativeBinary Include="$(BinDir)mscorrc.dll" />
     <NativeBinary Include="$(BinDir)sos.dll" />
     <NativeBinary Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
+    <NativeBinary Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe" />
     <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen.exe" />
