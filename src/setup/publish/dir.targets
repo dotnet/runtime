@@ -64,6 +64,8 @@
       <_MissingBlobNames Include="@(PublishRid->'sharedfx_%(Identity)_$(ConfigurationGroup)_version_badge.svg')" 
                           Exclude="@(_FoundBlobNames)" />
     </ItemGroup>
+    <Error Text="Missing publish output from all legs of the build."
+           Condition="'@(_MissingBlobNames)' != ''" />  
   </Target>
 
   <Import Project="..\dir.targets" />
