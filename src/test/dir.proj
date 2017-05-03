@@ -66,10 +66,11 @@
       <RestoreSourceArg>$(RestoreSourceArg) @(RestoreTestFallbackSource->'--source %(Identity)', ' ')</RestoreSourceArg>
       <RestoreArgs>--disable-parallel --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(RestoreSourceArg)</RestoreArgs>
       <RestoreArgs>$(RestoreArgs) /p:MNAVersion=$(ProductVersion) /p:TestTargetRid=$(TestTargetRid)</RestoreArgs>
+      <RestorePrefix Condition="'$(OsEnvironment)' != 'Windows_NT'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1</RestorePrefix>
     </PropertyGroup>
 
     <Message Importance="high" Text="Microsoft.NETCore.App Version: $(ProductVersion)" />
-    <Exec Command="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
+    <Exec Command="$(RestorePrefix) $(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
 
