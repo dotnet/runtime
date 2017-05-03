@@ -319,7 +319,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             if ( ! _testProject.IsRestored())
             {
-                string extraMSBuildProperties = $"/p:RuntimeIdentifiers={rid} /p:RuntimeIdentifier={rid}";
+                string extraMSBuildProperties = $"/p:TestTargetRid={rid}";
                 RestoreProject(fallbackSources, extraMSBuildProperties);
             }
 
