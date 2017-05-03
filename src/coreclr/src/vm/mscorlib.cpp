@@ -72,8 +72,6 @@
 #include "mdaassistants.h"
 #endif
 
-#include "coverage.h"
-
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"
 #include "oavariant.h"
