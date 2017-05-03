@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Tests
             RuntimeVariablesExpression vars = Expression.RuntimeVariables(Expression.Variable(typeof(int)));
             Assert.False(vars.CanReduce);
             Assert.Same(vars, vars.Reduce());
-            Assert.Throws<ArgumentException>(null, () => vars.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => vars.ReduceAndCheck());
         }
 
         [Fact]

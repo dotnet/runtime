@@ -472,7 +472,7 @@ namespace System.Linq.Expressions.Tests
             var lhs = Expression.Parameter(typeof(int));
             var rhs = Expression.Constant(25);
             MethodInfo meth = GetType().GetMethod(nameof(FiftyNinthBear));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "conversion", () => Expression.MakeBinary(type, lhs, rhs, false, meth, conversion));
         }
 
@@ -519,7 +519,7 @@ namespace System.Linq.Expressions.Tests
         {
             var lhs = Expression.Parameter(typeof(AddsToSomethingElse));
             var rhs = Expression.Constant(new AddsToSomethingElse(3));
-            Assert.Throws<ArgumentException>(null, () => Expression.AddAssign(lhs, rhs));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AddAssign(lhs, rhs));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

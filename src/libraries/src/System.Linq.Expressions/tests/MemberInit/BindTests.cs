@@ -91,8 +91,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StringProperty))[0];
             PropertyInfo property = typeof(PropertyAndFields).GetProperty(nameof(PropertyAndFields.StringProperty));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
         }
 
         [Fact]
@@ -100,8 +100,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(Unreadable<>).GetMember("WriteOnly")[0];
             PropertyInfo property = typeof(Unreadable<>).GetProperty("WriteOnly");
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
         }
 
         [Fact]
@@ -109,8 +109,8 @@ namespace System.Linq.Expressions.Tests
         {
             MemberInfo member = typeof(GenericType<>).GetMember(nameof(GenericType<int>.AlwaysInt32))[0];
             PropertyInfo property = typeof(GenericType<>).GetProperty(nameof(GenericType<int>.AlwaysInt32));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
-            Assert.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Bind(member, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Bind(property, Expression.Constant(0)));
         }
 
         [Fact]
@@ -296,7 +296,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, MemberData(nameof(BogusBindings))]
         public void BogusBindingType(MemberBinding binding)
         {
-            Assert.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(Expression.New(typeof(PropertyAndFields)), binding));
+            AssertExtensions.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(Expression.New(typeof(PropertyAndFields)), binding));
         }
 
 #if FEATURE_COMPILE

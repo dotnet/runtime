@@ -23,14 +23,14 @@ namespace System.Dynamic.Tests
         [InlineData(2, new string[] { "foo", "bar", "baz", "quux", "quuux" })]
         public void Ctor_CountLessThanArgNamesCount_ThrowsArgumentException(int argCount, string[] argNames)
         {
-            Assert.Throws<ArgumentException>(null, () => new CallInfo(argCount, argNames));
+            AssertExtensions.Throws<ArgumentException>(null, () => new CallInfo(argCount, argNames));
         }
 
         [Fact]
         public void Ctor_NullItemInArgNames_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("argNames[1]", () => new CallInfo(3, "foo", null, "bar"));
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "argNames[0]", () => new CallInfo(3, Enumerable.Repeat(default(string), 2)));
         }
 

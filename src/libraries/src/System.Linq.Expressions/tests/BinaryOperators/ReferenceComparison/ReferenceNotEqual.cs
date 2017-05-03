@@ -144,7 +144,7 @@ namespace System.Linq.Expressions.Tests
             Expression exp = Expression.ReferenceNotEqual(Expression.Constant(""), Expression.Constant(""));
             Assert.False(exp.CanReduce);
             Assert.Same(exp, exp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]

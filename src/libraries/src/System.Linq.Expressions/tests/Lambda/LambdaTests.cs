@@ -334,34 +334,34 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void IncorrectArgumentCount()
         {
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Action>(Expression.Empty(), Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Action<int, int>>(Expression.Empty(), "nullary or binary?", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Func<int>>(Expression.Constant(1), Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Func<int, int, int>>(Expression.Constant(1), "nullary or binary?", Enumerable.Empty<ParameterExpression>()));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda(typeof(Action), Expression.Empty(), Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda(typeof(Func<int, int, int>), Expression.Constant(1), "nullary or binary?", Enumerable.Empty<ParameterExpression>()));
         }
 
         [Fact]
         public void ByRefParameterForValueDelegateParameter()
         {
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Action<int>>(Expression.Empty(), Expression.Parameter(typeof(int).MakeByRefType())));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda<Func<int, bool, int, string>>(
                     Expression.Constant(""),
                     Expression.Parameter(typeof(int)),
                     Expression.Parameter(typeof(bool).MakeByRefType()),
                     Expression.Parameter(typeof(int))));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda(typeof(Action<int>), Expression.Empty(), Expression.Parameter(typeof(int).MakeByRefType())));
-            Assert.Throws<ArgumentException>(null,
+            AssertExtensions.Throws<ArgumentException>(null,
                 () => Expression.Lambda(
                     typeof(Func<int, bool, int, string>),
                     Expression.Constant(""),
@@ -388,8 +388,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void IncorrectReturnTypes()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Lambda<Func<int>>(Expression.Constant(typeof(long))));
-            Assert.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Func<int>), Expression.Constant(typeof(long))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Lambda<Func<int>>(Expression.Constant(typeof(long))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Func<int>), Expression.Constant(typeof(long))));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

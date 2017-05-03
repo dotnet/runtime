@@ -210,7 +210,7 @@ namespace System.Linq.Expressions.Tests
             Expression exp = Expression.Assign(Expression.Variable(typeof(int)), Expression.Constant(0));
             Assert.False(exp.CanReduce);
             Assert.Same(exp, exp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
@@ -234,7 +234,7 @@ namespace System.Linq.Expressions.Tests
         [InlineData(typeof(BaseClass), 1, typeof(int))]
         public void MismatchTypes(Type variableType, object constantValue, Type constantType)
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Assign(Expression.Variable(variableType), Expression.Constant(constantValue, constantType)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Assign(Expression.Variable(variableType), Expression.Constant(constantValue, constantType)));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
