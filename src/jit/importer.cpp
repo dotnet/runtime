@@ -3526,6 +3526,10 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                                     gtNewIconNode(offsetof(CORINFO_String, stringLen), TYP_I_IMPL));
                 op1 = gtNewOperNode(GT_IND, TYP_INT, op1);
             }
+
+            // Getting the length of a null string should throw
+            op1->gtFlags |= GTF_EXCEPT;
+
             retNode = op1;
             break;
 
