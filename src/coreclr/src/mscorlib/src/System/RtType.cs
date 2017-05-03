@@ -3792,6 +3792,11 @@ namespace System
         #endregion
 
         #region Misc
+        public override bool IsTypeDefinition
+        {
+            get { return RuntimeTypeHandle.IsTypeDefinition(this); }
+        }
+
         public override Type MakePointerType() { return new RuntimeTypeHandle(this).MakePointer(); }
         public override Type MakeByRefType() { return new RuntimeTypeHandle(this).MakeByRef(); }
         public override Type MakeArrayType() { return new RuntimeTypeHandle(this).MakeSZArray(); }
