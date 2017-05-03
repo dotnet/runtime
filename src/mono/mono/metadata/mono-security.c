@@ -244,28 +244,26 @@ internal_get_token_name (gpointer token, gunichar2 ** uniname)
 	return size;
 }
 
-MonoString*
-ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token)
+MonoStringHandle
+ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token, MonoError *error)
 {
-	MonoError error;
-	MonoString *result = NULL;
+	MonoStringHandle result;
 	gunichar2 *uniname = NULL;
 	gint32 size = 0;
 
-	error_init (&error);
+	error_init (error);
 
 	size = internal_get_token_name (token, &uniname);
 
 	if (size > 0) {
-		result = mono_string_new_utf16_checked (mono_domain_get (), uniname, size, &error);
+		result = mono_string_new_utf16_handle (mono_domain_get (), uniname, size, error);
 	}
 	else
-		result = mono_string_new_checked (mono_domain_get (), "", &error);
+		result = mono_string_new_handle (mono_domain_get (), "", error);
 
 	if (uniname)
 		g_free (uniname);
 
-	mono_error_set_pending_exception (&error);
 	return result;
 }
 #endif  /* !HOST_WIN32 */
