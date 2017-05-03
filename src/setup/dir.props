@@ -132,8 +132,8 @@
     <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetSdkPath)dotnet</DotnetSdkToolCommand>
     <OverrideToolHost Condition="'$(MSBuildRuntimeType)' == 'Core'">$(DotnetToolCommand)</OverrideToolHost>
     <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-
-    <DnuRestoreCommand>DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 "$(DotnetToolCommand)"</DnuRestoreCommand>
+    <DnuRestorePrefix Condition="'$(OsEnvironment)' != 'Windows_NT'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1</DnuRestorePrefix>
+    <DnuRestoreCommand>$(DnuRestorePrefix) "$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
     <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
