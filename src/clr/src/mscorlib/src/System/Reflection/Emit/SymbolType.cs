@@ -271,6 +271,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Type Overrides
+
+        public override bool IsTypeDefinition => false;
+
         public override bool IsSZArray => m_cRank <= 1 && m_isSzArray;
 
         public override Type MakePointerType()
