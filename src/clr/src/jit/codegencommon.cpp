@@ -6359,6 +6359,53 @@ void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStar
 
 /*-----------------------------------------------------------------------------
  *
+ *  Move of relocatable displacement value to register
+ */
+void CodeGen::genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg)
+{
+    getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, block, reg);
+    getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, block, reg);
+
+    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    {
+        getEmitter()->emitIns_R_R_R(INS_add, EA_4BYTE_DSP_RELOC, reg, reg, REG_PC);
+    }
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  Move of relocatable data-label to register
+ */
+void CodeGen::genMov32RelocatableDataLabel(unsigned value, regNumber reg)
+{
+    getEmitter()->emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, value, reg);
+    getEmitter()->emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, value, reg);
+
+    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    {
+        getEmitter()->emitIns_R_R_R(INS_add, EA_HANDLE_CNS_RELOC, reg, reg, REG_PC);
+    }
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ * Move of relocatable immediate to register
+ */
+void CodeGen::genMov32RelocatableImmediate(emitAttr size, unsigned value, regNumber reg)
+{
+    _ASSERTE(EA_IS_RELOC(size));
+
+    getEmitter()->emitIns_R_I(INS_movw, size, reg, value);
+    getEmitter()->emitIns_R_I(INS_movt, size, reg, value);
+
+    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    {
+        getEmitter()->emitIns_R_R_R(INS_add, size, reg, reg, REG_PC);
+    }
+}
+
+/*-----------------------------------------------------------------------------
+ *
  *  Returns register mask to push/pop to allocate a small stack frame,
  *  instead of using "sub sp" / "add sp". Returns RBM_NONE if either frame size
  *  is zero, or if we should use "sub sp" / "add sp" instead of push/pop.

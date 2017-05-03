@@ -148,6 +148,12 @@ public:
         CORJIT_FLAG_DESKTOP_QUIRKS          = 38, // The JIT should generate desktop-quirk-compatible code
         CORJIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         CORJIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
+
+#if defined(_TARGET_ARM_)
+        CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
+#else // !defined(_TARGET_ARM_)
+        CORJIT_FLAG_UNUSED11                = 41
+#endif // !defined(_TARGET_ARM_)
     };
 
     CORJIT_FLAGS()
