@@ -185,7 +185,7 @@ dynamic_image_unlock (MonoDynamicImage *image)
 	mono_image_unlock ((MonoImage*)image);
 }
 
-#ifndef DISABLE_REFLECTION_INIT
+#ifndef DISABLE_REFLECTION_EMIT
 /*
  * mono_dynamic_image_register_token:
  *
@@ -221,6 +221,22 @@ lookup_dyn_token (MonoDynamicImage *assembly, guint32 token)
 
 	return obj;
 }
+
+#ifndef DISABLE_REFLECTION_EMIT
+MonoObjectHandle
+mono_dynamic_image_get_registered_token (MonoDynamicImage *dynimage, guint32 token, MonoError *error)
+{
+	error_init (error);
+	return MONO_HANDLE_NEW (MonoObject, lookup_dyn_token (dynimage, token));
+}
+#else /* DISABLE_REFLECTION_EMIT */
+MonoObjectHandle
+mono_dynamic_image_get_registered_token (MonoDynamicImage *dynimage, guint32 token, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL_HANDLE;
+}
+#endif
 
 /**
  * 

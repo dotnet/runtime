@@ -549,7 +549,7 @@ ICALL_TYPE(ENUMB, "System.Reflection.Emit.EnumBuilder", ENUMB_1)
 HANDLES(ICALL(ENUMB_1, "setup_enum_type", ves_icall_EnumBuilder_setup_enum_type))
 
 ICALL_TYPE(MODULEB, "System.Reflection.Emit.ModuleBuilder", MODULEB_10)
-ICALL(MODULEB_10, "GetRegisteredToken", ves_icall_ModuleBuilder_GetRegisteredToken)
+HANDLES(ICALL(MODULEB_10, "GetRegisteredToken", ves_icall_ModuleBuilder_GetRegisteredToken))
 HANDLES(ICALL(MODULEB_8, "RegisterToken", ves_icall_ModuleBuilder_RegisterToken))
 ICALL(MODULEB_1, "WriteToFile", ves_icall_ModuleBuilder_WriteToFile)
 HANDLES(ICALL(MODULEB_2, "basic_init", ves_icall_ModuleBuilder_basic_init))
