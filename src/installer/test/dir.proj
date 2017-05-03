@@ -31,17 +31,15 @@
           DependsOnTargets="DetermineTestOutputDirectory">
     <PropertyGroup>
       <TestToolsLocalPath Condition="'$(TestToolsLocalPath)' == ''">$(TestsOutputDir)Tools</TestToolsLocalPath>
+      <BootstrapCommand Condition="'$(OSGroup)' == 'Windows_NT'">powershell -NoProfile -ExecutionPolicy unrestricted -Command "$(MSBuildThisFileDirectory)bootstrap/bootstrap.ps1" -ToolsLocalPath $(TestToolsLocalPath) -Architecture $(TargetArchitecture)</BootstrapCommand>
+      <BootstrapCommand Condition="'$(OSGroup)' != 'Windows_NT'">$(MSBuildThisFileDirectory)bootstrap/bootstrap.sh --toolsLocalPath $(TestToolsLocalPath)</BootstrapCommand>
       <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet.exe</DotnetTestToolCommand>
       <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet</DotnetTestToolCommand>
     </PropertyGroup>
 
-    <ItemGroup>
-      <SeedCliCopyFiles Include="$(DotnetSdkPath)/**/*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(SeedCliCopyFiles)"
-          DestinationFiles="@(SeedCliCopyFiles->'$(TestToolsLocalPath)/dotnetcli/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Exec Command="$(BootstrapCommand)" 
+          WorkingDirectory="$(MSBuildThisFileDirectory)bootstrap/" />
   </Target>
-
 
   <Target Name="RestoreTests">
     <ItemGroup>
