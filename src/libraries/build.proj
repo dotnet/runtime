@@ -52,7 +52,7 @@
   </Target>
 
   <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-  <Target Name="UpdateVSConfigurations" DependsOnTargets="BuildCoreFxTools">
+  <Target Name="UpdateVSConfigurations">
     <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
       <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
