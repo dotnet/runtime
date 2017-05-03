@@ -8,7 +8,7 @@
     <NativeBinary Include="$(BinDir)libsos.dylib" />
     <NativeBinary Include="$(BinDir)System.Globalization.Native.dylib" />
     <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)System.Private.CoreLib.dll" />
+    <NativeBinary Include="$(BinDir)System.Private.CoreLib.dll" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
   </ItemGroup>
