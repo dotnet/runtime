@@ -123,7 +123,16 @@ def static getOSGroup(def os) {
                 
                 if (isPR) {
                     TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-                    builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests")
+                    if (isSmoketest)
+                    {
+                        builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests Correctness")
+                    }
+                    else
+                    {
+                        builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests")
+                        builder.triggerOnlyOnComment()
+                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+perf.*")
+                    }
                     builder.triggerForBranch(branch)
                     builder.emitTrigger(newJob)
                 }
