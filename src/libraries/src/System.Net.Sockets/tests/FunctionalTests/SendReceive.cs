@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,6 +32,7 @@ namespace System.Net.Sockets.Tests
         public virtual bool GuaranteedSendOrdering => true;
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool UsesSync => false;
+        public virtual bool DisposeDuringOperationResultsInDisposedException => false;
 
         [Theory]
         [InlineData(null, 0, 0)] // null array
@@ -743,15 +743,22 @@ namespace System.Net.Sockets.Tests
 
                 using (Socket server = await acceptTask)
                 {
-                    Task receiveTask = client.ReceiveAsync(new ArraySegment<byte>(new byte[1]), SocketFlags.None);
+                    Task receiveTask = ReceiveAsync(client, new ArraySegment<byte>(new byte[1]));
                     Assert.False(receiveTask.IsCompleted, "Receive should be pending");
 
                     client.Dispose();
 
-                    var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
-                    Assert.True(
-                        se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
-                        $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
+                    if (DisposeDuringOperationResultsInDisposedException)
+                    {
+                        await Assert.ThrowsAsync<ObjectDisposedException>(() => receiveTask);
+                    }
+                    else
+                    {
+                        var se = await Assert.ThrowsAsync<SocketException>(() => receiveTask);
+                        Assert.True(
+                            se.SocketErrorCode == SocketError.OperationAborted || se.SocketErrorCode == SocketError.ConnectionAborted,
+                            $"Expected {nameof(SocketError.OperationAborted)} or {nameof(SocketError.ConnectionAborted)}, got {se.SocketErrorCode}");
+                    }
                 }
             }
         }
@@ -963,6 +970,7 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceiveApm : SendReceive
     {
         public SendReceiveApm(ITestOutputHelper output) : base(output) { }
+        public override bool DisposeDuringOperationResultsInDisposedException => true;
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Factory.FromAsync(s.BeginAccept, s.EndAccept, null);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
@@ -1006,6 +1014,8 @@ namespace System.Net.Sockets.Tests
     public sealed class SendReceiveTask : SendReceive
     {
         public SendReceiveTask(ITestOutputHelper output) : base(output) { }
+        public override bool DisposeDuringOperationResultsInDisposedException =>
+            PlatformDetection.IsFullFramework; // due to SocketTaskExtensions.netfx implementation wrapping APM rather than EAP
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
