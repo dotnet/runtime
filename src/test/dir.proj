@@ -69,7 +69,7 @@
     </PropertyGroup>
 
     <Message Importance="high" Text="Microsoft.NETCore.App Version: $(ProductVersion)" />
-    <Exec Command="$(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
+    <Exec Command="DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
 

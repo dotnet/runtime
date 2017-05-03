@@ -17,5 +17,5 @@ __dotnet=$__toolsLocalPath/dotnetcli/dotnet
 
 cp -fR $__scriptpath/tools-override/* $__toolsLocalPath 
 
-$__dotnet $__toolsLocalPath/run.exe $*
+DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $__dotnet $__toolsLocalPath/run.exe $*
 exit $?
