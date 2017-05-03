@@ -44,20 +44,18 @@ mono_icall_get_logical_drives (void)
 	return NULL;
 }
 
-void
-mono_icall_broadcast_setting_change (void)
+MonoBoolean
+mono_icall_broadcast_setting_change (MonoError *error)
 {
-	MonoError mono_error;
-	error_init (&mono_error);
+	error_init (error);
 
 	g_unsupported_api ("SendMessageTimeout");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "SendMessageTimeout");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SendMessageTimeout");
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
-	return;
+	return is_ok (error);
 }
 
 guint32
