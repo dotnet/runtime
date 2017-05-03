@@ -275,8 +275,32 @@ STDAPI BinderAcquirePEImage(LPCWSTR   wszAssemblyPath,
 
 STDAPI BinderHasNativeHeader(PEImage *pPEImage, BOOL* result)
 {
-    *result = pPEImage->HasNativeHeader();
-    return S_OK;
+    HRESULT hr = S_OK;
+
+    _ASSERTE(pPEImage != NULL);
+    _ASSERTE(result != NULL);
+
+    EX_TRY
+    {
+        *result = pPEImage->HasNativeHeader();
+    }
+    EX_CATCH_HRESULT(hr);
+
+    if (FAILED(hr))
+    {
+        *result = false;
+
+#if defined(FEATURE_PAL)
+        // PAL_LOADLoadPEFile may fail while loading IL masquerading as NI.
+        // This will result in a ThrowHR(E_FAIL).  Suppress the error.
+        if(hr == E_FAIL)
+        {
+            hr = S_OK;
+        }
+#endif // defined(FEATURE_PAL)
+    }
+
+    return hr;
 }
 
 STDAPI BinderAcquireImport(PEImage                  *pPEImage,
