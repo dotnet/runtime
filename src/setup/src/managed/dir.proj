@@ -20,7 +20,7 @@
 
     <GetBuildArgsByFrameworks
       OSGroup="$(OSGroup)"
-      ProjectJsonPaths="@(PackageProjects)">
+      ProjectPaths="@(PackageProjects)">
       <Output ItemName="buildCmdArgs" TaskParameter="BuildArgs" />
     </GetBuildArgsByFrameworks>
 

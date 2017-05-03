@@ -67,7 +67,6 @@
       <RestorePrefix Condition="'$(OsEnvironment)' != 'Windows_NT'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1</RestorePrefix>
     </PropertyGroup>
 
-    <Message Importance="high" Text="Microsoft.NETCore.App Version: $(ProductVersion)" />
     <Exec Command="$(RestorePrefix) $(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
@@ -103,7 +102,7 @@
     <PropertyGroup>
       <TestArgs>--configuration $(ConfigurationGroup)</TestArgs>
       <IsCrossArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">true</IsCrossArch>
-      <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.xml</TestResultsXml>
+      <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.trx</TestResultsXml>
     </PropertyGroup>
     <Exec Command="$(DotnetTestToolCommand) test $(TestArgs) --logger &quot;trx;LogFileName=$(TestResultsXml)&quot;"
           WorkingDirectory="$(TestWorkingDirectory)"
