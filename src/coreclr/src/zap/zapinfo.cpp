@@ -2481,7 +2481,25 @@ void ZapInfo::recordRelocation(void *location, void *target,
 
 #if defined(_TARGET_ARM_)
     case IMAGE_REL_BASED_THUMB_MOV32:
+    case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
     case IMAGE_REL_BASED_THUMB_BRANCH24:
+
+# ifdef _DEBUG
+    {
+        CORJIT_FLAGS jitFlags = m_zapper->m_pOpt->m_compilerFlags;
+
+        if (jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS))
+        {
+            _ASSERTE(fRelocType == IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL
+                     || fRelocType == IMAGE_REL_BASED_THUMB_BRANCH24);
+        }
+        else
+        {
+            _ASSERTE(fRelocType == IMAGE_REL_BASED_THUMB_MOV32
+                     || fRelocType == IMAGE_REL_BASED_THUMB_BRANCH24);
+        }
+    }
+# endif // _DEBUG
         break;
 #endif
 
@@ -2584,6 +2602,7 @@ void ZapInfo::recordRelocation(void *location, void *target,
 
 #if defined(_TARGET_ARM_)
     case IMAGE_REL_BASED_THUMB_MOV32:
+    case IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL:
         PutThumb2Mov32((UINT16 *)location, targetOffset);
         break;
 
