@@ -10,8 +10,8 @@
     "System.Runtime.Serialization.Json": "4.0.2",
     "Microsoft.DotNet.ProjectModel": "1.0.0-rc2-002794",
     "Microsoft.DotNet.Cli.Utils": "1.0.0-preview2-002794",
-    "NETStandard.Library": "1.6.1-preview1-24508-08",
-    "Microsoft.NETCore.Runtime.CoreCLR": "1.1.0-beta-24509-04"
+    "NETStandard.Library": "2.0.0-preview2-25303-01",
+    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25303-02"
   },
   "frameworks": {
     "netcoreapp1.0": {
@@ -23,6 +23,6 @@
     }
   },
   "runtimes": {
-    "{RID}" : {}
+    "{RID}": {}
   }
 }
