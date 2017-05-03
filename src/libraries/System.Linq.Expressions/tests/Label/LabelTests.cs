@@ -45,7 +45,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void DefaultMustMatchLabelType()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Label(Expression.Label(typeof(int)), Expression.Constant("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Label(Expression.Label(typeof(int)), Expression.Constant("hello")));
         }
 
         [Fact]
@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void AssignableOnlyReferenceAssignableNotImplicitConversion()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Label(Expression.Label(typeof(long)), Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Label(Expression.Label(typeof(long)), Expression.Constant(0)));
         }
 
         [Fact]

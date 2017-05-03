@@ -33,8 +33,8 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("endLine", () => Expression.DebugInfo(document, 1, 1, 0, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("endColumn", () => Expression.DebugInfo(document, 1, 1, 1, 0));
 
-            Assert.Throws<ArgumentException>(null, () => Expression.DebugInfo(document, 10, 1, 1, 1));
-            Assert.Throws<ArgumentException>(null, () => Expression.DebugInfo(document, 1, 10, 1, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.DebugInfo(document, 10, 1, 1, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.DebugInfo(document, 1, 10, 1, 1));
         }
 
         [Fact]

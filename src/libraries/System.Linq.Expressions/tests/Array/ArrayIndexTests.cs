@@ -2745,7 +2745,7 @@ namespace System.Linq.Expressions.Tests
         public static void ArrayIndexWrongRank()
         {
             Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
-            Assert.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, Expression.Constant(2)));
         }
 
         [Fact]

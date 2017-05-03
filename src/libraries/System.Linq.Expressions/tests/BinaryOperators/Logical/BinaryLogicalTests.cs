@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Tests
             Expression exp = Expression.AndAlso(Expression.Constant(true), Expression.Constant(false));
             Assert.False(exp.CanReduce);
             Assert.Same(exp, exp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
@@ -262,7 +262,7 @@ namespace System.Linq.Expressions.Tests
             Expression exp = Expression.OrElse(Expression.Constant(true), Expression.Constant(false));
             Assert.False(exp.CanReduce);
             Assert.Same(exp, exp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
@@ -354,24 +354,24 @@ namespace System.Linq.Expressions.Tests
         public static void MethodParametersNotEqual_ThrowsArgumentException()
         {
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid1));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant("abc"), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant("abc"), method));
         }
 
         [Fact]
         public static void Method_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
         {
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid2));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
         [Fact]
         public static void MethodDeclaringTypeHasNoTrueFalseOperator_ThrowsArgumentException()
         {
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
 #if FEATURE_COMPILE
@@ -497,7 +497,7 @@ namespace System.Linq.Expressions.Tests
             Type createdType = type.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
 
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Fact]
@@ -510,7 +510,7 @@ namespace System.Linq.Expressions.Tests
             Type createdType = type.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
 
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         public static IEnumerable<object[]> Operator_IncorrectMethod_TestData()
@@ -547,8 +547,8 @@ namespace System.Linq.Expressions.Tests
             object obj = Activator.CreateInstance(createdType);
             MethodInfo createdMethod = createdType.GetMethod("Method");
 
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
         }
 
         [Theory]
@@ -568,8 +568,8 @@ namespace System.Linq.Expressions.Tests
             object obj = Activator.CreateInstance(createdType);
             MethodInfo createdMethod = createdType.GetMethod("Method");
 
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
         }
 
         [Theory]
@@ -588,7 +588,7 @@ namespace System.Linq.Expressions.Tests
             TypeInfo createdType = builder.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
 
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Theory]
@@ -607,7 +607,7 @@ namespace System.Linq.Expressions.Tests
             TypeInfo createdType = builder.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
 
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Theory]
@@ -629,8 +629,8 @@ namespace System.Linq.Expressions.Tests
             object obj = Activator.CreateInstance(createdType);
             MethodInfo createdMethod = createdType.GetMethod("Method");
 
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj), createdMethod));
         }
 
         [Theory]
@@ -650,7 +650,7 @@ namespace System.Linq.Expressions.Tests
 
             TypeInfo createdType = builder.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Theory]
@@ -670,7 +670,7 @@ namespace System.Linq.Expressions.Tests
 
             TypeInfo createdType = builder.CreateTypeInfo();
             object obj = Activator.CreateInstance(createdType);
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
         [Fact]
@@ -736,8 +736,8 @@ namespace System.Linq.Expressions.Tests
         public static void ImplicitConversionToBool_ThrowsArgumentException()
         {
             MethodInfo method = typeof(ClassWithImplicitBoolOperator).GetMethod(nameof(ClassWithImplicitBoolOperator.ConversionMethod));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(new ClassWithImplicitBoolOperator()), Expression.Constant(new ClassWithImplicitBoolOperator()), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(new ClassWithImplicitBoolOperator()), Expression.Constant(new ClassWithImplicitBoolOperator()), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(new ClassWithImplicitBoolOperator()), Expression.Constant(new ClassWithImplicitBoolOperator()), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(new ClassWithImplicitBoolOperator()), Expression.Constant(new ClassWithImplicitBoolOperator()), method));
         }
 
         [Theory]

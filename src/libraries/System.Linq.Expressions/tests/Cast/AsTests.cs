@@ -872,14 +872,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void PointerType()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "type", () => Expression.TypeAs(Expression.Constant(""), typeof(int).MakePointerType()));
         }
 
         [Fact]
         public static void ByRefType()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "type", () => Expression.TypeAs(Expression.Constant(""), typeof(string).MakeByRefType()));
         }
 

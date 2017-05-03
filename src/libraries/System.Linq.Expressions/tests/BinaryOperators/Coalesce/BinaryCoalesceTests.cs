@@ -318,7 +318,7 @@ namespace System.Linq.Expressions.Tests
             Expression exp = Expression.Coalesce(Expression.Constant(0, typeof(int?)), Expression.Constant(0));
             Assert.False(exp.CanReduce);
             Assert.Same(exp, exp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
@@ -393,7 +393,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void RightLeft_NonEquivilentTypes_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Coalesce(Expression.Constant("abc"), Expression.Constant(5)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Coalesce(Expression.Constant("abc"), Expression.Constant(5)));
         }
 
         public delegate void VoidDelegate();

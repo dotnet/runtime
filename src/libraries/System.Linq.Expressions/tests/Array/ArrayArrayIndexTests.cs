@@ -2682,7 +2682,7 @@ namespace System.Linq.Expressions.Tests
         public static void ArrayIndexNullArray()
         {
             AssertExtensions.Throws<ArgumentNullException>("array", () => Expression.ArrayIndex(null));
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "array", () => Expression.ArrayIndex(null, Enumerable.Empty<Expression>()));
         }
 
@@ -2699,8 +2699,8 @@ namespace System.Linq.Expressions.Tests
         public static void ArrayIndexWrongRank()
         {
             Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
-            Assert.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, new[] { Expression.Constant(2) }));
-            Assert.Throws<ArgumentException>(null, () =>
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, new[] { Expression.Constant(2) }));
+            AssertExtensions.Throws<ArgumentException>(null, () =>
                 Expression.ArrayIndex(array, Expression.Constant(2), Expression.Constant(1), Expression.Constant(2)));
         }
 
