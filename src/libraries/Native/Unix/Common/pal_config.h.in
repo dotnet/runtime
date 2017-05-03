@@ -30,7 +30,7 @@
 #cmakedefine01 HAVE_PRIVATE_FDS_BITS
 #cmakedefine01 HAVE_STATFS
 #cmakedefine01 HAVE_EPOLL
-#cmakedefine01 HAVE_ACCEPT_4
+#cmakedefine01 HAVE_ACCEPT4
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_SENDFILE_4
 #cmakedefine01 HAVE_SENDFILE_6
