@@ -226,6 +226,7 @@ namespace System.Net.Tests
             Assert.Equal(100, request.ContentLength);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19225")]
         [Fact]
         public void HttpWebRequest_PreAuthenticateGetSet_Ok()
         {
@@ -241,6 +242,7 @@ namespace System.Net.Tests
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19225")]
         public void HttpWebRequest_KeepAlive_CorrectConnectionHeaderSent(bool? keepAlive)
         {
             HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
