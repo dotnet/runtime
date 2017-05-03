@@ -520,11 +520,11 @@ mono_tables_names [] = {
 #endif
 
 /* If TRUE (but also see DISABLE_STICT_STRONG_NAMES #define), Mono will check
- * that the public key token and version of a candidate assembly matches the
- * requested strong name.  If FALSE, as long as the name matches, the candidate
+ * that the public key token, culture and version of a candidate assembly matches
+ * the requested strong name.  If FALSE, as long as the name matches, the candidate
  * will be allowed.
  */
-static gboolean check_strong_names_strictly = TRUE;
+static gboolean check_strong_names_strictly = FALSE;
 
 // Amount initially reserved in each imageset's mempool.
 // FIXME: This number is arbitrary, a more practical number should be found

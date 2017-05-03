@@ -23,7 +23,8 @@ RUNTIME= $(top_builddir)/runtime/mono-wrapper
 TEST_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME)
 TOOLS_RUNTIME= MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME)
 
-TEST_RUNNER = ../test-runner.exe --runtime $(RUNTIME)
+# These tests are testing strict assembly strong-name resolution
+TEST_RUNNER = ../test-runner.exe --runtime $(RUNTIME) --runtime-args "--assembly-loader=strict"
 
 if HOST_WIN32
 TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),mono)
