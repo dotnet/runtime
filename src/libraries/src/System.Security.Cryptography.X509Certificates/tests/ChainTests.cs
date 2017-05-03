@@ -11,10 +11,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class ChainTests
     {
-        // #9293: Our Fedora and Ubuntu CI machines use NTFS for "tmphome", which causes our filesystem permissions checks to fail.
-        internal static bool IsReliableInCI { get; } =
-            !PlatformDetection.IsFedora &&
-            (!PlatformDetection.IsUbuntu || PlatformDetection.IsUbuntu1404);
+        internal static bool CanModifyStores { get; } = TestEnvironmentConfiguration.CanModifyStores;
 
         private static bool TrustsMicrosoftDotComRoot
         {
@@ -125,7 +122,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(nameof(IsReliableInCI))]
+        [ConditionalFact(nameof(CanModifyStores))]
         public static void VerifyChainFromHandle_Unix()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
@@ -414,7 +411,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot), nameof(IsReliableInCI))]
+        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot), nameof(CanModifyStores))]
         [OuterLoop(/* Modifies user certificate store */)]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
         {
