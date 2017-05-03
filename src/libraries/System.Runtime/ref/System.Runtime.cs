@@ -6500,6 +6500,12 @@ namespace System.Runtime.CompilerServices
     {
         public IsReadOnlyAttribute() { }
     }
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [AttributeUsage(AttributeTargets.Struct)]
+    public sealed class IsByRefLikeAttribute : Attribute
+    {
+        public IsByRefLikeAttribute() { }
+    }
     public sealed partial class RuntimeWrappedException : System.Exception
     {
         internal RuntimeWrappedException() { }
