@@ -557,7 +557,7 @@ ICALL(MODULEB_3, "build_metadata", ves_icall_ModuleBuilder_build_metadata)
 HANDLES(ICALL(MODULEB_5, "getMethodToken", ves_icall_ModuleBuilder_getMethodToken))
 HANDLES(ICALL(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken))
 HANDLES(ICALL(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex))
-ICALL(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type)
+HANDLES(ICALL(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type))
 
 ICALL_TYPE(SIGH, "System.Reflection.Emit.SignatureHelper", SIGH_1)
 HANDLES(ICALL(SIGH_1, "get_signature_field", ves_icall_SignatureHelper_get_signature_field))
