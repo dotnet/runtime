@@ -972,6 +972,7 @@
         {
           "Name": "DotNet-Trusted-Publish-Symbols",
           "Parameters": {
+            "PB_VsoRepositoryName": "DotNet-CoreFX-Trusted"
           },
           "ReportingParameters": {
             "TaskName": "Symbol Publish",
