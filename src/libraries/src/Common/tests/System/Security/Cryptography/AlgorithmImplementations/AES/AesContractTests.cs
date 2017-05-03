@@ -195,6 +195,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In NetFX AesCryptoServiceProvider requires a set key and throws otherwise. See #19023.")]
         public static void ValidateDecryptorProperties()
         {
             using (Aes aes = AesFactory.Create())
