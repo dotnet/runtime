@@ -26,8 +26,9 @@ extern MonoStringHandle ves_icall_System_Environment_get_UserName (MonoError *er
 
 
 /* System.Security.Principal.WindowsIdentity */
+gpointer mono_security_principal_windows_identity_get_current_token (void);
 extern MonoArray* ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token);
-extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void);
+extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *error);
 extern MonoString* ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token);
 extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username);
 

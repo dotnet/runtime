@@ -216,9 +216,16 @@ IsMemberOf (gid_t user, struct group *g)
 
 #ifndef HOST_WIN32
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
+mono_security_principal_windows_identity_get_current_token ()
 {
 	return GINT_TO_POINTER (geteuid ());
+}
+
+gpointer
+ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *error)
+{
+	error_init (error);
+	return mono_security_principal_windows_identity_get_current_token ();
 }
 
 static gint32

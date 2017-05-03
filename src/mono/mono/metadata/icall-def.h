@@ -830,7 +830,7 @@ ICALL_TYPE(EVID, "System.Security.Policy.Evidence", EVID_1)
 HANDLES(ICALL(EVID_1, "IsAuthenticodePresent", ves_icall_System_Security_Policy_Evidence_IsAuthenticodePresent))
 
 ICALL_TYPE(WINID, "System.Security.Principal.WindowsIdentity", WINID_1)
-ICALL(WINID_1, "GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken)
+HANDLES(ICALL(WINID_1, "GetCurrentToken", ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken))
 ICALL(WINID_2, "GetTokenName", ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName)
 ICALL(WINID_3, "GetUserToken", ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken)
 ICALL(WINID_4, "_GetRoles", ves_icall_System_Security_Principal_WindowsIdentity_GetRoles)

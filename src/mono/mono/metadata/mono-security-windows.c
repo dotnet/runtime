@@ -69,7 +69,7 @@ GetSidName (gunichar2 *server, PSID sid, gint32 *size)
 }
 
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
+mono_security_principal_windows_identity_get_current_token (void)
 {
 	gpointer token = NULL;
 
@@ -84,6 +84,13 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
 	}
 
 	return token;
+}
+
+gpointer
+ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *error)
+{
+	error_init (error);
+	return mono_security_principal_windows_identity_get_current_token ();
 }
 
 gint32
@@ -264,7 +271,7 @@ GetCurrentUserSid (void)
 {
 	PSID sid = NULL;
 	guint32 size = 0;
-	gpointer token = ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken ();
+	gpointer token = mono_security_principal_windows_identity_get_current_token ();
 
 	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
 	if (size > 0) {

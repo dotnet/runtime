@@ -14,19 +14,21 @@
 #include "mono/metadata/mono-security-windows-internals.h"
 
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
+mono_security_principal_windows_identity_get_current_token ()
 {
-	MonoError mono_error;
-	error_init (&mono_error);
-
 	g_unsupported_api ("OpenThreadToken, OpenProcessToken");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "OpenThreadToken, OpenProcessToken");
-	mono_error_set_pending_exception (&mono_error);
-
 	SetLastError (ERROR_NOT_SUPPORTED);
-
 	return NULL;
+}
+
+gpointer
+ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *error)
+{
+	error_init (error);
+
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "OpenThreadToken, OpenProcessToken");
+	return mono_security_principal_windows_identity_get_current_token ();
 }
 
 MonoArray*
