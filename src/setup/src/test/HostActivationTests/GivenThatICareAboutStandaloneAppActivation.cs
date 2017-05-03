@@ -50,6 +50,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var appExe = fixture.TestProject.AppExe;
 
+            // TODO: Use FS.Chmod when build utility project is converted to csproj.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Command.Create("chmod", "+x", appExe).Execute().EnsureSuccessful();
+            }
+
             Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
@@ -67,6 +73,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+
+            // TODO: Use FS.Chmod when build utility project is converted to csproj.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Command.Create("chmod", "+x", appExe).Execute().EnsureSuccessful();
+            }
 
             Command.Create(appExe)
                 .CaptureStdErr()
