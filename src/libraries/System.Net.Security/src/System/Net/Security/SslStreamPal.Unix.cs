@@ -180,14 +180,40 @@ namespace System.Net.Security
 
         public static SecurityStatusPal ApplyAlertToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
-            // TODO (#12319): Not implemented.
+            // There doesn't seem to be an exposed API for writing an alert,
+            // the API seems to assume that all alerts are generated internally by
+            // SSLHandshake.
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
 
         public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials credentialsHandle, SafeDeleteContext securityContext)
         {
-            // TODO (#12319): Not implemented.
-            return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            SafeDeleteSslContext sslContext = ((SafeDeleteSslContext)securityContext);
+
+            // Unset the quiet shutdown option initially configured.
+            Interop.Ssl.SslSetQuietShutdown(sslContext.SslContext, 0);
+
+            IntPtr sslHandle = sslContext.SslContext.DangerousGetHandle();
+            int status = Interop.Ssl.SslShutdown(sslHandle);
+            if (status == 0)
+            {
+                // Call SSL_shutdown again for a bi-directional shutdown.
+                status = Interop.Ssl.SslShutdown(sslHandle);
+            }
+
+            if (status == 1)
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+
+            Interop.Ssl.SslErrorCode code = Interop.Ssl.SslGetError(sslHandle, status);
+            if (code == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ ||
+                code == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+            }
+            else
+            {
+                return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, new Interop.OpenSsl.SslException((int)code));
+            }
         }
     }
 }
