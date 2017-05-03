@@ -129,7 +129,11 @@ pal::string_t get_filename(const pal::string_t& path)
 
 pal::string_t get_directory(const pal::string_t& path)
 {
-    pal::string_t ret = trim_end(path, DIR_SEPARATOR);
+    pal::string_t ret = path;
+    while (!ret.empty() && ret.back() == DIR_SEPARATOR)
+    {
+        ret.pop_back();
+    }
 
     // Find the last dir separator
     auto path_sep = ret.find_last_of(DIR_SEPARATOR);
@@ -282,16 +286,6 @@ bool get_global_shared_store_dir(pal::string_t* dir)
     }
     append_path(dir, RUNTIME_STORE_DIRECTORY_NAME);
     return true;
-}
-
-pal::string_t trim_end(const pal::string_t& path, pal::char_t elem)
-{
-    pal::string_t ret = path;
-    while (!ret.empty() && ret.back() == elem)
-    {
-        ret.pop_back();
-    }
-    return ret;
 }
 
 bool get_local_shared_store_dir(pal::string_t* dir)
