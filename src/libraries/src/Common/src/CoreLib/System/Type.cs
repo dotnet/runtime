@@ -32,6 +32,7 @@ namespace System
         public override Type ReflectedType => null;
         public abstract Type UnderlyingSystemType { get; }
 
+        public virtual bool IsTypeDefinition { get { throw NotImplemented.ByDesign; } }
         public bool IsArray => IsArrayImpl();
         protected abstract bool IsArrayImpl();
         public bool IsByRef => IsByRefImpl();
