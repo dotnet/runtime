@@ -1,19 +1,16 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Extensions.DependencyModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.ProjectModel;
-using Microsoft.DotNet.ProjectModel.Graph;
-using Microsoft.Extensions.DependencyModel;
-using NuGet.Frameworks;
 
-namespace DepsProcessor
+namespace Microsoft.DotNet.Build.Tasks
 {
     public class RuntimeReference
     {
-        public static List<RuntimeLibrary> RemoveReferences(IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<string> packages)
+        public static List<RuntimeLibrary> RemoveReferences(IReadOnlyList<RuntimeLibrary> runtimeLibraries, IEnumerable<string> packages)
         {
             List<RuntimeLibrary> result = new List<RuntimeLibrary>();
 
@@ -61,6 +58,5 @@ namespace DepsProcessor
             }
             return result;
         }
-
     }
 }

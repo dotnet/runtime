@@ -117,9 +117,6 @@
     <DnuRestoreDirs Include="@(_ProjectJsonFiles->'%(RootDir)%(Directory)')">
       <AdditionalArgs>%(AdditionalArgs) --disable-parallel</AdditionalArgs>
     </DnuRestoreDirs>
-    <DnuRestoreDirs Include="$(MSBuildThisFileDirectory)\tools-local\setuptools\independent\">
-      <AdditionalArgs>%(AdditionalArgs) --disable-parallel --infer-runtimes</AdditionalArgs>
-    </DnuRestoreDirs>
     <DnuRestoreDirs Include="$(MSBuildThisFileDirectory)src/pkg/deps" />
 
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
@@ -273,7 +270,7 @@
 
     <SharedFrameworkPublishDir>$(IntermediateOutputRootPath)sharedFrameworkPublish\</SharedFrameworkPublishDir>
     <SharedFrameworkPublishSymbolsDir>$(IntermediateOutputRootPath)sharedFrameworkPublish.symbols\</SharedFrameworkPublishSymbolsDir>
-    <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(HostVersion)</SharedFrameworkNameAndVersionRoot>
+    <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(SharedFrameworkNugetVersion)</SharedFrameworkNameAndVersionRoot>
   </PropertyGroup>
 
   <PropertyGroup>
