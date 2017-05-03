@@ -217,6 +217,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // https://github.com/dotnet/corefx/issues/19260
         public static void FindByValidThumbprint_RootCert()
         {
             using (X509Store machineRoot = new X509Store(StoreName.Root, StoreLocation.LocalMachine))

@@ -209,6 +209,17 @@ namespace System.Tests
         [Fact]
         public void GetSystemDirectory()
         {
+            if (PlatformDetection.IsWindowsNanoServer)
+            {
+                // https://github.com/dotnet/corefx/issues/19110
+                // On Windows Nano, ShGetKnownFolderPath currently doesn't give
+                // the correct result for SystemDirectory.
+                // Assert that it's wrong, so that if it's fixed, we don't forget to
+                // enable this test for Nano.
+                Assert.NotEqual(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
+                return;
+            }
+
             Assert.Equal(Environment.GetFolderPath(Environment.SpecialFolder.System), Environment.SystemDirectory);
         }
 
@@ -312,6 +323,22 @@ namespace System.Tests
             char* buffer = stackalloc char[260];
             SHGetFolderPathW(IntPtr.Zero, (int)folder, IntPtr.Zero, 0, buffer);
             string folderPath = new string(buffer);
+
+            if (PlatformDetection.IsWindowsNanoServer)
+            {
+                // https://github.com/dotnet/corefx/issues/19110
+                // On Windows Nano, ShGetKnownFolderPath currently isn't supported.
+                // It currently gives bogus results for everything except
+                // UserProfile. Assert that continues to be true, so if and when the fix the API,
+                // we will know to remove this Nano-specific path and protect their fix.
+                if (folder != Environment.SpecialFolder.UserProfile)
+                {
+                    Assert.NotEqual(folderPath, knownFolder);
+                }
+
+                return; // Even for UserProfile -- since the API is not supported the result may change
+            }
+
             Assert.Equal(folderPath, knownFolder);
         }
 
