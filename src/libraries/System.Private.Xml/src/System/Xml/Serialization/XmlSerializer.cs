@@ -22,6 +22,7 @@ namespace System.Xml.Serialization
     using System.Collections.Generic;
     using System.Runtime.Versioning;
     using System.Xml;
+    using System.Xml.Serialization;
 
     /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlDeserializationEvents"]/*' />
     /// <devdoc>
