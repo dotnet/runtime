@@ -162,12 +162,6 @@ namespace System
 
         public static bool IsDebian8 => IsDistroAndVersion("debian", "8");
         public static bool IsUbuntu1404 => IsDistroAndVersion("ubuntu", "14.04");
-        public static bool IsUbuntu1510 => IsDistroAndVersion("ubuntu", "15.10");
-        public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", "16.04");
-        public static bool IsUbuntu1610 => IsDistroAndVersion("ubuntu", "16.10");
-        public static bool IsFedora24 => IsDistroAndVersion("fedora", "24");
-        public static bool IsFedora25 => IsDistroAndVersion("fedora", "25");
-        public static bool IsFedora26 => IsDistroAndVersion("fedora", "26");
         public static bool IsCentos7 => IsDistroAndVersion("centos", "7");
 
         /// <summary>
