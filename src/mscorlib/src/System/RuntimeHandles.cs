@@ -127,6 +127,24 @@ namespace System
             m_type = type;
         }
 
+        internal static bool IsTypeDefinition(RuntimeType type)
+        {
+            CorElementType corElemType = GetCorElementType(type);
+            if (!((corElemType >= CorElementType.Void && corElemType < CorElementType.Ptr) ||
+                    corElemType == CorElementType.ValueType ||
+                    corElemType == CorElementType.Class ||
+                    corElemType == CorElementType.TypedByRef ||
+                    corElemType == CorElementType.I ||
+                    corElemType == CorElementType.U ||
+                    corElemType == CorElementType.Object))
+                return false;
+
+            if (HasInstantiation(type) && !IsGenericTypeDefinition(type))
+                return false;
+
+            return true;
+        }
+
         internal static bool IsPrimitive(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);

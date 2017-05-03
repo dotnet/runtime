@@ -154,6 +154,8 @@ namespace System.Reflection.Emit
 
         protected override TypeAttributes GetAttributeFlagsImpl() { return TypeAttributes.Public; }
 
+        public override bool IsTypeDefinition => false;
+
         public override bool IsSZArray => false;
 
         protected override bool IsArrayImpl() { return false; }

@@ -189,6 +189,7 @@ namespace System.Reflection.Emit
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
         protected override TypeAttributes GetAttributeFlagsImpl() { return m_type.Attributes; }
 
+        public override bool IsTypeDefinition => false;
         public override bool IsSZArray => false;
 
         protected override bool IsArrayImpl() { return false; }
