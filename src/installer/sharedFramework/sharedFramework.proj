@@ -44,6 +44,7 @@
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.pdb" />
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.runtimeconfig.json" />
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\apphost$(ExeSuffix)" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)hostfxr$(LibSuffix)" />
     </ItemGroup>
 
     <Message Text="To delete: @(ToDelete)" />
@@ -87,8 +88,6 @@
 
   <Target Name="CopyHostArtifactsToSharedFramework">
     <ItemGroup>
-      <HostArtifacts Include="$(CoreHostLockedDir)dotnet$(ExeSuffix)" />
-      <HostArtifacts Include="$(CoreHostLockedDir)$(DotnetHostFxrBaseName)" />
       <!-- Hostpolicy should be the latest and not the locked version as it is supposed to evolve for -->
       <!-- the framework and has a tight coupling with coreclr's API in the framework. -->
       <HostArtifacts Include="$(CoreHostOutputDir)\$(HostPolicyBaseName)" />
@@ -106,6 +105,18 @@
       <runtimeGraphGeneratorRuntime Condition="'$(runtimeGraphGeneratorRuntime)'==''">linux</runtimeGraphGeneratorRuntime>      
     </PropertyGroup>
 
+    <ItemGroup>
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethostresolver" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
+      <TrimPkgsWithCmdPrefix Include="@(TrimPkgsFromDeps ->'--remove %(Identity)')" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TrimPkgsCmd>@(TrimPkgsFromDeps ->'--remove %(Identity)', ' ')</TrimPkgsCmd>
+    </PropertyGroup>
+
     <Exec Command="$(DotnetToolCommand) publish --output $(runtimeGraphGeneratorOutput) $(runtimeGraphGeneratorProject) "
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
 
@@ -115,7 +126,7 @@
 
     </PropertyGroup>
 
-    <Exec Command="$(RuntimeGraphGeneratorExe) --project $(SharedFrameworkSourceRoot) --deps $(DepsJson) $(runtimeGraphGeneratorRuntime)"
+    <Exec Command="$(RuntimeGraphGeneratorExe) --project $(SharedFrameworkSourceRoot) --deps $(DepsJson) $(TrimPkgsCmd) $(runtimeGraphGeneratorRuntime) "
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
   </Target>
 
