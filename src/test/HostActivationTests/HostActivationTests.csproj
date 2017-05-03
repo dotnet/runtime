@@ -5,7 +5,6 @@
     <AssemblyName>HostActivationTests</AssemblyName>
     <PackageId>HostActivationTests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-    <!--<RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>-->
     <PackageTargetFallback>$(PackageTargetFallback);dotnet5.4;portable-net451+win8</PackageTargetFallback>
   </PropertyGroup>
 

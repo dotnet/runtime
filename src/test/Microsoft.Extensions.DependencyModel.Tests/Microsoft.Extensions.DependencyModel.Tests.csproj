@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description>Microsoft.DotNet.Tools.Tests.Utilities Class Library</Description>
-    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>Microsoft.Extensions.DependencyModel.Tests</AssemblyName>
     <AssemblyOriginatorKeyFile>../../../tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
