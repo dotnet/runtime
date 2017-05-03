@@ -5,13 +5,10 @@
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <ProjectGuid>{C99A835E-46F3-4C05-AD34-7DD84FB7466B}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
- 
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
