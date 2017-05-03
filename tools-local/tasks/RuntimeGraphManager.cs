@@ -1,29 +1,35 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.Extensions.DependencyModel;
+using NuGet.Frameworks;
+using NuGet.Packaging;
+using NuGet.ProjectModel;
+using NuGet.RuntimeModel;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ProjectModel.Compilation;
-using Microsoft.DotNet.ProjectModel.Graph;
-using Microsoft.Extensions.DependencyModel;
-using NuGet.RuntimeModel;
 
-namespace Microsoft.DotNet.ProjectModel
+namespace Microsoft.DotNet.Build.Tasks
 {
     public class RuntimeGraphManager
     {
         private const string RuntimeJsonFileName = "runtime.json";
 
-        public NuGet.RuntimeModel.RuntimeGraph Collect(IEnumerable<LibraryExport> exports)
+        public RuntimeGraph Collect(LockFile lockFile)
         {
+            string userPackageFolder = lockFile.PackageFolders.FirstOrDefault()?.Path;
+            var fallBackFolders = lockFile.PackageFolders.Skip(1).Select(f => f.Path);
+            var packageResolver = new FallbackPackagePathResolver(userPackageFolder, fallBackFolders);
+
             var graph = RuntimeGraph.Empty;
-            foreach (var export in exports)
+            foreach (var library in lockFile.Libraries)
             {
-                if (export.Library.Identity.Type == LibraryType.Package)
+                if (string.Equals(library.Type, "package", StringComparison.OrdinalIgnoreCase))
                 {
-                    PackageDescription description = (PackageDescription) export.Library;
-                    var runtimeJson =  description.PackageLibrary.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
+                    var runtimeJson = library.Files.FirstOrDefault(f => f == RuntimeJsonFileName);
                     if (runtimeJson != null)
                     {
-                        var runtimeJsonFullName = Path.Combine(export.Library.Path, runtimeJson);
+                        var libraryPath = packageResolver.GetPackageDirectory(library.Name, library.Version);
+                        var runtimeJsonFullName = Path.Combine(libraryPath, runtimeJson);
                         graph = RuntimeGraph.Merge(graph, JsonRuntimeFormat.ReadRuntimeGraph(runtimeJsonFullName));
                     }
                 }
