@@ -1637,7 +1637,7 @@ extern "C" Error SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, in
 
     socklen_t addrLen = static_cast<socklen_t>(*socketAddressLen);
     int accepted;
-#if defined(HAVE_ACCEPT_4) && defined(SOCK_CLOEXEC)
+#if defined(HAVE_ACCEPT4) && defined(SOCK_CLOEXEC)
     while (CheckInterrupted(accepted = accept4(fd, reinterpret_cast<sockaddr*>(socketAddress), &addrLen, SOCK_CLOEXEC)));
 #else
     while (CheckInterrupted(accepted = accept(fd, reinterpret_cast<sockaddr*>(socketAddress), &addrLen)));
