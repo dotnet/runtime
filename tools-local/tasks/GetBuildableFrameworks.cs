@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.Build.Tasks
     public class GetBuildArgsByFrameworks : BuildTask
     {
         [Required]
-        public ITaskItem[] ProjectJsonPaths { get; set; }
+        public ITaskItem[] ProjectPaths { get; set; }
         [Required]
         public string OSGroup { get; set; }
         [Output]
@@ -30,22 +30,20 @@ namespace Microsoft.DotNet.Build.Tasks
         public override bool Execute()
         {
             List<string> args = new List<string>();
-            foreach (var projectJsonPath in ProjectJsonPaths)
+            foreach (var projectPath in ProjectPaths)
             {
-                string dir = Path.GetDirectoryName(projectJsonPath.ItemSpec);
-                string text = File.ReadAllText(projectJsonPath.ItemSpec);
+                string text = File.ReadAllText(projectPath.ItemSpec);
                 Match match = Regex.Match(text, "<TargetFrameworks>(.*)</TargetFrameworks>");
                 if (match.Groups.Count == 2)
                 {
                     string[] tfms = match.Groups[1].Value.Split(';');
                     foreach (string framework in tfms)
                     {
-                        Console.WriteLine("OSGroup: " + OSGroup);
                         if (OSGroup == "Windows_NT"
                             || framework.StartsWith("netstandard")
                             || framework.StartsWith("netcoreapp"))
                         {
-                            args.Add($"--framework {framework} {projectJsonPath}");
+                            args.Add($"--framework {framework} {projectPath}");
                         }
                     }
                 }

@@ -2,9 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>LightupClient</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>LightupClient</PackageId>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
