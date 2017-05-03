@@ -7826,7 +7826,7 @@ mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpoint
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
 #ifdef ENABLE_INTERPRETER
-		g_error ("need RuntimeMethod in method_ptr when using interpreter");
+		//g_error ("need RuntimeMethod in method_ptr when using interpreter");
 #endif
 		delegate->method_ptr = mono_compile_method_checked (method, error);
 		return_val_if_nok (error, FALSE);

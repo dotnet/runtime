@@ -1216,7 +1216,10 @@ typedef struct {
 typedef struct {
 	struct MonoLMF lmf;
 	gboolean debugger_invoke;
+	gboolean interp_exit;
 	MonoContext ctx; /* if debugger_invoke is TRUE */
+	/* If interp_exit is TRUE */
+	gpointer interp_exit_data;
 } MonoLMFExt;
 
 /* Generic sharing */
@@ -2435,6 +2438,8 @@ gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *tar
 MonoLMF * mono_get_lmf                      (void);
 MonoLMF** mono_get_lmf_addr                 (void);
 void      mono_set_lmf                      (MonoLMF *lmf);
+void      mono_push_lmf                     (MonoLMFExt *ext);
+void      mono_pop_lmf                      (MonoLMF *lmf);
 MonoJitTlsData* mono_get_jit_tls            (void);
 MONO_API MonoDomain* mono_jit_thread_attach (MonoDomain *domain);
 MONO_API void      mono_jit_set_domain      (MonoDomain *domain);

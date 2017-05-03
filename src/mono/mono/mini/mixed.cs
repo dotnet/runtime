@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
 /*
  * Regression tests for the mixed-mode execution.
@@ -73,6 +74,16 @@ class InterpClass
 		return i;
 	}
 
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static StackTrace get_stacktrace_interp () {
+		var o = new object ();
+		return new StackTrace (true);
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void throw_ex () {
+		JitClass.throw_ex ();
+	}
 }
 
 /* The methods in this class will always be JITted */
@@ -140,6 +151,16 @@ class JitClass
 	public static void exit_byref (ref int i) {
 		i += 1;
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void throw_ex () {
+		throw new Exception ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static StackTrace get_stacktrace_jit () {
+		return InterpClass.get_stacktrace_interp ();
+	}
 }
 
 #if __MOBILE__
@@ -177,6 +198,66 @@ class Tests
 		JitClass.exit_byref (ref anint);
 		if (anint != 2)
 			return 4;
+		return 0;
+	}
+
+	public static int test_0_throw () {
+		// Throw an exception from jitted code, catch it in interpreted code
+		try {
+			JitClass.throw_ex ();
+		} catch {
+			return 0;
+		}
+		return 1;
+	}
+
+	public static int test_0_throw_child () {
+		try {
+			InterpClass.throw_ex ();
+		} catch {
+			return 0;
+		}
+		return 1;
+	}
+
+	static bool finally_called;
+
+	public static void call_finally () {
+		try {
+			JitClass.throw_ex ();
+		} finally {
+			finally_called = true;
+		}
+	}
+
+	public static int test_0_eh2 () {
+		finally_called = false;
+
+		// Throw an exception from jitted code, execute finally in interpreted code
+		try {
+			call_finally ();
+		} catch {
+			return 0;
+		}
+		if (!finally_called)
+			return 2;
+		return 1;
+	}
+
+	public static int test_0_stack_traces () {
+		//
+		// Get a stacktrace for an interp->jit->interp call stack
+		//
+		StackTrace st = JitClass.get_stacktrace_jit ();
+		var frame = st.GetFrame (0);
+		if (frame.GetMethod ().Name != "get_stacktrace_interp")
+			return 1;
+		frame = st.GetFrame (1);
+		if (frame.GetMethod ().Name != "get_stacktrace_jit")
+			return 2;
+		frame = st.GetFrame (2);
+		if (frame.GetMethod ().Name != "test_0_stack_traces")
+			return 3;
 		return 0;
 	}
 }

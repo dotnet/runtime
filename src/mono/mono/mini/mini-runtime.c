@@ -792,6 +792,38 @@ mono_set_lmf_addr (gpointer lmf_addr)
 }
 
 /*
+ * mono_push_lmf:
+ *
+ *   Push an MonoLMFExt frame on the LMF stack.
+ */
+void
+mono_push_lmf (MonoLMFExt *ext)
+{
+#ifdef MONO_ARCH_HAVE_INIT_LMF_EXT
+	MonoLMF **lmf_addr;
+
+	lmf_addr = mono_get_lmf_addr ();
+
+	mono_arch_init_lmf_ext (ext, *lmf_addr);
+
+	mono_set_lmf ((MonoLMF*)ext);
+#else
+	NOT_IMPLEMENTED;
+#endif
+}
+
+/*
+ * mono_push_lmf:
+ *
+ *   Pop the last frame from the LMF stack.
+ */
+void
+mono_pop_lmf (MonoLMF *lmf)
+{
+	mono_set_lmf ((MonoLMF *)(((gssize)lmf->previous_lmf) & ~3));
+}
+
+/*
  * mono_jit_thread_attach:
  *
  * Called by Xamarin.Mac and other products. Attach thread to runtime if

@@ -1493,7 +1493,8 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_UNKNOWN);
 
-	// FIXME: save lmf
+	/* This is needed to be able to unwind out of interpreted code */
+	mb->method->save_lmf = 1;
 
 #ifndef DISABLE_JIT
 	if (sig->ret->type != MONO_TYPE_VOID)

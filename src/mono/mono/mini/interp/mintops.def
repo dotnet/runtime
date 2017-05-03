@@ -172,7 +172,7 @@ OPDEF(MINT_LEAVE_S, "leave.s", 2, MintOpShortBranch)
 
 OPDEF(MINT_THROW, "throw", 1, MintOpNoArgs)
 OPDEF(MINT_RETHROW, "rethrow", 1, MintOpNoArgs)
-OPDEF(MINT_ENDFINALLY, "endfinally", 1, MintOpNoArgs)
+OPDEF(MINT_ENDFINALLY, "endfinally", 2, MintOpNoArgs)
 
 OPDEF(MINT_BRFALSE_I4, "brfalse.i4", 3, MintOpBranch)
 OPDEF(MINT_BRFALSE_I8, "brfalse.i8", 3, MintOpBranch)

@@ -7,6 +7,7 @@
 #include <mono/metadata/object.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/debug-internals.h>
 #include "config.h"
 
 enum {
@@ -88,6 +89,7 @@ typedef struct _RuntimeMethod
 	gpointer jit_entry;
 	MonoType *rtype;
 	MonoType **param_types;
+	MonoJitInfo *jinfo;
 } RuntimeMethod;
 
 struct _MonoInvocation {
@@ -115,6 +117,13 @@ typedef struct {
 	jmp_buf *current_env;
 	unsigned char search_for_handler;
 	unsigned char managed_code;
+
+	/* Resume state for resuming execution in mixed mode */
+	gboolean       has_resume_state;
+	/* Frame to resume execution at */
+	MonoInvocation *handler_frame;
+	/* IP to resume execution at */
+	gpointer handler_ip;
 } ThreadContext;
 
 extern int mono_interp_traceopt;
