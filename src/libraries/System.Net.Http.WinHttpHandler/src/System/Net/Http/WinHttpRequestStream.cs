@@ -195,6 +195,11 @@ namespace System.Net.Http
 
         private Task InternalWriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
+            if (count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
             return _chunkedMode ?
                 InternalWriteChunkedModeAsync(buffer, offset, count, token) :
                 InternalWriteDataAsync(buffer, offset, count, token);            
@@ -206,6 +211,7 @@ namespace System.Net.Http
             // and instead use the 'Transfer-Encoding: chunked' header. The caller is still required to encode the
             // request body according to chunking rules.
             Debug.Assert(_chunkedMode);
+            Debug.Assert(count > 0);
 
             string chunkSizeString = String.Format("{0:x}\r\n", count);
             byte[] chunkSize = Encoding.UTF8.GetBytes(chunkSizeString);
@@ -218,13 +224,8 @@ namespace System.Net.Http
 
         private Task<bool> InternalWriteDataAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            Debug.Assert(count >= 0);
-            
-            if (count == 0)
-            {
-                return Task.FromResult<bool>(true);
-            }
-            
+            Debug.Assert(count > 0);
+
             // TODO (Issue 2505): replace with PinnableBufferCache.
             if (!_cachedSendPinnedBuffer.IsAllocated || _cachedSendPinnedBuffer.Target != buffer)
             {
