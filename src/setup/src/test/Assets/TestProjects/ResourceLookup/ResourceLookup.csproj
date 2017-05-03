@@ -8,7 +8,7 @@
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+  <ItemGroup>
     <PackageReference Include="System.Spatial" Version="5.8.2" />
   </ItemGroup>
 
