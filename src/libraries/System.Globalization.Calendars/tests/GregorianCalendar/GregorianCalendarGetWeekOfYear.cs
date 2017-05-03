@@ -46,7 +46,7 @@ namespace System.Globalization.Tests
 
             // Any day in any month in any year
             int randomYear = RandomYear();
-            yield return new object[] { new DateTime(RandomYear(), randomMonth, RandomDay(randomYear, randomMonth)), RandomCalendarWeekRule(), RandomDayOfWeek() };
+            yield return new object[] { new DateTime(randomYear, randomMonth, RandomDay(randomYear, randomMonth)), RandomCalendarWeekRule(), RandomDayOfWeek() };
         }
 
         [Theory]
