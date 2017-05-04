@@ -160,18 +160,18 @@
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage">
     <ItemGroup>
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\project.json" />
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\project.json" />
+      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
+      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
-      <BuildBasePathArg>--build-base-path $(IntermediateOutputForPackaging)</BuildBasePathArg>
       <OutputArg>--output $(PackagesOutDir)</OutputArg>
-      <ConfigArg>--configuration $(Configuration)</ConfigArg>
+      <ConfigArg>--configuration $(ConfigurationGroup)</ConfigArg>
       <VersionSuffixArg>--version-suffix $(VersionSuffix)</VersionSuffixArg>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build --serviceable $(BuildBasePathArg) $(OutputArg) $(ConfigArg) $(VersionSuffixArg)" />
+    <Exec Command="$(DotnetSdkToolCommand) pack %(PackageProjects.Identity) --no-build --serviceable $(OutputArg) $(ConfigArg) $(VersionSuffixArg)"
+          Condition="'@(PackageProjects)' != ''" />
   </Target>
   
 </Project>

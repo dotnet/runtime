@@ -12,5 +12,7 @@ if not defined VisualStudioVersion (
 )
 
 :Run
+:: We do not want to run the first-time experience.
+set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 powershell -NoProfile -ExecutionPolicy unrestricted -Command "%~dp0run.ps1 -- %*"
 exit /b %ERRORLEVEL%
