@@ -46,6 +46,7 @@ namespace System.ConfigurationTests
             InlineData(true)
             InlineData(false)
             ]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18832")]
         public void Context_SimpleSettings_InNotNull(bool isSynchronized)
         {
             SimpleSettings settings = isSynchronized
@@ -59,6 +60,7 @@ namespace System.ConfigurationTests
             InlineData(true)
             InlineData(false)
             ]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18832")]
         public void Providers_SimpleSettings_Empty(bool isSynchronized)
         {
             SimpleSettings settings = isSynchronized
@@ -73,6 +75,7 @@ namespace System.ConfigurationTests
             InlineData(true)
             InlineData(false)
             ]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18832")]
         public void GetSetStringProperty_SimpleSettings_Ok(bool isSynchronized)
         {
             SimpleSettings settings = isSynchronized 
@@ -88,6 +91,7 @@ namespace System.ConfigurationTests
             InlineData(true)
             InlineData(false)
             ]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18832")]
         public void GetSetIntProperty_SimpleSettings_Ok(bool isSynchronized)
         {
             SimpleSettings settings = isSynchronized
@@ -100,6 +104,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18832")]
         public void Reload_SimpleSettings_Ok()
         {
             var settings = new SimpleSettings();
@@ -136,6 +141,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18832")]
         public void SettingsProperty_SettingsWithAttributes_Ok()
         {
             SettingsWithAttributes settings = new SettingsWithAttributes();
