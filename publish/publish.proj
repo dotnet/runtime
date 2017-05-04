@@ -8,9 +8,20 @@
 
   <Target Name="Build"
           DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;" />
-          
+  
+  <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
   <Target Name="PublishFinalOutput"
           DependsOnTargets="FinalizeBuildInAzure;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
+          
+  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
+    <RemoveDir Directories="$(BinDir)/publishpackages" />  
+    <ItemGroup>
+      <PackagesToShip Include="$(BinDir)/ForPublishing/*.nupkg" Exclude="$(BinDir)/ForPublishing/*.symbols.nupkg" />
+      <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PackagesToShip)"
+          DestinationFolder="$(BinDir)/publishpackages" />
+  </Target>
 
   <Target Name="PublishToAzure"
           DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers">
