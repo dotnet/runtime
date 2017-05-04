@@ -83,6 +83,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslShutdown")]
         internal static extern int SslShutdown(IntPtr ssl);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslShutdown")]
+        internal static extern int SslShutdown(SafeSslHandle ssl);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetBio")]
         internal static extern void SslSetBio(SafeSslHandle ssl, SafeBioHandle rbio, SafeBioHandle wbio);
 
