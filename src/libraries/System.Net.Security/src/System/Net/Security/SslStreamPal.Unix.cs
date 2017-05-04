@@ -193,18 +193,17 @@ namespace System.Net.Security
             // Unset the quiet shutdown option initially configured.
             Interop.Ssl.SslSetQuietShutdown(sslContext.SslContext, 0);
 
-            IntPtr sslHandle = sslContext.SslContext.DangerousGetHandle();
-            int status = Interop.Ssl.SslShutdown(sslHandle);
+            int status = Interop.Ssl.SslShutdown(sslContext.SslContext);
             if (status == 0)
             {
                 // Call SSL_shutdown again for a bi-directional shutdown.
-                status = Interop.Ssl.SslShutdown(sslHandle);
+                status = Interop.Ssl.SslShutdown(sslContext.SslContext);
             }
 
             if (status == 1)
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
 
-            Interop.Ssl.SslErrorCode code = Interop.Ssl.SslGetError(sslHandle, status);
+            Interop.Ssl.SslErrorCode code = Interop.Ssl.SslGetError(sslContext.SslContext, status);
             if (code == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ ||
                 code == Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE)
             {
