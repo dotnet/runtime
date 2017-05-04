@@ -30,7 +30,7 @@ gpointer mono_security_principal_windows_identity_get_current_token (void);
 extern MonoArray* ves_icall_System_Security_Principal_WindowsIdentity_GetRoles (gpointer token);
 extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *error);
 extern MonoStringHandle ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token, MonoError *error);
-extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username);
+extern gpointer ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHandle username, MonoError *error);
 
 
 /* System.Security.Principal.WindowsImpersonationContext */

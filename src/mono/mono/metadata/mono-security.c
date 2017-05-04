@@ -270,10 +270,11 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 
 #ifndef HOST_WIN32
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username)
+ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHandle username, MonoError *error)
 {
 	gpointer token = (gpointer)-2;
 
+	error_init (error);
 #ifdef HAVE_PWD_H
 
 #ifdef HAVE_GETPWNAM_R
@@ -286,7 +287,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	gchar *utf8_name;
 	gboolean result;
 
-	utf8_name = mono_unicode_to_external (mono_string_chars (username));
+	utf8_name = mono_string_handle_to_utf8 (username, error);
+	return_val_if_nok (error, NULL);
 
 #ifdef HAVE_GETPWNAM_R
 #ifdef _SC_GETPW_R_SIZE_MAX

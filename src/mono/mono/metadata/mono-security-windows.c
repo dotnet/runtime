@@ -135,8 +135,9 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token
 }
 
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username)
+ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHandle username, MonoError *error)
 {
+	error_init (error);
 	gpointer token = NULL;
 
 	/* TODO: MS has something like this working in Windows 2003 (client and
