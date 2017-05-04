@@ -374,7 +374,6 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerHeap(IN CLRDataEnumMemoryFlags fla
 
     // now dump the memory get dragged in by using DAC API implicitly.
     m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
-    status = m_memStatus;
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
@@ -394,7 +393,7 @@ HRESULT ClrDataAccess::DumpManagedObject(CLRDataEnumMemoryFlags flags, OBJECTREF
 {
     SUPPORTS_DAC;
 
-    HRESULT     status = S_OK;
+    HRESULT status = S_OK;
 
     if (objRef == NULL)
     {
@@ -1616,7 +1615,6 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerSkinny(IN CLRDataEnumMemoryFlags f
 
     // now dump the memory get dragged in by using DAC API implicitly.
     m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
-    status = m_memStatus;
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
@@ -1667,7 +1665,6 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerMicroTriage(IN CLRDataEnumMemoryFl
 
     // now dump the memory get dragged in by using DAC API implicitly.
     m_dumpStats.m_cbImplicity = m_instances.DumpAllInstances(m_enumMemCb);
-    status = m_memStatus;
 
     // Do not let any remaining implicitly enumerated memory leak out.
     Flush();
@@ -1811,8 +1808,6 @@ HRESULT ClrDataAccess::EnumMemoryRegionsWorkerCustom()
         status = E_INVALIDARG;
     }
 
-    status = m_memStatus;
-
     return S_OK;
 }
 
@@ -1935,7 +1930,6 @@ ClrDataAccess::EnumMemoryRegions(IN ICLRDataEnumMemoryRegionsCallback* callback,
 
     // We should not be trying to enumerate while we have an enumeration outstanding
     _ASSERTE(m_enumMemCb==NULL);
-    m_memStatus = S_OK;
     m_enumMemCb = callback;
 
     // QI for ICLRDataEnumMemoryRegionsCallback2 will succeed only for Win8+. 
