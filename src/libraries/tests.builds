@@ -6,6 +6,13 @@
     <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(RunningSharedFrameworkValidation)'=='true'">
+    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Data.Odbc.Tests.csproj" />
+    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.IO.Pipes.Tests.csproj" />
+    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\Microsoft.XmlSerializer.Generator.Tests.csproj" />
+    <TestProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\System.Reflection.Context.Tests.csproj" />
+  </ItemGroup>
+
   <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
   <PropertyGroup Condition="'$(BuildingUAPVertical)'=='true' and '$(SkipTests)' != 'true' " >
     <SerializeProjects>true</SerializeProjects>
