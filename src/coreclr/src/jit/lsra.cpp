@@ -5605,9 +5605,11 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             {
                 availablePhysRegInterval->previousInterval = intervalToUnassign;
 #ifdef _TARGET_ARM_
-                // TODO-ARM-Throughput: For ARM,  we don't have to keep a same previous interval in two RegRecords,
-                // if we can use a interval from one RegRecord. But I'm not sure yet.
-                // Please take a look at unassignPhysReg().
+                // TODO-ARM-Throughput: For ARM, this should not be necessary, i.e. keeping a same
+                // previous interval in two RegRecords, because we will always manage the register
+                // assignment of TYP_DOUBLE intervals together.
+                // Later we should be able to remove this and update unassignPhysReg() where
+                // previousInterval is used. Please also take a look at unassignPhysReg().
 
                 // Update overlapping floating point register for TYP_DOUBLE
                 if (intervalToUnassign->registerType == TYP_DOUBLE)
@@ -6289,7 +6291,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 {
     Interval* assignedInterval = regRec->assignedInterval;
     assert(assignedInterval != nullptr);
-    checkAndClearInterval(regRec, spillRefPosition);
+
     regNumber thisRegNum = regRec->regNum;
 
 #ifdef _TARGET_ARM_
@@ -6304,6 +6306,20 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
 
         nextRegNum = REG_NEXT(regRec->regNum);
         nextRegRec = getRegisterRecord(nextRegNum);
+
+        // Both two RegRecords should have been assigned to the same interval.
+        assert(assignedInterval == nextRegRec->assignedInterval);
+    }
+#endif // _TARGET_ARM_
+
+    checkAndClearInterval(regRec, spillRefPosition);
+
+#ifdef _TARGET_ARM_
+    if (assignedInterval->registerType == TYP_DOUBLE)
+    {
+        // Both two RegRecords should have been unassigned together.
+        assert(regRec->assignedInterval == nullptr);
+        assert(nextRegRec->assignedInterval == nullptr);
     }
 #endif // _TARGET_ARM_
 
@@ -6572,7 +6588,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 //    interval - an interval which is assigned to some register
 //
 // Assumptions:
-//    The interval must have been assigned to some register
+//    None
 //
 // Return Value:
 //    True only if regRec is second half of assignedReg in interval
@@ -6811,9 +6827,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 }
 #ifdef _TARGET_ARM_
                 // Consider overlapping floating point register for TYP_DOUBLE
-                else if (!assignedInterval->isConstant && isSecondHalfReg(physRegRecord, assignedInterval))
+                else if (!assignedInterval->isConstant && assignedInterval->registerType == TYP_DOUBLE)
                 {
-                    assert(assignedInterval->assignedReg->regNum == REG_PREV(physRegRecord->regNum));
+                    assert(!assignedInterval->isActive || isSecondHalfReg(physRegRecord, assignedInterval));
                 }
 #endif // _TARGET_ARM_
                 else
@@ -6944,22 +6960,9 @@ void LinearScan::freeRegister(RegRecord* physRegRecord)
             if (nextRefPosition == nullptr || RefTypeIsDef(nextRefPosition->refType))
             {
 #ifdef _TARGET_ARM_
-                if (assignedInterval->registerType == TYP_DOUBLE && !genIsValidDoubleReg(physRegRecord->regNum))
-                {
-                    // physRegRecord is a second half of a double register.
-
-                    // Don't call unassignPhysReg() again, because two FP registers of a double reister are already
-                    // unassigned together when this function is called with valid double register number.
-                    regNumber  prevRegNum    = REG_PREV(physRegRecord->regNum);
-                    RegRecord* prevRegRecord = getRegisterRecord(prevRegNum);
-
-                    // Both FP registers of a double reigster should not be allocated to the interval anymore.
-                    assert(assignedInterval->assignedReg != prevRegRecord);
-                    assert(assignedInterval->assignedReg != physRegRecord);
-                }
-                else
+                assert((assignedInterval->registerType != TYP_DOUBLE) || genIsValidDoubleReg(physRegRecord->regNum));
 #endif // _TARGET_ARM_
-                    unassignPhysReg(physRegRecord, nullptr);
+                unassignPhysReg(physRegRecord, nullptr);
             }
         }
     }
