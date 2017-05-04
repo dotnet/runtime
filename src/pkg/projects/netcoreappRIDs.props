@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  
+  <PropertyGroup Condition="'$(PortableBuild)' != 'true' and '$(PackageRID)' == ''">
+    <PackageRID>$(DistroRid)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
+    <PackageRID>win-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'OSX'">osx-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Linux'">linux-$(Platform)</PackageRID>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="osx-x64" />
+    <OfficialBuildRID Include="win-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win-x64"/>
+    <OfficialBuildRID Include="win-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+
+    <!-- The following RIDs are not officically supported and are not 
+         built during official builds, however we wish to include them 
+         in our runtime.json to enable others to provide them.  -->
+    <UnofficialBuildRID Include="debian.8-armel">
+      <Platform>armel</Platform>
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="tizen.4.0.0-armel">
+      <Platform>armel</Platform>
+    </UnofficialBuildRID>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <UsingTask TaskName="DownloadBlobsFromAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
+  <UsingTask TaskName="FinalizeBuild" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+  <UsingTask TaskName="GetAzureBlobList" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
+  <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
+
+  <!-- ToDo: Update versions repo -->
+  <Target Name="Build"
+          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;FinalizeBuildInAzure;PublishCoreHostPackagesToFeed" />
+
+  <Target Name="PublishToAzure"
+          DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers">
+    <MSBuild Targets="%(Project.PublishTarget)"
+             Projects="%(Project.Identity)"
+             Properties="%(Project.AdditionalProperties)"
+             BuildInParallel="true" />
+  </Target>
+
+  <Target Name="UploadToAzure"
+          Condition="'$(ItemsToPublish)' != ''">
+    <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
+    <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
+    <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
+    <Error Condition="'$(RelativeBlobPath)' == ''" Text="Missing required property 'RelativeBlobPath'" />
+
+    <ItemGroup>
+      <ItemsToPublish Include="$(ItemsToPublish)" />
+      <ItemsToPublish>
+        <RelativeBlobPath>$(RelativeBlobPath)/%(Filename)%(Extension)</RelativeBlobPath>
+      </ItemsToPublish>
+    </ItemGroup>
+    <UploadToAzure AccountName="$(AzureAccountName)"
+                   AccountKey="$(AzureAccessToken)"
+                   ContainerName="$(ContainerName)"
+                   Items="@(ItemsToPublish)" 
+                   Overwrite="false" />
+  </Target>
+
+  <Target Name="PublishDebFilesToDebianRepo"
+          DependsOnTargets="GenerateDebRepoFiles"
+          Condition="'@(DebInstallerFile)' != ''">
+      <Exec Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -listpkg %(DebInstallerFile.UploadJsonFilename)" />
+  </Target>
+
+  <Target Name="FinalizeBuildInAzure"
+          DependsOnTargets="CheckIfAllBuildsHavePublished">
+    <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
+    <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
+    <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
+    <Error Condition="'@(PublishRid)' == ''" Text="Missing required item 'PublishRid'" />
+          
+    <Message Importance="High" Text="Finalizing Build" />
+    <!-- Ensure all publish pieces are present and then publish to Azure Latest container -->
+    <FinalizeBuild AccountName="$(AzureAccountName)"
+                   AccountKey="$(AzureAccessToken)"
+                   ContainerName="$(ContainerName)"
+                   SemaphoreBlob="$(Channel)/Binaries/sharedFxPublishSemaphore"
+                   Channel="$(Channel)"
+                   Version="$(SharedFrameworkNugetVersion)"
+                   PublishRids="@(PublishRid)"
+                   FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
+                   ForcePublish="true"                  
+                   Condition="'@(_MissingBlobNames)' == ''" />
+    <Message Importance="High" Condition="'@(_MissingBlobNames)' != ''" Text="Skipping finalization, missing these blobs: '@(_MissingBlobNames)'" />
+  </Target>
+
+  <Target Name="PublishCoreHostPackagesToFeed"
+          DependsOnTargets="CheckIfAllBuildsHavePublished"
+          Condition="'@(_MissingBlobNames)' == ''">
+    <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
+    <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
+    <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
+    <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
+    <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
+
+    <GetAzureBlobList AccountName="$(AzureAccountName)"
+                      AccountKey="$(AzureAccessToken)"
+                      ContainerName="$(ContainerName)"
+                      FilterblobNames="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)">
+      <Output TaskParameter="BlobNames" ItemName="_BlobList" />
+    </GetAzureBlobList>
+    <ItemGroup>
+      <_CoreHostPackages Include="%(_BlobList.Identity)" Condition="'%(_BlobList.Extension)' == '.nupkg'" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(BinDir)ForPublishing/</DownloadDirectory>
+    </PropertyGroup>
+    <MakeDir Directories="$(DownloadDirectory)"
+             Condition="!Exists('$(DownloadDirectory)')" />
+    <DownloadBlobsFromAzure AccountName="$(AzureAccountName)"
+                           AccountKey="$(AzureAccessToken)"
+                           ContainerName="$(ContainerName)"
+                           BlobNames="@(_CoreHostPackages)"
+                           DownloadDirectory="$(DownloadDirectory)" />
+    <ItemGroup>
+      <_DownloadedPackages Include="@(_CoreHostPackages->'$(DownloadDirectory)%(Filename)%(Extension)')" />
+      <_DownloadedSymbolsPackages Include="%(_DownloadedPackages.Identity)" 
+                                 Condition="$([System.String]::new('%(_DownloadedPackages.Identity)').EndsWith('.symbols.nupkg'))" />
+      <_DownloadedStandardPackages Include="@(_DownloadedPackages)"
+                                  Exclude="@(_DownloadedSymbolsPackages)" />
+    </ItemGroup>
+    <Error Condition="'@(_DownloadedSymbolsPackages)' != '' and '$(NuGetSymbolsFeedUrl)' == ''" Text="Missing required property NuGetSymbolsFeedUrl" />
+    
+    <Message Text="Pushing CoreHost packages to $(NuGetFeedUrl)" />
+    <PropertyGroup>
+      <NuGetPushCommand>$(DotnetSdkToolCommand) nuget push --source $(NuGetFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
+      <NuGetPushSymbolsCommand>$(DotnetSdkToolCommand) nuget push --source $(NuGetSymbolsFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
+    </PropertyGroup>
+
+      <!-- ToDo: look at moving this to an msbuild task so that we can include retry logic, parallelize it, and hide the api key -->
+    <Exec Command="$(NuGetPushCommand) %(_DownloadedStandardPackages.Identity)" />
+
+    <Message Condition="'@(_DownloadedSymbolsPackages)' != ''" Text="Pushing CoreHost symbols packages to $(NuGetSymbolsFeedUrl)" />
+    <Exec Condition="'@(_DownloadedSymbolsPackages)' != ''" Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)" />
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

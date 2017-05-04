@@ -21,7 +21,8 @@ typedef pal::hresult_t(STDMETHODCALLTYPE *coreclr_initialize_fn)(
 // Prototype of the coreclr_shutdown function from coreclr.dll
 typedef pal::hresult_t(STDMETHODCALLTYPE *coreclr_shutdown_fn)(
     coreclr::host_handle_t hostHandle,
-    unsigned int domainId);
+    unsigned int domainId,
+    int* latchedExitCode);
 
 // Prototype of the coreclr_execute_assembly function from coreclr.dll
 typedef pal::hresult_t(STDMETHODCALLTYPE *coreclr_execute_assembly_fn)(
@@ -49,7 +50,7 @@ bool coreclr::bind(const pal::string_t& libcoreclr_path)
     }
 
     coreclr_initialize = (coreclr_initialize_fn)pal::get_symbol(g_coreclr, "coreclr_initialize");
-    coreclr_shutdown = (coreclr_shutdown_fn)pal::get_symbol(g_coreclr, "coreclr_shutdown");
+    coreclr_shutdown = (coreclr_shutdown_fn)pal::get_symbol(g_coreclr, "coreclr_shutdown_2");
     coreclr_execute_assembly = (coreclr_execute_assembly_fn)pal::get_symbol(g_coreclr, "coreclr_execute_assembly");
 
     return true;
@@ -83,11 +84,11 @@ pal::hresult_t coreclr::initialize(
         domain_id);
 }
 
-pal::hresult_t coreclr::shutdown(host_handle_t host_handle, domain_id_t domain_id)
+pal::hresult_t coreclr::shutdown(host_handle_t host_handle, domain_id_t domain_id, int* latchedExitCode)
 {
     assert(g_coreclr != nullptr && coreclr_shutdown != nullptr);
 
-    return coreclr_shutdown(host_handle, domain_id);
+    return coreclr_shutdown(host_handle, domain_id, latchedExitCode);
 }
 
 pal::hresult_t coreclr::execute_assembly(

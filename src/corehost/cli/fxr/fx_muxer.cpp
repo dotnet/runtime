@@ -431,25 +431,19 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
     }
 
     // Multi-level SharedFX lookup will look for the most appropriate version in several locations
-    // by following the priority rank below (from 1 to 4):
-    // 1. Current working directory
-    // 2. User directory
-    // 3. .exe directory
-    // 4. Global .NET directory
+    // by following the priority rank below:
+    //  User directory
+    // .exe directory
+    //  Global .NET directory
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
-    pal::string_t cwd;
     pal::string_t local_dir;
     pal::string_t global_dir;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
     if (multilevel_lookup)
     {
-        if (pal::getcwd(&cwd))
-        {
-            hive_dir.push_back(cwd);
-        }
         if (pal::get_local_dotnet_dir(&local_dir))
         {
             hive_dir.push_back(local_dir);
@@ -600,8 +594,20 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 {
     trace::verbose(_X("--- Resolving dotnet from working dir"));
     pal::string_t cwd;
+    if (!pal::getcwd(&cwd))
+    {
+        trace::verbose(_X("Failed to obtain current working dir"));
+        assert(cwd.empty());
+    }
+
+    return resolve_sdk_dotnet_path(own_dir, cwd, cli_sdk);
+}
+
+bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk)
+{
     pal::string_t global;
-    if (pal::getcwd(&cwd))
+
+    if (!cwd.empty())
     {
         for (pal::string_t parent_dir, cur_dir = cwd; true; cur_dir = parent_dir)
         {
@@ -623,10 +629,6 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
             }
         }
     }
-    else
-    {
-        trace::verbose(_X("Failed to obtain current working dir"));
-    }
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
@@ -635,16 +637,17 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 
     if (multilevel_lookup)
     {
-        if (pal::getcwd(&cwd))
-        {
-            hive_dir.push_back(cwd);
-        }
         if (pal::get_local_dotnet_dir(&local_dir))
         {
             hive_dir.push_back(local_dir);
         }
     }
-    hive_dir.push_back(own_dir);
+
+    if (!own_dir.empty())
+    {
+        hive_dir.push_back(own_dir);
+    }
+
     if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
     {
         hive_dir.push_back(global_dir);

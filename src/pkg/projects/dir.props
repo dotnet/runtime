@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+  <PropertyGroup>
+    <PackagePlatform>AnyCPU</PackagePlatform>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">obj/$(Configuration)/</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NuGetRuntimeIdentifier)' != ''">$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)/</IntermediateOutputPath>
+    
+    <ProjectJsonTemplate>$(MSBuildThisProjectDirectory)project.json.template</ProjectJsonTemplate>
+    <ProjectJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.json</ProjectJson>
+    <ProjectLockJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.lock.json</ProjectLockJson>
+
+    <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
+    <OutputPath>$(PackageOutputPath)</OutputPath>
+    
+    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(NuGetRuntimeIdentifier)</PackageTargetRuntime>
+
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <SkipValidatePackage>true</SkipValidatePackage>
+    <IncludeRuntimeJson>true</IncludeRuntimeJson>
+  </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
+  <!-- Add required legal files to packages -->
+  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <File Condition="Exists('$(PackageLicenseFile)')"
+          Include="$(PackageLicenseFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+          Include="$(PackageThirdPartyNoticesFile)" >
+      <SkipPackageFileCheck>true</SkipPackageFileCheck>
+    </File>
+
+    <AdditionalLibPackageExcludes Condition="'$(SymbolFileExtension)' != ''" Include="%2A%2A\%2A$(SymbolFileExtension)" />
+    <AdditionalSymbolPackageExcludes Condition="'$(LibraryFileExtension)' != ''" Include="%2A%2A\%2A.a;%2A%2A\%2A$(LibraryFileExtension)" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RIDPropsFile Condition="'$(RIDPropsFile)' == ''">$(MSBuildThisFileDirectory)\netcoreappRIDs.props</RIDPropsFile>
+  </PropertyGroup>
+
+  <Import Project="$(RIDPropsFile)" />
+
+  <ItemGroup>
+    <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
+    <!-- Include Unofficial Build RIDs in runtime.json's but do not include in the platform manifest -->
+    <BuildRID Include="@(UnofficialBuildRID)" Exclude="$(PackageRID)">
+      <ExcludeFromPlatformManifest>true</ExcludeFromPlatformManifest>
+    </BuildRID>
+    <BuildRID Include="$(PackageRID)">
+      <Platform>$(Platform)</Platform>
+    </BuildRID>
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <_projectExtension Condition="Exists('$(MSBuildProjectName).pkgproj')">.pkgproj</_projectExtension>
+    <_projectExtension Condition="'$(_projectExtension)' == '' AND Exists('$(MSBuildProjectName).depproj')">.depproj</_projectExtension>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
+    <_project Include="@(BuildRID)">
+      <Platform Condition="'%(Platform)' == ''">x64</Platform>
+      <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(Identity);NuGetRuntimeIdentifier=%(Identity);Platform=%(Platform)</AdditionalProperties>
+    </_project>
+
+    <Project Include="@(_project->'$(MSBuildProjectName)$(_projectExtension)')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
+    <ProjectReference Include="@(Project)" />
+  </ItemGroup>  
+</Project>
