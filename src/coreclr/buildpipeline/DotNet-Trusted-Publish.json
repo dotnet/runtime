@@ -172,7 +172,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(MyGetApiKey) $(ConfigurationGroup)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup)\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
