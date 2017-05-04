@@ -31,6 +31,15 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(authType));
             }
+            
+            if ((cred is SystemNetworkCredential)
+                && !((string.Equals(authType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
+                     || (string.Equals(authType, NegotiationInfoClass.Kerberos, StringComparison.OrdinalIgnoreCase))
+                     || (string.Equals(authType, NegotiationInfoClass.Negotiate, StringComparison.OrdinalIgnoreCase)))
+                )
+            {
+                throw new ArgumentException(SR.Format(SR.net_nodefaultcreds, authType), nameof(authType));
+            }
 
             ++_version;
 
@@ -66,6 +75,15 @@ namespace System.Net
             if (port < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
+            }
+            
+            if ((credential is SystemNetworkCredential)
+                && !((string.Equals(authenticationType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
+                     || (string.Equals(authenticationType, NegotiationInfoClass.Kerberos, StringComparison.OrdinalIgnoreCase))
+                     || (string.Equals(authenticationType, NegotiationInfoClass.Negotiate, StringComparison.OrdinalIgnoreCase)))
+                )
+            {
+                throw new ArgumentException(SR.Format(SR.net_nodefaultcreds, authenticationType), nameof(authenticationType));
             }
 
             ++_version;

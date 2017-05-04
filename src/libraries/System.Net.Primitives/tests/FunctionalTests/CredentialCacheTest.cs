@@ -22,7 +22,14 @@ namespace System.Net.Primitives.Functional.Tests
 
         private static readonly string authenticationType1 = "authenticationType1";
         private static readonly string authenticationType2 = "authenticationType2";
+        
+        private static readonly string authenticationTypeNTLM = "NTLM";
+        private static readonly string authenticationTypeKerberos = "Kerberos";
+        private static readonly string authenticationTypeNegotiate = "Negotiate";
+        private static readonly string authenticationTypeBasic = "Basic";
+        private static readonly string authenticationTypeDigest = "Digest";
 
+        private static readonly NetworkCredential customCredential = new NetworkCredential("username", "password");
         private static readonly NetworkCredential credential1 = new NetworkCredential("username1", "password");
         private static readonly NetworkCredential credential2 = new NetworkCredential("username2", "password");
         private static readonly NetworkCredential credential3 = new NetworkCredential("username3", "password");
@@ -94,6 +101,39 @@ namespace System.Net.Primitives.Functional.Tests
             yield return CreateHostPortCredentialCacheCount();
             yield return CreateUriAndHostPortCredentialCacheCount();
         }
+        
+        public static IEnumerable<object[]> StandardAuthTypeWithNetworkCredential =>
+            new[]
+            {
+                new object[] {authenticationTypeNTLM, customCredential},
+                new object[] {authenticationTypeKerberos, customCredential},
+                new object[] {authenticationTypeNegotiate, customCredential},
+                new object[] {authenticationTypeBasic, customCredential},
+                new object[] {authenticationTypeDigest, customCredential},
+                
+                new object[] {authenticationTypeNTLM, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeKerberos, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeNegotiate, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeBasic, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeDigest, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+            };
+            
+        public static IEnumerable<object[]> CustomAuthTypeWithDefaultNetworkCredential =>
+            new[]
+            {
+                new object[] {authenticationType1, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationType2, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+            };
+            
+        public static IEnumerable<object[]> CustomAuthTypeWithCustomNetworkCredential =>
+            new[]
+            {
+                new object[] {authenticationType1, customCredential},
+                new object[] {authenticationType1, customCredential},
+                
+                new object[] {authenticationType2, customCredential},
+                new object[] {authenticationType2, customCredential},
+            };
 
         [Fact]
         public static void Ctor_Empty_Success()
@@ -392,24 +432,99 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(String.Empty, c.Password);
             Assert.Equal(String.Empty, c.Domain);
         }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
-        public static void AddRemove_UriAuthenticationTypeDefaultCredentials_Success_net46()
+        
+        [Theory]
+        [MemberData(nameof(StandardAuthTypeWithNetworkCredential))]
+        [MemberData(nameof(CustomAuthTypeWithCustomNetworkCredential))]
+        public static void Add_UriAuthenticationType_Success(string authType, NetworkCredential nc)
         {
-            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
+            // Default credentials cannot be supplied for the Basic authentication scheme.
+            if (string.Equals(authType, authenticationTypeBasic, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                return;
+            }
+            
             CredentialCache cc = new CredentialCache();
-
-            // The full framework throw System.ArgumentException with the message
-            // 'Default credentials cannot be supplied for the authenticationType1 authentication scheme.'
-            AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authenticationType1, nc));
+            
+            // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
+            if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
+                    // if WDigestAvailable == false, it will throw ArgumentException.
+                    // It is not possible to easily determine if Digest is supported or not on .NET Framework. So, we will skip the test.
+                    return;
+                }
+                else
+                {
+                    // In .NET Core, WDigestAvailable will always be false (we don't support it).
+                    // It will always throw ArgumentException.
+                    AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
+                    return;
+                }
+            }
+            
+            cc.Add(uriPrefix1, authType, nc);
+            Assert.Equal(nc, cc.GetCredential(uriPrefix1, authType));
         }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void AddRemove_UriAuthenticationTypeDefaultCredentials_Success()
+        
+        [Theory]
+        [MemberData(nameof(CustomAuthTypeWithDefaultNetworkCredential))]
+        public static void Add_UriCustomAuthTypeWithDefaultCredential_ThrowsArgumentException(string authType, NetworkCredential nc)
         {
-            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
+            CredentialCache cc = new CredentialCache();
+            AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
+        }
+        
+        [Theory]
+        [MemberData(nameof(StandardAuthTypeWithNetworkCredential))]
+        [MemberData(nameof(CustomAuthTypeWithCustomNetworkCredential))]
+        public static void Add_HostPortAuthenticationType_Success(string authType, NetworkCredential nc)
+        {
+            // Default credentials cannot be supplied for the Basic authentication scheme.
+            if (string.Equals(authType, "Basic", StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                return;
+            }
+            
+            CredentialCache cc = new CredentialCache();
+            
+            // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
+            if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
+                    // if WDigestAvailable == false, it will throw ArgumentException.
+                    // It is not possible to easily determine if Digest is supported or not on .NET Framework. So, we will skip the test.
+                    return;
+                }
+                else
+                {
+                    // In .NET Core, WDigestAvailable will always be false (we don't support it).
+                    // It will always throw ArgumentException.
+                    AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
+                    return;
+                }
+            }
+            
+            cc.Add(host1, port1, authType, nc);
+            Assert.Equal(nc, cc.GetCredential(host1, port1, authType));
+        }
+        
+        [Theory]
+        [MemberData(nameof(CustomAuthTypeWithDefaultNetworkCredential))]
+        public static void Add_HostPortCustomAuthTypeWithDefaultCredential_ThrowsArgumentException(string authType, NetworkCredential nc)
+        {
+            CredentialCache cc = new CredentialCache();
+            AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
+        }
+        
+        [Fact]
+        public static void AddRemove_UriAuthenticationType_Success()
+        {
+            NetworkCredential nc = customCredential;
 
             CredentialCache cc = new CredentialCache();
             cc.Add(uriPrefix1, authenticationType1, nc);
@@ -421,10 +536,9 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void AddRemove_HostPortAuthenticationTypeDefaultCredentials_Success()
+        public static void AddRemove_HostPortAuthenticationType_Success()
         {
-            NetworkCredential nc = CredentialCache.DefaultNetworkCredentials as NetworkCredential;
+            NetworkCredential nc = customCredential;
 
             CredentialCache cc = new CredentialCache();
             cc.Add(host1, port1, authenticationType1, nc);
