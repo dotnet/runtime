@@ -84,8 +84,6 @@ namespace System.IO
      */
     public class UnmanagedMemoryStream : Stream
     {
-        private const long UnmanagedMemStreamMaxLength = Int64.MaxValue;
-
         private SafeBuffer _buffer;
         private unsafe byte* _mem;
         private long _length;
@@ -299,13 +297,6 @@ namespace System.IO
                 Contract.EndContractBlock();
                 if (!CanSeek) __Error.StreamIsClosed();
 
-#if !BIT64
-                unsafe {
-                    // On 32 bit machines, ensure we don't wrap around.
-                    if (value > (long) Int32.MaxValue || _mem + value < _mem)
-                        throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
-                }
-#endif
                 Interlocked.Exchange(ref _position, value);
             }
         }
@@ -334,14 +325,14 @@ namespace System.IO
                     throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
                 if (!_isOpen) __Error.StreamIsClosed();
 
-                // Note: subtracting pointers returns an Int64.  Working around
-                // to avoid hitting compiler warning CS0652 on this line. 
-                if (new IntPtr(value - _mem).ToInt64() > UnmanagedMemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
                 if (value < _mem)
                     throw new IOException(SR.IO_SeekBeforeBegin);
+                long newPosition = (long)value - (long)_mem;
+                if (newPosition < 0)
+                    throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
 
-                Interlocked.Exchange(ref _position, value - _mem);
+
+                Interlocked.Exchange(ref _position, newPosition);
             }
         }
 
@@ -490,8 +481,6 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin loc)
         {
             if (!_isOpen) __Error.StreamIsClosed();
-            if (offset > UnmanagedMemStreamMaxLength)
-                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
             switch (loc)
             {
                 case SeekOrigin.Begin:
