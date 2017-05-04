@@ -57,6 +57,9 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeFunc(Type[] typeArgs)
         {
+#if !FEATURE_COMPILE
+            Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(typeArgs));
+#else
             Type delType = Expression.GetDelegateType(typeArgs);
             Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
             Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
@@ -64,6 +67,7 @@ namespace System.Linq.Expressions.Tests
             Reflection.MethodInfo method = delType.GetMethod("Invoke");
             Assert.Equal(typeArgs.Last(), method.ReturnType);
             Assert.Equal(typeArgs.Take(typeArgs.Length - 1), method.GetParameters().Select(p => p.ParameterType));
+#endif
         }
 
         [Theory]
@@ -74,13 +78,18 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ManagedPointerTypeArgs))]
         public void CantBeAction(Type[] typeArgs)
         {
-            Type delType = Expression.GetDelegateType(typeArgs.Append(typeof(void)).ToArray());
+            Type[] delegateArgs = typeArgs.Append(typeof(void)).ToArray();
+#if !FEATURE_COMPILE
+            Assert.Throws<PlatformNotSupportedException>(() => Expression.GetDelegateType(delegateArgs));
+#else
+            Type delType = Expression.GetDelegateType(delegateArgs);
             Assert.True(typeof(MulticastDelegate).IsAssignableFrom(delType));
             Assert.DoesNotMatch(new Regex(@"System\.Action"), delType.FullName);
             Assert.DoesNotMatch(new Regex(@"System\.Func"), delType.FullName);
             Reflection.MethodInfo method = delType.GetMethod("Invoke");
             Assert.Equal(typeof(void), method.ReturnType);
             Assert.Equal(typeArgs, method.GetParameters().Select(p => p.ParameterType));
+#endif
         }
 
         // Open generic type args aren't useful directly with Expressions, but creating them is allowed.

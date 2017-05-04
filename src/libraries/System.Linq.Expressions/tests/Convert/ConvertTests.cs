@@ -16808,8 +16808,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(5, x); // Refness is lost on lifting.
         }
 
-        [Theory, InlineData(false)]
-        public static void CustomConversionNotStandardNameFromByRef(bool useInterpreter)
+        private static void CustomConversionNotStandardNameFromByRef(bool useInterpreter)
         {
             var param = Expression.Parameter(typeof(int).MakeByRefType());
             MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromRefInt));
@@ -16824,8 +16823,16 @@ namespace System.Linq.Expressions.Tests
         [Fact, ActiveIssue(18445)]
         public static void CustomConversionNotStandardNameFromByRefInterpreter()
         {
-            CustomConversionNotStandardNameFromByRef(true);
+            CustomConversionNotStandardNameFromByRef(useInterpreter: true);
         }
+
+#if FEATURE_COMPILE
+        [Fact]
+        public static void CustomConversionNotStandardNameFromByRefCompiler()
+        {
+            CustomConversionNotStandardNameFromByRef(useInterpreter: false);
+        }
+#endif
 
         [Fact]
         public static void CustomConversionNotStandardNameToWrongType()

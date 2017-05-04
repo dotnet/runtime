@@ -54,7 +54,10 @@ namespace System.Linq.Expressions.Tests
 
             MethodCallExpression expr = Expression.Call(obj, typeof(MS).GetMethod("I" + N), args);
 
-            Assert.Equal("InstanceMethodCallExpressionN", expr.GetType().Name);
+            if (!PlatformDetection.IsNetNative) // .Net Native blocks internal framework reflection.
+            {
+                Assert.Equal("InstanceMethodCallExpressionN", expr.GetType().Name);
+            }
 
             Assert.Same(obj, expr.Object);
 
@@ -159,7 +162,10 @@ namespace System.Linq.Expressions.Tests
 
             MethodCallExpression expr = Expression.Call(typeof(MS).GetMethod("S" + N), args);
 
-            Assert.Equal("MethodCallExpressionN", expr.GetType().Name);
+            if (!PlatformDetection.IsNetNative) // .Net Native blocks internal framework reflection.
+            {
+                Assert.Equal("MethodCallExpressionN", expr.GetType().Name);
+            }
 
             Assert.Equal(N, expr.ArgumentCount);
             for (var i = 0; i < N; i++)
@@ -309,12 +315,18 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertStaticMethodCall(int n, object obj)
         {
-            AssertTypeName("MethodCallExpression" + n, obj);
+            if (!PlatformDetection.IsNetNative)  // .Net Native blocks internal framework reflection.
+            {
+                AssertTypeName("MethodCallExpression" + n, obj);
+            }
         }
 
         private static void AssertInstanceMethodCall(int n, object obj)
         {
-            AssertTypeName("InstanceMethodCallExpression" + n, obj);
+            if (!PlatformDetection.IsNetNative)  // .Net Native blocks internal framework reflection.
+            {
+                AssertTypeName("InstanceMethodCallExpression" + n, obj);
+            }
         }
 
         private static void AssertTypeName(string expected, object obj)

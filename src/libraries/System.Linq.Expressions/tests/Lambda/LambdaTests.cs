@@ -269,6 +269,9 @@ namespace System.Linq.Expressions.Tests
                 double, double, double, double,
                 bool>), exp.Type);
 
+#if FEATURE_COMPILE
+            // From this point on, the tests require FEATURE_COMPILE (RefEmit) support as SLE needs to create delegate types on the fly. 
+            // You can't instantiate Func<> over 20 arguments or over byrefs.
             ParameterExpression[] paramList = Enumerable.Range(0, 20).Select(_ => Expression.Variable(typeof(int))).ToArray();
             exp = Expression.Lambda(
                 Expression.Constant(0),
@@ -300,6 +303,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(1, delMethod.GetParameters().Length);
             Assert.Equal(typeof(int).MakeByRefType(), delMethod.GetParameters()[0].ParameterType);
             Assert.Same(delType, Expression.Lambda(Expression.Constant(3L), Expression.Parameter(typeof(int).MakeByRefType())).Type);
+#endif //FEATURE_COMPILE
         }
 
         [Fact]

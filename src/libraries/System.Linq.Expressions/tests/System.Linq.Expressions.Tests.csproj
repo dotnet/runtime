@@ -125,7 +125,6 @@
     <Compile Include="DelegateType\GetDelegateTypeTests.cs" />
     <Compile Include="DynamicExpression\DynamicExpressionTests.cs" />
     <Compile Include="Dynamic\BinaryOperationTests.cs" />
-    <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />
     <Compile Include="Dynamic\BindingRestrictionsTests.cs" />
     <Compile Include="Dynamic\CallInfoTests.cs" />
     <Compile Include="Dynamic\CallSiteBinderDefaultBehaviourTests.cs" />
@@ -133,7 +132,6 @@
     <Compile Include="Dynamic\ConvertBinderTests.cs" />
     <Compile Include="Dynamic\DynamicObjectTests.cs" />
     <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
-    <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
     <Compile Include="Dynamic\ExpandoObjectTests.cs" />
     <Compile Include="Dynamic\GetIndexBinderTests.cs" />
     <Compile Include="Dynamic\GetMemberBinderTests.cs" />
@@ -292,6 +290,8 @@
   <ItemGroup  Condition="'$(TargetGroup)'!='uapaot'">
     <Compile Include="DebugViewTests.cs" />
     <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
+    <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />
+    <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="xunit.execution.dotnet" />
