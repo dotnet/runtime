@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>{TFM}</TargetFramework>
+    <RuntimeIdentifiers>{RIDs}</RuntimeIdentifiers>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
+  </ItemGroup>
+
+</Project>
