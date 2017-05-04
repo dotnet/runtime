@@ -180,6 +180,33 @@
           }
         }
       ]
+    },
+    {
+      "Name": "Publish finalized build",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "BuildConfiguration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Core-Setup-Publish",
+          "Parameters": {
+            "PB_DistroRid": "win7-x86",
+            "PB_TargetArchitecture": "x64",
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "Publish",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
+      ]
     }
   ]
 }
