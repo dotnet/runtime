@@ -83,24 +83,24 @@ Suggested Workflow
 We use and recommend the following workflow:
 
 1. Create an issue for your work. 
-  - You can skip this step for trivial changes.
-  - Reuse an existing issue on the topic, if there is one.
-  - Use [CODE_OWNERS.TXT](https://github.com/dotnet/coreclr/blob/master/CODE_OWNERS.TXT) to find relevant maintainers and @ mention them to ask for feedback on your issue.
-  - Get agreement from the team and the community that your proposed change is a good one.
-  - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/api-review-process.md). 
-  - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
+    - You can skip this step for trivial changes.
+    - Reuse an existing issue on the topic, if there is one.
+    - Use [CODE_OWNERS.TXT](https://github.com/dotnet/coreclr/blob/master/CODE_OWNERS.TXT) to find relevant maintainers and @ mention them to ask for feedback on your issue.
+    - Get agreement from the team and the community that your proposed change is a good one.
+    - If your change adds a new API, follow the [API Review Process](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/api-review-process.md). 
+    - Clearly state that you are going to take on implementing it, if that's the case. You can request that the issue be assigned to you. Note: The issue filer and the implementer don't have to be the same person.
 2. Create a personal fork of the repository on GitHub (if you don't already have one).
 3. Create a branch off of master (`git checkout -b mybranch`). 
-  - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue. 
-  - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
+    - Name the branch so that it clearly communicates your intentions, such as issue-123 or githubhandle-issue. 
+    - Branches are useful since they isolate your changes from incoming changes from upstream. They also enable you to create multiple PRs from the same fork.
 4. Make and commit your changes.
-  - Please follow our [Commit Messages](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md#commit-messages) guidance.
+    - Please follow our [Commit Messages](https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/contributing-workflow.md#commit-messages) guidance.
 5. Add new tests corresponding to your change, if applicable.
 6. Build the repository with your changes.
-  - Make sure that the builds are clean.
-  - Make sure that the tests are all passing, including your new tests.
+    - Make sure that the builds are clean.
+    - Make sure that the tests are all passing, including your new tests.
 7. Create a pull request (PR) against the upstream repository's **master** branch.
-  - Push your changes to your fork on GitHub (if you haven't already).
+    - Push your changes to your fork on GitHub (if you haven't already).
 
 Note: It is OK for your PR to include a large number of commits. Once your change is accepted, you will be asked to squash your commits into one or some appropriately small number of commits before your PR is merged.
 
