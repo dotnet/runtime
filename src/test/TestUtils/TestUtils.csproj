@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>TestUtils</AssemblyName>
+    <PackageId>TestUtils</PackageId>
+    <RuntimeFrameworkVersion>1.0.4</RuntimeFrameworkVersion>
+    <PackageTargetFallback>$(PackageTargetFallback);dotnet5.4;portable-net451+win8</PackageTargetFallback>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\build\shared-build-targets-utils\Utils\DotNetCli.cs;..\build\shared-build-targets-utils\Utils\EnvVars.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\AnsiConsole.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\AnsiColorExtensions.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\ArgumentEscaper.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\BuildFailureException.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\BuildReporter.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\Command.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\CommandResult.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\Constants.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\Reporter.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\Enumerations\BuildPlatform.cs;..\build\Microsoft.DotNet.Cli.Build.Framework\CurrentPlatform.cs" Exclude="bin\**;obj\**;**\*.xproj;packages\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="4.0.0" />
+    <PackageReference Include="System.Runtime.Serialization.Primitives" Version="4.1.1" />
+    <PackageReference Include="xunit" Version="2.2.0-beta5-build3474" />
+    <PackageReference Include="xunit.netcore.extensions" Version="1.0.0-prerelease-00206" />
+    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation" Version="4.0.0" />
+    <PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>

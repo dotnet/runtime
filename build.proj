@@ -53,6 +53,9 @@
     <Message Importance="High" Text="Restoring all packages..." />
     
     <Exec Command="$(DnuRestoreCommand) %(DnuRestoreDirs.AdditionalArgs) %(DnuRestoreDirs.Identity)" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
+
+    <!-- SDK project restore. Eventually this should be the only group being restored. -->
+    <Exec Condition="'@(SdkRestoreProjects)' != ''" Command="$(SdkRestoreCommand) &quot;%(SdkRestoreProjects.FullPath)&quot;" StandardOutputImportance="Low" />
   </Target>
 
   <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->

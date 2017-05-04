@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Utilities;
 
 namespace Microsoft.DotNet.Build.Tasks
@@ -21,7 +22,7 @@ namespace Microsoft.DotNet.Build.Tasks
     public class GetBuildArgsByFrameworks : BuildTask
     {
         [Required]
-        public ITaskItem[] ProjectJsonPaths { get; set; }
+        public ITaskItem[] ProjectPaths { get; set; }
         [Required]
         public string OSGroup { get; set; }
         [Output]
@@ -29,23 +30,20 @@ namespace Microsoft.DotNet.Build.Tasks
         public override bool Execute()
         {
             List<string> args = new List<string>();
-            foreach (var projectJsonPath in ProjectJsonPaths)
+            foreach (var projectPath in ProjectPaths)
             {
-                using (TextReader projectFileReader = File.OpenText(projectJsonPath.ItemSpec))
+                string text = File.ReadAllText(projectPath.ItemSpec);
+                Match match = Regex.Match(text, "<TargetFrameworks>(.*)</TargetFrameworks>");
+                if (match.Groups.Count == 2)
                 {
-
-                    var projectJsonReader = new JsonTextReader(projectFileReader);
-                    var serializer = new JsonSerializer();
-                    var project = serializer.Deserialize<JObject>(projectJsonReader);
-                    var dir = Path.GetDirectoryName(projectJsonPath.ItemSpec);
-                    var frameworksSection = project.Value<JObject>("frameworks");
-                    foreach (var framework in frameworksSection.Properties())
+                    string[] tfms = match.Groups[1].Value.Split(';');
+                    foreach (string framework in tfms)
                     {
                         if (OSGroup == "Windows_NT"
-                            || framework.Name.StartsWith("netstandard")
-                            || framework.Name.StartsWith("netcoreapp"))
+                            || framework.StartsWith("netstandard")
+                            || framework.StartsWith("netcoreapp"))
                         {
-                            args.Add($"--framework {framework.Name} {dir}");
+                            args.Add($"--framework {framework} {projectPath}");
                         }
                     }
                 }
