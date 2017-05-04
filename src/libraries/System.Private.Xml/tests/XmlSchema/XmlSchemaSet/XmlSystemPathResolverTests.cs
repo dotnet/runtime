@@ -75,6 +75,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18810")]
         public static void TestResolveInvalidPaths()
         {
             AssertInvalidPath(null);
