@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <RuntimeFrameworkVersion>$(_RuntimeFrameworkVersion)</RuntimeFrameworkVersion>
+    <CoreFxPackageVersion>4.4.0-$(CoreFxExpectedPrerelease)</CoreFxPackageVersion>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="Microsoft.NETCore.Platforms" Version="2.0.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="Microsoft.NETCore.Targets" Version="2.0.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="Microsoft.VisualBasic" Version="10.2.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="Microsoft.Win32.Registry.AccessControl" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="Microsoft.XmlSerializer.Generator" Version="1.0.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Buffers" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.CodeDom" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.4.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Composition" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Convention" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Hosting" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.Runtime" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Composition.TypedParts" Version="1.1.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Data.SqlClient" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.IO.Packaging" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.IO.Pipes.AccessControl" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.IO.Ports" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Json" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Memory" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Net.Http.WinHttpHandler" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Numerics.Vectors" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Reflection.DispatchProxy" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Reflection.Metadata" Version="1.5.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Reflection.TypeExtensions" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.AccessControl" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Cryptography.OpenSsl" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Permissions" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Threading.AccessControl" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.8.0-$(CoreFxExpectedPrerelease)" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(CoreFxPackageVersion)" />
+    <PackageReference Include="System.ValueTuple" Version="$(CoreFxPackageVersion)" />
+  </ItemGroup>
+
+  <Target Name="BinPlaceMetaPackageRef" BeforeTargets="CoreCompile">
+    <Copy SourceFiles="%(ReferencePath.Identity)" DestinationFolder="$(_MetaPackageDestinationFolder)" />
+  </Target>
+
+</Project>
