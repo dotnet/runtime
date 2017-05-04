@@ -27,6 +27,7 @@ namespace System.Net.Primitives.Functional.Tests
         private static readonly string authenticationTypeKerberos = "Kerberos";
         private static readonly string authenticationTypeNegotiate = "Negotiate";
         private static readonly string authenticationTypeBasic = "Basic";
+        private static readonly string authenticationTypeDigest = "Digest";
 
         private static readonly NetworkCredential credential1 = new NetworkCredential("username1", "password");
         private static readonly NetworkCredential credential2 = new NetworkCredential("username2", "password");
@@ -106,11 +107,13 @@ namespace System.Net.Primitives.Functional.Tests
                 new object[] {authenticationTypeKerberos, credential2},
                 new object[] {authenticationTypeNegotiate, credential3},
                 new object[] {authenticationTypeBasic, credential4},
+                new object[] {authenticationTypeDigest, credential5},
                 
                 new object[] {authenticationTypeNTLM, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
                 new object[] {authenticationTypeKerberos, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
                 new object[] {authenticationTypeNegotiate, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
-                // Default credentials cannot be supplied for the Basic authentication scheme.
+                new object[] {authenticationTypeBasic, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
+                new object[] {authenticationTypeDigest, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
             };
             
         public static IEnumerable<object[]> CustomAuthTypeWithDefaultNetworkCredential =>
@@ -433,7 +436,34 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(CustomAuthTypeWithCustomNetworkCredential))]
         public static void Add_UriAuthenticationType_Success(string authType, NetworkCredential nc)
         {
+            // Default credentials cannot be supplied for the Basic authentication scheme.
+            if (string.Equals(authType, authenticationTypeBasic, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                return;
+            }
+            
             CredentialCache cc = new CredentialCache();
+            
+            // .Net Framework and .Net Core have different behaviors for Digest when default NetworkCredential is used.
+            if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // In .Net framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
+                    // if WDigestAvailable == false, it will throw ArgumentException.
+                    // In order to determine WDigestAvailable's value, we need to use a method in SSPIWrapper.cs
+                    // It's not good practice to expose low level code in test project, we will skip the test.
+                    return;
+                }
+                else
+                {
+                    // In .Net Core, WDigestAvailable will always be false (we don't support it).
+                    // It will always throw ArgumentException.
+                    AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
+                    return;
+                }
+            }
+            
             cc.Add(uriPrefix1, authType, nc);
             Assert.Equal(nc, cc.GetCredential(uriPrefix1, authType));
         }
@@ -451,7 +481,34 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(CustomAuthTypeWithCustomNetworkCredential))]
         public static void Add_HostPortAuthenticationType_Success(string authType, NetworkCredential nc)
         {
+            // Default credentials cannot be supplied for the Basic authentication scheme.
+            if (string.Equals(authType, "Basic", StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                return;
+            }
+            
             CredentialCache cc = new CredentialCache();
+            
+            // .Net Framework and .Net Core have different behaviors for Digest when default NetworkCredential is used.
+            if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
+            {
+                if (PlatformDetection.IsFullFramework)
+                {
+                    // In .Net framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
+                    // if WDigestAvailable == false, it will throw ArgumentException.
+                    // In order to determine WDigestAvailable's value, we need to use a method in SSPIWrapper.cs
+                    // It's not good practice to expose low level code in test project, we will skip the test.
+                    return;
+                }
+                else
+                {
+                    // In .Net Core, WDigestAvailable will always be false (we don't support it).
+                    // It will always throw ArgumentException.
+                    AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
+                    return;
+                }
+            }
+            
             cc.Add(host1, port1, authType, nc);
             Assert.Equal(nc, cc.GetCredential(host1, port1, authType));
         }
