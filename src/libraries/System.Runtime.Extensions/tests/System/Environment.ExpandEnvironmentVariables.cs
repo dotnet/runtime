@@ -54,10 +54,15 @@ namespace System.Tests
             Assert.Equal(unexpanded, Environment.ExpandEnvironmentVariables(unexpanded));
         }
 
-        [Fact]
-        public void StringWithNoEnvironmentVariablesGoesThroughUnchnaged()
+        [Theory]
+        [InlineData("Hello World")]
+        [InlineData("C:\\J\\workspace\\debug_windows---bc3c3f12\\artifacts\\win81-x86\\stage2\\sdk\\2.0.0-preview1-005938\\Extensions")] // longer than 100 chars, a magic number in the impl
+        public void StringWithNoEnvironmentVariablesGoesThroughUnchanged(string value)
         {
-            Assert.Equal("Hello World", Environment.ExpandEnvironmentVariables("Hello World"));
+            for (int i = 0; i < 2; i++) // invoke multiple times to exercise StringBuilder reuse path
+            {
+                Assert.Equal(value, Environment.ExpandEnvironmentVariables(value));
+            }
         }
 
         [Fact]
