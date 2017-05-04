@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  
+  <PropertyGroup>
+    <PackageTargets>
+        GenerateVersionBadge;
+        GenerateCompressedFiles;
+        GenerateNugetPackages;
+        GenerateInstallers;
+    </PackageTargets>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+
+  <Target Name="InitPackage">
+    <ItemGroup>
+      <OutDirs Include="$(SharedHostPublishRoot)" />
+      <OutDirs Include="$(HostFxrPublishRoot)" />
+      <OutDirs Include="$(SharedFrameworkPublishRoot)" />
+    </ItemGroup>
+
+    <RemoveDir Directories="@(OutDirs)" />
+
+    <!-- copy shared host layout -->
+    <Copy SourceFiles="$(SharedFrameworkPublishDir)dotnet$(ExeSuffix)" 
+          DestinationFolder="$(SharedHostPublishRoot)" />
+
+    <Copy SourceFiles="$(ProjectDir)resources/ThirdPartyNotices.txt"
+          DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
+
+    <Copy SourceFiles="$(ProjectDir)resources/LICENSE.txt"
+          DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt" />
+
+    <!-- copy host fxr -->
+    <ItemGroup>
+      <HostFxrFiles Include="$(SharedFrameworkPublishDir)host\**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(HostFxrFiles)"
+           DestinationFolder="$(HostFxrPublishRoot)host/%(HostFxrFiles.RecursiveDir)" />
+
+    <!-- copy shared framwork layout -->
+    <ItemGroup>
+      <SharedFxFiles Include="$(SharedFrameworkPublishDir)shared\**\*" />
+    </ItemGroup>
+    <Copy Sourcefiles="@(SharedFxFiles)"
+          DestinationFolder="$(SharedFrameworkPublishRoot)shared/%(SharedFxFiles.RecursiveDir)" />
+
+    <!-- Fix file permits -->
+    <!-- Reset everything to user readable/writeable and group and world readable. -->
+    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+          Command='find %(OutDirs.Identity) -type f -name "*" -exec chmod 644 {} \;' />   
+    <!-- Generally, dylibs and sos have 'x' --> 
+    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+          Command='find %(OutDirs.Identity) -type f -name "*.dylib" -exec chmod 755 {} \;' />
+    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+          Command='find %(OutDirs.Identity) -type f -name "*.so" -exec chmod 755 {} \;' />  
+    <!-- Executables (those without dots) are executable -->
+    <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
+          Command='find %(OutDirs.Identity) -type f ! -name "*.*" -exec chmod 755 {} \;' />   
+    
+    
+    <!-- Copy all to combined directory -->
+    <ItemGroup>
+      <CombinedFiles Include="$(SharedHostPublishRoot)\**\*" />
+      <CombinedFiles Include="$(HostFxrPublishRoot)/**\*" />
+      <CombinedFiles Include="$(SharedFrameworkPublishRoot)/**\*" />      
+    </ItemGroup>
+    <RemoveDir Directories="@(CombinedPublishRoot)" />
+    <Copy SourceFiles="@(CombinedFiles)"
+          DestinationFolder="$(CombinedPublishRoot)/%(CombinedFiles.RecursiveDir)" />
+
+    <!-- create output dir -->
+    <MakeDir Condition="!Exists('$(PackagesOutDir)')"
+             Directories="$(PackagesOutDir)" />
+  </Target>
+
+  <Target Name="GenerateVersionBadge">
+    <PropertyGroup>
+      <templateSvg>$(ProjectDir)resources/images/version_badge.svg</templateSvg>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(OutputVersionBadge)"
+      Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(HostVersion)'))"
+      Overwrite="true"
+                      />
+  </Target>
+  
+  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" />
+
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <Target Name="GenerateZip"
+          Condition="'$(OSGroup)'=='Windows_NT'">
+
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(CombinedPublishRoot)"
+        DestinationArchive="$(PackagesOutDir)$(CombinedCompressedFile)"
+        OverwriteDestination="true" />
+
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(HostFxrPublishRoot)"
+        DestinationArchive="$(PackagesOutDir)$(HostFxrCompressedFile)"
+        OverwriteDestination="true" />
+
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(SharedFrameworkPublishRoot)"
+        DestinationArchive="$(PackagesOutDir)$(SharedFrameworkCompressedFile)"
+        OverwriteDestination="true" />
+
+    <ZipFileCreateFromDirectory
+        SourceDirectory="$(SharedFrameworkPublishSymbolsDir)"
+        DestinationArchive="$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)"
+        OverwriteDestination="true" />
+  </Target>
+
+  <Target Name="GenerateTarBall"
+          Condition="'$(OSGroup)'!='Windows_NT'">
+    <ItemGroup>
+      <CombinedCompressedFileSet Include="$(CombinedPublishRoot)/**" />
+      <HostFxrCompressedFileSet Include="$(HostFxrPublishRoot)/**" />
+      <SharedFrameworkCompressedFileSet Include="$(SharedFrameworkPublishRoot)/**" />
+      <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsDir)/**" />
+    </ItemGroup>
+
+    <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
+         we use -C so that we get a relative folder structure which is compressed rather than the full path -->
+    <Exec Command="tar -C $(CombinedPublishRoot) -czf $(PackagesOutDir)$(CombinedCompressedFile) ." 
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(PackagesOutDir)$(HostFxrCompressedFile) ." 
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(PackagesOutDir)$(SharedFrameworkCompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(SharedFrameworkPublishSymbolsDir) -czf $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(CombinedCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(CombinedCompressedFile)" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(HostFxrCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(HostFxrCompressedFile)" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkCompressedFile)" />
+    <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)" />
+  </Target>
+  
+  <Import Project="windows\package.targets" />
+  <Import Project="osx\package.targets" />
+  <Import Project="deb\package.targets" />
+
+  <PropertyGroup>
+   <InstallerDependsOn>
+     GenerateMsis;
+     GenerateBundles;
+     GeneratePkgs;
+     GenerateDebs;
+   </InstallerDependsOn>
+  </PropertyGroup>
+  <Target Name="GenerateInstallers" DependsOnTargets="$(InstallerDependsOn)" />
+
+  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage">
+    <ItemGroup>
+      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
+      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <OutputArg>--output $(PackagesOutDir)</OutputArg>
+      <ConfigArg>--configuration $(ConfigurationGroup)</ConfigArg>
+      <VersionSuffixArg>--version-suffix $(VersionSuffix)</VersionSuffixArg>
+    </PropertyGroup>
+
+    <Exec Command="$(DotnetSdkToolCommand) pack %(PackageProjects.Identity) --no-build --serviceable $(OutputArg) $(ConfigArg) $(VersionSuffixArg)"
+          Condition="'@(PackageProjects)' != ''" />
+  </Target>
+  
+</Project>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <CoreHostLockedDir>$(CoreHostOutputDir)locked\</CoreHostLockedDir>
+    <SharedFrameworkSourceRoot>$(IntermediateOutputRootPath)sharedFramework\framework</SharedFrameworkSourceRoot>
+    <IntermediateOutputForPackaging>$(IntermediateOutputRootPath)forPackaging</IntermediateOutputForPackaging>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LibPrefix Condition="'$(OSGroup)' != 'Windows_NT'">lib</LibPrefix>
+    <LibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.dll</LibSuffix>
+    <LibSuffix Condition="'$(OSGroup)' == 'OSX'">.dylib</LibSuffix>
+    <LibSuffix Condition="'$(OSGroup)' != 'Windows_NT' and '$(OSGroup)' != 'OSX'">.so</LibSuffix>  
+    <DotnetHostFxrBaseName>$(LibPrefix)hostfxr$(LibSuffix)</DotnetHostFxrBaseName>
+    <HostPolicyBaseName>$(LibPrefix)hostpolicy$(LibSuffix)</HostPolicyBaseName>      
+  </PropertyGroup>
+
+  <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
+  <!-- TODO: chcosta - do we really need this? -->
+  <PropertyGroup Condition="'$(TargetRid)' != ''">
+    <PackageTargetRid>$(TargetRid)</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>    
+  </PropertyGroup>
+    
+</Project>

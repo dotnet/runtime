@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25303-04"
+  },
+  "frameworks": {
+    "dnxcore50": {
+      "imports": "portable-net45+win8"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <Platform>$(TargetArchitecture)</Platform>
+    <DotNetHostBinDir>$(BaseOutputRootPath)corehost</DotNetHostBinDir>
+    <EnsureStableVersion>$(StabilizePackageVersion)</EnsureStableVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionTxtFile>$(ObjDir)version.txt</VersionTxtFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
+    <SymbolPackageOutputPath>$(SymbolPackagesOutDir)</SymbolPackageOutputPath>
+    <PackageLicenseFile>$(ProjectDir)src/pkg/projects/dotnet_library_license.txt</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)src/pkg/projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageDescriptionFile>$(ProjectDir)src/pkg/projects/descriptions.json</PackageDescriptionFile>
+    <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
+    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
+    <ProjectUrl>https://dot.net</ProjectUrl>
+    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
+    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+
+    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile>
+ 
+    <!-- this repo doesn't currently use the index so don't force it to be in sync --> 
+    <SkipIndexCheck>true</SkipIndexCheck>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageIndex Include="$(PackageIndexFile)" />
+  </ItemGroup>
+
+  <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
+    <Error Condition="'$(EnsureStableVersion)'==''" Text="EnsureStableVersion is undefined" />
+    <Error Condition="'$(HostPolicyVersion)'==''" Text="HostPolicyVersion is undefined" />
+    <Error Condition="'$(HostResolverVersion)'==''" Text="HostResolverVersion is undefined" />
+    <Error Condition="'$(HostVersion)'==''" Text="HostVersion is undefined" />
+  </Target>
+
+  <Target Name="ValidatePreReleaseStrings" Condition="'$(EnsureStableVersion)'=='false'">
+    <Error Condition="'$(PreReleaseLabel)'==''" Text="PreReleaseLabel is undefined" />
+    <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
+    <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
+  </Target>
+</Project>

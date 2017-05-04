@@ -11,6 +11,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdarg>
+#include <cstdint>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -76,6 +77,8 @@
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 
+#define CORELIB_NAME _X("System.Private.CoreLib.dll")
+
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
 
@@ -112,8 +115,6 @@ namespace pal
     typedef FARPROC proc_t;
 
     inline string_t exe_suffix() { return _X(".exe"); }
-    inline bool need_api_sets() { return true; }
-    void setup_api_sets(const std::unordered_set<pal::string_t>& api_sets);
 
     pal::string_t to_string(int value);
 
@@ -164,8 +165,6 @@ namespace pal
     typedef void* proc_t;
 
     inline string_t exe_suffix() { return _X(""); }
-    inline bool need_api_sets() { return false; }
-    inline void setup_api_sets(const std::unordered_set<pal::string_t>& api_sets) { }
 
     pal::string_t to_string(int value);
 

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
+    
+    <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
+    <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
+    <HostFxrPublishRoot>$(IntermediateOutputRootPath)hostFxr/</HostFxrPublishRoot>
+    <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
+    <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProductMoniker>$(PackageTargetRid)-$(HostFullVersion)</ProductMoniker>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CombinedCompressedFile>dotnet-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
+    <HostFxrCompressedFile>dotnet-hostfxr-$(ProductMoniker)$(CompressedFileExtension)</HostFxrCompressedFile>
+    <SharedFrameworkCompressedFile>dotnet-sharedframework-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+    <SharedFrameworkSymbolsCompressedFile>dotnet-sharedframework-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CombinedInstallerFile>dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
+    <CombinedInstallerEngine>dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
+    <SharedHostInstallerFile>dotnet-host-$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile>dotnet-hostfxr-$(ProductMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile>dotnet-sharedframework-$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    <SharedFrameworkEngine>dotnet-sharedframework-$(ProductMoniker)-engine.exe</SharedFrameworkEngine>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SharedHostBrandName>'Microsoft .NET Core $(ProductionVersion) - Host'</SharedHostBrandName>
+    <HostFxrBrandName>'Microsoft .NET Core $(ProductionVersion) - Host FX Resolver'</HostFxrBrandName>
+    <SharedFrameworkBrandName>'Microsoft .NET Core $(ProductionVersion) - Runtime'</SharedFrameworkBrandName>
+  </PropertyGroup>
+</Project>

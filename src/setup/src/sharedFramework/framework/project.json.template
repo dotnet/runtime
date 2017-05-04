@@ -1,0 +1,15 @@
+{
+  "version": "1.0.0-*",
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
+  "dependencies": {
+    "Microsoft.NETCore.App": "$(NetCoreAppVersion)"
+  },
+  "runtimes": {
+    "$(RID)": {}
+  },
+  "frameworks": {
+    "$(TargetFramework)": {}
+  }
+}

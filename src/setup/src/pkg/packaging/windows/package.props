@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <WindowsScriptRoot>$(PackagingRoot)windows\</WindowsScriptRoot>
+    <WixVersion>3.10.2</WixVersion>
+    <GetWixScript>$(WindowsScriptRoot)GetWix.ps1</GetWixScript>
+    <WixToolsDir>$(IntermediateOutputRootPath)WixTools.$(WixVersion)</WixToolsDir>
+    <WixObjRoot>$(IntermediateOutputRootPath)wix/</WixObjRoot>
+    <MsiArch>$(TargetArchitecture)</MsiArch>
+    <MsiArch Condition="'$(TargetArchitecture)' == 'arm'">x86</MsiArch>
+    <MsiArch Condition="'$(TargetArchitecture)' == 'arm64'">x64</MsiArch>    
+    <InsigniaCmd>$(WixToolsDir)\insignia.exe</InsigniaCmd>
+  </PropertyGroup>
+</Project>

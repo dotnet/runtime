@@ -70,17 +70,18 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str) co
             replace_char(&pal_relative_path, _X('/'), DIR_SEPARATOR);
         }
 
-        // Resources are represented as "<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
+        // Resources are represented as "lib/<netstandrd_ver>/<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
         // The <ietf-code> is the "directory" in the pal_relative_path below, so extract it.
         pal::string_t ietf_dir = get_directory(pal_relative_path);
         pal::string_t ietf = ietf_dir;
 
         // get_directory returns with DIR_SEPERATOR appended that we need to remove.
-        auto sep_pos = ietf.find_last_of(DIR_SEPARATOR);
-        if (sep_pos != pal::string_t::npos)
-        {
-            ietf = ietf.erase(sep_pos, pal::string_t::npos);
+        if (ietf.back() == DIR_SEPARATOR) {
+            ietf.pop_back();
         }
+
+        // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
+        ietf = get_filename(ietf);
         
         pal::string_t base_ietf_dir = base;
         append_path(&base_ietf_dir, ietf.c_str());
