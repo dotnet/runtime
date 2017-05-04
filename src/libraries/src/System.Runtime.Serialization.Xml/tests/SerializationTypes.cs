@@ -5142,3 +5142,35 @@ public class People
     [DataMember]
     public string Name;
 }
+
+[KnownType("KnownTypes")]
+[DataContract]
+public class EmployeeC
+{
+    public EmployeeC(string name)
+    {
+        Name = name;
+    }
+
+    [DataMember]
+    public string Name;
+
+    static Type[] KnownTypes()
+    {
+        return new Type[] { typeof(Manager), typeof(EmployeeC) };
+    }
+}
+
+[DataContract]
+public class Manager : EmployeeC
+{
+    public Manager(string name) : base(name)
+    {
+    }
+
+    [DataMember]
+    public int age;
+
+    [DataMember]
+    public EmployeeC[] emps;
+}
