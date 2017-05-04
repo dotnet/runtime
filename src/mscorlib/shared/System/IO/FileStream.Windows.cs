@@ -1599,7 +1599,7 @@ namespace System.IO
             {
                 var awaitable = (AsyncCopyToAwaitable)ThreadPoolBoundHandle.GetNativeOverlappedState(pOVERLAP);
 
-                Debug.Assert(awaitable._continuation != s_sentinel, "Sentinel must not have already been set as the continuation");
+                Debug.Assert(!ReferenceEquals(awaitable._continuation, s_sentinel), "Sentinel must not have already been set as the continuation");
                 awaitable._errorCode = errorCode;
                 awaitable._numBytes = numBytes;
 
@@ -1617,15 +1617,15 @@ namespace System.IO
             }
 
             public AsyncCopyToAwaitable GetAwaiter() => this;
-            public bool IsCompleted => _continuation == s_sentinel;
+            public bool IsCompleted => ReferenceEquals(_continuation, s_sentinel);
             public void GetResult() { }
             public void OnCompleted(Action continuation) => UnsafeOnCompleted(continuation);
             public void UnsafeOnCompleted(Action continuation)
             {
-                if (_continuation == s_sentinel ||
+                if (ReferenceEquals(_continuation, s_sentinel) ||
                     Interlocked.CompareExchange(ref _continuation, continuation, null) != null)
                 {
-                    Debug.Assert(_continuation == s_sentinel, $"Expected continuation set to s_sentinel, got ${_continuation}");
+                    Debug.Assert(ReferenceEquals(_continuation, s_sentinel), $"Expected continuation set to s_sentinel, got ${_continuation}");
                     Task.Run(continuation);
                 }
             }
