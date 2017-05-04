@@ -129,7 +129,7 @@ namespace System.Xml.Linq
             AddContentSkipNotify(other.content);
         }
 
-        public XElement()
+        internal XElement()
             : this("default")
         {
         }
