@@ -201,7 +201,7 @@ namespace Microsoft.DotNet.Build.Tasks.Utility
 
         public static async Task<HttpResponseMessage> RequestWithRetry(TaskLoggingHelper loggingHelper, HttpClient client,
             Func<HttpRequestMessage> createRequest, Func<HttpResponseMessage, bool> validationCallback = null, int retryCount = 5,
-            int retryDelaySeconds = 5, string url="")
+            int retryDelaySeconds = 5)
         {
             if (loggingHelper == null)
                 throw new ArgumentNullException(nameof(loggingHelper));
