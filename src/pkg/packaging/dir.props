@@ -32,8 +32,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SharedHostBrandName>'Microsoft .NET Core $(ProductionVersion) - Host'</SharedHostBrandName>
-    <HostFxrBrandName>'Microsoft .NET Core $(ProductionVersion) - Host FX Resolver'</HostFxrBrandName>
-    <SharedFrameworkBrandName>'Microsoft .NET Core $(ProductionVersion) - Runtime'</SharedFrameworkBrandName>
+    <ProductBrandPrefix>Microsoft .NET Core $(ProductionVersion)</ProductBrandPrefix>
+    <ProductBrandPrefix Condition="'$(ReleaseBrandSuffix)'!=''">Microsoft .NET Core $(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandPrefix>
+    <SharedHostBrandName>'$(ProductBrandPrefix) Host'</SharedHostBrandName>
+    <HostFxrBrandName>'$(ProductBrandPrefix) Host FX Resolver'</HostFxrBrandName>
+    <SharedFrameworkBrandName>'$(ProductBrandPrefix)  Runtime'</SharedFrameworkBrandName>
   </PropertyGroup>
 </Project>
