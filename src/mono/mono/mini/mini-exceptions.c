@@ -642,7 +642,12 @@ unwinder_init (Unwinder *unwinder)
 	memset (unwinder, 0, sizeof (Unwinder));
 }
 
+#if defined(GNUC) && defined(TARGET_ARM64)
+/* gcc 4.9.2 seems to miscompile this on arm64 */
+static __attribute__((optimize("O0"))) gboolean
+#else
 static gboolean
+#endif
 unwinder_unwind_frame (Unwinder *unwinder,
 					   MonoDomain *domain, MonoJitTlsData *jit_tls,
 					   MonoJitInfo *prev_ji, MonoContext *ctx,
@@ -1946,6 +1951,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			lmf = jit_tls->resume_state.lmf;
 			first_filter_idx = jit_tls->resume_state.first_filter_idx;
 			filter_idx = jit_tls->resume_state.filter_idx;
+			in_interp = FALSE;
 		} else {
 			unwind_res = unwinder_unwind_frame (&unwinder, domain, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 			if (!unwind_res) {
