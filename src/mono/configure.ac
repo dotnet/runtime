@@ -1031,20 +1031,20 @@ AC_SUBST(DEFAULT_PROFILE)
 
 if test x$USE_NLS = xprofile_default; then
 
-if test x$host_darwin = xyes; then
-# We make the default value for USE_NLS
-# "no" on OSX because it isn't available on most
-# default OSX installs. The most common configurations will
-# all disable it, so this saves us typing.
-  USE_NLS=no
-  AC_SUBST([USE_NLS])
-  AC_MSG_RESULT([$USE_NLS])
-else
-  USE_NLS=yes
-  AC_SUBST([USE_NLS])
-  AC_MSG_RESULT([$USE_NLS])
-fi
+	AC_MSG_CHECKING([NLS used])
 
+	# We make the default value for USE_NLS
+	# "no" on OSX because it isn't available on most
+	# default OSX installs. The most common configurations will
+	# all disable it, so this saves us typing.
+	if test x$host_darwin = xyes; then
+		USE_NLS=no;
+	else
+		USE_NLS=yes;
+	fi
+
+	AC_SUBST([USE_NLS])
+	AC_MSG_RESULT([$USE_NLS])
 fi
 
 AC_ARG_ENABLE(minimal, [  --enable-minimal=LIST      drop support for LIST subsystems.
@@ -1171,7 +1171,7 @@ if test "x$mono_feature_disable_normalization" = "xyes"; then
 fi
 
 #TODO: remove assembly_remapping feature name once everyone is using desktop_loader
-if test "x$mono_feature_disable_assembly_remapping" = "xyes" || "x$mono_feature_disable_desktop_loader" = "xyes"; then
+if test "x$mono_feature_disable_assembly_remapping" = "xyes" || test "x$mono_feature_disable_desktop_loader" = "xyes"; then
 	AC_DEFINE(DISABLE_DESKTOP_LOADER, 1, [Disable desktop assembly loader semantics.])
 	AC_MSG_NOTICE([Disabled desktop assembly loader semantics.])
 fi
