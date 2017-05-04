@@ -6,6 +6,7 @@ using System;
 using Microsoft.Build.Framework;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Diagnostics;
 using System.Xml;
 using System.Threading.Tasks;
 using System.Linq;
@@ -94,10 +95,11 @@ namespace Microsoft.DotNet.Build.Tasks
                     while (!string.IsNullOrEmpty(nextMarker))
                     {
                         urlListBlobs = string.Format($"https://{AccountName}.blob.core.windows.net/{ContainerName}?restype=container&comp=list&marker={nextMarker}");
-                        using (HttpResponseMessage response = Utility.AzureHelper.RequestWithRetry(Log, client, createRequest).GetAwaiter().GetResult())
+                        var nextRequest = Utility.AzureHelper.RequestMessage("GET", urlListBlobs, AccountName, AccountKey);
+                        using (HttpResponseMessage nextResponse = Utility.AzureHelper.RequestWithRetry(Log, client, nextRequest).GetAwaiter().GetResult())
                         {
                             responseFile = new XmlDocument();
-                            responseFile.LoadXml(response.Content.ReadAsStringAsync().GetAwaiter().GetResult());
+                            responseFile.LoadXml(await nextResponse.Content.ReadAsStringAsync());
                             XmlNodeList elemList = responseFile.GetElementsByTagName("Name");
 
                             blobsNames.AddRange(elemList.Cast<XmlNode>()
