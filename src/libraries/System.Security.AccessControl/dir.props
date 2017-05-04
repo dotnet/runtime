@@ -4,7 +4,7 @@
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <AssemblyKey>MSFT</AssemblyKey>
-    <IsNETCoreApp>true</IsNETCoreApp>
+    <IsNETCoreApp Condition="'$(OSGroup)' == 'Windows_NT'">true</IsNETCoreApp>
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
     <IsUAP>true</IsUAP>
     <ISUAPRef>false</ISUAPRef>
