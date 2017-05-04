@@ -31,7 +31,7 @@ extern MonoBoolean ves_icall_System_Globalization_CalendarData_fill_calendar_dat
 extern void ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *this_obj, gint32 datetime_index);
 extern void ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberFormatInfo* number, gint32 number_index);
 extern void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this_obj, MonoString *locale);
-extern MonoString* ves_icall_System_Globalization_CultureInfo_get_current_locale_name (void);
+extern MonoStringHandle ves_icall_System_Globalization_CultureInfo_get_current_locale_name (MonoError *error);
 extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint lcid);
 extern MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this_obj, MonoString *name);
 extern MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral, MonoBoolean specific, MonoBoolean installed);

@@ -1156,8 +1156,11 @@ load_agent (MonoDomain *domain, char *desc)
 
 	if (args) {
 		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 1, &error);
-		if (main_args)
-			mono_array_set (main_args, MonoString*, 0, mono_string_new (domain, args));
+		if (main_args) {
+			MonoString *str = mono_string_new_checked (domain, args, &error);
+			if (str)
+				mono_array_set (main_args, MonoString*, 0, str);
+		}
 	} else {
 		main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, 0, &error);
 	}

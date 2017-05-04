@@ -3978,8 +3978,11 @@ mono_runtime_get_main_args_checked (MonoError *error)
 	res = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, num_main_args, error);
 	return_val_if_nok (error, NULL);
 
-	for (i = 0; i < num_main_args; ++i)
-		mono_array_setref (res, i, mono_string_new (domain, main_args [i]));
+	for (i = 0; i < num_main_args; ++i) {
+		MonoString *arg = mono_string_new_checked (domain, main_args [i], error);
+		return_val_if_nok (error, NULL);
+		mono_array_setref (res, i, arg);
+	}
 
 	return res;
 }
@@ -4119,7 +4122,8 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 			 * main_args array.
 			 */
 			gchar *str = mono_utf8_from_external (argv [i]);
-			MonoString *arg = mono_string_new (domain, str);
+			MonoString *arg = mono_string_new_checked (domain, str, &error);
+			mono_error_assert_ok (&error);
 			mono_array_setref (args, i, arg);
 			g_free (str);
 		}
@@ -4592,18 +4596,23 @@ prepare_thread_to_exec_main (MonoDomain *domain, MonoMethod *method)
 
 	if (!domain->entry_assembly) {
 		gchar *str;
+		MonoError error;
 		MonoAssembly *assembly;
 
 		assembly = method->klass->image->assembly;
 		domain->entry_assembly = assembly;
 		/* Domains created from another domain already have application_base and configuration_file set */
 		if (domain->setup->application_base == NULL) {
-			MONO_OBJECT_SETREF (domain->setup, application_base, mono_string_new (domain, assembly->basedir));
+			MonoString *basedir = mono_string_new_checked (domain, assembly->basedir, &error);
+			mono_error_assert_ok (&error);
+			MONO_OBJECT_SETREF (domain->setup, application_base, basedir);
 		}
 
 		if (domain->setup->configuration_file == NULL) {
 			str = g_strconcat (assembly->image->name, ".config", NULL);
-			MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, str));
+			MonoString *config_file = mono_string_new_checked (domain, str, &error);
+			mono_error_assert_ok (&error);
+			MONO_OBJECT_SETREF (domain->setup, configuration_file, config_file);
 			g_free (str);
 			mono_domain_set_options_from_config (domain);
 		}
@@ -6254,8 +6263,12 @@ mono_string_new_wrapper (const char *text)
 
 	MonoDomain *domain = mono_domain_get ();
 
-	if (text)
-		return mono_string_new (domain, text);
+	if (text) {
+		MonoError error;
+		MonoString *result = mono_string_new_checked (domain, text, &error);
+		mono_error_assert_ok (&error);
+		return result;
+	}
 
 	return NULL;
 }
@@ -8086,9 +8099,13 @@ mono_load_remote_field_checked (MonoObject *this_obj, MonoClass *klass, MonoClas
 	return_val_if_nok (error, NULL);
 
 	full_name = mono_type_get_full_name (klass);
-	mono_array_setref (msg->args, 0, mono_string_new (domain, full_name));
-	mono_array_setref (msg->args, 1, mono_string_new (domain, mono_field_get_name (field)));
+	MonoString *full_name_str = mono_string_new_checked (domain, full_name, error);
 	g_free (full_name);
+	return_val_if_nok (error, NULL);
+	mono_array_setref (msg->args, 0, full_name_str);
+	MonoString *field_name = mono_string_new_checked (domain, mono_field_get_name (field), error);
+	return_val_if_nok (error, NULL);
+	mono_array_setref (msg->args, 1, field_name);
 
 	mono_remoting_invoke ((MonoObject *)(tp->rp), msg, &exc, &out_args, error);
 	return_val_if_nok (error, NULL);

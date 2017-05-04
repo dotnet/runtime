@@ -111,12 +111,15 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 					       gint *code,
 					       gint *reqnum)
 {
+	MonoError error;
 	FAMEvent ev;
 
 	if (FAMNextEvent (conn, &ev) == 1) {
-		*filename = mono_string_new (mono_domain_get (), ev.filename);
+		*filename = mono_string_new_checked (mono_domain_get (), ev.filename, &error);
 		*code = ev.code;
 		*reqnum = ev.fr.reqnum;
+		if (mono_error_set_pending_exception (&error))
+			return FALSE;
 		return TRUE;
 	}
 

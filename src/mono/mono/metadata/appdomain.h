@@ -69,6 +69,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoDomain *
 mono_domain_create_appdomain (char *friendly_name, char *configuration_file);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name);
 

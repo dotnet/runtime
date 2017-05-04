@@ -192,7 +192,9 @@ create_domain_objects (MonoDomain *domain)
 	string_vt = mono_class_vtable (domain, mono_defaults.string_class);
 	string_empty_fld = mono_class_get_field_from_name (mono_defaults.string_class, "Empty");
 	g_assert (string_empty_fld);
-	MonoString *empty_str = mono_string_intern_checked (mono_string_new (domain, ""), &error);
+	MonoString *empty_str = mono_string_new_checked (domain, "", &error);
+	mono_error_assert_ok (&error);
+	empty_str = mono_string_intern_checked (empty_str, &error);
 	mono_error_assert_ok (&error);
 	mono_field_static_set_value (string_vt, string_empty_fld, empty_str);
 	domain->empty_string = empty_str;
@@ -200,7 +202,8 @@ create_domain_objects (MonoDomain *domain)
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
-	arg = mono_string_new (domain, "Out of memory");
+	arg = mono_string_new_checked (domain, "Out of memory", &error);
+	mono_error_assert_ok (&error);
 	domain->out_of_memory_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL, &error);
 	mono_error_assert_ok (&error);
 
@@ -208,10 +211,12 @@ create_domain_objects (MonoDomain *domain)
 	 * These two are needed because the signal handlers might be executing on
 	 * an alternate stack, and Boehm GC can't handle that.
 	 */
-	arg = mono_string_new (domain, "A null value was found where an object instance was required");
+	arg = mono_string_new_checked (domain, "A null value was found where an object instance was required", &error);
+	mono_error_assert_ok (&error);
 	domain->null_reference_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL, &error);
 	mono_error_assert_ok (&error);
-	arg = mono_string_new (domain, "The requested operation caused a stack overflow.");
+	arg = mono_string_new_checked (domain, "The requested operation caused a stack overflow.", &error);
+	mono_error_assert_ok (&error);
 	domain->stack_overflow_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL, &error);
 	mono_error_assert_ok (&error);
 
@@ -521,8 +526,28 @@ leave:
 void
 mono_domain_set_config (MonoDomain *domain, const char *base_dir, const char *config_file_name)
 {
-	MONO_OBJECT_SETREF (domain->setup, application_base, mono_string_new (domain, base_dir));
-	MONO_OBJECT_SETREF (domain->setup, configuration_file, mono_string_new (domain, config_file_name));
+	HANDLE_FUNCTION_ENTER ();
+	MonoError error;
+	mono_domain_set_config_checked (domain, base_dir, config_file_name, &error);
+	mono_error_cleanup (&error);
+	HANDLE_FUNCTION_RETURN ();
+}
+
+gboolean
+mono_domain_set_config_checked (MonoDomain *domain, const char *base_dir, const char *config_file_name, MonoError *error)
+{
+	error_init (error);
+	MonoAppDomainSetupHandle setup = MONO_HANDLE_NEW (MonoAppDomainSetup, domain->setup);
+	MonoStringHandle base_dir_str = mono_string_new_handle (domain, base_dir, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_SET (setup, application_base, base_dir_str);
+	MonoStringHandle config_file_name_str = mono_string_new_handle (domain, config_file_name, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_SET (setup, configuration_file, config_file_name_str);
+leave:
+	return is_ok (error);
 }
 
 static MonoAppDomainSetupHandle
@@ -730,9 +755,10 @@ mono_domain_try_type_resolve_checked (MonoDomain *domain, char *name, MonoObject
 		}
 	}
 
-	if (name)
-		*params = (MonoObject*)mono_string_new (mono_domain_get (), name);
-	else
+	if (name) {
+		*params = (MonoObject*)mono_string_new_checked (mono_domain_get (), name, error);
+		return_val_if_nok (error, NULL);
+	} else
 		*params = tb;
 
 	ret = (MonoReflectionAssembly *) mono_runtime_invoke_checked (method, domain->domain, params, error);
@@ -2516,7 +2542,9 @@ unload_thread_main (void *arg)
 
 	internal = mono_thread_internal_current ();
 
-	mono_thread_set_name_internal (internal, mono_string_new (mono_domain_get (), "Domain unloader"), TRUE, FALSE, &error);
+	MonoString *thread_name_str = mono_string_new_checked (mono_domain_get (), "Domain unloader", &error);
+	if (is_ok (&error))
+		mono_thread_set_name_internal (internal, thread_name_str, TRUE, FALSE, &error);
 	if (!is_ok (&error)) {
 		data->failure_reason = g_strdup (mono_error_get_message (&error));
 		mono_error_cleanup (&error);

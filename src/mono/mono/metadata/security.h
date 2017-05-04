@@ -22,7 +22,7 @@
 G_BEGIN_DECLS
 
 /* System.Environment */
-extern MonoString* ves_icall_System_Environment_get_UserName (void);
+extern MonoStringHandle ves_icall_System_Environment_get_UserName (MonoError *error);
 
 
 /* System.Security.Principal.WindowsIdentity */

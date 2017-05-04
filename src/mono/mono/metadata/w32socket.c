@@ -2471,7 +2471,9 @@ addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name, MonoArray *
 					MonoAddress maddr;
 					mono_address_init (&maddr, AF_INET, &local_in [i]);
 					if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
-						addr_string = mono_string_new (domain, addr);
+						addr_string = mono_string_new_checked (domain, addr, error);
+						if (!is_ok (error))
+							goto leave;
 						mono_array_setref (*h_addr_list, addr_index, addr_string);
 						addr_index++;
 					}
@@ -2486,7 +2488,9 @@ addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name, MonoArray *
 					MonoAddress maddr;
 					mono_address_init (&maddr, AF_INET6, &local_in6 [i]);
 					if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
-						addr_string = mono_string_new (domain, addr);
+						addr_string = mono_string_new_checked (domain, addr, error);
+						if (!is_ok (error))
+							goto leave;
 						mono_array_setref (*h_addr_list, addr_index, addr_string);
 						addr_index++;
 					}
@@ -2525,19 +2529,23 @@ addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name, MonoArray *
 
 		mono_address_init (&maddr, ai->family, &ai->address);
 		if (mono_networking_addr_to_str (&maddr, buffer, sizeof (buffer)))
-			addr_string = mono_string_new (domain, buffer);
+			addr_string = mono_string_new_checked (domain, buffer, error);
 		else
-			addr_string = mono_string_new (domain, "");
+			addr_string = mono_string_new_checked (domain, "", error);
+		if (!is_ok (error))
+			goto leave2;
 
 		mono_array_setref (*h_addr_list, addr_index, addr_string);
 
 		if (!i) {
 			i++;
 			if (ai->canonical_name != NULL) {
-				*h_name = mono_string_new (domain, ai->canonical_name);
+				*h_name = mono_string_new_checked (domain, ai->canonical_name, error);
 			} else {
-				*h_name = mono_string_new (domain, buffer);
+				*h_name = mono_string_new_checked (domain, buffer, error);
 			}
+			if (!is_ok (error))
+				goto leave2;
 		}
 
 		addr_index++;
@@ -2669,6 +2677,7 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 MonoBoolean
 ves_icall_System_Net_Dns_GetHostName_internal (MonoString **h_name)
 {
+	MonoError error;
 	gchar hostname [NI_MAXHOST] = { 0 };
 	int ret;
 
@@ -2676,7 +2685,8 @@ ves_icall_System_Net_Dns_GetHostName_internal (MonoString **h_name)
 	if (ret == -1)
 		return FALSE;
 
-	*h_name = mono_string_new (mono_domain_get (), hostname);
+	*h_name = mono_string_new_checked (mono_domain_get (), hostname, &error);
+	mono_error_set_pending_exception (&error);
 
 	return TRUE;
 }
