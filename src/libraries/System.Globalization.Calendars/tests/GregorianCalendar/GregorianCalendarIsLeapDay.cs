@@ -11,8 +11,6 @@ namespace System.Globalization.Tests
 {
     public class GregorianCalendarIsLeapDay
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         public static IEnumerable<object[]> IsLeapDay_TestData()
         {
             int randomYear = RandomYear();

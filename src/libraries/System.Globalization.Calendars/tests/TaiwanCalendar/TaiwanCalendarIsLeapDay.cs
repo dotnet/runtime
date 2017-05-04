@@ -11,12 +11,10 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> IsLeapDay_TestData()
         {
-            int randomYear = TaiwanCalendarUtilities.RandomYear();
-            int radomMonth = TaiwanCalendarUtilities.RandomMonth();
-            int randomDay = TaiwanCalendarUtilities.RandomDay(randomYear, radomMonth);
-            yield return new object[] { randomYear, radomMonth, randomDay, false };
-
+            yield return new object[] { 2000 - 1911, 2, 28, false };
             yield return new object[] { 2000 - 1911, 2, 29, true };
+            yield return new object[] { 2000 - 1911, 3, 1, false };
+            yield return new object[] { 2001 - 1911, 2, 28, false };
         }
 
         [Theory]
