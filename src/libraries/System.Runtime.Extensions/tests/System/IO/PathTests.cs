@@ -237,7 +237,16 @@ namespace System.IO.Tests
             Assert.False(Path.IsPathRooted(uncPath));
             Assert.Equal(string.Empty, Path.GetPathRoot(uncPath));
         }
-        
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        public static void IsPathRooted(string path)
+        {
+            Assert.False(Path.IsPathRooted(path));
+        }
+
         // Testing invalid drive letters !(a-zA-Z)
         [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
