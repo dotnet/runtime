@@ -36,6 +36,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyInfoLines Include="[assembly: AssemblyMetadata(&quot;.NETFrameworkAssembly&quot;, &quot;&quot;)]" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="SymbolReader.cs" />
   </ItemGroup>
 
