@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <SharedFrameworkValidationRefPath>$(RefRootPath)SharedFrameworkValidation</SharedFrameworkValidationRefPath>
+    <SharedFrameworkValidationRuntimePath>$(BinDir)runtime/SharedFrameworkValidation</SharedFrameworkValidationRuntimePath>
+  </PropertyGroup>
+
+  <Target Name="RestorePackagesProject">
+    <PropertyGroup>
+      <_RuntimeFrameworkVersion>2.0.0-preview2-25303-01</_RuntimeFrameworkVersion>
+      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_RuntimeFrameworkVersion=$(_RuntimeFrameworkVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
+    </PropertyGroup>
+    <Exec Command="$(_RestorePackagesCommand)" />
+  </Target>
+
+  <Target Name="BuildPackagesProject">
+    <PropertyGroup>
+      <_BuildPackagesProjectCommand>"$(DotnetToolCommand)" build $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath)</_BuildPackagesProjectCommand>
+    </PropertyGroup>
+    <Exec Command="$(_BuildPackagesProjectCommand)" />
+  </Target>
+
+  <Target Name="PublishPackagesProject">
+    <PropertyGroup>
+      <_PublishPackagesProjectCommand>"$(DotnetToolCommand)" publish $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath) -f netcoreapp2.0 -r win-x64 -o $(SharedFrameworkValidationRuntimePath)</_PublishPackagesProjectCommand>
+    </PropertyGroup>
+    <Exec Command="$(_PublishPackagesProjectCommand)" />
+  </Target>
+
+  <Target Name="CopyXunitAssemblies">
+    <ItemGroup>
+      <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/xunit*.dll" />
+      <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/xunit.console.netcore.exe" />
+      <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/Newtonsoft.Json.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="%(XunitAssemblies.Identity)" DestinationFolder="$(SharedFrameworkValidationRuntimePath)" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="RestorePackagesProject;BuildPackagesProject;PublishPackagesProject;CopyXunitAssemblies" />
+  <Target Name="Clean">
+    <RemoveDir Directories="$(MSBuildThisFileDirectory)RestoreSDKProject\obj;$(MSBuildThisFileDirectory)RestoreSDKProject\bin;$(SharedFrameworkValidationRefPath);$(SharedFrameworkValidationRuntimePath)" />
+  </Target>
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
