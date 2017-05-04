@@ -6,7 +6,6 @@ using System;
 using Microsoft.Build.Framework;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Diagnostics;
 using System.Xml;
 using System.Threading.Tasks;
 using System.Linq;
