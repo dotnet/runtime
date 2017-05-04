@@ -24,12 +24,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CombinedInstallerFile>dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
-    <CombinedInstallerEngine>dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
-    <SharedHostInstallerFile>dotnet-host-$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile>dotnet-hostfxr-$(ProductMoniker)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile>dotnet-sharedframework-$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
-    <SharedFrameworkEngine>dotnet-sharedframework-$(ProductMoniker)-engine.exe</SharedFrameworkEngine>
+    <CombinedInstallerFile>$(PackagesOutDir)dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
+    <CombinedInstallerEngine>$(PackagesOutDir)dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
+    <SharedHostInstallerFile>$(PackagesOutDir)dotnet-host-$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile>$(PackagesOutDir)dotnet-hostfxr-$(ProductMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile>$(PackagesOutDir)dotnet-sharedframework-$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
   </PropertyGroup>
 
   <PropertyGroup>

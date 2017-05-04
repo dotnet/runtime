@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <dotnetDebToolPackageId>dotnet-deb-tool</dotnetDebToolPackageId>
-    <dotnetDebToolVersion>1.0.1-*</dotnetDebToolVersion>
     <dotnetDebToolSource>$(ProjectDir)tools-local/setuptools/dotnet-deb-tool/</dotnetDebToolSource>
     <dotnetDebToolPackageSource>$(PackagesOutDir)</dotnetDebToolPackageSource>
     <toolConsumerProjectName>dotnet-deb-tool-consumer.csproj</toolConsumerProjectName>
-    <debianConfigJsonFileName>debian_config.json</debianConfigJsonFileName>
     <consumingProjectDirectory>$(IntermediateOutputRootPath)$(toolConsumerProjectName)</consumingProjectDirectory>
     <debPackaginfConfigPath>$(PackagingRoot)deb/</debPackaginfConfigPath>
+
     <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
+    <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
+    
     <HostFxrDebPkgName>dotnet-hostfxr-$(HostVersion)</HostFxrDebPkgName>
+    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
+    
     <SharedFxDebPkgName>dotnet-sharedframework-$(SharedFrameworkName)-$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
+    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
   </PropertyGroup>
 </Project>

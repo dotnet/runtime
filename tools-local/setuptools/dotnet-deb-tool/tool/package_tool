@@ -172,7 +172,7 @@ copy_files_to_output(){
     # .deb, .dsc, etc.. Already in output dir
     # Copy Test files
 
-    cp $SCRIPT_DIR/src/test/integration_tests/test_package.bats $OUTPUT_DIR
+    cp $SCRIPT_DIR/test/integration_tests/test_package.bats $OUTPUT_DIR
 }
 
 ## Packaging Functions ##
