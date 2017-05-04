@@ -151,14 +151,14 @@ namespace System.Diagnostics.Tests
         [Fact]
         public async Task TestCanceledRequest()
         {
-            using (var eventRecords = new EventObserverAndRecorder())
+            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using (var eventRecords = new EventObserverAndRecorder( _ => { cts.Cancel();}))
             {
-                CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
-                await Assert.ThrowsAsync<TaskCanceledException>(
-                    () => new HttpClient().GetAsync("http://bing.com", cts.Token));
+                var ex = await Assert.ThrowsAnyAsync<Exception>(() => new HttpClient().GetAsync("http://bing.com", cts.Token));
+                Assert.True(ex is TaskCanceledException || ex is WebException);
 
                 // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
+                // 1 start event and no stop events
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(0, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
             }
@@ -463,7 +463,9 @@ namespace System.Diagnostics.Tests
         /// </summary>
         private class EventObserverAndRecorder : IObserver<KeyValuePair<string, object>>, IDisposable
         {
-            public EventObserverAndRecorder()
+            private readonly Action<KeyValuePair<string, object>> onEvent;
+
+            public EventObserverAndRecorder(Action<KeyValuePair<string, object>> onEvent = null)
             {
                 listSubscription = DiagnosticListener.AllListeners.Subscribe(new CallbackObserver<DiagnosticListener>(diagnosticListener =>
                 {
@@ -472,6 +474,8 @@ namespace System.Diagnostics.Tests
                         httpSubscription = diagnosticListener.Subscribe(this);
                     }
                 }));
+
+                this.onEvent = onEvent;
             }
 
             public EventObserverAndRecorder(Predicate<string> isEnabled)
@@ -506,7 +510,12 @@ namespace System.Diagnostics.Tests
 
             public void OnCompleted() { }
             public void OnError(Exception error) { }
-            public void OnNext(KeyValuePair<string, object> record) { Records.Enqueue(record);  }
+
+            public void OnNext(KeyValuePair<string, object> record)
+            {
+                Records.Enqueue(record);
+                onEvent?.Invoke(record);
+            }
 
             private readonly IDisposable listSubscription;
             private IDisposable httpSubscription;
