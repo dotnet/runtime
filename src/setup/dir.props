@@ -13,6 +13,7 @@
     <LockHostVersion>false</LockHostVersion>
     <PreReleaseLabel>preview2</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
+    <ReleaseBrandSuffix>Preview 2</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <BranchName>master</BranchName>
   </PropertyGroup>

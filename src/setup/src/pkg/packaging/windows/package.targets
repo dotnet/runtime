@@ -93,7 +93,7 @@
         <HostMsi>$(SharedHostInstallerFile)</HostMsi>
         <HostFxrMsi>$(HostFxrInstallerFile)</HostFxrMsi>
         <SharedBundle>$(CombinedInstallerFile)</SharedBundle>
-        <SharedBrandName>'Microsoft .NET Core $(ProductionVersion) - Runtime'</SharedBrandName>
+        <SharedBrandName>'$(ProductBrandPrefix) Runtime'</SharedBrandName>
         <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
      </PropertyGroup>
 
