@@ -2,9 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+
   <PropertyGroup>
     <Version>$(NetCoreAppVersion)</Version>
-    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(NetCoreAppVersion)').ToString(2))</NETCoreAppFramework>
+    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(ProductionVersion)').ToString(2))</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -15,7 +17,7 @@
          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
          packages.  This is needed so that we have a complete platform manifest in the shipping version of
          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
-    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(SIGNED_PACKAGES)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
   
   
@@ -55,17 +57,18 @@
 
   <!-- Redistributed package content from other nuget packages-->
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.App.depproj">
+    <ProjectReference Include="src\Microsoft.NETCore.App.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
   
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(BuildToolsTaskDir)core-setup.tasks.dll"/>
   <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
     <MSBuild Projects="@(ProjectReference)"
              Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 
                         '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR 
-                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND '%(ProjectReference.PackageTargetRuntime)' != '')"
+                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND
+                         '%(ProjectReference.PackageTargetRuntime)' != '' AND 
+                         '%(ProjectReference.ExcludeFromPlatformManifest)' != 'true')"
              Targets="GetPackageFiles">
       <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
     </MSBuild>

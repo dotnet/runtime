@@ -14,7 +14,7 @@
          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
          packages.  This is needed so that we have a complete platform manifest in the shipping version of
          the Microsoft.NETCore.UniversalWindowsPlatform (RID-agnostic/identity package). -->
-    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(SIGNED_PACKAGES)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
   
   
@@ -44,12 +44,12 @@
 
   <!-- Redistributed package content from other nuget packages-->
   <ItemGroup>
-    <ProjectReference Include="Microsoft.NETCore.UniversalWindowsPlatform.depproj">
+    <ProjectReference Include="src\Microsoft.NETCore.UniversalWindowsPlatform.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>
   </ItemGroup>
   
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(BuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
     <MSBuild Projects="@(ProjectReference)"
              Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR 

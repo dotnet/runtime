@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+  <Import Project="..\..\dir.targets" />
+  <Import Project="..\..\dir.traversal.targets" />
+
+  <!-- Target that builds dotnet, hostfxr and hostpolicy -->
+  <Target Name="Build" DependsOnTargets="BuildCoreHostUnix;BuildCoreHostWindows" /> 
+
+
+  <Target Name="BuildCoreHostUnix"
+          Condition="'$(OSGroup)' != 'Windows_NT'"
+          DependsOnTargets="GetLatestCommitHash">
+    <PropertyGroup>
+      <BuildArgs>--arch $(TargetArchitecture) --apphostver $(HostVersion) --hostver $(HostVersion) --fxrver $(HostVersion) --policyver $(HostVersion) --commithash $(LatestCommit)</BuildArgs>
+      <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) -portable</BuildArgs>     
+    </PropertyGroup>
+    
+    <Message Text="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" Importance="High"/>
+    <Exec Command="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" />
+
+    <ItemGroup>
+      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\exe\dotnet\dotnet" />
+      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\exe\apphost\apphost" />
+      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\dll\$(HostPolicyBaseName)" />
+      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\fxr\$(DotnetHostFxrBaseName)" />      
+    </ItemGroup>
+    
+    <Copy SourceFiles="@(CMakeOutput)"
+          DestinationFolder="$(CoreHostOutputDir)"/>
+  </Target>
+
+  <Target Name="BuildCoreHostWindows"
+          Condition="'$(OSGroup)' == 'Windows_NT'"
+          DependsOnTargets="GetLatestCommitHash">
+
+    <!-- Generate Version files -->
+    <ItemGroup>
+      <HostFiles Include="apphost;dotnet;hostfxr;hostpolicy" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Properties="GenerateNativeVersionInfo=true;AssemblyName=%(HostFiles.Identity);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
+             Targets="GenerateVersionHeader" />
+    <PropertyGroup>
+      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) version $(HostVersion) commit $(LatestCommit) rid $(TargetRid)</BuildArgs>
+    </PropertyGroup>
+
+    <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
+    <Message Text="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)" Importance="High"/>
+    <Exec Command="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)" />
+
+    <ItemGroup>
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\exe\dotnet\$(ConfigurationGroup)\dotnet.exe" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\exe\dotnet\$(ConfigurationGroup)\dotnet.pdb" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\exe\apphost\$(ConfigurationGroup)\apphost.exe" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\exe\apphost\$(ConfigurationGroup)\apphost.pdb" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\dll\$(ConfigurationGroup)\$(HostPolicyBaseName)" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\dll\$(ConfigurationGroup)\hostpolicy.pdb" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\fxr\$(ConfigurationGroup)\$(DotnetHostFxrBaseName)" />
+      <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\fxr\$(ConfigurationGroup)\hostfxr.pdb" />      
+    </ItemGroup>
+    
+    <Copy SourceFiles="@(CMakeOutput)"
+          DestinationFolder="$(CoreHostOutputDir)"/>
+  </Target>
+</Project>

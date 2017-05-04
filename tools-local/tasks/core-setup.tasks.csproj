@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'net45'">.NETFramework,Version=v4.5</NuGetTargetMoniker>
+    <CLSCompliant>false</CLSCompliant>
+    <ProjectGuid>{360F25FA-3CD9-4338-B961-A4F3122B88B2}</ProjectGuid>
+    <OutputPath Condition="'$(TargetGroup)' != 'net45'">$(LocalToolRuntimePath)</OutputPath>
+    <IntermediateOutputPath Condition="'$(TargetGroup)' == 'net45'">$(IntermediateOutputPath)\net45</IntermediateOutputPath>
+    <OutputPath Condition="'$(TargetGroup)' == 'net45'">$(LocalToolRuntimePath)\net46</OutputPath>
+    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip 
+         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
+    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
+    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'net45_Debug'" />
+  <ItemGroup>
+    <Compile Include="*.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net45'">
+    <Compile Include="netstandard/FileUtilities.netstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
+    <Compile Include="net45/FileUtilities.net45.cs" />
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Net.Http" />
+    <TargetingPackReference Include="System.Runtime" />
+    <TargetingPackReference Include="System.Xml" />
+    <TargetingPackReference Include="Microsoft.Build" />
+    <TargetingPackReference Include="Microsoft.Build.Framework" />
+    <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.DotNet.Build.Tasks.Local\Microsoft.DotNet.Build.Tasks.Local.csproj">
+      <Project>{b507bed2-0a28-456a-99c6-ad7aa148e35f}</Project>
+      <Name>Microsoft.DotNet.Build.Tasks.Local</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

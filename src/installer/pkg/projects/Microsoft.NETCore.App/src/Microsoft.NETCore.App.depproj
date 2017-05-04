@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- we intentionally don't want to produce output -->
+    <OutputPath>unused</OutputPath>
+    <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
+         null-refs when this isn't set and an analyzer is in the packages -->
+    <Language>unused</Language>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
+    <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
+    <CrossGenOutputPath>$(CrossGenRootPath)/$(MSBuildProjectName)/$(NuGetRuntimeIdentifier)</CrossGenOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="project.json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
+         Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
+    <DependenciesToPackage Include="NETStandard.Library" />
+    <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
+    <DependenciesToPackage Include="Microsoft.NETCore.Targets" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- get paths from packages that are needed for cross-gen and other includes,
+       only relevant for runtime-specific builds -->
+  <Target Name="GetPackagePaths" Condition="'$(NuGetRuntimeIdentifier)' != ''" DependsOnTargets="ResolveNuGetPackages">
+    <ItemGroup  Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <_runtimeCLR Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == '$(LibraryFilePrefix)coreclr$(LibraryFileExtension)'" />
+      <_runtimeCoreLib Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.dll'" />
+      <_runtimeJIT Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == '$(LibraryFilePrefix)clrjit$(LibraryFileExtension)'" />
+      <_fxSystemRuntime Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Runtime.dll'" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win8-arm'">/x86_arm</_crossDir>
+      <_crossDir Condition="'$(NuGetRuntimeIdentifier)' == 'win10-arm64'">/x64_arm64</_crossDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
+      <_runtimePackageId>%(_runtimeCLR.NuGetPackageId)</_runtimePackageId>
+      <_runtimePackageVersion>%(_runtimeCLR.NuGetPackageVersion)</_runtimePackageVersion>
+      <_runtimePackagePath>$(PackagesDir)/$(_runtimePackageId)/$(_runtimePackageVersion)</_runtimePackagePath>
+      
+      <_crossGenPath>$(_runtimePackagePath)/tools$(_crossDir)/crossgen$(ApplicationFileExtension)</_crossGenPath>
+      <_runtimeDirectory>%(_runtimeCLR.RootDir)%(_runtimeCLR.Directory)</_runtimeDirectory>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'@(_runtimeCoreLib)' != ''">
+      <_coreLibDirectory>%(_runtimeCoreLib.RootDir)%(_runtimeCoreLib.Directory)</_coreLibDirectory>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'@(_runtimeJIT)' != ''">
+      <_jitPackageId>%(_runtimeJIT.NuGetPackageId)</_jitPackageId>
+      <_jitPackageVersion>%(_runtimeJIT.NuGetPackageVersion)</_jitPackageVersion>
+      <_jitPackagePath>$(PackagesDir)/$(_jitPackageId)/$(_jitPackageVersion)</_jitPackagePath>
+      <_jitPath>%(_runtimeJIT.FullPath)</_jitPath>
+      <_jitPath Condition="'$(_crossDir)' != ''">$(_jitPackagePath)/runtimes$(_crossDir)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'@(_fxSystemRuntime)' != ''">
+      <_fxLibDirectory>%(_fxSystemRuntime.RootDir)%(_fxSystemRuntime.Directory)</_fxLibDirectory>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_requiredProperty Include="_runtimePackagePath;_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory" />
+    </ItemGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+  </Target>
+
+  <!-- Fetches all the file items from the packages that we want to redist -->
+  <Target Name="GetFilesFromPackages" DependsOnTargets="GetPackagePaths">
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <!-- RID-specific: include all runtime files -->
+      <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native), 
+             calculate it by looking for native in the path -->
+        <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
+      </_FilesToPackage>
+      <_FilesToPackage>
+        <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
+        <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
+      </_FilesToPackage>
+      <_FilesToPackage Include="$(_runtimePackagePath)/tools/*.*">
+        <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
+        <TargetPath>tools</TargetPath>
+      </_FilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+      <!-- Not RID-specific: include all reference files -->
+      <_FilesToPackage Include="@(Reference)">
+        <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
+      </_FilesToPackage>
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- add metadata for source and package -->
+      <_FilesToPackage>
+        <SourcePath>%(Identity)</SourcePath>
+        <PackagePath>%(TargetPath)/%(FileName)%(Extension)</PackagePath>
+      </_FilesToPackage>
+
+      <!-- transform to package path for deduping -->
+      <_primaryFilesByPackagePath Include="@(_FilesToPackage->'%(PackagePath)')" Condition="$([System.String]::new('%(NuGetPackageId)').EndsWith('$(PrimaryPackage)'))"/>
+      <_secondaryFilesByPackagePath Include="@(_FilesToPackage->'%(PackagePath)')" Condition="!$([System.String]::new('%(NuGetPackageId)').EndsWith('$(PrimaryPackage)'))"/>
+
+      <!-- remove any secondary files with same package path as primary files -->
+      <_secondaryFilesByPackagePath Remove="@(_primaryFilesByPackagePath)" />
+
+      <_filesByPackagePath Include="@(_primaryFilesByPackagePath);@(_secondaryFilesByPackagePath)" />
+
+      <!-- transform back to source -->
+      <FilesToPackage Include="@(_filesByPackagePath->'%(SourcePath)')" />
+    </ItemGroup>
+
+    <!-- simple check to make sure we don't accidentally pull an old 
+         package that should have been merged to the primary package -->
+    <ItemGroup>
+      <PermittedSystemPackages Include="System.ValueTuple" />
+      <_secondarySystemPackages Include="@(_secondaryFilesByPackagePath->'%(NuGetPackageId)')"
+                                Condition="$([System.String]::new('%(NuGetPackageId)').Contains('System.'))" />
+      <_secondarySystemPackages Remove="@(PermittedSystemPackages)" />
+    </ItemGroup>
+    <Error Text="Unexpected System package(s) @(_secondarySystemPackages)" Condition="'@(_secondarySystemPackages)' != ''" />
+
+    <Message Importance="low" Text="%(FilesToPackage.PackagePath) -> @(FilesToPackage)" />
+  </Target>
+
+  <!-- Prepares all items for cross-gen and replaces package file items with their cross-gen'ed equivalents -->
+  <Target Name="PrepareForCrossGen" Condition="'$(NuGetRuntimeIdentifier)' != '' AND '$(DisableCrossgen)' != 'true'" DependsOnTargets="GetFilesFromPackages">
+    <PropertyGroup>
+      <_crossGenIntermediatePath>$(IntermediateOutputPath)/crossgen</_crossGenIntermediatePath>
+    </PropertyGroup>
+    <ItemGroup>
+      <_filesToCrossGen Include="@(FilesToPackage)" 
+                        Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
+        <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
+      </_filesToCrossGen>
+
+      <FilesToPackage Remove="@(_filesToCrossGen)" />
+      
+      <_crossGenedFilesToPackage Include="@(_filesToCrossGen->'%(CrossGenedPath)')" />
+      <FilesToPackage Include="@(_crossGenedFilesToPackage)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
+      <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
+      <!-- the following need not be passed to crossgen but we do so to be safe. -->
+      <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
+      <!-- the following path must be passed to crossgen to locate all dependencies. -->
+      <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
+           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
+      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
+      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CrossGen"
+          DependsOnTargets="PrepareForCrossGen"
+          Inputs="@(_filesToCrossGen)"
+          Outputs="%(_filesToCrossGen.CrossGenedPath)">
+    <PropertyGroup>
+      <_crossGenResponseFile>$(_crossGenIntermediatePath)/%(_filesToCrossGen.FileName).rsp</_crossGenResponseFile>
+    </PropertyGroup>
+    <ItemGroup>
+      <_crossGenArgs Include="-readytorun" />
+      <_crossGenArgs Include="-in %(_filesToCrossGen.FullPath)" />
+      <_crossGenArgs Include="-out %(_filesToCrossGen.CrossGenedPath)" />
+      <_crossGenArgs Include="-platform_assemblies_paths $(_crossgenPlatformAssemblies)" />
+      <_crossGenArgs Include="-JITPath $(_jitPath)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(_crossGenIntermediatePath)" />
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('%(_filesToCrossGen.CrossGenedPath)'))" />
+    <WriteLinesToFile File="$(_crossGenResponseFile)" Lines="@(_crossGenArgs)" Overwrite="true" />
+
+    <Exec Command="$(_crossGenPath) @$(_crossGenResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
+  </Target>
+  
+  <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen" Returns="@(FilesToPackage)" />
+
+  <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
+    <!-- hack because current nuget task doesn't return version for ReferencedNuGetPackages,
+         can be removed once we switch to msbuild-based nuget & use PackageReference-->
+    <ReadLinesFromFile File="$(ProjectJson)">
+      <Output TaskParameter="Lines" ItemName="ProjectJsonLines" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <PackageMatch Include="@(ProjectJsonLines)">
+        <PackageId>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\w[^:&quot;]*)'))</PackageId>
+        <PackageVersion>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\d+\.\d+.\d+[^&quot;]*)'))</PackageVersion>
+      </PackageMatch>
+
+      <ReferencedPackage Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageMatch.PackageVersion)' != ''">
+        <Version>%(PackageMatch.PackageVersion)</Version>
+      </ReferencedPackage>
+      
+      <!-- intersect ReferencedPackage with DependenciesToPackage -->
+      <_DependenciesToPackageWithVersion Include="@(ReferencedPackage)" Condition="'@(ReferencedPackage)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
+        <TargetFramework>$(PackageTargetFramework)</TargetFramework>
+      </_DependenciesToPackageWithVersion>
+    </ItemGroup>
+
+    <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
+  </Target>
+ 
+  <!-- Run crossgen -->
+  <Target Name="Build" DependsOnTargets="CrossGen;GetFilesToPackage" />
+  
+  <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="DetermineRuntimeDependencies" />
+</Project>

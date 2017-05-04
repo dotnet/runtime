@@ -16,36 +16,60 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _builtDotnet;
         private string _nugetPackages;
         private string _corehostPackages;
+        private string _dotnetSDK;
 
         private string _targetRID;
+        private string _buildRID;
+        private string _mnaVersion;
 
+        public string BuildRID => _buildRID;
         public string TargetRID => _targetRID;
+        public string MicrosoftNETCoreAppVersion => _mnaVersion;
         public string RepoRoot => _repoRoot;
         public string Artifacts => _artifacts;
         public string HostArtifacts => _hostArtifacts;
         public string BuiltDotnet => _builtDotnet;
         public string NugetPackages => _nugetPackages;
         public string CorehostPackages => _corehostPackages;
+        public string DotnetSDK => _dotnetSDK;
 
         public RepoDirectoriesProvider(
             string repoRoot = null,
             string artifacts = null,
             string builtDotnet = null,
             string nugetPackages = null,
-            string corehostPackages = null)
+            string corehostPackages = null,
+            string dotnetSdk = null)
         {
-            _repoRoot = repoRoot ?? Path.Combine(Directory.GetCurrentDirectory(), "..", "..");
+            _repoRoot = repoRoot ?? Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.Parent.FullName;
 
-            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "artifacts");
-
+            string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "Bin");
+            
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
+            _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
+            _mnaVersion = Environment.GetEnvironmentVariable("MNA_VERSION");
 
-            _artifacts = Path.Combine(baseArtifactsFolder, _targetRID);
+            _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Debug", "Tools", "dotnetcli");
+            if (!Directory.Exists(_dotnetSDK))
+            {
+                _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Release", "Tools", "dotnetcli");
+            }
+            if (!Directory.Exists(_dotnetSDK))
+            {
+                throw new InvalidOperationException("ERROR: Test SDK folder not found.");
+            }
 
+            _artifacts = Path.Combine(baseArtifactsFolder, _buildRID+".Debug");
+            if(!Directory.Exists(_artifacts))
+                _artifacts = Path.Combine(baseArtifactsFolder, _buildRID+".Release");
             _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
-            _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, ".nuget", "packages");
+
+            _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, "packages");
+
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
-            _builtDotnet = builtDotnet ?? Path.Combine(_artifacts, "intermediate", "sharedFrameworkPublish");
+            _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Debug", "sharedFrameworkPublish");
+            if(!Directory.Exists(_builtDotnet))
+                _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Release", "sharedFrameworkPublish");
         }
     }
 }

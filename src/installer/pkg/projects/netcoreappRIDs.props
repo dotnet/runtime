@@ -3,10 +3,10 @@
   
   <PropertyGroup Condition="'$(PortableBuild)' != 'true' and '$(PackageRID)' == ''">
     <PackageRID>$(DistroRid)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
-    <PackageRID Condition="'$(OSEnvironment)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'OSX'">osx.10.12-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT'">win7-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT' AND '$(Platform)' =='arm'">win8-$(Platform)</PackageRID>
+    <PackageRID Condition="'$(OSGroup)' == 'Windows_NT' AND '$(Platform)' =='arm64'">win10-$(Platform)</PackageRID>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
@@ -16,9 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <OfficialBuildRid Include="debian.8-armel">
-      <Platform>armel</Platform>
-    </OfficialBuildRid>
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-x86">
@@ -34,9 +31,15 @@
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRid Include="tizen.4.0.0-armel">
+
+    <!-- The following RIDs are not officically supported and are not 
+         built during official builds, however we wish to include them 
+         in our runtime.json to enable others to provide them.  -->
+    <UnofficialBuildRID Include="debian.8-armel">
       <Platform>armel</Platform>
-    </OfficialBuildRid>
-    </ItemGroup>
-    
+    </UnofficialBuildRID>
+    <UnofficialBuildRID Include="tizen.4.0.0-armel">
+      <Platform>armel</Platform>
+    </UnofficialBuildRID>
+  </ItemGroup>
 </Project>

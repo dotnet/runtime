@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
+    <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TraversalBuildDependencies>
+      BatchRestorePackages;
+      ValidateExactRestore;
+      CreateOrUpdateCurrentVersionFile;
+      CreateVersionInfoFile;
+      BuildCustomTasks;
+    </TraversalBuildDependencies>
+    <TraversalBuildDependsOn>
+      $(TraversalBuildDependencies);
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Project Include="src/dir.proj" />
+    <Project Include="src/pkg/packaging/dir.proj"/>
+    <Project Include="$(MSBuildThisFileDirectory)src/test/dir.proj" Condition="'$(SkipTests)' != 'true'"/>
+  </ItemGroup>
+
+  <Target Name="BuildTraversalBuildDependencies"
+          DependsOnTargets="$(TraversalBuildDependencies)" />
+
+  <Target Name="BuildCustomTasks">
+      <MSBuild Projects="tools-local/Microsoft.DotNet.Build.Tasks.Local/Microsoft.DotNet.Build.Tasks.Local.builds" />
+      <MSBuild Projects="tools-local/tasks/core-setup.tasks.builds" />
+
+      <ItemGroup>
+        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
+        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
+      </ItemGroup>        
+      <Copy SourceFiles="@(CustomTaskDependencies)"
+            DestinationFolder="$(LocalBuildToolsTaskDir)"
+            OverwriteReadOnlyFiles="true"
+            SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="BatchRestorePackages" Condition="'$(RestoreDuringBuild)'=='true'">
+    <Message Importance="High" Text="Restoring all packages..." />
+    
+    <Exec Command="$(DnuRestoreCommand) %(DnuRestoreDirs.AdditionalArgs) %(DnuRestoreDirs.Identity)" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
+
+    <!-- SDK project restore. Eventually this should be the only group being restored. -->
+    <Exec Condition="'@(SdkRestoreProjects)' != ''" Command="$(SdkRestoreCommand) &quot;%(SdkRestoreProjects.FullPath)&quot;" StandardOutputImportance="Low" />
+  </Target>
+
+  <!-- Task from buildtools that uses lockfiles to validate that packages restored are exactly what were specified. -->
+  <UsingTask TaskName="ValidateExactRestore" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="ValidateExactRestore"
+          Condition="'$(AllowInexactRestore)'!='true'">
+    <ItemGroup>
+      <ProjectJsonTemplateFiles Include="$(MSBuildThisFileDirectory)**\project.json.template" />
+      <ProjectJsonsExcludingTemplateFiles Include="@(ProjectJsonFiles)" Exclude="@(ProjectJsonTemplateFiles)" />
+    </ItemGroup>
+    <ValidateExactRestore ProjectLockJsons="@(ProjectJsonsExcludingTemplateFiles->'%(RootDir)%(Directory)%(Filename).lock.json')" />
+  </Target>
+
+  <Import Project="dir.targets" />
+  <Import Project="dir.traversal.targets" />
+  <Import Project="$(ToolsDir)clean.targets" />
+  <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
+
+
+  <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
+  <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
+
+  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
+  <Target Name="CleanAllProjects">
+    <RemoveDir Directories="$(BinDir)" />
+  </Target>
+
+</Project>

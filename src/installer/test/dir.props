@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <TestDir>$(ProjectDir)/src/test</TestDir>
+    <TestAssetsDir>$(TestDir)/Assets</TestAssetsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestProjects Include="$(TestDir)/HostActivationTests/HostActivationTests.csproj" />
+    <TestProjects Include="$(TestDir)/Microsoft.Extensions.DependencyModel.Tests/Microsoft.Extensions.DependencyModel.Tests.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <RestoreTestFallbackSource Include="$(CoreHostOutputDir.TrimEnd('/\'.ToCharArray()))" />
+    <RestoreTestFallbackSource Include="$(PackagesBasePath)packages" />
+    <RestoreTestSource Include="@(DnuSourceList)" />
+  </ItemGroup>
+</Project>

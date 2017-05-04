@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
             // to locate it because we'll copy its contents into other folders
             string artifactsDir = Environment.GetEnvironmentVariable("TEST_ARTIFACTS");
-            string builtDotnet = Path.Combine(artifactsDir, "..", "..", "intermediate", "sharedFrameworkPublish");
+            string builtDotnet = Path.Combine(artifactsDir, "sharedFrameworkPublish");
 
             // The dotnetMultilevelSharedFxLookup dir will contain some folders and files that will be
             // necessary to perform the tests
@@ -39,14 +39,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             // are easily overwritten, so they will be placed inside the multilevel folder. The actual user location will
             // be used during tests
             _currentWorkingDir = Path.Combine(multilevelDir, "cwd");
-            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
-            {
-                _userDir = Environment.GetEnvironmentVariable("USERPROFILE");
-            }
-            else
-            {
-                _userDir = Environment.GetEnvironmentVariable("HOME");
-            }
+            _userDir = Path.Combine(multilevelDir, "user");
             _executableDir = Path.Combine(multilevelDir, "exe");
 
             // SharedFxBaseDirs contain all available version folders
@@ -98,13 +91,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
-            // CWD: empty
             // User: empty
             // Exe: 9999.0.0
             // Expected: 9999.0.0 from exe dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -117,13 +110,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
-            // CWD: empty
             // User: 9999.0.0
             // Exe: 9999.0.0
             // Expected: 9999.0.0 from user dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -136,20 +129,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
-            // CWD: 9999.0.0
+            // CWD: 9999.0.0   --> should not be picked
             // User: 9999.0.0
             // Exe: 9999.0.0
-            // Expected: 9999.0.0 from cwd
+            // Expected: 9999.0.0 from user dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(_cwdSelectedMessage);
+                .HaveStdErrContaining(_userSelectedMessage);
 
             // Remove dummy folders from user dir
             DeleteAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.0");
@@ -173,13 +167,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             SetRuntimeConfigJson(runtimeConfig, "9999.0.0-dummy0");
 
             // Version: 9999.0.0-dummy0
-            // CWD: empty
             // User: 9999.0.2, 9999.0.0-dummy2
             // Exe: 9999.0.0, 9999.0.0-dummy0
             // Expected: 9999.0.0-dummy2 from user dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -188,24 +182,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .And
                 .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0-dummy2"));
 
-            // Add a prerelease dummy version in CWD
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.0-dummy1");
+            // Add a prerelease dummy version in userdir 
+            AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.0-dummy1");
 
             // Version: 9999.0.0-dummy0
-            // CWD: 9999.0.0-dummy1
-            // User: 9999.0.2, 9999.0.0-dummy2
+            // User: 9999.0.2, 9999.0.0-dummy1, 9999.0.0-dummy2
             // Exe: 9999.0.0, 9999.0.0-dummy0
-            // Expected: 9999.0.0-dummy1 from cwd
+            // Expected: 9999.0.0-dummy1 from User
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0-dummy1"));
+                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0-dummy1"));
 
             // Set desired version = 9999.0.0
             SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
@@ -218,6 +212,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -225,25 +220,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.2"));
-
-            // Add a production dummy version in CWD
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.1");
-
-            // Version: 9999.0.0
-            // CWD: 9999.0.1, 9999.0.0-dummy1
-            // User: 9999.0.2, 9999.0.0-dummy2
-            // Exe: 9999.0.0, 9999.0.0-dummy0
-            // Expected: 9999.0.1 from cwd
-            dotnet.Exec(appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.1"));
 
             // Remove dummy folders from user dir
             DeleteAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.2", "9999.0.0-dummy2");
@@ -259,18 +235,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             // Add some dummy versions
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.0.1", "9999.0.0-dummy0");
             AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.2", "9999.0.0-dummy2");
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.3", "9999.0.0-dummy3");
 
             // Version: 9999.0.0 (through --fx-version arg)
-            // CWD: 9999.0.1, 9999.0.0-dummy0
             // User: 9999.0.2, 9999.0.0-dummy2
             // Exe: 9999.0.0, 9999.0.3, 9999.0.0-dummy3
             // Expected: 9999.0.0 from exe dir
             dotnet.Exec("--fx-version", "9999.0.0", appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -280,13 +255,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0"));
 
             // Version: 9999.0.0-dummy1 (through --fx-version arg)
-            // CWD: 9999.0.1, 9999.0.0-dummy0
             // User: 9999.0.2, 9999.0.0-dummy2
             // Exe: 9999.0.0, 9999.0.3, 9999.0.0-dummy3
             // Expected: no compatible version
             dotnet.Exec("--fx-version", "9999.0.0-dummy1", appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
+                .WithUserProfile(_userDir)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute(fExpectedToFail:true)
@@ -312,15 +287,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
             SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
-            // Add some dummy versions in the cwd
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "10000.1.1", "10000.1.3");
+            // Add some dummy versions in the exe
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "10000.1.1", "10000.1.3");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled through env var
-            // CWD: 10000.1.1, 10000.1.3
-            // Expected: 10000.1.3 from cwd
+            // exe: 10000.1.1, 10000.1.3
+            // Expected: 10000.1.3 from exe
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
@@ -329,17 +305,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "10000.1.3"));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.1.3"));
 
-            // Add a dummy version in the cwd
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.1.1");
+            // Add a dummy version in the exe dir 
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.1");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled through env var
-            // CWD: 9999.1.1, 10000.1.1, 10000.1.3
-            // Expected: 9999.1.1 from cwd
+            // exe: 9999.1.1, 10000.1.1, 10000.1.3
+            // Expected: 9999.1.1 from exe
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
@@ -348,7 +325,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.1.1"));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1"));
         }
 
         [Fact]
@@ -364,15 +341,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
             SetRuntimeConfigJson(runtimeConfig, "9999.1.1");
 
-            // Add some dummy versions in the cwd
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
+            // Add some dummy versions in the exe
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
 
             // Version: 9999.1.1
             // 'Roll forward on no candidate fx' enabled through env var
-            // CWD: 9998.0.1, 9998.1.0, 9999.0.0, 9999.0.1, 9999.1.0
+            // exe: 9998.0.1, 9998.1.0, 9999.0.0, 9999.0.1, 9999.1.0
             // Expected: no compatible version
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
@@ -402,12 +380,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled through env var
-            // CWD: empty
             // User: empty
             // Exe: 9999.1.0
             // Expected: 9999.1.0 from exe dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
@@ -423,12 +401,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled through env var
-            // CWD: empty
             // User: 9999.1.1
             // Exe: 9999.1.0
             // Expected: 9999.1.1 from user dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
@@ -438,27 +416,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(_userSelectedMessage);
-
-            // Add a dummy version in the cwd
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "10000.0.0");
-
-            // Version: 9999.0.0
-            // 'Roll forward on no candidate fx' enabled through env var
-            // CWD: 10000.0.0
-            // User: 9999.1.1
-            // Exe: 9999.1.0
-            // Expected: 10000.0.0 from cwd
-            dotnet.Exec(appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(_cwdSelectedMessage);
 
             // Remove dummy folders from user dir
             DeleteAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.1.1");
@@ -479,25 +436,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             SetRuntimeConfigJson(runtimeConfig, "9999.0.0", 1);
 
             // Add some dummy versions
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.1.0");
+            AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.1.0");
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
-
-            // Version: 9999.0.0
-            // 'Roll forward on no candidate fx' enabled through runtimeconfig
-            // CWD: 9999.1.0
-            // User: empty
-            // Exe: 9999.0.0
-            // Expected: 9999.1.0 from cwd
-            dotnet.Exec(appDll)
-                .WorkingDirectory(_currentWorkingDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And
-                .HaveStdErrContaining(_cwdSelectedMessage);
 
             // Set desired version = 9999.0.0
             // Disable 'roll forward on no candidate fx' through runtimeconfig
@@ -506,12 +446,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' disabled through runtimeconfig
-            // CWD: 9999.1.0
-            // User: empty
+            // User: 9999.1.0
             // Exe: 9999.0.0
             // Expected: 9999.0.0 from exe dir
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
@@ -538,17 +478,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             SetRuntimeConfigJson(runtimeConfig, "9999.0.0", 0);
 
             // Add some dummy versions
-            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.1.0");
+            AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.1.0");
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' enabled through argument
-            // CWD: 9999.1.0
-            // User: empty
+            // User: 9999.1.0
             // Exe: 9999.0.0
-            // Expected: 9999.1.0 from cwd
+            // Expected: 9999.1.0 from User
             dotnet.Exec("--roll-forward-on-no-candidate-fx", "1", appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()
                 .CaptureStdErr()
@@ -556,7 +496,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(_cwdSelectedMessage);
+                .HaveStdErrContaining(_userSelectedMessage);
 
             // Set desired version = 9999.0.0
             // Enable 'roll forward on no candidate fx' through Runtimeconfig
@@ -564,12 +504,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' disabled through argument
-            // CWD: 9999.1.0
-            // User: empty
+            // User: 9999.1.0
             // Exe: 9999.0.0
             // Expected: 9999.0.0 from exe dir
             dotnet.Exec("--roll-forward-on-no-candidate-fx", "0", appDll)
                 .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
                 .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .CaptureStdOut()

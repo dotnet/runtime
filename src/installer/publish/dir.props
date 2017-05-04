@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
+    <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
+  </PropertyGroup>
+    
+  <ItemGroup>
+    <DebInstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).deb" />
+    <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(InstallerExtension)" />
+    <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CombinedInstallerExtension)" />
+    <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CompressedFileExtension)" />
+    <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).nupkg" />
+    <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).symbols.nupkg" />
+    <IdentityPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).nupkg" Exclude="@(RuntimePackageFile)" />
+    <IdentityPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PublishRid Include="ubuntu.14.04-x64"/>
+    <PublishRid Include="ubuntu.16.04-x64"/>
+    <PublishRid Include="ubuntu.16.10-x64"/>
+    <PublishRid Include="debian.8-x64"/>
+    <PublishRid Include="linux-x64"/>
+    <PublishRid Include="win-x86"/>
+    <PublishRid Include="win-x64"/>
+    <PublishRid Include="osx-x64"/>
+<!-- Not currently producing arm builds 
+    <PublishRid Include="win-arm"/>
+    <PublishRid Include="win-arm64"/>
+    <PublishRid Include="linux-arm"/>
+    <PublishRid Include="linux-arm64"/>
+    <PublishRid Include="ubuntu.14.04-arm"/>
+    <PublishRid Include="ubuntu.16.04-arm"/>
+    <PublishRid Include="win8-arm"/>
+    <PublishRid Include="win10-arm64"/>
+-->    
+  </ItemGroup>
+</Project>  

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Project Include="$(MSBuildThisFileDirectory)src.builds" />
+    <Project Include="$(MSBuildThisFileDirectory)pkg/dir.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)sharedFramework/sharedFramework.proj" />
+  </ItemGroup>
+
+  <!-- Tasks from buildtools for easy project.json dependency updates -->
+  <UsingTask TaskName="UpdatePackageDependencyVersion" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <Target Name="UpdatePackageDependencyVersion">
+    <UpdatePackageDependencyVersion ProjectJsons="@(ProjectJsonFiles)"
+                                    PackageId="$(PackageId)"
+                                    OldVersion="$(OldVersion)"
+                                    NewVersion="$(NewVersion)" />
+  </Target>
+  
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>
