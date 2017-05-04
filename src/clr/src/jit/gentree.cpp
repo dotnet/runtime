@@ -11162,7 +11162,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             }
             else
             {
-                printf("%d", jitGetILoffs(tree->gtStmt.gtStmtILoffsx));
+                printf("0x%x", jitGetILoffs(tree->gtStmt.gtStmtILoffsx));
             }
             break;
 
