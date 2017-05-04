@@ -161,7 +161,12 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     // 
-    internal sealed class RuntimeResourceSet : ResourceSet, IEnumerable
+#if CORECLR
+    internal
+#else
+    public  // On CoreRT, this must be public because of need to whitelist past the ReflectionBlock.
+#endif
+    sealed class RuntimeResourceSet : ResourceSet, IEnumerable
     {
         internal const int Version = 2;            // File format version number
 
