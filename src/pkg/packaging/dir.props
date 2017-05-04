@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ProductMoniker>$(PackageTargetRid)-$(HostFullVersion)</ProductMoniker>
+    <ProductMoniker>$(PackageTargetRid).$(HostFullVersion)</ProductMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
