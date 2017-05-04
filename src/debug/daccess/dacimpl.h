@@ -1432,7 +1432,6 @@ private:
     ICLRMetadataLocator * m_legacyMetaDataLocator;
 
     LONG m_refs;
-    HRESULT m_memStatus;
     MDImportsCache m_mdImports;
     ICLRDataEnumMemoryRegionsCallback* m_enumMemCb;
     ICLRDataEnumMemoryRegionsCallback2* m_updateMemCb;

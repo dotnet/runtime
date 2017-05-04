@@ -159,7 +159,6 @@ DumpDataTarget::ReadVirtual(
     size_t read = pread64(m_fd, buffer, size, (off64_t)address);
     if (read == -1)
     {
-        fprintf(stderr, "ReadVirtual FAILED %016lx %08x\n", address, size);
         *done = 0;
         return E_FAIL;
     }

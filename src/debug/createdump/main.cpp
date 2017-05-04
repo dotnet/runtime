@@ -9,6 +9,7 @@ const char* g_help = "createdump [options] pid\n"
 "-n, --normal - create minidump.\n"
 "-h, --withheap - create minidump with heap (default).\n" 
 "-t, --triage - create triage minidump.\n" 
+"-u, --full - create full core dump.\n" 
 "-d, --diag - enable diagnostic messages.\n";
 
 bool CreateDumpCommon(const char* programPath, const char* dumpPathTemplate, MINIDUMP_TYPE minidumpType, CrashInfo* crashInfo);
@@ -59,6 +60,10 @@ int __cdecl main(const int argc, const char* argv[])
             else if ((strcmp(*argv, "-t") == 0) || (strcmp(*argv, "--triage") == 0))
             {
                 minidumpType = MiniDumpFilterTriage;
+            }
+            else if ((strcmp(*argv, "-u") == 0) || (strcmp(*argv, "--full") == 0))
+            {
+                minidumpType = MiniDumpWithFullMemory;
             }
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
             {

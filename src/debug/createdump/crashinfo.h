@@ -65,9 +65,11 @@ public:
 private:
     bool GetAuxvEntries();
     bool EnumerateModuleMappings();
-    bool EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType);
     bool GetDSOInfo();
+    bool EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);
     void InsertMemoryRegion(uint64_t address, size_t size);
+    void InsertMemoryRegion(const MemoryRegion& region);
+    bool ValidRegion(const MemoryRegion& region);
     void CombineMemoryRegions();
 };
