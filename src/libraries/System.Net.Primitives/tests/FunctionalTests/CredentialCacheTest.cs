@@ -29,6 +29,7 @@ namespace System.Net.Primitives.Functional.Tests
         private static readonly string authenticationTypeBasic = "Basic";
         private static readonly string authenticationTypeDigest = "Digest";
 
+        private static readonly NetworkCredential customCredential = new NetworkCredential("username", "password");
         private static readonly NetworkCredential credential1 = new NetworkCredential("username1", "password");
         private static readonly NetworkCredential credential2 = new NetworkCredential("username2", "password");
         private static readonly NetworkCredential credential3 = new NetworkCredential("username3", "password");
@@ -104,11 +105,11 @@ namespace System.Net.Primitives.Functional.Tests
         public static IEnumerable<object[]> StandardAuthTypeWithNetworkCredential =>
             new[]
             {
-                new object[] {authenticationTypeNTLM, credential1},
-                new object[] {authenticationTypeKerberos, credential2},
-                new object[] {authenticationTypeNegotiate, credential3},
-                new object[] {authenticationTypeBasic, credential4},
-                new object[] {authenticationTypeDigest, credential5},
+                new object[] {authenticationTypeNTLM, customCredential},
+                new object[] {authenticationTypeKerberos, customCredential},
+                new object[] {authenticationTypeNegotiate, customCredential},
+                new object[] {authenticationTypeBasic, customCredential},
+                new object[] {authenticationTypeDigest, customCredential},
                 
                 new object[] {authenticationTypeNTLM, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
                 new object[] {authenticationTypeKerberos, CredentialCache.DefaultNetworkCredentials as NetworkCredential},
@@ -127,11 +128,11 @@ namespace System.Net.Primitives.Functional.Tests
         public static IEnumerable<object[]> CustomAuthTypeWithCustomNetworkCredential =>
             new[]
             {
-                new object[] {authenticationType1, credential1},
-                new object[] {authenticationType1, credential2},
+                new object[] {authenticationType1, customCredential},
+                new object[] {authenticationType1, customCredential},
                 
-                new object[] {authenticationType2, credential1},
-                new object[] {authenticationType2, credential2},
+                new object[] {authenticationType2, customCredential},
+                new object[] {authenticationType2, customCredential},
             };
 
         [Fact]
@@ -445,20 +446,19 @@ namespace System.Net.Primitives.Functional.Tests
             
             CredentialCache cc = new CredentialCache();
             
-            // .Net Framework and .Net Core have different behaviors for Digest when default NetworkCredential is used.
+            // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
             if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
             {
                 if (PlatformDetection.IsFullFramework)
                 {
-                    // In .Net framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
+                    // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
                     // if WDigestAvailable == false, it will throw ArgumentException.
-                    // In order to determine WDigestAvailable's value, we need to use a method in SSPIWrapper.cs
-                    // It's not good practice to expose low level code in test project, we will skip the test.
+                    // It is not possible to easily determine if Digest is supported or not on .NET Framework. So, we will skip the test.
                     return;
                 }
                 else
                 {
-                    // In .Net Core, WDigestAvailable will always be false (we don't support it).
+                    // In .NET Core, WDigestAvailable will always be false (we don't support it).
                     // It will always throw ArgumentException.
                     AssertExtensions.Throws<ArgumentException>("authType", () => cc.Add(uriPrefix1, authType, nc));
                     return;
@@ -490,20 +490,19 @@ namespace System.Net.Primitives.Functional.Tests
             
             CredentialCache cc = new CredentialCache();
             
-            // .Net Framework and .Net Core have different behaviors for Digest when default NetworkCredential is used.
+            // .NET Framework and .NET Core have different behaviors for Digest when default NetworkCredential is used.
             if (string.Equals(authType, authenticationTypeDigest, StringComparison.OrdinalIgnoreCase) && (nc == CredentialCache.DefaultNetworkCredentials))
             {
                 if (PlatformDetection.IsFullFramework)
                 {
-                    // In .Net framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
+                    // In .NET Framework, when authType == Digest, if WDigestAvailable == true, it will pass the validation.
                     // if WDigestAvailable == false, it will throw ArgumentException.
-                    // In order to determine WDigestAvailable's value, we need to use a method in SSPIWrapper.cs
-                    // It's not good practice to expose low level code in test project, we will skip the test.
+                    // It is not possible to easily determine if Digest is supported or not on .NET Framework. So, we will skip the test.
                     return;
                 }
                 else
                 {
-                    // In .Net Core, WDigestAvailable will always be false (we don't support it).
+                    // In .NET Core, WDigestAvailable will always be false (we don't support it).
                     // It will always throw ArgumentException.
                     AssertExtensions.Throws<ArgumentException>("authenticationType", () => cc.Add(host1, port1, authType, nc));
                     return;
