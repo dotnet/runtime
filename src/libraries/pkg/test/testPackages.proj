@@ -5,6 +5,10 @@
   <ItemGroup>
     <PackageReports Condition="'$(TestPackage)' == ''" Include="$(PackageReportDir)*.json" />
     <PackageReports Condition="'$(TestPackage)' != ''" Include="$(PackageReportDir)$(TestPackage).json" />
+    
+    <!-- support override via commandline -->
+    <RuntimesToInclude Condition="'$(RuntimesToInclude)' != ''" Include="$(RuntimesToInclude)" />
+    <TargetFrameworksToInclude Condition="'$(TargetFrameworksToInclude)' != ''" Include="$(TargetFrameworksToInclude)" />
 
     <!-- restrict restore sources to the current build and publicly shipped packages -->
     <RestoreSource Include="$(PackageOutputPath)" />
@@ -12,63 +16,127 @@
 
     <!-- needed for SQLClient's SNI packages -->
     <RestoreSource Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+
+    <!-- we don't build alpine or older OSX versions -->
+    <RuntimesToExclude Include="alpine.3.4.3-x64;osx.10.10-x64;osx.10.11-x64" />
+
+    <!-- no targeting pack was ever shipped for net463 -->
+    <TargetFrameworksToExclude Include="net463" />
   </ItemGroup>
 
   <PropertyGroup>
-    <TestProjectDir>$(PackageOutputPath)projects/</TestProjectDir>
+    <TestDir>$(PackageOutputPath)test/</TestDir>
+    <TestToolsDir>$(TestDir)tools/</TestToolsDir>
+    <TestProjectDir>$(TestDir)projects/</TestProjectDir>
     <TestPackageDir>$(BinDir)testPackages</TestPackageDir>
+    <TestDotNetPath>$(TestToolsDir)/dotnet</TestDotNetPath>
+    
+    <ProjectTemplate>project.csproj.template</ProjectTemplate>
 
-    <TestRestoreCommand>$(DotnetToolCommand)</TestRestoreCommand>
+    <TestRestoreCommand>$(TestDotNetPath)</TestRestoreCommand>
     <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
     <TestRestoreCommand>$(TestRestoreCommand) @(RestoreSource->'-s %(Identity)', ' ')</TestRestoreCommand>
     <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
+    
   </PropertyGroup>
+
+  <ItemGroup>
+    <TestSupportFiles Include="$(DotnetCliPath)\**\*.*">
+      <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
+    </TestSupportFiles>
+  </ItemGroup>
+
+  <Target Name="CreateTestDir"
+          Inputs="@(TestSupportFiles)"
+          Outputs="@(TestSupportFiles->'%(DestinationFolder)\%(FileName)%(Extension)')">
+    <MakeDir Directories="%(TestSupportFiles.DestinationFolder)" />
+    <Copy SourceFiles="@(TestSupportFiles)" DestinationFolder="%(TestSupportFiles.DestinationFolder)" />
+  </Target>
   
   <Target Name="GetSupportedPackages">
     <GetSupportedPackagesFromPackageReports PackageReports="@(PackageReports)">
       <Output TaskParameter="SupportedPackages" ItemName="SupportedPackage"/>
     </GetSupportedPackagesFromPackageReports>
+    
+    <ItemGroup>
+      <SupportedPackage>
+        <ProjectDir>$(TestProjectDir)%(Identity)/%(TargetFrameworkShort)/</ProjectDir>
+      </SupportedPackage>
+      <SupportedPackage>
+        <ProjectFile>%(ProjectDir)project.csproj</ProjectFile>
+        <AssetsFile>%(ProjectDir)obj/project.assets.json</AssetsFile>
+        <SemaphoreFile>%(ProjectDir)project.built.semaphore</SemaphoreFile>
+      </SupportedPackage>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateTargetFrameworks" AfterTargets="GetSupportedPackages">
+    <ItemGroup>
+      <_supportedPackageByTargetFramework Include="@(SupportedPackage->'%(TargetFrameworkShort)')">
+        <Original>%(Identity)</Original>
+      </_supportedPackageByTargetFramework>
+
+      <_supportedPackageByTargetFrameworkToRemove Include="@(_supportedPackageByTargetFramework)" Exclude="@(TargetFrameworksToInclude)" Condition="'@(TargetFrameworksToInclude)' != ''" />
+      <_filteredSupportedPackageByTargetFramework Include="@(_supportedPackageByTargetFramework)" Exclude="@(TargetFrameworksToExclude);@(_supportedPackageByTargetFrameworkToRemove)" />
+
+      <SupportedPackage Remove="@(SupportedPackage)" />
+      <SupportedPackage Include="@(_filteredSupportedPackageByTargetFramework->'%(Original)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="UpdateRuntimeIdentifiers" 
+          AfterTargets="GetSupportedPackages"
+          Inputs="%(SupportedPackage.Identity);%(SupportedPackage.TargetFrameworkShort)"
+          Outputs="unused">
+    <ItemGroup>
+      <_supportedPackageRuntimes Remove="@(_supportedPackageRuntimes)" />
+      <_supportedPackageRuntimes Include="%(SupportedPackage.RuntimeIdentifiers)" />
+
+      <_supportedPackageRuntimesToRemove Include="@(_supportedPackageRuntimes)" Exclude="@(RuntimesToInclude)" Condition="'@(RuntimesToInclude)' != ''" />
+      <_filteredSupportedPackageRuntimes Include="@(_supportedPackageRuntimes)" Exclude="@(RuntimesToExclude);@(_supportedPackageRuntimesToRemove)" />
+
+      <SupportedPackage>
+        <RuntimeIdentifiers>@(_filteredSupportedPackageRuntimes)</RuntimeIdentifiers>
+      </SupportedPackage>
+    </ItemGroup>
   </Target>
 
   <Target Name="GenerateProjects"
-          DependsOnTargets="GetSupportedPackages"
-          Inputs="@(PackageReports)"
-          Outputs="$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/project.json">
-    <ItemGroup>
-      <_projectRuntimes Remove="@(_projectRuntimes)" />
-      <_projectRuntimes Include="%(SupportedPackage.RuntimeIdentifiers)" />
-    </ItemGroup>
-
+          DependsOnTargets="GetSupportedPackages;CreateTestDir"
+          Inputs="@(PackageReports);$(ProjectTemplate)"
+          Outputs="%(SupportedPackage.ProjectFile)">
     <PropertyGroup>
-      <_projectDir>$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/</_projectDir>
-      <_projectFile>$(_projectDir)project.json</_projectFile>
+      <_projectDir>%(SupportedPackage.ProjectDir)/</_projectDir>
+      <_projectFile>%(SupportedPackage.ProjectFile)</_projectFile>
       <_packageId>%(SupportedPackage.Identity)</_packageId>
       <_packageVersion>%(SupportedPackage.Version)</_packageVersion>
-      <_projectTFM>%(SupportedPackage.TargetFramework)</_projectTFM>
-      <_projectRuntimeSection />
-      <_projectRuntimeSection Condition="'@(_projectRuntimes)' != ''">@(_projectRuntimes->'"%(Identity)": {}', ', ')</_projectRuntimeSection>
+      <_projectTFM>%(SupportedPackage.TargetFrameworkShort)</_projectTFM>
+      <_projectRIDs>%(SupportedPackage.RuntimeIdentifiers)</_projectRIDs>
     </PropertyGroup>
 
     <MakeDir Directories="$(_projectDir)" />
     <!-- Update project.json template -->
     <WriteLinesToFile
       File="$(_projectFile)"
-      Lines="$([System.IO.File]::ReadAllText('project.template.json').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TFM}', $(_projectTFM)).Replace('{RuntimeSection}', $(_projectRuntimeSection)))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectTemplate)').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TFM}', $(_projectTFM)).Replace('{RIDs}', '$(_projectRIDs)'))"
       Overwrite="true" />
     <Message Text="Generated $(_projectFile)" />
   </Target>
 
   <Target Name="RestoreProjects"
           DependsOnTargets="GenerateProjects"
-          Inputs="$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/project.json"
-          Outputs="$(TestProjectDir)%(SupportedPackage.Identity)'%(SupportedPackage.TargetFramework)/project.lock.json">
+          Inputs="%(SupportedPackage.ProjectFile)"
+          Outputs="%(SupportedPackage.AssetsFile)">
     <PropertyGroup>
-      <_projectDir>$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/</_projectDir>
-      <_projectFile>$(_projectDir)project.json</_projectFile>
+      <_projectDir>%(SupportedPackage.ProjectDir)/</_projectDir>
+      <_projectFile>%(SupportedPackage.ProjectFile)</_projectFile>
+      <_projectAssetsFile>%(SupportedPackage.AssetsFile)</_projectAssetsFile>
     </PropertyGroup>
 
-    <Message Importance="High" Text="Testing $(_projectFile)" />
+    <Message Importance="High" Text="Restoring $(_projectFile)" />
     <Exec Command="$(TestRestoreCommand) &quot;$(_projectFile)&quot;" StandardOutputImportance="Low" ContinueOnError="ErrorAndContinue" />
+    <Touch Files="$(_projectAssetsFile)" />
+  </Target>
   </Target>
 
   <Target Name="Build" DependsOnTargets="RestoreProjects" />
