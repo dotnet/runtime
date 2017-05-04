@@ -259,6 +259,11 @@ void CodeGen::genReturn(GenTreePtr treeNode)
     GenTreePtr op1        = treeNode->gtGetOp1();
     var_types  targetType = treeNode->TypeGet();
 
+    // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in the return
+    // register, if it's not already there. The processing is the same as GT_RETURN. For filters, the IL spec says the
+    // result is type int32. Further, the only legal values are 0 or 1; the use of other values is "undefined".
+    assert(!treeNode->OperIs(GT_RETFILT) || (targetType == TYP_VOID) || (targetType == TYP_INT));
+
 #ifdef DEBUG
     if (targetType == TYP_VOID)
     {
@@ -311,398 +316,6 @@ void CodeGen::genReturn(GenTreePtr treeNode)
                 inst_RV_RV(ins_Move_Extend(targetType, true), retReg, op1->gtRegNum, targetType);
             }
         }
-    }
-}
-
-//------------------------------------------------------------------------
-// genCodeForTreeNode Generate code for a single node in the tree.
-//
-// Preconditions:
-//    All operands have been evaluated.
-//
-void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
-{
-    regNumber targetReg  = treeNode->gtRegNum;
-    var_types targetType = treeNode->TypeGet();
-    emitter*  emit       = getEmitter();
-
-#ifdef DEBUG
-    lastConsumedNode = nullptr;
-    if (compiler->verbose)
-    {
-        unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
-        compiler->gtDispLIRNode(treeNode, "Generating: ");
-    }
-#endif
-
-    // contained nodes are part of their parents for codegen purposes
-    // ex : immediates, most LEAs
-    if (treeNode->isContained())
-    {
-        return;
-    }
-
-    switch (treeNode->gtOper)
-    {
-        case GT_LCLHEAP:
-            genLclHeap(treeNode);
-            break;
-
-        case GT_CNS_INT:
-        case GT_CNS_DBL:
-            genSetRegToConst(targetReg, targetType, treeNode);
-            genProduceReg(treeNode);
-            break;
-
-        case GT_NOT:
-        case GT_NEG:
-            genCodeForNegNot(treeNode);
-            break;
-
-        case GT_OR:
-        case GT_XOR:
-        case GT_AND:
-            assert(varTypeIsIntegralOrI(treeNode));
-            __fallthrough;
-
-        case GT_ADD_LO:
-        case GT_ADD_HI:
-        case GT_SUB_LO:
-        case GT_SUB_HI:
-        case GT_ADD:
-        case GT_SUB:
-        case GT_MUL:
-            genConsumeOperands(treeNode->AsOp());
-            genCodeForBinary(treeNode);
-            break;
-
-        case GT_LSH:
-        case GT_RSH:
-        case GT_RSZ:
-        case GT_ROR:
-            genCodeForShift(treeNode);
-            break;
-
-        case GT_LSH_HI:
-        case GT_RSH_LO:
-            genCodeForShiftLong(treeNode);
-            break;
-
-        case GT_CAST:
-            // Cast is never contained (?)
-            noway_assert(targetReg != REG_NA);
-
-            if (varTypeIsFloating(targetType) && varTypeIsFloating(treeNode->gtOp.gtOp1))
-            {
-                // Casts float/double <--> double/float
-                genFloatToFloatCast(treeNode);
-            }
-            else if (varTypeIsFloating(treeNode->gtOp.gtOp1))
-            {
-                // Casts float/double --> int32/int64
-                genFloatToIntCast(treeNode);
-            }
-            else if (varTypeIsFloating(targetType))
-            {
-                // Casts int32/uint32/int64/uint64 --> float/double
-                genIntToFloatCast(treeNode);
-            }
-            else
-            {
-                // Casts int <--> int
-                genIntToIntCast(treeNode);
-            }
-            // The per-case functions call genProduceReg()
-            break;
-
-        case GT_LCL_FLD_ADDR:
-        case GT_LCL_VAR_ADDR:
-        {
-            // Address of a local var.  This by itself should never be allocated a register.
-            // If it is worth storing the address in a register then it should be cse'ed into
-            // a temp and that would be allocated a register.
-            noway_assert(targetType == TYP_BYREF);
-            noway_assert(!treeNode->InReg());
-
-            inst_RV_TT(INS_lea, targetReg, treeNode, 0, EA_BYREF);
-        }
-            genProduceReg(treeNode);
-            break;
-
-        case GT_LCL_FLD:
-            genCodeForLclFld(treeNode->AsLclFld());
-            break;
-
-        case GT_LCL_VAR:
-            genCodeForLclVar(treeNode->AsLclVar());
-            break;
-
-        case GT_STORE_LCL_FLD:
-            genCodeForStoreLclFld(treeNode->AsLclFld());
-            break;
-
-        case GT_STORE_LCL_VAR:
-            genCodeForStoreLclVar(treeNode->AsLclVar());
-            break;
-
-        case GT_RETFILT:
-            // A void GT_RETFILT is the end of a finally. For non-void filter returns we need to load the result in
-            // the return register, if it's not already there. The processing is the same as GT_RETURN.
-            if (targetType != TYP_VOID)
-            {
-                // For filters, the IL spec says the result is type int32. Further, the only specified legal values
-                // are 0 or 1, with the use of other values "undefined".
-                assert(targetType == TYP_INT);
-            }
-
-            __fallthrough;
-
-        case GT_RETURN:
-            genReturn(treeNode);
-            break;
-
-        case GT_LEA:
-            // if we are here, it is the case where there is an LEA that cannot
-            // be folded into a parent instruction
-            genLeaInstruction(treeNode->AsAddrMode());
-            break;
-
-        case GT_IND:
-            genConsumeAddress(treeNode->AsIndir()->Addr());
-            emit->emitInsLoadStoreOp(ins_Load(targetType), emitTypeSize(treeNode), targetReg, treeNode->AsIndir());
-            genProduceReg(treeNode);
-            break;
-
-        case GT_MOD:
-        case GT_UDIV:
-        case GT_UMOD:
-            // We shouldn't be seeing GT_MOD on float/double args as it should get morphed into a
-            // helper call by front-end.  Similarly we shouldn't be seeing GT_UDIV and GT_UMOD
-            // on float/double args.
-            noway_assert(!varTypeIsFloating(treeNode));
-            __fallthrough;
-
-        case GT_DIV:
-        {
-            genConsumeOperands(treeNode->AsOp());
-
-            noway_assert(targetReg != REG_NA);
-
-            GenTreePtr  dst    = treeNode;
-            GenTreePtr  src1   = treeNode->gtGetOp1();
-            GenTreePtr  src2   = treeNode->gtGetOp2();
-            instruction ins    = genGetInsForOper(treeNode->OperGet(), targetType);
-            emitAttr    attr   = emitTypeSize(treeNode);
-            regNumber   result = REG_NA;
-
-            // dst can only be a reg
-            assert(!dst->isContained());
-
-            // src can be only reg
-            assert(!src1->isContained() || !src2->isContained());
-
-            if (varTypeIsFloating(targetType))
-            {
-                // Floating point divide never raises an exception
-
-                emit->emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
-            }
-            else // an signed integer divide operation
-            {
-                // TODO-ARM-Bug: handle zero division exception.
-
-                emit->emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
-            }
-
-            genProduceReg(treeNode);
-        }
-        break;
-
-        case GT_INTRINSIC:
-            genIntrinsic(treeNode);
-            break;
-
-        case GT_EQ:
-        case GT_NE:
-        case GT_LT:
-        case GT_LE:
-        case GT_GE:
-        case GT_GT:
-            genCodeForCompare(treeNode->AsOp());
-            break;
-
-        case GT_JTRUE:
-            genCodeForJumpTrue(treeNode);
-            break;
-
-        case GT_JCC:
-        {
-            GenTreeJumpCC* jcc = treeNode->AsJumpCC();
-
-            assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
-
-            CompareKind  compareKind = ((jcc->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-            emitJumpKind jumpKind    = genJumpKindForOper(jcc->gtCondition, compareKind);
-
-            inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
-        }
-        break;
-
-        case GT_RETURNTRAP:
-            genCodeForReturnTrap(treeNode->AsOp());
-            break;
-
-        case GT_STOREIND:
-            genCodeForStoreInd(treeNode->AsStoreInd());
-            break;
-
-        case GT_COPY:
-            // This is handled at the time we call genConsumeReg() on the GT_COPY
-            break;
-
-        case GT_LIST:
-        case GT_FIELD_LIST:
-        case GT_ARGPLACE:
-            // Nothing to do
-            break;
-
-        case GT_PUTARG_STK:
-            genPutArgStk(treeNode->AsPutArgStk());
-            break;
-
-        case GT_PUTARG_REG:
-            genPutArgReg(treeNode->AsOp());
-            break;
-
-        case GT_CALL:
-            genCallInstruction(treeNode->AsCall());
-            break;
-
-        case GT_LOCKADD:
-        case GT_XCHG:
-        case GT_XADD:
-            genLockedInstructions(treeNode->AsOp());
-            break;
-
-        case GT_MEMORYBARRIER:
-            instGen_MemoryBarrier();
-            break;
-
-        case GT_CMPXCHG:
-            NYI("GT_CMPXCHG");
-            genProduceReg(treeNode);
-            break;
-
-        case GT_RELOAD:
-            // do nothing - reload is just a marker.
-            // The parent node will call genConsumeReg on this which will trigger the unspill of this node's child
-            // into the register specified in this node.
-            break;
-
-        case GT_NOP:
-            break;
-
-        case GT_NO_OP:
-            if (treeNode->gtFlags & GTF_NO_OP_NO)
-            {
-                noway_assert(!"GTF_NO_OP_NO should not be set");
-            }
-            else
-            {
-                instGen(INS_nop);
-            }
-            break;
-
-        case GT_ARR_BOUNDS_CHECK:
-            genRangeCheck(treeNode);
-            break;
-
-        case GT_PHYSREG:
-            if (treeNode->gtRegNum != treeNode->AsPhysReg()->gtSrcReg)
-            {
-                inst_RV_RV(INS_mov, treeNode->gtRegNum, treeNode->AsPhysReg()->gtSrcReg, targetType);
-
-                genTransferRegGCState(treeNode->gtRegNum, treeNode->AsPhysReg()->gtSrcReg);
-            }
-            break;
-
-        case GT_PHYSREGDST:
-            break;
-
-        case GT_NULLCHECK:
-        {
-            assert(!treeNode->gtOp.gtOp1->isContained());
-            regNumber addrReg = genConsumeReg(treeNode->gtOp.gtOp1);
-            emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, targetReg, addrReg, 0);
-        }
-        break;
-
-        case GT_CATCH_ARG:
-
-            noway_assert(handlerGetsXcptnObj(compiler->compCurBB->bbCatchTyp));
-
-            /* Catch arguments get passed in a register. genCodeForBBlist()
-               would have marked it as holding a GC object, but not used. */
-
-            noway_assert(gcInfo.gcRegGCrefSetCur & RBM_EXCEPTION_OBJECT);
-            genConsumeReg(treeNode);
-            break;
-
-        case GT_PINVOKE_PROLOG:
-            noway_assert(((gcInfo.gcRegGCrefSetCur | gcInfo.gcRegByrefSetCur) & ~fullIntArgRegMask()) == 0);
-
-            // the runtime side requires the codegen here to be consistent
-            emit->emitDisableRandomNops();
-            break;
-
-        case GT_LABEL:
-            genPendingCallLabel       = genCreateTempLabel();
-            treeNode->gtLabel.gtLabBB = genPendingCallLabel;
-            emit->emitIns_J_R(INS_adr, EA_PTRSIZE, genPendingCallLabel, treeNode->gtRegNum);
-            break;
-
-        case GT_CLS_VAR_ADDR:
-            emit->emitIns_R_C(INS_lea, EA_PTRSIZE, targetReg, treeNode->gtClsVar.gtClsVarHnd, 0);
-            genProduceReg(treeNode);
-            break;
-
-        case GT_STORE_DYN_BLK:
-        case GT_STORE_BLK:
-            genCodeForStoreBlk(treeNode->AsBlk());
-            break;
-
-        case GT_JMPTABLE:
-            genJumpTable(treeNode);
-            break;
-
-        case GT_SWITCH_TABLE:
-            genTableBasedSwitch(treeNode);
-            break;
-
-        case GT_ARR_INDEX:
-            genCodeForArrIndex(treeNode->AsArrIndex());
-            break;
-
-        case GT_ARR_OFFSET:
-            genCodeForArrOffset(treeNode->AsArrOffs());
-            break;
-
-        case GT_IL_OFFSET:
-            // Do nothing; these nodes are simply markers for debug info.
-            break;
-
-        default:
-        {
-#ifdef DEBUG
-            char message[256];
-            _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
-                        GenTree::NodeName(treeNode->OperGet()));
-            NYIRAW(message);
-#else
-            NYI("unimplemented node");
-#endif
-        }
-        break;
     }
 }
 
@@ -1168,45 +781,6 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     NYI_ARM("genCodeForInitBlkUnroll");
 }
 
-void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
-{
-    if (blkOp->gtBlkOpGcUnsafe)
-    {
-        getEmitter()->emitDisableGC();
-    }
-    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
-
-    switch (blkOp->gtBlkOpKind)
-    {
-        case GenTreeBlk::BlkOpKindHelper:
-            if (isCopyBlk)
-            {
-                genCodeForCpBlk(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlk(blkOp);
-            }
-            break;
-        case GenTreeBlk::BlkOpKindUnroll:
-            if (isCopyBlk)
-            {
-                genCodeForCpBlkUnroll(blkOp);
-            }
-            else
-            {
-                genCodeForInitBlkUnroll(blkOp);
-            }
-            break;
-        default:
-            unreached();
-    }
-    if (blkOp->gtBlkOpGcUnsafe)
-    {
-        getEmitter()->emitEnableGC();
-    }
-}
-
 //------------------------------------------------------------------------
 // genCodeForNegNot: Produce code for a GT_NEG/GT_NOT node.
 //
@@ -1486,6 +1060,58 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 }
 
 //------------------------------------------------------------------------
+// genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV/GT_MOD/GT_UMOD node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForDivMod(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_DIV, GT_UDIV, GT_MOD, GT_UMOD));
+
+    // We shouldn't be seeing GT_MOD on float/double args as it should get morphed into a
+    // helper call by front-end. Similarly we shouldn't be seeing GT_UDIV and GT_UMOD
+    // on float/double args.
+    noway_assert(tree->OperIs(GT_DIV) || !varTypeIsFloating(tree));
+
+    var_types targetType = tree->TypeGet();
+    regNumber targetReg  = tree->gtRegNum;
+    emitter*  emit       = getEmitter();
+
+    genConsumeOperands(tree);
+
+    noway_assert(targetReg != REG_NA);
+
+    GenTreePtr  dst    = tree;
+    GenTreePtr  src1   = tree->gtGetOp1();
+    GenTreePtr  src2   = tree->gtGetOp2();
+    instruction ins    = genGetInsForOper(tree->OperGet(), targetType);
+    emitAttr    attr   = emitTypeSize(tree);
+    regNumber   result = REG_NA;
+
+    // dst can only be a reg
+    assert(!dst->isContained());
+
+    // src can be only reg
+    assert(!src1->isContained() || !src2->isContained());
+
+    if (varTypeIsFloating(targetType))
+    {
+        // Floating point divide never raises an exception
+
+        emit->emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+    }
+    else // an signed integer divide operation
+    {
+        // TODO-ARM-Bug: handle zero division exception.
+
+        emit->emitIns_R_R_R(ins, attr, dst->gtRegNum, src1->gtRegNum, src2->gtRegNum);
+    }
+
+    genProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
 //
 // Arguments:
@@ -1563,6 +1189,22 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             genProduceReg(tree);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForJcc: Produce code for a GT_JCC node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForJcc(GenTreeJumpCC* tree)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+    emitJumpKind jumpKind    = genJumpKindForOper(tree->gtCondition, compareKind);
+
+    inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
 }
 
 //------------------------------------------------------------------------
