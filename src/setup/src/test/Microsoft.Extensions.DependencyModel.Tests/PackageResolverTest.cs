@@ -76,7 +76,6 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             assemblies.Should().Contain(Path.Combine(packagePath, F.SecondAssemblyPath));
         }
 
-
         [Fact]
         public void FailsWhenOneOfAssembliesNotFound()
         {
@@ -89,10 +88,33 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var resolver = new PackageCompilationAssemblyResolver(fileSystem,  new string[] { PackagesPath });
             var assemblies = new List<string>();
 
-            var exception = Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, assemblies));
-            exception.Message.Should()
-                .Contain(F.SecondAssemblyPath)
-                .And.Contain(library.Name);
+            resolver.TryResolveAssemblyPaths(library, assemblies)
+                .Should().BeFalse();
+
+            assemblies.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void KeepsLookingWhenOneOfAssembliesNotFound()
+        {
+            var packagePath1 = GetPackagesPath(F.DefaultPackageName, F.DefaultVersion);
+            var secondPath = "secondPath";
+            var packagePath2 = GetPackagesPath(secondPath, F.DefaultPackageName, F.DefaultVersion);
+            var fileSystem = FileSystemMockBuilder.Create()
+                .AddFiles(packagePath1, F.DefaultAssemblyPath)
+                .AddFiles(packagePath2, F.DefaultAssemblyPath, F.SecondAssemblyPath)
+                .Build();
+            var library = F.Create(assemblies: F.TwoAssemblies);
+
+            var resolver = new PackageCompilationAssemblyResolver(fileSystem, new string[] { PackagesPath, secondPath });
+            var assemblies = new List<string>();
+
+            resolver.TryResolveAssemblyPaths(library, assemblies)
+                .Should().BeTrue();
+
+            assemblies.Should().HaveCount(2);
+            assemblies.Should().Contain(Path.Combine(packagePath2, F.DefaultAssemblyPath));
+            assemblies.Should().Contain(Path.Combine(packagePath2, F.SecondAssemblyPath));
         }
 
         private static string GetPackagesPath(string id, string version)
