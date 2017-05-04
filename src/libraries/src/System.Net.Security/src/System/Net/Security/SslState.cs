@@ -737,9 +737,7 @@ namespace System.Net.Security
                     KeyExchangeStrength);
             }
         }
-        //
-        //
-        //
+
         internal void InternalEndProcessAuthentication(LazyAsyncResult lazyResult)
         {
             // No "artificial" timeouts implemented so far, InnerStream controls that.
