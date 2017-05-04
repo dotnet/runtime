@@ -14385,6 +14385,7 @@ DECLARE_API(CreateDump)
     BOOL normal = FALSE;
     BOOL withHeap = FALSE;
     BOOL triage = FALSE;
+    BOOL full = FALSE;
     BOOL diag = FALSE;
 
     size_t nArg = 0;
@@ -14393,6 +14394,7 @@ DECLARE_API(CreateDump)
         {"-n", &normal, COBOOL, FALSE},
         {"-h", &withHeap, COBOOL, FALSE},
         {"-t", &triage, COBOOL, FALSE},
+        {"-f", &full, COBOOL, FALSE},
         {"-d", &diag, COBOOL, FALSE},
     };
     CMDValue arg[] = 
@@ -14407,7 +14409,11 @@ DECLARE_API(CreateDump)
     ULONG pid = 0; 
     g_ExtSystem->GetCurrentProcessId(&pid);
 
-    if (withHeap)
+    if (full)
+    {
+        minidumpType = MiniDumpWithFullMemory;
+    }
+    else if (withHeap)
     {
         minidumpType = MiniDumpWithPrivateReadWriteMemory;
     }

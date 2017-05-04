@@ -36,35 +36,12 @@ public:
         assert((end & ~PAGE_MASK) == 0);
     }
 
-    const uint32_t Permissions() const
-    {
-        return m_permissions;
-    }
-
-    const uint64_t StartAddress() const
-    {
-        return m_startAddress;
-    }
-
-    const uint64_t EndAddress() const
-    {
-        return m_endAddress;
-    }
-
-    const uint64_t Size() const 
-    {
-        return m_endAddress - m_startAddress;
-    }
-
-    const uint64_t Offset() const
-    {
-        return m_offset;
-    }
-
-    const char* FileName() const
-    {
-        return m_fileName;
-    }
+    const uint32_t Permissions() const { return m_permissions; }
+    const uint64_t StartAddress() const { return m_startAddress; }
+    const uint64_t EndAddress() const { return m_endAddress; }
+    const uint64_t Size() const { return m_endAddress - m_startAddress; }
+    const uint64_t Offset() const { return m_offset; }
+    const char* FileName() const { return m_fileName; }
 
     bool operator<(const MemoryRegion& rhs) const
     {
@@ -88,10 +65,10 @@ public:
     void Print() const
     {
         if (m_fileName != nullptr) {
-            TRACE("%016lx - %016lx (%04ld) %016lx %x %s\n", m_startAddress, m_endAddress, (Size() >> PAGE_SHIFT), m_offset, m_permissions, m_fileName);
+            TRACE("%016lx - %016lx (%06ld) %016lx %x %s\n", m_startAddress, m_endAddress, (Size() >> PAGE_SHIFT), m_offset, m_permissions, m_fileName);
         }
         else {
-            TRACE("%016lx - %016lx (%04ld) %02x\n", m_startAddress, m_endAddress, (Size() >> PAGE_SHIFT), m_permissions);
+            TRACE("%016lx - %016lx (%06ld) %x\n", m_startAddress, m_endAddress, (Size() >> PAGE_SHIFT), m_permissions);
         }
     }
 };

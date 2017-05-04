@@ -623,6 +623,7 @@ createdump [options] [dumpFileName]
 -n - create minidump.
 -h - create minidump with heap (default).
 -t - create triage minidump.
+-f - create full core dump (everything).
 -d - enable diagnostic messages.
 
 Creates a platform (ELF core on Linux, etc.) minidump. The pid can be placed in the dump 

@@ -6305,8 +6305,6 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
         status = m_enumMemCb->EnumMemoryRegion(TO_CDADDR(addr), enumSize);
         if (status != S_OK)
         {
-            m_memStatus = status;
-
             // If dump generation was cancelled, allow us to throw upstack so we'll actually quit.
             if ((fExpectSuccess) && (status != COR_E_OPERATIONCANCELED))
                 return false;
