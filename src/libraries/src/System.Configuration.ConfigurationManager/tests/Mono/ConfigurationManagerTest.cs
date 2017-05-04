@@ -130,6 +130,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18831")]
         public void exePath_UserLevelNone()
         {
             string name = TestUtil.ThisApplicationPath;
