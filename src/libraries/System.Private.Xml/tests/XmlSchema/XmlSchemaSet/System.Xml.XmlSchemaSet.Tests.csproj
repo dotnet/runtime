@@ -40,7 +40,6 @@
     <Compile Include="TC_SchemaSet_ValidationEventHandler.cs" />
     <Compile Include="TC_SchemaSet_XmlNameTable.cs" />
     <Compile Include="TC_SchemaSet_XmlResolver.cs" />
-    <Compile Include="XmlSystemPathResolverTests.cs" />
     <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
