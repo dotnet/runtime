@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -302,9 +303,8 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeConnectToHostString : DualModeBase
     {
-        [Theory]
+        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -321,9 +321,8 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv6", "true")]
     public class DualModeConnectToDnsEndPoint : DualModeBase
     {
-        [Theory]
+        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -614,9 +613,8 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -640,9 +638,8 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
-        [ActiveIssue(4002, TestPlatforms.AnyUnix)]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
             int port;
@@ -2445,6 +2442,21 @@ namespace System.Net.Sockets.Tests
         {
             _log = TestLogging.GetInstance();
             Assert.True(Capability.IPv4Support() && Capability.IPv6Support());
+        }
+
+        public static bool LocalhostIsBothIPv4AndIPv6 { get; } = GetLocalhostIsBothIPv4AndIPv6();
+
+        private static bool GetLocalhostIsBothIPv4AndIPv6()
+        {
+            try
+            {
+                IPAddress[] addresses = Dns.GetHostAddresses("localhost");
+                return
+                    addresses.Any(ip => ip.AddressFamily == AddressFamily.InterNetwork) &&
+                    addresses.Any(ip => ip.AddressFamily == AddressFamily.InterNetworkV6);
+            }
+            catch { }
+            return false;
         }
 
         protected static void AssertDualModeEnabled(Socket socket, IPAddress listenOn)
