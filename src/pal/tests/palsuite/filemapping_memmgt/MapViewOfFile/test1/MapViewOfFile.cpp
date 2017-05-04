@@ -14,13 +14,26 @@
 **============================================================*/
 #include <palsuite.h>
 #define MAPPINGSIZE 8192
+
+// This test is special - it doesn't work when the file is created on a tmpfs, like the /tmp folder
+// that is the default location for running PAL tests. The reason is that on such filesystem,
+// it is not possible to create file with FILE_FLAG_NO_BUFFERING.
+// So we explicitly use the /var/tmp that cannot be on tmpfs, since it it persistent over reboots.
+
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/var/tmp/"
+#else
+// On Android, "/var/tmp/" doesn't exist; temporary files should go to /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp/"
+#endif
+
 int __cdecl main(int argc, char *argv[])
 {
 
     HANDLE  hFile = INVALID_HANDLE_VALUE;
     LPSTR   buf = NULL;
     CHAR    ch[MAPPINGSIZE];
-    CHAR    lpFileName[] = "test.tmp";
+    CHAR    lpFilePath[MAX_PATH];
     DWORD   dwBytesWritten = 0;
     DWORD   dwInitialSize = 0;
     DWORD   dwFinalSize = 0;
@@ -36,9 +49,11 @@ int __cdecl main(int argc, char *argv[])
         return FAIL;
     }
 
+    GetTempFileName(TEMP_DIRECTORY_PATH, "tst", 0, lpFilePath);
+
     /* Create a file handle with CreateFile.
      */
-    hFile = CreateFile( lpFileName,
+    hFile = CreateFile( lpFilePath,
                         GENERIC_WRITE|GENERIC_READ,
                         FILE_SHARE_READ|FILE_SHARE_WRITE,
                         NULL,
@@ -49,7 +64,7 @@ int __cdecl main(int argc, char *argv[])
     if (hFile == INVALID_HANDLE_VALUE)
     {
         Fail( "ERROR: %u :unable to create file \"%s\".\n",
-              GetLastError(), lpFileName);
+              GetLastError(), lpFilePath);
     }
 
     /* Get the initial size of file, for latter tests.
@@ -58,7 +73,7 @@ int __cdecl main(int argc, char *argv[])
     if ( INVALID_FILE_SIZE == dwInitialSize )
     {
         Fail("ERROR:%u: The created file \"%s\" has an invalid "
-             "file size.\n",GetLastError(),lpFileName);
+             "file size.\n",GetLastError(),lpFilePath);
     }
 
     /*
@@ -220,6 +235,9 @@ int __cdecl main(int argc, char *argv[])
     }
     
     VirtualFree( buf, 0, MEM_RELEASE );
+
+    DeleteFile(lpFilePath);
+
     PAL_Terminate();
     return PASS;
 }
