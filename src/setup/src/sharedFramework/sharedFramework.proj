@@ -23,14 +23,12 @@
     
     <PropertyGroup>
       <SharedFrameworkSourceRoot>$(MSBuildThisFileDirectory)framework</SharedFrameworkSourceRoot>
-
-      <RestoreArgs>--source $(PackagesOutDir) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</RestoreArgs>
       <CommonSharedFrameworkArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(TargetRid) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
     </PropertyGroup>  
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
 
-    <Exec Command="$(DotnetSdkToolCommand) restore --verbosity:diag $(RestoreArgs) $(CommonSharedFrameworkArgs)"
+    <Exec Command="$(SdkRestoreCommand) --source $(PackagesOutDir) $(CommonSharedFrameworkArgs)"
           WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
