@@ -28,11 +28,11 @@
                                  DestinationDirectory="$(WixToolsDir)"
                                  OverwriteDestination="false" />
 
-      <GenerateGuidFromName Name="$(PackagesOutDir)$(SharedHostInstallerFile)">
+      <GenerateGuidFromName Name="$(SharedHostInstallerFile)">
         <Output TaskParameter="GeneratedGui" PropertyName="SharedHostUpgradeCode" />
       </GenerateGuidFromName>
 
-      <GenerateGuidFromName Name="$(PackagesOutDir)$(HostFxrInstallerFile)">
+      <GenerateGuidFromName Name="$(HostFxrInstallerFile)">
         <Output TaskParameter="GeneratedGui" PropertyName="HostFxrUpgradeCode" />
       </GenerateGuidFromName>
 
@@ -40,20 +40,20 @@
         <WixOutputs Include="$(WixObjRoot)host">
             <InputDir>$(SharedHostPublishRoot)</InputDir>
             <BrandName>$(SharedHostBrandName)</BrandName>
-            <InstallerName>$(PackagesOutDir)$(SharedHostInstallerFile)</InstallerName>
+            <InstallerName>$(SharedHostInstallerFile)</InstallerName>
             <UpgradeCode>$(SharedHostUpgradeCode)</UpgradeCode>
         </WixOutputs>
         <WixOutputs Include="$(WixObjRoot)hostfxr">
             <InputDir>$(HostFxrPublishRoot)</InputDir>
             <BrandName>$(HostFxrBrandName)</BrandName>
-            <InstallerName>$(PackagesOutDir)$(HostFxrInstallerFile)</InstallerName>
+            <InstallerName>$(HostFxrInstallerFile)</InstallerName>
             <UpgradeCode>$(HostFxrUpgradeCode)</UpgradeCode>
         </WixOutputs>
         <!-- shared framework has extra arguments so it needs to be in a separate group -->
         <WixOutputs2 Include="$(WixObjRoot)sharedframework">
             <InputDir>$(SharedFrameworkPublishRoot)</InputDir>
             <BrandName>$(SharedFrameworkBrandName)</BrandName>
-            <InstallerName>$(PackagesOutDir)$(SharedFrameworkInstallerFile)</InstallerName>
+            <InstallerName>$(SharedFrameworkInstallerFile)</InstallerName>
         </WixOutputs2>
       </ItemGroup>
 
@@ -69,7 +69,7 @@
         <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
       </GenerateMsiVersion>
 
-      <GenerateGuidFromName Name="$(PackagesOutDir)$(SharedFrameworkInstallerFile)">
+      <GenerateGuidFromName Name="$(SharedFrameworkInstallerFile)">
         <Output TaskParameter="GeneratedGui" PropertyName="SharedFxUpgradeCode" />
       </GenerateGuidFromName>
 
@@ -89,10 +89,10 @@
           Condition="'$(OSGroup)' == 'Windows_NT'">
      <PropertyGroup>
         <SharedFxBundleScript>$(WindowsScriptRoot)sharedframework\generatebundle.ps1</SharedFxBundleScript>
-        <ShareFXMsi>$(PackagesOutDir)$(SharedFrameworkInstallerFile)</ShareFXMsi>
-        <HostMsi>$(PackagesOutDir)$(SharedHostInstallerFile)</HostMsi>
-        <HostFxrMsi>$(PackagesOutDir)$(HostFxrInstallerFile)</HostFxrMsi>
-        <SharedBundle>$(PackagesOutDir)$(CombinedInstallerFile)</SharedBundle>
+        <ShareFXMsi>$(SharedFrameworkInstallerFile)</ShareFXMsi>
+        <HostMsi>$(SharedHostInstallerFile)</HostMsi>
+        <HostFxrMsi>$(HostFxrInstallerFile)</HostFxrMsi>
+        <SharedBundle>$(CombinedInstallerFile)</SharedBundle>
         <SharedBrandName>'Microsoft .NET Core $(ProductionVersion) - Runtime'</SharedBrandName>
         <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
      </PropertyGroup>
@@ -109,11 +109,11 @@
   </Target>
 
   <Target Name="ExtractEngineBundle">
-      <Exec Command="$(InsigniaCmd) -ib $(PackagesOutDir)$(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerEngine)" />
+      <Exec Command="$(InsigniaCmd) -ib $(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerEngine)" />
   </Target>
 
   <Target Name="ReattachEngineToBundle">
-      <Exec Command="$(InsigniaCmd) -ab $(PackagesOutDir)$(CombinedInstallerEngine) $(PackagesOutDir)$(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerFile)" />
+      <Exec Command="$(InsigniaCmd) -ab $(CombinedInstallerEngine) $(PackagesOutDir)$(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerFile)" />
   </Target>
 
 </Project>
