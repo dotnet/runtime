@@ -21,7 +21,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class DecryptTests
     {
-        [Fact]
+        public static bool IsNet462OrNewer() => (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer());
+
+        [ConditionalFact(nameof(IsNet462OrNewer))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_IssuerAndSerial()
         {
@@ -30,7 +32,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSAKeyTransfer1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNet462OrNewer))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_Ski()
         {
@@ -48,7 +50,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSAKeyTransferCapi1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNet462OrNewer))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_256()
         {
@@ -57,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSASha256KeyTransfer1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNet462OrNewer))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_384()
         {
@@ -66,7 +68,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSASha384KeyTransfer1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNet462OrNewer))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void Decrypt_512()
         {
@@ -119,7 +121,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             TestSimpleDecrypt_RoundTrip(Certificates.RSAKeyTransferCapi1, contentInfo, Oids.Aes256, SubjectIdentifierType.IssuerAndSerialNumber);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNet462OrNewer))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void DecryptMultipleRecipients()
         {
