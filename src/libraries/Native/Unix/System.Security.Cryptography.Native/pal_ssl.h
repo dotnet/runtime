@@ -332,6 +332,11 @@ Shims the SSL_CTX_set_quiet_shutdown method.
 extern "C" void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx);
 
 /*
+Shims the SSL_set_quiet_shutdown method.
+*/
+extern "C" void CryptoNative_SslSetQuietShutdown(SSL* ctx, int mode);
+
+/*
 Shims the SSL_get_client_CA_list method.
 
 Returns the list of CA names explicity set.
