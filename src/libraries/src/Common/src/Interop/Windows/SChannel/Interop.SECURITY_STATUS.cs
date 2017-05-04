@@ -47,7 +47,8 @@ internal static partial class Interop
         SecurityQosFailed = unchecked((int)0x80090332),
         SmartcardLogonRequired = unchecked((int)0x8009033E),
         UnsupportedPreauth = unchecked((int)0x80090343),
-        BadBinding = unchecked((int)0x80090346)
+        BadBinding = unchecked((int)0x80090346),
+        DowngradeDetected = unchecked((int)0x80090350)
     }
 
 #if TRACE_VERBOSE
@@ -155,6 +156,7 @@ internal static partial class Interop
                 case 0x80090346: return "SEC_E_BAD_BINDINGS";
                 case 0x80090347: return "SEC_E_MULTIPLE_ACCOUNTS";
                 case 0x80090348: return "SEC_E_NO_KERB_KEY";
+                case 0x80090350: return "SEC_E_DOWNGRADE_DETECTED";
                 case 0x80091001: return "CRYPT_E_MSG_ERROR";
                 case 0x80091002: return "CRYPT_E_UNKNOWN_ALGO";
                 case 0x80091003: return "CRYPT_E_OID_FORMAT";
