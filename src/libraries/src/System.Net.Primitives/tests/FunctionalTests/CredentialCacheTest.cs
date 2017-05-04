@@ -524,7 +524,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void AddRemove_UriAuthenticationType_Success()
         {
-            NetworkCredential nc = credential1;
+            NetworkCredential nc = customCredential;
 
             CredentialCache cc = new CredentialCache();
             cc.Add(uriPrefix1, authenticationType1, nc);
@@ -538,7 +538,7 @@ namespace System.Net.Primitives.Functional.Tests
         [Fact]
         public static void AddRemove_HostPortAuthenticationType_Success()
         {
-            NetworkCredential nc = credential1;
+            NetworkCredential nc = customCredential;
 
             CredentialCache cc = new CredentialCache();
             cc.Add(host1, port1, authenticationType1, nc);
