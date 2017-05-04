@@ -74,6 +74,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18719")]
         public static void TestVerify521_EcdhKey()
         {
             byte[] keyBlob = (byte[])TestData.s_ECDsa521KeyBlob.Clone();
