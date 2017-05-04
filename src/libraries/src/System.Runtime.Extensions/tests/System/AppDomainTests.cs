@@ -13,7 +13,8 @@ using Xunit.NetCore.Extensions;
 
 namespace System.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18718")]
+    // No appdomain in UWP or CoreRT
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18718")]
     public class AppDomainTests : RemoteExecutorTestBase
     {
         public AppDomainTests()
