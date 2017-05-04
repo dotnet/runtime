@@ -21,7 +21,7 @@ Struct-Related Issues in RyuJIT
 The following issues illustrate some of the motivation for improving the handling of value types
 (structs) in RyuJIT:
 
-* [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable] VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
+* [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/coreclr/issues/11407), also VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
  * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
    instead generates many unnecessary copies. It is addressed by full enregistration of
    structs that fit into a register:
