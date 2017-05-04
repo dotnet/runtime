@@ -140,6 +140,28 @@
           <Method Name="op_Implicit" Dynamic="Required"/>
           <Method Name="op_Explicit" Dynamic="Required"/>
         </Type>
+        <Type Name="IDisposable">
+          <Method Name="Dispose" Dynamic="Required"/>
+        </Type>
+        <Type Name="Math">
+          <Method Name="Pow" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Collections">
+        <Type Name="IEnumerator">
+           <Method Name="MoveNext" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Collections.Generic">
+        <Type Name="IEnumerable&lt;&gt;" Dynamic="Required">
+           <Method Name="GetEnumerator" Dynamic="Required"/>
+        </Type>
+        <Type Name="IEnumerator&lt;&gt;">
+           <Property Name="Current" Dynamic="Required"/>
+        </Type>
+      </Namespace>
+      <Namespace Name="System.Runtime.CompilerServices">
+        <Type Name="RuntimeWrappedException" Dynamic="Required All" Activate="Required All" />
       </Namespace>
     </Assembly>
     <Assembly Name="System.Runtime">

@@ -53,8 +53,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(16, y);
         }
 
-        [Theory, InlineData(false)]
-        public void CreateByRefAliasing(bool useInterpreter)
+        private void CreateByRefAliasing(bool useInterpreter)
         {
             ParameterExpression pX = Expression.Parameter(typeof(int).MakeByRefType());
             ParameterExpression pY = Expression.Parameter(typeof(int).MakeByRefType());
@@ -69,8 +68,16 @@ namespace System.Linq.Expressions.Tests
         [Fact, ActiveIssue(13458)]
         public void CreateByRefAliasingInterpreted()
         {
-            CreateByRefAliasing(true);
+            CreateByRefAliasing(useInterpreter: true);
         }
+
+#if FEATURE_COMPILE
+        [Fact]
+        public void CreateByRefAliasingCompiled()
+        {
+            CreateByRefAliasing(useInterpreter: false);
+        }
+#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CreateByRefReferencingReadonly(bool useInterpreter)

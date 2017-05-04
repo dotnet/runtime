@@ -39,9 +39,10 @@ namespace System.Linq.Expressions.Tests
         {
             return
                 (RuntimeWrappedException)
-                    typeof(RuntimeWrappedException).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
-                        .First(c => c.GetParameters().Length == 1)
-                        .Invoke(new[] {inner});
+                    typeof(RuntimeWrappedException).GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding,
+                                                                   null,
+                                                                   new Type[] { typeof(object) },
+                                                                   null).Invoke(new[] {inner});
         }
 
         [Theory]
@@ -1008,7 +1009,11 @@ namespace System.Linq.Expressions.Tests
                 )
             );
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(tryExp);
+#if FEATURE_COMPILE
             Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
+#else
+            lambda.Compile(true);
+#endif
         }
 
         [Theory, InlineData(true)]

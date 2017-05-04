@@ -776,8 +776,10 @@ namespace System.Linq.Expressions.Interpreter
         {
             ConstructorInfo ctor = _runtimeWrappedExceptionCtor
                 ?? (_runtimeWrappedExceptionCtor = typeof(RuntimeWrappedException)
-                .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
-                .First(c => c.GetParametersCached().Length == 1));
+                .GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding, 
+                                null, 
+                                new Type[] { typeof(object) }, 
+                                null));
             return (RuntimeWrappedException)ctor.Invoke(new [] {thrown});
         }
     }
