@@ -110,6 +110,7 @@ namespace System.Reflection.Emit
         protected override bool IsPointerImpl() { throw null; }
         protected override bool IsPrimitiveImpl() { throw null; }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsVariableBoundArray { get { throw null; } }
         protected override bool IsValueTypeImpl() { throw null; }
         public override System.Type MakeArrayType() { throw null; }
         public override System.Type MakeArrayType(int rank) { throw null; }
@@ -208,6 +209,7 @@ namespace System.Reflection.Emit
         protected override bool IsPrimitiveImpl() { throw null; }
         public override bool IsSubclassOf(System.Type c) { throw null; }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsVariableBoundArray { get { throw null; } }
         protected override bool IsValueTypeImpl() { throw null; }
         public override System.Type MakeArrayType() { throw null; }
         public override System.Type MakeArrayType(int rank) { throw null; }
@@ -415,6 +417,7 @@ namespace System.Reflection.Emit
         protected override bool IsPrimitiveImpl() { throw null; }
         public override bool IsSubclassOf(System.Type c) { throw null; }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsVariableBoundArray { get { throw null; } }
         public override System.Type MakeArrayType() { throw null; }
         public override System.Type MakeArrayType(int rank) { throw null; }
         public override System.Type MakeByRefType() { throw null; }

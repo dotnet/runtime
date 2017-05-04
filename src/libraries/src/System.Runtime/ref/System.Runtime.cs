@@ -2634,6 +2634,7 @@ namespace System
         public virtual bool IsSerializable { get { throw null; } }
         public bool IsSpecialName { get { throw null; } }
         public virtual bool IsSZArray { get { throw null; } }
+        public virtual bool IsVariableBoundArray { get { throw null; } }
         public bool IsUnicodeClass { get { throw null; } }
         public bool IsValueType { get { throw null; } }
         public bool IsVisible { get { throw null; } }
@@ -6136,6 +6137,7 @@ namespace System.Reflection
         protected override bool IsCOMObjectImpl() { throw null; }
         public override bool IsConstructedGenericType { get { throw null; } }
         public override bool IsSZArray { get { throw null; } }
+        public override bool IsVariableBoundArray { get { throw null; } }
         public override System.Type GetElementType() { throw null; }
         protected override bool HasElementTypeImpl() { throw null; }
         public override System.Type UnderlyingSystemType { get { throw null; } }
