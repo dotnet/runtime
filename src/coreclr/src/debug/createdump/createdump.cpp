@@ -29,6 +29,10 @@ CreateDumpCommon(const char* programPath, const char* dumpPathTemplate, MINIDUMP
             dumpType = "triage minidump";
             break;
 
+        case MiniDumpWithFullMemory:
+            dumpType = "full dump";
+            break;
+
         default:
             break;
     }
