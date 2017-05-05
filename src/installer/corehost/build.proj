@@ -36,7 +36,7 @@
 
     <!-- Generate Version files -->
     <ItemGroup>
-      <HostFiles Include="apphost;dotnet;hostfxr;hostpolicy" />
+      <HostFiles Include="dotnet;hostfxr;hostpolicy" />
     </ItemGroup>
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Properties="GenerateNativeVersionInfo=true;AssemblyName=%(HostFiles.Identity);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
