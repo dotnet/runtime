@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Xunit;
 
@@ -537,8 +538,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 onlineChain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
                 onlineChain.ChainPolicy.RevocationFlag = X509RevocationFlag.EntireChain;
 
-                bool valid = onlineChain.Build(cert);
-                Assert.True(valid, "Online Chain Built Validly");
+                // Attempt the online test a couple of times, in case there was just a CRL
+                // download failure.
+                const int RetryLimit = 3;
+                bool valid = false;
+
+                for (int i = 0; i < RetryLimit; i++)
+                {
+                    valid = onlineChain.Build(cert);
+
+                    if (valid)
+                    {
+                        break;
+                    }
+
+                    for (int j = 0; j < onlineChain.ChainElements.Count; j++)
+                    {
+                        X509ChainElement chainElement = onlineChain.ChainElements[j];
+
+                        // Since `NoError` gets mapped as the empty array, just look for non-empty arrays
+                        if (chainElement.ChainElementStatus.Length > 0)
+                        {
+                            X509ChainStatusFlags allFlags = chainElement.ChainElementStatus.Aggregate(
+                                X509ChainStatusFlags.NoError,
+                                (cur, status) => cur | status.Status);
+
+                            Console.WriteLine(
+                                $"{nameof(VerifyWithRevocation)}: online attempt {i} - errors at depth {j}: {allFlags}");
+                        }
+
+                        chainElement.Certificate.Dispose();
+                    }
+                }
+
+                Assert.True(valid, $"Online Chain Built Validly within {RetryLimit} tries");
 
                 // Since the network was enabled, we should get the whole chain.
                 Assert.Equal(3, onlineChain.ChainElements.Count);
