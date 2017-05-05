@@ -59,6 +59,8 @@
                    SemaphoreBlob="$(Channel)/Binaries/sharedFxPublishSemaphore"
                    Channel="$(Channel)"
                    Version="$(SharedFrameworkNugetVersion)"
+                   SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
+                   SharedHostNuGetVersion="$(HostVersion)"
                    PublishRids="@(PublishRid)"
                    FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  
