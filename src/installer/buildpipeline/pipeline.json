@@ -193,8 +193,8 @@
         {
           "Name": "Core-Setup-Publish",
           "Parameters": {
-            "PB_DistroRid": "win7-x86",
             "PB_TargetArchitecture": "x64",
+            "PB_PublishLocation": "Bin\\publishpackages",
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
