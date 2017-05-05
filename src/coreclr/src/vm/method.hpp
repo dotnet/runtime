@@ -2031,23 +2031,18 @@ public:
     // direct call to direct jump.
     //
     // We use (1) for x86 and (2) for 64-bit to get the best performance on each platform.
-    //
+    // For ARM (1) is used.
 
     TADDR AllocateCompactEntryPoints(LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
     static MethodDesc* GetMethodDescFromCompactEntryPoint(PCODE addr, BOOL fSpeculative = FALSE);
     static SIZE_T SizeOfCompactEntryPoints(int count);
 
-    static BOOL IsCompactEntryPointAtAddress(PCODE addr)
-    {
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
-        // Compact entrypoints start at odd addresses
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (addr & 1) != 0;
-#else
-        #error Unsupported platform
-#endif
-    }
+    static BOOL IsCompactEntryPointAtAddress(PCODE addr);
+
+#ifdef _TARGET_ARM_
+    static int GetCompactEntryPointMaxCount ();
+#endif // _TARGET_ARM_
 #endif // HAS_COMPACT_ENTRYPOINTS
 
     FORCEINLINE PTR_MethodTable GetMethodTable()

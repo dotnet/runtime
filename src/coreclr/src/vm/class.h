@@ -2502,6 +2502,17 @@ inline PCODE GetPreStubEntryPoint()
     return GetEEFuncEntryPoint(ThePreStub);
 }
 
+#if defined(HAS_COMPACT_ENTRYPOINTS) && defined(_TARGET_ARM_)
+
+EXTERN_C void STDCALL ThePreStubCompactARM();
+
+inline PCODE GetPreStubCompactARMEntryPoint()
+{
+    return GetEEFuncEntryPoint(ThePreStubCompactARM);
+}
+
+#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined(_TARGET_ARM_)
+
 PCODE TheUMThunkPreStub();
 
 PCODE TheVarargNDirectStub(BOOL hasRetBuffArg);

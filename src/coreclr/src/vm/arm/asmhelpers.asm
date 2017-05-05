@@ -24,6 +24,7 @@
     IMPORT UMThunkStubRareDisableWorker
     IMPORT UM2MDoADCallBack
     IMPORT PreStubWorker
+    IMPORT PreStubGetMethodDescForCompactEntryPoint
     IMPORT NDirectImportWorker
     IMPORT ObjIsInstanceOfNoGC
     IMPORT ArrayStoreCheck
@@ -567,6 +568,26 @@ UM2MThunk_WrapperHelper_ArgumentsSetup
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
         EPILOG_BRANCH_REG   r12
+
+        NESTED_END
+
+; ------------------------------------------------------------------
+
+        NESTED_ENTRY ThePreStubCompactARM
+
+        ; r12 - address of compact entry point + PC_REG_RELATIVE_OFFSET
+
+        PROLOG_WITH_TRANSITION_BLOCK
+
+        mov         r0, r12
+
+        bl          PreStubGetMethodDescForCompactEntryPoint
+
+        mov         r12, r0                                  ; pMethodDesc
+
+        EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
+
+        b          ThePreStub
 
         NESTED_END
 
