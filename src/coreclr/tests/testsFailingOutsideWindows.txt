@@ -57,6 +57,7 @@ JIT/Methodical/Boxing/xlang/_dbgsin_cs_il/_dbgsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_odbgsin_cs_il/_odbgsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_orelsin_cs_il/_orelsin_cs_il.sh
 JIT/Methodical/Boxing/xlang/_relsin_cs_il/_relsin_cs_il.sh
+JIT/Regression/JitBlue/GitHub_11408/GitHub_11408/GitHub_11408.sh
 Interop/StructMarshalling/PInvoke/MarshalStructAsLayoutExp/MarshalStructAsLayoutExp.sh
 GC/LargeMemory/Allocation/finalizertest/finalizertest.sh
 GC/LargeMemory/API/gc/reregisterforfinalize/reregisterforfinalize.sh
