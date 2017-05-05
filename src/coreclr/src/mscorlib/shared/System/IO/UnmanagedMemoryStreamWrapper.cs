@@ -34,19 +34,16 @@ namespace System.IO
 
         public override bool CanRead
         {
-            [Pure]
             get { return _unmanagedStream.CanRead; }
         }
 
         public override bool CanSeek
         {
-            [Pure]
             get { return _unmanagedStream.CanSeek; }
         }
 
         public override bool CanWrite
         {
-            [Pure]
             get { return _unmanagedStream.CanWrite; }
         }
 
@@ -55,7 +52,7 @@ namespace System.IO
             try
             {
                 if (disposing)
-                    _unmanagedStream.Close();
+                    _unmanagedStream.Dispose();
             }
             finally
             {
@@ -112,7 +109,7 @@ namespace System.IO
             }
         }
 
-        public override int Read([In, Out] byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             return _unmanagedStream.Read(buffer, offset, count);
         }
@@ -129,11 +126,8 @@ namespace System.IO
 
         public unsafe override byte[] ToArray()
         {
-            if (!_unmanagedStream._isOpen) __Error.StreamIsClosed();
-            if (!_unmanagedStream.CanRead) __Error.ReadNotSupported();
-
             byte[] buffer = new byte[_unmanagedStream.Length];
-            Buffer.Memcpy(buffer, 0, _unmanagedStream.Pointer, 0, (int)_unmanagedStream.Length);
+            _unmanagedStream.Read(buffer, 0, (int)_unmanagedStream.Length);
             return buffer;
         }
 
@@ -153,9 +147,6 @@ namespace System.IO
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
             Contract.EndContractBlock();
-
-            if (!_unmanagedStream._isOpen) __Error.StreamIsClosed();
-            if (!CanRead) __Error.ReadNotSupported();
 
             byte[] buffer = ToArray();
 
@@ -216,5 +207,4 @@ namespace System.IO
         }
     }  // class UnmanagedMemoryStreamWrapper
 }  // namespace
-
 
