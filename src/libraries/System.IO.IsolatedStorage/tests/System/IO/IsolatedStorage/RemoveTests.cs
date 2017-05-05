@@ -10,6 +10,7 @@ namespace System.IO.IsolatedStorage
     public class RemoveTests : IsoStorageTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void RemoveUserStoreForApplication()
         {
             TestHelper.WipeStores();
@@ -25,6 +26,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void RemoveUserStoreForAssembly()
         {
             TestHelper.WipeStores();
@@ -40,6 +42,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void RemoveUserStoreForDomain()
         {
             TestHelper.WipeStores();
@@ -57,6 +60,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void RemoveStoreWithContent(PresetScopes scope)
         {
             TestHelper.WipeStores();
