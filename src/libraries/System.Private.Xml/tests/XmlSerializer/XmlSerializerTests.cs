@@ -1635,42 +1635,51 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_TimeSpanAsRoot()
     {
-        Assert.StrictEqual(new TimeSpan(1, 2, 3), SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3),
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+        if (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx470OrNewer())
+        {
+            Assert.StrictEqual(new TimeSpan(1, 2, 3), SerializeAndDeserialize<TimeSpan>(new TimeSpan(1, 2, 3),
+    @"<?xml version=""1.0"" encoding=""utf-8""?>
 <TimeSpan>PT1H2M3S</TimeSpan>"));
-        Assert.StrictEqual(TimeSpan.Zero, SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero,
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+            Assert.StrictEqual(TimeSpan.Zero, SerializeAndDeserialize<TimeSpan>(TimeSpan.Zero,
+    @"<?xml version=""1.0"" encoding=""utf-8""?>
 <TimeSpan>PT0S</TimeSpan>"));
-        Assert.StrictEqual(TimeSpan.MinValue, SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue,
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+            Assert.StrictEqual(TimeSpan.MinValue, SerializeAndDeserialize<TimeSpan>(TimeSpan.MinValue,
+    @"<?xml version=""1.0"" encoding=""utf-8""?>
 <TimeSpan>-P10675199DT2H48M5.4775808S</TimeSpan>"));
-        Assert.StrictEqual(TimeSpan.MaxValue, SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue,
-@"<?xml version=""1.0"" encoding=""utf-8""?>
+            Assert.StrictEqual(TimeSpan.MaxValue, SerializeAndDeserialize<TimeSpan>(TimeSpan.MaxValue,
+    @"<?xml version=""1.0"" encoding=""utf-8""?>
 <TimeSpan>P10675199DT2H48M5.4775807S</TimeSpan>"));
+        }
     }
 
     [Fact]
     public static void Xml_TypeWithTimeSpanProperty()
     {
-        var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
-        var deserializedObj = SerializeAndDeserialize(obj,
+        if (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx470OrNewer())
+        {
+            var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
+            var deserializedObj = SerializeAndDeserialize(obj,
 @"<?xml version=""1.0"" encoding=""utf-16""?>
 <TypeWithTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
   <TimeSpanProperty>PT0.001S</TimeSpanProperty>
 </TypeWithTimeSpanProperty>");
-        Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
+            Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
+        }
     }
 
     [Fact]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
-        var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
-        var deserializedObj = SerializeAndDeserialize(obj,
-@"<?xml version=""1.0""?>
+        if (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx470OrNewer())
+        {
+            var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
+            var deserializedObj = SerializeAndDeserialize(obj,
+    @"<?xml version=""1.0""?>
 <TypeWithDefaultTimeSpanProperty xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><TimeSpanProperty2>PT1M</TimeSpanProperty2></TypeWithDefaultTimeSpanProperty>");
-        Assert.NotNull(deserializedObj);
-        Assert.Equal(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
-        Assert.Equal(obj.TimeSpanProperty2, deserializedObj.TimeSpanProperty2);
+            Assert.NotNull(deserializedObj);
+            Assert.Equal(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
+            Assert.Equal(obj.TimeSpanProperty2, deserializedObj.TimeSpanProperty2);
+        }
     }
 
     [Fact]
