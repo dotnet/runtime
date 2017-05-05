@@ -564,8 +564,6 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < members.Length; i++)
                 {
                     MemberMapping m = members[i];
-                    string memberName = m.Name;
-                    object memberValue = GetMemberValue(o, memberName);
 
                     bool isSpecified = true;
                     bool shouldPersist = true;
@@ -586,6 +584,7 @@ namespace System.Xml.Serialization
                     {
                         if (isSpecified && shouldPersist)
                         {
+                            object memberValue = GetMemberValue(o, m.Name);
                             WriteMember(memberValue, m.Attribute, m.TypeDesc, o);
                         }
                     }
@@ -594,8 +593,9 @@ namespace System.Xml.Serialization
                 for (int i = 0; i < members.Length; i++)
                 {
                     MemberMapping m = members[i];
-                    string memberName = m.Name;
-                    object memberValue = GetMemberValue(o, memberName);
+
+                    if (m.Xmlns != null)
+                        continue;
 
                     bool isSpecified = true;
                     bool shouldPersist = true;
@@ -612,9 +612,6 @@ namespace System.Xml.Serialization
                         shouldPersist = (bool)method.Invoke(o, Array.Empty<object>());
                     }
 
-                    if (m.Xmlns != null)
-                        continue;
-
                     bool checkShouldPersist = m.CheckShouldPersist && (m.Elements.Length > 0 || m.Text != null);
 
                     if (!checkShouldPersist)
@@ -622,17 +619,19 @@ namespace System.Xml.Serialization
                         shouldPersist = true;
                     }
 
-                    object choiceSource = null;
-                    if (m.ChoiceIdentifier != null)
-                    {
-                        choiceSource = GetMemberValue(o, m.ChoiceIdentifier.MemberName);
-                    }
-
                     if (isSpecified && shouldPersist)
                     {
+                        object choiceSource = null;
+                        if (m.ChoiceIdentifier != null)
+                        {
+                            choiceSource = GetMemberValue(o, m.ChoiceIdentifier.MemberName);
+                        }
+
+                        object memberValue = GetMemberValue(o, m.Name);
                         WriteMember(memberValue, choiceSource, m.ElementsSortedByDerivation, m.Text, m.ChoiceIdentifier, m.TypeDesc, true);
                     }
                 }
+
                 if (!mapping.IsSoap)
                 {
                     WriteEndElement(o);
