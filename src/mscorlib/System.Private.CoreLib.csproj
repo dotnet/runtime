@@ -152,7 +152,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ArrayList.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ListDictionaryInternal.cs" />
