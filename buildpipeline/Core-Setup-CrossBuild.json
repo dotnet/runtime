@@ -125,7 +125,7 @@
       },
       "inputs": {
         "scriptPath": "$(PB_RepoName)/scripts/docker-as-current-user.sh",
-        "args": "run --name $(PB_DockerContainerName) --rm --privileged -v $(System.DefaultWorkingDirectory)/$(PB_RepoName):$(PB_GitDirectory) -w $(PB_GitDirectory) -e HOME -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_SYMBOLS_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_SYMBOLS_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerImageName) ./build.sh $(CommonArguments) $(BuildArguments) $(PB_PortableBuild) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
+        "args": "run --name $(PB_DockerContainerName) --rm --privileged -v $(System.DefaultWorkingDirectory)/$(PB_RepoName):$(PB_GitDirectory) -w $(PB_GitDirectory) -e HOME -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e GITHUB_PASSWORD $(PB_DockerImageName) ./build.sh $(CommonArguments) $(BuildArguments) $(PB_PortableBuild) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
         "disableAutoCwd": "false",
         "cwd": "",
         "failOnStandardError": "false"
@@ -266,12 +266,6 @@
     "REPO_SERVER": {
       "value": "azure-apt-cat.cloudapp.net"
     },
-    "NUGET_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
-    },
-    "NUGET_API_KEY": {
-      "value": "PassedViaPipeBuild"
-    },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
     },
@@ -325,9 +319,6 @@
     },
     "PB_CleanAgent": {
       "value": "true"
-    },
-    "NUGET_SYMBOLS_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     }
   },
   "demands": [
