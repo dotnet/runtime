@@ -3142,6 +3142,26 @@ public static partial class DataContractSerializerTests
         }
     }
 
+    [Fact]
+    public static void DCS_KnownTypeMethodName()
+    {
+        var emp1 = new EmployeeC("Steve");
+        var emp2 = new EmployeeC("Lilian");
+        var value = new Manager("Tony")
+        {
+            age = 30,
+            emps = new EmployeeC[] { emp1, emp2 }
+        };
+
+        Manager actual = SerializeAndDeserialize(value, @"<Manager xmlns=""http://schemas.datacontract.org/2004/07/"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><Name>Tony</Name><age>30</age><emps><EmployeeC><Name>Steve</Name></EmployeeC><EmployeeC><Name>Lilian</Name></EmployeeC></emps></Manager>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.age, actual.age);
+        Assert.NotNull(actual.emps);
+        Assert.Equal(value.emps.Count(), actual.emps.Count());
+        Assert.Equal(value.emps[0].Name, actual.emps[0].Name);
+        Assert.Equal(value.emps[1].Name, actual.emps[1].Name);
+    }
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractSerializer dcs;
