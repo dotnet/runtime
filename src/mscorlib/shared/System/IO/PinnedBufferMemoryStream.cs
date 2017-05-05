@@ -26,9 +26,6 @@ namespace System.IO
         private byte[] _array;
         private GCHandle _pinningHandle;
 
-        // The new inheritance model requires a Critical default ctor since base (UnmanagedMemoryStream) has one
-        private PinnedBufferMemoryStream() : base() { }
-
         internal PinnedBufferMemoryStream(byte[] array)
         {
             Debug.Assert(array != null, "Array can't be null");
@@ -42,7 +39,7 @@ namespace System.IO
             }
 
             _array = array;
-            _pinningHandle = new GCHandle(array, GCHandleType.Pinned);
+            _pinningHandle = GCHandle.Alloc(array, GCHandleType.Pinned);
             // Now the byte[] is pinned for the lifetime of this instance.
             // But I also need to get a pointer to that block of memory...
             fixed (byte* ptr = &_array[0])
@@ -56,20 +53,11 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            if (_isOpen)
+            if (_pinningHandle.IsAllocated)
             {
                 _pinningHandle.Free();
-                _isOpen = false;
             }
-#if _DEBUG
-            // To help track down lifetime issues on checked builds, force 
-            //a full GC here.
-            if (disposing)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-#endif
+
             base.Dispose(disposing);
         }
     }

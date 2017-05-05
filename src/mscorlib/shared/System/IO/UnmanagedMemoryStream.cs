@@ -2,27 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** 
-**
-** Purpose: Create a stream over unmanaged memory, mostly
-**          useful for memory-mapped files.
-**
-**
-===========================================================*/
-
-using System;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
-
 
 namespace System.IO
 {
@@ -47,41 +32,12 @@ namespace System.IO
      * call free, run a user-provided delegate to free the memory, etc.  
      * We'll suggest user write a subclass of UnmanagedMemoryStream that uses
      * a SafeHandle subclass to hold onto the memory.
-     * Check for problems when using this in the negative parts of a 
-     * process's address space.  We may need to use unsigned longs internally
-     * and change the overflow detection logic.
      * 
-     * -----SECURITY MODEL AND SILVERLIGHT-----
-     * A few key notes about exposing UMS in silverlight:
-     * 1. No ctors are exposed to transparent code. This version of UMS only
-     * supports byte* (not SafeBuffer). Therefore, framework code can create
-     * a UMS and hand it to transparent code. Transparent code can use most
-     * operations on a UMS, but not operations that directly expose a 
-     * pointer.
-     * 
-     * 2. Scope of "unsafe" and non-CLS compliant operations reduced: The
-     * Whidbey version of this class has CLSCompliant(false) at the class 
-     * level and unsafe modifiers at the method level. These were reduced to 
-     * only where the unsafe operation is performed -- i.e. immediately 
-     * around the pointer manipulation. Note that this brings UMS in line 
-     * with recent changes in pu/clr to support SafeBuffer.
-     * 
-     * 3. Currently, the only caller that creates a UMS is ResourceManager, 
-     * which creates read-only UMSs, and therefore operations that can 
-     * change the length will throw because write isn't supported. A 
-     * conservative option would be to formalize the concept that _only_
-     * read-only UMSs can be creates, and enforce this by making WriteX and
-     * SetLength SecurityCritical. However, this is a violation of 
-     * security inheritance rules, so we must keep these safe. The 
-     * following notes make this acceptable for future use.
-     *    a. a race condition in WriteX that could have allowed a thread to 
-     *    read from unzeroed memory was fixed
-     *    b. memory region cannot be expanded beyond _capacity; in other 
-     *    words, a UMS creator is saying a writable UMS is safe to 
-     *    write to anywhere in the memory range up to _capacity, specified
-     *    in the ctor. Even if the caller doesn't specify a capacity, then
-     *    length is used as the capacity.
      */
+
+    /// <summary>
+    /// Stream over a memory pointer or over a SafeBuffer
+    /// </summary>
     public class UnmanagedMemoryStream : Stream
     {
         private SafeBuffer _buffer;
@@ -91,11 +47,12 @@ namespace System.IO
         private long _position;
         private long _offset;
         private FileAccess _access;
-        internal bool _isOpen;
-        [NonSerialized]
+        private bool _isOpen;
         private Task<Int32> _lastReadTask; // The last successful task returned from ReadAsync 
 
-
+        /// <summary>
+        /// Creates a closed stream.
+        /// </summary>
         // Needed for subclasses that need to map a file, etc.
         protected UnmanagedMemoryStream()
         {
@@ -106,16 +63,32 @@ namespace System.IO
             _isOpen = false;
         }
 
+        /// <summary>
+        /// Creates a stream over a SafeBuffer.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length)
         {
             Initialize(buffer, offset, length, FileAccess.Read);
         }
 
+        /// <summary>
+        /// Creates a stream over a SafeBuffer.
+        /// </summary>
         public UnmanagedMemoryStream(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
             Initialize(buffer, offset, length, access);
         }
 
+        /// <summary>
+        /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
+        /// </summary>
+        /// <param name="buffer"></param>
+        /// <param name="offset"></param>
+        /// <param name="length"></param>
+        /// <param name="access"></param>
         protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
             if (buffer == null)
@@ -175,18 +148,27 @@ namespace System.IO
             _isOpen = true;
         }
 
+        /// <summary>
+        /// Creates a stream over a byte*.
+        /// </summary>
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length)
         {
             Initialize(pointer, length, length, FileAccess.Read);
         }
 
+        /// <summary>
+        /// Creates a stream over a byte*.
+        /// </summary>
         [CLSCompliant(false)]
         public unsafe UnmanagedMemoryStream(byte* pointer, long length, long capacity, FileAccess access)
         {
             Initialize(pointer, length, capacity, access);
         }
 
+        /// <summary>
+        /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
+        /// </summary>
         [CLSCompliant(false)]
         protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
@@ -213,24 +195,37 @@ namespace System.IO
             _isOpen = true;
         }
 
+        /// <summary>
+        /// Returns true if the stream can be read; otherwise returns false.
+        /// </summary>
         public override bool CanRead
         {
             [Pure]
             get { return _isOpen && (_access & FileAccess.Read) != 0; }
         }
 
+        /// <summary>
+        /// Returns true if the stream can seek; otherwise returns false.
+        /// </summary>
         public override bool CanSeek
         {
             [Pure]
             get { return _isOpen; }
         }
 
+        /// <summary>
+        /// Returns true if the stream can be written to; otherwise returns false.
+        /// </summary>
         public override bool CanWrite
         {
             [Pure]
             get { return _isOpen && (_access & FileAccess.Write) != 0; }
         }
 
+        /// <summary>
+        /// Closes the stream. The stream's memory needs to be dealt with separately.
+        /// </summary>
+        /// <param name="disposing"></param>
         protected override void Dispose(bool disposing)
         {
             _isOpen = false;
@@ -242,11 +237,19 @@ namespace System.IO
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// Since it's a memory stream, this method does nothing.
+        /// </summary>
         public override void Flush()
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
         }
 
+        /// <summary>
+        /// Since it's a memory stream, this method does nothing specific.
+        /// </summary>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public override Task FlushAsync(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -263,67 +266,73 @@ namespace System.IO
             }
         }
 
-
+        /// <summary>
+        /// Number of bytes in the stream.
+        /// </summary>
         public override long Length
         {
             get
             {
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return Interlocked.Read(ref _length);
             }
         }
 
+        /// <summary>
+        /// Number of bytes that can be written to the stream.
+        /// </summary>
         public long Capacity
         {
             get
             {
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (!_isOpen) throw Error.GetStreamIsClosed();
                 return _capacity;
             }
         }
 
+        /// <summary>
+        /// ReadByte will read byte at the Position in the stream
+        /// </summary>
         public override long Position
         {
             get
             {
-                if (!CanSeek) __Error.StreamIsClosed();
+                if (!CanSeek) throw Error.GetStreamIsClosed();
                 Contract.EndContractBlock();
                 return Interlocked.Read(ref _position);
             }
             set
             {
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
+                if (!CanSeek) throw Error.GetStreamIsClosed();
                 Contract.EndContractBlock();
-                if (!CanSeek) __Error.StreamIsClosed();
 
                 Interlocked.Exchange(ref _position, value);
             }
         }
 
+        /// <summary>
+        /// Pointer to memory at the current Position in the stream. 
+        /// </summary>
         [CLSCompliant(false)]
         public unsafe byte* PositionPointer
         {
             get
             {
-                if (_buffer != null)
-                {
-                    throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-                }
+                if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
+                if (!_isOpen) throw Error.GetStreamIsClosed();
 
                 // Use a temp to avoid a race
                 long pos = Interlocked.Read(ref _position);
                 if (pos > _capacity)
                     throw new IndexOutOfRangeException(SR.IndexOutOfRange_UMSPosition);
                 byte* ptr = _mem + pos;
-                if (!_isOpen) __Error.StreamIsClosed();
                 return ptr;
             }
             set
             {
-                if (_buffer != null)
-                    throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-                if (!_isOpen) __Error.StreamIsClosed();
+                if (_buffer != null) throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
+                if (!_isOpen) throw Error.GetStreamIsClosed();
 
                 if (value < _mem)
                     throw new IOException(SR.IO_SeekBeforeBegin);
@@ -331,23 +340,18 @@ namespace System.IO
                 if (newPosition < 0)
                     throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_UnmanagedMemStreamLength);
 
-
                 Interlocked.Exchange(ref _position, newPosition);
             }
         }
 
-        internal unsafe byte* Pointer
-        {
-            get
-            {
-                if (_buffer != null)
-                    throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-
-                return _mem;
-            }
-        }
-
-        public override int Read([In, Out] byte[] buffer, int offset, int count)
+        /// <summary>
+        /// Reads bytes from stream and puts them into the buffer
+        /// </summary>
+        /// <param name="buffer">Buffer to read the bytes to.</param>
+        /// <param name="offset">Starting index in the buffer.</param>
+        /// <param name="count">Maximum number of bytes to read.</param>
+        /// <returns>Number of bytes actually read.</returns>
+        public override int Read(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
@@ -359,8 +363,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // Keep this in sync with contract validation in ReadAsync
 
-            if (!_isOpen) __Error.StreamIsClosed();
-            if (!CanRead) __Error.ReadNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanRead) throw Error.GetReadNotSupported();
 
             // Use a local variable to avoid a race where another thread 
             // changes our position after we decide we can read some bytes.
@@ -409,6 +413,14 @@ namespace System.IO
             return nInt;
         }
 
+        /// <summary>
+        /// Reads bytes from stream and puts them into the buffer
+        /// </summary>
+        /// <param name="buffer">Buffer to read the bytes to.</param>
+        /// <param name="offset">Starting index in the buffer.</param>
+        /// <param name="count">Maximum number of bytes to read.</param>       
+        /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
+        /// <returns>Task that can be used to access the number of bytes actually read.</returns>
         public override Task<Int32> ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -437,10 +449,14 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Returns the byte at the stream current Position and advances the Position.
+        /// </summary>
+        /// <returns></returns>
         public override int ReadByte()
         {
-            if (!_isOpen) __Error.StreamIsClosed();
-            if (!CanRead) __Error.ReadNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanRead) throw Error.GetReadNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
@@ -478,9 +494,15 @@ namespace System.IO
             return result;
         }
 
+        /// <summary>
+        /// Advanced the Position to specific location in the stream.
+        /// </summary>
+        /// <param name="offset">Offset from the loc parameter.</param>
+        /// <param name="loc">Origin for the offset parameter.</param>
+        /// <returns></returns>
         public override long Seek(long offset, SeekOrigin loc)
         {
-            if (!_isOpen) __Error.StreamIsClosed();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
             switch (loc)
             {
                 case SeekOrigin.Begin:
@@ -512,15 +534,19 @@ namespace System.IO
             return finalPos;
         }
 
+        /// <summary>
+        /// Sets the Length of the stream.
+        /// </summary>
+        /// <param name="value"></param>
         public override void SetLength(long value)
         {
             if (value < 0)
-                throw new ArgumentOutOfRangeException("length", SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
             if (_buffer != null)
                 throw new NotSupportedException(SR.NotSupported_UmsSafeBuffer);
-            if (!_isOpen) __Error.StreamIsClosed();
-            if (!CanWrite) __Error.WriteNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             if (value > _capacity)
                 throw new IOException(SR.IO_FixedCapacity);
@@ -541,6 +567,12 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Writes buffer into the stream
+        /// </summary>
+        /// <param name="buffer">Buffer that will be written.</param>
+        /// <param name="offset">Starting index in the buffer.</param>
+        /// <param name="count">Number of bytes to write.</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
@@ -553,8 +585,8 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();  // Keep contract validation in sync with WriteAsync(..)
 
-            if (!_isOpen) __Error.StreamIsClosed();
-            if (!CanWrite) __Error.WriteNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
@@ -624,6 +656,14 @@ namespace System.IO
             return;
         }
 
+        /// <summary>
+        /// Writes buffer into the stream. The operation completes synchronously.
+        /// </summary>
+        /// <param name="buffer">Buffer that will be written.</param>
+        /// <param name="offset">Starting index in the buffer.</param>
+        /// <param name="count">Number of bytes to write.</param>
+        /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
+        /// <returns>Task that can be awaited </returns>
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             if (buffer == null)
@@ -647,15 +687,18 @@ namespace System.IO
             catch (Exception ex)
             {
                 Debug.Assert(!(ex is OperationCanceledException));
-                return Task.FromException<Int32>(ex);
+                return Task.FromException(ex);
             }
         }
 
-
+        /// <summary>
+        /// Writes a byte to the stream and advances the current Position.
+        /// </summary>
+        /// <param name="value"></param>
         public override void WriteByte(byte value)
         {
-            if (!_isOpen) __Error.StreamIsClosed();
-            if (!CanWrite) __Error.WriteNotSupported();
+            if (!_isOpen) throw Error.GetStreamIsClosed();
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
