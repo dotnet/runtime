@@ -26,12 +26,43 @@ Required Testing: Validation of the behavior of the affected APIs.
 ## Stress Testing ##
 Stress testing must run for at least **48 hours** against a debug build.
 
-Instructions for running stress are located in the repo at tests\src\GC\Stress\stress_run_readme.txt.
+Stress testing for checked and release builds can be done on pull requests with The .NET CI infrastructure.
+A stress run can be requested using the trigger phrase:
+
+```
+@dotnet_bot test <platform> <flavor> gc_reliability_framework
+```
+
+This will run the stress framework for the default amount of time (15 hours) on the given platform and build flavor.
 
 ## Functional Testing ##
 A functional test run executes the same code as a stress run, but only runs for 30 minutes.
 
 Instructions for running stress are located in the repo at tests\src\GC\Stress\stress_run_readme.txt.
+
+It is recommended that you run at least some of the below PR-triggered CI jobs:
+
+```
+@dotnet_bot test Windows_NT Checked longgc
+@dotnet_bot test OSX10.12 Checked longgc
+@dotnet_bot test Ubuntu Checked longgc
+@dotnet_bot test Windows_NT Checked standalone_gc
+@dotnet_bot test OSX10.12 Checked standalone_gc
+@dotnet_bot test Ubuntu Checked standalone_gc
+```
+
+The "Long GC" tests are a series of GC tests whose running time is too long or memory usage is too high to run with
+the rest of the Priority 0 unit tests. The "Standalone GC" build mode builds and runs the GC in a semi-standalone manner
+(see https://github.com/dotnet/coreclr/projects/3).
+
+You may also wish to run the GC Simulator tests. They may take up to 24 hours to complete and are known to sometimes fail on Ubuntu
+due to poor interactions with the Linux OOM killer. However, they have proven to be quite useful in finding bugs in the past:
+
+```
+@dotnet_bot test Windows_NT Release gcsimulator
+@dotnet_bot test Ubuntu Release gcsimulator
+@dotnet_bot test OSX10.12 Release gcsimulator
+```
 
 ## Performance Testing ##
 Coming soon.
