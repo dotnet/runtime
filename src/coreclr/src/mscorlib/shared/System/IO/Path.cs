@@ -76,19 +76,23 @@ namespace System.IO
         // "\\server\share").
         public static string GetDirectoryName(string path)
         {
-            if (path != null)
+            if (string.IsNullOrWhiteSpace(path))
             {
-                PathInternal.CheckInvalidPathChars(path);
-                path = PathInternal.NormalizeDirectorySeparators(path);
-                int root = PathInternal.GetRootLength(path);
-
-                int i = path.Length;
-                if (i > root)
-                {
-                    while (i > root && !PathInternal.IsDirectorySeparator(path[--i])) ;
-                    return path.Substring(0, i);
-                }
+                if (path == null) return null;
+                throw new ArgumentException(SR.Arg_PathIllegal, nameof(path));
             }
+
+            PathInternal.CheckInvalidPathChars(path);
+            path = PathInternal.NormalizeDirectorySeparators(path);
+            int root = PathInternal.GetRootLength(path);
+
+            int i = path.Length;
+            if (i > root)
+            {
+                while (i > root && !PathInternal.IsDirectorySeparator(path[--i])) ;
+                return path.Substring(0, i);
+            }
+            
             return null;
         }
 
