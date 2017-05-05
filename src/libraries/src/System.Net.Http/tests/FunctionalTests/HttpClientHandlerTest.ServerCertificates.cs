@@ -212,7 +212,6 @@ namespace System.Net.Http.Functional.Tests
         };
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(7812, TestPlatforms.Windows)]
         [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)

@@ -15,7 +15,6 @@
     <CompileItem Include="$(CommonPath)\Interop\Windows\winhttp\Interop.winhttp.cs" />
     <CompileItem Include="$(CommonPath)\System\CharArrayHelpers.cs" />
     <CompileItem Include="$(CommonPath)\System\StringExtensions.cs" />
-    <CompileItem Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.TryGetHeaderName.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\UriScheme.cs" />
@@ -23,6 +22,7 @@
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\WinHttpException.cs" />
+    <CompileItem Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <CompileItem Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <CompileItem Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs" />
     <CompileItem Include="$(MSBuildThisFileDirectory)\System\Net\Http\WinHttpAuthHelper.cs" />

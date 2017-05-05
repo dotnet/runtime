@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.ComponentModel;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 namespace System.Net.Http
@@ -47,7 +47,9 @@ namespace System.Net.Http
 
         public static WinHttpException CreateExceptionUsingError(int error)
         {
-            return new WinHttpException(error, GetErrorMessage(error));
+            var e = new WinHttpException(error, GetErrorMessage(error));
+            ExceptionStackTrace.AddCurrentStack(e);
+            return e;
         }
 
         public static string GetErrorMessage(int error)
