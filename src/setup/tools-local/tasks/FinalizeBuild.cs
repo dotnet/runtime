@@ -45,8 +45,6 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public override bool Execute()
         {
-            Console.WriteLine("Attach for finalization");
-            Console.ReadLine();
             ParseConnectionString();
 
             if (Log.HasLoggedErrors)
