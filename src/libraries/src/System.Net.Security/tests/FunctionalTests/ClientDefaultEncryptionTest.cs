@@ -34,6 +34,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ClientDefaultEncryption_ServerRequireEncryption_ConnectWithEncryption()
         {
             using (var serverRequireEncryption = new DummyTcpServer(
@@ -75,6 +76,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ClientDefaultEncryption_ServerNoEncryption_NoConnect()
         {
             using (var serverNoEncryption = new DummyTcpServer(
