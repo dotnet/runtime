@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <IgnoredTypes Include="System.IO.Ports.Handshake" />
+    <IgnoredTypes Include="System.IO.Ports.Parity" />
+    <IgnoredTypes Include="System.IO.Ports.SerialData" />
+    <IgnoredTypes Include="System.IO.Ports.SerialDataReceivedEventArgs" />
+    <IgnoredTypes Include="System.IO.Ports.SerialDataReceivedEventHandler" />
+    <IgnoredTypes Include="System.IO.Ports.SerialError" />
+    <IgnoredTypes Include="System.IO.Ports.SerialErrorReceivedEventArgs" />
+    <IgnoredTypes Include="System.IO.Ports.SerialErrorReceivedEventHandler" />
+    <IgnoredTypes Include="System.IO.Ports.SerialPinChange" />
+    <IgnoredTypes Include="System.IO.Ports.SerialPinChangedEventArgs" />
+    <IgnoredTypes Include="System.IO.Ports.SerialPinChangedEventHandler" />
+    <IgnoredTypes Include="System.IO.Ports.SerialPort" />
+    <IgnoredTypes Include="System.IO.Ports.StopBits" />
+  </ItemGroup>
+</Project>
