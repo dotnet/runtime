@@ -111,7 +111,7 @@ namespace System.IO.Tests
 
                 if (IntPtr.Size == 4)
                 {
-                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = long.MaxValue);
+                    stream.Position = long.MaxValue;
                     stream.Position = int.MaxValue;
                 }
                 else
