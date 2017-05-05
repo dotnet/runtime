@@ -2,6 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Canonicalization.Tests", "tests\Canonicalization\Canonicalization.Tests.csproj", "{D3AD82FC-051D-4121-8E48-B13CE8024776}"
+	ProjectSection(ProjectDependencies) = postProject
+		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Serialization.Xml.Tests", "tests\System.Runtime.Serialization.Xml.Tests.csproj", "{30CAB353-089E-4294-B23B-F2DD1D945654}"
 	ProjectSection(ProjectDependencies) = postProject
 		{9D747A18-C8FD-4D7A-8913-4ED7911683B4} = {9D747A18-C8FD-4D7A-8913-4ED7911683B4}
@@ -36,6 +41,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D3AD82FC-051D-4121-8E48-B13CE8024776}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{30CAB353-089E-4294-B23B-F2DD1D945654}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{30CAB353-089E-4294-B23B-F2DD1D945654}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{30CAB353-089E-4294-B23B-F2DD1D945654}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
@@ -61,6 +70,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{D3AD82FC-051D-4121-8E48-B13CE8024776} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{30CAB353-089E-4294-B23B-F2DD1D945654} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{122A5432-C5B7-4293-AFDA-B24F4D54FDEF} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{38889701-0AF4-48B3-999C-E99D639C61B6} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
