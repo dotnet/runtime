@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.TargetingPack.Private.CoreCLR": "2.0.0-preview2-25303-03"
+    "Microsoft.TargetingPack.Private.CoreCLR": "2.0.0-preview2-25305-01"
   },
   "frameworks": {
     "netcoreapp1.1": {
