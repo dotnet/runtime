@@ -1628,9 +1628,6 @@
   <data name="ArgumentOutOfRange_ArrayLBAndLength" xml:space="preserve">
     <value>Higher indices will exceed Int32.MaxValue because of large lower bound and/or length.</value>
   </data>
-  <data name="ArgumentOutOfRange_ArrayListInsert" xml:space="preserve">
-    <value>Insertion index was out of range. Must be non-negative and less than or equal to size.</value>
-  </data>
   <data name="ArgumentOutOfRange_BadHourMinuteSecond" xml:space="preserve">
     <value>Hour, Minute, and Second parameters describe an un-representable DateTime.</value>
   </data>
