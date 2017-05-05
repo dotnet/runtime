@@ -12,6 +12,7 @@ namespace System.IO.IsolatedStorage
     public class GetFileNamesTests : IsoStorageTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
         public void GetFileNames_ThrowsArgumentNull()
         {
             using (var isf = IsolatedStorageFile.GetUserStoreForApplication())

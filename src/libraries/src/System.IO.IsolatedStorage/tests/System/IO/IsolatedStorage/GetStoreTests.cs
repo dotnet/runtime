@@ -50,6 +50,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
         public void GetUserStoreForApplication()
         {
             var isf = IsolatedStorageFile.GetUserStoreForApplication();
