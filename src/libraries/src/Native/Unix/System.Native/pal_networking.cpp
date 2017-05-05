@@ -723,9 +723,16 @@ extern "C" void SystemNative_FreeHostEntry(HostEntry* entry)
     }
 }
 
-inline int32_t ConvertGetNameInfoFlagsToNative(int32_t flags)
+// There were several versions of glibc that had the flags parameter of getnameinfo unsigned
+#if HAVE_GETNAMEINFO_SIGNED_FLAGS
+typedef int32_t NativeFlagsType;
+#else
+typedef uint32_t NativeFlagsType;
+#endif
+
+inline NativeFlagsType ConvertGetNameInfoFlagsToNative(int32_t flags)
 {
-    int32_t outFlags = 0;
+    NativeFlagsType outFlags = 0;
     if ((flags & PAL_NI_NAMEREQD) == PAL_NI_NAMEREQD)
     {
         outFlags |= NI_NAMEREQD;
@@ -752,7 +759,7 @@ extern "C" int32_t SystemNative_GetNameInfo(const uint8_t* address,
     assert((host != nullptr) || (service != nullptr));
     assert((hostLength > 0) || (serviceLength > 0));
 
-    int32_t nativeFlags = ConvertGetNameInfoFlagsToNative(flags);
+    NativeFlagsType nativeFlags = ConvertGetNameInfoFlagsToNative(flags);
     int32_t result;
 
     if (isIPv6)
@@ -2341,7 +2348,8 @@ static Error TryChangeSocketEventRegistrationInner(
         op = EPOLL_CTL_DEL;
     }
 
-    epoll_event evt = {.events = GetEPollEvents(newEvents) | EPOLLET, .data = {.ptr = reinterpret_cast<void*>(data)}};
+    epoll_event evt = {.events = GetEPollEvents(newEvents) | static_cast<unsigned int>(EPOLLET),
+                       .data = {.ptr = reinterpret_cast<void*>(data)}};
     int err = epoll_ctl(port, op, socket, &evt);
     return err == 0 ? PAL_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
