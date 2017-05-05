@@ -37,6 +37,7 @@ namespace System.ConfigurationTests
             InlineData("System.Collections.Specialized.StringCollection", typeof(StringCollection))
             InlineData("System.Collections.Specialized.NameValueCollection", typeof(NameValueCollection))
             ]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19340")]
         public void GetType_NoAssemblyQualifcation(string typeString, Type expectedType)
         {
             Assert.Equal(expectedType, TypeUtil.GetType(typeString, throwOnError: false));
