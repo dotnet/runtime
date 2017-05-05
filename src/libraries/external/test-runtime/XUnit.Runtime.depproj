@@ -140,7 +140,10 @@
           AfterTargets="RestorePackages"
           Condition="'$(TargetGroup)' == 'uapaot'">
     <PropertyGroup>
-      <TestILCToolsPackageName>TestILCNugetPackageForCoreFX</TestILCToolsPackageName>
+      <TestILCToolsPackageName>TestILC</TestILCToolsPackageName>
+      <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'x64'">$(TestILCToolsPackageName).amd64ret</TestILCToolsPackageName>
+      <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'x86'">$(TestILCToolsPackageName).x86ret</TestILCToolsPackageName>
+      <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'arm'">$(TestILCToolsPackageName).armret</TestILCToolsPackageName>
       <TestILCFolder Condition="'$(TestILCFolder)' == ''">$(PackagesDir)$(TestILCToolsPackageName)\$(ProjectNTfsTestILCPackageVersion)\TestILC</TestILCFolder>
       <TestILCFolder>$(TestILCFolder.Replace('/', '\'))</TestILCFolder>
     </PropertyGroup>

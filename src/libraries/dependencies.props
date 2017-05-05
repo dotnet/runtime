@@ -12,8 +12,8 @@
     <CoreFxCurrentRef>1ec7eb334c406a82a41c020e73ff1717a0e90f92</CoreFxCurrentRef>
     <CoreClrCurrentRef>ccf03e3ac9788a503bae623ca6b765224656a586</CoreClrCurrentRef>
     <ExternalCurrentRef>1ec7eb334c406a82a41c020e73ff1717a0e90f92</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>1ec7eb334c406a82a41c020e73ff1717a0e90f92</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>1ec7eb334c406a82a41c020e73ff1717a0e90f92</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>2fec23caa2e720ba53500a8edac9093cf5d8c354</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>2fec23caa2e720ba53500a8edac9093cf5d8c354</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>ca04b94304beb477534b4fa0d6080089c21a0284</SniCurrentRef>
     <StandardCurrentRef>1ec7eb334c406a82a41c020e73ff1717a0e90f92</StandardCurrentRef>
   </PropertyGroup>
@@ -23,9 +23,9 @@
     <CoreFxExpectedPrerelease>preview2-25304-02</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>preview2-25304-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25304-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25304-01</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25304-01</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25304-01</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25305-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25305-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25305-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.0.0-preview2-25304-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
@@ -114,7 +114,7 @@
     <XmlUpdateStep Include="ProjectNTfsTestILC">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>ProjectNTfsTestILCPackageVersion</ElementName>
-      <PackageId>TestILCNugetPackageForCoreFX</PackageId>
+      <PackageId>TestILC.amd64ret</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="Sni">
       <Path>$(MSBuildThisFileFullPath)</Path>
