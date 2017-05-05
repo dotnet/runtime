@@ -550,11 +550,8 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\IOException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\Stream.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryAccessor.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStream.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStreamWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
