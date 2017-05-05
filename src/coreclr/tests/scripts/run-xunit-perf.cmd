@@ -18,11 +18,15 @@ setlocal
   set USAGE_DISPLAYED=
   set SHOULD_UPLOAD_TO_BENCHVIEW=
   set BENCHVIEW_PATH=
+  set COLLECTION_FLAGS=stopwatch
+  set ETW_COLLECTION=Off
+  set STABILITY_PREFIX=
 
   call :parse_command_line_arguments %*
   if defined USAGE_DISPLAYED exit /b %ERRORLEVEL%
 
   call :set_test_architecture  || exit /b 1
+  call :set_collection_config  || exit /b 1
   call :verify_benchview_tools || exit /b 1
   call :verify_core_overlay    || exit /b 1
   call :set_perf_run_log       || exit /b 1
@@ -86,7 +90,7 @@ setlocal
   if defined IS_SCENARIO_TEST (
     call :run_cmd corerun.exe "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid Perf 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
   ) else (
-    call :run_cmd corerun.exe PerfHarness.dll "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid Perf 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
+    call :run_cmd %STABILITY_PREFIX% corerun.exe PerfHarness.dll "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid Perf --perf:collect %COLLECTION_FLAGS% 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
   )
 
   IF %ERRORLEVEL% NEQ 0 (
@@ -118,6 +122,12 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
+  IF /I [%~1] == [-stabilityPrefix] (
+    set STABILITY_PREFIX=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
   IF /I [%~1] == [-scenarioTest] (
     set IS_SCENARIO_TEST=1
     shift
@@ -130,6 +140,12 @@ rem ****************************************************************************
   )
   IF /I [%~1] == [-runtype] (
     set BENCHVIEW_RUN_TYPE=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-collectionflags] (
+    set COLLECTION_FLAGS=%~2
     shift
     shift
     goto :parse_command_line_arguments
@@ -208,6 +224,18 @@ rem ****************************************************************************
   )
   exit /b 0
 
+  :set_collection_config
+rem ****************************************************************************
+rem   Set's the config based on the providers used for collection
+rem ****************************************************************************
+  if /I [%COLLECTION_FLAGS%] == [stopwatch] (
+    set ETW_COLLECTION=Off
+  ) else (
+    set ETW_COLLECTION=On
+  )
+  exit /b 0
+
+  
 :set_perf_run_log
 rem ****************************************************************************
 rem   Sets the script's output log file.
@@ -266,6 +294,7 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config-name "%TEST_CONFIG%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Configuration "%TEST_CONFIG%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OS "Windows_NT"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Profile "%ETW_COLLECTION%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --arch "%TEST_ARCHITECTURE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
   call :run_cmd py.exe "%BENCHVIEW_PATH%\submission.py" measurement.json %LV_SUBMISSION_ARGS%
@@ -288,7 +317,7 @@ rem ****************************************************************************
 rem   Script's usage.
 rem ****************************************************************************
   set USAGE_DISPLAYED=1
-  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-runtype] ^<rolling^|private^> [-scenarioTest]
+  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^>
   echo/
   echo For the path to the tests you can pass a parent directory and the script will grovel for
   echo all tests in subdirectories and run them.
@@ -300,6 +329,10 @@ rem ****************************************************************************
   echo Runtype sets the runtype that we upload to Benchview, rolling for regular runs, and private for
   echo PRs.
   echo -scenarioTest should be included if you are running a scenario benchmark.
+  echo -collectionFlags This is used to specify what collectoin flags get passed to the performance
+  echo harness that is doing the test running.  If this is not specified we only use stopwatch.
+  echo Other flags are "default", which is the whatever the test being run specified, "CacheMisses",
+  echo "BranchMispredictions", and "InstructionsRetired".  
   exit /b %ERRORLEVEL%
 
 :print_error
