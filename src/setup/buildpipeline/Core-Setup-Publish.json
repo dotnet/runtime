@@ -117,7 +117,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:PublishFinalOutput /p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ContainerName=$(STORAGE_CONTAINER) /p:GitHubUser=$(GITHUB_USER) /p:GitHubEmail=$(GITHUB_EMAIL) /p:GitHubAuthToken=$(GITHUB_AUTH_TOKEN) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_VersionsRepo)/$(PB_Branch) /p:ShippedNuGetPackageGlobPath=$(PB_SourcesDirectory)\\Bin\\publishpackages\\$(PB_FilesToPublish)",
+        "msbuildArguments": "/t:PublishFinalOutput /p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ContainerName=$(STORAGE_CONTAINER) /p:GitHubUser=$(GITHUB_USER) /p:GitHubEmail=$(GITHUB_EMAIL) /p:GitHubAuthToken=$(GITHUB_AUTH_TOKEN) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(PB_Branch)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -237,22 +237,6 @@
       "value": "Release",
       "allowOverride": true
     },
-    "COREHOST_TRACE": {
-      "value": "0",
-      "allowOverride": true
-    },
-    "STORAGE_ACCOUNT": {
-      "value": "karajascli"
-    },
-    "STORAGE_CONTAINER": {
-      "value": "core-setup"
-    },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true"
-    },
     "NUGET_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core-dev-eng/api/v2/package "
     },
@@ -260,26 +244,8 @@
       "value": null,
       "isSecret": true
     },
-    "GITHUB_PASSWORD": {
-      "value": "PassedViaPipeBuild"
-    },
-    "SIGNED_PACKAGES": {
-      "value": "true"
-    },
-    "CertificateId": {
-      "value": "400"
-    },
     "PB_DistroRid": {
       "value": "win7-x64"
-    },
-    "MsbuildSigningArguments": {
-      "value": "/p:CertificateId=$(CertificateId) /v:detailed"
-    },
-    "TeamName": {
-      "value": "DotNetCore"
-    },
-    "system.debug": {
-      "value": "false"
     },
     "NUGET_SYMBOLS_FEED_URL": {
       "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
@@ -291,7 +257,7 @@
       "value": "--branch addPublish https://github.com/karajas/core-setup.git"
     },
     "PB_AzureAccountName": {
-      "value": "karajascli"
+      "value": "dotnetcli"
     },
     "PB_AzureAccessToken": {
       "value": null,
@@ -310,38 +276,35 @@
     "SourceVersion": {
       "value": "HEAD"
     },
-    "PB_SignType": {
-      "value": "real"
-    },
     "PB_CommonMSBuildArgs": {
       "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture)"
     },
     "OfficialBuildId": {
-      "value": "20170503.01"
+      "value": "$(Build.BuildNumber)"
     },
     "PB_TargetArchitecture": {
       "value": "x64",
       "allowOverride": true
     },
     "GITHUB_USER": {
-      "value": "karajas"
+      "value": "dotnetbot"
     },
     "GITHUB_AUTH_TOKEN": {
       "value": null,
       "isSecret": true
     },
     "PB_VersionsRepoOwner": {
-      "value": "karajas"
+      "value": "dotnet"
     },
     "PB_VersionsRepo": {
+      "value": "versions"
+    },    
+    "PB_RepoName": {
       "value": "core-setup"
     },
     "GITHUB_EMAIL": {
       "value": null,
       "isSecret": true
-    },
-    "PB_FilesToPublish": {
-      "value": "*.nupkg"
     }
   },
   "demands": [
