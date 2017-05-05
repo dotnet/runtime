@@ -17,29 +17,6 @@
 ** thread safety. If a reader writer lock is available, then that may be used
 ** with a Dictionary to get the same thread safety guarantee. 
 ** 
-** Reader writer locks don't exist in silverlight, so we do the following as a
-** result of removing non-generic collections from silverlight: 
-** 1. If the Hashtable was fully synchronized, then we replace it with a 
-**    Dictionary with full locks around reads/writes (same thread safety
-**    guarantee).
-** 2. Otherwise, the Hashtable has the default MR/SW thread safety behavior, 
-**    so we do one of the following on a case-by-case basis:
-**    a. If the race condition can be addressed by rearranging the code and using a temp
-**       variable (for example, it's only populated immediately after created)
-**       then we address the race condition this way and use Dictionary.
-**    b. If there's concern about degrading performance with the increased 
-**       locking, we ifdef with FEATURE_NONGENERIC_COLLECTIONS so we can at 
-**       least use Hashtable in the desktop build, but Dictionary with full 
-**       locks in silverlight builds. Note that this is heavier locking than 
-**       MR/SW, but this is the only option without rewriting (or adding back)
-**       the reader writer lock. 
-**    c. If there's no performance concern (e.g. debug-only code) we 
-**       consistently replace Hashtable with Dictionary plus full locks to 
-**       reduce complexity.
-**    d. Most of serialization is dead code in silverlight. Instead of updating
-**       those Hashtable occurences in serialization, we carved out references 
-**       to serialization such that this code doesn't need to build in 
-**       silverlight. 
 ===========================================================*/
 
 namespace System.Collections.Generic

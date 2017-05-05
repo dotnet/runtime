@@ -146,12 +146,6 @@ DEFINE_CLASS(ARRAY,                 System,                 Array)
 DEFINE_PROPERTY(ARRAY,              LENGTH,                 Length,                     Int)
 DEFINE_METHOD(ARRAY,                GET_DATA_PTR_OFFSET_INTERNAL, GetDataPtrOffsetInternal, IM_RetInt)
 
-#ifdef FEATURE_NONGENERIC_COLLECTIONS 
-DEFINE_CLASS(ARRAY_LIST,            Collections,            ArrayList)
-DEFINE_METHOD(ARRAY_LIST,           CTOR,                   .ctor,                      IM_RetVoid)
-DEFINE_METHOD(ARRAY_LIST,           ADD,                    Add,                        IM_Obj_RetInt)
-#endif // FEATURE_NONGENERIC_COLLECTIONS 
-
 DEFINE_CLASS(ARRAY_WITH_OFFSET,     Interop,                ArrayWithOffset)                 
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
