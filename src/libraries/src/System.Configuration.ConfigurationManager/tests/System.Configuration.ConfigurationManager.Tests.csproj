@@ -94,6 +94,7 @@
     <Compile Include="System\Configuration\TestData.cs" />
     <Compile Include="System\Configuration\StringValidatorTests.cs" />
     <Compile Include="System\Configuration\SubclassTypeValidatorAttributeTests.cs" />
+    <Compile Include="System\Configuration\StringValidatorAttributeTests.cs" />
     <Compile Include="System\Configuration\TimeSpanValidatorAttributeTests.cs" />
     <Compile Include="System\Configuration\TypeUtilTests.cs" />
     <Compile Include="System\Configuration\UriSectionTests.cs" />
