@@ -129,7 +129,7 @@ EXIT /B %ERRORLEVEL%
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  do%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    filename=%24{fileToPrecompile}%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    echo Precompiling %24filename%0a</WrapperShContents>
-      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    %24overlayDir/crossgen /Platform_Assemblies_Paths %24overlayDir %24filename 1> %24filename.stdout 2>%24filename.stderr%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    %24overlayDir/crossgen /Platform_Assemblies_Paths %24overlayDir /in %24filename /out %24overlayDir/temp.ni.dll 1> %24filename.stdout 2>%24filename.stderr%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    exitCode=%24%3F%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    if [ %24exitCode != 0 ]%3B then%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      if grep -q -e '(COR_E_ASSEMBLYEXPECTED)' %24filename.stderr%3B then%0a</WrapperShContents>
@@ -137,7 +137,10 @@ EXIT /B %ERRORLEVEL%
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      else%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)        echo Unable to precompile %24filename.%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      fi%0a</WrapperShContents>
-      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    fi%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    else%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      rm %24filename%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)      mv %24overlayDir/temp.ni.dll %24filename%0a</WrapperShContents>
+      <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    fi%0a</WrapperShContents> 
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    rm %24filename.stdout%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)    rm %24filename.stderr%0a</WrapperShContents>
       <WrapperShContents Condition="'$(Crossgen)' == 'true'">$(WrapperShContents)  done%0a</WrapperShContents>
