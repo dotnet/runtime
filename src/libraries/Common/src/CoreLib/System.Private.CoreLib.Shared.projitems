@@ -149,8 +149,11 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathTooLongException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PinnedBufferMemoryStream.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\SeekOrigin.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\StreamHelpers.CopyValidation.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStream.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\UnmanagedMemoryStreamWrapper.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs"/>
