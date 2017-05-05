@@ -158,6 +158,7 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeDirection.Out, PipeDirection.In)]
         [InlineData(PipeDirection.In, PipeDirection.Out)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18546")]
         public void ReadModeToByte_Accepted(PipeDirection serverDirection, PipeDirection clientDirection)
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(serverDirection))
