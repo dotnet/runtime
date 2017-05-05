@@ -25,21 +25,23 @@ namespace System.Net
             { Interop.SECURITY_STATUS.BadBinding, SecurityStatusPalErrorCode.BadBinding },
             { Interop.SECURITY_STATUS.BufferNotEnough, SecurityStatusPalErrorCode.BufferNotEnough },
             { Interop.SECURITY_STATUS.CannotInstall, SecurityStatusPalErrorCode.CannotInstall },
+            { Interop.SECURITY_STATUS.CannotPack, SecurityStatusPalErrorCode.CannotPack },
             { Interop.SECURITY_STATUS.CertExpired, SecurityStatusPalErrorCode.CertExpired },
             { Interop.SECURITY_STATUS.CertUnknown, SecurityStatusPalErrorCode.CertUnknown },
             { Interop.SECURITY_STATUS.CompAndContinue, SecurityStatusPalErrorCode.CompAndContinue },
             { Interop.SECURITY_STATUS.CompleteNeeded, SecurityStatusPalErrorCode.CompleteNeeded },
             { Interop.SECURITY_STATUS.ContextExpired, SecurityStatusPalErrorCode.ContextExpired },
-            { Interop.SECURITY_STATUS.CredentialsNeeded, SecurityStatusPalErrorCode.CredentialsNeeded },
             { Interop.SECURITY_STATUS.ContinueNeeded, SecurityStatusPalErrorCode.ContinueNeeded },
+            { Interop.SECURITY_STATUS.CredentialsNeeded, SecurityStatusPalErrorCode.CredentialsNeeded },
+            { Interop.SECURITY_STATUS.DowngradeDetected, SecurityStatusPalErrorCode.DowngradeDetected },
             { Interop.SECURITY_STATUS.IllegalMessage, SecurityStatusPalErrorCode.IllegalMessage },
-            { Interop.SECURITY_STATUS.CannotPack, SecurityStatusPalErrorCode.CannotPack },
             { Interop.SECURITY_STATUS.IncompleteCredentials, SecurityStatusPalErrorCode.IncompleteCredentials },
             { Interop.SECURITY_STATUS.IncompleteMessage, SecurityStatusPalErrorCode.IncompleteMessage },
             { Interop.SECURITY_STATUS.InternalError, SecurityStatusPalErrorCode.InternalError },
             { Interop.SECURITY_STATUS.InvalidHandle, SecurityStatusPalErrorCode.InvalidHandle },
             { Interop.SECURITY_STATUS.InvalidToken, SecurityStatusPalErrorCode.InvalidToken },
             { Interop.SECURITY_STATUS.LogonDenied, SecurityStatusPalErrorCode.LogonDenied },
+            { Interop.SECURITY_STATUS.MessageAltered, SecurityStatusPalErrorCode.MessageAltered },
             { Interop.SECURITY_STATUS.NoAuthenticatingAuthority, SecurityStatusPalErrorCode.NoAuthenticatingAuthority },
             { Interop.SECURITY_STATUS.NoImpersonation, SecurityStatusPalErrorCode.NoImpersonation },
             { Interop.SECURITY_STATUS.NoCredentials, SecurityStatusPalErrorCode.NoCredentials },
@@ -48,7 +50,6 @@ namespace System.Net
             { Interop.SECURITY_STATUS.OutOfMemory, SecurityStatusPalErrorCode.OutOfMemory },
             { Interop.SECURITY_STATUS.OutOfSequence, SecurityStatusPalErrorCode.OutOfSequence },
             { Interop.SECURITY_STATUS.PackageNotFound, SecurityStatusPalErrorCode.PackageNotFound },
-            { Interop.SECURITY_STATUS.MessageAltered, SecurityStatusPalErrorCode.MessageAltered },
             { Interop.SECURITY_STATUS.QopNotSupported, SecurityStatusPalErrorCode.QopNotSupported },
             { Interop.SECURITY_STATUS.Renegotiate, SecurityStatusPalErrorCode.Renegotiate },
             { Interop.SECURITY_STATUS.SecurityQosFailed, SecurityStatusPalErrorCode.SecurityQosFailed },
@@ -59,8 +60,7 @@ namespace System.Net
             { Interop.SECURITY_STATUS.UnsupportedPreauth, SecurityStatusPalErrorCode.UnsupportedPreauth },
             { Interop.SECURITY_STATUS.Unsupported, SecurityStatusPalErrorCode.Unsupported },
             { Interop.SECURITY_STATUS.UntrustedRoot, SecurityStatusPalErrorCode.UntrustedRoot },
-            { Interop.SECURITY_STATUS.WrongPrincipal, SecurityStatusPalErrorCode.WrongPrincipal },
-            { Interop.SECURITY_STATUS.DowngradeDetected, SecurityStatusPalErrorCode.DowngradeDetected }
+            { Interop.SECURITY_STATUS.WrongPrincipal, SecurityStatusPalErrorCode.WrongPrincipal }
         };
 
         internal static SecurityStatusPal GetSecurityStatusPalFromNativeInt(int win32SecurityStatus)
