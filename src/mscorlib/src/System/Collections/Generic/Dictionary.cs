@@ -706,22 +706,6 @@ namespace System.Collections.Generic
             value = default(TValue);
             return false;
         }
-
-        // Method similar to TryGetValue that returns the value instead of putting it in an out param.
-        public TValue GetValueOrDefault(TKey key) => GetValueOrDefault(key, default(TValue));
-
-        // Method similar to TryGetValue that returns the value instead of putting it in an out param. If the entry
-        // doesn't exist, returns the defaultValue instead.
-        public TValue GetValueOrDefault(TKey key, TValue defaultValue)
-        {
-            int i = FindEntry(key);
-            if (i >= 0)
-            {
-                return entries[i].value;
-            }
-            return defaultValue;
-        }
-
         public bool TryAdd(TKey key, TValue value) => TryInsert(key, value, InsertionBehavior.None);
 
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly
