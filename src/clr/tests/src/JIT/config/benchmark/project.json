@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "xunit.performance.api": "1.0.0-beta-build0003",
-    "xunit.performance.core": "1.0.0-beta-build0003",
-    "xunit.performance.execution": "1.0.0-beta-build0003",
-    "xunit.performance.metrics": "1.0.0-beta-build0003",
+    "xunit.performance.api": "1.0.0-beta-build0004",
+    "xunit.performance.core": "1.0.0-beta-build0004",
+    "xunit.performance.execution": "1.0.0-beta-build0004",
+    "xunit.performance.metrics": "1.0.0-beta-build0004",
     "Microsoft.Diagnostics.Tracing.TraceEvent": "1.0.3-alpha-experimental",
     "Microsoft.NETCore.Platforms": "2.0.0-preview2-25305-01",
     "System.Collections.NonGeneric": "4.4.0-beta-24913-02",
