@@ -8,7 +8,6 @@
   </PropertyGroup>
     
   <ItemGroup>
-    <DebInstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).deb" />
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(InstallerExtension)" />
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CombinedInstallerExtension)" />
     <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CompressedFileExtension)" />
