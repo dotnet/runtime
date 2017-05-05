@@ -180,7 +180,7 @@ namespace System.Globalization
                 return new String(pBuffer);
             }
 
-            return "";
+            return null;
         }
 
         internal static unsafe int GetLocaleInfoExInt(String localeName, uint field)
