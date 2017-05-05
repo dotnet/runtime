@@ -32,7 +32,8 @@ namespace Microsoft.DotNet.Cli.Build
                 newArgs.Insert(0, "-v");
             }
 
-            return Command.Create(Path.Combine(BinPath, $"dotnet{Constants.ExeSuffix}"), newArgs);
+            return Command.Create(Path.Combine(BinPath, $"dotnet{Constants.ExeSuffix}"), newArgs)
+                .EnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1");
         }
 
         public Command Restore(params string[] args) => Exec("restore", args);
