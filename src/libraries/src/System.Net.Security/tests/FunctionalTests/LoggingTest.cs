@@ -26,7 +26,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>

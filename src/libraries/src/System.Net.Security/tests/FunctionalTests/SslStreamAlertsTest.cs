@@ -23,7 +23,6 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -58,7 +57,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -91,7 +89,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -124,7 +121,6 @@ namespace System.Net.Security.Tests
         }
         
         [Fact]
-        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
             VirtualNetwork network = new VirtualNetwork();
