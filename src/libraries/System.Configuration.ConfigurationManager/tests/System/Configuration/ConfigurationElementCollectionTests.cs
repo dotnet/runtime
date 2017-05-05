@@ -204,6 +204,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19338")]
         public void EqualsNullIsFalse()
         {
             // Note: this null refs on desktop
