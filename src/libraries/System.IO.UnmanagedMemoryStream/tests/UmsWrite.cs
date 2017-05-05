@@ -109,18 +109,10 @@ namespace System.IO.Tests
                 UnmanagedMemoryStream stream = manager.Stream;
                 UmsTests.WriteUmsInvariants(stream);
 
-                if (IntPtr.Size == 4)
-                {
-                    stream.Position = long.MaxValue;
-                    stream.Position = int.MaxValue;
-                }
-                else
-                {
-                    stream.Position = long.MaxValue;
-                    var bytes = new byte[3];
-                    Assert.Throws<IOException>(() => stream.Write(bytes, 0, bytes.Length));
-                    Assert.Throws<IOException>(() => stream.WriteByte(1));
-                }
+                stream.Position = long.MaxValue;
+                var bytes = new byte[3];
+                Assert.Throws<IOException>(() => stream.Write(bytes, 0, bytes.Length));
+                Assert.Throws<IOException>(() => stream.WriteByte(1));
             }
         }
 
