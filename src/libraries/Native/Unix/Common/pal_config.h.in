@@ -37,6 +37,7 @@
 #cmakedefine01 HAVE_FCOPYFILE
 #cmakedefine01 HAVE_GETHOSTBYNAME_R
 #cmakedefine01 HAVE_GETHOSTBYADDR_R
+#cmakedefine01 HAVE_GETNAMEINFO_SIGNED_FLAGS
 #cmakedefine01 HAVE_GETPEEREID
 #cmakedefine01 HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO
 #cmakedefine01 HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR
@@ -78,6 +79,7 @@
 #cmakedefine01 IPV6MR_INTERFACE_UNSIGNED
 #cmakedefine01 BIND_ADDRLEN_UNSIGNED
 #cmakedefine01 INOTIFY_RM_WATCH_WD_UNSIGNED
+#cmakedefine01 HAVE_IN_EXCL_UNLINK
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5
