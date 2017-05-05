@@ -223,7 +223,6 @@
 
   <PropertyGroup>
     <Framework>netcoreapp2.0</Framework>
-    <Framework Condition="'$(TargetArchitecture)' == 'arm64'">netcoreapp1.1</Framework>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'Windows_NT'">

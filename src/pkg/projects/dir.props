@@ -73,15 +73,16 @@
   <Import Project="$(RIDPropsFile)" />
 
   <ItemGroup>
+    <_buildingOnRID Include="$(PackageRID)" Condition="'$(BuildOnUnknownPlatforms)' != 'false'">
+      <Platform>$(Platform)</Platform>
+    </_buildingOnRID>
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
-    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="@(_buildingOnRID)"/>
     <!-- Include Unofficial Build RIDs in runtime.json's but do not include in the platform manifest -->
-    <BuildRID Include="@(UnofficialBuildRID)" Exclude="$(PackageRID)">
+    <BuildRID Include="@(UnofficialBuildRID)" Exclude="@(_buildingOnRID)">
       <ExcludeFromPlatformManifest>true</ExcludeFromPlatformManifest>
     </BuildRID>
-    <BuildRID Include="$(PackageRID)">
-      <Platform>$(Platform)</Platform>
-    </BuildRID>
+    <BuildRID Include="@(_buildingOnRID)"/>
   </ItemGroup>
   
   <PropertyGroup>
