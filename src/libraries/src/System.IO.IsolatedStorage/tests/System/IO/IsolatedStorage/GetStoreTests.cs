@@ -101,6 +101,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18269")]
         public void GetEnumerator_NoOp()
         {
             IEnumerator e = IsolatedStorageFile.GetEnumerator(IsolatedStorageScope.Assembly);
@@ -111,6 +112,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18269")]
         public void GetEnumerator_ThrowsForCurrent()
         {
             IEnumerator e = IsolatedStorageFile.GetEnumerator(IsolatedStorageScope.Assembly);
