@@ -6760,9 +6760,9 @@ VOID ETW::MethodLog::SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHe
                                      ulHelperSize, 
                                      0, 
                                      methodFlags, 
-                                     NULL, 
+                                     NULL,
                                      pHelperName, 
-                                     NULL, 
+                                     NULL,
                                      GetClrInstanceId());
     }
 }
