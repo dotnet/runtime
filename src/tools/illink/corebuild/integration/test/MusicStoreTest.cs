@@ -19,8 +19,6 @@ namespace ILLink.Tests
 		{
 			string csproj = SetupProject();
 
-			SetRuntimeFrameworkVersion(csproj);
-
 			// Copy root files into the project directory
 			string demoRoot= Path.GetDirectoryName(csproj);
 			CopyRootFiles(demoRoot);
@@ -37,23 +35,6 @@ namespace ILLink.Tests
 			BuildAndLink(csproj, rootFiles);
 		}
 
-		// TODO: remove this once the linker is able to handle
-		// ready-to-run assembies
-		private void SetRuntimeFrameworkVersion(string csproj) {
-			var xdoc = XDocument.Load(csproj);
-			var ns = xdoc.Root.GetDefaultNamespace();
-
-			var versionElement = xdoc.Root.Descendants(ns + "RuntimeFrameworkVersion").First();
-			string runtimeFrameworkVersion = "2.0.0-preview2-002093-00";
-			Console.WriteLine($"setting runtime framework version to {runtimeFrameworkVersion}");
-			versionElement.Value = runtimeFrameworkVersion;
-
-			Console.WriteLine(versionElement);
-
-			using (var fs = new FileStream(csproj, FileMode.Create)) {
-				xdoc.Save(fs);
-			}
-		}
 		// returns path to .csproj project file
 		string SetupProject()
 		{
