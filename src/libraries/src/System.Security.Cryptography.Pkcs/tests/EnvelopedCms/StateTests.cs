@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class StateTests
     {
-        public static bool IsNet462OrNewer() => (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer());
+        public static bool SupportsCngCertificates { get; } = (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer());
 
         //
         // Exercises various edge cases when EnvelopedCms methods and properties are called out of the "expected" order.
@@ -256,7 +256,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         //
         // State 4: Called Decode() + Decrypt()
         //
-        [ConditionalFact(nameof(IsNet462OrNewer))]
+        [ConditionalFact(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void PostDecrypt_Encode()
         {
@@ -288,7 +288,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNet462OrNewer))]
+        [ConditionalFact(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void PostDecrypt_RecipientInfos()
         {
@@ -327,7 +327,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNet462OrNewer))]
+        [ConditionalFact(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void PostDecrypt_Decrypt()
         {

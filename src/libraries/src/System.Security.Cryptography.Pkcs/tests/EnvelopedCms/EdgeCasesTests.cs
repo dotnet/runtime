@@ -21,9 +21,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class EdgeCasesTests
     {
-        public static bool IsNet462OrNewer() => (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer());
+        public static bool SupportsCngCertificates { get; } = (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer());
 
-        [ConditionalFact(nameof(IsNet462OrNewer))]
+        [ConditionalFact(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ImportEdgeCase()
         {
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsNet462OrNewer))]
+        [ConditionalFact(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ImportEdgeCaseSki()
         {
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ValidateZeroLengthContent(encodedMessage);
         }
 
-        [ConditionalFact(nameof(IsNet462OrNewer))]
+        [ConditionalFact(nameof(SupportsCngCertificates))]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_FixedValue()
         {
