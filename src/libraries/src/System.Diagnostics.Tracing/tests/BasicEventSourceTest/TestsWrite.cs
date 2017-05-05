@@ -39,7 +39,6 @@ namespace BasicEventSourceTests
         /// Tests the EventListener code path
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18805")]
         public void Test_Write_T_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -53,7 +52,6 @@ namespace BasicEventSourceTests
         /// Tests the EventListener code path using events instead of virtual callbacks.
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18805")]
         public void Test_Write_T_EventListener_UseEvents()
         {
             Test_Write_T(new EventListenerListener(true));
