@@ -25,6 +25,7 @@ namespace System.ConfigurationTests
 </configuration>";
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19341")]
         public void UriSectionIdnIriParsing()
         {
             using (var temp = new TempConfig(UriSectionConfiguration))
@@ -37,6 +38,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19341")]
         public void UriSectionSchemeSettings()
         {
             using (var temp = new TempConfig(UriSectionConfiguration))
