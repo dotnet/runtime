@@ -27,6 +27,8 @@ public class UmsSecurityTests
                         stream.PositionPointer = stream.PositionPointer - 1;
                     });
 
+                    Assert.Throws<ArgumentOutOfRangeException>(() => stream.PositionPointer = (byte*)ulong.MaxValue);
+
                     // Make sure that moving later than the length can be done but then
                     // fails appropriately during reads and writes, and that the stream's
                     // data is still intact after the fact
@@ -35,6 +37,19 @@ public class UmsSecurityTests
                     CheckStreamIntegrity(stream, data);
                 }
             } // fixed
+        }
+    }
+
+    [Fact]
+    public static void OverflowPositionPointer()
+    {
+        unsafe
+        {
+            using (var ums = new UnmanagedMemoryStream((byte*)0x40000000, 0xB8000000))
+            {
+                ums.PositionPointer = (byte*)0xF0000000;
+                Assert.Equal(0xB0000000, ums.Position);
+            }
         }
     }
 
