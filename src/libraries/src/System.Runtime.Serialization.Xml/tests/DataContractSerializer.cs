@@ -3062,8 +3062,23 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(instance, result);
     }
 
+    [Fact]
+    public static void DCS_BasicRoundtripDCRDefaultCollections()
+    {
+        var defaultCollections = new SerializationTestTypes.DefaultCollections();
+        var setting = new DataContractSerializerSettings()
+        {
+            DataContractResolver = new SerializationTestTypes.ResolverDefaultCollections(),
+            PreserveObjectReferences = true
+        };
+        string baseline = @"<DefaultCollections z:Id=""1"" xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:z=""http://schemas.microsoft.com/2003/10/Serialization/""><_arrayList z:Id=""2"" z:Size=""1"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType z:Id=""3"" i:type=""b:SerializationTestTypes.Person"" xmlns:b=""http://www.default.com""><Age>0</Age><Name i:nil=""true""/></a:anyType></_arrayList><_dictionary z:Id=""4"" z:Size=""1"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfintanyType><a:Key>1</a:Key><a:Value z:Id=""5"" i:type=""b:SerializationTestTypes.CharClass"" xmlns:b=""http://www.default.com""><c>0</c><c1>65535</c1><c2>0</c2><c3>99</c3></a:Value></a:KeyValueOfintanyType></_dictionary><_hashtable z:Id=""6"" z:Size=""1"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:KeyValueOfanyTypeanyType><a:Key z:Id=""7"" i:type=""b:System.String"" xmlns:b=""http://www.default.com"">one</a:Key><a:Value z:Id=""8"" i:type=""b:SerializationTestTypes.Version1"" xmlns:b=""http://www.default.com""><make z:Id=""9"" i:type=""b:System.String"" xmlns=""TestingVersionTolerance"">Chevrolet</make></a:Value></a:KeyValueOfanyTypeanyType></_hashtable><_singleDimArray z:Id=""10"" z:Size=""1"" xmlns:a=""http://schemas.microsoft.com/2003/10/Serialization/Arrays""><a:anyType z:Id=""11"" i:type=""b:SerializationTestTypes.Employee"" xmlns:b=""http://www.default.com""><dateHired xmlns=""NonExistNamespace"">0001-01-01T00:00:00</dateHired><individual i:nil=""true"" xmlns=""NonExistNamespace"" xmlns:c=""http://schemas.datacontract.org/2004/07/SerializationTestTypes""/><salary xmlns=""NonExistNamespace"">0</salary></a:anyType></_singleDimArray></DefaultCollections>";
+
+        var actual = SerializeAndDeserialize(defaultCollections, baseline, setting);
+        SerializationTestTypes.ComparisonHelper.CompareRecursively(defaultCollections, actual);
+    }
+
     #endregion
-    
+
     [Fact]
     public static void DCS_MyPersonSurrogate()
     {
