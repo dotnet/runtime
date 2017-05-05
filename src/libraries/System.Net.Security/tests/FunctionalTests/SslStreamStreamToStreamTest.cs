@@ -39,6 +39,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public void SslStream_StreamToStream_Authentication_IncorrectServerName_Fail()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -142,6 +143,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public void SslStream_StreamToStream_LargeWrites_Sync_Success(bool randomizedData)
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -188,6 +190,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task SslStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[_sampleMsg.Length];
@@ -254,6 +257,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task SslStream_StreamToStream_WriteAsync_ReadByte_Success()
         {
             VirtualNetwork network = new VirtualNetwork();

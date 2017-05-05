@@ -33,6 +33,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ServerRequireEncryption_ClientRequireEncryption_ConnectWithEncryption()
         {
             using (var serverRequireEncryption = new DummyTcpServer(
@@ -53,6 +54,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ServerRequireEncryption_ClientAllowNoEncryption_ConnectWithEncryption()
         {
             using (var serverRequireEncryption = new DummyTcpServer(
@@ -73,6 +75,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(SupportsNullEncryption))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ServerRequireEncryption_ClientNoEncryption_NoConnect()
         {
             using (var serverRequireEncryption = new DummyTcpServer(

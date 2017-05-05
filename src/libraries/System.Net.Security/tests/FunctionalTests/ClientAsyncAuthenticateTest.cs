@@ -25,12 +25,14 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task ClientAsyncAuthenticate_ServerNoEncryption_NoConnect()
         {
             await Assert.ThrowsAsync<IOException>(() => ClientAsyncSslHelper(EncryptionPolicy.NoEncryption));
