@@ -188,7 +188,12 @@ namespace System.Security.Cryptography.Xml.Tests
             signedXml.ComputeSignature();
 
             Assert.Null(signedXml.SigningKeyName);
-            Assert.Equal("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", signedXml.SignatureMethod);
+
+            if (PlatformDetection.IsFullFramework)
+                Assert.Equal("http://www.w3.org/2000/09/xmldsig#rsa-sha1", signedXml.SignatureMethod);
+            else
+                Assert.Equal("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", signedXml.SignatureMethod);
+
             Assert.Equal(key.KeySize / 8, signedXml.SignatureValue.Length);
             Assert.Null(signedXml.SigningKeyName);
 
@@ -1256,8 +1261,12 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml sign = new SignedXml(doc);
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
-            // verify MS-generated signature
-            Assert.False(sign.CheckSignature(new HMACSHA256(badKey)));
+            // https://github.com/dotnet/corefx/issues/18690
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.False(sign.CheckSignature(new HMACSHA256(badKey)));
+            }
+
             Assert.True(sign.CheckSignature(new HMACSHA256(emptyHmacKey)));
         }
 
@@ -1288,8 +1297,12 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml sign = new SignedXml(doc);
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
-            // verify MS-generated signature
-            Assert.False(sign.CheckSignature(new HMACSHA512(badKey)));
+            // https://github.com/dotnet/corefx/issues/18690
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.False(sign.CheckSignature(new HMACSHA512(badKey)));
+            }
+
             Assert.True(sign.CheckSignature(new HMACSHA512(emptyHmacKey)));
         }
 
@@ -1323,8 +1336,12 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml sign = new SignedXml(doc);
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
-            // verify MS-generated signature
-            Assert.False(sign.CheckSignature(new HMACSHA384(badKey)));
+            // https://github.com/dotnet/corefx/issues/18690
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.False(sign.CheckSignature(new HMACSHA384(badKey)));
+            }
+
             Assert.True(sign.CheckSignature(new HMACSHA384(emptyHmacKey)));
         }
 
@@ -1358,8 +1375,12 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml sign = new SignedXml(doc);
             sign.LoadXml(doc.DocumentElement["Signature"]);
 
-            // verify MS-generated signature
-            Assert.False(sign.CheckSignature(new HMACMD5(badKey)));
+            // https://github.com/dotnet/corefx/issues/18690
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.False(sign.CheckSignature(new HMACMD5(badKey)));
+            }
+
             Assert.True(sign.CheckSignature(new HMACMD5(emptyHmacKey)));
         }
 
@@ -1552,11 +1573,25 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void SignedXmlUsesSha256ByDefault()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18690")]
+        public void CoreFxSignedXmlUsesSha256ByDefault()
         {
             const string expectedSignatureMethod = "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256";
             const string expectedDigestMethod = "http://www.w3.org/2001/04/xmlenc#sha256";
+            ValidateSignedXmlDefaultHashAlgorithms(expectedSignatureMethod, expectedDigestMethod);
+        }
 
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18690")]
+        public void NetFxSignedXmlUsesSha1ByDefault()
+        {
+            const string expectedSignatureMethod = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
+            const string expectedDigestMethod = "http://www.w3.org/2000/09/xmldsig#sha1";
+            ValidateSignedXmlDefaultHashAlgorithms(expectedSignatureMethod, expectedDigestMethod);
+        }
+
+        private void ValidateSignedXmlDefaultHashAlgorithms(string expectedSignatureMethod, string expectedDigestMethod)
+        {
             const string xml = @"<?xml version=""1.0""?>
 <example>
 <test>some text node</test>

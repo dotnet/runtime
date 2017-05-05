@@ -96,7 +96,16 @@ namespace System.Security.Cryptography.Xml.Tests
             xmlDocument.LoadXml(xml);
 
             RSAKeyValue rsa = new RSAKeyValue();
-            Assert.Throws<CryptographicException>(() => rsa.LoadXml(xmlDocument.DocumentElement));
+
+            // FormatException exception because desktop does not
+            // check if Convert.FromBase64String throws
+            // Related to: https://github.com/dotnet/corefx/issues/18690
+            try
+            {
+                rsa.LoadXml(xmlDocument.DocumentElement);
+            }
+            catch (CryptographicException) { }
+            catch (FormatException) when (PlatformDetection.IsFullFramework) { }
         }
 
         private static object[][] LoadXml_InvalidXml_Source()

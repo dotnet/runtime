@@ -155,7 +155,16 @@ namespace System.Security.Cryptography.Xml
 
         public void AddIssuerSerial(string issuerName, string serialNumber)
         {
-            BigInteger h = BigInteger.Parse(serialNumber, NumberStyles.AllowHexSpecifier);
+            if (string.IsNullOrEmpty(issuerName))
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
+
+            if (string.IsNullOrEmpty(serialNumber))
+                throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
+
+            BigInteger h;
+            if (!BigInteger.TryParse(serialNumber, NumberStyles.AllowHexSpecifier, NumberFormatInfo.CurrentInfo, out h))
+                throw new ArgumentException(SR.Cryptography_Xml_InvalidX509IssuerSerialNumber, nameof(serialNumber));
+
             if (_issuerSerials == null)
                 _issuerSerials = new ArrayList();
             _issuerSerials.Add(new X509IssuerSerial(issuerName, h.ToString()));

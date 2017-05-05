@@ -134,6 +134,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/16798")]
         public void LoadStreamInput_CorrectXml()
         {
             XmlDocument doc = new XmlDocument();
@@ -166,6 +167,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/16798")]
         public void GetOutput_XmlNoEncryptedData()
         {
             XmlDocument doc = new XmlDocument();
@@ -179,6 +181,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/16798")]
         public void GetOutput_XmlWithEncryptedData()
         {
             XmlDocument doc = new XmlDocument();
@@ -192,6 +195,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/16798")]
         public void GetOutput_XmlWithEncryptedDataInRoot()
         {
             XmlDocument doc = new XmlDocument();
@@ -205,6 +209,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/16798")]
         public void GetOutput_XmlWithEncryptedDataAndExcept()
         {
             XmlDocument doc = new XmlDocument();
