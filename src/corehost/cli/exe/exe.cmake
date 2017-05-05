@@ -34,7 +34,7 @@ else()
 endif()
 
 set(RESOURCES)
-if(WIN32)
+if(WIN32 AND NOT SKIP_VERSIONING)
     list(APPEND RESOURCES ../../native.rc)
 endif()
 
