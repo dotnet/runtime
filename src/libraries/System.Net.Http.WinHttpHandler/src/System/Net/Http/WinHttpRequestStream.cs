@@ -249,7 +249,7 @@ namespace System.Net.Http
                     IntPtr.Zero))
                 {
                     _state.TcsInternalWriteDataToRequestStream.TrySetException(
-                        new IOException(SR.net_http_io_write, WinHttpException.CreateExceptionUsingLastError().InitializeStackTrace()));
+                        new IOException(SR.net_http_io_write, WinHttpException.CreateExceptionUsingLastError()));
                 }
             }
 
