@@ -89,13 +89,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [InlineData("aA1!", new double[] { -1, -1, 1, -1 })]
-        // Numeric surrogate (CUNEIFORM NUMERIC SIGN FIVE BAN2 VARIANT FORM)
-        [InlineData("\uD809\uDC55", new double[] { 5, -1 })]
-        [InlineData("a\uD809\uDC55a", new double[] { -1, 5, -1 , -1 })]
-        // Non-numeric surrogate (CUNEIFORM SIGN ZU5 TIMES A)
-        [InlineData("\uD808\uDF6C", new double[] { -1, -1 })]
-        [InlineData("a\uD808\uDF6Ca", new double[] { -1, -1, -1, -1 })]
+        [MemberData(nameof(s_GetNumericValueData))]
         public void GetNumericValue(string s, double[] expected)
         {
             for (int i = 0; i < expected.Length; i++)
@@ -103,6 +97,17 @@ namespace System.Globalization.Tests
                 Assert.Equal(expected[i], CharUnicodeInfo.GetNumericValue(s, i));
             }
         }
+
+        public static readonly object[][] s_GetNumericValueData =
+        {
+            new object[] {"aA1!", new double[] { -1, -1, 1, -1 }},
+            // Numeric surrogate (CUNEIFORM NUMERIC SIGN FIVE BAN2 VARIANT FORM)
+            new object[] {"\uD809\uDC55", new double[] { 5, -1 }},
+            new object[] {"a\uD809\uDC55a", new double[] { -1, 5, -1 , -1 }},
+            // Numeric surrogate (CUNEIFORM NUMERIC SIGN FIVE BAN2 VARIANT FORM)
+            new object[] {"\uD808\uDF6C", new double[] { -1, -1 }},
+            new object[] {"a\uD808\uDF6Ca", new double[] { -1, -1, -1, -1 }},
+        };
 
         [Fact]
         public void GetNumericValue_Invalid()
