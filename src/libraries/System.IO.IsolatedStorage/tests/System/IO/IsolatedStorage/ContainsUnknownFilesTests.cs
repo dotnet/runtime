@@ -14,6 +14,7 @@ namespace System.IO.IsolatedStorage
             = typeof(IsolatedStorageFile).GetMethod("ContainsUnknownFiles", BindingFlags.NonPublic | BindingFlags.Instance);
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void ContainsUnknownFiles_CleanStore(PresetScopes scope)
         {
             TestHelper.WipeStores();
@@ -25,6 +26,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void ContainsUnknownFiles_OkFiles(PresetScopes scope)
         {
             TestHelper.WipeStores();
@@ -44,6 +46,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void ContainsUnknownFiles_NotOkFiles(PresetScopes scope)
         {
             TestHelper.WipeStores();
@@ -66,6 +69,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void ContainsUnknownFiles_NotOkDirectory(PresetScopes scope)
         {
             TestHelper.WipeStores();
