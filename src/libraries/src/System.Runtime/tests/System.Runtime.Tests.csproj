@@ -120,6 +120,9 @@
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uapaot'">
+    <Compile Include="System\TypeTests.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="ArrayTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
@@ -142,7 +145,6 @@
     <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\TypedReferenceTests.cs" />
-    <Compile Include="System\TypeTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\StringSplitExtensions.cs" />
