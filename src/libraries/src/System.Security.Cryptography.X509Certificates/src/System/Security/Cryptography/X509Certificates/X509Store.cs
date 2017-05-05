@@ -70,6 +70,12 @@ namespace System.Security.Cryptography.X509Certificates
             Location = storeLocation;
         }
 
+        public X509Store(StoreName storeName, StoreLocation storeLocation, OpenFlags flags)
+            : this(storeName, storeLocation)
+        {
+            Open(flags);
+        }
+
         public X509Store(string storeName, StoreLocation storeLocation)
         {
             if (storeLocation != StoreLocation.CurrentUser && storeLocation != StoreLocation.LocalMachine)
@@ -78,6 +84,13 @@ namespace System.Security.Cryptography.X509Certificates
             Location = storeLocation;
             Name = storeName;
         }
+
+        public X509Store(string storeName, System.Security.Cryptography.X509Certificates.StoreLocation storeLocation, System.Security.Cryptography.X509Certificates.OpenFlags flags)
+            : this(storeName, storeLocation)
+        {
+            Open(flags);
+        }
+
 
         public X509Store(IntPtr storeHandle)
         {
@@ -122,6 +135,11 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 return certificates;
             }
+        }
+
+        public bool IsOpen
+        {
+            get { return _storePal != null; }
         }
 
         public void Add(X509Certificate2 certificate)
