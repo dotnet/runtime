@@ -3,7 +3,7 @@
   <Import Project="dir.props" />
 
   <ItemGroup>
-    <Project Include="Microsoft.NETCore.UniversalWindowsPlatform.pkgproj" />
+    <Project Include="Microsoft.NETCore.UniversalWindowsPlatform.pkgproj" Condition="'$(Platform)' != 'arm64'"/>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />

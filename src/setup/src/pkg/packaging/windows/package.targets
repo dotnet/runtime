@@ -7,7 +7,7 @@
     <UsingTask TaskName="ZipFileExtractToDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
     <Target Name="GenerateMsis"
-            Condition="'$(OSGroup)' == 'Windows_NT'">
+            Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
       
       <PropertyGroup>
         <WixVersion Condition="'$(WixVersion)' == ''">3.10.2</WixVersion>
@@ -86,7 +86,7 @@
 
   <Target Name="GenerateBundles"
           DependsOnTargets="GetBundleDisplayVersion"
-          Condition="'$(OSGroup)' == 'Windows_NT'">
+          Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
      <PropertyGroup>
         <SharedFxBundleScript>$(WindowsScriptRoot)sharedframework\generatebundle.ps1</SharedFxBundleScript>
         <ShareFXMsi>$(SharedFrameworkInstallerFile)</ShareFXMsi>
@@ -108,11 +108,11 @@
      <Exec Command="powershell -NoProfile -NoLogo $(SharedFxBundleScript) $(BundleParameters)" />
   </Target>
 
-  <Target Name="ExtractEngineBundle">
+  <Target Name="ExtractEngineBundle" Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
       <Exec Command="$(InsigniaCmd) -ib $(CombinedInstallerFile) -o $(CombinedInstallerEngine)" />
   </Target>
 
-  <Target Name="ReattachEngineToBundle">
+  <Target Name="ReattachEngineToBundle" Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
       <Exec Command="$(InsigniaCmd) -ab $(CombinedInstallerEngine) $(CombinedInstallerFile) -o $(CombinedInstallerFile)" />
   </Target>
 

@@ -151,7 +151,7 @@ esac
 
 __BuildType=Debug
 __BuildArch=x64
-__IncludeTests=Include_Tests
+__SkipTests=false
 __VerboseBuild=0
 __CrossBuild=0
 __PortableBuild=0
@@ -209,7 +209,7 @@ while :; do
             ;;
 
         skiptests)
-            __IncludeTests=
+            __SkipTests=true
             ;;
     esac
 
@@ -222,7 +222,7 @@ initHostDistroRid
 # init the target distro name
 initTargetDistroRid
 
-__RunArgs="-TargetArchitecture=$__BuildArch -ConfigurationGroup=$__BuildType -OSGroup=$__HostOS -DistroRid=$__DistroRid"
+__RunArgs="-TargetArchitecture=$__BuildArch -ConfigurationGroup=$__BuildType -OSGroup=$__HostOS -DistroRid=$__DistroRid -SkipTests=$__SkipTests"
 
 if [ $__PortableBuild == 1 ]; then
   __RunArgs="$__RunArgs -PortableBuild=True"

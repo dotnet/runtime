@@ -43,11 +43,12 @@
              Targets="GenerateVersionHeader" />
     <PropertyGroup>
       <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) version $(HostVersion) commit $(LatestCommit) rid $(TargetRid)</BuildArgs>
+      <CustomNativeToolsetDir Condition="'$(TargetArchitecture)' == 'arm64'"> toolsetdir $(NativeToolsetDir)</CustomNativeToolsetDir>      
     </PropertyGroup>
 
     <!-- Run script that invokes Cmake to create VS files, and then calls msbuild to compile them -->
     <Message Text="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)" Importance="High"/>
-    <Exec Command="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)" />
+    <Exec Command="$(MSBuildProjectDirectory)\build.cmd $(BuildArgs)$(CustomNativeToolsetDir)" />
 
     <ItemGroup>
       <CMakeOutput Include="$(IntermediateOutputRootPath)corehost\cli\exe\dotnet\$(ConfigurationGroup)\dotnet.exe" />
