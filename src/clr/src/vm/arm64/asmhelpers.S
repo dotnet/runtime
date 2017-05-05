@@ -217,6 +217,7 @@ LEAF_END ThePreStubPatch, _TEXT
 //   x13  : incremented by 8
 //   x14  : incremented by 8
 //   x15  : trashed
+//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 WRITE_BARRIER_ENTRY JIT_ByRefWriteBarrier
 
@@ -236,6 +237,7 @@ WRITE_BARRIER_END JIT_ByRefWriteBarrier
 //   x12  : trashed
 //   x14  : incremented by 8
 //   x15  : trashed
+//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     PREPARE_EXTERNAL_VAR g_lowest_address, x12
@@ -262,6 +264,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   x12  : trashed
 //   x14  : incremented by 8
 //   x15  : trashed
+//   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
     dmb  ST
@@ -310,6 +313,21 @@ LOCAL_LABEL(shadowupdateend):
     ldp  x12, x13, [sp],#16
 #endif
 
+#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+    // Update the write watch table if necessary
+    PREPARE_EXTERNAL_VAR g_sw_ww_enabled_for_gc_heap, x12
+    ldrb w12, [x12]
+    cbz  x12, LOCAL_LABEL(CheckCardTable)
+    PREPARE_EXTERNAL_VAR g_sw_ww_table, x12
+    ldr  x12, [x12]
+    add  x12, x12, x14, lsr #0xc  // SoftwareWriteWatch::AddressToTableByteIndexShift
+    ldrb w17, [x12]
+    cbnz x17, LOCAL_LABEL(CheckCardTable)
+    mov  w17, #0xFF
+    strb w17, [x12]
+#endif
+
+LOCAL_LABEL(CheckCardTable):
     // Branch to Exit if the reference is not in the Gen0 heap
     //
     PREPARE_EXTERNAL_VAR g_ephemeral_low, x12
@@ -333,6 +351,21 @@ LOCAL_LABEL(shadowupdateend):
 LOCAL_LABEL(UpdateCardTable):
     mov  x12, 0xFF 
     strb w12, [x15]
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    // Check if we need to update the card table
+    PREPARE_EXTERNAL_VAR g_card_bundle_table, x12
+    ldr  x12, [x12]
+    add  x15,  x12, x14, lsr #21
+    ldrb w12, [x15]
+    cmp  x12, 0xFF
+    beq  LOCAL_LABEL(Exit)
+
+LOCAL_LABEL(UpdateCardBundle):
+    mov  x12, 0xFF
+    strb w12, [x15]
+#endif
+
 LOCAL_LABEL(Exit):
     add  x14, x14, 8
     ret  lr  
