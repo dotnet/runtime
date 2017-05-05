@@ -109,11 +109,11 @@
   </Target>
 
   <Target Name="ExtractEngineBundle">
-      <Exec Command="$(InsigniaCmd) -ib $(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerEngine)" />
+      <Exec Command="$(InsigniaCmd) -ib $(CombinedInstallerFile) -o $(CombinedInstallerEngine)" />
   </Target>
 
   <Target Name="ReattachEngineToBundle">
-      <Exec Command="$(InsigniaCmd) -ab $(CombinedInstallerEngine) $(PackagesOutDir)$(CombinedInstallerFile) -o $(PackagesOutDir)$(CombinedInstallerFile)" />
+      <Exec Command="$(InsigniaCmd) -ab $(CombinedInstallerEngine) $(CombinedInstallerFile) -o $(CombinedInstallerFile)" />
   </Target>
 
 </Project>
