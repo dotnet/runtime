@@ -525,6 +525,16 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
     // Note that these are just best guesses to save memory. If we guessed wrong,
     // we will allocate a new exact type of precode in GetOrCreatePrecode.
     BOOL fForcedPrecode = pFirstMD->RequiresStableEntryPoint(count > 1);
+
+#ifdef _TARGET_ARM_
+    if (pFirstMD->RequiresMethodDescCallingConvention(count > 1)
+        || count >= MethodDescChunk::GetCompactEntryPointMaxCount ())
+    {
+        // We do not pass method desc on scratch register
+        fForcedPrecode = TRUE;
+    }
+#endif // _TARGET_ARM_
+
     if (!fForcedPrecode && (totalSize > MethodDescChunk::SizeOfCompactEntryPoints(count)))
         return NULL;
 #endif
