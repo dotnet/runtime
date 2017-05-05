@@ -59,6 +59,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void DeleteFile_DeletesFile(PresetScopes scope)
         {
             TestHelper.WipeStores();
