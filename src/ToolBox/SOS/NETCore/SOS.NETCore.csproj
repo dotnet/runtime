@@ -11,13 +11,13 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
     <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
 
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
-    
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->
@@ -34,10 +34,6 @@
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
     <DebugType>portable</DebugType>
   </PropertyGroup>
-
-  <ItemGroup>
-    <AssemblyInfoLines Include="[assembly: AssemblyMetadata(&quot;.NETFrameworkAssembly&quot;, &quot;&quot;)]" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="SymbolReader.cs" />
