@@ -62,16 +62,7 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             using (var client = new HttpClient(handler))
             {
-                try
-                {
-                    handler.MaxConnectionsPerServer = 1;
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    // Some older libcurls used in some of our Linux CI systems don't support this
-                    Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
-                }
-
+                handler.MaxConnectionsPerServer = 1;
                 await Task.WhenAll(
                     from i in Enumerable.Range(0, 5)
                     select client.GetAsync(Configuration.Http.RemoteEchoServer));
