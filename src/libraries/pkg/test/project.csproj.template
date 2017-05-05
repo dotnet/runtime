@@ -3,10 +3,13 @@
   <PropertyGroup>
     <TargetFramework>{TFM}</TargetFramework>
     <RuntimeIdentifiers>{RIDs}</RuntimeIdentifiers>
+    <TestPackageId>{PackageId}</TestPackageId>
+    <TestPackageVersion>{PackageVersion}</TestPackageVersion>
   </PropertyGroup>
   
   <ItemGroup>
     <PackageReference Include="{PackageId}" Version="{PackageVersion}" />
   </ItemGroup>
 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), packageTest.targets))\packageTest.targets" />
 </Project>
