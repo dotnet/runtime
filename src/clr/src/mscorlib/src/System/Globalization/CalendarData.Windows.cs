@@ -157,20 +157,9 @@ namespace System.Globalization
                 }
             }
 
-            GCHandle contextHandle = GCHandle.Alloc(data);
-            try
+            unsafe
             {
-                // Now call the enumeration API. Work is done by our callback function
-#if CORECLR
-                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, (IntPtr)contextHandle);
-#else
-                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarsCallback);
-                Interop.Kernel32.EnumCalendarInfoExEx(callback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, (IntPtr)contextHandle);
-#endif
-            }
-            finally
-            {
-                contextHandle.Free();
+                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarsCallback, localeName, ENUM_ALL_CALENDARS, null, CAL_ICALINTVALUE, Unsafe.AsPointer(ref data));
             }
 
             // Copy to the output array
@@ -300,15 +289,13 @@ namespace System.Globalization
         }
 
         // EnumCalendarInfoExEx callback itself.
-#if !CORECLR
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-#endif
-        private static unsafe Interop.BOOL EnumCalendarInfoCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr pReserved, IntPtr lParam)
+        // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumCalendarInfoCallback(char* lpCalendarInfoString, uint calendar, IntPtr pReserved, void* lParam)
         {
-            EnumData context = (EnumData)((GCHandle)lParam).Target;
+            ref EnumData context = ref Unsafe.As<byte, EnumData>(ref *(byte*)lParam);
             try
             {
-                string calendarInfo = new string((char*)lpCalendarInfoString);
+                string calendarInfo = new string(lpCalendarInfoString);
 
                 // If we had a user override, check to make sure this differs
                 if (context.userOverride != calendarInfo)
@@ -354,20 +341,10 @@ namespace System.Globalization
                 }
             }
 
-            GCHandle contextHandle = GCHandle.Alloc(context);
-            try
+            unsafe
             {
-#if CORECLR
-                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, (IntPtr)contextHandle);
-#else
                 // Now call the enumeration API. Work is done by our callback function
-                IntPtr callback = AddrofIntrinsics.AddrOf<Func<IntPtr, uint, IntPtr, IntPtr, Interop.BOOL>>(EnumCalendarInfoCallback);
-                Interop.Kernel32.EnumCalendarInfoExEx(callback, localeName, (uint)calendar, null, calType, (IntPtr)contextHandle);
-#endif // CORECLR
-            }
-            finally
-            {
-                contextHandle.Free();
+                Interop.Kernel32.EnumCalendarInfoExEx(EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, Unsafe.AsPointer(ref context));
             }
 
             // Now we have a list of data, fail if we didn't find anything.
@@ -464,12 +441,10 @@ namespace System.Globalization
             public IntList calendars;      // list of calendars found so far
         }
 
-#if !CORECLR
-        [NativeCallable(CallingConvention = CallingConvention.StdCall)]
-#endif
-        private static Interop.BOOL EnumCalendarsCallback(IntPtr lpCalendarInfoString, uint calendar, IntPtr reserved, IntPtr lParam)
+        // [NativeCallable(CallingConvention = CallingConvention.StdCall)]
+        private static unsafe Interop.BOOL EnumCalendarsCallback(char* lpCalendarInfoString, uint calendar, IntPtr reserved, void* lParam)
         {
-            EnumCalendarsData context = (EnumCalendarsData)((GCHandle)lParam).Target;
+            ref EnumCalendarsData context = ref Unsafe.As<byte, EnumCalendarsData>(ref *(byte*)lParam);
             try
             {
                 // If we had a user override, check to make sure this differs
