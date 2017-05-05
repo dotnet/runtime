@@ -65,6 +65,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void GetUserStoreForAssembly()
         {
             var isf = IsolatedStorageFile.GetUserStoreForAssembly();
@@ -74,6 +75,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void GetUserStoreForDomain()
         {
             var isf = IsolatedStorageFile.GetUserStoreForDomain();
