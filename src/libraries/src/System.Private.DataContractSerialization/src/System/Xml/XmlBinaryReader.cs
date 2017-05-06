@@ -183,7 +183,7 @@ namespace System.Xml
 
         private bool CanOptimizeReadElementContent()
         {
-            return (_arrayState == ArrayState.None);
+            return (_arrayState == ArrayState.None && !Signing);
         }
 
         public override float ReadElementContentAsFloat()
@@ -364,6 +364,8 @@ namespace System.Xml
         {
             if (this.Node.ReadState == ReadState.Closed)
                 return false;
+
+            SignNode();
             if (_isTextWithEndElement)
             {
                 _isTextWithEndElement = false;
@@ -1204,12 +1206,12 @@ namespace System.Xml
 
         private bool IsStartArray(string localName, string namespaceUri, XmlBinaryNodeType nodeType)
         {
-            return IsStartElement(localName, namespaceUri) && _arrayState == ArrayState.Element && _arrayNodeType == nodeType;
+            return IsStartElement(localName, namespaceUri) && _arrayState == ArrayState.Element && _arrayNodeType == nodeType && !Signing;
         }
 
         private bool IsStartArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, XmlBinaryNodeType nodeType)
         {
-            return IsStartElement(localName, namespaceUri) && _arrayState == ArrayState.Element && _arrayNodeType == nodeType;
+            return IsStartElement(localName, namespaceUri) && _arrayState == ArrayState.Element && _arrayNodeType == nodeType && !Signing;
         }
 
         private void CheckArray(Array array, int offset, int count)
@@ -1494,6 +1496,11 @@ namespace System.Xml
             None,
             Element,
             Content
+        }
+
+        protected override XmlSigningNodeWriter CreateSigningNodeWriter()
+        {
+            return new XmlSigningNodeWriter(false);
         }
     }
 }

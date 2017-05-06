@@ -53,7 +53,7 @@
     <Compile Include="$(RuntimeSerializationSources)\Globals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\GenericParameterDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\HybridObjectCache.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\InvalidDataContract.cs"  Condition="'$(TargetGroup)' == 'uapaot'" />
+    <Compile Include="$(RuntimeSerializationSources)\InvalidDataContract.cs" Condition="'$(TargetGroup)' == 'uapaot'" />
     <Compile Include="$(RuntimeSerializationSources)\ObjectToIdCache.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ObjectReferenceStack.cs" />
     <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
@@ -162,6 +162,8 @@
     <Compile Include="System\Runtime\Serialization\XsdDataContractExporter.cs" />
     <Compile Include="System\Runtime\Serialization\SurrogateDataContract.cs" />
     <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
+    <Compile Include="System\Xml\XmlCanonicalWriter.cs" />
+    <Compile Include="System\Xml\XmlSigningNodeWriter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />

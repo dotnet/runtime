@@ -15,6 +15,18 @@ namespace System.Xml
 {
     internal abstract class XmlNodeWriter
     {
+        private static XmlNodeWriter s_nullNodeWriter;
+
+        static public XmlNodeWriter Null
+        {
+            get
+            {
+                if (s_nullNodeWriter == null)
+                    s_nullNodeWriter = new XmlNullNodeWriter();
+                return s_nullNodeWriter;
+            }
+        }
+
         public abstract void Flush();
         public virtual Task FlushAsync()
         {
@@ -94,5 +106,52 @@ namespace System.Xml
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(NotImplemented.ByDesign);
         }
         public abstract void WriteQualifiedName(string prefix, XmlDictionaryString localName);
+
+        private class XmlNullNodeWriter : XmlNodeWriter
+        {
+            public override void Flush() { }
+            public override void Close() { }
+            public override void WriteDeclaration() { }
+            public override void WriteComment(string text) { }
+            public override void WriteCData(string text) { }
+            public override void WriteStartElement(string prefix, string localName) { }
+            public override void WriteStartElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength) { }
+            public override void WriteStartElement(string prefix, XmlDictionaryString localName) { }
+            public override void WriteEndStartElement(bool isEmpty) { }
+            public override void WriteEndElement(string prefix, string localName) { }
+            public override void WriteEndElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength) { }
+            public override void WriteXmlnsAttribute(string prefix, string ns) { }
+            public override void WriteXmlnsAttribute(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] nsBuffer, int nsOffset, int nsLength) { }
+            public override void WriteXmlnsAttribute(string prefix, XmlDictionaryString ns) { }
+            public override void WriteStartAttribute(string prefix, string localName) { }
+            public override void WriteStartAttribute(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength) { }
+            public override void WriteStartAttribute(string prefix, XmlDictionaryString localName) { }
+            public override void WriteEndAttribute() { }
+            public override void WriteCharEntity(int ch) { }
+            public override void WriteEscapedText(string value) { }
+            public override void WriteEscapedText(XmlDictionaryString value) { }
+            public override void WriteEscapedText(char[] chars, int offset, int count) { }
+            public override void WriteEscapedText(byte[] buffer, int offset, int count) { }
+            public override void WriteText(string value) { }
+            public override void WriteText(XmlDictionaryString value) { }
+            public override void WriteText(char[] chars, int offset, int count) { }
+            public override void WriteText(byte[] buffer, int offset, int count) { }
+            public override void WriteInt32Text(int value) { }
+            public override void WriteInt64Text(Int64 value) { }
+            public override void WriteBoolText(bool value) { }
+            public override void WriteUInt64Text(UInt64 value) { }
+            public override void WriteFloatText(float value) { }
+            public override void WriteDoubleText(double value) { }
+            public override void WriteDecimalText(decimal value) { }
+            public override void WriteDateTimeText(DateTime value) { }
+            public override void WriteUniqueIdText(UniqueId value) { }
+            public override void WriteTimeSpanText(TimeSpan value) { }
+            public override void WriteGuidText(Guid value) { }
+            public override void WriteStartListText() { }
+            public override void WriteListSeparator() { }
+            public override void WriteEndListText() { }
+            public override void WriteBase64Text(byte[] trailBuffer, int trailCount, byte[] buffer, int offset, int count) { }
+            public override void WriteQualifiedName(string prefix, XmlDictionaryString localName) { }
+        }
     }
 }
