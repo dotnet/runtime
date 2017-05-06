@@ -38,8 +38,8 @@
             "REPO_ID": "562fbfe0b2d7d0e0a43780c4",
             "REPO_USER": "dotnet",
             "REPO_SERVER": "azure-apt-cat.cloudapp.net",
-            "CLI_NUGET_FEED_URL": "https://dotnet.myget.org/F/dotnet-core/api/v2/package",
-            "CLI_NUGET_SYMBOLS_FEED_URL": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
+            "CLI_NUGET_FEED_URL": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package",
+            "CLI_NUGET_SYMBOLS_FEED_URL": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
