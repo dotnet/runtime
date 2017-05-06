@@ -5143,6 +5143,19 @@ public class People
     public string Name;
 }
 
+public class SoapComplexType
+{
+    public bool BoolValue;
+    public string StringValue;
+}
+
+public class SoapComplexTypeWithArray
+{
+    public int[] IntArray;
+    public string[] StringArray;
+    public List<int> IntList;
+    public List<string> StringList;
+}
 [KnownType("KnownTypes")]
 [DataContract]
 public class EmployeeC
