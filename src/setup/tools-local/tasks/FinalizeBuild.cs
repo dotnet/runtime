@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string Version { get; set; }
         [Required]
-        public ITaskItem [] PublishVersionFiles { get; set; }
+        public ITaskItem [] PublishRids { get; set; }
         [Required]
         public string CommitHash { get; set; }
         public bool ForcePublish { get; set; }
@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.Build.Tasks
                     CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}", $"{Channel}/Installers/Latest/");
 
                     // Generate the Sharedfx Version text files
-                    List<string> versionFiles = PublishVersionFiles.Select(p => $"{p.ItemSpec}.version").ToList();
+                    List<string> versionFiles = PublishRids.Select(p => $"{p.GetMetadata("VersionFileName")}.version").ToList();
 
                     string sfxVersion = GetSharedFrameworkVersionFileContent();
                     foreach(string version in versionFiles)
