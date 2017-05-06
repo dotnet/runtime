@@ -65,4 +65,6 @@
                           Exclude="@(_FoundBlobNames)" />
     </ItemGroup>
   </Target>
+
+  <Import Project="..\dir.targets" />
 </Project>
