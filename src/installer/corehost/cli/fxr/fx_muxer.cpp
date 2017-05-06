@@ -171,7 +171,7 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app)
     // First append directory.
     pal::string_t deps_file;
     deps_file.assign(get_directory(app));
-    deps_file.push_back(DIR_SEPARATOR);
+
 
     // Then the app name and the file extension
     pal::string_t app_name = get_filename(app);
@@ -222,8 +222,14 @@ pal::string_t get_deps_file(
 {
     if (config.get_portable())
     {
+        pal::string_t deps_file = fx_dir;
+        
+        if (!deps_file.empty() && deps_file.back() != DIR_SEPARATOR)
+        {
+            deps_file.push_back(DIR_SEPARATOR);
+        }
         // Portable app's hostpolicy is resolved from FX deps
-        return fx_dir + DIR_SEPARATOR + config.get_fx_name() + _X(".deps.json");
+        return deps_file + config.get_fx_name() + _X(".deps.json");
     }
     else
     {
