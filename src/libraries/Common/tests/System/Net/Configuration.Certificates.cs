@@ -19,7 +19,7 @@ namespace System.Net.Test.Common
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
             private static Mutex m = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
-            private const int MutexTimeout = 5 * 1000;
+            private const int MutexTimeout = 30 * 1000;
 
             public static X509Certificate2 GetServerCertificate() => GetCertWithPrivateKey(GetServerCertificateCollection());
 
