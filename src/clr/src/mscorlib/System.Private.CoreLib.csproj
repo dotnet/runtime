@@ -345,7 +345,6 @@
     <Compile Include="$(BclSourcesRoot)\System\NonSerializedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Number.cs" />
     <Compile Include="$(BclSourcesRoot)\System\OperatingSystem.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\OperationCanceledException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\PlatformID.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ResId.cs" />
@@ -475,10 +474,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
@@ -543,7 +539,6 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\File.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.CoreCLR.cs" />
@@ -662,17 +657,11 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ICU.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debug.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\TextReader.cs" />
@@ -690,9 +679,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Win32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Windows.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
