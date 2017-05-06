@@ -51,7 +51,7 @@
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
     <Error Condition="'$(LatestCommit)' == ''" Text="Missing required property 'LatestCommit'" />
-    <Error Condition="'@(PublishVersionFile)' == ''" Text="Missing required item 'PublishVersionFile'" />
+    <Error Condition="'@(PublishRid)' == ''" Text="Missing required item 'PublishRid'" />
           
     <Message Importance="High" Text="Finalizing Build" />
     <!-- Ensure all publish pieces are present and then publish to Azure Latest container -->
@@ -63,7 +63,7 @@
                    Version="$(SharedFrameworkNugetVersion)"
                    SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
                    SharedHostNuGetVersion="$(HostVersion)"
-                   PublishVersionFiles="@(PublishVersionFile)"
+                   PublishRids="@(PublishRid)"
                    CommitHash="$(LatestCommit)"
                    FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  

@@ -6,7 +6,7 @@
     <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
   </PropertyGroup>
-    
+
   <ItemGroup>
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(InstallerExtension)" />
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CombinedInstallerExtension)" />
@@ -18,23 +18,55 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PublishVersionFile Include="ubuntu.x64"/>
-    <PublishVersionFile Include="ubuntu.16.04.x64"/>
-    <PublishVersionFile Include="ubuntu.16.10.x64"/>
-    <PublishVersionFile Include="debian.x64"/>
-    <PublishVersionFile Include="linux.x64"/>
-    <PublishVersionFile Include="win.x86"/>
-    <PublishVersionFile Include="win.x64"/>
-    <PublishVersionFile Include="osx.x64"/>
-<!-- Not currently producing arm builds 
-    <PublishVersionFile Include="win.arm"/>
-    <PublishVersionFile Include="win.arm64"/>
-    <PublishVersionFile Include="linux.arm"/>
-    <PublishVersionFile Include="linux.arm64"/>
-    <PublishVersionFile Include="ubuntu.14.04.arm"/>
-    <PublishVersionFile Include="ubuntu.16.04.arm"/>
-    <PublishVersionFile Include="win8.arm"/>
-    <PublishVersionFile Include="win10.arm64"/>
--->    
+    <PublishRid Include="ubuntu.14.04-x64">
+      <VersionFileName>ubuntu.x64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="ubuntu.16.04-x64">
+      <VersionFileName>ubuntu.16.04.x64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="ubuntu.16.10-x64">
+      <VersionFileName>ubuntu.16.10.x64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="debian.8-x64">
+      <VersionFileName>debian.x64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="linux-x64">
+      <VersionFileName>linux.x64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="win-x86">
+      <VersionFileName>win.x86</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="win-x64">
+      <VersionFileName>win.x64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="osx-x64">
+      <VersionFileName>osx.x64</VersionFileName>
+    </PublishRid>
+    <!-- Not currently producing arm builds 
+    <PublishRid Include="win-arm">
+      <VersionFileName>win.arm</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="win-arm64">
+      <VersionFileName>win.arm64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="linux-arm">
+      <VersionFileName>linux.arm</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="linux-arm64">
+      <VersionFileName>linux.arm64</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="ubuntu.14.04-arm">
+      <VersionFileName>ubuntu.14.04.arm</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="ubuntu.16.04-arm">
+      <VersionFileName>ubuntu.16.04.arm</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="win8-arm">
+      <VersionFileName>win8.arm</VersionFileName>
+    </PublishRid>
+    <PublishRid Include="win10-arm64">
+      <VersionFileName>win10.arm64</VersionFileName>
+    </PublishRid>
+-->
   </ItemGroup>
-</Project>  
+</Project>
