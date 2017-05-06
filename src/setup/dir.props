@@ -9,8 +9,7 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <StabilizePackageVersion>false</StabilizePackageVersion>
-    <LockHostVersion>false</LockHostVersion>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <PreReleaseLabel>preview2</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
     <ReleaseBrandSuffix>Preview 2</ReleaseBrandSuffix>
@@ -69,27 +68,52 @@
          by setting the non-official build minor version to 9 -->
     <BuildNumberMinor Condition="'$(BuildNumberMinor)' == '0'">9</BuildNumberMinor>
 
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
-
-    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</ProductVersion>
+    <ProductVersionSuffix Condition="'$(StabilizePackageVersion)' !='true'">-$(VersionSuffix)</ProductVersionSuffix>
+    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(ProductVersionSuffix)</ProductVersion>
     <ProductionVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductionVersion>
 
-    <SharedFrameworkNugetVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductionVersion)</SharedFrameworkNugetVersion>
-    <SharedFrameworkNugetVersion Condition="'$(StabilizePackageVersion)' == 'false'">$(ProductVersion)</SharedFrameworkNugetVersion>
+    <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
 
     <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
-    <HostVersion>$(SharedFrameworkNugetVersion)</HostVersion>
-    <AppHostVersion>$(SharedFrameworkNugetVersion)</AppHostVersion>
-    <NetCoreAppVersion>$(SharedFrameworkNugetVersion)</NetCoreAppVersion>
-    <HostResolverVersion>$(SharedFrameworkNugetVersion)</HostResolverVersion>
-    <HostPolicyVersion>$(SharedFrameworkNugetVersion)</HostPolicyVersion>
+
+    <!--
+      By default, we are always building the nuget packages for HostPolicy, HostFXR and
+      Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
+      
+      However, there are scenarios when some of these components will not change (e.g. during
+      servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
+      set the appropriate "UseShipped*" property below to true so that we will use the last shipped
+      version of the package. 
+    -->
+
+    <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
+    <UseShippedHostPackage>false</UseShippedHostPackage>
+    <HostVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductVersion)</HostVersion>
+    <HostVersion Condition="'$(UseShippedHostPackage)' == 'true'">2.0.0</HostVersion>
+
+    <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
+    <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
+    <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
     
-    <HostFullVersion>$(ProductVersion)</HostFullVersion>
-    <HostResolverFullVersion>$(ProductVersion)</HostResolverFullVersion>
-    <AppHostFullVersion>$(ProductVersion)</AppHostFullVersion>
-    <HostPolicyFullVersion>$(ProductVersion)</HostPolicyFullVersion>
+    <!-- 
+        The FXR Resolver package version is only updated whenever there is a change in it. 
+        If there is ever a need to use a shipped version of the package, then set the property
+        below to true. 
+    -->
+    <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
+    <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
+    <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
+
+    <!-- 
+         Host Policy package version is only updated whenever there is a change in it.
+         If there is ever a need to use a shipped version of the package, then set the property
+         below to true. 
+    -->
+    <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
+    <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
+    <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
   </PropertyGroup>
 
   <!-- Import Build tools common props file where repo-independent properties are found -->

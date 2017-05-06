@@ -5,7 +5,7 @@
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
   <PropertyGroup>
-    <Version>$(NetCoreAppVersion)</Version>
+    <Version>$(SharedFrameworkNugetVersion)</Version>
     <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(ProductionVersion)').ToString(2))</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
@@ -37,7 +37,7 @@
     </Dependency>
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
-       <Version>$(HostPolicyFullVersion)</Version>
+       <Version>$(HostPolicyVersion)</Version>
        <TargetFramework>.NETCoreApp2.0</TargetFramework>
     </Dependency>
 

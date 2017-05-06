@@ -121,7 +121,7 @@
   <Target Name="GenerateHostFxrDeb">
     <PropertyGroup>
       <DebPackageName>$(HostFxrDebPkgName)</DebPackageName>
-      <DebPackageVersion>$(HostVersion)</DebPackageVersion>
+      <DebPackageVersion>$(HostResolverVersion)</DebPackageVersion>
       <InputRoot>$(HostFxrPublishRoot)</InputRoot>
       <DebFile>$(HostFxrInstallerFile)</DebFile>
       <ConfigJsonName>dotnet-hostfxr-debian_config.json</ConfigJsonName>
@@ -164,7 +164,7 @@
         <ReplacementString>$(HostVersion)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%HOSTFXR_NUGET_VERSION%">
-        <ReplacementString>$(HostVersion)</ReplacementString>
+        <ReplacementString>$(HostResolverVersion)</ReplacementString>
       </HostFxrTokenValue>
       <HostFxrTokenValue Include="%HOSTFXR_DEBIAN_PACKAGE_NAME%">
         <ReplacementString>$(DebPackageName)</ReplacementString>
