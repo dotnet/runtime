@@ -46,10 +46,6 @@ public:
     static
     void QCALLTYPE GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly);
 
-    static FCDECL2(Object*,         LoadFile,                   StringObject* pathUNSAFE,
-                                                                Object* securityUNSAFE);
-    static FCDECL6(Object*,         LoadImage,                  U1Array* PEByteArrayUNSAFE, U1Array* SymByteArrayUNSAFE, Object* securityUNSAFE, StackCrawlMark* stackMark, CLR_BOOL fForIntrospection, SecurityContextSource securityContextSource);
-
     static FCDECL10(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
                                                                 StringObject* codeBaseUNSAFE, 
                                                                 Object* securityUNSAFE, 
@@ -60,9 +56,6 @@ public:
                                                                 CLR_BOOL fForIntrospection,
                                                                 CLR_BOOL fSuppressSecurityChecks,
                                                                 INT_PTR ptrLoadContextBinder);
-
-    static FCDECL1(FC_BOOL_RET, IsFrameworkAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
-    static FCDECL1(FC_BOOL_RET, IsNewPortableAssembly, AssemblyNameBaseObject* refAssemblyNameUNSAFE);
 
     //
     // instance FCALLs

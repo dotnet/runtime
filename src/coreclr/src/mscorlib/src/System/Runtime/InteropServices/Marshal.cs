@@ -22,7 +22,6 @@ namespace System.Runtime.InteropServices
     using System.Security;
     using System.Text;
     using System.Threading;
-    using System.Runtime.Remoting;
     using System.Runtime.CompilerServices;
     using System.Globalization;
     using System.Runtime.ConstrainedExecution;

@@ -93,7 +93,6 @@ namespace Microsoft.Win32
     using System.Security;
     using System.Text;
     using System.Configuration.Assemblies;
-    using System.Runtime.Remoting;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Microsoft.Win32.SafeHandles;

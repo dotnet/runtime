@@ -13,7 +13,6 @@
 
 using System;
 using System.Runtime.Serialization;
-using System.Runtime.Remoting;
 using System.Diagnostics.Contracts;
 
 namespace System.Runtime.CompilerServices

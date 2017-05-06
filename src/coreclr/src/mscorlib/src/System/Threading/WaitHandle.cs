@@ -15,7 +15,6 @@
 namespace System.Threading
 {
     using System.Threading;
-    using System.Runtime.Remoting;
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;

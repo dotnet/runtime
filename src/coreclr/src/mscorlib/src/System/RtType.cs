@@ -23,7 +23,6 @@ using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
-using System.Runtime.Remoting;
 using MdSigCallingConvention = System.Signature.MdSigCallingConvention;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 using System.Runtime.InteropServices;
