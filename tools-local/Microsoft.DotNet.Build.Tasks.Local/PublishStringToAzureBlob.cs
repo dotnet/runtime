@@ -1,4 +1,5 @@
 using Microsoft.Build.Framework;
+using Microsoft.DotNet.Build.Tasks.Utility;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -13,6 +14,7 @@ namespace Microsoft.DotNet.Build.Tasks
         public string ContainerName { get; set; }
         [Required]
         public string Content { get; set; }
+        public string ContentType { get; set; }
 
         public override bool Execute()
         {
@@ -25,6 +27,12 @@ namespace Microsoft.DotNet.Build.Tasks
                 {
                     Tuple<string, string> headerBlobType = new Tuple<string, string>("x-ms-blob-type", "BlockBlob");
                     List<Tuple<string, string>> additionalHeaders = new List<Tuple<string, string>>() { headerBlobType };
+
+                    if (!string.IsNullOrEmpty(ContentType))
+                    {
+                        additionalHeaders.Add(new Tuple<string, string>(AzureHelper.ContentTypeString, ContentType));
+                    }
+
                     var request = Utility.AzureHelper.RequestMessage("PUT", blobUrl, AccountName, AccountKey, additionalHeaders, Content);
 
                     Utility.AzureHelper.RequestWithRetry(Log, client, request).GetAwaiter().GetResult();
@@ -44,6 +52,7 @@ namespace Microsoft.DotNet.Build.Tasks
                                    string containerName,
                                    string blobName,
                                    string content,
+                                   string contentType,
                                    IBuildEngine buildengine,
                                    ITaskHost taskHost)
         {
@@ -54,6 +63,7 @@ namespace Microsoft.DotNet.Build.Tasks
                 ContainerName = containerName,
                 BlobName = blobName,
                 Content = content,
+                ContentType = contentType,
                 BuildEngine = buildengine,
                 HostObject = taskHost
             };

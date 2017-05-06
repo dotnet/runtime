@@ -45,11 +45,13 @@
   </Target>
 
   <Target Name="FinalizeBuildInAzure"
-          DependsOnTargets="CheckIfAllBuildsHavePublished">
+          DependsOnTargets="CheckIfAllBuildsHavePublished;
+                            GetLatestCommitHash">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
     <Error Condition="'$(ContainerName)' == ''" Text="Missing required property 'ContainerName'" />
-    <Error Condition="'@(PublishRid)' == ''" Text="Missing required item 'PublishRid'" />
+    <Error Condition="'$(LatestCommit)' == ''" Text="Missing required property 'LatestCommit'" />
+    <Error Condition="'@(PublishVersionFile)' == ''" Text="Missing required item 'PublishVersionFile'" />
           
     <Message Importance="High" Text="Finalizing Build" />
     <!-- Ensure all publish pieces are present and then publish to Azure Latest container -->
@@ -59,7 +61,8 @@
                    SemaphoreBlob="$(Channel)/Binaries/sharedFxPublishSemaphore"
                    Channel="$(Channel)"
                    Version="$(SharedFrameworkNugetVersion)"
-                   PublishRids="@(PublishRid)"
+                   PublishVersionFiles="@(PublishVersionFile)"
+                   CommitHash="$(LatestCommit)"
                    FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  
                    Condition="'@(_MissingBlobNames)' == ''" />
