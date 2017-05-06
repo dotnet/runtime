@@ -61,7 +61,7 @@
     </GetAzureBlobList>
     <ItemGroup>
       <_FoundBlobNames Include="%(_BlobNames.FileName)%(_BlobNames.Extension)" Condition="'%(_BlobNames.Extension)' == '.svg'" />
-      <_MissingBlobNames Include="@(PublishRid->'sharedfx_%(Identity)_$(ConfigurationGroup)_version_badge.svg')" 
+      <_MissingBlobNames Include="@(PublishVersionFile->'sharedfx_%(Identity)_$(ConfigurationGroup)_version_badge.svg')" 
                           Exclude="@(_FoundBlobNames)" />
     </ItemGroup>
   </Target>
