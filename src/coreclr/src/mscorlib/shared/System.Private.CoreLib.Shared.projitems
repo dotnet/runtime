@@ -520,6 +520,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\Interop.Libraries.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Casing.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Collation.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Idna.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Locale.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" Condition="'$(EnableDummyGlobalizationImplementation)' != 'true'"/>

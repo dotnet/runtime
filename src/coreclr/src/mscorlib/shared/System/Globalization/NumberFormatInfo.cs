@@ -84,7 +84,7 @@ namespace System.Globalization
         internal int percentDecimalDigits = 2;
 
         [OptionalField(VersionAdded = 2)]
-        internal int digitSubstitution = (int) DigitShapes.None;
+        internal int digitSubstitution = (int)DigitShapes.None;
 
         internal bool isReadOnly = false;
 
@@ -131,7 +131,7 @@ namespace System.Globalization
             Contract.EndContractBlock();
         }
 
-        private static void VerifyNativeDigits(string [] nativeDig, string propertyName)
+        private static void VerifyNativeDigits(string[] nativeDig, string propertyName)
         {
             if (nativeDig == null)
             {
@@ -157,7 +157,7 @@ namespace System.Globalization
                     {
                         // Not 1 or 2 UTF-16 code points
                         throw new ArgumentException(SR.Argument_InvalidNativeDigitValue, propertyName);
-                    } 
+                    }
                     else if (!char.IsSurrogatePair(nativeDig[i][0], nativeDig[i][1]))
                     {
                         // 2 UTF-6 code points, but not a surrogate pair
@@ -175,8 +175,8 @@ namespace System.Globalization
             }
         }
 
-         private static void VerifyDigitSubstitution(DigitShapes digitSub, string propertyName)
-         {
+        private static void VerifyDigitSubstitution(DigitShapes digitSub, string propertyName)
+        {
             switch (digitSub)
             {
                 case DigitShapes.Context:
@@ -309,7 +309,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                VerifyDecimalSeparator(value, "CurrencyDecimalSeparator");
+                VerifyDecimalSeparator(value, nameof(CurrencyDecimalSeparator));
                 currencyDecimalSeparator = value;
             }
         }
@@ -404,13 +404,13 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("PercentGroupSizes",
+                    throw new ArgumentNullException(nameof(PercentGroupSizes),
                         SR.ArgumentNull_Obj);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
                 Int32[] inputSizes = (Int32[])value.Clone();
-                CheckGroupSize("PercentGroupSizes", inputSizes);
+                CheckGroupSize(nameof(PercentGroupSizes), inputSizes);
                 percentGroupSizes = inputSizes;
             }
         }
@@ -807,9 +807,9 @@ namespace System.Globalization
             }
         }
 
-        public string [] NativeDigits
+        public string[] NativeDigits
         {
-            get { return (String[]) nativeDigits.Clone(); }
+            get { return (String[])nativeDigits.Clone(); }
             set
             {
                 VerifyWritable();
@@ -820,12 +820,12 @@ namespace System.Globalization
 
         public DigitShapes DigitSubstitution
         {
-            get { return (DigitShapes) digitSubstitution; } 
+            get { return (DigitShapes)digitSubstitution; }
             set
             {
                 VerifyWritable();
                 VerifyDigitSubstitution(value, nameof(DigitSubstitution));
-                digitSubstitution = (int) value;
+                digitSubstitution = (int)value;
             }
         }
 
