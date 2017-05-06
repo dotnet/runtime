@@ -4011,6 +4011,20 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18964")]
+    public static void XmlMembersMapping_Soap_CompositeType()
+    {
+        string memberName = "GetDataUsingDataContract";
+        var requestBodyValue = new CompositeTypeForXmlMembersMapping() { BoolValue = true, StringValue = "foo" };
+        var requestBodyActual = RoundTripWithXmlMembersMappingSoap<CompositeTypeForXmlMembersMapping>(requestBodyValue, memberName,
+            "<?xml version=\"1.0\"?>\r\n<q1:CompositeTypeForXmlMembersMapping xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\" xmlns:q1=\"http://tempuri.org/\">\r\n  <BoolValue xsi:type=\"xsd:boolean\">true</BoolValue>\r\n  <StringValue xsi:type=\"xsd:string\">foo</StringValue>\r\n</q1:CompositeTypeForXmlMembersMapping>");
+
+        Assert.NotNull(requestBodyActual);
+        Assert.Equal(requestBodyValue.BoolValue, requestBodyActual.BoolValue);
+        Assert.Equal(requestBodyValue.StringValue, requestBodyActual.StringValue);
+    }
+
+    [Fact]
     public static void XmlMembersMapping_Soap_PrimitiveValue_HasWrapperElement()
     {
         string memberName = "value";
@@ -4230,6 +4244,74 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(actual);
         Assert.NotNull(actual.Collection);
         Assert.True(value.Collection.SequenceEqual(actual.Collection));
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18964")]
+    public static void XmlMembersMapping_Soap_SoapComplexType()
+    {
+        string memberName = "EchoComositeTypeXmlSerializerFormatSoapResult";
+        var requestBodyValue = new SoapComplexType() { BoolValue = true, StringValue = "hello" };
+
+        string baseline = "<root><q1:EchoComositeTypeXmlSerializerFormatSoapResponse xmlns:q1=\"http://tempuri.org/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><EchoComositeTypeXmlSerializerFormatSoapResult href=\"#id1\"/></q1:EchoComositeTypeXmlSerializerFormatSoapResponse><q2:SoapComplexType id=\"id1\" a:type=\"q2:SoapComplexType\" xmlns:q2=\"http://tempuri.org/encoded\" xmlns:a=\"http://www.w3.org/2001/XMLSchema-instance\"><BoolValue a:type=\"q3:boolean\" xmlns:q3=\"http://www.w3.org/2001/XMLSchema\">true</BoolValue><StringValue a:type=\"q4:string\" xmlns:q4=\"http://www.w3.org/2001/XMLSchema\">hello</StringValue></q2:SoapComplexType></root>";
+        string ns = s_defaultNs;
+        string wrapperName = "EchoComositeTypeXmlSerializerFormatSoapResponse";
+
+        object[] value = new object[] { requestBodyValue };
+        XmlReflectionMember member = GetReflectionMember<SoapComplexType>(memberName, ns);
+        member.SoapAttributes.SoapElement = new SoapElementAttribute(memberName);
+        var members = new XmlReflectionMember[] { member };        
+
+        var importer = new SoapReflectionImporter(null, "http://tempuri.org/encoded");
+        var membersMapping = importer.ImportMembersMapping(wrapperName, ns, members, hasWrapperElement: true, writeAccessors: true);
+        var serializer = XmlSerializer.FromMappings(new XmlMapping[] { membersMapping })[0];
+
+        object[] actual = SerializeAndDeserializeWithWrapper(value, serializer, baseline);
+        Assert.NotNull(actual);
+        Assert.Equal(value.Length, actual.Length);
+
+        var requestBodyActual = (SoapComplexType)actual[0];
+        Assert.NotNull(requestBodyActual);
+        Assert.Equal(requestBodyValue.BoolValue, requestBodyActual.BoolValue);
+        Assert.Equal(requestBodyValue.StringValue, requestBodyActual.StringValue);
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18964")]
+    public static void XmlMembersMapping_Soap_SoapComplexTypeWithArray()
+    {
+        string memberName = "EchoComositeTypeXmlSerializerFormatSoapResult";
+        var requestBodyValue = new SoapComplexTypeWithArray()
+        {
+            IntArray = new int[] { 1, 2 },
+            StringArray = new string[] { "foo", "bar" },
+            IntList = new List<int>() { 1, 2 },
+            StringList = new List<string>() { "foo", "bar" }
+        };
+
+        string baseline = "<root><q1:EchoComositeTypeXmlSerializerFormatSoapResponse xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:q1=\"http://tempuri.org/\"><EchoComositeTypeXmlSerializerFormatSoapResult href=\"#id1\" /></q1:EchoComositeTypeXmlSerializerFormatSoapResponse><q2:SoapComplexTypeWithArray id=\"id1\" d2p1:type=\"q2:SoapComplexTypeWithArray\" xmlns:d2p1=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:q2=\"http://tempuri.org/encoded\"><IntArray href=\"#id2\" /><StringArray href=\"#id3\" /><IntList href=\"#id4\" /><StringList href=\"#id5\" /></q2:SoapComplexTypeWithArray><q3:Array id=\"id2\" xmlns:q4=\"http://www.w3.org/2001/XMLSchema\" q3:arrayType=\"q4:int[2]\" xmlns:q3=\"http://schemas.xmlsoap.org/soap/encoding/\"><Item>1</Item><Item>2</Item></q3:Array><q5:Array id=\"id3\" xmlns:q6=\"http://www.w3.org/2001/XMLSchema\" q5:arrayType=\"q6:string[2]\" xmlns:q5=\"http://schemas.xmlsoap.org/soap/encoding/\"><Item>foo</Item><Item>bar</Item></q5:Array><q7:Array id=\"id4\" xmlns:q8=\"http://www.w3.org/2001/XMLSchema\" q7:arrayType=\"q8:int[2]\" xmlns:q7=\"http://schemas.xmlsoap.org/soap/encoding/\"><Item>1</Item><Item>2</Item></q7:Array><q9:Array id=\"id5\" xmlns:q10=\"http://www.w3.org/2001/XMLSchema\" q9:arrayType=\"q10:string[2]\" xmlns:q9=\"http://schemas.xmlsoap.org/soap/encoding/\"><Item>foo</Item><Item>bar</Item></q9:Array></root>";
+        string ns = s_defaultNs;
+        string wrapperName = "EchoComositeTypeXmlSerializerFormatSoapResponse";
+
+        object[] value = new object[] { requestBodyValue };
+        XmlReflectionMember member = GetReflectionMember<SoapComplexTypeWithArray>(memberName, ns);
+        member.SoapAttributes.SoapElement = new SoapElementAttribute(memberName);
+        var members = new XmlReflectionMember[] { member };
+
+        var importer = new SoapReflectionImporter(null, "http://tempuri.org/encoded");
+        var membersMapping = importer.ImportMembersMapping(wrapperName, ns, members, hasWrapperElement: true, writeAccessors: true);
+        var serializer = XmlSerializer.FromMappings(new XmlMapping[] { membersMapping })[0];
+
+        object[] actual = SerializeAndDeserializeWithWrapper(value, serializer, baseline);
+        Assert.NotNull(actual);
+        Assert.Equal(value.Length, actual.Length);
+
+        var requestBodyActual = (SoapComplexTypeWithArray)actual[0];
+        Assert.NotNull(requestBodyActual);
+        Assert.True(requestBodyValue.IntArray.SequenceEqual(requestBodyActual.IntArray));
+        Assert.True(requestBodyValue.StringArray.SequenceEqual(requestBodyActual.StringArray));
+        Assert.True(requestBodyValue.IntList.SequenceEqual(requestBodyActual.IntList));
+        Assert.True(requestBodyValue.StringList.SequenceEqual(requestBodyActual.StringList));
     }
 
     [Fact]

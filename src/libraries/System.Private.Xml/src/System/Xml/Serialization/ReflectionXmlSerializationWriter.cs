@@ -1387,7 +1387,7 @@ namespace System.Xml.Serialization
             MemberInfo[] memberInfos = declaringType.GetMember(memberName);
             if (memberInfos == null || memberInfos.Length == 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError, memberName));
+                throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"Could not find member named {memberName} of type {declaringType.ToString()}"));
             }
 
             MemberInfo memberInfo = memberInfos[0];
