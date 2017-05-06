@@ -2,6 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
     <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
