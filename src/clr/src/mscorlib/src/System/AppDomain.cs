@@ -25,7 +25,6 @@ namespace System
     using System.Collections.Generic;
     using System.Threading;
     using System.Runtime.InteropServices;
-    using System.Runtime.Remoting;
     using System.Reflection.Emit;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.IO;
@@ -258,18 +257,6 @@ namespace System
         private static extern APPX_FLAGS nGetAppXFlags();
 #endif
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void GetAppDomainManagerType(AppDomainHandle domain,
-                                                           StringHandleOnStack retAssembly,
-                                                           StringHandleOnStack retType);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        private static extern void SetAppDomainManagerType(AppDomainHandle domain,
-                                                           string assembly,
-                                                           string type);
-
         [SuppressUnmanagedCodeSecurity]
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void SetSecurityHomogeneousFlag(AppDomainHandle domain,
@@ -326,54 +313,6 @@ namespace System
                     appLocalWinMD = String.Empty;
                 }
                 SetupBindingPaths(trustedPlatformAssemblies, platformResourceRoots, appPaths, appNiPaths, appLocalWinMD);
-            }
-
-            string domainManagerAssembly;
-            string domainManagerType;
-            GetAppDomainManagerType(out domainManagerAssembly, out domainManagerType);
-
-            if (domainManagerAssembly != null && domainManagerType != null)
-            {
-                try
-                {
-                    _domainManager = CreateInstanceAndUnwrap(domainManagerAssembly, domainManagerType) as AppDomainManager;
-                }
-                catch (FileNotFoundException e)
-                {
-                    throw new TypeLoadException(SR.Argument_NoDomainManager, e);
-                }
-                catch (SecurityException e)
-                {
-                    throw new TypeLoadException(SR.Argument_NoDomainManager, e);
-                }
-                catch (TypeLoadException e)
-                {
-                    throw new TypeLoadException(SR.Argument_NoDomainManager, e);
-                }
-
-                if (_domainManager == null)
-                {
-                    throw new TypeLoadException(SR.Argument_NoDomainManager);
-                }
-
-                // If this domain was not created by a managed call to CreateDomain, then the AppDomainSetup
-                // will not have the correct values for the AppDomainManager set.
-                FusionStore.AppDomainManagerAssembly = domainManagerAssembly;
-                FusionStore.AppDomainManagerType = domainManagerType;
-
-                bool notifyFusion = _domainManager.GetType() != typeof(System.AppDomainManager) && !DisableFusionUpdatesFromADManager();
-
-
-
-                AppDomainSetup FusionStoreOld = null;
-                if (notifyFusion)
-                    FusionStoreOld = new AppDomainSetup(FusionStore, true);
-
-                // Initialize the AppDomainMAnager and register the instance with the native host if requested
-                _domainManager.InitializeNewDomain(FusionStore);
-
-                if (notifyFusion)
-                    SetupFusionStore(_FusionStore, FusionStoreOld); // Notify Fusion about the changes the user implementation of InitializeNewDomain may have made to the FusionStore object.
             }
 
             InitializeCompatibilityFlags();
@@ -485,34 +424,6 @@ namespace System
         }
 
         /// <summary>
-        ///     Get the name of the assembly and type that act as the AppDomainManager for this domain
-        /// </summary>
-        internal void GetAppDomainManagerType(out string assembly, out string type)
-        {
-            // We can't just use our parameters because we need to ensure that the strings used for hte QCall
-            // are on the stack.
-            string localAssembly = null;
-            string localType = null;
-
-            GetAppDomainManagerType(GetNativeHandle(),
-                                    JitHelpers.GetStringHandleOnStack(ref localAssembly),
-                                    JitHelpers.GetStringHandleOnStack(ref localType));
-
-            assembly = localAssembly;
-            type = localType;
-        }
-
-        /// <summary>
-        ///     Set the assembly and type which act as the AppDomainManager for this domain
-        /// </summary>
-        private void SetAppDomainManagerType(string assembly, string type)
-        {
-            Debug.Assert(assembly != null, "assembly != null");
-            Debug.Assert(type != null, "type != null");
-            SetAppDomainManagerType(GetNativeHandle(), assembly, type);
-        }
-
-        /// <summary>
         ///     Called for every AppDomain (including the default domain) to initialize the security of the AppDomain)
         /// </summary>
         private void InitializeDomainSecurity(Evidence providedSecurityInfo,
@@ -582,23 +493,6 @@ namespace System
             {
                 return _domainManager;
             }
-        }
-
-
-        public ObjectHandle CreateInstance(String assemblyName,
-                                           String typeName)
-
-        {
-            // jit does not check for that, so we should do it ...
-            if (this == null)
-                throw new NullReferenceException();
-
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            Contract.EndContractBlock();
-
-            return Activator.CreateInstance(assemblyName,
-                                            typeName);
         }
 
         public static AppDomain CurrentDomain
@@ -1158,12 +1052,6 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            // set up the AppDomainManager for this domain and initialize security.
-            if (adSetup.AppDomainManagerAssembly != null && adSetup.AppDomainManagerType != null)
-            {
-                ad.SetAppDomainManagerType(adSetup.AppDomainManagerAssembly, adSetup.AppDomainManagerType);
-            }
-
             ad.CreateAppDomainManager(); // could modify FusionStore's object
             ad.InitializeDomainSecurity(providedSecurityInfo,
                                         creatorsSecurityInfo,
@@ -1300,16 +1188,6 @@ namespace System
                 return true;
             }
         }
-
-        public Object CreateInstanceAndUnwrap(String assemblyName,
-                                              String typeName)
-        {
-            ObjectHandle oh = CreateInstance(assemblyName, typeName);
-            if (oh == null)
-                return null;
-
-            return oh.Unwrap();
-        } // CreateInstanceAndUnwrap
 
         public Int32 Id
         {

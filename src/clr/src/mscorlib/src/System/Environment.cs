@@ -77,9 +77,6 @@ namespace System
             }
         }
 
-
-        private static volatile OperatingSystem m_os;  // Cached OperatingSystem value
-
         /*==================================TickCount===================================
         **Action: Gets the number of ticks since the system was started.
         **Returns: The number of ticks since the system was started.

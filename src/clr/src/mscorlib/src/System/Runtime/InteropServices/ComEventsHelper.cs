@@ -99,7 +99,6 @@
 // code:ComEventsMethod.Invoke
 
 using System;
-using System.Runtime.Remoting;
 
 namespace System.Runtime.InteropServices
 {

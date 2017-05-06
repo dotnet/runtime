@@ -4,7 +4,6 @@
 
 namespace System.Diagnostics
 {
-    using System.Runtime.Remoting;
     using System;
     using System.IO;
     using System.Collections;
