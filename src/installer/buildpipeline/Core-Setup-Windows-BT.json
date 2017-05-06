@@ -60,51 +60,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Init tools",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "$(PB_SourcesDirectory)\\init-tools.cmd",
-        "arguments": "",
-        "workingFolder": "$(PB_SourcesDirectory)",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Generate version assets",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\build.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /p:OfficialBuildId=$(OfficialBuildId)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Build",
       "timeoutInMinutes": 0,
       "task": {
