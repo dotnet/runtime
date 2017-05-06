@@ -298,7 +298,7 @@
       "allowOverride": true
     },
     "NUGET_FEED_URL": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/api/v2/package"
+      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
     },
     "NUGET_API_KEY": {
       "value": null,
@@ -321,7 +321,7 @@
       "value": "$(PB_DockerHost_Sandbox)/Tools"
     },
     "NUGET_SYMBOLS_FEED_URL": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
+      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     },
     "PB_DockerImageName": {
       "value": "$(PB_DockerRepository):$(PB_DockerTag)"
