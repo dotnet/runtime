@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Reflection;
 
 namespace System.Net
 {
@@ -543,17 +544,59 @@ namespace System.Net
             return _tokenizer.GetCookieString();
         }
 
-        private static void SetCookieName(Cookie cookie, string name)
+        private static MethodInfo s_internalSetNameMethod;
+        private static MethodInfo InternalSetNameMethod
         {
-            try
+            get
             {
-                cookie.Name = name;
-            }
-            catch (CookieException)
-            {
-                Debug.Assert(cookie.Name == string.Empty);
+                if (s_internalSetNameMethod == null)
+                {
+                    // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
+                    // Cookie.set_Name keeps the original name if the string is empty or null.
+                    // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
+                    MethodInfo method = typeof(Cookie).GetMethod("InternalSetName", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(method != null, "We need to use an internal method named InternalSetName that is declared on Cookie.");
+                    s_internalSetNameMethod = method;
+                }
+
+                return s_internalSetNameMethod;
             }
         }
+
+        private static FieldInfo s_isQuotedDomainField = null;
+        private static FieldInfo IsQuotedDomainField
+        {
+            get
+            {
+                if (s_isQuotedDomainField == null)
+                {
+                    FieldInfo field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(field != null, "We need to use an internal property named IsQuotedDomain that is declared on Cookie.");
+                    s_isQuotedDomainField = field;
+                }
+
+                return s_isQuotedDomainField;
+            }
+        }
+
+        private static FieldInfo s_isQuotedVersionField = null;
+        private static FieldInfo IsQuotedVersionField
+        {
+            get
+            {
+                if (s_isQuotedVersionField == null)
+                {
+                    FieldInfo field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(field != null, "We need to use an internal property named IsQuotedVersion that is declared on Cookie.");
+                    s_isQuotedVersionField = field;
+                }
+
+                return s_isQuotedVersionField;
+            }
+        }
+
+        private static object[] s_emptyStringArray = null;
+        private static object[] EmptyStringArray => s_emptyStringArray ?? (s_emptyStringArray = new object[] { string.Empty });
 
         // Get
         //
@@ -579,7 +622,7 @@ namespace System.Net
                 if (cookie == null && (token == CookieToken.NameValuePair || token == CookieToken.Attribute))
                 {
                     cookie = new Cookie();
-                    SetCookieName(cookie, _tokenizer.Name);
+                    InternalSetNameMethod.Invoke(cookie, new object[] { _tokenizer.Name });
                     cookie.Value = _tokenizer.Value;
                 }
                 else
@@ -614,8 +657,7 @@ namespace System.Net
                                     {
                                         domainSet = true;
                                         cookie.Domain = CheckQuoted(_tokenizer.Value);
-                                        // TODO: this is internal.
-                                        // cookie.IsQuotedDomain = _tokenizer.Quoted;
+                                        IsQuotedDomainField.SetValue(cookie, _tokenizer.Quoted);
                                     }
                                     break;
 
@@ -633,7 +675,7 @@ namespace System.Net
                                         else
                                         {
                                             // This cookie will be rejected
-                                            SetCookieName(cookie, string.Empty);
+                                            InternalSetNameMethod.Invoke(cookie, EmptyStringArray);
                                         }
                                     }
                                     break;
@@ -650,7 +692,7 @@ namespace System.Net
                                         else
                                         {
                                             // This cookie will be rejected
-                                            SetCookieName(cookie, string.Empty);
+                                            InternalSetNameMethod.Invoke(cookie, EmptyStringArray);
                                         }
                                     }
                                     break;
@@ -674,7 +716,7 @@ namespace System.Net
                                         catch
                                         {
                                             // This cookie will be rejected
-                                            SetCookieName(cookie, string.Empty);
+                                            InternalSetNameMethod.Invoke(cookie, EmptyStringArray);
                                         }
                                     }
                                     break;
@@ -687,13 +729,12 @@ namespace System.Net
                                         if (int.TryParse(CheckQuoted(_tokenizer.Value), out parsed))
                                         {
                                             cookie.Version = parsed;
-                                            // TODO: this is internal.
-                                            // cookie.IsQuotedVersion = _tokenizer.Quoted;
+                                            IsQuotedVersionField.SetValue(cookie, _tokenizer.Quoted);
                                         }
                                         else
                                         {
                                             // This cookie will be rejected
-                                            SetCookieName(cookie, string.Empty);
+                                            InternalSetNameMethod.Invoke(cookie, EmptyStringArray);
                                         }
                                     }
                                     break;
@@ -760,7 +801,7 @@ namespace System.Net
                     {
                         cookie = new Cookie();
                     }
-                    SetCookieName(cookie, _tokenizer.Name);
+                    InternalSetNameMethod.Invoke(cookie, new object[] { _tokenizer.Name });
                     cookie.Value = _tokenizer.Value;
                 }
                 else
@@ -775,8 +816,7 @@ namespace System.Net
                                     {
                                         domainSet = true;
                                         cookie.Domain = CheckQuoted(_tokenizer.Value);
-                                        // TODO: this is internal.
-                                        // cookie.IsQuotedDomain = _tokenizer.Quoted;
+                                        IsQuotedDomainField.SetValue(cookie, _tokenizer.Quoted);
                                     }
                                     break;
 
@@ -799,7 +839,7 @@ namespace System.Net
                                         catch (CookieException)
                                         {
                                             // This cookie will be rejected
-                                            SetCookieName(cookie, string.Empty);
+                                            InternalSetNameMethod.Invoke(cookie, EmptyStringArray);
                                         }
                                     }
                                     break;
@@ -817,7 +857,7 @@ namespace System.Net
                                 case CookieToken.Unknown:
                                     // this is a new cookie, the token is for the next cookie.
                                     _savedCookie = new Cookie();
-                                    SetCookieName(_savedCookie, _tokenizer.Name);
+                                    InternalSetNameMethod.Invoke(_savedCookie, new object[] { _tokenizer.Name });
                                     _savedCookie.Value = _tokenizer.Value;
                                     return cookie;
                             }
