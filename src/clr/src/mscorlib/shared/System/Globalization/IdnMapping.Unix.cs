@@ -39,7 +39,7 @@ namespace System.Globalization
             }
 
             char[] outputHeap = new char[actualLength];
-            fixed (char* pOutputHeap = outputHeap)
+            fixed (char* pOutputHeap = &outputHeap[0])
             {
                 actualLength = Interop.GlobalizationInterop.ToAscii(flags, unicode, count, pOutputHeap, actualLength);
                 if (actualLength == 0 || actualLength > outputHeap.Length)
@@ -66,7 +66,7 @@ namespace System.Globalization
             else
             {
                 char[] output = new char[count];
-                fixed (char* pOutput = output)
+                fixed (char* pOutput = &output[0])
                 {
                     return GetUnicodeCore(ascii, count, flags, pOutput, count, reattempt: true);
                 }
