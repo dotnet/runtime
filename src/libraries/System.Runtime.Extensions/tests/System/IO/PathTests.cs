@@ -35,8 +35,16 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData("\r\n")]
+        public static void GetDirectoryName_EmptyOrWhitespace_Throws(string path)
+        {
+            Assert.Throws<ArgumentException>(() => Path.GetDirectoryName(path));
+        }
+
+        [Theory]
         [InlineData(null, null)]
-        [InlineData("", null)]
         [InlineData(".", "")]
         [InlineData("..", "")]
         [InlineData("baz", "")]
@@ -175,7 +183,8 @@ namespace System.IO.Tests
         public static void GetPathRoot()
         {
             Assert.Null(Path.GetPathRoot(null));
-            Assert.Equal(string.Empty, Path.GetPathRoot(string.Empty));
+            Assert.Throws<ArgumentException>(() => Path.GetPathRoot(string.Empty));
+            Assert.Throws<ArgumentException>(() => Path.GetPathRoot("\r\n"));
 
             string cwd = Directory.GetCurrentDirectory();
             Assert.Equal(cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1), Path.GetPathRoot(cwd));
