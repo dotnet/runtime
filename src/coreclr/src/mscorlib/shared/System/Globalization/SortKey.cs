@@ -11,14 +11,14 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
+
 namespace System.Globalization
 {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
-    using System.Diagnostics;
-    using System.Diagnostics.Contracts;
-
     [Serializable]
     public partial class SortKey
     {
@@ -30,8 +30,7 @@ namespace System.Globalization
         internal string _localeName;       // locale identifier
 
         [OptionalField(VersionAdded = 1)] // LCID field so serialization is Whidbey compatible though we don't officially support it
-        internal int _win32LCID;            
-                                          // Whidbey serialization 
+        internal int _win32LCID;
 
         internal CompareOptions _options;  // options
         internal string _string;         // original string
@@ -45,8 +44,8 @@ namespace System.Globalization
         {
             _keyData = keyData;
             _localeName = localeName;
-            _options    = options;
-            _string   = str;
+            _options = options;
+            _string = str;
         }
 
         [OnSerializing]
@@ -84,7 +83,7 @@ namespace System.Globalization
                 return (_string);
             }
         }
-    
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  GetKeyData
@@ -100,7 +99,7 @@ namespace System.Globalization
                 return (byte[])(_keyData.Clone());
             }
         }
-    
+
         ////////////////////////////////////////////////////////////////////////
         //
         //  Compare
@@ -112,14 +111,15 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public static int Compare(SortKey sortkey1, SortKey sortkey2)
         {
-            if (sortkey1==null || sortkey2==null)
+            if (sortkey1 == null || sortkey2 == null)
             {
                 throw new ArgumentNullException((sortkey1 == null ? nameof(sortkey1) : nameof(sortkey2)));
             }
             Contract.EndContractBlock();
+
             byte[] key1Data = sortkey1._keyData;
             byte[] key2Data = sortkey2._keyData;
-    
+
             Debug.Assert(key1Data != null, "key1Data != null");
             Debug.Assert(key2Data != null, "key2Data != null");
 
@@ -138,13 +138,13 @@ namespace System.Globalization
 
             int compLen = (key1Data.Length < key2Data.Length) ? key1Data.Length : key2Data.Length;
 
-            for (int i=0; i<compLen; i++)
+            for (int i = 0; i < compLen; i++)
             {
-                if (key1Data[i]>key2Data[i])
+                if (key1Data[i] > key2Data[i])
                 {
                     return (1);
                 }
-                if (key1Data[i]<key2Data[i])
+                if (key1Data[i] < key2Data[i])
                 {
                     return (-1);
                 }
