@@ -42,7 +42,6 @@
     <PublishRid Include="osx-x64">
       <VersionFileName>osx.x64</VersionFileName>
     </PublishRid>
-    <!-- Not currently producing arm builds 
     <PublishRid Include="win-arm">
       <VersionFileName>win.arm</VersionFileName>
     </PublishRid>
@@ -52,21 +51,5 @@
     <PublishRid Include="linux-arm">
       <VersionFileName>linux.arm</VersionFileName>
     </PublishRid>
-    <PublishRid Include="linux-arm64">
-      <VersionFileName>linux.arm64</VersionFileName>
-    </PublishRid>
-    <PublishRid Include="ubuntu.14.04-arm">
-      <VersionFileName>ubuntu.14.04.arm</VersionFileName>
-    </PublishRid>
-    <PublishRid Include="ubuntu.16.04-arm">
-      <VersionFileName>ubuntu.16.04.arm</VersionFileName>
-    </PublishRid>
-    <PublishRid Include="win8-arm">
-      <VersionFileName>win8.arm</VersionFileName>
-    </PublishRid>
-    <PublishRid Include="win10-arm64">
-      <VersionFileName>win10.arm64</VersionFileName>
-    </PublishRid>
--->
   </ItemGroup>
 </Project>

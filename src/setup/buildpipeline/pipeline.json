@@ -82,7 +82,7 @@
           "Parameters": {
             "PB_DistroRid": "rhel.7.2-x64",
             "PB_DockerTag": "rhel7_prereqs_2",
-            "PB_PortableBuildArg": "-portable",
+            "PB_AdditionalBuildArgs":"-portable",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -90,6 +90,22 @@
             "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
             "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Linux-BT",
+          "Parameters": {
+            "PB_DistroRid": "ubuntu.14.04-arm",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
+            "PB_TargetArchitecture": "arm",
+            "PB_AdditionalBuildArgs":"arm cross -portable skiptests",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Ubuntu 14.04",
+            "Type": "build/product/",
+            "Platform": "arm"
           }
         },
         {
@@ -103,6 +119,34 @@
             "OperatingSystem": "OSX",
             "Type": "build/product/",
             "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-BT",
+          "Parameters": {
+            "PB_AdditionalBuildArgs": "-PortableBuild=true -SkipTests=true",
+            "PB_TargetArchitecture": "arm",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-BT",
+          "Parameters": {
+            "PB_AdditionalBuildArgs": "-PortableBuild=true -SkipTests=true -- /p:NativeToolSetDir=C:\\tools\\clr",
+            "PB_TargetArchitecture": "arm64",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm64"
           }
         },
         {
