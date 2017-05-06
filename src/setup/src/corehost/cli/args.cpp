@@ -100,7 +100,7 @@ bool parse_arguments(
     {
         // coreconsole mode. Find the managed app in the same directory
         pal::string_t managed_app(own_dir);
-        managed_app.push_back(DIR_SEPARATOR);
+
         managed_app.append(get_executable(own_name));
         managed_app.append(_X(".dll"));
         args.managed_application = managed_app;
@@ -132,7 +132,11 @@ bool parse_arguments(
 
         args.deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
         args.deps_path.append(app_base);
-        args.deps_path.push_back(DIR_SEPARATOR);
+
+        if (!app_base.empty() && app_base.back() != DIR_SEPARATOR)
+        {
+            args.deps_path.push_back(DIR_SEPARATOR);
+        }
         args.deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
         args.deps_path.append(_X(".deps.json"));
     }
