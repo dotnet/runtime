@@ -35,6 +35,11 @@ namespace System.Xml
             _writer.SetOutput(stream, ownsStream, encoding);
             SetOutput(_writer);
         }
+
+        protected override XmlSigningNodeWriter CreateSigningNodeWriter()
+        {
+            return new XmlSigningNodeWriter(true);
+        }
     }
 
     internal class XmlUTF8NodeWriter : XmlStreamNodeWriter

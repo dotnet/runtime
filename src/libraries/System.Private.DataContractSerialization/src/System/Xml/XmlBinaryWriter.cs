@@ -1086,6 +1086,10 @@ namespace System.Xml
             SetOutput(_writer);
         }
 
+        protected override XmlSigningNodeWriter CreateSigningNodeWriter()
+        {
+            return new XmlSigningNodeWriter(false);
+        }
 
         protected override void WriteTextNode(XmlDictionaryReader reader, bool attribute)
         {

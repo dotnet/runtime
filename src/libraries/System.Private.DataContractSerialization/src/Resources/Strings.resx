@@ -1111,4 +1111,19 @@
   <data name="FactoryTypeNotISerializable" xml:space="preserve">
     <value>Factory type '{0}' for ISerializable type '{1}' must also be ISerializable.</value>
   </data>
+  <data name="XmlCanonicalizationStarted" xml:space="preserve">
+    <value>Canonicalization already started.</value>
+  </data>
+
+  <data name="XmlCanonicalizationNotStarted" xml:space="preserve">
+    <value>Canonicalization not started.</value>
+  </data>
+
+  <data name="CombinedPrefixNSLength" xml:space="preserve">
+    <value>The combined length of the prefix and namespace must not be greater than {0}.</value>
+  </data>
+
+  <data name="InvalidInclusivePrefixListCollection" xml:space="preserve">
+    <value>The inclusive namespace prefix collection cannot contain null as one of the items.</value>
+  </data>
 </root>
