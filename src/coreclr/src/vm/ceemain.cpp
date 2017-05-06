@@ -693,6 +693,11 @@ void EEStartupHelper(COINITIEE fFlags)
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
 
+#ifdef FEATURE_PERFTRACING
+        // Initialize the event pipe.
+        EventPipe::Initialize();
+#endif // FEATURE_PERFTRACING
+
 #ifdef FEATURE_EVENT_TRACE        
         // Initialize event tracing early so we can trace CLR startup time events.
         InitializeEventTracing();
@@ -1036,8 +1041,7 @@ void EEStartupHelper(COINITIEE fFlags)
 #endif
 
 #ifdef FEATURE_PERFTRACING
-        // Initialize the event pipe and start it if requested.
-        EventPipe::Initialize();
+        // Start the event pipe if requested.
         EventPipe::EnableOnStartup();
 #endif // FEATURE_PERFTRACING
 
