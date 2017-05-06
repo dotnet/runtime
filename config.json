@@ -137,6 +137,12 @@
       "valueType": "property",
       "values": ["true", "false"],
       "defaultValue":false
+    },
+    "DisableCrossgen": {
+      "description": "Disable crossgen during the build",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue":false
     }
   },
   "commands": {
@@ -219,6 +225,12 @@
           "description": "Skips running tests",
           "settings":{
             "SkipTests": "true"
+          }
+        },
+        "disableCrossgen":{
+          "description": "Disable crossgen during the build",
+          "settings":{
+            "DisableCrossgen": "true"
           }
         }
       },

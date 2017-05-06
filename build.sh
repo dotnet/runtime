@@ -152,6 +152,7 @@ esac
 __BuildType=Debug
 __BuildArch=x64
 __SkipTests=false
+__DisableCrossgen=false
 __VerboseBuild=0
 __CrossBuild=0
 __PortableBuild=0
@@ -178,14 +179,17 @@ while :; do
 
         arm)
             __BuildArch=arm
+            __DisableCrossgen=true
             ;;
 
         armel)
             __BuildArch=armel
+            __DisableCrossgen=true
             ;;
 
         arm64)
             __BuildArch=arm64
+            __DisableCrossgen=true
             ;;
 
         debug)
@@ -211,6 +215,9 @@ while :; do
         skiptests)
             __SkipTests=true
             ;;
+        disablecrossgen)
+            __DisableCrossgen=true
+            ;;
     esac
 
     shift
@@ -222,7 +229,7 @@ initHostDistroRid
 # init the target distro name
 initTargetDistroRid
 
-__RunArgs="-TargetArchitecture=$__BuildArch -ConfigurationGroup=$__BuildType -OSGroup=$__HostOS -DistroRid=$__DistroRid -SkipTests=$__SkipTests"
+__RunArgs="-TargetArchitecture=$__BuildArch -ConfigurationGroup=$__BuildType -OSGroup=$__HostOS -DistroRid=$__DistroRid -SkipTests=$__SkipTests -DisableCrossgen=$__DisableCrossgen"
 
 if [ $__PortableBuild == 1 ]; then
   __RunArgs="$__RunArgs -PortableBuild=True"
