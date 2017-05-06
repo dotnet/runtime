@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
 using System.Net.WebSockets;
 using System.Reflection;
@@ -46,6 +47,24 @@ namespace System.Net
             }
         }
 
+        private static MethodInfo s_internalAddMethod = null;
+        private static MethodInfo InternalAddMethod
+        {
+            get
+            {
+                if (s_internalAddMethod == null)
+                {
+                    // We need to use CookieCollection.InternalAdd, as this method performs no validation on the Cookies.
+                    // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
+                    MethodInfo method = typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(method != null, "We need to use an internal method named InternalAdd that is declared on Cookie.");
+                    s_internalAddMethod = method;
+                }
+
+                return s_internalAddMethod;
+            }
+        }
+
         private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
@@ -65,26 +84,7 @@ namespace System.Net
                     continue;
                 }
 
-                // This is a modified copy of CoookieCollection.InternalAdd, which is internal to System.Net.Primitives.
-                // It differs from the original in some subtle ways.
-                // Firstly, new Variant cookies will not overwrite older ones. We can't have this behaviour as Cookie.Variant
-                // is internal. This violates the Cookie2 spec.
-                // Secondly, if the Cookie version is not the MaxSupportedVersion, we don't set the CookieCollection.IsOtherVersionSeen
-                // to true. This causes different behaviour when calling CookieContainer.GetCookieHeader. This doesn't matter, as we are
-                // just using CookieCollection (not CookieContainer) here.
-                bool cookieExists = false;
-                foreach (Cookie addedCookie in cookies)
-                {
-                    if (CookieComparer.Compare(cookie, addedCookie) == 0)
-                    {
-                        cookieExists = true;
-                        break;
-                    }
-                }
-                if (!cookieExists)
-                {
-                    cookies.Add(cookie);
-                }
+                InternalAddMethod.Invoke(cookies, new object[] { cookie, true });
             }
             return cookies;
         }
