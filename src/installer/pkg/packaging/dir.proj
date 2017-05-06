@@ -160,8 +160,8 @@
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage">
     <ItemGroup>
-      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
+      <PackageProjects Condition="'$(OS)' == 'Windows_NT'" Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
+      <PackageProjects Condition="'$(OS)' == 'Windows_NT'" Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
