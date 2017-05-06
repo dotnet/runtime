@@ -87,26 +87,6 @@ namespace System.Reflection
             return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
         }
 
-        // Evidence is protected in Assembly.Load()
-        [Obsolete("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of LoadFrom which does not take an Evidence parameter. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal static Assembly LoadFrom(String assemblyFile,
-                                        Evidence securityEvidence)
-        {
-            Contract.Ensures(Contract.Result<Assembly>() != null);
-
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
-            return RuntimeAssembly.InternalLoadFrom(
-                assemblyFile,
-                securityEvidence,
-                null, // hashValue
-                AssemblyHashAlgorithm.None,
-                false,// forIntrospection);
-                ref stackMark);
-        }
-
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly LoadFrom(String assemblyFile,
                                         byte[] hashValue,
                                         AssemblyHashAlgorithm hashAlgorithm)

@@ -206,11 +206,5 @@ namespace System.IO
         {
             throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
-
-        // From WinError.h
-        internal const int ERROR_FILE_NOT_FOUND = Win32Native.ERROR_FILE_NOT_FOUND;
-        internal const int ERROR_PATH_NOT_FOUND = Win32Native.ERROR_PATH_NOT_FOUND;
-        internal const int ERROR_ACCESS_DENIED = Win32Native.ERROR_ACCESS_DENIED;
-        internal const int ERROR_INVALID_PARAMETER = Win32Native.ERROR_INVALID_PARAMETER;
     }
 }

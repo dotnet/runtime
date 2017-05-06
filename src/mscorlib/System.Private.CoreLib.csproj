@@ -344,9 +344,7 @@
     <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\NonSerializedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Number.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\OperatingSystem.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\PlatformID.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ResId.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
@@ -590,9 +588,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />

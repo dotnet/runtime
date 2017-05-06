@@ -8,7 +8,6 @@ namespace System.Text
     using System.Collections;
     using System.Collections.Generic;
     using System.Runtime;
-    using System.Runtime.Remoting;
     using System.Runtime.Serialization;
     using System.Globalization;
     using System.Security;
