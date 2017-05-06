@@ -37,7 +37,8 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string Version { get; set; }
         [Required]
-        public ITaskItem [] PublishRids { get; set; }
+        public ITaskItem [] PublishVersionFiles { get; set; }
+        [Required]
         public string CommitHash { get; set; }
         public bool ForcePublish { get; set; }
 
@@ -98,12 +99,12 @@ namespace Microsoft.DotNet.Build.Tasks
                     CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}", $"{Channel}/Installers/Latest/");
 
                     // Generate the Sharedfx Version text files
-                    List<string> versionFiles = PublishRids.Select(p => $"{p.ItemSpec}.version").ToList();
+                    List<string> versionFiles = PublishVersionFiles.Select(p => $"{p.ItemSpec}.version").ToList();
 
                     string sfxVersion = GetSharedFrameworkVersionFileContent();
                     foreach(string version in versionFiles)
                     {
-                        PublishStringToBlob(ContainerName, $"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion);
+                        PublishStringToBlob(ContainerName, $"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion, "text/plain");
                     }
                 }
                 finally
@@ -116,11 +117,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
         private string GetSharedFrameworkVersionFileContent()
         {
-            string returnString = string.Empty;
-            if(!string.IsNullOrWhiteSpace(CommitHash))
-            {
-                returnString += $"{CommitHash}{Environment.NewLine}";
-            }
+            string returnString = $"{CommitHash}{Environment.NewLine}";
             returnString += $"{SharedFrameworkNugetVersion}{Environment.NewLine}";
             return returnString;
         }
@@ -199,7 +196,7 @@ namespace Microsoft.DotNet.Build.Tasks
                                             HostObject);
         }
 
-        public bool PublishStringToBlob(string container, string blob, string contents)
+        public bool PublishStringToBlob(string container, string blob, string contents, string contentType = null)
         {
             return PublishStringToAzureBlob.Execute(AccountName, 
                                                     AccountKey, 
@@ -207,6 +204,7 @@ namespace Microsoft.DotNet.Build.Tasks
                                                     container, 
                                                     blob, 
                                                     contents, 
+                                                    contentType,
                                                     BuildEngine, 
                                                     HostObject);
         }
