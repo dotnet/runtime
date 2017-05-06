@@ -492,6 +492,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\PinnableBufferCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadInterruptedException.cs" />
@@ -655,7 +656,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ICU.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
@@ -690,7 +690,6 @@
     <Compile Include="$(CommonPath)\Preprocessed\AssemblyRefs.g.cs" />
     <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
     <Compile Include="$(CommonPath)\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)\PinnableBufferCache.cs" />
     <Compile Include="$(CommonPath)\System\SR.cs" />
     <!-- Include Internals visible to file in the compilation -->
     <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
