@@ -5,6 +5,8 @@
 #include "common.h"
 #include "eventpipejsonfile.h"
 
+#ifdef FEATURE_PERFTRACING
+
 EventPipeJsonFile::EventPipeJsonFile(SString &outFilePath)
 {
     CONTRACTL
@@ -15,6 +17,7 @@ EventPipeJsonFile::EventPipeJsonFile(SString &outFilePath)
     }
     CONTRACTL_END;
 
+    m_writeErrorEncountered = false;
     m_pFileStream = new CFileStream();
     if(FAILED(m_pFileStream->OpenForWrite(outFilePath)))
     {
@@ -52,7 +55,14 @@ EventPipeJsonFile::~EventPipeJsonFile()
     }
 }
 
-void EventPipeJsonFile::WriteEvent(CommonEventFields &commonFields, SString &message, StackContents &stackContents)
+void EventPipeJsonFile::WriteEvent(EventPipeEventInstance &instance)
+{
+    STANDARD_VM_CONTRACT;
+
+    instance.SerializeToJsonFile(this);
+}
+
+void EventPipeJsonFile::WriteEvent(LARGE_INTEGER timeStamp, DWORD threadID, SString &message, StackContents &stackContents)
 {
     STANDARD_VM_CONTRACT;
 
@@ -67,16 +77,16 @@ void EventPipeJsonFile::WriteEvent(CommonEventFields &commonFields, SString &mes
 
     // Convert the timestamp from a QPC value to a trace-relative timestamp.
     double millisecondsSinceTraceStart = 0.0;
-    if(commonFields.TimeStamp.QuadPart != m_fileOpenTimeStamp.QuadPart)
+    if(timeStamp.QuadPart != m_fileOpenTimeStamp.QuadPart)
     {
         LARGE_INTEGER elapsedNanoseconds;
-        elapsedNanoseconds.QuadPart = commonFields.TimeStamp.QuadPart - m_fileOpenTimeStamp.QuadPart;
+        elapsedNanoseconds.QuadPart = timeStamp.QuadPart - m_fileOpenTimeStamp.QuadPart;
         millisecondsSinceTraceStart = elapsedNanoseconds.QuadPart / 1000000.0;
     }
 
     StackScratchBuffer scratch;
     SString threadFrame;
-    threadFrame.Printf("Thread (%d)", commonFields.ThreadID);
+    threadFrame.Printf("Thread (%d)", threadID);
     SString event;
     event.Printf("{\"Time\" : \"%f\", \"Metric\" : \"1\",\n\"Stack\": [\n\"%s\",\n%s\"%s\"]},", millisecondsSinceTraceStart, message.GetANSI(scratch), strCallStack.GetANSI(scratch), threadFrame.GetANSI(scratch));
     Write(event);
@@ -129,3 +139,5 @@ void EventPipeJsonFile::FormatCallStack(StackContents &stackContents, SString &r
         resultStr.Append(frameStr);
     }
 }
+
+#endif // FEATURE_PERFTRACING
