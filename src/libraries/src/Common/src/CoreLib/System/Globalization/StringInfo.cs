@@ -93,7 +93,7 @@ namespace System.Globalization
             {
                 if (null == value)
                 {
-                    throw new ArgumentNullException("String",
+                    throw new ArgumentNullException(nameof(String),
                         SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
@@ -117,13 +117,13 @@ namespace System.Globalization
             }
         }
 
-        public string SubstringByTextElements(int startingTextElement) 
+        public string SubstringByTextElements(int startingTextElement)
         {
             // If the string is empty, no sense going further. 
-            if (null == this.Indexes) 
+            if (null == this.Indexes)
             {
                 // Just decide which error to give depending on the param they gave us....
-                if (startingTextElement < 0) 
+                if (startingTextElement < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(startingTextElement), SR.ArgumentOutOfRange_NeedPosNum);
                 }
@@ -135,7 +135,7 @@ namespace System.Globalization
             return (SubstringByTextElements(startingTextElement, Indexes.Length - startingTextElement));
         }
 
-        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) 
+        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements)
         {
             if (startingTextElement < 0)
             {
