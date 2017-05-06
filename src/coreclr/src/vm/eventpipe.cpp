@@ -4,21 +4,46 @@
 
 #include "common.h"
 #include "eventpipe.h"
+#include "eventpipeconfiguration.h"
+#include "eventpipeevent.h"
+#include "eventpipefile.h"
+#include "eventpipeprovider.h"
 #include "eventpipejsonfile.h"
 #include "sampleprofiler.h"
 
-CrstStatic EventPipe::s_initCrst;
+#ifdef FEATURE_PAL
+#include "pal.h"
+#endif // FEATURE_PAL
+
+#ifdef FEATURE_PERFTRACING
+
+CrstStatic EventPipe::s_configCrst;
 bool EventPipe::s_tracingInitialized = false;
-bool EventPipe::s_tracingEnabled = false;
+EventPipeConfiguration* EventPipe::s_pConfig = NULL;
+EventPipeFile* EventPipe::s_pFile = NULL;
 EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
+
+#ifdef FEATURE_PAL
+// This function is auto-generated from /src/scripts/genEventPipe.py
+extern "C" void InitProvidersAndEvents();
+#endif
 
 void EventPipe::Initialize()
 {
     STANDARD_VM_CONTRACT;
 
-    s_tracingInitialized = s_initCrst.InitNoThrow(
+    s_tracingInitialized = s_configCrst.InitNoThrow(
         CrstEventPipe,
-        (CrstFlags)(CRST_TAKEN_DURING_SHUTDOWN));
+        (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
+
+    s_pConfig = new EventPipeConfiguration();
+    s_pConfig->Initialize();
+
+#ifdef FEATURE_PAL
+    // This calls into auto-generated code to initialize the runtime providers
+    // and events so that the EventPipe configuration lock isn't taken at runtime
+    InitProvidersAndEvents();
+#endif
 }
 
 void EventPipe::EnableOnStartup()
@@ -66,9 +91,14 @@ void EventPipe::Enable()
         return;
     }
 
-    // Take the lock and enable tracing.
-    CrstHolder _crst(&s_initCrst);
-    s_tracingEnabled = true;
+    // Take the lock before enabling tracing.
+    CrstHolder _crst(GetLock());
+
+    // Create the event pipe file.
+    SString eventPipeFileOutputPath;
+    eventPipeFileOutputPath.Printf("Process-%d.netperf", GetCurrentProcessId());
+    s_pFile = new EventPipeFile(eventPipeFileOutputPath);
+
     if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) == 2)
     {
         // File placed in current working directory.
@@ -77,7 +107,14 @@ void EventPipe::Enable()
         s_pJsonFile = new EventPipeJsonFile(outputFilePath);
     }
 
+    // Enable tracing.
+    s_pConfig->Enable();
+
+    // Enable the sample profiler
     SampleProfiler::Enable();
+
+    // TODO: Iterate through the set of providers, enable them as appropriate.
+    // This in-turn will iterate through all of the events and set their isEnabled bits.
 }
 
 void EventPipe::Disable()
@@ -90,18 +127,38 @@ void EventPipe::Disable()
     }
     CONTRACTL_END;
 
-    CrstHolder _crst(&s_initCrst);
-    s_tracingEnabled = false;
+    // Don't block GC during clean-up.
+    GCX_PREEMP();
+
+    // Take the lock before disabling tracing.
+    CrstHolder _crst(GetLock());
+
+    // Disable the profiler.
     SampleProfiler::Disable();
+
+    // Disable tracing.
+    s_pConfig->Disable();
 
     if(s_pJsonFile != NULL)
     {
         delete(s_pJsonFile);
         s_pJsonFile = NULL;
     }
+
+    if(s_pFile != NULL)
+    {
+        delete(s_pFile);
+        s_pFile = NULL;
+    }
+
+    if(s_pConfig != NULL)
+    {
+        delete(s_pConfig);
+        s_pConfig = NULL;
+    }
 }
 
-bool EventPipe::EventEnabled(GUID& providerID, INT64 keyword)
+void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length)
 {
     CONTRACTL
     {
@@ -111,55 +168,53 @@ bool EventPipe::EventEnabled(GUID& providerID, INT64 keyword)
     }
     CONTRACTL_END;
 
-    // TODO: Implement filtering.
-    return false;
-}
-
-void EventPipe::WriteEvent(GUID& providerID, INT64 eventID, BYTE *pData, size_t length, bool sampleStack)
-{
-    CONTRACTL
+    // Exit early if the event is not enabled.
+    if(!event.IsEnabled())
     {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    StackContents stackContents;
-    bool stackWalkSucceeded;
-
-    if(sampleStack)
-    {
-        stackWalkSucceeded = WalkManagedStackForCurrentThread(stackContents);
+        return;
     }
 
-    // TODO: Write the event.
+    DWORD threadID = GetCurrentThreadId();
+
+    // Create an instance of the event.
+    EventPipeEventInstance instance(
+        event,
+        threadID,
+        pData,
+        length);
+
+    // Write to the EventPipeFile.
+    _ASSERTE(s_pFile != NULL);
+    s_pFile->WriteEvent(instance);
+
+    // Write to the EventPipeJsonFile if it exists.
+    if(s_pJsonFile != NULL)
+    {
+        s_pJsonFile->WriteEvent(instance);
+    }
 }
 
-void EventPipe::WriteSampleProfileEvent(Thread *pThread, StackContents &stackContents)
+void EventPipe::WriteSampleProfileEvent(SampleProfilerEventInstance &instance)
 {
     CONTRACTL
     {
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(pThread != NULL);
     }
     CONTRACTL_END;
 
-    EX_TRY
+    // Write to the EventPipeFile.
+    if(s_pFile != NULL)
     {
-        if(s_pJsonFile != NULL)
-        {
-            CommonEventFields eventFields;
-            QueryPerformanceCounter(&eventFields.TimeStamp);
-            eventFields.ThreadID = pThread->GetOSThreadId();
-
-            static SString message(W("THREAD_TIME"));
-            s_pJsonFile->WriteEvent(eventFields, message, stackContents);
-        }
+        s_pFile->WriteEvent(instance);
     }
-    EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
+
+    // Write to the EventPipeJsonFile if it exists.
+    if(s_pJsonFile != NULL)
+    {
+        s_pJsonFile->WriteEvent(instance);
+    }
 }
 
 bool EventPipe::WalkManagedStackForCurrentThread(StackContents &stackContents)
@@ -173,8 +228,12 @@ bool EventPipe::WalkManagedStackForCurrentThread(StackContents &stackContents)
     CONTRACTL_END;
 
     Thread *pThread = GetThread();
-    _ASSERTE(pThread != NULL);
-    return WalkManagedStackForThread(pThread, stackContents);
+    if(pThread != NULL)
+    {
+        return WalkManagedStackForThread(pThread, stackContents);
+    }
+
+    return false;
 }
 
 bool EventPipe::WalkManagedStackForThread(Thread *pThread, StackContents &stackContents)
@@ -232,3 +291,19 @@ StackWalkAction EventPipe::StackWalkCallback(CrawlFrame *pCf, StackContents *pDa
     // Continue the stack walk.
     return SWA_CONTINUE;
 }
+
+EventPipeConfiguration* EventPipe::GetConfiguration()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return s_pConfig;
+}
+
+CrstStatic* EventPipe::GetLock()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return &s_configCrst;
+}
+
+#endif // FEATURE_PERFTRACING

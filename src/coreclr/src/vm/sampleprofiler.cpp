@@ -3,18 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
+#include "eventpipeeventinstance.h"
 #include "sampleprofiler.h"
 #include "hosting.h"
 #include "threadsuspend.h"
 
+#ifdef FEATURE_PERFTRACING
+
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread* SampleProfiler::s_pSamplingThread = NULL;
+const GUID SampleProfiler::s_providerID = {0x3c530d44,0x97ae,0x513a,{0x1e,0x6d,0x78,0x3e,0x8f,0x8e,0x03,0xa9}}; // {3c530d44-97ae-513a-1e6d-783e8f8e03a9}
+EventPipeProvider* SampleProfiler::s_pEventPipeProvider = NULL;
+EventPipeEvent* SampleProfiler::s_pThreadTimeEvent = NULL;
 CLREventStatic SampleProfiler::s_threadShutdownEvent;
 #ifdef FEATURE_PAL
 long SampleProfiler::s_samplingRateInNs = 1000000; // 1ms
 #endif
 
-// Synchronization of multiple callers occurs in EventPipe::Enable.
 void SampleProfiler::Enable()
 {
     CONTRACTL
@@ -23,8 +28,21 @@ void SampleProfiler::Enable()
         GC_TRIGGERS;
         MODE_ANY;
         PRECONDITION(s_pSamplingThread == NULL);
+        // Synchronization of multiple callers occurs in EventPipe::Enable.
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
+
+    if(s_pEventPipeProvider == NULL)
+    {
+        s_pEventPipeProvider = new EventPipeProvider(s_providerID);
+        s_pThreadTimeEvent = s_pEventPipeProvider->AddEvent(
+            0, /* keywords */
+            0, /* eventID */
+            0, /* eventVersion */
+            EventPipeEventLevel::Informational,
+            false /* NeedStack */);
+    }
 
     s_profilingEnabled = true;
     s_pSamplingThread = SetupUnstartedThread();
@@ -40,7 +58,6 @@ void SampleProfiler::Enable()
     }
 }
 
-// Synchronization of multiple callers occurs in EventPipe::Disable.
 void SampleProfiler::Disable()
 {
     CONTRACTL
@@ -48,6 +65,8 @@ void SampleProfiler::Disable()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
+        // Synchronization of multiple callers occurs in EventPipe::Disable.
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
@@ -140,16 +159,20 @@ void SampleProfiler::WalkManagedThreads()
     CONTRACTL_END;
 
     Thread *pThread = NULL;
-    StackContents stackContents;
 
     // Iterate over all managed threads.
     // Assumes that the ThreadStoreLock is held because we've suspended all threads.
     while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
     {
+        SampleProfilerEventInstance instance(pThread);
+        StackContents &stackContents = *(instance.GetStack());
+
         // Walk the stack and write it out as an event.
         if(EventPipe::WalkManagedStackForThread(pThread, stackContents) && !stackContents.IsEmpty())
         {
-            EventPipe::WriteSampleProfileEvent(pThread, stackContents);
+            EventPipe::WriteSampleProfileEvent(instance);
         }
     }
 }
+
+#endif // FEATURE_PERFTRACING

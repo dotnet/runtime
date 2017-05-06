@@ -5,11 +5,17 @@
 #ifndef __SAMPLEPROFILER_H__
 #define __SAMPLEPROFILER_H__
 
+#ifdef FEATURE_PERFTRACING
+
 #include "common.h"
 #include "eventpipe.h"
 
 class SampleProfiler
 {
+
+    // Declare friends.
+    friend class SampleProfilerEventInstance;
+
     public:
 
         // Enable profiling.
@@ -32,6 +38,11 @@ class SampleProfiler
         // The sampling thread.
         static Thread *s_pSamplingThread;
 
+        // The provider and event emitted by the profiler.
+        static const GUID s_providerID;
+        static EventPipeProvider *s_pEventPipeProvider;
+        static EventPipeEvent *s_pThreadTimeEvent;
+
         // Thread shutdown event for synchronization between Disable() and the sampling thread.
         static CLREventStatic s_threadShutdownEvent;
 
@@ -40,5 +51,7 @@ class SampleProfiler
         static long s_samplingRateInNs;
 #endif
 };
+
+#endif // FEATURE_PERFTRACING
 
 #endif // __SAMPLEPROFILER_H__
