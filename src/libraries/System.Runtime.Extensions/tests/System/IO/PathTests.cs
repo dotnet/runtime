@@ -727,8 +727,8 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Path.GetFullPath(invalidPath));
         }
 
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to get short path name
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public static void GetFullPath_Windows_83Paths()
         {
             // Create a temporary file name with a name longer than 8.3 such that it'll need to be shortened.
@@ -746,11 +746,14 @@ namespace System.IO.Tests
                     Assert.Equal(tempFilePath, Path.GetFullPath(shortName));
 
                     // Should work with device paths that aren't well-formed extended syntax
-                    Assert.Equal(@"\\.\" + tempFilePath, Path.GetFullPath(@"\\.\" + shortName));
-                    Assert.Equal(@"\\?\" + tempFilePath, Path.GetFullPath(@"//?/" + shortName));
+                    if (!PathFeatures.IsUsingLegacyPathNormalization())
+                    {
+                        Assert.Equal(@"\\.\" + tempFilePath, Path.GetFullPath(@"\\.\" + shortName));
+                        Assert.Equal(@"\\?\" + tempFilePath, Path.GetFullPath(@"//?/" + shortName));
 
-                    // Shouldn't mess with well-formed extended syntax
-                    Assert.Equal(@"\\?\" + shortName, Path.GetFullPath(@"\\?\" + shortName));
+                        // Shouldn't mess with well-formed extended syntax
+                        Assert.Equal(@"\\?\" + shortName, Path.GetFullPath(@"\\?\" + shortName));
+                    }
 
                     // Validate case where short name doesn't expand to a real file
                     string invalidShortName = @"S:\DOESNT~1\USERNA~1.RED\LOCALS~1\Temp\bg3ylpzp";
