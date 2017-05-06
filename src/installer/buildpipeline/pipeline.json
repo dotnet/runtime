@@ -82,7 +82,7 @@
           "Parameters": {
             "PB_DistroRid": "rhel.7.2-x64",
             "PB_DockerTag": "rhel7_prereqs_2",
-            "PB_AdditionalBuildArgs":"-portable",
+            "PB_AdditionalBuildArguments":"-portable",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -98,7 +98,7 @@
             "PB_DistroRid": "ubuntu.14.04-arm",
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "PB_TargetArchitecture": "arm",
-            "PB_AdditionalBuildArgs":"arm cross -portable skiptests",
+            "PB_AdditionalBuildArguments":"arm cross -portable skiptests",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -124,7 +124,7 @@
         {
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
-            "PB_AdditionalBuildArgs": "-PortableBuild=true -SkipTests=true",
+            "PB_AdditionalBuildArguments": "/p:PortableBuild=true /p:SkipTests=true",
             "PB_TargetArchitecture": "arm",
             "PB_PortableBuild": "true"
           },
@@ -138,7 +138,7 @@
         {
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
-            "PB_AdditionalBuildArgs": "-PortableBuild=true -SkipTests=true -- /p:NativeToolSetDir=C:\\tools\\clr",
+            "PB_AdditionalBuildArguments": "/p:PortableBuild=true /p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
             "PB_TargetArchitecture": "arm64",
             "PB_PortableBuild": "true"
           },
