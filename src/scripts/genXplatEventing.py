@@ -39,7 +39,7 @@ stdprolog_cmake="""
 #******************************************************************
 """
 
-lindent = "                  ";
+lindent = "    ";
 palDataTypeMapping ={
         #constructed types
         "win:null"          :" ",
@@ -282,18 +282,17 @@ def generateClrallEvents(eventNodes,allTemplates):
         #generate EventEnabled
         clrallEvents.append("inline BOOL EventEnabled")
         clrallEvents.append(eventName)
-        clrallEvents.append("() {return XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabled")
-        clrallEvents.append(eventName+"();}\n\n")
+        clrallEvents.append("() {return ")
+        clrallEvents.append("EventPipeEventEnabled" + eventName + "() || ")
+        clrallEvents.append("(XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabled")
+        clrallEvents.append(eventName+"());}\n\n")
         #generate FireEtw functions
         fnptype     = []
         fnbody      = []
         fnptype.append("inline ULONG FireEtw")
         fnptype.append(eventName)
         fnptype.append("(\n")
-        fnbody.append(lindent)
-        fnbody.append("if (!EventEnabled")
-        fnbody.append(eventName)
-        fnbody.append("()) {return ERROR_SUCCESS;}\n")
+
         line        = []
         fnptypeline = []
 
@@ -339,11 +338,22 @@ def generateClrallEvents(eventNodes,allTemplates):
         fnptype.extend(fnptypeline)
         fnptype.append("\n)\n{\n")
         fnbody.append(lindent)
-        fnbody.append("return FireEtXplat")
+        fnbody.append("ULONG status = EventPipeWriteEvent" + eventName + "(" + ''.join(line) + ");\n")
+        fnbody.append(lindent)
+        fnbody.append("if(XplatEventLogger::IsEventLoggingEnabled())\n")
+        fnbody.append(lindent)
+        fnbody.append("{\n")
+        fnbody.append(lindent)
+        fnbody.append(lindent)
+        fnbody.append("status &= FireEtXplat")
         fnbody.append(eventName)
         fnbody.append("(")
         fnbody.extend(line)
         fnbody.append(");\n")
+        fnbody.append(lindent)
+        fnbody.append("}\n")
+        fnbody.append(lindent)
+        fnbody.append("return status;\n")
         fnbody.append("}\n\n")
 
         clrallEvents.extend(fnptype)
@@ -397,6 +407,57 @@ def generateClrXplatEvents(eventNodes, allTemplates):
         fnptype.extend(fnptypeline)
         fnptype.append("\n);\n")
         clrallEvents.extend(fnptype)
+
+    return ''.join(clrallEvents)
+
+def generateClrEventPipeWriteEvents(eventNodes, allTemplates):
+    clrallEvents = []
+    for eventNode in eventNodes:
+        eventName    = eventNode.getAttribute('symbol')
+        templateName = eventNode.getAttribute('template')
+
+        #generate EventPipeEventEnabled and EventPipeWriteEvent functions
+        eventenabled = []
+        writeevent   = []
+        fnptypeline  = []
+
+        eventenabled.append("extern \"C\" bool EventPipeEventEnabled")
+        eventenabled.append(eventName)
+        eventenabled.append("();\n")
+
+        writeevent.append("extern \"C\" ULONG EventPipeWriteEvent")
+        writeevent.append(eventName)
+        writeevent.append("(\n")
+
+        if templateName:
+            template = allTemplates[templateName]
+            fnSig    = template.signature
+
+            for params in fnSig.paramlist:
+                fnparam     = fnSig.getParam(params)
+                wintypeName = fnparam.winType
+                typewName   = palDataTypeMapping[wintypeName]
+                winCount    = fnparam.count
+                countw      = palDataTypeMapping[winCount]
+
+                if params in template.structs:
+                    fnptypeline.append("%sint %s_ElementSize,\n" % (lindent, params))
+
+                fnptypeline.append(lindent)
+                fnptypeline.append(typewName)
+                fnptypeline.append(countw)
+                fnptypeline.append(" ")
+                fnptypeline.append(fnparam.name)
+                fnptypeline.append(",\n")
+
+            #remove trailing commas
+            if len(fnptypeline) > 0:
+                del fnptypeline[-1]
+
+        writeevent.extend(fnptypeline)
+        writeevent.append("\n);\n")
+        clrallEvents.extend(eventenabled)
+        clrallEvents.extend(writeevent)
 
     return ''.join(clrallEvents)
 
@@ -670,15 +731,19 @@ def generatePlformIndependentFiles(sClrEtwAllMan,incDir,etmDummyFile):
 
     clrallevents   = incDir + "/clretwallmain.h"
     clrxplatevents = incDir + "/clrxplatevents.h"
+    clreventpipewriteevents = incDir + "/clreventpipewriteevents.h"
 
     Clrallevents   = open(clrallevents,'w')
     Clrxplatevents = open(clrxplatevents,'w')
+    Clreventpipewriteevents = open(clreventpipewriteevents,'w')
 
     Clrallevents.write(stdprolog + "\n")
     Clrxplatevents.write(stdprolog + "\n")
+    Clreventpipewriteevents.write(stdprolog + "\n")
 
-    Clrallevents.write("\n#include \"clrxplatevents.h\"\n\n")
-
+    Clrallevents.write("\n#include \"clrxplatevents.h\"\n")
+    Clrallevents.write("#include \"clreventpipewriteevents.h\"\n\n")
+    
     for providerNode in tree.getElementsByTagName('provider'):
         templateNodes = providerNode.getElementsByTagName('template')
         allTemplates  = parseTemplateNodes(templateNodes)
@@ -689,8 +754,12 @@ def generatePlformIndependentFiles(sClrEtwAllMan,incDir,etmDummyFile):
         #pal: create clrallevents.h
         Clrxplatevents.write(generateClrXplatEvents(eventNodes, allTemplates) + "\n")
 
+        #eventpipe: create clreventpipewriteevents.h
+        Clreventpipewriteevents.write(generateClrEventPipeWriteEvents(eventNodes, allTemplates) + "\n")
+
     Clrxplatevents.close()
     Clrallevents.close()
+    Clreventpipewriteevents.close()
 
 class EventExclusions:
     def __init__(self):

@@ -154,15 +154,27 @@ generate_event_logging_sources()
 # Event Logging Infrastructure
    __GeneratedIntermediate="$__IntermediatesDir/Generated"
    __GeneratedIntermediateEventProvider="$__GeneratedIntermediate/eventprovider_new"
+   __GeneratedIntermediateEventPipe="$__GeneratedIntermediate/eventpipe_new"
+
     if [[ -d "$__GeneratedIntermediateEventProvider" ]]; then
         rm -rf  "$__GeneratedIntermediateEventProvider"
+    fi
+
+    if [[ -d "$__GeneratedIntermediateEventPipe" ]]; then
+        rm -rf  "$__GeneratedIntermediateEventPipe"
     fi
 
     if [[ ! -d "$__GeneratedIntermediate/eventprovider" ]]; then
         mkdir -p "$__GeneratedIntermediate/eventprovider"
     fi
 
+    if [[ ! -d "$__GeneratedIntermediate/eventpipe" ]]; then
+        mkdir -p "$__GeneratedIntermediate/eventpipe"
+    fi
+
     mkdir -p "$__GeneratedIntermediateEventProvider"
+    mkdir -p "$__GeneratedIntermediateEventPipe"
+    
     if [[ $__SkipCoreCLR == 0 || $__ConfigureOnly == 1 ]]; then
         echo "Laying out dynamically generated files consumed by the build system "
         echo "Laying out dynamically generated Event Logging Test files"
@@ -171,6 +183,18 @@ generate_event_logging_sources()
         if  [[ $? != 0 ]]; then
             exit
         fi
+
+        case $__BuildOS in
+            Linux)
+                echo "Laying out dynamically generated EventPipe Implementation"
+                $PYTHON -B -Wall -Werror "$__ProjectRoot/src/scripts/genEventPipe.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventPipe" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst"
+                if  [[ $? != 0 ]]; then
+                    exit
+                fi
+                ;;
+            *)
+                ;;
+        esac
 
         #determine the logging system
         case $__BuildOS in
@@ -193,6 +217,14 @@ generate_event_logging_sources()
     fi
 
     rm -rf "$__GeneratedIntermediateEventProvider"
+
+    echo "Cleaning the temp folder of dynamically generated EventPipe files"
+    $PYTHON -B -Wall -Werror -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediate/eventpipe\",\"$__GeneratedIntermediateEventPipe\")"
+    if  [[ $? != 0 ]]; then
+        exit
+    fi
+
+    rm -rf "$__GeneratedIntermediateEventPipe"
 }
 
 build_native()
