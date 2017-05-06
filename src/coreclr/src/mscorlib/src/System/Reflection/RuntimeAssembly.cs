@@ -320,26 +320,6 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        internal static RuntimeAssembly InternalLoadFrom(String assemblyFile,
-                                                         Evidence securityEvidence,
-                                                         byte[] hashValue,
-                                                         AssemblyHashAlgorithm hashAlgorithm,
-                                                         bool forIntrospection,
-                                                         ref StackCrawlMark stackMark)
-        {
-            if (assemblyFile == null)
-                throw new ArgumentNullException(nameof(assemblyFile));
-
-            Contract.EndContractBlock();
-
-            AssemblyName an = new AssemblyName();
-            an.CodeBase = assemblyFile;
-            an.SetHashControl(hashValue, hashAlgorithm);
-            // The stack mark is used for MDA filtering
-            return InternalLoadAssemblyName(an, securityEvidence, null, ref stackMark, true /*thrownOnFileNotFound*/, forIntrospection);
-        }
-
         // Wrapper function to wrap the typical use of InternalLoad.
         internal static RuntimeAssembly InternalLoad(String assemblyString,
                                                      Evidence assemblySecurity,
