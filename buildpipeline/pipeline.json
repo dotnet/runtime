@@ -93,6 +93,22 @@
           }
         },
         {
+          "Name": "Core-Setup-Linux-BT", 
+          "Parameters": { 
+            "PB_DistroRid": "ubuntu.14.04-arm", 
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239", 
+            "PB_TargetArchitecture": "arm", 
+            "PB_AdditionalBuildArguments":"arm cross -portable skiptests", 
+            "PB_PortableBuild": "true" 
+          }, 
+          "ReportingParameters": { 
+            "SubType": "PortableBuild", 
+            "OperatingSystem": "Ubuntu 14.04", 
+            "Type": "build/product/", 
+            "Platform": "arm" 
+          } 
+        },         
+        {
           "Name": "Core-Setup-OSX-BT",
           "Parameters": {
             "PB_PortableBuildArg": "-portable",
