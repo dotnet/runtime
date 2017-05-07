@@ -228,7 +228,7 @@ namespace System.Net
 
             if (_contentLength != -1)
             {
-                //request.ContentLength = _contentLength; // TODO #11881: Uncomment once member is available
+                request.ContentLength = _contentLength;
             }
 
             if (_proxySet)
@@ -246,7 +246,7 @@ namespace System.Net
 
         protected virtual WebResponse GetWebResponse(WebRequest request)
         {
-            WebResponse response = request.EndGetResponse(request.BeginGetResponse(null, null)); // request.GetResponse(); // TODO #11881: Uncomment once member is available
+            WebResponse response = request.GetResponse();
             _webResponse = response;
             return response;
         }
@@ -394,7 +394,7 @@ namespace System.Net
                 _method = method;
                 request = _webRequest = GetWebRequest(GetUri(address));
                 return new WebClientWriteStream(
-                    request.EndGetRequestStream(request.BeginGetRequestStream(null, null)), // request.GetRequestStream(); // TODO #11881: Uncomment once member is available
+                    request.GetRequestStream(),
                     request,
                     this);
             }
@@ -734,7 +734,7 @@ namespace System.Net
 
             if (!string.IsNullOrEmpty(connection))
             {
-                //hwr.Connection = connection; // TODO #11881: Uncomment once member is available
+                hwr.Connection = connection;
             }
 
             if (!string.IsNullOrEmpty(contentType))
@@ -744,22 +744,22 @@ namespace System.Net
 
             if (!string.IsNullOrEmpty(expect))
             {
-                //hwr.Expect = expect; // TODO #11881: Uncomment once member is available
+                hwr.Expect = expect;
             }
 
             if (!string.IsNullOrEmpty(referrer))
             {
-                //hwr.Referer = referrer; // TODO #11881: Uncomment once member is available
+                hwr.Referer = referrer;
             }
 
             if (!string.IsNullOrEmpty(userAgent))
             {
-                //hwr.UserAgent = userAgent; // TODO #11881: Uncomment once member is available
+                hwr.UserAgent = userAgent;
             }
 
             if (!string.IsNullOrEmpty(host))
             {
-                //hwr.Host = host; // TODO #11881: Uncomment once member is available
+                hwr.Host = host;
             }
         }
 
@@ -934,7 +934,7 @@ namespace System.Net
                     header = footer = null;
                 }
 
-                using (Stream writeStream = request.EndGetRequestStream(request.BeginGetRequestStream(null, null))) // request.GetRequestStream() // TODO #11881: Uncomment once member is available
+                using (Stream writeStream = request.GetRequestStream())
                 {
                     if (header != null)
                     {
@@ -948,7 +948,8 @@ namespace System.Net
                             while (true)
                             {
                                 int bytesRead = readStream.Read(buffer, 0, buffer.Length);
-                                if (bytesRead <= 0) break;
+                                if (bytesRead <= 0)
+                                    break;
                                 writeStream.Write(buffer, 0, bytesRead);
                             }
                         }

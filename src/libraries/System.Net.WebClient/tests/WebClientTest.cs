@@ -399,7 +399,6 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
         }
 
-        [ActiveIssue(18680)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [InlineData("http://localhost", true)]
