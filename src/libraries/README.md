@@ -20,6 +20,7 @@ Great starting page: http://dotnet.github.io
   * [Install official releases](https://www.microsoft.com/net/core)
   * [Documentation](https://docs.microsoft.com/en-us/dotnet) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
     * [Deploying apps](https://docs.microsoft.com/en-us/dotnet/articles/core/preview3/deploying)
+  * [Supported OS versions](https://github.com/dotnet/core/blob/master/roadmap.md#technology-roadmaps)
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
 * [Bringing more APIs to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md) (and why some APIs will be left out)
@@ -89,6 +90,8 @@ Daily builds of .NET Core components are published to [dotnet-core MyGet gallery
 The latest version number of each library can be seen in that gallery.
 
 ### Build & Test Status
+
+Note: See officially supported [OS versions](https://github.com/dotnet/core/blob/master/roadmap.md#technology-roadmaps).
 
 |    | Inner x64 Debug | Inner x64 Release | Outer x64 Debug | Outer x64 Release |
 |:---|----------------:|------------------:|----------------:|------------------:|
