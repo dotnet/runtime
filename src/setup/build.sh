@@ -179,17 +179,14 @@ while :; do
 
         arm)
             __BuildArch=arm
-            __DisableCrossgen=true
             ;;
 
         armel)
             __BuildArch=armel
-            __DisableCrossgen=true
             ;;
 
         arm64)
             __BuildArch=arm64
-            __DisableCrossgen=true
             ;;
 
         debug)
