@@ -4,8 +4,5 @@ MembersMustExist : Member 'System.String.EndsWith(System.Char)' does not exist i
 MembersMustExist : Member 'System.String.Replace(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Replace(System.String, System.String, System.StringComparison)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.StartsWith(System.Char)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.Char, System.Object[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.Char, System.String[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.String, System.Object[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Text.StringBuilder.AppendJoin(System.String, System.String[])' does not exist in the implementation but it does exist in the contract.
-Total Issues: 10
+MembersMustExist : Member 'System.String.GetHashCode(System.StringComparison)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 7
