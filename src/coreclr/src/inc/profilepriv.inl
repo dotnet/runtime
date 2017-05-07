@@ -736,6 +736,36 @@ inline BOOL CORProfilerInMemorySymbolsUpdatesEnabled()
         ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED));
 }
 
+inline BOOL CORProfilerIsMonitoringEventPipe()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+    return (CORProfilerPresent() &&
+        ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_MONITOR_EVENT_PIPE));
+}
+
+inline BOOL CORProfilerIsMonitoringDynamicFunctionUnloads()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+        SO_NOT_MAINLINE;
+    }
+    CONTRACTL_END;
+
+    return (CORProfilerPresent() &&
+        ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS));
+}
+
 #if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
 
 #if defined(FEATURE_PROFAPI_ATTACH_DETACH)

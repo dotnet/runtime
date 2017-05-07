@@ -169,6 +169,7 @@ set(VM_SOURCES_WKS
     eventpipeeventinstance.cpp
     eventpipefile.cpp
     eventpipejsonfile.cpp
+    eventpipeprofilerapi.cpp
     eventpipeprovider.cpp
     eventstore.cpp
     fastserializer.cpp
