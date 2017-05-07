@@ -64,6 +64,20 @@ unsigned int EventPipeEventInstance::GetLength() const
     return m_dataLength;
 }
 
+unsigned int EventPipeEventInstance::GetThreadId() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_threadID;
+}
+
+LARGE_INTEGER EventPipeEventInstance::GetTimestamp() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_timeStamp;
+}
+
 void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel)
 {
     CONTRACTL
