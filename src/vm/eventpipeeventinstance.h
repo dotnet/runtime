@@ -31,6 +31,12 @@ public:
     // Get the length of the data.
     unsigned int GetLength() const;
 
+    // Get the thread id of the event.
+    unsigned int GetThreadId() const;
+
+    // Get the timestamp of the event.
+    LARGE_INTEGER GetTimestamp() const;
+
     // Serialize this object using FastSerialization.
     void FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel);
 

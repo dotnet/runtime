@@ -181,7 +181,10 @@ public:
         FunctionID  functionId,
         HRESULT     hrStatus,
         BOOL        fIsSafeToBlock);
-    
+
+    HRESULT DynamicMethodUnloaded(
+        FunctionID  functionId);
+
     HRESULT JITCachedFunctionSearchStarted(
         /* [in] */  FunctionID functionId,
         /* [out] */ BOOL * pbUseCachedFunction);
@@ -480,6 +483,21 @@ public:
 
     HRESULT GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext);
 
+    //
+    // Event Pipe
+    // 
+
+    HRESULT EventPipeEventDelivered(
+        REFGUID eventGuid,
+        DWORD eventId,
+        DWORD eventVersion,
+        DWORD eventThreadId,
+        LARGE_INTEGER eventTimestamp,
+        ULONG cbEventData,
+        LPCBYTE eventData,
+        ULONG numStackFrames,
+        UINT_PTR stackFrames[]);
+
 private:
 
     //
@@ -541,7 +559,7 @@ private:
 
     // Pointer to the profiler's implementation of the callback interface(s).
     // Profilers MUST support ICorProfilerCallback2.
-    // Profilers MAY optionally support ICorProfilerCallback3,4,5,6,7,8
+    // Profilers MAY optionally support ICorProfilerCallback3,4,5,6,7,8,9
     ICorProfilerCallback2 * m_pCallback2;
     ICorProfilerCallback3 * m_pCallback3;
     ICorProfilerCallback4 * m_pCallback4;
@@ -549,6 +567,8 @@ private:
     ICorProfilerCallback6 * m_pCallback6;
     ICorProfilerCallback7 * m_pCallback7;
     ICorProfilerCallback8 * m_pCallback8;
+    ICorProfilerCallback9 * m_pCallback9;
+
     HMODULE                 m_hmodProfilerDLL;
 
     BOOL                    m_fLoadedViaAttach;
