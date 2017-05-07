@@ -38,6 +38,7 @@ public class UmsSecurityTests
         }
     }
 
+    [ActiveIssue(19444)]
     [Fact]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX allows a negative Position following some PositionPointer overflowing inputs. See dotnet/coreclr#11376.")]
     public static void OverflowPositionPointer()
