@@ -125,7 +125,7 @@ Daily Builds
 [linux-x64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-linux-x64.latest.tar.gz
 [linux-x64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-linux-x64.latest.tar.gz
 
-[linux-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_linux_arm_Release_version_badge.svg
+[linux-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/sharedfx_linux-arm_Release_version_badge.svg
 [linux-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/dnvm/latest.sharedfx.linux.arm.version
 [linux-arm-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-linux-arm.latest.tar.gz
 [linux-arm-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/master/Binaries/Latest/dotnet-sharedframework-symbols-linux-arm.latest.tar.gz
