@@ -8,6 +8,8 @@
 
 #ifndef DISABLE_JIT
 
+#include <mono/utils/mono-memory-model.h>
+
 #include "mini.h"
 #include "ir-emit.h"
 
@@ -145,6 +147,22 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 		soffset += 1;
 		size -= 1;
 	}
+}
+
+MonoInst*
+mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offset, int ins_flag)
+{
+	MonoInst *ins;
+
+	EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, type, src->dreg, offset);
+	ins->flags |= ins_flag;
+
+	if (ins_flag & MONO_INST_VOLATILE) {
+		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
+	}
+
+	return ins;
 }
 
 #endif
