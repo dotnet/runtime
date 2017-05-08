@@ -42,6 +42,7 @@ namespace System.Net.Security.Tests
             await ServerAsyncSslHelper(protocol, protocol);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "These protocols are explicitly disabled on .NET Core but still supported on .NET Framework.")] 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
         public async Task ServerAsyncAuthenticate_EachServerUnsupportedProtocol_Fail(SslProtocols protocol)
@@ -73,6 +74,7 @@ namespace System.Net.Security.Tests
                 });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "These protocols are explicitly disabled on .NET Core but still supported on .NET Framework.")] 
         [Fact]
         public async Task ServerAsyncAuthenticate_UnsupportedAllServer_Fail()
         {
