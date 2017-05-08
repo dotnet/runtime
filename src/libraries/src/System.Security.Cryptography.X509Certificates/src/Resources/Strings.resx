@@ -262,9 +262,6 @@
   <data name="NotSupported_ImmutableX509Certificate" xml:space="preserve">
     <value>X509Certificate is immutable on this platform. Use the equivalent constructor instead.</value>
   </data>
-  <data name="net_http_unix_openssl_version" xml:space="preserve">
-    <value>The libcurl library in use is built with {0}, we require version OpenSSL/1.0</value>
-  </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>
