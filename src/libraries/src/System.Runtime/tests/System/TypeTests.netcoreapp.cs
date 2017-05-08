@@ -24,10 +24,7 @@ namespace System.Tests
 
             if (PlatformDetection.IsWindows)
             {
-                if (!PlatformDetection.IsNetNative)  // .Net Native - MakeArrayType() of these magic types throws exception: (https://github.com/dotnet/corert/issues/3522)
-                {
-                    NonArrayBaseTypes.Add(Type.GetTypeFromCLSID(default(Guid)));
-                }
+                NonArrayBaseTypes.Add(Type.GetTypeFromCLSID(default(Guid)));
             }
         }
 
