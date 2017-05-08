@@ -346,21 +346,21 @@ namespace System.Net.Tests
         public void Host_SetNullValue_ThrowsArgumentNullException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentNullException>("value", () => request.Host = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", null, () => request.Host = null);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
         public void Host_SetSlash_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Host = "/localhost");
+            AssertExtensions.Throws<ArgumentException>("value", null, () => request.Host = "/localhost");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
         public void Host_SetInvalidUri_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Host = "NoUri+-*");
+            AssertExtensions.Throws<ArgumentException>("value", null, () => request.Host = "NoUri+-*");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1236,6 +1236,8 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(19083)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19083")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1257,6 +1259,7 @@ namespace System.Net.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ResponseCallback not called after Abort on netfx")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns()
         {
@@ -1275,6 +1278,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(18800)]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {
