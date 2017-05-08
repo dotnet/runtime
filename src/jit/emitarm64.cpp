@@ -5368,19 +5368,18 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     id->idReg2(reg2);
     id->idReg3(reg3);
 
+    // Record the attribute for the second register in the pair
+    id->idGCrefReg2(GCT_NONE);
     if (attrReg2 != EA_UNKNOWN)
     {
+        // Record the attribute for the second register in the pair
         assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
         if (EA_IS_GCREF(attrReg2))
         {
-            /* A special value indicates a GCref pointer value */
-
             id->idGCrefReg2(GCT_GCREF);
         }
         else if (EA_IS_BYREF(attrReg2))
         {
-            /* A special value indicates a Byref pointer value */
-
             id->idGCrefReg2(GCT_BYREF);
         }
     }
@@ -6176,17 +6175,18 @@ void emitter::emitIns_R_R_S_S(
     id->idInsFmt(fmt);
     id->idInsOpt(INS_OPTS_NONE);
 
+    // Record the attribute for the second register in the pair
     if (EA_IS_GCREF(attr2))
     {
-        /* A special value indicates a GCref pointer value */
-
         id->idGCrefReg2(GCT_GCREF);
     }
     else if (EA_IS_BYREF(attr2))
     {
-        /* A special value indicates a Byref pointer value */
-
         id->idGCrefReg2(GCT_BYREF);
+    }
+    else
+    {
+        id->idGCrefReg2(GCT_NONE);
     }
 
     id->idReg1(reg1);
@@ -6401,17 +6401,18 @@ void emitter::emitIns_S_S_R_R(
     id->idInsFmt(fmt);
     id->idInsOpt(INS_OPTS_NONE);
 
+    // Record the attribute for the second register in the pair
     if (EA_IS_GCREF(attr2))
     {
-        /* A special value indicates a GCref pointer value */
-
         id->idGCrefReg2(GCT_GCREF);
     }
     else if (EA_IS_BYREF(attr2))
     {
-        /* A special value indicates a Byref pointer value */
-
         id->idGCrefReg2(GCT_BYREF);
+    }
+    else
+    {
+        id->idGCrefReg2(GCT_NONE);
     }
 
     id->idReg1(reg1);
