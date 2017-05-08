@@ -388,19 +388,19 @@ namespace System.IO.Tests
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testBase = GetTestFileName();
-            testDir.CreateSubdirectory(testBase + "aBBb");
-            testDir.CreateSubdirectory(testBase + "aBBB");
+            testDir.CreateSubdirectory(testBase + "yZZz");
+            testDir.CreateSubdirectory(testBase + "yZZZ");
 
-            File.Create(Path.Combine(testDir.FullName, testBase + "AAAA")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, testBase + "aAAa")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, testBase + "YYYY")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, testBase + "yYYy")).Dispose();
 
             if (TestDirectories)
             {
-                Assert.Equal(1, GetEntries(testDir.FullName, "*BB*").Length);
+                Assert.Equal(1, GetEntries(testDir.FullName, "*ZZ*").Length);
             }
             if (TestFiles)
             {
-                Assert.Equal(1, GetEntries(testDir.FullName, "*AA*").Length);
+                Assert.Equal(1, GetEntries(testDir.FullName, "*YY*").Length);
             }
         }
 
