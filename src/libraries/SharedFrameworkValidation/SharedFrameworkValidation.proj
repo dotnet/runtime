@@ -37,7 +37,37 @@
     <Copy SourceFiles="%(XunitAssemblies.Identity)" DestinationFolder="$(SharedFrameworkValidationRuntimePath)" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="RestorePackagesProject;BuildPackagesProject;PublishPackagesProject;CopyXunitAssemblies" />
+  <Target Name="ReplaceTestingSharedFrameworkWithRestoredPackages">
+    <!-- Deleting the contents of the test shared framework since it will be replaced. -->
+    <ItemGroup>
+      <_FilesToDelete Include="$(NETCoreAppTestSharedFrameworkPath)\*.*" />
+    </ItemGroup>
+    <Delete Files="@(_FilesToDelete)" />
+
+    <ItemGroup>
+      <_FilesToCopy Include="$(SharedFrameworkValidationRuntimePath)\*.*" />
+    </ItemGroup>
+    <Copy SourceFiles="%(_FilesToCopy.Identity)" DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)" />
+  </Target>
+
+  <Target Name="GenerateTestSharedFrameworkDepsFile">
+    <MSBuild Targets="GenerateTestSharedFrameworkDepsFile"
+             Projects="$(MSBuildThisFileDirectory)\..\src.builds"
+             ContinueOnError="ErrorAndStop" />
+  </Target>
+
+  <PropertyGroup>
+    <BuildDependsOn>
+      RestorePackagesProject;
+      BuildPackagesProject;
+      PublishPackagesProject;
+      CopyXunitAssemblies;
+      ReplaceTestingSharedFrameworkWithRestoredPackages;
+      GenerateTestSharedFrameworkDepsFile;
+    </BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
   <Target Name="Clean">
     <RemoveDir Directories="$(MSBuildThisFileDirectory)RestoreSDKProject\obj;$(MSBuildThisFileDirectory)RestoreSDKProject\bin;$(SharedFrameworkValidationRefPath);$(SharedFrameworkValidationRuntimePath)" />
   </Target>
