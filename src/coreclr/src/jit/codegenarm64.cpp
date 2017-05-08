@@ -1366,18 +1366,59 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
         }
         else
         {
-            getEmitter()->emitIns_R_I(INS_mov, size, reg, (imm & 0xffff));
-            getEmitter()->emitIns_R_I_I(INS_movk, size, reg, ((imm >> 16) & 0xffff), 16, INS_OPTS_LSL);
+            // Determine whether movn or movz will require the fewest instructions to populate the immediate
+            int preferMovn = 0;
 
-            if ((size == EA_8BYTE) &&
-                ((imm >> 32) != 0)) // Sometimes the upper 32 bits are zero and the first mov has zero-ed them
+            for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
             {
-                getEmitter()->emitIns_R_I_I(INS_movk, EA_8BYTE, reg, ((imm >> 32) & 0xffff), 32, INS_OPTS_LSL);
-                if ((imm >> 48) != 0) // Frequently the upper 16 bits are zero and the first mov has zero-ed them
+                if (((imm >> i) & 0xffffLL) == 0xffffLL)
+                    ++preferMovn;
+                else if (((imm >> i) & 0xffffLL) == 0x0000)
+                    --preferMovn;
+            }
+
+            // Initial movz or movn will fill the remaining bytes with the skipVal
+            // This can allow skipping mov* which will be effectively nop.
+            ssize_t skipVal = (preferMovn > 0) ? 0xffffLL : 0;
+
+            instruction ins = (skipVal) ? INS_movn : INS_movz;
+
+            ssize_t imm16 = (((ins != INS_movn) ? imm : ~imm) >> (0)) & 0xffffLL;
+
+            if (imm16 != skipVal)
+            {
+                getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 0, INS_OPTS_LSL);
+                ins = INS_movk;
+            }
+
+            imm16 = (((ins != INS_movn) ? imm : ~imm) >> (16)) & 0xffffLL;
+
+            if (imm16 != skipVal)
+            {
+                getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 16, INS_OPTS_LSL);
+                ins = INS_movk;
+            }
+
+            if (size == EA_8BYTE)
+            {
+                imm16 = (((ins != INS_movn) ? imm : ~imm) >> (32)) & 0xffffLL;
+
+                if (imm16 != skipVal)
                 {
-                    getEmitter()->emitIns_R_I_I(INS_movk, EA_8BYTE, reg, ((imm >> 48) & 0xffff), 48, INS_OPTS_LSL);
+                    getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 32, INS_OPTS_LSL);
+                    ins = INS_movk;
+                }
+
+                imm16 = (((ins != INS_movn) ? imm : ~imm) >> (48)) & 0xffffLL;
+
+                if (imm16 != skipVal)
+                {
+                    getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 48, INS_OPTS_LSL);
+                    ins = INS_movk;
                 }
             }
+
+            assert(ins == INS_movk);
         }
         // The caller may have requested that the flags be set on this mov (rarely/never)
         if (flags == INS_FLAGS_SET)
