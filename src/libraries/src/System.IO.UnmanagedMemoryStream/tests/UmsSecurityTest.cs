@@ -38,7 +38,6 @@ public class UmsSecurityTests
         }
     }
 
-    [ActiveIssue(19444)]
     [Fact]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX allows a negative Position following some PositionPointer overflowing inputs. See dotnet/coreclr#11376.")]
     public static void OverflowPositionPointer()
@@ -50,7 +49,15 @@ public class UmsSecurityTests
                 ums.PositionPointer = (byte*)0xF0000000;
                 Assert.Equal(0xB0000000, ums.Position);
 
-                Assert.Throws<ArgumentOutOfRangeException>(() => ums.PositionPointer = (byte*)ulong.MaxValue);
+                if (IntPtr.Size == 4)
+                {
+                    ums.PositionPointer = (byte*)ulong.MaxValue;
+                    Assert.Equal(uint.MaxValue - 0x40000000, ums.Position);
+                }
+                else
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => ums.PositionPointer = (byte*)ulong.MaxValue);
+                }
             }
         }
     }
