@@ -441,7 +441,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs)  /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishRidAgnosticPackages=$(PB_PublishRidAgnosticPackages) /p:BuildFullPlatformManifest=$(PB_BuildFullPlatformManifest) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish.log",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs)  /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishRidAgnosticPackages=$(PB_PublishRidAgnosticPackages) /p:BuildFullPlatformManifest=$(PB_BuildFullPlatformManifest) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\publish.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
