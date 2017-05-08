@@ -9,8 +9,7 @@
 
   <Target Name="RestorePackagesProject">
     <PropertyGroup>
-      <_RuntimeFrameworkVersion>2.0.0-preview2-25303-01</_RuntimeFrameworkVersion>
-      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_RuntimeFrameworkVersion=$(_RuntimeFrameworkVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
+      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
     </PropertyGroup>
     <Exec Command="$(_RestorePackagesCommand)" />
   </Target>
