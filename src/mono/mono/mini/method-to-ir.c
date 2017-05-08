@@ -10832,7 +10832,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					int addr_reg = mono_alloc_preg (cfg);
 					EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, addr_reg, static_data->dreg, field->offset);
 				}
-				} else if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
+			} else if ((cfg->opt & MONO_OPT_SHARED) || (cfg->compile_aot && addr)) {
 				MonoInst *iargs [2];
 
 				g_assert (field->parent);
