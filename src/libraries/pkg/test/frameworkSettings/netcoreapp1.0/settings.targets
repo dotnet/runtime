@@ -22,5 +22,6 @@
     <IgnoredTypes Include="System.Threading.CountdownEvent" />
     <IgnoredTypes Include="System.Threading.IOCompletionCallback" />
     <IgnoredTypes Include="System.Threading.NativeOverlapped" />
+    <IgnoredTypes Include="System.DBNull" />
   </ItemGroup>
 </Project>

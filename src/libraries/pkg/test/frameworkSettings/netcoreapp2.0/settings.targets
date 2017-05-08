@@ -13,5 +13,7 @@
     <IgnoredTypes Include="System.Threading.Overlapped" />
     <IgnoredTypes Include="System.Threading.PreAllocatedOverlapped" />
     <IgnoredTypes Include="System.Threading.ThreadPoolBoundHandle" />
+
+    <IgnoredTypes Include="System.DBNull" />
   </ItemGroup>
 </Project>
