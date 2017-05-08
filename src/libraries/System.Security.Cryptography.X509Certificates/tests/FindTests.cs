@@ -217,7 +217,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(19260, TestPlatforms.OSX)]
         public static void FindByValidThumbprint_RootCert()
         {
             using (X509Store machineRoot = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
@@ -236,36 +235,54 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     foreach (X509Certificate2 cert in storeCerts)
                     {
-                        if (cert.NotBefore < notBefore && cert.NotAfter > notAfter)
+                        if (cert.NotBefore >= notBefore || cert.NotAfter <= notAfter)
                         {
-                            X509KeyUsageExtension keyUsageExtension = null;
+                            // Not (safely) valid, skip.
+                            continue;
+                        }
 
-                            foreach (X509Extension extension in cert.Extensions)
+                        X509KeyUsageExtension keyUsageExtension = null;
+
+                        foreach (X509Extension extension in cert.Extensions)
+                        {
+                            keyUsageExtension = extension as X509KeyUsageExtension;
+
+                            if (keyUsageExtension != null)
                             {
-                                keyUsageExtension = extension as X509KeyUsageExtension;
-
-                                if (keyUsageExtension != null)
-                                {
-                                    break;
-                                }
-                            }
-
-                            // Some tool is putting the com.apple.systemdefault utility cert in the
-                            // LM\Root store on OSX machines; but it gets rejected by OpenSSL as an
-                            // invalid root for not having the Certificate Signing key usage value.
-                            //
-                            // While the real problem seems to be with whatever tool is putting it
-                            // in the bundle; we can work around it here.
-                            const X509KeyUsageFlags RequiredFlags = X509KeyUsageFlags.KeyCertSign;
-
-                            // No key usage extension means "good for all usages"
-                            if (keyUsageExtension == null ||
-                                (keyUsageExtension.KeyUsages & RequiredFlags) == RequiredFlags)
-                            {
-                                rootCert = cert;
                                 break;
                             }
                         }
+
+                        // Some tool is putting the com.apple.systemdefault utility cert in the
+                        // LM\Root store on OSX machines; but it gets rejected by OpenSSL as an
+                        // invalid root for not having the Certificate Signing key usage value.
+                        //
+                        // While the real problem seems to be with whatever tool is putting it
+                        // in the bundle; we can work around it here.
+                        const X509KeyUsageFlags RequiredFlags = X509KeyUsageFlags.KeyCertSign;
+
+                        // No key usage extension means "good for all usages"
+                        if (keyUsageExtension != null &&
+                            (keyUsageExtension.KeyUsages & RequiredFlags) != RequiredFlags)
+                        {
+                            // Not a valid KeyUsage, skip.
+                            continue;
+                        }
+
+                        using (ChainHolder chainHolder = new ChainHolder())
+                        {
+                            chainHolder.Chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                            if (!chainHolder.Chain.Build(cert))
+                            {
+                                // Despite being not expired and having a valid KeyUsage, it's
+                                // not considered a valid root/chain.
+                                continue;
+                            }
+                        }
+
+                        rootCert = cert;
+                        break;
                     }
 
                     // Just in case someone has a system with no valid trusted root certs whatsoever.
