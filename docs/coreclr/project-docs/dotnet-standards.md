@@ -49,7 +49,7 @@ ECMA 372 - C++/CLI
 
 The C++/CLI language was standardized as [ECMA 372](http://www.ecma-international.org/publications/standards/Ecma-372.htm) in 2005.
 
-EMCA 372 is supported by the .NET Framework, but not .NET Core.
+ECMA 372 is supported by the .NET Framework, but not .NET Core.
 
 **ECMA 372 Resources**
 
