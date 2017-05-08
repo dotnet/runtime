@@ -1236,6 +1236,8 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(19083)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19083")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1257,6 +1259,7 @@ namespace System.Net.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ResponseCallback not called after Abort on netfx")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns()
         {
@@ -1275,6 +1278,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(18800)]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_EndGetResponseThrowsWebException()
         {
