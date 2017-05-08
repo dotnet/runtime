@@ -2872,8 +2872,10 @@ void Lowering::InsertPInvokeMethodProlog()
     store->gtOp.gtOp1 = call;
     store->gtFlags |= GTF_VAR_DEF;
 
+    GenTree* const insertionPoint = firstBlockRange.FirstNonPhiOrCatchArgNode();
+
     comp->fgMorphTree(store);
-    firstBlockRange.InsertAtEnd(LIR::SeqTree(comp, store));
+    firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, store));
     DISPTREERANGE(firstBlockRange, store);
 
 #if !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
@@ -2887,7 +2889,7 @@ void Lowering::InsertPInvokeMethodProlog()
         GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfCallSiteSP);
     storeSP->gtOp1 = PhysReg(REG_SPBASE);
 
-    firstBlockRange.InsertAtEnd(LIR::SeqTree(comp, storeSP));
+    firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
 
 #endif // !defined(_TARGET_X86_) && !defined(_TARGET_ARM_)
@@ -2903,7 +2905,7 @@ void Lowering::InsertPInvokeMethodProlog()
                                                    callFrameInfo.offsetOfCalleeSavedFP);
     storeFP->gtOp1 = PhysReg(REG_FPBASE);
 
-    firstBlockRange.InsertAtEnd(LIR::SeqTree(comp, storeFP));
+    firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
 #endif // !defined(_TARGET_ARM_)
 
@@ -2918,7 +2920,7 @@ void Lowering::InsertPInvokeMethodProlog()
         // Push a frame - if we are NOT in an IL stub, this is done right before the call
         // The init routine sets InlinedCallFrame's m_pNext, so we just set the thead's top-of-stack
         GenTree* frameUpd = CreateFrameLinkUpdate(PushFrame);
-        firstBlockRange.InsertAtEnd(LIR::SeqTree(comp, frameUpd));
+        firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, frameUpd));
         DISPTREERANGE(firstBlockRange, frameUpd);
     }
 #endif // _TARGET_64BIT_
