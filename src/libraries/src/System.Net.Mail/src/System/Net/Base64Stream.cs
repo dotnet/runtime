@@ -55,12 +55,6 @@ namespace System.Net
             _lineLength = writeStateInfo.MaxLineLength;
         }
 
-        internal Base64Stream(Stream stream, int lineLength) : base(stream)
-        {
-            _lineLength = lineLength;
-            _writeState = new Base64WriteStateInfo();
-        }
-
         internal Base64Stream(Base64WriteStateInfo writeStateInfo) : base(new MemoryStream())
         {
             _lineLength = writeStateInfo.MaxLineLength;
