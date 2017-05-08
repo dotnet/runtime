@@ -194,7 +194,6 @@
           "Name": "Core-Setup-Publish",
           "Parameters": {
             "PB_TargetArchitecture": "x64",
-            "PB_PublishLocation": "Bin\\publishpackages",
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",

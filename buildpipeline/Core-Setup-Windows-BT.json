@@ -89,7 +89,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration)",
+        "msbuildArguments": "/p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",

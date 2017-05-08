@@ -65,6 +65,7 @@
                          Exclude="@(_FoundBlobNames)" />
     </ItemGroup>
     <Error Text="Missing publish output from all legs of the build. Missing blobs are '@(_MissingBlobNames)'"
+           Importance="High"
            Condition="'@(_MissingBlobNames)' != ''" />
   </Target>
 
