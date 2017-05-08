@@ -226,9 +226,6 @@
   <data name="net_http_unix_https_support_unavailable_libcurl" xml:space="preserve">
     <value>The libcurl library in use ({0}) does not support HTTPS.</value>
   </data>
-  <data name="net_http_unix_openssl_version" xml:space="preserve">
-    <value>The libcurl library in use is built with {0}, we require version OpenSSL/1.0</value>
-  </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
   </data>

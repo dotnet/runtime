@@ -29,12 +29,9 @@ internal static partial class Interop
                 opensslVersion.IndexOf("openssl/1.0", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 // CURL uses OpenSSL which me must initialize first to guarantee thread-safety
+                // Only initialize for OpenSSL/1.0, any newer versions may have mismatched
+                // pointers, resulting in segfaults.
                 CryptoInitializer.Initialize();
-            }
-            else
-            {
-                // Some newer version of openssl used, which might result in segfaults.
-                throw new PlatformNotSupportedException(SR.Format(SR.net_http_unix_openssl_version, opensslVersion));
             }
 #endif
 
