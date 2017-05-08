@@ -150,27 +150,35 @@ namespace System.Tests
             }
         }
 
-        public static IEnumerable<object[]> Ctor_ExceptionRecovery_MemberData()
+        private static IEnumerable<Lazy<InitiallyExceptionThrowingCtor>> Ctor_ExceptionRecovery_MemberData()
         {
-            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(), 5 };
-            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(true), 5 };
-            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(false), 5 };
-            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.ExecutionAndPublication), 5 };
-            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.None), 5 };
-            yield return new object[] { new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.PublicationOnly), 5 };
+            yield return new Lazy<InitiallyExceptionThrowingCtor>();
+            yield return new Lazy<InitiallyExceptionThrowingCtor>(true);
+            yield return new Lazy<InitiallyExceptionThrowingCtor>(false);
+            yield return new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.ExecutionAndPublication);
+            yield return new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.None);
+            yield return new Lazy<InitiallyExceptionThrowingCtor>(LazyThreadSafetyMode.PublicationOnly);
         }
 
-        [Theory]
-        [MemberData(nameof(Ctor_ExceptionRecovery_MemberData))]
-        public static void Ctor_ExceptionRecovery(Lazy<InitiallyExceptionThrowingCtor> lazy, int expected)
+        //
+        // Do not use [Theory]. XUnit argument formatter can invoke the lazy.Value property underneath you and ruin the assumptions
+        // made by the test.
+        //
+        [Fact]
+        public static void Ctor_ExceptionRecovery()
         {
-            InitiallyExceptionThrowingCtor.counter = 0;
-            InitiallyExceptionThrowingCtor result = null;
-            for (var i = 0; i < 10; ++i)
+            foreach (Lazy<InitiallyExceptionThrowingCtor> lazy in Ctor_ExceptionRecovery_MemberData())
             {
-                try { result = lazy.Value; } catch (Exception) { }
+                InitiallyExceptionThrowingCtor.counter = 0;
+                InitiallyExceptionThrowingCtor result = null;
+                for (int i = 0; i < 10; ++i)
+                {
+                    try
+                    { result = lazy.Value; }
+                    catch (Exception) { }
+                }
+                Assert.Equal(5, result.Value);
             }
-            Assert.Equal(result.Value, expected);
         }
 
         private static void Value_ExceptionRecovery_IntImpl(Lazy<int> lazy, ref int counter, int expected)
