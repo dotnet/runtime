@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] plainText = "f238882f6530ae9191c294868feed0b0df4058b322377dec14690c3b6bbf6ad1dd5b7c063a28e2cca2a6dce8cc2e668ea6ce80cee4c1a1a955ff46c530f3801b".HexToByteArray();
             byte[] cipher = "7c6e1bcd3c30d2fb2d92e3346048307dc6719a6b96a945b4d987af09469ec68f5ca535fab7f596fffa80f7cfaeb26eefaf8d4ca8be190393b2569249d673f042".HexToByteArray();
 
-            using (Aes a = Aes.Create())
+            using (Aes a = AesFactory.Create())
             using (MemoryStream cipherStream = new MemoryStream(cipher))
             {
                 a.Key = key;

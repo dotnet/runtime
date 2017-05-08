@@ -31,6 +31,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             throw new NotImplementedException();
         }
 
+#if netcoreapp
         public override void ImportParameters(ECParameters parameters)
         {
             throw new NotImplementedException();
@@ -50,5 +51,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             throw new NotImplementedException();
         }
+#endif
     }
 }

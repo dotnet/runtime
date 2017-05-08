@@ -6,7 +6,7 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.RuntimeInformation</AssemblyName>
     <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx'">$(DefineConstants);netfx</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='net462' OR '$(TargetGroup)'=='net47'">$(DefineConstants);netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">$(DefineConstants);wpa81</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">$(DefineConstants);win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
@@ -62,7 +62,7 @@
     </Compile>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx' OR '$(TargetGroup)'=='uap')">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81')">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>
@@ -87,7 +87,7 @@
       <Link>Common\Interop\Windows\kernel32\Interop.GetSystemInfo.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>

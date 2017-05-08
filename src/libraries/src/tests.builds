@@ -3,6 +3,10 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <!-- When building through build-tests.cmd tests.builds is the main project that is being built. We set IsTestProject to true when the project path has /tests/.
+    Since IsTestProject is set to false in this case, when TargetGroup = netfx it will add net462 and net47 build configurations if they exist on the test project.
+    We only want to build tests against current TargetGroup -->
+    <AdditionalBuildConfigurations Condition="'$(TargetGroup)' == 'netfx'"></AdditionalBuildConfigurations>
     <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
   </PropertyGroup>
 
