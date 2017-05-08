@@ -60,6 +60,13 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(
+            TargetFrameworkMonikers.Net45 |
+            TargetFrameworkMonikers.Net451 |
+            TargetFrameworkMonikers.Net452 |
+            TargetFrameworkMonikers.Net46 |
+            TargetFrameworkMonikers.Net461,
+            "https://github.com/dotnet/corefx/issues/19270")]
         public void SignedXmlHasCertificateVerifiableSignature()
         {
             using (X509Certificate2 x509cert = TestHelpers.GetSampleX509Certificate())
