@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
-    <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportNiFiles>
-    <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportNiFiles>
-    <_PlatformDoesNotSupportNiFiles Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportNiFiles>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(Platform)' == 'arm'">true</_PlatformDoesNotSupportCreatedump>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(Platform)' == 'armel'">true</_PlatformDoesNotSupportCreatedump>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportCreatedump>
+    <_PlatformDoesNotSupportCreatedump Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportCreatedump>
     <_PlatformDoesNotSupportEventTrace Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportEventTrace>
     <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
   </PropertyGroup>
@@ -18,6 +19,7 @@
     <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
     <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
     <NativeBinary Include="$(BinDir)System.Private.CoreLib.dll" />
+    <NativeBinary Condition="'$(_PlatformDoesNotSupportCreatedump)' != 'true'" Include="$(BinDir)createdump" />
     <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
   </ItemGroup>
