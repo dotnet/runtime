@@ -260,6 +260,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Version_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19179")]
         public void Version(Version version, string versionString)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");

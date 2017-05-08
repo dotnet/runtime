@@ -43,6 +43,7 @@ namespace MonoTests.System.Configuration
     public class ConfigurationManagerTest
     {
         [Fact] // OpenExeConfiguration (ConfigurationUserLevel)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19384")]
         public void OpenExeConfiguration1_UserLevel_None()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
@@ -260,6 +261,7 @@ namespace MonoTests.System.Configuration
         [Fact]
         // Doesn't pass on Mono
         // [Category("NotWorking")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19384")]
         public void mapped_ExeConfiguration_null()
         {
             SysConfig config = ConfigurationManager.OpenMappedExeConfiguration(null, ConfigurationUserLevel.None);
