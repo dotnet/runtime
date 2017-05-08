@@ -107,8 +107,12 @@ setlocal
   )
 
   rem Save off the results to the root directory for recovery later in Jenkins
-  call :run_cmd xcopy "Perf-%BENCHNAME%*.xml" "%CORECLR_REPO%\" || exit /b 1
-  call :run_cmd xcopy "Perf-%BENCHNAME%*.etl" "%CORECLR_REPO%\" || exit /b 1
+  IF EXIST "Perf-%BENCHNAME%.xml" (
+    call :run_cmd copy "Perf-%BENCHNAME%.xml" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.xml" || exit /b 1
+  )
+  IF EXIST "Perf-%BENCHNAME%.etl" (
+    call :run_cmd copy "Perf-%BENCHNAME%.etl" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.etl" || exit /b 1
+  )
 
   exit /b 0
 
