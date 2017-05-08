@@ -6,6 +6,8 @@
       netfx;
       uap;
       netstandard;
+      net462;
+      net47;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -6,7 +6,7 @@
     <AssemblyName>System.Security.Cryptography.Cng</AssemblyName>
     <ProjectGuid>{4C1BD451-6A99-45E7-9339-79C77C42EE9E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='netfx'">true</GenFacadesIgnoreMissingTypes>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
@@ -29,6 +29,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Security\Cryptography\AesCng.cs" />
     <Compile Include="System\Security\Cryptography\CngAlgorithm.cs" />
