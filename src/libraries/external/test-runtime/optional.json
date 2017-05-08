@@ -4,9 +4,9 @@
       "dependencies": {
         "Microsoft.DotNet.IBCMerge": "4.6.0-alpha-00001",
         "Microsoft.DotNet.UAP.TestTools": "1.0.2",
-        "TestILC.amd64ret": "1.0.0-beta-25305-00",
-        "TestILC.armret": "1.0.0-beta-25305-00",
-        "TestILC.x86ret": "1.0.0-beta-25305-00"
+        "TestILC.amd64ret": "1.0.0-beta-25308-00",
+        "TestILC.armret": "1.0.0-beta-25308-00",
+        "TestILC.x86ret": "1.0.0-beta-25308-00"
       }
     }
   }
