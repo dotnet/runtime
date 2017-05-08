@@ -2445,8 +2445,10 @@ void * MAPMapPEFile(HANDLE hFile)
 #else // defined(_AMD64_)    
     // First try to reserve virtual memory using ExecutableAllcator. This allows all PE images to be
     // near each other and close to the coreclr library which also allows the runtime to generate
-    // more efficient code (by avoiding usage of jump stubs).
-    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(virtualSize, GetVirtualPageSize()));
+    // more efficient code (by avoiding usage of jump stubs). Alignment to a 64 KB granularity should
+    // not be necessary (alignment to page size should be sufficient), but see
+    // ExecutableMemoryAllocator::AllocateMemory() for the reason why it is done.
+    loadedBase = ReserveMemoryFromExecutableAllocator(pThread, ALIGN_UP(virtualSize, VIRTUAL_64KB));
     if (loadedBase == NULL)
     {
         // MAC64 requires we pass MAP_SHARED (or MAP_PRIVATE) flags - otherwise, the call is failed.
