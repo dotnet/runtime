@@ -261,7 +261,7 @@ namespace BasicEventSourceTests
         private EventListener _listener;
         private Action<EventSource> _onEventSourceCreated;
 
-#if netcoreapp
+#if FEATURE_ETLEVENTS
 		public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated
         {
             add
@@ -293,11 +293,12 @@ namespace BasicEventSourceTests
 
         public EventListenerListener(bool useEventsToListen = false)
         {
-#if netcoreapp
+#if FEATURE_ETLEVENTS
             if (useEventsToListen)
             {
                 _listener = new HelperEventListener(null);
-                _listener.EventSourceCreated += mListenerEventSourceCreated;
+                _listener.EventSourceCreated += (sender, eventSourceCreatedEventArgs) 
+                    => _onEventSourceCreated?.Invoke(eventSourceCreatedEventArgs.EventSource);
                 _listener.EventWritten += mListenerEventWritten;
             }
             else
@@ -346,13 +347,6 @@ namespace BasicEventSourceTests
             };
         }
 
-#if netcoreapp
-        private void mListenerEventSourceCreated(object sender, EventSourceCreatedEventArgs eventSource)
-        {
-			_onEventSourceCreated?.Invoke(eventSource.EventSource);
-		}
-#endif
-
         private void mListenerEventWritten(object sender, EventWrittenEventArgs eventData)
         {
             OnEvent(new EventListenerEvent(eventData));
@@ -376,9 +370,9 @@ namespace BasicEventSourceTests
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-#if netcoreapp
-                // EventSource:L4375 OnEventWritten is internal protected. Can't call...
-                // base.OnEventWritten(eventData); 
+#if FEATURE_ETLEVENTS
+                // OnEventWritten is abstract in netfx <= 461
+                base.OnEventWritten(eventData); 
 #endif
                 _forwardTo?.OnEvent?.Invoke(new EventListenerEvent(eventData));
             }

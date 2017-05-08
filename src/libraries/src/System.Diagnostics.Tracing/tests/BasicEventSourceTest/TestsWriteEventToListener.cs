@@ -346,7 +346,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-#if netcoreapp
+#if FEATURE_ETLEVENTS 
         [Fact]
         public void Test_EventSourceCreatedEvents_BeforeListener()
         {
