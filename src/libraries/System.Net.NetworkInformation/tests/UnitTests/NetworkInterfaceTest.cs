@@ -11,6 +11,7 @@ namespace System.Net.NetworkInformation.Unit.Tests
     public class NetworkInterfaceTest
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17993")]
         public void GetIsNetworkAvailable_ConnectionProfileNotPresent_ReturnsFalse()
         {
             FakeNetwork.IsConnectionProfilePresent = false;
@@ -18,6 +19,7 @@ namespace System.Net.NetworkInformation.Unit.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17993")]
         public void GetIsNetworkAvailable_NetworkConnectivityLevelIsNone_ReturnsFalse()
         {
             FakeNetwork.IsConnectionProfilePresent = true;

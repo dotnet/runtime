@@ -11,6 +11,7 @@ namespace System.IO.IsolatedStorage.Tests
     public class HelperTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18202")]
         public void GetDefaultIdentityAndHash()
         {
             object identity;
