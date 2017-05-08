@@ -346,21 +346,21 @@ namespace System.Net.Tests
         public void Host_SetNullValue_ThrowsArgumentNullException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentNullException>("value", () => request.Host = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", null, () => request.Host = null);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
         public void Host_SetSlash_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Host = "/localhost");
+            AssertExtensions.Throws<ArgumentException>("value", null, () => request.Host = "/localhost");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
         public void Host_SetInvalidUri_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Host = "NoUri+-*");
+            AssertExtensions.Throws<ArgumentException>("value", null, () => request.Host = "NoUri+-*");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
