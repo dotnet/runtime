@@ -104,6 +104,7 @@
     <AssemblyInfoLines Include="[assembly: System.Security.AllowPartiallyTrustedCallers]" />
     <AssemblyInfoLines Include="[assembly: System.Runtime.InteropServices.ComVisible(false)]" />
     <AssemblyInfoLines Include="[assembly: System.Resources.NeutralResourcesLanguage(&quot;en-US&quot;)]" />
+    <AssemblyInfoLines Include="[assembly: System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory | System.Runtime.InteropServices.DllImportSearchPath.System32)]" />
   </ItemGroup>
   <!--
     Helper Paths
