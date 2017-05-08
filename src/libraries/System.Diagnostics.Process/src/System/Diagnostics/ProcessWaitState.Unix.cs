@@ -140,10 +140,7 @@ namespace System.Diagnostics
                     }
                 }
             }
-            if (pws != null)
-            {
-                pws.Dispose();
-            }
+            pws?.Dispose();
         }
 
         /// <summary>
@@ -202,10 +199,7 @@ namespace System.Diagnostics
 
             _exited = true;
             _exitTime = DateTime.Now;
-            if (_exitedEvent != null)
-            {
-                _exitedEvent.Set();
-            }
+            _exitedEvent?.Set();
         }
 
         /// <summary>Ensures an exited event has been initialized and returns it.</summary>
@@ -447,10 +441,7 @@ namespace System.Diagnostics
                     // be caught first thing in the loop where we check _exited, and if it didn't exit,
                     // our remaining time will be zero, so we'll do a quick remaining check and bail.
                     waitTask.Wait();
-                    if (cts != null)
-                    {
-                        cts.Dispose();
-                    }
+                    cts?.Dispose();
                 }
                 else
                 {
@@ -476,6 +467,12 @@ namespace System.Diagnostics
 
             return _waitInProgress = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForExit
             {
+                // Arbitrary values chosen to balance delays with polling overhead.  Start with fast polling
+                // to handle quickly completing processes, but fall back to longer polling to minimize
+                // overhead for those that take longer to complete.
+                const int StartingPollingIntervalMs = 1, MaxPollingIntervalMs = 100;
+                int pollingIntervalMs = StartingPollingIntervalMs;
+
                 try
                 {
                     // While we're not canceled
@@ -497,8 +494,8 @@ namespace System.Diagnostics
                         // Wait
                         try
                         {
-                            const int PollingIntervalMs = 100; // arbitrary value chosen to balance delays with polling overhead
-                            await Task.Delay(PollingIntervalMs, cancellationToken);
+                            await Task.Delay(pollingIntervalMs, cancellationToken);
+                            pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
                         }
                         catch (OperationCanceledException) { }
                     }
