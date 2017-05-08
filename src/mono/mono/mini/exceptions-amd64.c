@@ -13,6 +13,11 @@
 
 #include <config.h>
 
+// Secret password to unlock wcscat_s on mxe, must happen before string.h included
+#ifdef __MINGW32__
+#define MINGW_HAS_SECURE_API 1
+#endif
+
 #include <glib.h>
 #include <string.h>
 
@@ -899,6 +904,7 @@ mono_arch_exceptions_init (void)
 	}
 }
 
+// Implies defined(TARGET_WIN32)
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
 
 static void
