@@ -97,8 +97,8 @@
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "Latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },
@@ -117,15 +117,15 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:PublishFinalOutput /p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ContainerName=$(STORAGE_CONTAINER) /p:GitHubUser=$(GITHUB_USER) /p:GitHubEmail=$(GITHUB_EMAIL) /p:GitHubAuthToken=$(GITHUB_AUTH_TOKEN) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(PB_Branch)",
+        "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ContainerName=$(STORAGE_CONTAINER) /p:GitHubUser=$(GITHUB_USER) /p:GitHubEmail=$(GITHUB_EMAIL) /p:GitHubAuthToken=$(GITHUB_AUTH_TOKEN) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(PB_Branch) /p:Finalize=true /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\publish.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
         "logProjectEvents": "false",
         "createLogFile": "false",
         "msbuildLocationMethod": "version",
-        "msbuildVersion": "15.0",
-        "msbuildArchitecture": "x86",
+        "msbuildVersion": "Latest",
+        "msbuildArchitecture": "x64",
         "msbuildLocation": ""
       }
     },

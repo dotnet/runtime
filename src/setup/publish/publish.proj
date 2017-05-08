@@ -7,13 +7,13 @@
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
   <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;" />
+          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishFinalOutput" />
   
   <Target Name="PublishFinalOutput"
+          Condition="'$(Finalize)' == 'true'"
           DependsOnTargets="FinalizeBuildInAzure;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
           
   <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
-    <RemoveDir Directories="$(CurrentVersionPublishOutput)" />  
     <ItemGroup>
       <PackagesToShip Include="$(BinDir)/ForPublishing/*.nupkg" Exclude="$(BinDir)/ForPublishing/*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
@@ -22,6 +22,7 @@
   </Target>
 
   <Target Name="PublishToAzure"
+          Condition="'$(Finalize)' != 'true'"
           DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers">
     <MSBuild Targets="%(Project.PublishTarget)"
              Projects="%(Project.Identity)"
@@ -51,7 +52,7 @@
 
   <Target Name="PublishDebFilesToDebianRepo"
           DependsOnTargets="GenerateDebRepoFiles"
-          Condition="'@(DebInstallerFile)' != ''">
+          Condition="'@(DebInstallerFile)' != '' AND '$(Finalize)' != 'true'">
       <Exec Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -listpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
@@ -79,7 +80,6 @@
                    FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  
                    Condition="'@(_MissingBlobNames)' == ''" />
-    <Message Importance="High" Condition="'@(_MissingBlobNames)' != ''" Text="Skipping finalization, missing these blobs: '@(_MissingBlobNames)'" />
   </Target>
 
   <Target Name="PublishCoreHostPackagesToFeed"
