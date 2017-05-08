@@ -60,7 +60,7 @@ enum VIRTUAL_CONSTANTS
     
     VIRTUAL_PAGE_SIZE       = 0x1000,
     VIRTUAL_PAGE_MASK       = VIRTUAL_PAGE_SIZE - 1,
-    BOUNDARY_64K    = 0xffff
+    VIRTUAL_64KB            = 0x10000
 };
 
 /*++
@@ -130,10 +130,21 @@ public:
         AllocateMemory
 
         This function attempts to allocate the requested amount of memory from its reserved virtual
-        address space. The function will return NULL if the allocation request cannot
+        address space. The function will return null if the allocation request cannot
         be satisfied by the memory that is currently available in the allocator.
     --*/
     void* AllocateMemory(SIZE_T allocationSize);
+
+    /*++
+    Function:
+        AllocateMemory
+
+        This function attempts to allocate the requested amount of memory from its reserved virtual
+        address space, if memory is available within the specified range. The function will return
+        null if the allocation request cannot satisfied by the memory that is currently available in
+        the allocator.
+    --*/
+    void *AllocateMemoryWithinRange(const void *beginAddress, const void *endAddress, SIZE_T allocationSize);
 
 private:
     /*++
@@ -160,12 +171,13 @@ private:
     // that can be used to calculate an approximate location of the memory that
     // is in 2GB range from the coreclr library. In addition, having precise size of libcoreclr
     // is not necessary for the calculations.
-    const int32_t CoreClrLibrarySize = 100 * 1024 * 1024;
+    static const int32_t CoreClrLibrarySize = 100 * 1024 * 1024;
 
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
     // entire libcoreclr to be located in a 2GB range.
-    const int32_t MaxExecutableMemorySize = 0x7FFF0000 - CoreClrLibrarySize;
+    static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
+    static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
 
     // Start address of the reserved virtual address space
     void* m_startAddress;

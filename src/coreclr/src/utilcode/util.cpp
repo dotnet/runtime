@@ -573,7 +573,9 @@ static DWORD ShouldInjectFaultInRange()
 // Reserves free memory within the range [pMinAddr..pMaxAddr] using
 // ClrVirtualQuery to find free memory and ClrVirtualAlloc to reserve it.
 //
-// This method only supports the flAllocationType of MEM_RESERVE
+// This method only supports the flAllocationType of MEM_RESERVE, and expects that the memory
+// is being reserved for the purpose of eventually storing executable code.
+//
 // Callers also should set dwSize to a multiple of sysInfo.dwAllocationGranularity (64k).
 // That way they can reserve a large region and commit smaller sized pages
 // from that region until it fills up.  
@@ -603,6 +605,11 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     static unsigned countOfCalls = 0;  // We log the number of tims we call this method
     countOfCalls++;                    // increment the call counter
 
+    if (dwSize == 0)
+    {
+        return nullptr;
+    }
+
     //
     // First lets normalize the pMinAddr and pMaxAddr values
     //
@@ -618,18 +625,26 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         pMaxAddr = (BYTE *) TOP_MEMORY;
     }
 
+    // If pMaxAddr is not greater than pMinAddr we can not make an allocation
+    if (pMaxAddr <= pMinAddr)
+    {
+        return nullptr;
+    }
+
     // If pMinAddr is BOT_MEMORY and pMaxAddr is TOP_MEMORY
     // then we can call ClrVirtualAlloc instead 
     if ((pMinAddr == (BYTE *) BOT_MEMORY) && (pMaxAddr == (BYTE *) TOP_MEMORY))
     {
-        return (BYTE*) ClrVirtualAlloc(NULL, dwSize, flAllocationType, flProtect);
+        return (BYTE*) ClrVirtualAlloc(nullptr, dwSize, flAllocationType, flProtect);
     }
 
-    // If pMaxAddr is not greater than pMinAddr we can not make an allocation
-    if (dwSize == 0 || pMaxAddr <= pMinAddr)
+#ifdef FEATURE_PAL
+    pResult = (BYTE *)PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(pMinAddr, pMaxAddr, dwSize);
+    if (pResult != nullptr)
     {
-        return NULL;
+        return pResult;
     }
+#endif // FEATURE_PAL
 
     // We will do one scan from [pMinAddr .. pMaxAddr]
     // First align the tryAddr up to next 64k base address. 
