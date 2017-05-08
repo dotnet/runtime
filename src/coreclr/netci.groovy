@@ -1545,7 +1545,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                            Utilities.setJobTimeout(newJob, 240)
                        }
 
-                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2"
+                       buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=1"
                        // Test build and run are launched together.
                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -key_location C:\\tools\\key.txt"
                        //Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
