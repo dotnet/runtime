@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.IO.Tests
@@ -752,7 +753,10 @@ namespace System.IO.Tests
                     string shortName = sb.ToString();
 
                     // Make sure the shortened name expands back to the original one
-                    Assert.Equal(tempFilePath, Path.GetFullPath(shortName));
+                    // Sometimes shortening or GetFullPath is changing the casing of "temp" on some test machines: normalize both sides
+                    tempFilePath = Regex.Replace(tempFilePath, @"\temp\\", @"\TEMP\\",  RegexOptions.IgnoreCase);
+                    shortName = Regex.Replace(Path.GetFullPath(shortName), @"\temp\\", @"\TEMP\\",  RegexOptions.IgnoreCase);
+                    Assert.Equal(tempFilePath, shortName);
 
                     // Should work with device paths that aren't well-formed extended syntax
                     if (!PathFeatures.IsUsingLegacyPathNormalization())
