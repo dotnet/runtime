@@ -170,13 +170,16 @@ void deps_resolver_t::setup_shared_store_probes(
     }
 }
 
-pal::string_t deps_resolver_t::get_probe_directories()
+pal::string_t deps_resolver_t::get_lookup_probe_directories()
 {
     pal::string_t directories;
     for (const auto& pc : m_probes)
     {
-        directories.append(pc.probe_dir);
-        directories.push_back(PATH_SEPARATOR);
+        if (pc.is_lookup())
+        {
+            directories.append(pc.probe_dir);
+            directories.push_back(PATH_SEPARATOR);
+        }
     }
 
     return directories;
