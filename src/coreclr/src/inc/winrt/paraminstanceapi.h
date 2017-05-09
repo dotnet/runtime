@@ -1642,7 +1642,14 @@ namespace Ro { namespace detail {
             DWORD dwcb;
             DWORD dwcbResult;
 
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable: 33098) // "Banned hash algorithm is used" - SHA-1 is required for compatibility
+#endif // _PREFAST_
             CHKNT(BCryptOpenAlgorithmProvider(&_hAlg, BCRYPT_SHA1_ALGORITHM, MS_PRIMITIVE_PROVIDER, 0));
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif // _PREFAST_
 
             CHKNT(BCryptGetProperty(_hAlg, BCRYPT_OBJECT_LENGTH, reinterpret_cast<PBYTE>(&dwcb), sizeof(dwcb), &dwcbResult, 0));
 

@@ -63,7 +63,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     if ((dstFlags & srcFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
         // Xmm0-Xmm15
-        CopyContextChunk(&(pDst->Xmm0), &(pSrc->Xmm0), &(pDst->Xmm15) + sizeof(M128A),
+        CopyContextChunk(&(pDst->Xmm0), &(pSrc->Xmm0), &(pDst->Xmm15) + 1,
                          CONTEXT_FLOATING_POINT);
 
         // MxCsr

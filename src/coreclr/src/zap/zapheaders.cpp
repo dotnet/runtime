@@ -325,7 +325,7 @@ ZapPEExports::ZapPEExports(LPCWSTR dllPath)
 
 DWORD ZapPEExports::GetSize()
 {
-	return DWORD(sizeof(IMAGE_EXPORT_DIRECTORY) + wcslen(m_dllFileName) + 1);
+	return DWORD(sizeof(IMAGE_EXPORT_DIRECTORY) + wcslen(m_dllFileName) * sizeof(BYTE) + 1);
 }
 
 void ZapPEExports::Save(ZapWriter * pZapWriter)
