@@ -43,7 +43,9 @@
     <Compile Include="Assertions\BaseExpectedLinkedBehaviorAttribute.cs" />
     <Compile Include="Assertions\KeptBackingFieldAttribute.cs" />
     <Compile Include="Assertions\KeptMemberAttribute.cs" />
+    <Compile Include="Assertions\KeptTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
+    <Compile Include="Assertions\RemovedTypeInAssemblyAttribute.cs" />
     <Compile Include="Metadata\BaseMetadataAttribute.cs" />
     <Compile Include="Metadata\CoreLinkAttribute.cs" />
     <Compile Include="Metadata\NotATestCaseAttribute.cs" />
