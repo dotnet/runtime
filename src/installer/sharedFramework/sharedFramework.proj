@@ -5,6 +5,7 @@
 
   <UsingTask TaskName="ChangeEntryPointLibraryName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="ProcessSharedFrameworkDeps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
 
   <PropertyGroup>
     <BuildTargets>
@@ -18,19 +19,21 @@
   <Target Name="Build" DependsOnTargets="$(BuildTargets)" />
 
   <Target Name="PublishSharedFrameworkAndSharedHost"
-          DependsOnTargets="RestoreLockedCoreHost;GenerateSharedFrameworkProject">
+          DependsOnTargets="RestoreLockedCoreHost">
     
     <PropertyGroup>
-      <RestoreArgs>--fallbacksource $(PackagesOutDir) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</RestoreArgs>
+      <SharedFrameworkSourceRoot>$(MSBuildThisFileDirectory)framework</SharedFrameworkSourceRoot>
+      <CommonSharedFrameworkArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(TargetRid) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
     </PropertyGroup>  
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
 
-    <Exec Command="$(DotnetToolCommand) restore --verbosity verbose --disable-parallel --infer-runtimes $(RestoreArgs)"
+    <Exec Command="$(SdkRestoreCommand) --source $(PackagesOutDir) $(CommonSharedFrameworkArgs)"
           WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
-    <Exec Command="$(DotnetToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) -r $(TargetRid) $(SharedFrameworkSourceRoot)"
+    <Exec Command="$(DotnetSdkToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
+          WorkingDirectory="$(SharedFrameworkSourceRoot)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
 
     <!-- Clean deps.json -->
@@ -97,12 +100,11 @@
 
   <Target Name="GenerateRuntimeGraph">
     <PropertyGroup>
-      <runtimeGraphGeneratorName>DepsProcessor</runtimeGraphGeneratorName>
-      <runtimeGraphGeneratorProject>$(ProjectDir)tools-local/setuptools/independent/$(runtimeGraphGeneratorName)</runtimeGraphGeneratorProject>
-      <runtimeGraphGeneratorOutput>$(IntermediateOutputRootPath)setuptools/independent/$(runtimeGraphGeneratorName)</runtimeGraphGeneratorOutput>
-      <runtimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</runtimeGraphGeneratorRuntime>
-      <runtimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</runtimeGraphGeneratorRuntime>
-      <runtimeGraphGeneratorRuntime Condition="'$(runtimeGraphGeneratorRuntime)'==''">linux</runtimeGraphGeneratorRuntime>      
+      <SharedFrameworkAssetsFile>$(SharedFrameworkSourceRoot)/obj/project.assets.json</SharedFrameworkAssetsFile>
+      <SharedFrameworkDepsFile>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</SharedFrameworkDepsFile>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>      
     </PropertyGroup>
 
     <ItemGroup>
@@ -110,24 +112,12 @@
       <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethostresolver" />
       <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
       <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
-      <TrimPkgsWithCmdPrefix Include="@(TrimPkgsFromDeps ->'--remove %(Identity)')" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <TrimPkgsCmd>@(TrimPkgsFromDeps ->'--remove %(Identity)', ' ')</TrimPkgsCmd>
-    </PropertyGroup>
-
-    <Exec Command="$(DotnetToolCommand) publish --output $(runtimeGraphGeneratorOutput) $(runtimeGraphGeneratorProject) "
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
-
-    <PropertyGroup>
-      <RuntimeGraphGeneratorExe>$(runtimeGraphGeneratorOutput)/$(runtimeGraphGeneratorName)$(ExeSuffix)</RuntimeGraphGeneratorExe>
-      <DepsJson>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</DepsJson>
-
-    </PropertyGroup>
-
-    <Exec Command="$(RuntimeGraphGeneratorExe) --project $(SharedFrameworkSourceRoot) --deps $(DepsJson) $(TrimPkgsCmd) $(runtimeGraphGeneratorRuntime) "
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+    
+    <ProcessSharedFrameworkDeps AssetsFilePath="$(SharedFrameworkAssetsFile)"
+                                DepsFilePath="$(SharedFrameworkDepsFile)"
+                                PackagesToRemove="@(TrimPkgsFromDeps)"
+                                Runtime="$(RuntimeGraphGeneratorRuntime)" />
   </Target>
 
   <Target Name="RestoreLockedCoreHost">
@@ -176,26 +166,4 @@
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
   </Target>
 
-  <Target Name="GenerateSharedFrameworkProject">
-
-    <MakeDir Condition="!Exists('$(IntermediateOutputRootPath)sharedFramework')" 
-             Directories="$(IntermediateOutputRootPath)sharedFramework;$(SharedFrameworkSourceRoot)" />
-
-    <ItemGroup>
-      <SharedFrameworkFiles Include="$(MSBuildThisFileDirectory)**\*.cs" />
-    </ItemGroup>
-    <PropertyGroup>
-      <SharedFrameworkTemplate>$(MSBuildThisFileDirectory)framework\project.json.template</SharedFrameworkTemplate>
-    </PropertyGroup>
-
-    <Copy SourceFiles="@(SharedFrameworkFiles)" DestinationFolder="$(SharedFrameworkSourceRoot)"/>
-
-    <ReplaceFileContents
-      InputFile="$(SharedFrameworkTemplate)"
-      DestinationFile="$(SharedFrameworkSourceRoot)\project.json"
-      ReplacementPatterns="%24(NetCoreAppVersion);%24(RID);%24(TargetFramework)"
-      ReplacementStrings="$(HostFullVersion);$(TargetRid);$(Framework)" />
-
-  </Target>
-  
 </Project>
