@@ -1558,6 +1558,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             GenTreePtr op1 = treeNode->gtGetOp1();
             genConsumeRegs(op1);
             emit->emitInsBinary(ins_Store(targetType), emitTypeSize(treeNode), treeNode, op1);
+
+            genUpdateLife(treeNode);
         }
         break;
 
