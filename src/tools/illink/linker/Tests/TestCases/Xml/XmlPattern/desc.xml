@@ -1,7 +1,0 @@
-﻿<linker>
-	<assembly fullname="TestCases">
-		<type fullname="TestCases.Xml.XmlPattern.*Baz">
-			<method signature="System.Void .ctor()" />
-		</type>
-	</assembly>
-</linker>

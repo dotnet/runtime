@@ -223,15 +223,8 @@ namespace Mono.Linker.Steps {
 				}
 			}
 
-			switch (preserve) {
-			case TypePreserve.Nothing:
-				if (!nav.HasChildren)
-					Annotations.SetPreserve (type, TypePreserve.All);
-				break;
-			default:
+			if (preserve != TypePreserve.Nothing)
 				Annotations.SetPreserve (type, preserve);
-				break;
-			}
 
 			if (nav.HasChildren) {
 				MarkSelectedFields (nav, type);
@@ -261,7 +254,7 @@ namespace Mono.Linker.Steps {
 		{
 			string attribute = GetAttribute (nav, _preserve);
 			if (attribute == null || attribute.Length == 0)
-				return TypePreserve.Nothing;
+				return nav.HasChildren ? TypePreserve.Nothing : TypePreserve.All;
 
 			try {
 				return (TypePreserve) Enum.Parse (typeof (TypePreserve), attribute, true);

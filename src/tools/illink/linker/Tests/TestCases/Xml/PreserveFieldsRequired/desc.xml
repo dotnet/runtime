@@ -1,7 +1,0 @@
-﻿<linker>
-	<assembly fullname="TestCases">
-		<type fullname="TestCases.Xml.PreserveFieldsRequired.Foo" />
-		<type fullname="TestCases.Xml.PreserveFieldsRequired.NotRequiredButUsedNotPreserved" preserve="nothing" required="false" />
-		<type fullname="TestCases.Xml.PreserveFieldsRequired.NotRequiredButUsedAndFieldsPreserved" preserve="fields" required="false" />
-	</assembly>
-</linker>

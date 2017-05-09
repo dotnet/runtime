@@ -1,0 +1,140 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Mono.Linker.Tests.Cases</RootNamespace>
+    <AssemblyName>Mono.Linker.Tests.Cases</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;INCLUDE_EXPECTATIONS</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;INCLUDE_EXPECTATIONS</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInConstructorIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInDifferentNamespaceIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInFieldIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnUsedFieldIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnPreservedTypeIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnPreservedTypeWithTypeUsedInPropertySetterIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnPreservedTypeWithUsedSetter.cs" />
+    <Compile Include="Attributes\AttributeOnUsedMethodIsKept.cs" />
+    <Compile Include="Attributes\AttributeOnUsedPropertyIsKept.cs" />
+    <Compile Include="Basic\ComplexNestedClassesHasUnusedRemoved.cs" />
+    <Compile Include="Basic\InterfaceMethodImplementedOnBaseClassDoesNotGetStripped.cs" />
+    <Compile Include="Basic\MultiLevelNestedClassesAllRemovedWhenNonUsed.cs" />
+    <Compile Include="Basic\NestedDelegateInvokeMethodsPreserved.cs" />
+    <Compile Include="Basic\UninvokedInterfaceMemberGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedFieldGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedMethodGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedPropertyGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedPropertySetterRemoved.cs" />
+    <Compile Include="Basic\UsedPropertyIsKept.cs" />
+    <Compile Include="CoreLink\LinkingOfCoreLibrariesRemovesUnusedTypes.cs" />
+    <Compile Include="Advanced\DeadCodeElimination1.cs" />
+    <Compile Include="Advanced\FieldThatOnlyGetsSetIsRemoved.cs" />
+    <Compile Include="Generics\CorrectOverloadedMethodGetsStrippedInGenericClass.cs" />
+    <Compile Include="Generics\DerivedClassWithMethodOfSameNameAsBaseButDifferentNumberOfGenericParametersUnusedBaseWillGetStripped.cs" />
+    <Compile Include="Generics\GenericInstanceInterfaceMethodImplementedWithDifferentGenericArgumentNameDoesNotGetStripped.cs" />
+    <Compile Include="Generics\MethodWithParameterWhichHasGenericParametersAndOverrideUsesADifferentNameForGenericParameter.cs" />
+    <Compile Include="Generics\MethodWithParameterWhichHasGenericParametersAndOverrideUsesADifferentNameForGenericParameterNestedCase.cs" />
+    <Compile Include="Generics\MethodWithParameterWhichHasGenericParametersAndOverrideUsesADifferentNameForGenericParameterNestedCase2.cs" />
+    <Compile Include="Generics\OverrideWithAnotherVirtualMethodOfSameNameWithDifferentParameterType.cs" />
+    <Compile Include="Interop\InternalCalls\DefaultConstructorOfReturnTypeIsNotRemoved.cs" />
+    <Compile Include="Interop\PInvoke\DefaultConstructorOfReturnTypeIsNotRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved.cs" />
+    <Compile Include="Interop\PInvoke\UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\UnusedDefaultConstructorIsRemoved.cs" />
+    <Compile Include="Interop\PInvoke\UnusedDefaultConstructorIsRemoved.cs" />
+    <Compile Include="Interop\FieldsOfTypeMarkedSequentialLayoutAreNotRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\UnusedFieldsOfTypesAreNotRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\UnusedFieldsOfTypesPassedByRefAreNotRemoved.cs" />
+    <Compile Include="Interop\PInvoke\UnusedFieldsOfTypesAreNotRemoved.cs" />
+    <Compile Include="Interop\PInvoke\UnusedFieldsOfTypesPassedByRefAreNotRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\UnusedFieldsOfTypesWhenHasThisAreNotRemoved.cs" />
+    <Compile Include="Interop\UnusedTypeWithSequentialLayoutIsRemoved.cs" />
+    <Compile Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.cs" />
+    <Compile Include="LinkXml\UnusedFieldPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedTypeWithPreserveAllHasAllMembersPreserved.cs" />
+    <Compile Include="LinkXml\UnusedTypeWithPreserveFieldsHasMethodsRemoved.cs" />
+    <Compile Include="LinkXml\UnusedTypeWithPreserveMethodsHasFieldsRemoved.cs" />
+    <Compile Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.cs" />
+    <Compile Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.cs" />
+    <Compile Include="References\ReferencesAreRemovedWhenAllUsagesAreRemoved.cs" />
+    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass2.cs" />
+    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass3.cs" />
+    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass4.cs" />
+    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass5.cs" />
+    <Compile Include="VirtualMethods\ClassImplemtingInterfaceMethodsThroughBaseClass6.cs" />
+    <Compile Include="VirtualMethods\HarderToDetectUnusedVirtualMethodGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedClassGetsRemoved.cs" />
+    <Compile Include="Basic\UnusedNestedClassGetsRemoved.cs" />
+    <Compile Include="Statics\UnusedStaticMethodGetsRemoved.cs" />
+    <Compile Include="VirtualMethods\UnusedVirtualMethodRemoved.cs" />
+    <Compile Include="VirtualMethods\UsedVirtualMethodNotRemoved.cs" />
+    <Compile Include="Generics\UsedOverloadedGenericMethodInGenericClassIsNotStripped.cs" />
+    <Compile Include="Generics\UsedOverloadedGenericMethodInstanceInGenericClassIsNotStripped.cs" />
+    <Compile Include="Generics\UsedOverloadedGenericMethodWithNoParametersIsNotStripped.cs" />
+    <Compile Include="Statics\UnusedStaticConstructorGetsRemoved.cs" />
+    <Compile Include="VirtualMethods\TypeGetsMarkedThatImplementsAlreadyMarkedInterfaceMethod.cs" />
+    <Compile Include="VirtualMethods\VirtualMethodGetsPerservedIfBaseMethodGetsInvoked.cs" />
+    <Compile Include="VirtualMethods\VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml" />
+    <Content Include="LinkXml\UnusedFieldPreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedTypePreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedTypeWithPreserveAllHasAllMembersPreserved.xml" />
+    <Content Include="LinkXml\UnusedTypeWithPreserveFieldsHasMethodsRemoved.xml" />
+    <Content Include="LinkXml\UnusedTypeWithPreserveMethodsHasFieldsRemoved.xml" />
+    <Content Include="LinkXml\UnusedTypeWithPreserveNothingAndPreserveMembers.xml" />
+    <Content Include="LinkXml\UnusedTypeWithPreserveNothingHasMembersRemoved.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
+      <Project>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</Project>
+      <Name>Mono.Linker.Tests.Cases.Expectations</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
