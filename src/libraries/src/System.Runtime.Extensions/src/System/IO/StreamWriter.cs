@@ -334,26 +334,45 @@ namespace System.IO
 
             CheckAsyncTaskInProgress();
 
-            int index = 0;
-            int count = buffer.Length;
-            while (count > 0)
+            // Threshold of 4 was chosen after running perf tests
+            if (buffer.Length <= 4)
             {
-                if (_charPos == _charLen)
+                for (int i = 0; i < buffer.Length; i++)
                 {
-                    Flush(false, false);
-                }
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
 
-                int n = _charLen - _charPos;
-                if (n > count)
+                    Debug.Assert(_charLen - _charPos > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
+                    _charBuffer[_charPos] = buffer[i];
+                    _charPos++;
+                }
+            }
+            else
+            {
+                int count = buffer.Length;
+
+                int index = 0;
+                while (count > 0)
                 {
-                    n = count;
-                }
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
 
-                Debug.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
-                Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
-                _charPos += n;
-                index += n;
-                count -= n;
+                    int n = _charLen - _charPos;
+                    if (n > count)
+                    {
+                        n = count;
+                    }
+
+                    Debug.Assert(n > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
+                    Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
+                    _charPos += n;
+                    index += n;
+                    count -= n;
+                }
             }
 
             if (_autoFlush)
@@ -383,24 +402,44 @@ namespace System.IO
 
             CheckAsyncTaskInProgress();
 
-            while (count > 0)
+            // Threshold of 4 was chosen after running perf tests
+            if (count <= 4)
             {
-                if (_charPos == _charLen)
+                while (count > 0)
                 {
-                    Flush(false, false);
-                }
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
 
-                int n = _charLen - _charPos;
-                if (n > count)
+                    Debug.Assert(_charLen - _charPos > 0, "StreamWriter::Write(char[]) isn't making progress!  This is most likely a race in user code.");
+                    _charBuffer[_charPos] = buffer[index];
+                    _charPos++;
+                    index++;
+                    count--;
+                }
+            }
+            else
+            {
+                while (count > 0)
                 {
-                    n = count;
-                }
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
 
-                Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
-                Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
-                _charPos += n;
-                index += n;
-                count -= n;
+                    int n = _charLen - _charPos;
+                    if (n > count)
+                    {
+                        n = count;
+                    }
+
+                    Debug.Assert(n > 0, "StreamWriter::Write(char[], int, int) isn't making progress!  This is most likely a race condition in user code.");
+                    Buffer.BlockCopy(buffer, index * sizeof(char), _charBuffer, _charPos * sizeof(char), n * sizeof(char));
+                    _charPos += n;
+                    index += n;
+                    count -= n;
+                }
             }
 
             if (_autoFlush)
@@ -419,25 +458,44 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             int count = value.Length;
-            int index = 0;
-            while (count > 0)
+
+            // Threshold of 4 was chosen after running perf tests
+            if (count <= 4)
             {
-                if (_charPos == _charLen)
+                for (int i = 0; i < count; i++)
                 {
-                    Flush(false, false);
-                }
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
 
-                int n = _charLen - _charPos;
-                if (n > count)
+                    Debug.Assert(_charLen - _charPos > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                    _charBuffer[_charPos] = value[i];
+                    _charPos++;
+                }
+            }
+            else
+            {
+                int index = 0;
+                while (count > 0)
                 {
-                    n = count;
-                }
+                    if (_charPos == _charLen)
+                    {
+                        Flush(false, false);
+                    }
 
-                Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
-                value.CopyTo(index, _charBuffer, _charPos, n);
-                _charPos += n;
-                index += n;
-                count -= n;
+                    int n = _charLen - _charPos;
+                    if (n > count)
+                    {
+                        n = count;
+                    }
+
+                    Debug.Assert(n > 0, "StreamWriter::Write(String) isn't making progress!  This is most likely a race condition in user code.");
+                    value.CopyTo(index, _charBuffer, _charPos, n);
+                    _charPos += n;
+                    index += n;
+                    count -= n;
+                }
             }
 
             if (_autoFlush)
