@@ -686,28 +686,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
             noway_assert(structSize <= MAX_PASS_MULTIREG_BYTES);
 
-            // For a 16-byte structSize with GC pointers we will use two ldr and two str instructions
-            //             ldr     x2, [x0]
-            //             ldr     x3, [x0, #8]
-            //             str     x2, [sp, #16]
-            //             str     x3, [sp, #24]
-            //
-            // For a 16-byte structSize with no GC pointers we will use a ldp and two str instructions
+            // For a >= 16-byte structSize we will generate a ldp and stp instruction each loop
             //             ldp     x2, x3, [x0]
-            //             str     x2, [sp, #16]
-            //             str     x3, [sp, #24]
-            //
-            // For a 32-byte structSize with no GC pointers we will use two ldp and four str instructions
-            //             ldp     x2, x3, [x0]
-            //             str     x2, [sp, #16]
-            //             str     x3, [sp, #24]
-            //             ldp     x2, x3, [x0]
-            //             str     x2, [sp, #32]
-            //             str     x3, [sp, #40]
-            //
-            // Note that when loading from a varNode we currently can't use the ldp instruction
-            // TODO-ARM64-CQ: Implement support for using a ldp instruction with a varNum (see emitIns_R_S)
-            //
+            //             stp     x2, x3, [sp, #16]
 
             int      remainingSize = structSize;
             unsigned structOffset  = 0;
@@ -720,9 +701,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 if (varNode != nullptr)
                 {
-                    // Load from our varNumImp source, currently we can't use a ldp instruction to do this
-                    emit->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), loReg, varNumInp, 0);
-                    emit->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), hiReg, varNumInp, TARGET_POINTER_SIZE);
+                    // Load from our varNumImp source
+                    emit->emitIns_R_R_S_S(INS_ldp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg, varNumInp,
+                                          0);
                 }
                 else
                 {
@@ -735,10 +716,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                                           INS_OPTS_NONE, emitTypeSize(type0));
                 }
 
-                // Emit two store instructions to store the two registers into the outgoing argument area
-                emit->emitIns_S_R(ins_Store(type0), emitTypeSize(type0), loReg, varNumOut, argOffsetOut);
-                emit->emitIns_S_R(ins_Store(type1), emitTypeSize(type1), hiReg, varNumOut,
-                                  argOffsetOut + TARGET_POINTER_SIZE);
+                // Emit stp instruction to store the two registers into the outgoing argument area
+                emit->emitIns_S_S_R_R(INS_stp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg, varNumOut,
+                                      argOffsetOut);
                 argOffsetOut += (2 * TARGET_POINTER_SIZE); // We stored 16-bytes of the struct
                 assert(argOffsetOut <= argOffsetMax);      // We can't write beyound the outgoing area area
 

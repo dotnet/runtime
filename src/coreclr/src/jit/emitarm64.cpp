@@ -883,6 +883,26 @@ bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
     }
 }
 
+bool emitter::emitInsWritesToLclVarStackLocPair(instrDesc* id)
+{
+    if (!id->idIsLclVar())
+        return false;
+
+    instruction ins = id->idIns();
+
+    // This list is related to the list of instructions used to store local vars in emitIns_S_S_R_R().
+    // We don't accept writing to float local vars.
+
+    switch (ins)
+    {
+        case INS_stnp:
+        case INS_stp:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
 {
     instruction ins = id->idIns();
@@ -5348,19 +5368,18 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     id->idReg2(reg2);
     id->idReg3(reg3);
 
+    // Record the attribute for the second register in the pair
+    id->idGCrefReg2(GCT_NONE);
     if (attrReg2 != EA_UNKNOWN)
     {
+        // Record the attribute for the second register in the pair
         assert((fmt == IF_LS_3B) || (fmt == IF_LS_3C));
         if (EA_IS_GCREF(attrReg2))
         {
-            /* A special value indicates a GCref pointer value */
-
             id->idGCrefReg2(GCT_GCREF);
         }
         else if (EA_IS_BYREF(attrReg2))
         {
-            /* A special value indicates a Byref pointer value */
-
             id->idGCrefReg2(GCT_BYREF);
         }
     }
@@ -6090,6 +6109,102 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
 
 /*****************************************************************************
  *
+ *  Add an instruction referencing two register and consectutive stack-based local variable slots.
+ */
+void emitter::emitIns_R_R_S_S(
+    instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
+{
+    assert((ins == INS_ldp) || (ins == INS_ldnp));
+    assert(EA_8BYTE == EA_SIZE(attr1));
+    assert(EA_8BYTE == EA_SIZE(attr2));
+    assert(isGeneralRegisterOrZR(reg1));
+    assert(isGeneralRegisterOrZR(reg2));
+    assert(offs >= 0);
+
+    emitAttr       size  = EA_SIZE(attr1);
+    insFormat      fmt   = IF_LS_3B;
+    int            disp  = 0;
+    const unsigned scale = 3;
+
+    /* Figure out the variable's frame position */
+    int  base;
+    bool FPbased;
+
+    base = emitComp->lvaFrameAddress(varx, &FPbased);
+    disp = base + offs;
+
+    // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
+    regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+    reg3           = encodingSPtoZR(reg3);
+
+    bool    useRegForAdr = true;
+    ssize_t imm          = disp;
+    ssize_t mask         = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+    if (imm == 0)
+    {
+        useRegForAdr = false;
+    }
+    else
+    {
+        if ((imm & mask) == 0)
+        {
+            ssize_t immShift = imm >> scale; // The immediate is scaled by the size of the ld/st
+
+            if ((immShift >= -64) && (immShift <= 63))
+            {
+                fmt          = IF_LS_3C;
+                useRegForAdr = false;
+                imm          = immShift;
+            }
+        }
+    }
+
+    if (useRegForAdr)
+    {
+        regNumber rsvd = codeGen->rsGetRsvdReg();
+        emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvd, reg3, imm);
+        reg3 = rsvd;
+        imm  = 0;
+    }
+
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrCns(attr1, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+
+    // Record the attribute for the second register in the pair
+    if (EA_IS_GCREF(attr2))
+    {
+        id->idGCrefReg2(GCT_GCREF);
+    }
+    else if (EA_IS_BYREF(attr2))
+    {
+        id->idGCrefReg2(GCT_BYREF);
+    }
+    else
+    {
+        id->idGCrefReg2(GCT_NONE);
+    }
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    id->idSetIsLclVar();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
  *  Add an instruction referencing a stack-based local variable and a register
  */
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int varx, int offs)
@@ -6207,6 +6322,102 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber reg1, int va
 
     id->idReg1(reg1);
     id->idReg2(reg2);
+    id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
+    id->idSetIsLclVar();
+
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs = emitVarRefOffs;
+#endif
+
+    dispIns(id);
+    appendToCurIG(id);
+}
+
+/*****************************************************************************
+ *
+ *  Add an instruction referencing consecutive stack-based local variable slots and two registers
+ */
+void emitter::emitIns_S_S_R_R(
+    instruction ins, emitAttr attr1, emitAttr attr2, regNumber reg1, regNumber reg2, int varx, int offs)
+{
+    assert((ins == INS_stp) || (ins == INS_stnp));
+    assert(EA_8BYTE == EA_SIZE(attr1));
+    assert(EA_8BYTE == EA_SIZE(attr2));
+    assert(isGeneralRegisterOrZR(reg1));
+    assert(isGeneralRegisterOrZR(reg2));
+    assert(offs >= 0);
+
+    emitAttr       size  = EA_SIZE(attr1);
+    insFormat      fmt   = IF_LS_3B;
+    int            disp  = 0;
+    const unsigned scale = 3;
+
+    /* Figure out the variable's frame position */
+    int  base;
+    bool FPbased;
+
+    base = emitComp->lvaFrameAddress(varx, &FPbased);
+    disp = base + offs;
+
+    // TODO-ARM64-CQ: with compLocallocUsed, should we use REG_SAVED_LOCALLOC_SP instead?
+    regNumber reg3 = FPbased ? REG_FPBASE : REG_SPBASE;
+    reg3           = encodingSPtoZR(reg3);
+
+    bool    useRegForAdr = true;
+    ssize_t imm          = disp;
+    ssize_t mask         = (1 << scale) - 1; // the mask of low bits that must be zero to encode the immediate
+    if (imm == 0)
+    {
+        useRegForAdr = false;
+    }
+    else
+    {
+        if ((imm & mask) == 0)
+        {
+            ssize_t immShift = imm >> scale; // The immediate is scaled by the size of the ld/st
+
+            if ((immShift >= -64) && (immShift <= 63))
+            {
+                fmt          = IF_LS_3C;
+                useRegForAdr = false;
+                imm          = immShift;
+            }
+        }
+    }
+
+    if (useRegForAdr)
+    {
+        regNumber rsvd = codeGen->rsGetRsvdReg();
+        emitIns_R_R_Imm(INS_add, EA_8BYTE, rsvd, reg3, imm);
+        reg3 = rsvd;
+        imm  = 0;
+    }
+
+    assert(fmt != IF_NONE);
+
+    instrDesc* id = emitNewInstrCns(attr1, imm);
+
+    id->idIns(ins);
+    id->idInsFmt(fmt);
+    id->idInsOpt(INS_OPTS_NONE);
+
+    // Record the attribute for the second register in the pair
+    if (EA_IS_GCREF(attr2))
+    {
+        id->idGCrefReg2(GCT_GCREF);
+    }
+    else if (EA_IS_BYREF(attr2))
+    {
+        id->idGCrefReg2(GCT_BYREF);
+    }
+    else
+    {
+        id->idGCrefReg2(GCT_NONE);
+    }
+
+    id->idReg1(reg1);
+    id->idReg2(reg2);
+    id->idReg3(reg3);
     id->idAddr()->iiaLclVar.initLclVarAddr(varx, offs);
     id->idSetIsLclVar();
 
@@ -9369,7 +9580,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     // Now we determine if the instruction has written to a (local variable) stack location, and either written a GC
     // ref or overwritten one.
-    if (emitInsWritesToLclVarStackLoc(id))
+    if (emitInsWritesToLclVarStackLoc(id) || emitInsWritesToLclVarStackLocPair(id))
     {
         int      varNum = id->idAddr()->iiaLclVar.lvaVarNum();
         unsigned ofs    = AlignDown(id->idAddr()->iiaLclVar.lvaOffset(), sizeof(size_t));
@@ -9395,6 +9606,31 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             }
             if (vt == TYP_REF || vt == TYP_BYREF)
                 emitGCvarDeadUpd(adr + ofs, dst);
+        }
+        if (emitInsWritesToLclVarStackLocPair(id))
+        {
+            unsigned ofs2 = ofs + sizeof(size_t);
+            if (id->idGCrefReg2() != GCT_NONE)
+            {
+                emitGCvarLiveUpd(adr + ofs2, varNum, id->idGCrefReg2(), dst);
+            }
+            else
+            {
+                // If the type of the local is a gc ref type, update the liveness.
+                var_types vt;
+                if (varNum >= 0)
+                {
+                    // "Regular" (non-spill-temp) local.
+                    vt = var_types(emitComp->lvaTable[varNum].lvType);
+                }
+                else
+                {
+                    TempDsc* tmpDsc = emitComp->tmpFindNum(varNum);
+                    vt              = tmpDsc->tdTempType();
+                }
+                if (vt == TYP_REF || vt == TYP_BYREF)
+                    emitGCvarDeadUpd(adr + ofs2, dst);
+            }
         }
     }
 
