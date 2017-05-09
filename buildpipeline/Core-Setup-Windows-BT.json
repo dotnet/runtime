@@ -69,7 +69,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)\\build.cmd",
-        "arguments": "-- $(PB_BuildArguments)",
+        "arguments": "-- $(PB_CommonMSBuildArgs)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -89,7 +89,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration)",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken))",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -195,8 +195,12 @@
     "BuildConfiguration": {
       "value": "Release"
     },
-    "PB_BuildArguments": {
-      "value": "/p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) $(PB_AdditionalBuildArguments)"
+    "PB_CommonMSBuildArgs": {
+      "value": "/p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) $(PB_AdditionalBuildArguments)"
+    },
+    "PB_PortableBuild": {
+      "value": "false",
+      "allowOverride": true
     },
     "PB_CleanAgent": {
       "value": "true"
