@@ -48,6 +48,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
         public void ExecuteScalarErrorTest()
         {
             RemoteInvoke(() =>
@@ -93,6 +94,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
         public void ExecuteNonQueryErrorTest()
         {
             RemoteInvoke(() =>
