@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <Compile Include="net45/FileUtilities.net45.cs" />
+    <Compile Include="net45/ProcessSharedFrameworkDeps.net45.cs" />
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.Net.Http" />
