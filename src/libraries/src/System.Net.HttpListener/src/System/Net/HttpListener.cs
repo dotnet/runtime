@@ -14,7 +14,7 @@ namespace System.Net
 
         private readonly object _internalLock;
         private volatile State _state; // _state is set only within lock blocks, but often read outside locks. 
-        private HttpListenerPrefixCollection _prefixes;
+        private readonly HttpListenerPrefixCollection _prefixes;
         internal Hashtable _uriPrefixes = new Hashtable();
         private bool _ignoreWriteExceptions;
         private ServiceNameStore _defaultServiceNames;
@@ -47,10 +47,7 @@ namespace System.Net
 
         public AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate
         {
-            get
-            {
-                return _authenticationDelegate;
-            }
+            get => _authenticationDelegate;
             set
             {
                 CheckDisposed();
@@ -60,10 +57,7 @@ namespace System.Net
 
         public ExtendedProtectionSelector ExtendedProtectionSelectorDelegate
         {
-            get
-            {
-                return _extendedProtectionSelectorDelegate;
-            }
+            get => _extendedProtectionSelectorDelegate;
             set
             {
                 CheckDisposed();
@@ -78,10 +72,7 @@ namespace System.Net
 
         public AuthenticationSchemes AuthenticationSchemes
         {
-            get
-            {
-                return _authenticationScheme;
-            }
+            get => _authenticationScheme;
             set
             {
                 CheckDisposed();
@@ -91,10 +82,7 @@ namespace System.Net
 
         public ExtendedProtectionPolicy ExtendedProtectionPolicy
         {
-            get
-            {
-                return _extendedProtectionPolicy;
-            }
+            get => _extendedProtectionPolicy;
             set
             {
                 CheckDisposed();
@@ -111,20 +99,171 @@ namespace System.Net
             }
         }
 
-        public ServiceNameCollection DefaultServiceNames
+        public ServiceNameCollection DefaultServiceNames => _defaultServiceNames.ServiceNames;
+
+        public HttpListenerPrefixCollection Prefixes
         {
             get
             {
-                return _defaultServiceNames.ServiceNames;
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+                CheckDisposed();
+                if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+                return _prefixes;
+            }
+        }
+
+        internal void AddPrefix(string uriPrefix)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix:{uriPrefix}");
+            string registeredPrefix = null;
+            try
+            {
+                if (uriPrefix == null)
+                {
+                    throw new ArgumentNullException(nameof(uriPrefix));
+                }
+                CheckDisposed();
+                int i;
+                if (string.Compare(uriPrefix, 0, "http://", 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    i = 7;
+                }
+                else if (string.Compare(uriPrefix, 0, "https://", 0, 8, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    i = 8;
+                }
+                else
+                {
+                    throw new ArgumentException(SR.net_listener_scheme, nameof(uriPrefix));
+                }
+                bool inSquareBrakets = false;
+                int j = i;
+                while (j < uriPrefix.Length && uriPrefix[j] != '/' && (uriPrefix[j] != ':' || inSquareBrakets))
+                {
+                    if (uriPrefix[j] == '[')
+                    {
+                        if (inSquareBrakets)
+                        {
+                            j = i;
+                            break;
+                        }
+                        inSquareBrakets = true;
+                    }
+                    if (inSquareBrakets && uriPrefix[j] == ']')
+                    {
+                        inSquareBrakets = false;
+                    }
+                    j++;
+                }
+                if (i == j)
+                {
+                    throw new ArgumentException(SR.net_listener_host, nameof(uriPrefix));
+                }
+                if (uriPrefix[uriPrefix.Length - 1] != '/')
+                {
+                    throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
+                }
+                registeredPrefix = uriPrefix[j] == ':' ? String.Copy(uriPrefix) : uriPrefix.Substring(0, j) + (i == 7 ? ":80" : ":443") + uriPrefix.Substring(j);
+                fixed (char* pChar = registeredPrefix)
+                {
+                    i = 0;
+                    while (pChar[i] != ':')
+                    {
+                        pChar[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)pChar[i]];
+                        i++;
+                    }
+                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
+                if (_state == State.Started)
+                {
+                    AddPrefixCore(registeredPrefix);
+                }
+                _uriPrefixes[uriPrefix] = registeredPrefix;
+                _defaultServiceNames.Add(uriPrefix);
+            }
+            catch (Exception exception)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                throw;
+            }
+            finally
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"prefix: {registeredPrefix}");
+            }
+        }
+        
+        internal bool ContainsPrefix(string uriPrefix) => _uriPrefixes.Contains(uriPrefix);
+
+        internal bool RemovePrefix(string uriPrefix)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, $"uriPrefix: {uriPrefix}");
+            try
+            {
+                CheckDisposed();
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
+                if (uriPrefix == null)
+                {
+                    throw new ArgumentNullException(nameof(uriPrefix));
+                }
+
+                if (!_uriPrefixes.Contains(uriPrefix))
+                {
+                    return false;
+                }
+
+                if (_state == State.Started)
+                {
+                    RemovePrefixCore((string)_uriPrefixes[uriPrefix]);
+                }
+
+                _uriPrefixes.Remove(uriPrefix);
+                _defaultServiceNames.Remove(uriPrefix);
+            }
+            catch (Exception exception)
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, exception);
+                throw;
+            }
+            finally
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this, $"uriPrefix: {uriPrefix}");
+            }
+            return true;
+        }
+
+        internal void RemoveAll(bool clear)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            try
+            {
+                CheckDisposed();
+                // go through the uri list and unregister for each one of them
+                if (_uriPrefixes.Count > 0)
+                {
+                    if (_state == State.Started)
+                    {
+                        foreach (string registeredPrefix in _uriPrefixes.Values)
+                        {
+                            RemovePrefixCore(registeredPrefix);
+                        }
+                    }
+
+                    if (clear)
+                    {
+                        _uriPrefixes.Clear();
+                        _defaultServiceNames.Clear();
+                    }
+                }
+            }
+            finally
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
             }
         }
 
         public string Realm
         {
-            get
-            {
-                return _realm;
-            }
+            get => _realm;
             set
             {
                 CheckDisposed();
@@ -136,10 +275,7 @@ namespace System.Net
 
         public bool IgnoreWriteExceptions
         {
-            get
-            {
-                return _ignoreWriteExceptions;
-            }
+            get => _ignoreWriteExceptions;
             set
             {
                 CheckDisposed();
@@ -189,9 +325,6 @@ namespace System.Net
             Closed,
         }
 
-        void IDisposable.Dispose()
-        {
-            Dispose();
-        }
+        void IDisposable.Dispose() => Dispose();
     }
 }

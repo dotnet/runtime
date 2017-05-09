@@ -47,6 +47,7 @@
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\Net\HttpListenerPrefixCollection.cs" />
     <Compile Include="System\Net\HttpRequestStream.cs" />
     <Compile Include="System\Net\AuthenticationTypes.cs" />
     <Compile Include="System\Net\HttpResponseStream.cs" />
@@ -65,6 +66,9 @@
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
+      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
@@ -79,7 +83,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\Net\Windows\HttpListenerPrefixCollection.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerContext.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
@@ -98,9 +101,6 @@
     <Compile Include="System\Net\Windows\RequestContextBase.cs" />
     <Compile Include="System\Net\Windows\SyncRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerAsyncResult.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
-      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
     </Compile>
@@ -336,7 +336,6 @@
     <Compile Include="System\Net\Managed\HttpListenerTimeoutManager.Managed.cs" />
     <Compile Include="System\Net\Managed\ListenerAsyncResult.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpHeaderStrings.cs" />
-    <Compile Include="System\Net\Managed\HttpListenerPrefixCollection.Managed.cs" />
     <Compile Include="System\Net\Managed\ChunkedInputStream.cs" />
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />
