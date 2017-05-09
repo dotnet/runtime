@@ -124,10 +124,9 @@
         {
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
-            "PB_AdditionalBuildArguments": "/p:PortableBuild=true /p:SkipTests=true",
+            "PB_AdditionalBuildArguments": "/p:SkipTests=true",
             "PB_TargetArchitecture": "arm",
-            "PB_PortableBuild": "true",
-            "PB_DistroRid": "win-arm"
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
@@ -139,10 +138,9 @@
         {
           "Name": "Core-Setup-Windows-BT",
           "Parameters": {
-            "PB_AdditionalBuildArguments": "/p:PortableBuild=true /p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
+            "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
             "PB_TargetArchitecture": "arm64",
-            "PB_PortableBuild": "true",
-            "PB_DistroRid": "win-arm64"
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
