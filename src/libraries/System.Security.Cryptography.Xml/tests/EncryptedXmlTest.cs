@@ -633,7 +633,12 @@ namespace System.Security.Cryptography.Xml.Tests
                 ed.CipherData = new CipherData();
                 ed.CipherData.CipherReference = new CipherReference("invaliduri");
 
-                Assert.Throws<CryptographicException>(() => exml.DecryptData(ed, aes));
+                // https://github.com/dotnet/corefx/issues/19272
+                Action decrypt = () => exml.DecryptData(ed, aes);
+                if (PlatformDetection.IsFullFramework)
+                    Assert.Throws<ArgumentNullException>(decrypt);
+                else
+                    Assert.Throws<CryptographicException>(decrypt);
             }
         }
 
