@@ -25,7 +25,6 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18196")]
         public void GetDirectoryOrRootName_GettingDirectoryFromAFilePath()
         {
             string exePath = AppDomain.CurrentDomain.BaseDirectory;
