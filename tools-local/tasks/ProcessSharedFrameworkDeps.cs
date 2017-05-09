@@ -17,10 +17,10 @@ namespace Microsoft.DotNet.Build.Tasks
         public string DepsFilePath { get; set; }
 
         [Required]
-        public ITaskItem[] PackagesToRemove { get; set; }
+        public string[] PackagesToRemove { get; set; }
 
         [Required]
-        public ITaskItem[] Runtimes { get; set; }
+        public string Runtime { get; set; }
 
         public override bool Execute()
         {
@@ -33,13 +33,13 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var manager = new RuntimeGraphManager();
             var graph = manager.Collect(lockFile);
-            var expandedGraph = manager.Expand(graph, ToStringArray(Runtimes));
+            var expandedGraph = manager.Expand(graph, Runtime);
 
             var trimmedRuntimeLibraries = context.RuntimeLibraries;
 
             if (PackagesToRemove != null && PackagesToRemove.Any())
             {
-                trimmedRuntimeLibraries = RuntimeReference.RemoveReferences(context.RuntimeLibraries, ToStringArray(PackagesToRemove));
+                trimmedRuntimeLibraries = RuntimeReference.RemoveReferences(context.RuntimeLibraries, PackagesToRemove);
             }
 
             context = new DependencyContext(
@@ -56,13 +56,6 @@ namespace Microsoft.DotNet.Build.Tasks
             }
 
             return true;
-        }
-
-        private static string[] ToStringArray(ITaskItem[] items)
-        {
-            return items
-                .Select(i => i.ItemSpec)
-                .ToArray();
         }
     }
 }

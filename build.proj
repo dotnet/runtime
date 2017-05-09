@@ -41,7 +41,7 @@
 
     <PropertyGroup>
       <DependencyModelTFM>netstandard1.3</DependencyModelTFM>
-      <DependencyModelTFM Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
+      <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
     </PropertyGroup>
     
       <ItemGroup>
