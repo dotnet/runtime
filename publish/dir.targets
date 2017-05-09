@@ -62,8 +62,11 @@
     <ItemGroup>
       <_FoundBlobNames Include="%(_BlobNames.FileName)%(_BlobNames.Extension)" Condition="'%(_BlobNames.Extension)' == '.svg'" />
       <_MissingBlobNames Include="@(PublishRid->'sharedfx_%(Identity)_$(ConfigurationGroup)_version_badge.svg')" 
-                          Exclude="@(_FoundBlobNames)" />
+                         Exclude="@(_FoundBlobNames)" />
     </ItemGroup>
+    <Error Text="Missing publish output from all legs of the build. Missing blobs are '@(_MissingBlobNames)'"
+           Importance="High"
+           Condition="'@(_MissingBlobNames)' != ''" />
   </Target>
 
   <Import Project="..\dir.targets" />

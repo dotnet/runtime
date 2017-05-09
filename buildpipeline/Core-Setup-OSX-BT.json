@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/Tools/msbuild.sh",
-        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
+        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -204,17 +204,8 @@
       "value": "true",
       "allowOverride": true
     },
-    "NUGET_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
-    },
-    "NUGET_API_KEY": {
-      "value": "PassedViaPipeBuild"
-    },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
-    },
-    "NUGET_SYMBOLS_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     },
     "PB_CleanAgent": {
       "value": "true"
@@ -223,7 +214,7 @@
       "value": "$(Build.SourcesDirectory)/core-setup"
     },
     "PB_Branch": {
-      "value": "buildtools"
+      "value": "master"
     },
     "PB_AzureAccountName": {
       "value": "sourcebuild"
