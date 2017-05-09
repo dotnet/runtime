@@ -78,6 +78,29 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
         }
     }
 
+    [Fact]
+    public void TestValidEncodings()
+    {
+        Action<Encoding> check = encoding =>
+        {
+            Console.OutputEncoding = encoding;
+            Assert.Equal(encoding, Console.OutputEncoding);
+            Console.InputEncoding = encoding;
+            Assert.Equal(encoding, Console.InputEncoding);
+        };
+
+        // These seem to always be available
+        check(Encoding.UTF8);
+        check(Encoding.Unicode);
+
+        // On full Windows, ASCII is available also
+        if (!PlatformDetection.IsWindowsNanoServer)
+        {
+            check(Encoding.ASCII);
+        }
+
+    }
+
     public class NonexistentCodePageEncoding : Encoding
     {
         public override int CodePage => int.MinValue;
@@ -104,8 +127,8 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
             Assert.Same(inReader, Console.In);
 
             // Change the InputEncoding
-            Console.InputEncoding = Encoding.ASCII;
-            Assert.Equal(Encoding.ASCII, Console.InputEncoding);
+            Console.InputEncoding = Encoding.Unicode; // Not ASCII: not supported by Windows Nano
+            Assert.Equal(Encoding.Unicode, Console.InputEncoding);
 
             if (PlatformDetection.IsWindows)
             {
@@ -152,8 +175,8 @@ public partial class ConsoleEncoding : RemoteExecutorTestBase
             Assert.Same(outWriter, Console.Out);
 
             // Change the OutputEncoding
-            Console.OutputEncoding = Encoding.ASCII;
-            Assert.Equal(Encoding.ASCII, Console.OutputEncoding);
+            Console.OutputEncoding = Encoding.Unicode; // Not ASCII: not supported by Windows Nano
+            Assert.Equal(Encoding.Unicode, Console.OutputEncoding);
 
             Assert.NotSame(errorWriter, Console.Error);
             Assert.NotSame(outWriter, Console.Out);
