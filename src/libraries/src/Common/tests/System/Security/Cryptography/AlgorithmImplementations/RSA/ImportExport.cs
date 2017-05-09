@@ -42,8 +42,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(privateParams.Exponent, publicParams.Exponent);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")]
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void PaddedExport()
         {
             // OpenSSL's numeric type for the storage of RSA key parts disregards zero-valued
@@ -70,8 +69,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(ref diminishedDPParameters, ref exported);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void LargeKeyImportExport()
         {
             RSAParameters imported = TestData.RSA16384Params;
@@ -100,8 +98,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void UnusualExponentImportExport()
         {
             // Most choices for the Exponent value in an RSA key use a Fermat prime.
@@ -146,8 +143,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Null(exportedPublic.D);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void ImportReset()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -195,8 +191,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19238")] 
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void MultiExport()
         {
             RSAParameters imported = TestData.RSA1024Params;
