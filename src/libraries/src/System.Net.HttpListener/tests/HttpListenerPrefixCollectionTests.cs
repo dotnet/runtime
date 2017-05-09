@@ -265,6 +265,7 @@ namespace System.Net.Tests
             Assert.Throws<HttpListenerException>(() => listener.Start());
         }
 
+        [ActiveIssue(19526)]
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixAlreadyStarted_ThrowsHttpListenerExceptionOnAdd(string uriPrefix)
