@@ -2570,7 +2570,7 @@ HRESULT CCLRErrorReportingManager::BucketParamsCache::SetAt(BucketParameterIndex
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (index >= InvalidBucketParamIndex)
+    if (index < 0 || index >= InvalidBucketParamIndex)
     {
         _ASSERTE(!"bad bucket parameter index");
         return E_INVALIDARG;

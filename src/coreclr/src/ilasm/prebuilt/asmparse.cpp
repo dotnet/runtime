@@ -1834,9 +1834,16 @@ YYSTATIC	char	*yyscpy(register char*t, register char*f)
 
 	YYSTATIC short	yyn;
 	YYSTATIC short	yystate = 0;
-	YYSTATIC short	*yyps= &yys[-1];
+#ifdef _PREFAST_
+#pragma warning(push)
+#pragma warning(disable: 6200) // Index '-1' is out of valid index range...for non-stack buffer...
+#endif
+    YYSTATIC short	*yyps= &yys[-1];
 	YYSTATIC YYSTYPE	*yypv= &yyv[-1];
-	YYSTATIC short	yyj;
+#ifdef _PREFAST_
+#pragma warning(pop)
+#endif
+    YYSTATIC short	yyj;
 	YYSTATIC short	yym;
 
 #endif
