@@ -55,13 +55,17 @@ platformList.each { platform ->
         dockerCommand = "docker run --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
         buildCommand = "${dockerCommand} ./build.sh ${configuration} ${architecture}${portableArgs}"
     }
-    else {
+    else if (os == "PortableLinux") {
         // Jenkins non-Ubuntu CI machines don't have docker
-        buildCommand = "./build.sh ${configuration} -portable"
-
+        buildCommand = "./build.sh ${configuration} ${architecture} -portable"
+        
         // Trigger a portable Linux build that runs on RHEL7.2
         osForGHTrigger = "PortableLinux"
         os = "RHEL7.2"
+    }
+    else {
+        // Jenkins non-Ubuntu CI machines don't have docker
+        buildCommand = "./build.sh ${configuration} ${architecture}"
     }
 
     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
