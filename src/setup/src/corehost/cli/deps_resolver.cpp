@@ -148,7 +148,6 @@ void deps_resolver_t::setup_shared_store_probes(
 
     if (pal::directory_exists(args.local_shared_store))
     {
-        // Shared Store probe: $HOME/.dotnet/store or %USERPROFILE%\.dotnet\store
         m_probes.push_back(probe_config_t::lookup(args.local_shared_store));
     }
 
@@ -159,7 +158,6 @@ void deps_resolver_t::setup_shared_store_probes(
 
     if (args.global_shared_store != args.dotnet_shared_store && pal::directory_exists(args.global_shared_store))
     {
-        // Shared Store probe: /usr/share/dotnet/store or C:\Program Files (x86)\dotnet\store
         m_probes.push_back(probe_config_t::lookup(args.global_shared_store));
     }
 }
