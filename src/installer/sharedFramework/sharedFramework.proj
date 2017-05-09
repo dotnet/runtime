@@ -102,6 +102,9 @@
     <PropertyGroup>
       <SharedFrameworkAssetsFile>$(SharedFrameworkSourceRoot)/obj/project.assets.json</SharedFrameworkAssetsFile>
       <SharedFrameworkDepsFile>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</SharedFrameworkDepsFile>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>      
     </PropertyGroup>
 
     <ItemGroup>
@@ -109,16 +112,12 @@
       <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethostresolver" />
       <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
       <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
-    
-      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'" Include="win" />
-      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'" Include="osx" />
-      <RuntimeGraphGeneratorRuntime Condition="'@(runtimeGraphGeneratorRuntime)'==''" Include="linux" />
     </ItemGroup>
     
     <ProcessSharedFrameworkDeps AssetsFilePath="$(SharedFrameworkAssetsFile)"
                                 DepsFilePath="$(SharedFrameworkDepsFile)"
                                 PackagesToRemove="@(TrimPkgsFromDeps)"
-                                Runtimes="@(RuntimeGraphGeneratorRuntime)" />
+                                Runtime="$(RuntimeGraphGeneratorRuntime)" />
   </Target>
 
   <Target Name="RestoreLockedCoreHost">
