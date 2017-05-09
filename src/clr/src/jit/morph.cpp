@@ -6628,9 +6628,10 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
                 else
 #endif // _TARGET_64BIT_
                 {
-                    // Only volatile could be set, and it maps over
-                    noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_COMMON_MASK)) == 0);
-                    noway_assert(GTF_FLD_VOLATILE == GTF_IND_VOLATILE);
+                    // Only volatile or classinit could be set, and they map over
+                    noway_assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_COMMON_MASK)) == 0);
+                    static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
+                    static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
                     tree->SetOper(GT_CLS_VAR);
                     tree->gtClsVar.gtClsVarHnd = symHnd;
                     FieldSeqNode* fieldSeq =

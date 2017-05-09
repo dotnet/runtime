@@ -6008,7 +6008,9 @@ void Compiler::optHoistLoopExprsForBlock(BasicBlock* blk, unsigned lnum, LoopHoi
     {
         GenTreePtr stmtTree = stmt->gtStmtExpr;
         bool       hoistable;
-        (void)optHoistLoopExprsForTree(stmtTree, lnum, hoistCtxt, &firstBlockAndBeforeSideEffect, &hoistable);
+        bool       cctorDependent;
+        (void)optHoistLoopExprsForTree(stmtTree, lnum, hoistCtxt, &firstBlockAndBeforeSideEffect, &hoistable,
+                                       &cctorDependent);
         if (hoistable)
         {
             // we will try to hoist the top-level stmtTree
@@ -6114,43 +6116,81 @@ bool Compiler::optIsProfitableToHoistableTree(GenTreePtr tree, unsigned lnum)
 
 //
 //  This function returns true if 'tree' is a loop invariant expression.
-//  It also sets '*pHoistable' to true if 'tree' can be hoisted into a loop PreHeader block
+//  It also sets '*pHoistable' to true if 'tree' can be hoisted into a loop PreHeader block,
+//  and sets '*pCctorDependent' if 'tree' is a function of a static field that must not be
+//  hoisted (even if '*pHoistable' is true) unless a preceding corresponding cctor init helper
+//  call is also hoisted.
 //
-bool Compiler::optHoistLoopExprsForTree(
-    GenTreePtr tree, unsigned lnum, LoopHoistContext* hoistCtxt, bool* pFirstBlockAndBeforeSideEffect, bool* pHoistable)
+bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
+                                        unsigned          lnum,
+                                        LoopHoistContext* hoistCtxt,
+                                        bool*             pFirstBlockAndBeforeSideEffect,
+                                        bool*             pHoistable,
+                                        bool*             pCctorDependent)
 {
     // First do the children.
     // We must keep track of whether each child node was hoistable or not
     //
     unsigned nChildren = tree->NumChildren();
     bool     childrenHoistable[GenTree::MAX_CHILDREN];
+    bool     childrenCctorDependent[GenTree::MAX_CHILDREN];
 
     // Initialize the array elements for childrenHoistable[] to false
     for (unsigned i = 0; i < nChildren; i++)
     {
-        childrenHoistable[i] = false;
+        childrenHoistable[i]      = false;
+        childrenCctorDependent[i] = false;
     }
 
-    bool treeIsInvariant = true;
+    // Initclass CLS_VARs are the base case of cctor dependent trees.
+    bool treeIsCctorDependent = (tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0));
+    bool treeIsInvariant      = true;
     for (unsigned childNum = 0; childNum < nChildren; childNum++)
     {
         if (!optHoistLoopExprsForTree(tree->GetChild(childNum), lnum, hoistCtxt, pFirstBlockAndBeforeSideEffect,
-                                      &childrenHoistable[childNum]))
+                                      &childrenHoistable[childNum], &childrenCctorDependent[childNum]))
         {
             treeIsInvariant = false;
         }
+
+        if (childrenCctorDependent[childNum])
+        {
+            // Normally, a parent of a cctor-dependent tree is also cctor-dependent.
+            treeIsCctorDependent = true;
+
+            // Check for the case where we can stop propagating cctor-dependent upwards.
+            if (tree->OperIs(GT_COMMA) && (childNum == 1))
+            {
+                GenTreePtr op1 = tree->gtGetOp1();
+                if (op1->OperIs(GT_CALL))
+                {
+                    GenTreeCall* call = op1->AsCall();
+                    if ((call->gtCallType == CT_HELPER) &&
+                        s_helperCallProperties.MayRunCctor(eeGetHelperNum(call->gtCallMethHnd)))
+                    {
+                        // Hoisting the comma is ok because it would hoist the initialization along
+                        // with the static field reference.
+                        treeIsCctorDependent = false;
+                        // Hoisting the static field without hoisting the initialization would be
+                        // incorrect; unset childrenHoistable for the field to ensure this doesn't
+                        // happen.
+                        childrenHoistable[0] = false;
+                    }
+                }
+            }
+        }
     }
 
-    // If all the children of "tree" are hoistable, then "tree" itself can be hoisted
-    //
-    bool treeIsHoistable = treeIsInvariant;
+    // If all the children of "tree" are hoistable, then "tree" itself can be hoisted,
+    // unless it has a static var reference that can't be hoisted past its cctor call.
+    bool treeIsHoistable = treeIsInvariant && !treeIsCctorDependent;
 
     // But we must see if anything else prevents "tree" from being hoisted.
     //
     if (treeIsInvariant)
     {
         // Tree must be a suitable CSE candidate for us to be able to hoist it.
-        treeIsHoistable = optIsCSEcandidate(tree);
+        treeIsHoistable &= optIsCSEcandidate(tree);
 
         // If it's a call, it must be a helper call, and be pure.
         // Further, if it may run a cctor, it must be labeled as "Hoistable"
@@ -6188,14 +6228,6 @@ bool Compiler::optHoistLoopExprsForTree(
                 {
                     treeIsHoistable = false;
                 }
-            }
-            // Currently we must give up on reads from static variables (even if we are in the first block).
-            //
-            if (tree->OperGet() == GT_CLS_VAR)
-            {
-                // TODO-CQ: test that fails if we hoist GT_CLS_VAR: JIT\Directed\Languages\ComponentPascal\pi_r.exe
-                // method Main
-                treeIsHoistable = false;
             }
         }
 
@@ -6290,7 +6322,8 @@ bool Compiler::optHoistLoopExprsForTree(
         }
     }
 
-    *pHoistable = treeIsHoistable;
+    *pHoistable      = treeIsHoistable;
+    *pCctorDependent = treeIsCctorDependent;
     return treeIsInvariant;
 }
 
