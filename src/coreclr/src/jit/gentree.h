@@ -926,6 +926,7 @@ public:
 
 #define GTF_FLD_NULLCHECK 0x80000000 // GT_FIELD -- need to nullcheck the "this" pointer
 #define GTF_FLD_VOLATILE 0x40000000  // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
+#define GTF_FLD_INITCLASS 0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
 #define GTF_INX_RNGCHK 0x80000000        // GT_INDEX -- the array reference should be range-checked.
 #define GTF_INX_REFARR_LAYOUT 0x20000000 // GT_INDEX -- same as GTF_IND_REFARR_LAYOUT
@@ -955,8 +956,10 @@ public:
     (GTF_IND_VOLATILE | GTF_IND_REFARR_LAYOUT | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
      GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_ARR_INDEX)
 
-#define GTF_CLS_VAR_ASG_LHS 0x04000000 // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
-                                       //                 of an assignment; don't evaluate it independently.
+#define GTF_CLS_VAR_ASG_LHS 0x04000000   // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
+                                         //                 of an assignment; don't evaluate it independently.
+#define GTF_CLS_VAR_VOLATILE 0x40000000  // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
+#define GTF_CLS_VAR_INITCLASS 0x20000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
 
 #define GTF_ADDR_ONSTACK 0x80000000 // GT_ADDR    -- this expression is guaranteed to be on the stack
 
