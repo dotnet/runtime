@@ -32,12 +32,12 @@ namespace System.IO.Tests
     {
         protected override FileStream CreateFileStream(string path, FileMode mode)
         {
-            return File.Open(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete | FileShare.Inheritable);
+            return File.Open(path, mode, mode == FileMode.Append ? FileAccess.Write : FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access)
         {
-            return File.Open(path, mode, access, FileShare.ReadWrite | FileShare.Delete | FileShare.Inheritable);
+            return File.Open(path, mode, access, FileShare.ReadWrite | FileShare.Delete);
         }
 
         protected override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share)

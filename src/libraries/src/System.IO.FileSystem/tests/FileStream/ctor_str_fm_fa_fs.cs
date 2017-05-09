@@ -23,11 +23,14 @@ namespace System.IO.Tests
         private static readonly FileShare[] s_shares =
         {
             FileShare.None,
-            FileShare.Inheritable,
-            FileShare.Delete, FileShare.Delete | FileShare.Inheritable,
-            FileShare.Read, FileShare.Read | FileShare.Inheritable, FileShare.Read | FileShare.Delete, FileShare.Read | FileShare.Delete | FileShare.Inheritable,
-            FileShare.Write, FileShare.Write | FileShare.Inheritable, FileShare.Write | FileShare.Delete, FileShare.Write | FileShare.Delete | FileShare.Inheritable,
-            FileShare.ReadWrite, FileShare.ReadWrite | FileShare.Inheritable, FileShare.ReadWrite | FileShare.Delete, FileShare.ReadWrite | FileShare.Delete | FileShare.Inheritable
+            FileShare.Delete,
+            FileShare.Read, FileShare.Read | FileShare.Delete,
+            FileShare.Write, FileShare.Write | FileShare.Delete,
+            FileShare.ReadWrite, FileShare.ReadWrite | FileShare.Delete
+
+            // Does not include FileShare.Inheritable, as doing so when other tests concurrently spawn processes
+            // results in those file handles being inherited, which then keeps the file open longer
+            // than expected by the test, resulting in subsequent sharing violations.
         };
 
         [Fact]
@@ -52,6 +55,25 @@ namespace System.IO.Tests
                     }
                 }
             }
+        }
+
+        [Fact]
+        public void FileShareOpen_Inheritable()
+        {
+            RemoteInvoke(() =>
+            {
+                int i = 0;
+                foreach (FileAccess access in new[] { FileAccess.ReadWrite, FileAccess.Write, FileAccess.Read })
+                {
+                    foreach (FileShare share in s_shares)
+                    {
+                        string fileName = GetTestFilePath(i++);
+                        CreateFileStream(fileName, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete).Dispose();
+                        CreateFileStream(fileName, FileMode.Open, access, share | FileShare.Inheritable).Dispose();
+                    }
+                }
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
