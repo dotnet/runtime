@@ -6,11 +6,23 @@
   <UsingTask TaskName="GetAzureBlobList" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
-  <!-- ToDo: Update versions repo -->
   <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;FinalizeBuildInAzure;PublishCoreHostPackagesToFeed" />
+          DependsOnTargets="PublishToAzure;PublishFinalOutput" />
+  
+  <Target Name="PublishFinalOutput"
+          Condition="'$(Finalize)' == 'true'"
+          DependsOnTargets="FinalizeBuildInAzure;PublishDebFilesToDebianRepo;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
+          
+  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
+    <ItemGroup>
+      <PackagesToShip Include="$(BinDir)/ForPublishing/*.nupkg" Exclude="$(BinDir)/ForPublishing/*.symbols.nupkg" />
+      <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
+      <ShippedNuGetPackage Include="@(PackagesToShip)" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="PublishToAzure"
+          Condition="'$(Finalize)' != 'true'"
           DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers">
     <MSBuild Targets="%(Project.PublishTarget)"
              Projects="%(Project.Identity)"
@@ -68,7 +80,6 @@
                    FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  
                    Condition="'@(_MissingBlobNames)' == ''" />
-    <Message Importance="High" Condition="'@(_MissingBlobNames)' != ''" Text="Skipping finalization, missing these blobs: '@(_MissingBlobNames)'" />
   </Target>
 
   <Target Name="PublishCoreHostPackagesToFeed"
@@ -121,6 +132,7 @@
     <Message Condition="'@(_DownloadedSymbolsPackages)' != ''" Text="Pushing CoreHost symbols packages to $(NuGetSymbolsFeedUrl)" />
     <Exec Condition="'@(_DownloadedSymbolsPackages)' != ''" Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)" />
   </Target>
-
+  
+  <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
