@@ -15,7 +15,7 @@ namespace System.Net.Tests
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
-        private const string Hostname = "localhost";
+        public const string Hostname = "localhost";
         private readonly string _path;
         private readonly int _port;
 

@@ -27,14 +27,9 @@ namespace System.Net
             }
         }
 
-        public HttpListenerPrefixCollection Prefixes
-        {
-            get
-            {
-                CheckDisposed();
-                return _prefixes;
-            }
-        }
+        private void AddPrefixCore(string uriPrefix) => HttpEndPointManager.AddPrefix(uriPrefix, this);
+
+        private void RemovePrefixCore(string uriPrefix) => HttpEndPointManager.RemovePrefix(uriPrefix, this);
 
         public void Start()
         {
@@ -66,14 +61,8 @@ namespace System.Net
 
         public bool UnsafeConnectionNtlmAuthentication
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get => throw new PlatformNotSupportedException();
+            set => throw new PlatformNotSupportedException();
         }
 
         public void Stop()
