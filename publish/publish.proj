@@ -7,11 +7,11 @@
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
   <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishFinalOutput" />
+          DependsOnTargets="PublishToAzure;PublishFinalOutput" />
   
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="FinalizeBuildInAzure;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
+          DependsOnTargets="FinalizeBuildInAzure;PublishDebFilesToDebianRepo;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
           
   <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
     <ItemGroup>
@@ -52,7 +52,7 @@
 
   <Target Name="PublishDebFilesToDebianRepo"
           DependsOnTargets="GenerateDebRepoFiles"
-          Condition="'@(DebInstallerFile)' != '' AND '$(Finalize)' != 'true'">
+          Condition="'@(DebInstallerFile)' != ''">
       <Exec Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -listpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
