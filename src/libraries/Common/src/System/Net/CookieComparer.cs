@@ -20,7 +20,7 @@ namespace System.Net
                 return result;
             }
 
-            // NB: The only path is case sensitive as per spec. However, many Windows applications assume
+            // NB: Only the path is case sensitive as per spec. However, many Windows applications assume
             //     case-insensitivity.
             return string.Compare(left.Path, right.Path, StringComparison.Ordinal);
         }

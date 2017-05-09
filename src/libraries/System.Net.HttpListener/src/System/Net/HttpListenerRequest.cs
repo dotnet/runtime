@@ -47,8 +47,8 @@ namespace System.Net
             }
         }
 
-        private static MethodInfo s_internalAddMethod = null;
-        private static MethodInfo InternalAddMethod
+        private static Func<CookieCollection, Cookie, bool, int> s_internalAddMethod = null;
+        private static Func<CookieCollection, Cookie, bool, int> InternalAddMethod
         {
             get
             {
@@ -58,7 +58,7 @@ namespace System.Net
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
                     MethodInfo method = typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.NonPublic | BindingFlags.Instance);
                     Debug.Assert(method != null, "We need to use an internal method named InternalAdd that is declared on Cookie.");
-                    s_internalAddMethod = method;
+                    s_internalAddMethod = (Func<CookieCollection, Cookie, bool, int>)Delegate.CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>), method);
                 }
 
                 return s_internalAddMethod;
@@ -70,21 +70,21 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
             CookieCollection cookies = new CookieCollection();
             CookieParser parser = new CookieParser(setCookieHeader);
-            for (;;)
+            while (true)
             {
                 Cookie cookie = parser.GetServer();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CookieParser returned cookie:" + cookie?.ToString());
                 if (cookie == null)
                 {
                     // EOF, done.
                     break;
                 }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CookieParser returned cookie: " + cookie.ToString());
                 if (cookie.Name.Length == 0)
                 {
                     continue;
                 }
 
-                InternalAddMethod.Invoke(cookies, new object[] { cookie, true });
+                InternalAddMethod(cookies, cookie, true);
             }
             return cookies;
         }
@@ -96,7 +96,7 @@ namespace System.Net
                 if (_cookies == null)
                 {
                     string cookieString = Headers[HttpKnownHeaderNames.Cookie];
-                    if (cookieString != null && cookieString.Length > 0)
+                    if (!string.IsNullOrEmpty(cookieString))
                     {
                         _cookies = ParseCookies(RequestUri, cookieString);
                     }
