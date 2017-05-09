@@ -126,7 +126,8 @@
           "Parameters": {
             "PB_AdditionalBuildArguments": "/p:PortableBuild=true /p:SkipTests=true",
             "PB_TargetArchitecture": "arm",
-            "PB_PortableBuild": "true"
+            "PB_PortableBuild": "true",
+            "PB_DistroRid": "win-arm"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
@@ -140,7 +141,8 @@
           "Parameters": {
             "PB_AdditionalBuildArguments": "/p:PortableBuild=true /p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
             "PB_TargetArchitecture": "arm64",
-            "PB_PortableBuild": "true"
+            "PB_PortableBuild": "true",
+            "PB_DistroRid": "win-arm64"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
