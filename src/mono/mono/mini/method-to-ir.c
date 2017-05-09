@@ -8734,6 +8734,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			sp -= n;
 
+			if (cmethod && cmethod->klass->image == mono_defaults.corlib && !strcmp (cmethod->klass->name, "ThrowHelper"))
+				cfg->cbb->out_of_line = TRUE;
+
 			/*
 			 * We have the `constrained.' prefix opcode.
 			 */
