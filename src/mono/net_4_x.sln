@@ -589,6 +589,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cil-stringreplacer-net_4_x"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "commoncryptogenerator-net_4_x", "mcs/tools/commoncryptogenerator/commoncryptogenerator-net_4_x.csproj", "{12527E95-60D3-4A66-91C6-7F8031519299}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "resx2sr-net_4_x", "mcs/tools/resx2sr/resx2sr-net_4_x.csproj", "{07D30676-A919-4763-8C3C-B2C4DAFFC662}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "al-net_4_x", "mcs/tools/al/al-net_4_x.csproj", "{D237CE6E-EA8F-4E8E-8413-295B27714AC6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "monolinker-net_4_x", "mcs/tools/linker/monolinker-net_4_x.csproj", "{FA920637-C202-4E75-AC0F-1A8DBD631DF1}"
@@ -1859,6 +1861,10 @@ Global
 		{12527E95-60D3-4A66-91C6-7F8031519299}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12527E95-60D3-4A66-91C6-7F8031519299}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12527E95-60D3-4A66-91C6-7F8031519299}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07D30676-A919-4763-8C3C-B2C4DAFFC662}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07D30676-A919-4763-8C3C-B2C4DAFFC662}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07D30676-A919-4763-8C3C-B2C4DAFFC662}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07D30676-A919-4763-8C3C-B2C4DAFFC662}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D237CE6E-EA8F-4E8E-8413-295B27714AC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D237CE6E-EA8F-4E8E-8413-295B27714AC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D237CE6E-EA8F-4E8E-8413-295B27714AC6}.Release|Any CPU.ActiveCfg = Release|Any CPU

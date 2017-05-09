@@ -1067,6 +1067,17 @@
       <resources></resources>
       <response>commoncryptogenerator.exe.sources</response>
     </project>
+    <project dir="tools/resx2sr" library="resx2sr-build">
+      <boot></boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize -r:System -r:System.Drawing -r:System.Xml</flags>
+      <output>resx2sr.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/build/resx2sr.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>build</profile>
+      <resources></resources>
+      <response>resx2sr.exe.sources</response>
+    </project>
     <project dir="ilasm" library="ilasm-build">
       <boot></boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../class/lib/build/mscorlib.dll -optimize -r:PEAPI -r:Mono.CompilerServices.SymbolWriter -r:Mono.Security</flags>
@@ -5169,6 +5180,17 @@
       <profile>net_4_x</profile>
       <resources></resources>
       <response>commoncryptogenerator.exe.sources</response>
+    </project>
+    <project dir="tools/resx2sr" library="resx2sr-net_4_x">
+      <boot></boot>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -unsafe -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -d:MULTIPLEX_OS -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:System -r:System.Drawing -r:System.Xml</flags>
+      <output>resx2sr.exe</output>
+      <built_sources></built_sources>
+      <library_output>./../../class/lib/net_4_x/resx2sr.exe</library_output>
+      <fx_version>4.5</fx_version>
+      <profile>net_4_x</profile>
+      <resources></resources>
+      <response>resx2sr.exe.sources</response>
     </project>
     <project dir="tools/al" library="al-net_4_x">
       <boot></boot>
