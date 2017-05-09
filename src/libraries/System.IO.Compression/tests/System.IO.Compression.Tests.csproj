@@ -27,6 +27,9 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+      <Link>Common\System\IO\PathFeatures.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
       <Link>Common\System\IO\Compression\CRC.cs</Link>
     </Compile>
