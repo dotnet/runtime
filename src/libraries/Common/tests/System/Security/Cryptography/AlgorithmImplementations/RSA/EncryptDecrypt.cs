@@ -8,6 +8,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public class EncryptDecrypt
     {
+        private static bool EphemeralKeysAreExportable => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+
         [Fact]
         public static void DecryptSavedAnswer()
         {
@@ -192,7 +194,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(EphemeralKeysAreExportable))]
         public static void RsaDecryptAfterExport()
         {
             byte[] output;
