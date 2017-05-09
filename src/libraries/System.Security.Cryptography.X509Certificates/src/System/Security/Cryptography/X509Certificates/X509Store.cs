@@ -10,6 +10,10 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509Store : IDisposable
     {
+        internal const string RootStoreName = "Root";
+        internal const string IntermediateCAStoreName = "CA";
+        internal const string DisallowedStoreName = "Disallowed";
+
         private IStorePal _storePal;
 
         public X509Store()
@@ -46,16 +50,16 @@ namespace System.Security.Cryptography.X509Certificates
                     Name = "AuthRoot";
                     break;
                 case StoreName.CertificateAuthority:
-                    Name = "CA";
+                    Name = IntermediateCAStoreName;
                     break;
                 case StoreName.Disallowed:
-                    Name = "Disallowed";
+                    Name = DisallowedStoreName;
                     break;
                 case StoreName.My:
                     Name = "My";
                     break;
                 case StoreName.Root:
-                    Name = "Root";
+                    Name = RootStoreName;
                     break;
                 case StoreName.TrustedPeople:
                     Name = "TrustedPeople";
