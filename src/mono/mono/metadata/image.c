@@ -1700,7 +1700,7 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 	}
 #endif
 
-	absfname = mono_path_canonicalize (fname);
+	absfname = mono_path_resolve_symlinks (fname);
 
 	/*
 	 * The easiest solution would be to do all the loading inside the mutex,
