@@ -193,6 +193,9 @@
   <data name="Cryptography_Unix_X509_MachineStoresRootOnly" xml:space="preserve">
     <value>Unix LocalMachine X509Store is limited to the Root and CertificateAuthority stores.</value>
   </data>
+  <data name="Cryptography_Unix_X509_NoDisallowedStore" xml:space="preserve">
+    <value>The Disallowed store is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_Unix_X509_PropertyNotSettable" xml:space="preserve">
       <value>The {0} value cannot be set on Unix.</value>
   </data>

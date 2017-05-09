@@ -410,11 +410,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [InlineData(StoreLocation.CurrentUser)]
-        [InlineData(StoreLocation.LocalMachine)]
-        public static void EnumerateDisallowedStore(StoreLocation location)
+        [InlineData(StoreLocation.CurrentUser, true)]
+        [InlineData(StoreLocation.LocalMachine, true)]
+        [InlineData(StoreLocation.CurrentUser, false)]
+        [InlineData(StoreLocation.LocalMachine, false)]
+        public static void EnumerateDisallowedStore(StoreLocation location, bool useEnum)
         {
-            using (X509Store store = new X509Store(StoreName.Disallowed, location))
+            X509Store store = useEnum
+                ? new X509Store(StoreName.Disallowed, location)
+                // Non-normative casing, proving that we aren't case-sensitive (Windows isn't)
+                : new X509Store("disallowed", location);
+
+            using (store)
             {
                 store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
 
@@ -423,6 +430,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // That's all.  We enumerated it.
                     // There might not even be data in it.
                 }
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
+        [InlineData(StoreLocation.CurrentUser, true)]
+        [InlineData(StoreLocation.LocalMachine, true)]
+        [InlineData(StoreLocation.CurrentUser, false)]
+        [InlineData(StoreLocation.LocalMachine, false)]
+        public static void CannotOpenDisallowedStore(StoreLocation location, bool useEnum)
+        {
+            X509Store store = useEnum
+                ? new X509Store(StoreName.Disallowed, location)
+                // Non-normative casing, proving that we aren't case-sensitive (Windows isn't)
+                : new X509Store("disallowed", location);
+
+            using (store)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => store.Open(OpenFlags.ReadOnly));
+
+                Assert.Throws<PlatformNotSupportedException>(
+                    () => store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly));
             }
         }
     }
