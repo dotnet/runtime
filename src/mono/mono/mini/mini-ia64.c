@@ -1249,7 +1249,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_ADD_INS (cfg->cbb, store);
 		}
 	} else {
-		mini_emit_memcpy (cfg, IA64_SP, 16 + ainfo->offset, src->dreg, 0, size, 4);
+		mini_emit_memcpy (cfg, IA64_SP, 16 + ainfo->offset, src->dreg, 0, size, SIZEOF_VOID_P);
 	}
 }
 
