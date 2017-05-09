@@ -24,6 +24,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
+        [ActiveIssue(19436)]
         public static void VerifyDecryptKeyExchangePkcs1()
         {
             using (RSA rsa = RSAFactory.Create())
