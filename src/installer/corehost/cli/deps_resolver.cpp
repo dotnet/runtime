@@ -126,7 +126,13 @@ void deps_resolver_t::get_dir_assemblies(
             }
 
             // Add entry for this asset
-            pal::string_t file_path = dir + DIR_SEPARATOR + file;
+            pal::string_t file_path = dir;
+            if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
+            {
+                file_path.push_back(DIR_SEPARATOR);
+            }
+            file_path.append(file);
+
             trace::verbose(_X("Adding %s to %s assembly set from %s"), file_name.c_str(), dir_name.c_str(), file_path.c_str());
             dir_assemblies->emplace(file_name, file_path);
         }

@@ -217,7 +217,7 @@ namespace pal
 
     int xtoi(const char_t* input);
 
-    bool load_library(const char_t* path, dll_t* dll);
+    bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 }
