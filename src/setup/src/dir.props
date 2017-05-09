@@ -4,7 +4,6 @@
 
   <PropertyGroup>
     <CoreHostLockedDir>$(CoreHostOutputDir)locked\</CoreHostLockedDir>
-    <SharedFrameworkSourceRoot>$(IntermediateOutputRootPath)sharedFramework\framework</SharedFrameworkSourceRoot>
     <IntermediateOutputForPackaging>$(IntermediateOutputRootPath)forPackaging</IntermediateOutputForPackaging>
   </PropertyGroup>
 
