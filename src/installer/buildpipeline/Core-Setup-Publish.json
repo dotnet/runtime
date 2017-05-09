@@ -158,7 +158,7 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Perform Cleanup Tasks",
       "timeoutInMinutes": 0,
@@ -299,6 +299,12 @@
     },
     "PB_GitHubEmail": {
       "value": "dotnet-build-bot@microsoft.com"
+    },
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "TeamName": {
+      "value": "DotNetCore"
     }
   },
   "demands": [
