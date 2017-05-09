@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -17,7 +16,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
-    public partial class HttpWebRequestTest
+    public partial class HttpWebRequestTest : RemoteExecutorTestBase
     {
         private const string RequestBody = "This is data to POST.";
         private readonly byte[] _requestBodyBytes = Encoding.UTF8.GetBytes(RequestBody);
@@ -526,8 +525,7 @@ namespace System.Net.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "ConnectionGroupName isn't implemented in Core")]
         public void ConnectionGroupName_SetAndGetGroup_ValuesMatch(Uri remoteServer)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);            
 
             if (!PlatformDetection.IsFullFramework)
             {
@@ -600,55 +598,70 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentException>("value", () => request.Expect = "100-continue");
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void DefaultMaximumResponseHeadersLength_SetAndGetLength_ValuesMatch(Uri remoteServer)
+        [Fact]
+        public void DefaultMaximumResponseHeadersLength_SetAndGetLength_ValuesMatch()
         {
-            int defaultMaximumResponseHeadersLength = HttpWebRequest.DefaultMaximumResponseHeadersLength;
-            const int NewDefaultMaximumResponseHeadersLength = 255;
+            RemoteInvoke(() =>
+            {
+                int defaultMaximumResponseHeadersLength = HttpWebRequest.DefaultMaximumResponseHeadersLength;
+                const int NewDefaultMaximumResponseHeadersLength = 255;
 
-            try
-            {
-                HttpWebRequest.DefaultMaximumResponseHeadersLength = NewDefaultMaximumResponseHeadersLength;
-                Assert.Equal(NewDefaultMaximumResponseHeadersLength, HttpWebRequest.DefaultMaximumResponseHeadersLength);
-            }
-            finally
-            {
-                HttpWebRequest.DefaultMaximumResponseHeadersLength = defaultMaximumResponseHeadersLength;
-            }
+                try
+                {
+                    HttpWebRequest.DefaultMaximumResponseHeadersLength = NewDefaultMaximumResponseHeadersLength;
+                    Assert.Equal(NewDefaultMaximumResponseHeadersLength, HttpWebRequest.DefaultMaximumResponseHeadersLength);
+                }
+                finally
+                {
+                    HttpWebRequest.DefaultMaximumResponseHeadersLength = defaultMaximumResponseHeadersLength;
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void DefaultMaximumErrorResponseLength_SetAndGetLength_ValuesMatch(Uri remoteServer)
+        [Fact]
+        public void DefaultMaximumErrorResponseLength_SetAndGetLength_ValuesMatch()
         {
-            int defaultMaximumErrorsResponseLength = HttpWebRequest.DefaultMaximumErrorResponseLength;
-            const int NewDefaultMaximumErrorsResponseLength = 255;
+            RemoteInvoke(() =>
+            {
+                int defaultMaximumErrorsResponseLength = HttpWebRequest.DefaultMaximumErrorResponseLength;
+                const int NewDefaultMaximumErrorsResponseLength = 255;
 
-            try
-            {
-                HttpWebRequest.DefaultMaximumErrorResponseLength = NewDefaultMaximumErrorsResponseLength;
-                Assert.Equal(NewDefaultMaximumErrorsResponseLength, HttpWebRequest.DefaultMaximumErrorResponseLength);
-            }
-            finally
-            {
-                HttpWebRequest.DefaultMaximumErrorResponseLength = defaultMaximumErrorsResponseLength;
-            }
+                try
+                {
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = NewDefaultMaximumErrorsResponseLength;
+                    Assert.Equal(NewDefaultMaximumErrorsResponseLength, HttpWebRequest.DefaultMaximumErrorResponseLength);
+                }
+                finally
+                {
+                    HttpWebRequest.DefaultMaximumErrorResponseLength = defaultMaximumErrorsResponseLength;
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void DefaultCachePolicy_SetAndGetPolicyReload_ValuesMatch(Uri remoteServer)
+        [Fact]
+        public void DefaultCachePolicy_SetAndGetPolicyReload_ValuesMatch()
         {
-            RequestCachePolicy requestCachePolicy = HttpWebRequest.DefaultCachePolicy;
+            RemoteInvoke(() =>
+            {
+                RequestCachePolicy requestCachePolicy = HttpWebRequest.DefaultCachePolicy;
 
-            try
-            {
-                RequestCachePolicy newRequestCachePolicy = new RequestCachePolicy(RequestCacheLevel.Reload);
-                HttpWebRequest.DefaultCachePolicy = newRequestCachePolicy;
-                Assert.Equal(newRequestCachePolicy.Level, HttpWebRequest.DefaultCachePolicy.Level);
-            }
-            finally
-            {
-                HttpWebRequest.DefaultCachePolicy = requestCachePolicy;
-            }
+                try
+                {
+                    RequestCachePolicy newRequestCachePolicy = new RequestCachePolicy(RequestCacheLevel.Reload);
+                    HttpWebRequest.DefaultCachePolicy = newRequestCachePolicy;
+                    Assert.Equal(newRequestCachePolicy.Level, HttpWebRequest.DefaultCachePolicy.Level);
+                }
+                finally
+                {
+                    HttpWebRequest.DefaultCachePolicy = requestCachePolicy;
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -966,6 +979,7 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.Method = HttpMethod.Get.Method;
+
             using (WebResponse response = await request.GetResponseAsync())
             using (Stream myStream = response.GetResponseStream())
             {
@@ -974,8 +988,7 @@ namespace System.Net.Tests
                 {
                     string strContent = sr.ReadToEnd();
                     Assert.True(strContent.Contains("\"Host\": \"" + System.Net.Test.Common.Configuration.Http.Host + "\""));
-                }
-                
+                }                
             }
         }
 
@@ -1037,7 +1050,6 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp(serverUrl);
             WebException ex = Assert.Throws<WebException>(() => request.GetResponseAsync().GetAwaiter().GetResult());
             Assert.Equal(WebExceptionStatus.NameResolutionFailure, ex.Status);
-
         }
 
         public static object[][] StatusCodeServers = {
@@ -1049,10 +1061,8 @@ namespace System.Net.Tests
         public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-
             WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
             Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
-
         }
 
         [Theory, MemberData(nameof(EchoServers))]
