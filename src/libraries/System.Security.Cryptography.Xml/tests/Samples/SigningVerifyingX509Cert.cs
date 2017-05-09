@@ -20,7 +20,7 @@ namespace System.Security.Cryptography.Xml.Tests
 <test>some text node</test>
 </example>";
         
-        private static bool SupportsDecryptValue => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+        private static bool SupportsNewRsaTypes => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
 
         private static void SignXml(XmlDocument doc, AsymmetricAlgorithm key)
         {
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         // https://github.com/dotnet/corefx/issues/19270
-        [ConditionalFact(nameof(SupportsDecryptValue))]
+        [ConditionalFact(nameof(SupportsNewRsaTypes))]
         public void SignedXmlHasCertificateVerifiableSignature()
         {
             using (X509Certificate2 x509cert = TestHelpers.GetSampleX509Certificate())
