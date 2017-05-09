@@ -6,6 +6,7 @@
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ValueTuple.csproj" />
+    <InboxOnTargetFramework Include="netstandard2.0" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
     <InboxOnTargetFramework Include="uap10.1" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
