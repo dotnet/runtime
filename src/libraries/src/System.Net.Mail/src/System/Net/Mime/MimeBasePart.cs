@@ -135,28 +135,6 @@ namespace System.Net.Mime
             return true;
         }
 
-        internal static bool IsAnsi(string value, bool permitCROrLF)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            foreach (char c in value)
-            {
-                if (c > 0xff)
-                {
-                    return false;
-                }
-                if (!permitCROrLF && (c == '\r' || c == '\n'))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         internal string ContentID
         {
             get { return Headers[MailHeaderInfo.GetString(MailHeaderID.ContentID)]; }
