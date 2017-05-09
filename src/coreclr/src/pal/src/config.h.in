@@ -66,6 +66,8 @@
 #cmakedefine HAVE_UNW_GET_ACCESSORS
 #cmakedefine01 HAVE_XSWDEV
 #cmakedefine01 HAVE_XSW_USAGE
+#cmakedefine01 HAVE_PUBLIC_XSTATE_STRUCT
+#cmakedefine01 HAVE_PR_SET_PTRACER
 
 #cmakedefine01 HAVE_STAT_TIMESPEC
 #cmakedefine01 HAVE_STAT_NSEC
