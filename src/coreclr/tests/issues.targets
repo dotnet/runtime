@@ -209,7 +209,10 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
             <Issue>11469, The test causes OutOfMemory exception in crossgen mode.</Issue> 
-        </ExcludeList> 
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_278523\DevDiv_278523\DevDiv_278523.cmd">
+            <Issue>11476, fails on both jit32 and RyuJit x86</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
