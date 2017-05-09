@@ -252,6 +252,7 @@ namespace System.Net.Tests
             yield return new object[] { "http://\\/" };
         }
 
+        [ActiveIssue(19526)]
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixNotStarted_ThrowsHttpListenerExceptionOnStart(string uriPrefix)
