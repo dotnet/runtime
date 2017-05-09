@@ -6,8 +6,6 @@
     <RootNamespace>System.Net.Requests</RootNamespace>
     <AssemblyName>System.Net.Requests</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Disable binplacing for now since we need to use the uapaot version of this assembly -->
-    <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
