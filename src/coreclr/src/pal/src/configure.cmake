@@ -1022,6 +1022,25 @@ int main(int argc, char **argv)
     return 0;
 }" HAVE_XSW_USAGE)
 
+check_cxx_source_compiles("
+#include <signal.h>
+
+int main(int argc, char **argv)
+{
+    struct _xstate xstate;
+    struct _fpx_sw_bytes bytes;
+    return 0;
+}" HAVE_PUBLIC_XSTATE_STRUCT)
+
+check_cxx_source_compiles("
+#include <sys/prctl.h>
+
+int main(int argc, char **argv)
+{
+    int flag = (int)PR_SET_PTRACER;
+    return 0;
+}" HAVE_PR_SET_PTRACER)
+
 set(CMAKE_REQUIRED_LIBRARIES pthread)
 check_cxx_source_compiles("
 #include <errno.h>
