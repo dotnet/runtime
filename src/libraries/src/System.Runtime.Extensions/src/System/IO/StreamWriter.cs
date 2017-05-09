@@ -334,12 +334,10 @@ namespace System.IO
 
             CheckAsyncTaskInProgress();
 
-            int count = buffer.Length;
-			
             // Threshold of 4 was chosen after running perf tests
-            if (count <= 4)
+            if (buffer.Length <= 4)
             {
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < buffer.Length; i++)
                 {
                     if (_charPos == _charLen)
                     {
@@ -353,6 +351,8 @@ namespace System.IO
             }
             else
             {
+                int count = buffer.Length;
+
                 int index = 0;
                 while (count > 0)
                 {

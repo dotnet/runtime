@@ -17,7 +17,7 @@ namespace System.IO.Tests
         private const int DefaultStreamWriterBufferSize = 1024; // Same as StreamWriter internal default
 
         [Benchmark]
-        [MemberData(nameof(WriteMemberData))]
+        [MemberData(nameof(WriteLengthMemberData))]
         public void WriteCharArray(int writeLength)
         {
             char[] buffer = new string('a', writeLength).ToCharArray();
@@ -47,7 +47,7 @@ namespace System.IO.Tests
         }
 
         [Benchmark]
-        [MemberData(nameof(WriteMemberData))]
+        [MemberData(nameof(WriteLengthMemberData))]
         public void WritePartialCharArray(int writeLength)
         {
             char[] buffer = new string('a', writeLength + 10).ToCharArray();
@@ -77,7 +77,7 @@ namespace System.IO.Tests
         }
 
         [Benchmark]
-        [MemberData(nameof(WriteMemberData))]
+        [MemberData(nameof(WriteLengthMemberData))]
         public void WriteString(int writeLength)
         {
             string value = new string('a', writeLength);
@@ -106,13 +106,9 @@ namespace System.IO.Tests
             }
         }
 
-        public static IEnumerable<object[]> WriteMemberData()
+        public static IEnumerable<object[]> WriteLengthMemberData()
         {
-            for (int i = 2; i <= 10; i++)
-            {
-                yield return new object[] { i };
-            }
-
+            yield return new object[] { 2 };
             yield return new object[] { 100 };
         }
     }
