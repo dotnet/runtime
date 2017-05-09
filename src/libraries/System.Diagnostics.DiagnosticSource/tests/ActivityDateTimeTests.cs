@@ -6,6 +6,7 @@ namespace System.Diagnostics.Tests
     public class ActivityDateTimeTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19545")]
         public void StartStopReturnsPreciseDuration()
         {
             var activity = new Activity("test");
