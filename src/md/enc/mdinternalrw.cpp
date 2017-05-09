@@ -2393,7 +2393,7 @@ HRESULT MDInternalRW::GetItemGuid(      // return hresult
 
     // Get the GUID, if any.
     hr = GetCustomAttributeByName(tkObj, INTEROP_GUID_TYPE, (const void**)&pBlob, &cbBlob);
-    if (hr != S_FALSE)
+    if (SUCCEEDED(hr) && hr != S_FALSE)
     {
         // Should be in format.  Total length == 41
         // <0x0001><0x24>01234567-0123-0123-0123-001122334455<0x0000>

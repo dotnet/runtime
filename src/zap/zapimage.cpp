@@ -2620,6 +2620,12 @@ HRESULT ZapImage::parseProfileData()
         READ(entry,CORBBTPROF_SECTION_TABLE_ENTRY);
 
         SectionFormat format = sectionHeader->Entries[i].FormatID;
+        _ASSERTE(format >= 0);
+        if (format < 0)
+        {
+            continue;
+        }
+
         if (convertFromV1)
         {
             if (format < LastTokenFlagSection)
