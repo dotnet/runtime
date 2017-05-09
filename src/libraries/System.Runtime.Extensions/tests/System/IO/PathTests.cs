@@ -490,8 +490,15 @@ namespace System.IO.Tests
                 longPath.Append(Path.DirectorySeparatorChar).Append('a').Append(Path.DirectorySeparatorChar).Append('.');
             }
 
-            // Now no longer throws unless over ~32K
-            Assert.NotNull(Path.GetFullPath(longPath.ToString()));
+            if (PathFeatures.AreAllLongPathsAvailable())
+            {
+                // Now no longer throws unless over ~32K
+                Assert.NotNull(Path.GetFullPath(longPath.ToString()));
+            }
+            else
+            {
+                Assert.Throws<PathTooLongException>(() => Path.GetFullPath(longPath.ToString()));
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
@@ -504,12 +511,16 @@ namespace System.IO.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
-        [Fact]
-        public static void GetFullPath_Windows_URIFormatNotSupported()
+        [Theory]
+        [InlineData("http://www.microsoft.com")]
+        [InlineData("file://www.microsoft.com")]
+        public static void GetFullPath_Windows_URIFormatNotSupported(string path)
         {
             // Throws via our invalid colon filtering
-            Assert.Throws<NotSupportedException>(() => Path.GetFullPath("http://www.microsoft.com"));
-            Assert.Throws<NotSupportedException>(() => Path.GetFullPath("file://www.microsoft.com"));
+            if (!PathFeatures.IsUsingLegacyPathNormalization())
+            {
+                Assert.Throws<NotSupportedException>(() => Path.GetFullPath(path));
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests Windows-specific invalid paths
@@ -519,8 +530,15 @@ namespace System.IO.Tests
         [InlineData(@"C  :\somedir")]
         public static void GetFullPath_Windows_NotSupportedExceptionPaths(string path)
         {
-            // Many of these used to throw ArgumentException despite being documented as NotSupportedException
-            Assert.Throws<NotSupportedException>(() => Path.GetFullPath(path));
+            // Old path normalization throws ArgumentException, new one throws NotSupportedException
+            if (!PathFeatures.IsUsingLegacyPathNormalization())
+            {
+                Assert.Throws<NotSupportedException>(() => Path.GetFullPath(path));
+            }
+            else
+            {
+                Assert.Throws<ArgumentException>(() => Path.GetFullPath(path));
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests legitimate Windows paths that are now allowed
@@ -549,8 +567,16 @@ namespace System.IO.Tests
         [Fact]
         public static void GetFullPath_Windows_MaxPathNotTooLong()
         {
-            // Shouldn't throw anymore
-            Path.GetFullPath(@"C:\" + new string('a', 255) + @"\");
+            string value = @"C:\" + new string('a', 255) + @"\";
+            if (PathFeatures.AreAllLongPathsAvailable())
+            {
+                // Shouldn't throw anymore
+                Path.GetFullPath(value);
+            }
+            else
+            {
+                Assert.Throws<PathTooLongException>(() => Path.GetFullPath(value));
+            }
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Tests PathTooLong on Windows
