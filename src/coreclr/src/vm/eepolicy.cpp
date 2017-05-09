@@ -1105,6 +1105,98 @@ void EEPolicy::HandleExitProcess(ShutdownCompleteAction sca)
     HandleExitProcessHelper(action, 0, sca);
 }
 
+StackWalkAction LogCallstackForLogCallback(
+    CrawlFrame       *pCF,      //
+    VOID*             pData     // Caller's private data
+)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        SO_INTOLERANT;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SmallStackSString *pWordAt = ((SmallStackSString*)pData);
+
+    MethodDesc *pMD = pCF->GetFunction();
+    _ASSERTE(pMD != NULL);
+
+    StackSString str;
+    str = *pWordAt;
+
+    TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature); 
+    PrintToStdErrW(str.GetUnicode());
+    PrintToStdErrA("\n");
+
+    return SWA_CONTINUE;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// A worker to save managed stack trace.
+//
+// Arguments:
+//    reporter - EventReporter object for EventLog
+//
+// Return Value:
+//    None
+//
+inline void LogCallstackForLogWorker()
+{
+    Thread* pThread = GetThread();
+    _ASSERTE (pThread);
+
+    SmallStackSString WordAt;
+
+    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    {
+        WordAt.Set(W("   at"));
+    }
+    else
+    {
+        WordAt.Insert(WordAt.Begin(), W("   "));
+    }
+    WordAt += W(" ");
+
+    pThread->StackWalkFrames(&LogCallstackForLogCallback, &WordAt, QUICKUNWIND | FUNCTIONSONLY);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Generate an EventLog entry for unhandled exception.
+//
+// Arguments:
+//    pExceptionInfo - Exception information
+//
+// Return Value:
+//    None
+//
+inline void DoLogForFailFastException(LPCWSTR pszMessage, PEXCEPTION_POINTERS pExceptionInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    Thread *pThread = GetThread();
+    EX_TRY
+    {
+        PrintToStdErrA("FailFast: ");
+        PrintToStdErrW((WCHAR*)pszMessage);
+        PrintToStdErrA("\n");
+
+        if (pThread)
+        {
+            PrintToStdErrA("\n");
+            LogCallstackForLogWorker();
+        }
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+}
+
 //
 // Log an error to the event log if possible, then throw up a dialog box.
 //
@@ -1116,6 +1208,12 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     STATIC_CONTRACT_MODE_ANY;
 
     _ASSERTE(pExceptionInfo != NULL);
+
+    // Log FailFast exception to StdErr
+    if (exitCode == (UINT)COR_E_FAILFAST)
+    {
+        DoLogForFailFastException(pszMessage, pExceptionInfo);
+    }
 
     if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))
     {
