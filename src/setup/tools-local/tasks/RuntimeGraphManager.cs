@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public class RuntimeGraphManager
+    internal class RuntimeGraphManager
     {
         private const string RuntimeJsonFileName = "runtime.json";
 
@@ -37,16 +37,13 @@ namespace Microsoft.DotNet.Build.Tasks
             return graph;
         }
 
-        public IEnumerable<RuntimeFallbacks> Expand(RuntimeGraph runtimeGraph, IEnumerable<string> runtimes)
+        public IEnumerable<RuntimeFallbacks> Expand(RuntimeGraph runtimeGraph, string runtime)
         {
-            foreach (var runtime in runtimes)
+            var importers = FindImporters(runtimeGraph, runtime);
+            foreach (var importer in importers)
             {
-                var importers = FindImporters(runtimeGraph, runtime);
-                foreach (var importer in importers)
-                {
-                    // ExpandRuntime return runtime itself as first item so we are skiping it
-                    yield return new RuntimeFallbacks(importer, runtimeGraph.ExpandRuntime(importer).Skip(1));
-                }
+                // ExpandRuntime return runtime itself as first item so we are skiping it
+                yield return new RuntimeFallbacks(importer, runtimeGraph.ExpandRuntime(importer).Skip(1));
             }
         }
 
