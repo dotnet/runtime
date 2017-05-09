@@ -73,6 +73,9 @@
     <ClCompile Include="..\mono\mini\mini.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\mini\memory-access.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\mono\mini\mini-amd64.c">
       <Filter>Source Files</Filter>
     </ClCompile>

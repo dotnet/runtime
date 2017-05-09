@@ -48,6 +48,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\mono\mini\mini.c" />
+    <ClCompile Include="..\mono\mini\memory-access.c" />
     <ClInclude Include="..\mono\metadata\remoting.h" />
     <ClInclude Include="..\mono\mini\ir-emit.h" />
     <ClCompile Include="..\mono\mini\method-to-ir.c" />
