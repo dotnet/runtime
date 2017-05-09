@@ -4694,6 +4694,7 @@
       "BaselineVersion": "4.4.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.2.0",
+        "netstandard2.0": "4.0.2.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
         "uap10.1": "4.0.2.0",

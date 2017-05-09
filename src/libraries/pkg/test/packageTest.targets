@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <_targetFrameworkVersionIndex>$(TargetFramework.IndexOfAny(".-0123456789"))</_targetFrameworkVersionIndex>
+    <_targetFrameworkIdentifier Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(TargetFramework.SubString(0, $(_targetFrameworkVersionIndex)))</_targetFrameworkIdentifier>
+    <ToolsDir>$(MSBuildThisFileDirectory)tools\</ToolsDir>
+  </PropertyGroup>
+
+  <Import Project="tools\Packaging.common.targets" />
+  <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
+  <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />
+  <Import Project="packageSettings\$(TestPackageId)\*.targets" />
+  <Import Project="packageSettings\$(TestPackageId)\$(_targetFrameworkIdentifier)\*.targets" />
+  <Import Project="packageSettings\$(TestPackageId)\$(TargetFramework)\*.targets" />
+
+  <Target Name="LogBeginTest">
+    <PropertyGroup>
+      <_message>Testing $(TestPackageID) TFM=$(TargetFramework)</_message>
+      <_message Condition="'$(RuntimeIdentifier)' != ''">$(_message) RID=$(RuntimeIdentifier)</_message>
+    </PropertyGroup>
+    <Message Importance="High" Text="$(_message)" />
+  </Target>
+
+  <Target Name="VerifyReferenceClosure"
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(ShouldVerifyClosure)' == 'true' AND '$(RuntimeIdentifier)' == ''">
+    <ItemGroup>
+      <_refClosureFileNames Include="@(ReferencePath->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_refClosureFileNames>
+      <_refClosureFileNamesFiltered Include="@(_refClosureFileNames)" Exclude="@(ExcludeFromClosure);@(ExcludeFromClosure->'%(Identity).ni')"/>
+      <_refClosureFileFiltered Include="@(_refClosureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <VerifyClosure Condition="'@(_refClosureFileFiltered)' != ''"
+                   Sources="@(_refClosureFileFiltered)"
+                   IgnoredReferences="@(IgnoredReference)" />
+  </Target>
+
+  <Target Name="VerifyReferenceTypes" 
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(ShouldVerifyTypes)' == 'true' AND '$(RuntimeIdentifier)' == ''">
+    <ItemGroup>
+      <_refTypesFileNames Include="@(ReferencePath->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_refTypesFileNames>
+      <_refTypesFileNamesFiltered Include="@(_refTypesFileNames)" Exclude="@(ExcludeFromTypes);@(ExcludeFromTypes->'%(Identity).ni')"/>
+      <_refTypesFileFiltered Include="@(_refTypesFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <VerifyTypes Condition="'@(_refTypesFileFiltered)' != ''"
+                 Sources="@(_refTypesFileFiltered)"
+                 IgnoredTypes="@(IgnoredTypes)" />
+  </Target>
+
+  <Target Name="VerifyRuntimeClosure" 
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(ShouldVerifyClosure)' == 'true' AND '$(RuntimeIdentifier)' != '' AND '@(ReferenceCopyLocalPaths)' != ''">
+    <ItemGroup>
+      <_runClosureFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_runClosureFileNames>
+      <_runClosureFileNamesFiltered Include="@(_runClosureFileNames)" Exclude="@(ExcludeFromClosure);@(ExcludeFromClosure->'%(Identity).ni')"/>
+      <_runClosureFileFiltered Include="@(_runClosureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <VerifyClosure Condition="'@(_runClosureFileFiltered)' != ''"
+                   Sources="@(_runClosureFileFiltered)"
+                   IgnoredReferences="@(IgnoredReference)" />
+  </Target>
+
+  <Target Name="VerifyRuntimeTypes" 
+          DependsOnTargets="ResolveReferences"
+          Condition="'$(ShouldVerifyTypes)' == 'true' AND '$(RuntimeIdentifier)' != ''">
+    <ItemGroup>
+      <_runTypesFileNames Include="@(ReferenceCopyLocalPaths->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_runTypesFileNames>
+      <_runTypesFileNamesFiltered Include="@(_runTypesFileNames)" Exclude="@(ExcludeFromTypes);@(ExcludeFromTypes->'%(Identity).ni')"/>
+      <_runTypesFileFiltered Include="@(_runTypesFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <VerifyTypes Condition="'@(_runTypesFileFiltered)' != ''"
+                 Sources="@(_runTypesFileFiltered)"
+                 IgnoredTypes="@(IgnoredTypes)" />
+  </Target>
+
+  <PropertyGroup>
+    <TestDependsOn>
+      LogBeginTest;
+      VerifyReferenceClosure;
+      VerifyReferenceTypes;
+      VerifyRuntimeClosure;
+      VerifyRuntimeTypes;
+    </TestDependsOn>
+  </PropertyGroup>
+  
+  <!-- inner target to be called by outer Test Target -->
+  <Target Name="_test"
+          DependsOnTargets="$(TestDependsOn)">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <Touch AlwaysCreate="true" Files="$(IntermediateOutputPath)\.testComplete" />
+  </Target>
+  
+  <Target Name="_getTestProjects">
+    <ItemGroup>
+      <_projectRuntime Include="$(RuntimeIdentifiers)" />
+
+      <!-- Run _test once without RID, then for each RID -->
+      <TestProject Include="$(MSBuildProjectFullPath)">
+        <Semaphore>$(IntermediateOutputPath)\.testComplete</Semaphore>
+      </TestProject>
+      <TestProject Include="$(MSBuildProjectFullPath)">
+        <Semaphore>$(IntermediateOutputPath)\%(_projectRuntime.Identity)\.testComplete</Semaphore>
+        <AdditionalProperties>RuntimeIdentifier=%(_projectRuntime.Identity)</AdditionalProperties>
+      </TestProject>
+    </ItemGroup>
+  </Target>
+  
+  <!-- runs all tests scenarios for this project -->
+  <Target Name="Test"
+          DependsOnTargets="_getTestProjects"
+          Inputs="@(TestProject);$(MSBuildAllProjects);$(ProjectAssetsFile)"
+          Outputs="@(TestProject->'%(Semaphore)')">
+    <MSBuild Projects="@(TestProject)" Targets="_test" BuildInParallel="true" />
+  </Target>
+</Project>
