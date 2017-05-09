@@ -362,6 +362,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>("key", () => listener.Prefixes.Contains(null));
         }
 
+        [ActiveIssue(19526)]
         [Fact]
         public void Remove_PrefixExistsNotStarted_ReturnsTrue()
         {
@@ -373,6 +374,7 @@ namespace System.Net.Tests
             Assert.Equal(0, listener.Prefixes.Count);
         }
 
+        [ActiveIssue(19526)]
         [Fact]
         public async Task Remove_PrefixExistsStarted_ReturnsTrue()
         {
