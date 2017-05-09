@@ -38,7 +38,7 @@ ThreadInfo::Initialize(ICLRDataTarget* dataTarget)
             return false;
         }
     }
-    TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, m_gpRegisters.rip, m_gpRegisters.rsp);
+    TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.rip, (unsigned long long)m_gpRegisters.rsp);
     return true;
 }
 
