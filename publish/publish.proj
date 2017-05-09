@@ -7,11 +7,11 @@
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
   <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishFinalOutput" />
+          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishFinalOutput" />
   
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="FinalizeBuildInAzure;PublishDebFilesToDebianRepo;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
+          DependsOnTargets="FinalizeBuildInAzure;PublishCoreHostPackagesToFeed;UpdatePublishedVersions" />
           
   <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
     <ItemGroup>
@@ -53,6 +53,26 @@
   <Target Name="PublishDebFilesToDebianRepo"
           DependsOnTargets="GenerateDebRepoFiles"
           Condition="'@(DebInstallerFile)' != ''">
+      <ItemGroup>
+        <RepoIds Include="DebianId_ubuntu1404-x64">
+          <Key>$(DebianId_ubuntu1404-x64)</Key>
+        </RepoIds>
+        <RepoIds Include="DebianId_debian8-x64">
+          <Key>$(DebianId_debian8-x64)</Key>
+        </RepoIds>
+        <RepoIds Include="DebianId_ubuntu1604-x64">
+          <Key>$(DebianId_ubuntu1604-x64)</Key>
+        </RepoIds>
+        <RepoIds Include="DebianId_ubuntu1610-x64">
+          <Key>$(DebianId_ubuntu1610-x64)</Key>
+        </RepoIds>
+      </ItemGroup>
+      <PropertyGroup>
+        <RidWithoutDots>$([System.String]::Copy($(DistroRid)).Replace('.', ''))</RidWithoutDots>
+        <DebRepoId Condition="$([System.String]::Copy(%(RepoIds.Identity)).EndsWith('$(RidWithoutDots)'))">%(RepoIds.Key)</DebRepoId>
+      </PropertyGroup>
+      <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
+             Text=" Missing parameters for debian publish." />
       <Exec Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -listpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
