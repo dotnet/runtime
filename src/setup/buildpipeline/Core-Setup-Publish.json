@@ -16,7 +16,7 @@
         "scriptName": "",
         "arguments": "-path $(PB_SourcesDirectory)",
         "workingFolder": "",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }",
+        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }\n\nif (Test-Path $path){\n    # in case vbcs is still alive\n     $p = Get-Process -Name \"VBCS\"\n     Stop-Process -InputObject $p\n }",
         "failOnStandardError": "true"
       }
     },
@@ -254,7 +254,7 @@
       "value": "$(Build.SourcesDirectory)\\core-setup"
     },
     "PB_VsoRepoUrl": {
-      "value": "--branch addPublish https://github.com/karajas/core-setup.git"
+      "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
     },
     "PB_AzureAccountName": {
       "value": "dotnetcli"
