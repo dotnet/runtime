@@ -351,7 +351,7 @@
       "value": "$(Build.SourcesDirectory)/core-setup"
     },
     "PB_Branch": {
-      "value": "buildtools"
+      "value": "master"
     },
     "PB_DockerHost_Sandbox": {
       "value": "$(Build.StagingDirectory)/HostSandbox"
