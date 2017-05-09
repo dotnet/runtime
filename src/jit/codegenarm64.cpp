@@ -2664,6 +2664,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     emitter* emit = getEmitter();
 
+    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
+
     if (source->gtOper == GT_IND)
     {
         srcAddr = source->gtGetOp1();
@@ -2741,6 +2746,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
             genCodeForLoadOffset(INS_ldrb, EA_1BYTE, tmpReg, srcAddr, offset);
             genCodeForStoreOffset(INS_strb, EA_1BYTE, tmpReg, dstAddr, offset);
         }
+    }
+
+    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
     }
 }
 
@@ -2820,6 +2830,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
+    if (cpObjNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
+
     emitter* emit = getEmitter();
 
     BYTE* gcPtrs = cpObjNode->gtGcPtrs;
@@ -2896,6 +2911,11 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
     // While we normally update GC info prior to the last instruction that uses them,
     // these actually live into the helper call.
     gcInfo.gcMarkRegSetNpt(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
+
+    if (cpObjNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
 }
 
 // generate code do a switch statement based on a table of ip-relative offsets
@@ -3562,6 +3582,11 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         {
             assert(!data->isContained());
             dataReg = data->gtRegNum;
+        }
+
+        if (tree->gtFlags & GTF_IND_VOLATILE)
+        {
+            instGen_MemoryBarrier();
         }
 
         emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), dataReg, tree);

@@ -1359,6 +1359,11 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     genConsumeAddress(tree->Addr());
     emit->emitInsLoadStoreOp(ins_Load(targetType), emitTypeSize(tree), targetReg, tree);
     genProduceReg(tree);
+
+    if (tree->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
 }
 
 // Generate code for a CpBlk node by the means of the VM memcpy helper call
@@ -1381,7 +1386,17 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
     }
 #endif // _TARGET_ARM64_
 
+    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
+
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
+
+    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
 }
 
 // Generates code for InitBlk by calling the VM memset helper function.
@@ -1418,6 +1433,12 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 #endif // _TARGET_ARM64_
 
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
+
+    if (initBlkNode->gtFlags & GTF_IND_VOLATILE)
+    {
+        instGen_MemoryBarrier();
+    }
+
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
 
