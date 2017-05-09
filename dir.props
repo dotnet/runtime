@@ -16,6 +16,7 @@
     <ReleaseBrandSuffix>Preview 2</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <BranchName>master</BranchName>
+    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
   </PropertyGroup>
   
   <PropertyGroup>
