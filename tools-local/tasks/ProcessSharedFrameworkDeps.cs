@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public class ProcessSharedFrameworkDeps : Task
+    public partial class ProcessSharedFrameworkDeps : Task
     {
         [Required]
         public string AssetsFilePath { get; set; }
@@ -22,7 +22,19 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string Runtime { get; set; }
 
+        [Required]
+        public string BuildToolsTaskDir { get; set; }
+
         public override bool Execute()
+        {
+            EnsureInitialized(BuildToolsTaskDir);
+
+            ExecuteCore();
+
+            return true;
+        }
+
+        private void ExecuteCore()
         {
             DependencyContext context;
             using (var depsStream = File.OpenRead(DepsFilePath))
@@ -54,8 +66,8 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 new DependencyContextWriter().Write(context, depsStream);
             }
-
-            return true;
         }
+
+        partial void EnsureInitialized(string buildToolsTaskDir);
     }
 }
