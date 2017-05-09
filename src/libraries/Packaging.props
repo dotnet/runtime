@@ -9,6 +9,7 @@
     <ProjectUrl>https://dot.net</ProjectUrl>
     <!-- Add a condition for this when we are able to run on .NET Core -->
     <PackagingTaskDir>$(ToolsDir)net46/</PackagingTaskDir>
+    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
