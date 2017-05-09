@@ -61,11 +61,99 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 						} else if (checkAttrInAssembly.AttributeType.Name == nameof (KeptTypeInAssemblyAttribute)) {
 							if (linkedType == null)
 								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+						} else if (checkAttrInAssembly.AttributeType.Name == nameof (RemovedMemberInAssemblyAttribute)) {
+							if (linkedType == null)
+								continue;
+
+							VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
+						} else if (checkAttrInAssembly.AttributeType.Name == nameof (KeptMemberInAssemblyAttribute)) {
+							if (linkedType == null)
+								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
+
+							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
 						} else {
-							throw new NotImplementedException ($"Type {original}, has an unknown other assembly attribute of type {checkAttrInAssembly.AttributeType}");
+							throw new NotImplementedException ($"Type {expectedTypeName}, has an unknown other assembly attribute of type {checkAttrInAssembly.AttributeType}");
 						}
 					}
 				}
+			}
+		}
+
+		static void VerifyRemovedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = ((TypeReference) inAssemblyAttribute.ConstructorArguments [1].Value).Resolve ();
+			foreach (var memberNameAttr in (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments [2].Value) {
+				string memberName = (string) memberNameAttr.Value;
+
+				// We will find the matching type from the original assembly first that way we can confirm
+				// that the name defined in the attribute corresponds to a member that actually existed
+				var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (originalFieldMember != null) {
+					var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+					if (linkedField != null)
+						Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been removed");
+
+					continue;
+				}
+
+				var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (originalPropertyMember != null) {
+					var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+					if (linkedProperty != null)
+						Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been removed");
+
+					continue;
+				}
+
+				var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+				if (originalMethodMember != null) {
+					var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+					if (linkedMethod != null)
+						Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been removed");
+
+					continue;
+				}
+
+				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
+			}
+		}
+
+		static void VerifyKeptMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		{
+			var originalType = ((TypeReference) inAssemblyAttribute.ConstructorArguments [1].Value).Resolve ();
+			foreach (var memberNameAttr in (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments [2].Value) {
+				string memberName = (string) memberNameAttr.Value;
+
+				// We will find the matching type from the original assembly first that way we can confirm
+				// that the name defined in the attribute corresponds to a member that actually existed
+				var originalFieldMember = originalType.Fields.FirstOrDefault (m => m.Name == memberName);
+				if (originalFieldMember != null) {
+					var linkedField = linkedType.Fields.FirstOrDefault (m => m.Name == memberName);
+					if (linkedField == null)
+						Assert.Fail ($"Field `{memberName}` on Type `{originalType}` should have been kept");
+
+					continue;
+				}
+
+				var originalPropertyMember = originalType.Properties.FirstOrDefault (m => m.Name == memberName);
+				if (originalPropertyMember != null) {
+					var linkedProperty = linkedType.Properties.FirstOrDefault (m => m.Name == memberName);
+					if (linkedProperty == null)
+						Assert.Fail ($"Property `{memberName}` on Type `{originalType}` should have been kept");
+
+					continue;
+				}
+
+				var originalMethodMember = originalType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+				if (originalMethodMember != null) {
+					var linkedMethod = linkedType.Methods.FirstOrDefault (m => m.GetSignature () == memberName);
+					if (linkedMethod == null)
+						Assert.Fail ($"Method `{memberName}` on Type `{originalType}` should have been kept");
+
+					continue;
+				}
+
+				Assert.Fail ($"Invalid test assertion.  No member named `{memberName}` exists on the original type `{originalType}`");
 			}
 		}
 
@@ -89,7 +177,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		static bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
 		{
-			return attr.AttributeType.Name == nameof (RemovedTypeInAssemblyAttribute) || attr.AttributeType.Name == nameof (KeptTypeInAssemblyAttribute);
+			return attr.AttributeType.Name == nameof (RemovedTypeInAssemblyAttribute)
+				|| attr.AttributeType.Name == nameof (KeptTypeInAssemblyAttribute)
+				|| attr.AttributeType.Name == nameof (RemovedMemberInAssemblyAttribute)
+				|| attr.AttributeType.Name == nameof (KeptMemberInAssemblyAttribute);
 		}
 
 		struct AssemblyContainer : IDisposable
