@@ -1,0 +1,10 @@
+﻿<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedPropertyPreservedByLinkXmlIsKept/Unused">
+      <method signature="System.Int32 get_PreservedProperty1()" />
+      <method signature="System.Void set_PreservedProperty1(System.Int32)" />
+      <method signature="System.Int32 get_PreservedProperty2()" />
+      <method signature="System.Void set_PreservedProperty3(System.Int32)" />
+    </type>
+  </assembly>
+</linker>

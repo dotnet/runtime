@@ -1,5 +1,0 @@
-﻿<linker>
-	<assembly fullname="TestCases">
-		<type fullname="TestCases.Xml.NestedNested.Foo" />
-	</assembly>
-</linker>

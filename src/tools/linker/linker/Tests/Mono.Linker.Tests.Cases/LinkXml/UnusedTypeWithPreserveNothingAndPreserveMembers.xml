@@ -1,0 +1,8 @@
+﻿<linker>
+  <assembly fullname="test, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Mono.Linker.Tests.Cases.LinkXml.UnusedTypeWithPreserveNothingAndPreserveMembers/Unused" preserve="nothing">
+      <field signature="System.Int32 Field1" />
+      <method signature="System.Void Method1()" />
+    </type>
+  </assembly>
+</linker>

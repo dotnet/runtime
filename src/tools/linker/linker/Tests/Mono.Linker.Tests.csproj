@@ -10,6 +10,7 @@
     <StartupObject>
     </StartupObject>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <RootNamespace>Mono.Linker</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -45,15 +46,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Mono.Linker.Tests\AbstractLinkingTestFixture.cs" />
-    <Compile Include="Mono.Linker.Tests\AbstractTestFixture.cs" />
-    <Compile Include="Mono.Linker.Tests\LinkingTestFixture.cs" />
-    <Compile Include="Mono.Linker.Tests\AssemblyInfo.cs" />
-    <Compile Include="Mono.Linker.Tests\XmlLinkingTestFixture.cs" />
-    <Compile Include="Mono.Linker.Tests\ResolveLinkedAssemblyStep.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Properties\" />
+    <Folder Include="TestCasesRunner\" />
+    <Folder Include="Extensions\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\cecil\Mono.Cecil.csproj">
@@ -64,12 +59,39 @@
       <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
       <Name>Mono.Linker</Name>
     </ProjectReference>
-    <ProjectReference Include="TestCases\TestCases.csproj">
-      <Project>{26D857FB-EEE3-4A5B-95BC-DAB39F880A99}</Project>
-      <Name>TestCases</Name>
+    <ProjectReference Include="Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj">
+      <Project>{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}</Project>
+      <Name>Mono.Linker.Tests.Cases</Name>
+    </ProjectReference>
+    <ProjectReference Include="Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
+      <Project>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</Project>
+      <Name>Mono.Linker.Tests.Cases.Expectations</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="TestCases\TestSuites.cs" />
+    <Compile Include="TestCases\TestDatabase.cs" />
+    <Compile Include="Tests\PreserveActionComparisonTests.cs" />
+    <Compile Include="TestCasesRunner\LinkXmlHelpers.cs" />
+    <Compile Include="TestCasesRunner\LinkedTestCaseResult.cs" />
+    <Compile Include="TestCasesRunner\ManagedCompilationResult.cs" />
+    <Compile Include="TestCasesRunner\TestCaseCollector.cs" />
+    <Compile Include="TestCasesRunner\TestCaseLinkerOptions.cs" />
+    <Compile Include="TestCasesRunner\TestRunner.cs" />
+    <Compile Include="TestCases\TestCase.cs" />
+    <Compile Include="Extensions\NiceIO.cs" />
+    <Compile Include="Extensions\CecilExtensions.cs" />
+    <Compile Include="TestCasesRunner\ExpectationsProvider.cs" />
+    <Compile Include="TestCasesRunner\AssemblyChecker.cs" />
+    <Compile Include="TestCasesRunner\LinkerArgumentBuilder.cs" />
+    <Compile Include="TestCasesRunner\LinkerDriver.cs" />
+    <Compile Include="TestCasesRunner\ObjectFactory.cs" />
+    <Compile Include="TestCasesRunner\ResultChecker.cs" />
+    <Compile Include="TestCasesRunner\TestCaseCompiler.cs" />
+    <Compile Include="TestCasesRunner\TestCaseMetadaProvider.cs" />
+    <Compile Include="TestCasesRunner\TestCaseSandbox.cs" />
   </ItemGroup>
 </Project>
