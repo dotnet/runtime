@@ -22,6 +22,10 @@ namespace System.Security.Cryptography.Xml.Tests
 <test>some text node</test>
 </example>";
 
+        private static bool SupportsSha2Algorithms =>
+            !PlatformDetection.IsFullFramework ||
+            CryptoConfig.CreateFromName("http://www.w3.org/2001/04/xmldsig-more#rsa-sha384") as SignatureDescription != null;
+
         private static void SignXml(XmlDocument doc, RSA key, string signatureMethod, string digestMethod)
         {
             var signedXml = new SignedXml(doc)
@@ -56,7 +60,8 @@ namespace System.Security.Cryptography.Xml.Tests
             return signedXml.CheckSignature(key);
         }
 
-        [Theory]
+        // https://github.com/dotnet/corefx/issues/19269
+        [ConditionalTheory(nameof(SupportsSha2Algorithms))]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#rsa-sha256", "http://www.w3.org/2001/04/xmlenc#sha256")]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#rsa-sha384", "http://www.w3.org/2001/04/xmldsig-more#sha384")]
         [InlineData("http://www.w3.org/2001/04/xmldsig-more#rsa-sha512", "http://www.w3.org/2001/04/xmlenc#sha512")]
