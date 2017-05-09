@@ -18,11 +18,6 @@ namespace System.Net
         private List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
         private Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
 
-        internal SslStream CreateSslStream(Stream innerStream, bool ownsStream, RemoteCertificateValidationCallback callback)
-        {
-            return new SslStream(innerStream, ownsStream, callback);
-        }
-
         public HttpListenerTimeoutManager TimeoutManager
         {
             get

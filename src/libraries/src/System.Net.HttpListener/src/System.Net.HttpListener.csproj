@@ -329,6 +329,7 @@
     <Compile Include="System\Net\Managed\ListenerPrefix.cs" />
     <Compile Include="System\Net\Managed\HttpRequestStream.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListener.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListener.Certificates.cs" />
     <Compile Include="System\Net\Managed\HttpListenerContext.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListenerRequest.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListenerResponse.Managed.cs" />
