@@ -117,7 +117,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ContainerName=$(STORAGE_CONTAINER) /p:GitHubUser=$(GITHUB_USER) /p:GitHubEmail=$(GITHUB_EMAIL) /p:GitHubAuthToken=$(GITHUB_AUTH_TOKEN) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(PB_Branch) /p:Finalize=true /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish.log",
+        "msbuildArguments": "/p:Configuration=$(BuildConfiguration) $(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:GitHubUser=$(PB_GitHubUser) /p:GitHubEmail=$(PB_GitHubEmail) /p:GitHubAuthToken=$(GITHUB_PASSWORD) /p:VersionsRepoOwner=$(PB_VersionsRepoOwner) /p:VersionsRepo=$(PB_VersionsRepo) /p:VersionsRepoPath=build-info/dotnet/$(PB_RepoName)/$(PB_Branch) /p:Finalize=true /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish.log",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -238,17 +238,16 @@
       "allowOverride": true
     },
     "NUGET_FEED_URL": {
-      "value": "https://dotnet.myget.org/F/dotnet-core-dev-eng/api/v2/package "
+      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
     },
     "NUGET_API_KEY": {
-      "value": null,
-      "isSecret": true
+      "value": "PassedViaPipeBuild"
     },
     "PB_DistroRid": {
       "value": "win7-x64"
     },
     "NUGET_SYMBOLS_FEED_URL": {
-      "value": "https://dotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
+      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     },
     "PB_SourcesDirectory": {
       "value": "$(Build.SourcesDirectory)\\core-setup"
@@ -286,12 +285,8 @@
       "value": "x64",
       "allowOverride": true
     },
-    "GITHUB_USER": {
-      "value": "dotnetbot"
-    },
-    "GITHUB_AUTH_TOKEN": {
-      "value": null,
-      "isSecret": true
+    "PB_GitHubUser": {
+      "value": "dotnet-build-bot"
     },
     "PB_VersionsRepoOwner": {
       "value": "dotnet"
@@ -302,9 +297,8 @@
     "PB_RepoName": {
       "value": "core-setup"
     },
-    "GITHUB_EMAIL": {
-      "value": null,
-      "isSecret": true
+    "PB_GitHubEmail": {
+      "value": "dotnet-build-bot@microsoft.com"
     }
   },
   "demands": [
