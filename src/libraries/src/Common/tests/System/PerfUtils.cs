@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System
 {
@@ -31,14 +32,27 @@ namespace System
         }
 
         /// <summary>
-        /// Helper method to create a string containing a number of random
+        /// Helper method to create a string containing a number of 
         /// characters equal to the specified length
         /// </summary>
         public string CreateString(int length)
         {
-            byte[] bytes = new byte[length];
-            _rand.NextBytes(bytes);
-            return Convert.ToBase64String(bytes);
+            char[] str = new char[length];
+
+            for (int i = 0; i < str.Length; i++)
+            {
+                // Add path separator so folders aren't too long.
+                if (i%20 == 0)
+                {
+                    str[i] = Path.DirectorySeparatorChar;
+                }
+                else
+                {
+                    str[i] = 'a';
+                }
+            }
+
+            return new string(str);
         }
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
