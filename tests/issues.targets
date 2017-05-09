@@ -207,6 +207,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\External\dev11_239804\ShowLocallocAlignment\ShowLocallocAlignment.cmd">
             <Issue>7163, fails on both legacy backend and RyuJIT</Issue>
         </ExcludeList>
+		<ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\JitBlue\DevDiv_255294\DevDiv_255294\DevDiv_255294.cmd">
+			<Issue>11469, The test causes OutOfMemory exception in crossgen mode.</Issue> 
+		</ExcludeList> 
     </ItemGroup>
 
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
