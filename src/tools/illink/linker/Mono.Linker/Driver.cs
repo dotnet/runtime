@@ -162,6 +162,10 @@ namespace Mono.Linker {
 						if (!bool.Parse (GetParam ()))
 							p.RemoveStep (typeof (RegenerateGuidStep));
 						break;
+					case 'z':
+							if (!bool.Parse (GetParam ()))
+								p.RemoveStep (typeof (BlacklistStep));
+							break;
 					case 'v':
 						context.KeepMembersForDebuggerAttributes = bool.Parse (GetParam ());
 						break;
@@ -304,6 +308,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("   -a          Link from a list of assemblies");
 			Console.WriteLine ("   -r          Link from a list of assemblies using roots visible outside of the assembly");
 			Console.WriteLine ("   -i          Link from an mono-api-info descriptor");
+			Console.WriteLine ("   -z          Include default preservations (true or false), default to true");
 			Console.WriteLine ("");
 
 			Environment.Exit (1);
