@@ -155,7 +155,7 @@ if [ "$build_arch" == "armel" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
-clang_version=$(echo $CC | awk -F- '{ print $NF }')
+clang_version=$( $CC --version | head -1 | sed 's/[^0-9]*\([0-9]*\.[0-9]*\).*/\1/' )
 # Use O1 option when the clang version is smaller than 3.9
 # Otherwise use O3 option in release build
 if [[ ( ${clang_version%.*} -eq 3  &&  ${clang_version#*.} -lt 9 ) &&
