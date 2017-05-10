@@ -16,18 +16,23 @@
     <PropertyGroup>
       <BuildArgs>--arch $(TargetArchitecture) --apphostver $(AppHostVersion) --hostver $(HostVersion) --fxrver $(HostResolverVersion) --policyver $(HostPolicyVersion) --commithash $(LatestCommit)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) -portable</BuildArgs>     
+      <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
     </PropertyGroup>
-    
+
+    <RemoveDir Directories="$(CMakeBuildDir)" Condition="Exists('$(CMakeBuildDir)')" />
+    <MakeDir Directories="$(CMakeBuildDir)" />
+
     <Message Text="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" Importance="High"/>
-    <Exec Command="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" />
+    <Exec Command="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)"
+          WorkingDirectory="$(CMakeBuildDir)"/>
 
     <ItemGroup>
-      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\exe\dotnet\dotnet" />
-      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\exe\apphost\apphost" />
-      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\dll\$(HostPolicyBaseName)" />
-      <CMakeOutput Include="$(MSBuildProjectDirectory)\cli\fxr\$(DotnetHostFxrBaseName)" />      
+      <CMakeOutput Include="$(CMakeBuildDir)cli\exe\dotnet\dotnet" />
+      <CMakeOutput Include="$(CMakeBuildDir)cli\exe\apphost\apphost" />
+      <CMakeOutput Include="$(CMakeBuildDir)cli\dll\$(HostPolicyBaseName)" />
+      <CMakeOutput Include="$(CMakeBuildDir)cli\fxr\$(DotnetHostFxrBaseName)" />
     </ItemGroup>
-    
+
     <Copy SourceFiles="@(CMakeOutput)"
           DestinationFolder="$(CoreHostOutputDir)"/>
   </Target>
