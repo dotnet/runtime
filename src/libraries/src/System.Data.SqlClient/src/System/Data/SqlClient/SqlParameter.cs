@@ -114,6 +114,37 @@ namespace System.Data.SqlClient
             this.SourceColumn = sourceColumn;
         }
 
+        public SqlParameter(
+            string parameterName,
+            SqlDbType dbType, 
+            int size,
+            ParameterDirection direction,
+            byte precision,
+            byte scale,
+            string sourceColumn,
+            DataRowVersion sourceVersion,
+            bool sourceColumnNullMapping,
+            object value,
+            string xmlSchemaCollectionDatabase,
+            string xmlSchemaCollectionOwningSchema,
+            string xmlSchemaCollectionName
+        ) : this()
+        {
+            this.ParameterName = parameterName;
+            this.SqlDbType = dbType;
+            this.Size = size;
+            this.Direction = direction;
+            this.Precision = precision;
+            this.Scale = scale;
+            this.SourceColumn = sourceColumn;
+            this.SourceVersion = sourceVersion;
+            this.SourceColumnNullMapping = sourceColumnNullMapping;
+            this.Value = value;
+            this.XmlSchemaCollectionDatabase = xmlSchemaCollectionDatabase;
+            this.XmlSchemaCollectionOwningSchema = xmlSchemaCollectionOwningSchema;
+            this.XmlSchemaCollectionName = xmlSchemaCollectionName;
+        }
+
         private SqlParameter(SqlParameter source) : this()
         {
             ADP.CheckArgumentNull(source, nameof(source));
