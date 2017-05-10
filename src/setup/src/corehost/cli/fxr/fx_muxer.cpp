@@ -1018,6 +1018,11 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 
     trace::verbose(_X("--- Executing in muxer mode..."));
 
+    if (argc <= 1)
+    {
+        return muxer_usage(!is_sdk_dir_present(own_dir));
+    }
+
     if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
     {
         return parse_args_and_execute(own_dir, own_dll, 2, argc, argv, true, host_mode_t::muxer, &is_an_app); // arg offset 2 for dotnet, exec
