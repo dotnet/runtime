@@ -98,7 +98,7 @@ namespace System.Net.Test.Common
         public static async Task<List<string>> AcceptSocketAsync(Socket server, Func<Socket, Stream, StreamReader, StreamWriter, Task<List<string>>> funcAsync, Options options = null)
         {
             options = options ?? new Options();
-            using (Socket s = await AcceptAsyncApm(server).ConfigureAwait(false)) // TODO: Issue #17690
+            using (Socket s = await server.AcceptAsync().ConfigureAwait(false))
             {
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (options.UseSsl)
@@ -195,18 +195,6 @@ namespace System.Net.Test.Common
                 
                 return null;
             }), out localEndPoint);
-        }
-        
-        private static Task<Socket> AcceptAsyncApm(Socket socket)
-        {
-            var tcs = new TaskCompletionSource<Socket>(socket);
-            socket.BeginAccept(null, 0, iar =>
-            {
-                var innerTcs = (TaskCompletionSource<Socket>)iar.AsyncState;
-                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndAccept(iar)); }
-                catch (Exception e) { innerTcs.TrySetException(e); }
-            }, tcs);
-            return tcs.Task;
         }        
     }
 }
