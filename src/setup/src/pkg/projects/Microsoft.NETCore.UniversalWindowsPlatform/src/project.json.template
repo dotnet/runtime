@@ -1,10 +1,10 @@
 {
   "dependencies": {
     "Microsoft.Net.Native.Compiler": "1.6.1",
-    "Microsoft.Private.CoreFx.UAP": "4.4.0-preview2-25303-04",
-    "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25303-02",
-    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25303-04",
-    "NETStandard.Library": "2.0.0-preview2-25303-01",
+    "Microsoft.Private.CoreFx.UAP": "4.4.0-preview2-25310-01",
+    "transport.Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-preview2-25309-01",
+    "Microsoft.NETCore.Platforms": "2.0.0-preview2-25310-01",
+    "NETStandard.Library": "2.0.0-preview2-25310-01",
     "System.ServiceModel.Duplex": "4.4.0-beta-25205-01",
     "System.ServiceModel.Http": "4.4.0-beta-25205-01",
     "System.ServiceModel.NetTcp": "4.4.0-beta-25205-01",
