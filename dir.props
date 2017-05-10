@@ -138,6 +138,7 @@
 
   <!-- Packaging properties -->
   <PropertyGroup>
+    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
     <PreReleaseLabel>preview2</PreReleaseLabel>
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
