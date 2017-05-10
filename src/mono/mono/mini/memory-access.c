@@ -20,10 +20,10 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 {
 	int val_reg;
 
+	/*FIXME arbitrary hack to avoid unbound code expansion.*/
+	g_assert (size < 10000);
 	g_assert (val == 0);
-
-	if (align == 0)
-		align = 4;
+	g_assert (align > 0);
 
 	if ((size <= SIZEOF_REGISTER) && (size <= align)) {
 		switch (size) {
@@ -51,39 +51,51 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 	else
 		MONO_EMIT_NEW_ICONST (cfg, val_reg, val);
 
-	if (align < 4) {
-		/* This could be optimized further if neccesary */
-		while (size >= 1) {
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, offset, val_reg);
-			offset += 1;
-			size -= 1;
-		}
-		return;
-	}	
+	if (align < SIZEOF_VOID_P) {
+		if (align % 2 == 1)
+			goto set_1;
+		if (align % 4 == 2)
+			goto set_2;
+		if (SIZEOF_VOID_P == 8 && align % 8 == 4)
+			goto set_4;
+	}
 
-	if (!cfg->backend->no_unaligned_access && SIZEOF_REGISTER == 8) {
-		if (offset % 8) {
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
-			offset += 4;
-			size -= 4;
-		}
+	//Unaligned offsets don't naturaly happen in the runtime, so it's ok to be conservative in how we copy
+	//We assume that input src and dest are be aligned to `align` so offset just worsen it
+	int offsets_mask = offset & 0x7; //we only care about the misalignment part
+	if (offsets_mask) {
+		if (offsets_mask % 2 == 1)
+			goto set_1;
+		if (offsets_mask % 4 == 2)
+			goto set_2;
+		if (SIZEOF_VOID_P == 8 && offsets_mask % 8 == 4)
+			goto set_4;
+	}
+
+	if (SIZEOF_REGISTER == 8) {
 		while (size >= 8) {
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, destreg, offset, val_reg);
 			offset += 8;
 			size -= 8;
 		}
-	}	
+	}
 
+set_4:
 	while (size >= 4) {
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, offset, val_reg);
 		offset += 4;
 		size -= 4;
 	}
+
+
+set_2:
 	while (size >= 2) {
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, destreg, offset, val_reg);
 		offset += 2;
 		size -= 2;
 	}
+
+set_1:
 	while (size >= 1) {
 		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, offset, val_reg);
 		offset += 1;
@@ -96,25 +108,32 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 {
 	int cur_reg;
 
-	if (align == 0)
-		align = 4;
-
 	/*FIXME arbitrary hack to avoid unbound code expansion.*/
 	g_assert (size < 10000);
+	g_assert (align > 0);
 
-	if (align < 4) {
-		/* This could be optimized further if neccesary */
-		while (size >= 1) {
-			cur_reg = alloc_preg (cfg);
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, cur_reg, srcreg, soffset);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, doffset, cur_reg);
-			doffset += 1;
-			soffset += 1;
-			size -= 1;
-		}
+	if (align < SIZEOF_VOID_P) {
+		if (align == 4)
+			goto copy_4;
+		if (align == 2)
+			goto copy_2;
+		goto copy_1;
 	}
 
-	if (!cfg->backend->no_unaligned_access && SIZEOF_REGISTER == 8) {
+	//Unaligned offsets don't naturaly happen in the runtime, so it's ok to be conservative in how we copy
+	//We assume that input src and dest are be aligned to `align` so offset just worsen it
+	int offsets_mask = (doffset | soffset) & 0x7; //we only care about the misalignment part
+	if (offsets_mask) {
+		if (offsets_mask % 2 == 1)
+			goto copy_1;
+		if (offsets_mask % 4 == 2)
+			goto copy_2;
+		if (SIZEOF_VOID_P == 8 && offsets_mask % 8 == 4)
+			goto copy_4;
+	}
+
+
+	if (SIZEOF_REGISTER == 8) {
 		while (size >= 8) {
 			cur_reg = alloc_preg (cfg);
 			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI8_MEMBASE, cur_reg, srcreg, soffset);
@@ -123,8 +142,9 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 			soffset += 8;
 			size -= 8;
 		}
-	}	
+	}
 
+copy_4:
 	while (size >= 4) {
 		cur_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, cur_reg, srcreg, soffset);
@@ -133,6 +153,8 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 		soffset += 4;
 		size -= 4;
 	}
+
+copy_2:
 	while (size >= 2) {
 		cur_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI2_MEMBASE, cur_reg, srcreg, soffset);
@@ -141,6 +163,8 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 		soffset += 2;
 		size -= 2;
 	}
+
+copy_1:
 	while (size >= 1) {
 		cur_reg = alloc_preg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, cur_reg, srcreg, soffset);
