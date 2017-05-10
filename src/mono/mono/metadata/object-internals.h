@@ -1889,8 +1889,8 @@ MonoObject*
 mono_runtime_delegate_invoke_checked (MonoObject *delegate, void **params,
 				      MonoError *error);
 
-MonoArray*
-mono_runtime_get_main_args_checked (MonoError *error);
+MonoArrayHandle
+mono_runtime_get_main_args_handle (MonoError *error);
 
 int
 mono_runtime_run_main_checked (MonoMethod *method, int argc, char* argv[],

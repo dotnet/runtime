@@ -6611,12 +6611,11 @@ char **environ;
 #endif
 #endif
 
-ICALL_EXPORT MonoArray *
-ves_icall_System_Environment_GetCommandLineArgs (void)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Environment_GetCommandLineArgs (MonoError *error)
 {
-	MonoError error;
-	MonoArray *result = mono_runtime_get_main_args_checked (&error);
-	mono_error_set_pending_exception (&error);
+	error_init (error);
+	MonoArrayHandle result = mono_runtime_get_main_args_handle (error);
 	return result;
 }
 

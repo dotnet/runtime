@@ -4010,38 +4010,56 @@ static int num_main_args = 0;
 MonoArray*
 mono_runtime_get_main_args (void)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoError error;
-	MonoArray *result = mono_runtime_get_main_args_checked (&error);
-	mono_error_assert_ok (&error);
-	return result;
+	MonoArray *result = NULL;
+	error_init (&error);
+	MonoArrayHandle arg_array = mono_runtime_get_main_args_handle (&error);
+	goto_if_nok (&error, leave);
+	result = MONO_HANDLE_RAW (arg_array);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (result);
+}
+
+static gboolean
+handle_main_arg_array_set (MonoDomain *domain, int idx, MonoArrayHandle dest, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	MonoStringHandle value = mono_string_new_handle (domain, main_args [idx], error);
+	goto_if_nok (error, leave);
+	MONO_HANDLE_ARRAY_SETREF (dest, idx, value);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
 /**
- * mono_runtime_get_main_args_checked:
+ * mono_runtime_get_main_args_handle:
  * \param error set on error
  * \returns a \c MonoArray with the arguments passed to the main
  * program. On failure returns NULL and sets \p error.
  */
-MonoArray*
-mono_runtime_get_main_args_checked (MonoError *error)
+MonoArrayHandle
+mono_runtime_get_main_args_handle (MonoError *error)
 {
-	MonoArray *res;
+	HANDLE_FUNCTION_ENTER ();
+	MonoArrayHandle array;
 	int i;
 	MonoDomain *domain = mono_domain_get ();
-
 	error_init (error);
 
-	res = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, num_main_args, error);
-	return_val_if_nok (error, NULL);
-
-	for (i = 0; i < num_main_args; ++i) {
-		MonoString *arg = mono_string_new_checked (domain, main_args [i], error);
-		return_val_if_nok (error, NULL);
-		mono_array_setref (res, i, arg);
+	array = mono_array_new_handle (domain, mono_defaults.string_class, num_main_args, error);
+	if (!is_ok (error)) {
+		array = MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
+		goto leave;
 	}
-
-	return res;
+	for (i = 0; i < num_main_args; ++i) {
+		if (!handle_main_arg_array_set (domain, i, array, error))
+			goto leave;
+	}
+leave:
+	HANDLE_FUNCTION_RETURN_REF (MonoArray, array);
 }
 
 static void
