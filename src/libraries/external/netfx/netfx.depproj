@@ -21,8 +21,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="$(TargetingPackNugetPackageId)">
-      <Version Condition="'$(TargetGroup)' != 'net47'">1.0.1</Version>
-      <Version Condition="'$(TargetGroup)' == 'net47'">1.0.0-prerelease</Version>
+      <Version>1.0.1</Version>
     </PackageReference>
     <PackageReference Include="NETStandard.Library" Condition="'$(TargetGroup)' == 'netfx'">
       <Version>$(NETStandardPackageVersion)</Version>
