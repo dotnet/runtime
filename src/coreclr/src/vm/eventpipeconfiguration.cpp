@@ -85,6 +85,7 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider)
 
     // TODO: Set the provider configuration and enable it if we know
     // anything about the provider before it is registered.
+    provider.SetConfiguration(true /* providerEnabled */, 0xFFFFFFFFFFFFFFFF /* keywords */, EventPipeEventLevel::Verbose /* level */);
 
     return true;
 }

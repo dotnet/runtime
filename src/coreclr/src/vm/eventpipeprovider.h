@@ -61,7 +61,7 @@ private:
 
 public:
 
-    EventPipeProvider(const GUID &providerID);
+    EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
     ~EventPipeProvider();
 
     // Get the provider ID.
@@ -78,12 +78,6 @@ public:
 
     // Create a new event.
     EventPipeEvent* AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack);
-
-    // Register a callback with the provider to be called on state change.
-    void RegisterCallback(EventPipeCallback pCallbackFunction, void *pData);
-
-    // Unregister a callback.
-    void UnregisterCallback(EventPipeCallback pCallbackFunction);
 
 private:
 

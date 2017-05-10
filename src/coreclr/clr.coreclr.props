@@ -47,7 +47,7 @@
     <FeatureRandomizedStringHashing>true</FeatureRandomizedStringHashing>
     <!-- The rejit feature is available only on supported architectures (x86 & x64) -->
     <FeatureReJIT Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</FeatureReJIT>
-    <FeatureManagedEtw>true</FeatureManagedEtw>
+    <FeatureManagedEtw>false</FeatureManagedEtw>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <BinderDebugLog Condition="'$(_BuildType)'=='dbg'">true</BinderDebugLog>
     <FeatureAppX>true</FeatureAppX>
@@ -76,15 +76,20 @@
     <FeatureCominterop>false</FeatureCominterop>
     <FeatureCominteropUnmanagedActivation>false</FeatureCominteropUnmanagedActivation>
     <FeatureCominteropWinRTManagedActivation>false</FeatureCominteropWinRTManagedActivation>
-    <FeatureManagedEtw>false</FeatureManagedEtw>
 
     <FeatureCoreFxGlobalization>true</FeatureCoreFxGlobalization>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
     <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
+    <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
     <FeatureUseLcid>true</FeatureUseLcid>
     <FeatureImplicitLongPath>true</FeatureImplicitLongPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsLinux)' == 'true'">
+    <FeatureManagedEtw>true</FeatureManagedEtw>
+    <FeaturePerfTracing>true</FeaturePerfTracing>
   </PropertyGroup>
 </Project>
