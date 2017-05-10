@@ -42,9 +42,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             _userDir = Path.Combine(multilevelDir, "user");
             _executableDir = Path.Combine(multilevelDir, "exe");
 
+            RepoDirectories = new RepoDirectoriesProvider(builtDotnet: _executableDir);
+
             // SharedFxBaseDirs contain all available version folders
             _cwdSharedFxBaseDir = Path.Combine(_currentWorkingDir, "shared", "Microsoft.NETCore.App");
-            _userSharedFxBaseDir = Path.Combine(_userDir, ".dotnet", RuntimeEnvironment.RuntimeArchitecture, "shared", "Microsoft.NETCore.App");
+            _userSharedFxBaseDir = Path.Combine(_userDir, ".dotnet", RepoDirectories.BuildArchitecture, "shared", "Microsoft.NETCore.App");
             _exeSharedFxBaseDir = Path.Combine(_executableDir, "shared", "Microsoft.NETCore.App");
 
             // Create directories. It's necessary to copy the entire publish folder to the exe dir because
@@ -54,7 +56,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             CopyDirectory(builtDotnet, _executableDir);
 
             // Restore and build SharedFxLookupPortableApp from exe dir
-            RepoDirectories = new RepoDirectoriesProvider(builtDotnet:_executableDir);
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("SharedFxLookupPortableApp", RepoDirectories)
                 .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
