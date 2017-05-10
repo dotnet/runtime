@@ -265,6 +265,19 @@ namespace Microsoft.Framework.WebEncoders
             Assert.Equal("lo&#x2B;wo", output.ToString());
         }
 
+        [Fact]
+        public void HtmlEncode_AstralWithTextWriter()
+        {
+            byte[] buffer = new byte[10];
+            MemoryStream ms = new MemoryStream(buffer);
+            using (StreamWriter sw = new StreamWriter(ms))
+            {
+                string input = "\U0010FFFF";
+                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(sw, input);
+            }
+            Assert.Equal("&#x10FFFF;", System.Text.Encoding.UTF8.GetString(buffer));
+        }
+
         private static bool IsSurrogateCodePoint(int codePoint)
         {
             return (0xD800 <= codePoint && codePoint <= 0xDFFF);
