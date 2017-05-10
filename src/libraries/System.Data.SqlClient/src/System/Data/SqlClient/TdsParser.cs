@@ -5875,7 +5875,7 @@ namespace System.Data.SqlClient
 
             {
                 userName = rec.userName;
-                encryptedPassword = TdsParserStaticMethods.EncryptPassword(rec.password);
+                encryptedPassword = TdsParserStaticMethods.ObfuscatePassword(rec.password);
                 encryptedPasswordLengthInBytes = encryptedPassword.Length;  // password in clear text is already encrypted and its length is in byte
             }
 
