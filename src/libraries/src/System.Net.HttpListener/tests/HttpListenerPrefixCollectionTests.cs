@@ -256,6 +256,7 @@ namespace System.Net.Tests
             yield return new object[] { "http://\\/" };
         }
 
+        [ActiveIssue(19619)]
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixNotStarted_ThrowsHttpListenerExceptionOnStart(string uriPrefix)
@@ -268,6 +269,7 @@ namespace System.Net.Tests
             Assert.Throws<HttpListenerException>(() => listener.Start());
         }
 
+        [ActiveIssue(19619)]
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixAlreadyStarted_ThrowsHttpListenerExceptionOnAdd(string uriPrefix)
@@ -281,6 +283,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(19619)]
         [Theory]
         [ActiveIssue(18128, TestPlatforms.AnyUnix)] // Fails by design on Windows but is allowed by the managed implementation
         [InlineData("http://192./")]
