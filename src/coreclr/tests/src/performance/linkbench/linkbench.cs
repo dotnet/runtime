@@ -235,6 +235,7 @@ namespace LinkBench
         private static MetricModel SizeMetric = new MetricModel { Name = "Size", DisplayName = "File Size", Unit = "MB" };
         private static MetricModel PercMetric = new MetricModel { Name = "Ratio", DisplayName = "Reduction", Unit = "Linked/Unlinked" };
         public static string Workspace;
+        public static string LinkBenchRoot;
         public static string ScriptDir;
         public static string AssetsDir;
         private static Benchmark CurrentBenchmark;
@@ -242,34 +243,33 @@ namespace LinkBench
         private static Benchmark[] Benchmarks =
         {
             new Benchmark("HelloWorld",
-                "LinkBench\\HelloWorld\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
-                "LinkBench\\HelloWorld\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
-                () => Benchmark.AddLinkerReference("LinkBench\\HelloWorld\\HelloWorld.csproj")),
+                "HelloWorld\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
+                "HelloWorld\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
+                () => Benchmark.AddLinkerReference("HelloWorld\\HelloWorld.csproj")),
             new Benchmark("WebAPI",
-                "LinkBench\\WebAPI\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
-                "LinkBench\\WebAPI\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
-                () => { Benchmark.AddLinkerReference("LinkBench\\WebAPI\\WebAPI.csproj");
-                        Benchmark.PreventPublishFiltering("LinkBench\\WebAPI\\WebAPI.csproj"); }),
+                "WebAPI\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
+                "WebAPI\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
+                () => { Benchmark.AddLinkerReference("WebAPI\\WebAPI.csproj");
+                        Benchmark.PreventPublishFiltering("WebAPI\\WebAPI.csproj"); }),
             new Benchmark("MusicStore",
-                "LinkBench\\JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
-                "LinkBench\\JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
-                () => { Benchmark.AddLinkerReference("LinkBench\\JitBench\\src\\MusicStore\\MusicStore.csproj");
-                       Benchmark.SetRuntimeFrameworkVersion("LinkBench\\JitBench\\src\\MusicStore\\MusicStore.csproj"); }),
+                "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\unlinked",
+                "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\linked",
+                () => { Benchmark.AddLinkerReference("JitBench\\src\\MusicStore\\MusicStore.csproj");
+                       Benchmark.SetRuntimeFrameworkVersion("JitBench\\src\\MusicStore\\MusicStore.csproj"); }),
             new Benchmark("MusicStore_R2R",
-                "LinkBench\\JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\unlinked",
-                "LinkBench\\JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\linked"),
+                "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\unlinked",
+                "JitBench\\src\\MusicStore\\bin\\release\\netcoreapp2.0\\win10-x64\\R2R\\linked"),
             new Benchmark("Corefx",
-                "LinkBench\\corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\pretrimmed",
-                "LinkBench\\corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed"),
+                "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\pretrimmed",
+                "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed"),
             new Benchmark("Roslyn",
-                "LinkBench\\roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\publish",
-                "LinkBench\\roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked")
+                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\publish",
+                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked")
         };
 
         static int UsageError()
         {
-            Console.WriteLine("Usage: LinkBench [--clean] [--nosetup] [--nobuild] [--perf:runid <id>] [<benchmarks>]");
-            Console.WriteLine("  --clean: Remove LinkBench working directory at start");
+            Console.WriteLine("Usage: LinkBench [--nosetup] [--nobuild] [--perf:runid <id>] [<benchmarks>]");
             Console.WriteLine("  --nosetup: Don't clone and fixup benchmark repositories");
             Console.WriteLine("  --nosetup: Don't build and link benchmarks");
             Console.WriteLine("  --perf:runid: Specify the ID to append to benchmark result files");
@@ -280,7 +280,6 @@ namespace LinkBench
 
         public static int Main(String [] args)
         {
-            bool doClean = false;
             bool doSetup = true;
             bool doBuild = true;
             string runId = "";
@@ -289,11 +288,7 @@ namespace LinkBench
 
             for (int i = 0; i < args.Length; i++)
             {
-                if (String.Compare(args[i], "--clean", true) == 0)
-                {
-                    doClean = true;
-                }
-                else if (String.Compare(args[i], "--nosetup", true) == 0)
+                if (String.Compare(args[i], "--nosetup", true) == 0)
                 {
                     doSetup = false;
                 }
@@ -343,6 +338,14 @@ namespace LinkBench
             {
                 foreach (Benchmark benchmark in Benchmarks)
                 {
+                    if (String.Compare(benchmark.Name, "CoreFX", true) == 0)
+                    {
+                        // CoreFX is not enabled by default, because the lab cannot run it yet.
+                        // Jenkins runs on an older OS with path-length limit, which causes 
+                        // CoreFX build to fail.
+                        continue;
+                    }
+
                     benchmark.SetToRun();
                 }
             }
@@ -350,11 +353,11 @@ namespace LinkBench
             // Workspace is the ROOT of the coreclr tree.
             // If CORECLR_REPO is not set, the script assumes that the location of sandbox
             // is <path>\coreclr\sandbox.
-            string sandbox = Directory.GetCurrentDirectory();
+            LinkBenchRoot = Directory.GetCurrentDirectory();
             Workspace = Environment.GetEnvironmentVariable("CORECLR_REPO");
             if (Workspace == null)
             {
-                Workspace = Directory.GetParent(sandbox).FullName;
+                Workspace = Directory.GetParent(LinkBenchRoot).FullName;
             }
             if (Workspace == null)
             {
@@ -366,16 +369,9 @@ namespace LinkBench
             ScriptDir = linkBenchSrcDir + "scripts\\";
             AssetsDir = linkBenchSrcDir + "assets\\";
 
-            string linkBenchRoot = sandbox + "\\LinkBench";
-            string __dotNet = linkBenchRoot + "\\.dotNet\\dotnet.exe";
-            Environment.SetEnvironmentVariable("LinkBenchRoot", linkBenchRoot );
-            Environment.SetEnvironmentVariable("__dotnet1", linkBenchRoot + "\\.dotNet\\1.0.0\\dotnet.exe");
-            Environment.SetEnvironmentVariable("__dotnet2", linkBenchRoot + "\\.dotNet\\2.0.0\\dotnet.exe");
-
-            if (doClean)
-            {
-                Directory.Delete("LinkBench", true);
-            }
+            Environment.SetEnvironmentVariable("LinkBenchRoot", LinkBenchRoot);
+            Environment.SetEnvironmentVariable("__dotnet1", LinkBenchRoot + "\\.Net1\\dotnet.exe");
+            Environment.SetEnvironmentVariable("__dotnet2", LinkBenchRoot + "\\.Net2\\dotnet.exe");
 
             // Update the build files to facilitate the link step
             if (doSetup)
@@ -388,7 +384,7 @@ namespace LinkBench
                     setup.WaitForExit();
                     if (setup.ExitCode != 0)
                     {
-                        Console.WriteLine("clone failed");
+                        Console.WriteLine("Benchmark Setup failed");
                         return -2;
                     }
                 }
@@ -415,7 +411,7 @@ namespace LinkBench
                     setup.WaitForExit();
                     if (setup.ExitCode != 0)
                     {
-                        Console.WriteLine("Setup failed");
+                        Console.WriteLine("Benchmark build failed");
                         return -3;
                     }
                 }
