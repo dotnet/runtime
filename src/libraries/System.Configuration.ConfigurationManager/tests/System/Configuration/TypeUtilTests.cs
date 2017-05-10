@@ -12,32 +12,32 @@ using Xunit;
 
 namespace System.ConfigurationTests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Unit test for core implementation")]
     public class TypeUtilTests
     {
-        [Theory
+        [Theory,
             // CoreLib
-            InlineData("System.String", typeof(string))
-            InlineData("System.Int32", typeof(int))
+            InlineData("System.String", typeof(string)),
+            InlineData("System.Int32", typeof(int)),
             // System.Configuration
-            InlineData("System.Configuration.PropertyInformation", typeof(PropertyInformation))
+            InlineData("System.Configuration.PropertyInformation", typeof(PropertyInformation)),
             // System.Runtime, previously System
-            InlineData("System.Uri", typeof(Uri))
+            InlineData("System.Uri", typeof(Uri)),
             // System.Collections, previously System
-            InlineData("System.Collections.Generic.LinkedList`1", typeof(LinkedList<>))
-            InlineData("System.Collections.Generic.Queue`1", typeof(Queue<>))
-            InlineData("System.Collections.Generic.Stack`1", typeof(Stack<>))
+            InlineData("System.Collections.Generic.LinkedList`1", typeof(LinkedList<>)),
+            InlineData("System.Collections.Generic.Queue`1", typeof(Queue<>)),
+            InlineData("System.Collections.Generic.Stack`1", typeof(Stack<>)),
             // System.Collections.Concurrent, previously System
-            InlineData("System.Collections.Concurrent.ConcurrentBag`1", typeof(ConcurrentBag<>))
-            InlineData("System.Collections.Concurrent.BlockingCollection`1", typeof(BlockingCollection<>))
+            InlineData("System.Collections.Concurrent.ConcurrentBag`1", typeof(ConcurrentBag<>)),
+            InlineData("System.Collections.Concurrent.BlockingCollection`1", typeof(BlockingCollection<>)),
             // System.Collections.Specialized, previously System
-            InlineData("System.Collections.Specialized.HybridDictionary", typeof(HybridDictionary))
-            InlineData("System.Collections.Specialized.ListDictionary", typeof(ListDictionary))
-            InlineData("System.Collections.Specialized.StringDictionary", typeof(StringDictionary))
-            InlineData("System.Collections.Specialized.OrderedDictionary", typeof(OrderedDictionary))
-            InlineData("System.Collections.Specialized.StringCollection", typeof(StringCollection))
+            InlineData("System.Collections.Specialized.HybridDictionary", typeof(HybridDictionary)),
+            InlineData("System.Collections.Specialized.ListDictionary", typeof(ListDictionary)),
+            InlineData("System.Collections.Specialized.StringDictionary", typeof(StringDictionary)),
+            InlineData("System.Collections.Specialized.OrderedDictionary", typeof(OrderedDictionary)),
+            InlineData("System.Collections.Specialized.StringCollection", typeof(StringCollection)),
             InlineData("System.Collections.Specialized.NameValueCollection", typeof(NameValueCollection))
             ]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19340")]
         public void GetType_NoAssemblyQualifcation(string typeString, Type expectedType)
         {
             Assert.Equal(expectedType, TypeUtil.GetType(typeString, throwOnError: false));
@@ -56,7 +56,6 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19339")]
         public void GetTypeConfigHost()
         {
             TestHost host = new TestHost((s, b) => { return typeof(string); });
@@ -64,7 +63,6 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19339")]
         public void GetTypeConfigHost_ThrowOnError()
         {
             TestHost host = new TestHost((s, b) => { if (b) throw new ArgumentException(); return null; });
@@ -72,7 +70,6 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19339")]
         public void GetTypeConfigHost_NoThrowOnError()
         {
             TestHost host = new TestHost((s, b) => { if (b) throw new ArgumentException(); return null; });
