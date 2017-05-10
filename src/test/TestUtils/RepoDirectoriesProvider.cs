@@ -20,9 +20,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         private string _targetRID;
         private string _buildRID;
+        private string _buildArchitecture;
         private string _mnaVersion;
 
         public string BuildRID => _buildRID;
+        public string BuildArchitecture => _buildArchitecture;
         public string TargetRID => _targetRID;
         public string MicrosoftNETCoreAppVersion => _mnaVersion;
         public string RepoRoot => _repoRoot;
@@ -47,13 +49,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             
             _targetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
             _buildRID = Environment.GetEnvironmentVariable("BUILDRID");
+            _buildArchitecture = Environment.GetEnvironmentVariable("BUILD_ARCHITECTURE");
             _mnaVersion = Environment.GetEnvironmentVariable("MNA_VERSION");
 
-            _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Debug", "Tools", "dotnetcli");
-            if (!Directory.Exists(_dotnetSDK))
-            {
-                _dotnetSDK = dotnetSdk ?? Path.Combine(baseArtifactsFolder, "tests", _targetRID + ".Release", "Tools", "dotnetcli");
-            }
+            _dotnetSDK = dotnetSdk ?? Environment.GetEnvironmentVariable("DOTNET_SDK_PATH");
+
             if (!Directory.Exists(_dotnetSDK))
             {
                 throw new InvalidOperationException("ERROR: Test SDK folder not found.");

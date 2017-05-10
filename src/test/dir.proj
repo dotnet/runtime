@@ -6,7 +6,6 @@
   <PropertyGroup>
     <BuildTestTargets>
         DetermineTestOutputDirectory;
-        InitBaseDotnetCli;
         RestoreTests;
         BuildTests;
         RunTests;
@@ -25,23 +24,6 @@
       <TestsOutputDir Condition="'$(TestsOutputDir)' == ''">$(BaseOutputPath)tests/$(TestOSPlatformConfig)/</TestsOutputDir>
     </PropertyGroup>
   </Target>
-
-  <!-- We need a version of the Cli that we can plug the host / shared framework into for testing. -->
-  <Target Name="InitBaseDotnetCli"
-          DependsOnTargets="DetermineTestOutputDirectory">
-    <PropertyGroup>
-      <TestToolsLocalPath Condition="'$(TestToolsLocalPath)' == ''">$(TestsOutputDir)Tools</TestToolsLocalPath>
-      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet.exe</DotnetTestToolCommand>
-      <DotnetTestToolCommand Condition="'$(DotnetTestToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(TestToolsLocalPath)/dotnetcli/dotnet</DotnetTestToolCommand>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <SeedCliCopyFiles Include="$(DotnetSdkPath)/**/*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(SeedCliCopyFiles)"
-          DestinationFiles="@(SeedCliCopyFiles->'$(TestToolsLocalPath)/dotnetcli/%(RecursiveDir)%(Filename)%(Extension)')" />
-  </Target>
-
 
   <Target Name="RestoreTests">
     <ItemGroup>
@@ -69,7 +51,7 @@
       <RestorePrefix Condition="'$(OsEnvironment)' != 'Windows_NT'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1</RestorePrefix>
     </PropertyGroup>
 
-    <Exec Command="$(RestorePrefix) $(DotnetTestToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
+    <Exec Command="$(RestorePrefix) $(DotnetSdkToolCommand) restore $(RestoreArgs) %(RestoreTest.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
 
@@ -82,7 +64,7 @@
 
     <Message Text="Building Tests" Importance="High" />
     <Message Importance="High" Text="TestProjects: @(TestProjects)" />
-    <Exec Command="$(DotnetTestToolCommand) build $(BuildArgs) %(TestProjects.Identity)"
+    <Exec Command="$(DotnetSdkToolCommand) build $(BuildArgs) %(TestProjects.Identity)"
           WorkingDirectory="$([System.IO.Path]::GetDirectoryName(%(TestProjects.Identity)))"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir.TrimEnd('/\'.ToCharArray()))" />
   </Target>
@@ -106,9 +88,9 @@
       <IsCrossArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel'">true</IsCrossArch>
       <TestResultsXml>$(TestsOutputDir)$(TestProjectFilename)-testResults.trx</TestResultsXml>
     </PropertyGroup>
-    <Exec Command="$(DotnetTestToolCommand) test $(TestArgs) --logger &quot;trx;LogFileName=$(TestResultsXml)&quot;"
+    <Exec Command="$(DotnetSdkToolCommand) test $(TestArgs) --logger &quot;trx;LogFileName=$(TestResultsXml)&quot;"
           WorkingDirectory="$(TestWorkingDirectory)"
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(TargetRid);MNA_VERSION=$(ProductVersion)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir);TEST_ARTIFACTS=$(SystemPathTestsOutputDir);TEST_TARGETRID=$(TestTargetRid);BUILDRID=$(TargetRid);BUILD_ARCHITECTURE=$(TargetArchitecture);MNA_VERSION=$(ProductVersion);DOTNET_SDK_PATH=$(DotnetSdkPath)"
           Condition="'$(TestProjectFilename)' != 'HostActivationTests' or '$(IsCrossArch)' != 'true'"
           ContinueOnError="true"
           IgnoreStandardErrorWarningFormat="true"
