@@ -461,6 +461,40 @@ namespace System.Net.Tests
                 }
             };
 
+            // Not added if the cookie already exists.
+            yield return new object[]
+            {
+                "cookie: name=value,name=value", new CookieCollection
+                {
+                    new Cookie("name", "value")
+                }
+            };
+
+            yield return new object[]
+            {
+                "cookie: name=value,name=value2", new CookieCollection
+                {
+                    new Cookie("name", "value2")
+                }
+            };
+
+            yield return new object[]
+            {
+                "cookie: name=value,name=value;$port=\"200\"", new CookieCollection
+                {
+                    new Cookie("name", "value") { Port = "\"200\"" }
+                }
+            };
+
+            // Cookie with a greater variant (e.g. Rfc2109) is preferred over a lower variant (e.g. Plain).
+            yield return new object[]
+            {
+                "cookie: name=value;$port=\"200\",name=value", new CookieCollection
+                {
+                    new Cookie("name", "value") { Port = "\"200\"" }
+                }
+            };
+
             yield return new object[]
             {
                 "cookie: name1=value1,name2=value2;name3=value3", new CookieCollection
@@ -471,23 +505,20 @@ namespace System.Net.Tests
                 }
             };
 
-            // [ActiveIssue(18128)] // Hangs on Unix
-            if (PlatformDetection.IsWindows)
+            yield return new object[]
             {
-                yield return new object[]
+                "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
                 {
-                    "cookie: name=value;$port=\"80\";$Path=path;$Domain=domain", new CookieCollection
-                    {
-                        new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
-                    }
-                };
+                    new Cookie("name", "value") { Port = "\"80\"", Path = "path", Domain = "domain" }
+                }
+            };
 
-                yield return new object[] { "cookie: =value", new CookieCollection() };
-            }
+            yield return new object[] { "cookie: =value", new CookieCollection() };
 
             yield return new object[] { "cookie: $Path", new CookieCollection() };
             yield return new object[] { "cookie: $Domain", new CookieCollection() };
             yield return new object[] { "cookie: $Port", new CookieCollection() };
+
             yield return new object[]
             {
                 "cookie:name=value; domain=.domain.com", new CookieCollection
@@ -512,7 +543,6 @@ namespace System.Net.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(Cookies_TestData))]
-        [ActiveIssue(18486, TestPlatforms.Windows)]
         public async Task Cookies_GetProperty_ReturnsExpected(string cookieString, CookieCollection expected)
         {
             await GetRequest("POST", null, new[] { cookieString }, (_, request) =>

@@ -63,8 +63,20 @@
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieComparer.cs">
+      <Link>Common\System\Net\CookieComparer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieFields.cs">
+      <Link>Common\System\Net\CookieFields.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieParser.cs">
+      <Link>Common\System\Net\CookieParser.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
       <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
