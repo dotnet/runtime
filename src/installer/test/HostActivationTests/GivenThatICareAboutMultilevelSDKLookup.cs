@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.DotNet.InternalAbstractions;
@@ -8,6 +9,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
 {
     public class GivenThatICareAboutMultilevelSDKLookup
     {
+        private static IDictionary<string, string> s_DefaultEnvironment = new Dictionary<string, string>()
+        {
+            {"COREHOST_TRACE", "1" },
+            // The SDK being used may be crossgen'd for a different architecture than we are building for.
+            // Turn off ready to run, so an x64 crossgen'd SDK can be loaded in an x86 process.
+            {"COMPlus_ReadyToRun", "0" },
+        };
+
         private RepoDirectoriesProvider RepoDirectories;
         private TestProjectFixture PreviouslyBuiltAndRestoredPortableTestProjectFixture;
 
@@ -47,9 +56,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // we'll need to build from it. The CopyDirectory method automatically creates the dest dir
             CopyDirectory(builtDotnet, _executableDir);
 
+            RepoDirectories = new RepoDirectoriesProvider(builtDotnet: _executableDir);
+
             // SdkBaseDirs contain all available version folders
             _cwdSdkBaseDir = Path.Combine(_currentWorkingDir, "sdk");
-            _userSdkBaseDir = Path.Combine(_userDir, ".dotnet", RuntimeEnvironment.RuntimeArchitecture, "sdk");
+            _userSdkBaseDir = Path.Combine(_userDir, ".dotnet", RepoDirectories.BuildArchitecture, "sdk");
             _exeSdkBaseDir = Path.Combine(_executableDir, "sdk");
 
             // Create directories
@@ -58,7 +69,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             Directory.CreateDirectory(_exeSdkBaseDir);
 
             // Restore and build PortableApp from exe dir
-            RepoDirectories = new RepoDirectoriesProvider(builtDotnet: _executableDir);
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
                 .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
@@ -105,7 +115,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -125,7 +135,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -145,7 +155,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -181,7 +191,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -202,7 +212,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -234,7 +244,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -254,7 +264,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -274,7 +284,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -294,7 +304,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -314,7 +324,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Environment(s_DefaultEnvironment)
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
