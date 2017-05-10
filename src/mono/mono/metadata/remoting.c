@@ -671,8 +671,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	int i, j, param_index, copy_locals_base;
 	MonoClass *ret_class = NULL;
 	int loc_array=0, loc_return=0, loc_serialized_exc=0;
-	MonoExceptionClause *main_clause;
-	int pos, pos_leave;
+	MonoExceptionClause *clauses, *main_clause, *serialization_clause;
+	int pos, pos_leave, pos_leave_serialization;
 	gboolean copy_return;
 	WrapperInfo *info;
 
@@ -714,7 +714,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	/* try */
 
-	main_clause = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, sizeof (MonoExceptionClause));
+	clauses = (MonoExceptionClause *)mono_image_alloc0 (method->klass->image, 2 * sizeof (MonoExceptionClause));
+	main_clause = &clauses [0];
 	main_clause->try_offset = mono_mb_get_label (mb);
 
 	/* Clean the call context */
@@ -894,15 +895,48 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	
 	/* handler code */
 	main_clause->handler_offset = mono_mb_get_label (mb);
+
+	/*
+	 * We deserialize the exception in another try-catch so we can catch
+	 * serialization failure exceptions.
+	 */
+	serialization_clause = &clauses [1];
+	serialization_clause->try_offset = mono_mb_get_label (mb);
+
+	mono_mb_emit_managed_call (mb, method_rs_serialize_exc, NULL);
+	mono_mb_emit_stloc (mb, loc_serialized_exc);
+	mono_mb_emit_ldarg (mb, 2);
+	mono_mb_emit_ldloc (mb, loc_serialized_exc);
+	mono_mb_emit_byte (mb, CEE_STIND_REF);
+	pos_leave_serialization = mono_mb_emit_branch (mb, CEE_LEAVE);
+
+	/* Serialization exception catch */
+	serialization_clause->flags = MONO_EXCEPTION_CLAUSE_NONE;
+	serialization_clause->try_len = mono_mb_get_pos (mb) - serialization_clause->try_offset;
+	serialization_clause->data.catch_class = mono_defaults.object_class;
+
+	/* handler code */
+	serialization_clause->handler_offset = mono_mb_get_label (mb);
+
+	/*
+	 * If the serialization of the original exception failed we serialize the newly
+	 * thrown exception, which should always succeed, passing it over to the calling
+	 * domain.
+	 */
 	mono_mb_emit_managed_call (mb, method_rs_serialize_exc, NULL);
 	mono_mb_emit_stloc (mb, loc_serialized_exc);
 	mono_mb_emit_ldarg (mb, 2);
 	mono_mb_emit_ldloc (mb, loc_serialized_exc);
 	mono_mb_emit_byte (mb, CEE_STIND_REF);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
-	main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
-	/* end catch */
 
+	/* end serialization exception catch */
+	serialization_clause->handler_len = mono_mb_get_pos (mb) - serialization_clause->handler_offset;
+	mono_mb_patch_branch (mb, pos_leave_serialization);
+
+	mono_mb_emit_branch (mb, CEE_LEAVE);
+	/* end main catch */
+	main_clause->handler_len = mono_mb_get_pos (mb) - main_clause->handler_offset;
 	mono_mb_patch_branch (mb, pos_leave);
 	
 	if (copy_return)
@@ -910,7 +944,7 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 
 	mono_mb_emit_byte (mb, CEE_RET);
 
-	mono_mb_set_clauses (mb, 1, main_clause);
+	mono_mb_set_clauses (mb, 2, clauses);
 #endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
