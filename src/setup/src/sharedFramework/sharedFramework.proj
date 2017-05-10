@@ -23,7 +23,7 @@
     
     <PropertyGroup>
       <SharedFrameworkSourceRoot>$(MSBuildThisFileDirectory)framework</SharedFrameworkSourceRoot>
-      <CommonSharedFrameworkArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(TargetRid) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
+      <CommonSharedFrameworkArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
     </PropertyGroup>  
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
@@ -126,48 +126,19 @@
   </Target>
 
   <Target Name="RestoreLockedCoreHost">
-    <ItemGroup>
-      <ProjJsonLines Include='{' />
-      <ProjJsonLines Include='  "dependencies": {' />
-      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHostResolver"  :  "$(HostResolverVersion)",' />
-      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHost"  :  "$(HostVersion)"' />
-      <ProjJsonLines Include='  },' />
-      <ProjJsonLines Include='  "frameworks": {' />
-      <ProjJsonLines Include='    "$(Framework)": {}' />
-      <ProjJsonLines Include='  },' />
-      <ProjJsonLines Include='  "runtimes": {' />
-      <ProjJsonLines Include='    "$(PackageTargetRid)": {}' />
-      <ProjJsonLines Include='  }' />
-      <ProjJsonLines Include='}' />
-    </ItemGroup>
-
     <PropertyGroup>
-      <JsonDir>$(IntermediateOutputRootPath)lockedHostTemp</JsonDir>
-    </PropertyGroup>
-
-    <MakeDir Condition="!Exists('$(JsonDir)')" Directories="$(JsonDir)" />
-
-    <WriteLinesToFile
-      File="$(JsonDir)\project.json"
-      Lines="@(ProjJsonLines)"
-      Overwrite="true" />
-    
-    <PropertyGroup>
-      <RestoreArgs>--source https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json --fallbacksource $(PackagesOutDir) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))"</RestoreArgs>
-    </PropertyGroup>  
-
-    <Exec Command="$(DotnetToolCommand) restore --verbosity verbose $(RestoreArgs)"
-          WorkingDirectory="$(JsonDir)"
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
-
-    <PropertyGroup>
-      <PublishArgs>--output $(CoreHostLockedDir) --no-build -r $(PackageTargetRid)</PublishArgs>
+      <LockedHostSourceRoot>$(MSBuildThisFileDirectory)lockedhost</LockedHostSourceRoot>
+      <CommonLockedHostArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid) /p:HostResolverVersion=$(HostResolverVersion) /p:HostVersion=$(HostVersion)</CommonLockedHostArgs>
     </PropertyGroup>
 
     <RemoveDir Directories="$(CoreHostLockedDir)" />
 
-    <Exec Command="$(DotnetToolCommand) publish $(PublishArgs)"
-          WorkingDirectory="$(JsonDir)"
+    <Exec Command="$(SdkRestoreCommand) --source $(PackagesOutDir) $(CommonLockedHostArgs)"
+          WorkingDirectory="$(LockedHostSourceRoot)" />
+
+
+    <Exec Command="$(DotnetSdkToolCommand) publish --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
+          WorkingDirectory="$(LockedHostSourceRoot)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
   </Target>
 
