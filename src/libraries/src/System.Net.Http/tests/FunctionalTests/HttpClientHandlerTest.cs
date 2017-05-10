@@ -950,7 +950,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(18864)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx's ConnectStream.ReadAsync tries to read beyond data already buffered, causing hangs #18864")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
