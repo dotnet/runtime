@@ -159,7 +159,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
+        "arguments": "run --rm $(PB_CrossBuildArgs)$(DockerCommonRunArgs) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -333,6 +333,13 @@
     },
     "SourceVersion": {
       "value": "HEAD"
+    },
+    "ROOTFS_DIR": {
+      "value": "/crossrootfs/$(PB_TargetArchitecture)"
+    },
+    "PB_CrossBuildArgs": {
+      "value": "",
+      "allowOverride": true
     },
     "DockerCommonRunArgs": {
       "value": "--name $(PB_DockerContainerName) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -w=\"$(PB_GitDirectory)\" $(PB_DockerImageName)"
