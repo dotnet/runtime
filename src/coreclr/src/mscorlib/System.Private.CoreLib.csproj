@@ -566,6 +566,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
     <Compile Condition="'$(FeatureXplatEventSource)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
+    <Compile Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />

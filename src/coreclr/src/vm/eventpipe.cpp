@@ -184,8 +184,10 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
         length);
 
     // Write to the EventPipeFile.
-    _ASSERTE(s_pFile != NULL);
-    s_pFile->WriteEvent(instance);
+    if(s_pFile != NULL)
+    {
+        s_pFile->WriteEvent(instance);
+    }
 
     // Write to the EventPipeJsonFile if it exists.
     if(s_pJsonFile != NULL)
@@ -304,6 +306,69 @@ CrstStatic* EventPipe::GetLock()
     LIMITED_METHOD_CONTRACT;
 
     return &s_configCrst;
+}
+
+INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
+    GUID providerID,
+    EventPipeCallback pCallbackFunc)
+{
+    QCALL_CONTRACT;
+
+    EventPipeProvider *pProvider = NULL;
+
+    BEGIN_QCALL;
+
+    pProvider = new EventPipeProvider(providerID, pCallbackFunc, NULL);
+
+    END_QCALL;
+
+    return reinterpret_cast<INT_PTR>(pProvider);
+}
+
+INT_PTR QCALLTYPE EventPipeInternal::AddEvent(
+    INT_PTR provHandle,
+    __int64 keywords,
+    unsigned int eventID,
+    unsigned int eventVersion,
+    unsigned int level,
+    bool needStack)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    // TODO
+
+    END_QCALL;
+
+    return 0;
+}
+
+void QCALLTYPE EventPipeInternal::DeleteProvider(
+    INT_PTR provHandle)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    if(provHandle != NULL)
+    {
+        EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider*>(provHandle);
+        delete pProvider;
+    }
+
+    END_QCALL;
+}
+
+void QCALLTYPE EventPipeInternal::WriteEvent(
+    INT_PTR eventHandle,
+    void *pData,
+    unsigned int length)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    // TODO
+
+    END_QCALL;
 }
 
 #endif // FEATURE_PERFTRACING

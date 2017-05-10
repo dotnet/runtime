@@ -10,7 +10,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeProvider::EventPipeProvider(const GUID &providerID)
+EventPipeProvider::EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
     {
@@ -25,8 +25,8 @@ EventPipeProvider::EventPipeProvider(const GUID &providerID)
     m_keywords = 0;
     m_providerLevel = EventPipeEventLevel::Critical;
     m_pEventList = new SList<SListElem<EventPipeEvent*>>();
-    m_pCallbackFunction = NULL;
-    m_pCallbackData = NULL;
+    m_pCallbackFunction = pCallbackFunction;
+    m_pCallbackData = pCallbackData;
 
     // Register the provider.
     EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
@@ -165,46 +165,6 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     m_pEventList->InsertTail(new SListElem<EventPipeEvent*>(&event));
 }
 
-void EventPipeProvider::RegisterCallback(EventPipeCallback pCallbackFunction, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Take the config lock before setting the callback.
-    CrstHolder _crst(EventPipe::GetLock());
-
-    if(m_pCallbackFunction == NULL)
-    {
-        m_pCallbackFunction = pCallbackFunction;
-        m_pCallbackData = pData;
-    }
-}
-
-void EventPipeProvider::UnregisterCallback(EventPipeCallback pCallbackFunction)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Take the config lock before setting the callback.
-    CrstHolder _crst(EventPipe::GetLock());
-
-    if(m_pCallbackFunction == pCallbackFunction)
-    {
-        m_pCallbackFunction = NULL;
-        m_pCallbackData = NULL;
-    }
-}
-
 void EventPipeProvider::InvokeCallback()
 {
     CONTRACTL
@@ -216,7 +176,7 @@ void EventPipeProvider::InvokeCallback()
     }
     CONTRACTL_END;
 
-    if(m_pCallbackFunction != NULL)
+    if(m_pCallbackFunction != NULL && !g_fEEShutDown)
     {
         (*m_pCallbackFunction)(
             &m_providerID,
