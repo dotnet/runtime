@@ -117,7 +117,8 @@
     <ProcessSharedFrameworkDeps AssetsFilePath="$(SharedFrameworkAssetsFile)"
                                 DepsFilePath="$(SharedFrameworkDepsFile)"
                                 PackagesToRemove="@(TrimPkgsFromDeps)"
-                                Runtime="$(RuntimeGraphGeneratorRuntime)" />
+                                Runtime="$(RuntimeGraphGeneratorRuntime)"
+                                BuildToolsTaskDir="$(BuildToolsTaskDir)" />
   </Target>
 
   <Target Name="RestoreLockedCoreHost">
