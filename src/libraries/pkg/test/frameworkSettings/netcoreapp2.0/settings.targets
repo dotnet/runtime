@@ -4,13 +4,6 @@
     <!-- XDocumentExtensions is duplicated -->
     <IgnoredTypes Include="System.Xml.XPath.XDocumentExtensions" />
 
-    <!-- Overlapped types are duplicated -->
-    <IgnoredTypes Include="System.Threading.IOCompletionCallback" />
-    <IgnoredTypes Include="System.Threading.NativeOverlapped" />
-    <IgnoredTypes Include="System.Threading.Overlapped" />
-    <IgnoredTypes Include="System.Threading.PreAllocatedOverlapped" />
-    <IgnoredTypes Include="System.Threading.ThreadPoolBoundHandle" />
-
     <IgnoredTypes Include="System.DBNull" />
   </ItemGroup>
 </Project>
