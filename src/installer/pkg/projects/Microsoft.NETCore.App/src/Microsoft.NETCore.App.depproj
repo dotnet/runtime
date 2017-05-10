@@ -74,6 +74,44 @@
     <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
   </Target>
 
+  <Target Name="GenerateHashVersionsFile" DependsOnTargets="GetPackagePaths;ResolveNuGetPackages">
+    <PropertyGroup>
+      <CoreFxVersionFile 
+        Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))">
+          $(PackagesDir)%(Reference.NuGetPackageId)/%(Reference.NuGetPackageVersion)/version.txt
+      </CoreFxVersionFile>
+      <CoreClrVersionFile Condition="'$(NuGetRuntimeIdentifier)' != ''">
+          $(_runtimePackagePath)/version.txt
+      </CoreClrVersionFile>
+    </PropertyGroup>
+    <ReadLinesFromFile File="$(CoreFxVersionFile)" Condition="Exists('$(CoreFxVersionFile)')">
+      <Output TaskParameter="Lines" PropertyName="CoreFxHash" />
+    </ReadLinesFromFile>
+    <ReadLinesFromFile File="$(CoreClrVersionFile)" Condition="Exists('$(CoreClrVersionFile)')">
+      <Output TaskParameter="Lines" PropertyName="CoreClrHash" />
+    </ReadLinesFromFile>
+
+    <Error Condition="!Exists('$(CoreFxVersionFile)')" Text="Failed to find the corefx version.txt file at $(CoreFxVersionFile)" />
+
+    <ItemGroup>
+      <_VersionsFileLines Include="core-setup $(LatestCommit)" />
+      <_VersionsFileLines Include="corefx $(CoreFxHash)" />
+      <_VersionsFileLines Include="dotnet/versions/corefx $(CoreFxCurrentRef)" />
+      <_VersionsFileLines Include="coreclr $(CoreClrHash)" Condition="'$(CoreClrHash)'!=''" />
+      <_VersionsFileLines Include="dotnet/versions/coreclr $(CoreClrCurrentRef)" Condition="'$(CoreClrHash)'!=''" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(_VersionsFileLines)"
+                       File="$(IntermediateOutputPath)\Microsoft.NETCore.App.versions.txt"
+                       Overwrite="true"/>
+  </Target>
+
+  <ItemGroup>
+    <FilesToPackage Include="$(IntermediateOutputPath)\Microsoft.NETCore.App.versions.txt">
+      <TargetPath></TargetPath>
+    </FilesToPackage>
+  </ItemGroup>
+
   <!-- Fetches all the file items from the packages that we want to redist -->
   <Target Name="GetFilesFromPackages" DependsOnTargets="GetPackagePaths">
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
@@ -218,7 +256,7 @@
   </Target>
  
   <!-- Run crossgen -->
-  <Target Name="Build" DependsOnTargets="CrossGen;GetFilesToPackage" />
+  <Target Name="Build" DependsOnTargets="GenerateHashVersionsFile;CrossGen;GetFilesToPackage" />
   
   <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
   <Target Name="DetermineRuntimeDependencies" />
