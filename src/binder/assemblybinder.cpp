@@ -689,11 +689,11 @@ namespace BINDER_SPACE
         sCoreLib = sCoreLibDir;
         sCoreLib.Append(CoreLibName_IL_W);
         BOOL fExplicitBindToNativeImage = (fBindToNativeImage == true)? TRUE:FALSE;
-#if defined(FEATURE_PAL) && !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
+#ifdef FEATURE_NI_BIND_FALLBACK
         // Some non-Windows platforms do not automatically generate the NI image as CoreLib.dll.
         // If those platforms also do not support automatic fallback from NI to IL, bind as IL.
         fExplicitBindToNativeImage = FALSE;
-#endif // defined(FEATURE_PAL) && !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
+#endif // FEATURE_NI_BIND_FALLBACK
         IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
                                                    FALSE /* fInspectionOnly */,
                                                    TRUE /* fIsInGAC */,
