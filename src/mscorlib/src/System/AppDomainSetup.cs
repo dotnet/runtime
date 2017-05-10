@@ -338,18 +338,6 @@ namespace System
             }
         }
 
-        static internal int Locate(String s)
-        {
-            if (String.IsNullOrEmpty(s))
-                return -1;
-
-            Debug.Assert('A' == ACTAG_APP_BASE_URL[0], "Assumption violated");
-            if (s[0] == 'A' && s == ACTAG_APP_BASE_URL)
-                return (int)LoaderInformation.ApplicationBaseValue;
-
-            return -1;
-        }
-
 #if FEATURE_COMINTEROP
         public bool SandboxInterop
         {
