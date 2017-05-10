@@ -10,7 +10,7 @@
     <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
     <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
     
-    <HostFxrDebPkgName>dotnet-hostfxr-$(HostVersion)</HostFxrDebPkgName>
+    <HostFxrDebPkgName>dotnet-hostfxr-$(HostResolverVersion)</HostFxrDebPkgName>
     <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
     
     <SharedFxDebPkgName>dotnet-sharedframework-$(SharedFrameworkName)-$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>

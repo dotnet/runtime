@@ -83,7 +83,7 @@
 
     <WriteLinesToFile
       File="$(OutputVersionBadge)"
-      Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(HostVersion)'))"
+      Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(ProductVersion)'))"
       Overwrite="true"
                       />
   </Target>

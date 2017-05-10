@@ -57,11 +57,11 @@
     <Move SourceFiles="$(SharedFrameworkNameAndVersionRoot)\framework.deps.json" 
           DestinationFiles="$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json" />
     
-    <!-- Copy Muxer -->
+    <!-- Use the muxer we intended to consume (either restored a shipped version or the one we built) -->
     <Copy SourceFiles="$(CoreHostLockedDir)dotnet$(ExeSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)" />
 
-    <!--  CopyHostFxrToVersionedDirectory -->
-    <Copy SourceFiles="$(CoreHostLockedDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)\host\fxr\$(HostVersion)" />
+    <!--  Use the FXR Resolver we intended to consume (either restored a shipped version or the one we built) -->
+    <Copy SourceFiles="$(CoreHostLockedDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)\host\fxr\$(HostResolverVersion)" />
 
     <!-- Copy symbols to publish folder -->
     <ItemGroup>
@@ -80,7 +80,7 @@
     <!-- Generate .version file -->
     <ItemGroup>
       <VersionLines Include="$(LatestCommit)" />
-      <VersionLines Include="$(HostFullVersion)" />
+      <VersionLines Include="$(SharedFrameworkNugetVersion)" />
     </ItemGroup>
 
     <WriteLinesToFile
@@ -89,6 +89,10 @@
       Overwrite="true" />
   </Target>
 
+  <!-- TODO: Why do we need to have this is M.N.App references the expected version? However,
+             I have noticed that without this, M.N.App publish results in having an older (1.1.x)
+             hostpolicy binary.
+  -->
   <Target Name="CopyHostArtifactsToSharedFramework">
     <ItemGroup>
       <!-- Hostpolicy should be the latest and not the locked version as it is supposed to evolve for -->
@@ -125,8 +129,8 @@
     <ItemGroup>
       <ProjJsonLines Include='{' />
       <ProjJsonLines Include='  "dependencies": {' />
-      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHostResolver"  :  "$(HostFullVersion)",' />
-      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHost"  :  "$(HostFullVersion)"' />
+      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHostResolver"  :  "$(HostResolverVersion)",' />
+      <ProjJsonLines Include='    "Microsoft.NETCore.DotNetHost"  :  "$(HostVersion)"' />
       <ProjJsonLines Include='  },' />
       <ProjJsonLines Include='  "frameworks": {' />
       <ProjJsonLines Include='    "$(Framework)": {}' />

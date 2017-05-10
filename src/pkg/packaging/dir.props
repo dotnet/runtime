@@ -13,12 +13,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ProductMoniker>$(PackageTargetRid).$(HostFullVersion)</ProductMoniker>
+    <ProductMoniker>$(PackageTargetRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
     <CombinedCompressedFile>dotnet-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
-    <HostFxrCompressedFile>dotnet-hostfxr-$(ProductMoniker)$(CompressedFileExtension)</HostFxrCompressedFile>
+    <HostFxrCompressedFile>dotnet-hostfxr-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
     <SharedFrameworkCompressedFile>dotnet-sharedframework-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
     <SharedFrameworkSymbolsCompressedFile>dotnet-sharedframework-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
   </PropertyGroup>
@@ -27,7 +27,7 @@
     <CombinedInstallerFile>$(PackagesOutDir)dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
     <CombinedInstallerEngine>$(PackagesOutDir)dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
     <SharedHostInstallerFile>$(PackagesOutDir)dotnet-host-$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile>$(PackagesOutDir)dotnet-hostfxr-$(ProductMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+    <HostFxrInstallerFile>$(PackagesOutDir)dotnet-hostfxr-$(PackageTargetRid).$(HostResolverVersion)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(PackagesOutDir)dotnet-sharedframework-$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
   </PropertyGroup>
 
