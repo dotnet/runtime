@@ -39,7 +39,7 @@
 
     <PropertyGroup>
         <InstallLocation>/usr/local/share/dotnet</InstallLocation>
-        <CommonArgs>--version $(HostVersion) --install-location $(InstallLocation)</CommonArgs>
+        <CommonArgs>--version $(SharedFrameworkNugetVersion) --install-location $(InstallLocation)</CommonArgs>
     </PropertyGroup>
 
     <Exec Command="pkgbuild --root %(OSXPackages.Root) --identifier %(OSXPackages.Id)  $(CommonArgs) --scripts %(OSXPackages.Script) %(OSXPackages.OutFile)" />
@@ -60,7 +60,7 @@
       <ConfigPattern Include="{SharedHostComponentId}" /> <ConfigReplace Include="$(SharedHostComponentId)" />
       <ConfigPattern Include="{HostFxrComponentId}" /> <ConfigReplace Include="$(HostFxrComponentId)" />
       <ConfigPattern Include="{SharedFrameworkNugetName}" /> <ConfigReplace Include="$(SharedFrameworkName)'" />
-      <ConfigPattern Include="{SharedFrameworkNugetVersion}" /> <ConfigReplace Include="$(HostVersion)" />
+      <ConfigPattern Include="{SharedFrameworkNugetVersion}" /> <ConfigReplace Include="$(SharedFrameworkNugetVersion)" />
       <ConfigPattern Include="{SharedFxBrandName}" /> <ConfigReplace Include="$(SharedFrameworkBrandName)" />
       <ConfigPattern Include="{SharedHostBrandName}" /> <ConfigReplace Include="$(SharedHostBrandName)" />
       <ConfigPattern Include="{HostFxrBrandName}" /> <ConfigReplace Include="$(HostFxrBrandName)" />      
@@ -72,7 +72,7 @@
         ReplacementPatterns="@(ConfigPattern)"
         ReplacementStrings="@(ConfigReplace)" />
     
-    <Exec Command="productbuild --version $(HostVersion) --identifier $(SharedPackageId) --package-path $(PackagesIntermediateDir) --resources $(ResourcePath) --distribution $(DistributionFile) $(OutFilePath)" />
+    <Exec Command="productbuild --version $(ProductVersion) --identifier $(SharedPackageId) --package-path $(PackagesIntermediateDir) --resources $(ResourcePath) --distribution $(DistributionFile) $(OutFilePath)" />
   </Target>
 
 </Project>

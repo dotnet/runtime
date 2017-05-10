@@ -4,7 +4,9 @@
   <Import Project="..\..\dir.targets" />
   <Import Project="..\..\dir.traversal.targets" />
 
-  <!-- Target that builds dotnet, hostfxr and hostpolicy -->
+  <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
+       since the build produced artifacts should always version the same (even if they may not get used).
+  -->
   <Target Name="Build" DependsOnTargets="BuildCoreHostUnix;BuildCoreHostWindows" /> 
 
 
@@ -12,7 +14,7 @@
           Condition="'$(OSGroup)' != 'Windows_NT'"
           DependsOnTargets="GetLatestCommitHash">
     <PropertyGroup>
-      <BuildArgs>--arch $(TargetArchitecture) --apphostver $(HostVersion) --hostver $(HostVersion) --fxrver $(HostVersion) --policyver $(HostVersion) --commithash $(LatestCommit)</BuildArgs>
+      <BuildArgs>--arch $(TargetArchitecture) --apphostver $(AppHostVersion) --hostver $(HostVersion) --fxrver $(HostResolverVersion) --policyver $(HostPolicyVersion) --commithash $(LatestCommit)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) -portable</BuildArgs>     
     </PropertyGroup>
     
@@ -42,7 +44,7 @@
              Properties="GenerateNativeVersionInfo=true;AssemblyName=%(HostFiles.Identity);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
              Targets="GenerateVersionHeader" />
     <PropertyGroup>
-      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) version $(HostVersion) commit $(LatestCommit) rid $(TargetRid)</BuildArgs>
+      <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(TargetRid)</BuildArgs>
       <CustomNativeToolsetDir Condition="'$(TargetArchitecture)' == 'arm64'"> toolsetdir $(NativeToolsetDir)</CustomNativeToolsetDir>      
     </PropertyGroup>
 

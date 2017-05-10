@@ -29,7 +29,10 @@ if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&sh
 
 if /i [%1] == [rid]         ( set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [toolsetDir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [version] (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [hostver] (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [apphostver] (set __AppHostVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [fxrver] (set __HostResolverVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [policyver] (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [commit] (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
 shift
@@ -103,9 +106,9 @@ if /i "%__BuildArch%" == "arm64" (
     call :PrivateToolSet
 )
 
-echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 %__VSVersion% %__BuildArch% %__HostVersion% %__CommitSha%"
+echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%"
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__VSVersion% %__BuildArch% %__HostVersion% %__CommitSha%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%
 popd
 
 :CheckForProj

@@ -5,7 +5,6 @@
   <PropertyGroup>
     <Platform>$(TargetArchitecture)</Platform>
     <DotNetHostBinDir>$(BaseOutputRootPath)corehost</DotNetHostBinDir>
-    <EnsureStableVersion>$(StabilizePackageVersion)</EnsureStableVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -35,13 +34,13 @@
   </ItemGroup>
 
   <Target Name="ValidateArgs" Condition="'$(CLIBuildVersion)'==''">
-    <Error Condition="'$(EnsureStableVersion)'==''" Text="EnsureStableVersion is undefined" />
     <Error Condition="'$(HostPolicyVersion)'==''" Text="HostPolicyVersion is undefined" />
     <Error Condition="'$(HostResolverVersion)'==''" Text="HostResolverVersion is undefined" />
     <Error Condition="'$(HostVersion)'==''" Text="HostVersion is undefined" />
+    <Error Condition="'$(AppHostVersion)'==''" Text="AppHostVersion is undefined" />
   </Target>
 
-  <Target Name="ValidatePreReleaseStrings" Condition="'$(EnsureStableVersion)'=='false'">
+  <Target Name="ValidatePreReleaseStrings" Condition="'$(StabilizePackageVersion)'!='true'">
     <Error Condition="'$(PreReleaseLabel)'==''" Text="PreReleaseLabel is undefined" />
     <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
     <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
