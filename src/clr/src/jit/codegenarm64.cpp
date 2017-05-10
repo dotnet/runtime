@@ -2522,6 +2522,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 
     genConsumeOperands(initBlkNode);
 
+    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before volatile an initBlockUnroll operation
+        instGen_MemoryBarrier();
+    }
+
     regNumber valReg = initVal->IsIntegralConst(0) ? REG_ZR : initVal->gtRegNum;
 
     assert(!initVal->IsIntegralConst(0) || (valReg == REG_ZR));
@@ -2660,6 +2666,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     emitter* emit = getEmitter();
 
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpBlkUnroll operation
+        instGen_MemoryBarrier();
+    }
+
     if (source->gtOper == GT_IND)
     {
         srcAddr = source->gtGetOp1();
@@ -2737,6 +2749,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
             genCodeForLoadOffset(INS_ldrb, EA_1BYTE, tmpReg, srcAddr, offset);
             genCodeForStoreOffset(INS_strb, EA_1BYTE, tmpReg, dstAddr, offset);
         }
+    }
+
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpBlkUnroll operation
+        instGen_MemoryBarrier();
     }
 }
 
@@ -2816,6 +2834,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
+    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpObj operation
+        instGen_MemoryBarrier();
+    }
+
     emitter* emit = getEmitter();
 
     BYTE* gcPtrs = cpObjNode->gtGcPtrs;
@@ -2886,6 +2910,12 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             ++i;
         }
         assert(gcPtrCount == 0);
+    }
+
+    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpObj operation
+        instGen_MemoryBarrier();
     }
 
     // Clear the gcInfo for REG_WRITE_BARRIER_SRC_BYREF and REG_WRITE_BARRIER_DST_BYREF.
@@ -3558,6 +3588,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         {
             assert(!data->isContained());
             dataReg = data->gtRegNum;
+        }
+
+        if (tree->gtFlags & GTF_IND_VOLATILE)
+        {
+            // issue a full memory barrier a before volatile StInd
+            instGen_MemoryBarrier();
         }
 
         emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), dataReg, tree);
