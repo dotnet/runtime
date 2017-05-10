@@ -4,7 +4,7 @@
       "description": "OS Group for result binaries.",
       "valueType": "property",
       "values": ["Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
-      "defaultValue": "Windows_NT"
+      "defaultValue": "${OSName}"
      },
     "RestoreDuringBuild": {
       "description": "Enables/Disables the restoration of packages.",
@@ -34,7 +34,7 @@
       "description": "Specifies the distro rid for Unix OS.",
       "valueType": "property",
       "values": [],
-      "defaultValue": "${OSRid}"
+      "defaultValue": "${OSRid}-${CPUArch}"
     },
     "TargetArchitecture":{
       "description": "Build for the specified architecture (x64, x86 (supported only on Windows), arm, or arm64, default: x64)",
