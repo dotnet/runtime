@@ -58,7 +58,6 @@
     <Compile Include="System\Xml\Linq\XText.cs" />
     <Compile Include="System\Xml\Schema\XNodeValidator.cs" />
     <Compile Include="System\Xml\XPath\XAttributeExtensions.cs" />
-    <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
     <Compile Include="System\Xml\XPath\XNodeNavigator.cs" />
     <Compile Include="System\Xml\XPath\XObjectExtensions.cs" />
   </ItemGroup>
