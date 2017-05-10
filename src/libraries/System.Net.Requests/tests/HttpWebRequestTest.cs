@@ -121,6 +121,7 @@ namespace System.Net.Tests
             Assert.True(request.AllowReadStreamBuffering);
         }
 
+        [OuterLoop]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(Uri remoteServer)
         {
@@ -135,14 +136,19 @@ namespace System.Net.Tests
             }               
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void ContentLength_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task ContentLength_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.ContentLength = 255);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.ContentLength = 255);
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -178,14 +184,19 @@ namespace System.Net.Tests
             Assert.Null(request.ContentType);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void MaximumResponseHeadersLength_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task MaximumResponseHeadersLength_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.MaximumResponseHeadersLength = 255);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.MaximumResponseHeadersLength = 255);
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -221,14 +232,19 @@ namespace System.Net.Tests
             Assert.Equal(MaximumAutomaticRedirections, request.MaximumAutomaticRedirections);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void ContinueTimeout_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task ContinueTimeout_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.ContinueTimeout = 255);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.ContinueTimeout = 255);
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -301,7 +317,8 @@ namespace System.Net.Tests
                 var sw = Stopwatch.StartNew();
                 WebException exception = Assert.Throws<WebException>(() =>
                 {
-                    var response = (HttpWebResponse)request.GetResponse();
+                    var response = request.GetResponse();
+                    response.Dispose();
                 });
                 
                 sw.Stop();
@@ -331,14 +348,19 @@ namespace System.Net.Tests
             Assert.Equal(UserAgent, request.UserAgent);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void Host_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task Host_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.Host = "localhost");
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.Host = "localhost");
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -458,7 +480,7 @@ namespace System.Net.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19225")]
         public void KeepAlive_CorrectConnectionHeaderSent(bool? keepAlive)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
+            HttpWebRequest request = WebRequest.CreateHttp(Test.Common.Configuration.Http.RemoteEchoServer);
 
             if (keepAlive.HasValue)
             {
@@ -483,14 +505,19 @@ namespace System.Net.Tests
             }
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void AutomaticDecompression_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task AutomaticDecompression_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.AutomaticDecompression = DecompressionMethods.Deflate);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.AutomaticDecompression = DecompressionMethods.Deflate);
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -692,14 +719,19 @@ namespace System.Net.Tests
             Assert.Equal(date, request.Date);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void SendChunked_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task SendChunked_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.SendChunked = true);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.SendChunked = true);
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1039,7 +1071,8 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.UseDefaultCredentials = true;
-            await request.GetResponseAsync();
+            var response = await request.GetResponseAsync();
+            response.Dispose();
         }
 
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
@@ -1075,14 +1108,19 @@ namespace System.Net.Tests
             }
         }
 
-        [MemberData(nameof(EchoServers))]
-        public void Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.Headers = null);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.Headers = null);
+                }
+            });
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
@@ -1123,15 +1161,19 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentException>("value", () => request.Method = "Method(2");
         }
 
-        [OuterLoop]
-        [Theory, MemberData(nameof(EchoServers))]
-        public void Proxy_SetAfterRequestSubmitted_ThrowsInvalidOperationException(Uri remoteServer)
+        [Fact]
+        public async Task Proxy_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (var response = (HttpWebResponse)request.GetResponse())
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
-                Assert.Throws<InvalidOperationException>(() => request.Proxy = WebRequest.DefaultWebProxy);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                Task<WebResponse> getResponse = request.GetResponseAsync();
+                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                using (WebResponse response = await getResponse)
+                {
+                    Assert.Throws<InvalidOperationException>(() => request.Proxy = WebRequest.DefaultWebProxy);
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]

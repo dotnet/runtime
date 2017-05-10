@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Tests hang on .NET Framework")]
     public class RequestStreamTest
     {
         readonly byte[] buffer = new byte[1];
@@ -62,7 +63,7 @@ namespace System.Net.Tests
             }
         }
 
-        #endregion
+#endregion
 
         #region WriteAsync
 
@@ -223,7 +224,7 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
             request.Method = "POST";
-            return request.GetRequestStreamAsync().GetAwaiter().GetResult();
+            return request.GetRequestStream();
         }
     }
 }
