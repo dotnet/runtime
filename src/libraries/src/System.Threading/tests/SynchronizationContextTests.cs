@@ -9,6 +9,7 @@ namespace System.Threading.Tests
     public static class SynchronizationContextTests
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19570")]
         public static void WaitTest()
         {
             var tsc = new TestSynchronizationContext();
