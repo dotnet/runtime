@@ -56,7 +56,7 @@ endif()
 
 # Check for LLDB library
 find_library(LLDB NAMES LLDB lldb lldb-4.0 lldb-3.9 lldb-3.8 lldb-3.7 lldb-3.6 lldb-3.5 PATHS "${WITH_LLDB_LIBS}" PATH_SUFFIXES llvm NO_DEFAULT_PATH)
-find_library(LLDB NAMES LLDB lldb lldb-4.0 lldb-3.8 lldb-3.7 lldb-3.6 lldb-3.5 PATH_SUFFIXES llvm)
+find_library(LLDB NAMES LLDB lldb lldb-4.0 lldb-3.9 lldb-3.8 lldb-3.7 lldb-3.6 lldb-3.5 PATH_SUFFIXES llvm)
 if(LLDB STREQUAL LLDB-NOTFOUND)
     if(REQUIRE_LLDBPLUGIN)
         set(MESSAGE_MODE FATAL_ERROR)
