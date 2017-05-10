@@ -239,7 +239,11 @@ namespace System.Net.Tests
 
         public static IEnumerable<object[]> InvalidPrefix_TestData()
         {
-            yield return new object[] { $"http://{Guid.NewGuid().ToString("N")}/" };
+            // [ActiveIssue(19593, TestPlatforms.OSX)]
+            if (!PlatformDetection.IsOSX)
+            {
+                yield return new object[] { $"http://{Guid.NewGuid().ToString("N")}/" };
+            }
             yield return new object[] { "http://[]/" };
             yield return new object[] { "http://[::1%2]/" };
             yield return new object[] { "http://[::]/" };
@@ -271,7 +275,7 @@ namespace System.Net.Tests
             using (var factory = new HttpListenerFactory())
             {
                 HttpListener listener = factory.GetListener();
-                    Assert.Single(listener.Prefixes);
+                Assert.Single(listener.Prefixes);
 
                 Assert.Throws<HttpListenerException>(() => listener.Prefixes.Add(uriPrefix));
             }
