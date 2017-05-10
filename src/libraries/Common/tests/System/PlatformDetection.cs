@@ -385,5 +385,11 @@ namespace System
         }
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
+
+        public static bool IsReflectionEmitSupported = !PlatformDetection.IsNetNative;
+
+        // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
+        // heavily on Reflection.Emit
+        public static bool IsXmlDsigXsltTransformSupported => PlatformDetection.IsReflectionEmitSupported;
     }
 }

@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void AddIssuerSerial_Issuer_Null()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();
-            Assert.Throws<ArgumentException>("issuerName", () => data.AddIssuerSerial(null, "serial"));
+            AssertExtensions.Throws<ArgumentException>("issuerName", () => data.AddIssuerSerial(null, "serial"));
         }
 
         [Fact]
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void AddIssuerSerial_Null_Serial()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();
-            Assert.Throws<ArgumentException>("serialNumber", () => data.AddIssuerSerial("issuer", null));
+            AssertExtensions.Throws<ArgumentException>("serialNumber", () => data.AddIssuerSerial("issuer", null));
         }
 
         [Fact]
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void AddIssuerSerial_Invalid_Serial()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();
-            Assert.Throws<ArgumentException>("serialNumber", () => data.AddIssuerSerial("issuer", "NotANumber"));
+            AssertExtensions.Throws<ArgumentException>("serialNumber", () => data.AddIssuerSerial("issuer", "NotANumber"));
         }
 
         [Fact]
