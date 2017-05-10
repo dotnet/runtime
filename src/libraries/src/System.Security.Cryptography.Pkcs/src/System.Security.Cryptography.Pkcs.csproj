@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_CryptographyPkcs</GeneratePlatformNotSupportedAssemblyMessage>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
   </PropertyGroup>
   <!-- Don't delete these clauses even if they look useless. They tell the VS IDE that "Windows_Debug", etc., are
@@ -19,7 +19,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND ('$(TargetGroup)' != 'netstandard' OR '$(TargetsWindows)' == 'true')">
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObject.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObjectCollection.cs" />
     <Compile Include="System\Security\Cryptography\CryptographicAttributeObjectEnumerator.cs" />
@@ -49,7 +49,7 @@
     <Compile Include="System\Security\Cryptography\Xml\X509IssuerSerial.cs" />
   </ItemGroup>
   <!-- Internal types (platform independent) -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND ('$(TargetGroup)' != 'netstandard' OR '$(TargetsWindows)' == 'true')">
     <Compile Include="Internal\Cryptography\DecryptorPal.cs" />
     <Compile Include="Internal\Cryptography\KeyAgreeRecipientInfoPal.cs" />
     <Compile Include="Internal\Cryptography\KeyLengths.cs" />
@@ -60,7 +60,7 @@
     <Compile Include="Internal\Cryptography\RecipientInfoPal.cs" />
   </ItemGroup>
   <!-- Internal types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Internal\Cryptography\Pal\Windows\AlgId.cs" />
     <Compile Include="Internal\Cryptography\Pal\Windows\DecryptorPalWindows.cs" />
     <Compile Include="Internal\Cryptography\Pal\Windows\DecryptorPalWindows.Decode.cs" />
@@ -80,7 +80,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandleUwp.cs" />
   </ItemGroup>
   <!-- Interop types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_CONTEXT.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_ID.cs" />
     <Compile Include="Interop\Windows\Crypt32\Interop.CERT_INFO.cs" />
@@ -140,7 +140,7 @@
     <Compile Include="Interop\Windows\Heap\Interop.Heap.cs" />
   </ItemGroup>
   <!-- Common types (platform: Windows) -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\Internal\Cryptography\Windows\CryptoThrowHelper.cs">
       <Link>Common\Internal\Cryptography\Windows\CryptoThrowHelper.cs</Link>
     </Compile>
@@ -164,7 +164,7 @@
     </Compile>
   </ItemGroup>
   <!-- Internal types (platform: Unix) -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'netstandard'">
     <Compile Include="Internal\Cryptography\Pal\Unix\PkcsPal.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">

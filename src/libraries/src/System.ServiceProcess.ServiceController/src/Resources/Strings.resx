@@ -97,4 +97,7 @@
   <data name="Timeout" xml:space="preserve">
     <value>Time out has expired and the operation has not been completed.</value>
   </data>
+  <data name="PlatformNotSupported_ServiceController" xml:space="preserve">
+    <value>ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.</value>
+  </data>
 </root>

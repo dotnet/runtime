@@ -70,4 +70,7 @@
  <data name="BaseType_Cannot_Be_Abstract" xml:space="preserve">
     <value>The base type '{0}' cannot be abstract.</value>
   </data>
+  <data name="PlatformNotSupported_ReflectionDispatchProxy" xml:space="preserve">
+    <value>This operation is not supported on .NET Standard as Reflection.Emit is not available.</value>
+  </data>
 </root>

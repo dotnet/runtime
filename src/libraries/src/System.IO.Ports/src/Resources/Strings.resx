@@ -169,4 +169,7 @@
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the port '{0}' is denied.</value>
   </data>
+  <data name="PlatformNotSupported_IOPorts" xml:space="preserve">
+    <value>System.IO.Ports is currently only supported on Windows.</value>
+  </data>
 </root>
