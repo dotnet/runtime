@@ -9,7 +9,9 @@ namespace System.ConfigurationTests
 {
     public class UriSectionTests
     {
-        public static string UriSectionConfiguration =
+        // In core we don't include framework configuration objects in the implicit
+        // machine.config as they don't have any function.
+        public static string UriSectionConfiguration_Core =
 @"<?xml version='1.0' encoding='utf-8' ?>
 <configuration>
     <configSections>
@@ -24,11 +26,22 @@ namespace System.ConfigurationTests
     </uri>
 </configuration>";
 
+        public static string UriSectionConfiguration_NetFX =
+@"<?xml version='1.0' encoding='utf-8' ?>
+<configuration>
+    <uri>
+        <idn enabled='All' />
+        <iriParsing enabled='true' />
+        <schemeSettings>
+            <add name='ftp' genericUriParserOptions='DontCompressPath' />
+        </schemeSettings>
+    </uri>
+</configuration>";
+
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19341")]
         public void UriSectionIdnIriParsing()
         {
-            using (var temp = new TempConfig(UriSectionConfiguration))
+            using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
             {
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");
@@ -38,10 +51,9 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19341")]
         public void UriSectionSchemeSettings()
         {
-            using (var temp = new TempConfig(UriSectionConfiguration))
+            using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
             {
                 var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
                 UriSection uriSection = (UriSection)config.GetSection("uri");
