@@ -70,6 +70,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			builder.AddCoreLink (caseDefinedOptions.CoreLink);
 
+			// Running the blacklist step causes a ton of stuff to be preserved.  That's good for normal use cases, but for
+			// our test cases that pollutes the results
+			if (!string.IsNullOrEmpty (caseDefinedOptions.IncludeBlacklistStep))
+				builder.IncludeBlacklist (caseDefinedOptions.IncludeBlacklistStep);
+
+			// Internationalization assemblies pollute our test case results as well so disable them
+			if (!string.IsNullOrEmpty (caseDefinedOptions.Il8n))
+				builder.AddIl8n (caseDefinedOptions.Il8n);
+
 			linker.Link (builder.ToArgs ());
 
 			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath);

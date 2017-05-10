@@ -77,7 +77,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var assemblyAttr in assembliesToCheck) {
 				var name = (string) assemblyAttr.ConstructorArguments.First ().Value;
 				var expectedPath = outputDirectory.Combine (name);
-				Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
+
+				if (assemblyAttr.AttributeType.Name == nameof (RemovedAssemblyAttribute))
+					Assert.IsFalse (expectedPath.FileExists (), $"Expected the assembly {name} to not exist in {outputDirectory}, but it did");
+				else if (assemblyAttr.AttributeType.Name == nameof (KeptAssemblyAttribute))
+					Assert.IsTrue (expectedPath.FileExists (), $"Expected the assembly {name} to exist in {outputDirectory}, but it did not");
+				else
+					throw new NotImplementedException($"Unknown assembly assertion of type {assemblyAttr.AttributeType}");
 			}
 		}
 

@@ -45,6 +45,7 @@ namespace Mono.Linker.Steps {
 		protected List<MethodDefinition> _virtual_methods;
 		protected Dictionary<TypeDefinition, CustomAttribute> _assemblyDebuggerDisplayAttributes;
 		protected Dictionary<TypeDefinition, CustomAttribute> _assemblyDebuggerTypeProxyAttributes;
+		protected Queue<CustomAttribute> _topLevelAttributes;
 
 		public AnnotationStore Annotations {
 			get { return _context.Annotations; }
@@ -54,6 +55,7 @@ namespace Mono.Linker.Steps {
 		{
 			_methods = new Queue<MethodDefinition> ();
 			_virtual_methods = new List<MethodDefinition> ();
+			_topLevelAttributes = new Queue<CustomAttribute> ();
 
 			_assemblyDebuggerDisplayAttributes = new Dictionary<TypeDefinition, CustomAttribute> ();
 			_assemblyDebuggerTypeProxyAttributes = new Dictionary<TypeDefinition, CustomAttribute> ();
@@ -118,11 +120,13 @@ namespace Mono.Linker.Steps {
 			if (QueueIsEmpty ())
 				throw new InvalidOperationException ("No entry methods");
 
-			while (!QueueIsEmpty ()) {
-				ProcessQueue ();
-				ProcessVirtualMethods ();
-				DoAdditionalProcessing ();
-			}
+			ProcessEntireQueue ();
+
+			// After all types have been processed then we can process the lazily marked attributes
+			ProcessLazyAttributes ();
+
+			// We need to process the queue again in case marking the attributes enqueued more work
+			ProcessEntireQueue ();
 
 			// deal with [TypeForwardedTo] pseudo-attributes
 			foreach (AssemblyDefinition assembly in _context.GetAssemblies ()) {
@@ -153,6 +157,15 @@ namespace Mono.Linker.Steps {
 						Annotations.Mark (assembly.MainModule);
 					}
 				}
+			}
+		}
+
+		void ProcessEntireQueue ()
+		{
+			while (!QueueIsEmpty ()) {
+				ProcessQueue ();
+				ProcessVirtualMethods ();
+				DoAdditionalProcessing ();
 			}
 		}
 
@@ -234,6 +247,15 @@ namespace Mono.Linker.Steps {
 
 			foreach (CustomAttribute ca in provider.CustomAttributes)
 				MarkCustomAttribute (ca);
+		}
+
+		void LazyMarkCustomAttributes (ICustomAttributeProvider provider)
+		{
+			if (!provider.HasCustomAttributes)
+				return;
+
+			foreach (CustomAttribute ca in provider.CustomAttributes)
+				_topLevelAttributes.Enqueue (ca);
 		}
 
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
@@ -459,14 +481,12 @@ namespace Mono.Linker.Steps {
 
 			ProcessModule (assembly);
 
-			MarkAssemblySpecialCustomAttributes (assembly);
-
-			MarkCustomAttributes (assembly);
+			MarkAssemblyCustomAttributes (assembly);
 
 			MarkSecurityDeclarations (assembly);
 
 			foreach (ModuleDefinition module in assembly.Modules)
-				MarkCustomAttributes (module);
+				LazyMarkCustomAttributes (module);
 		}
 
 		void ProcessModule (AssemblyDefinition assembly)
@@ -480,6 +500,20 @@ namespace Mono.Linker.Steps {
 					MarkType (type);
 					break;
 				}
+			}
+		}
+
+		void ProcessLazyAttributes ()
+		{
+			while (_topLevelAttributes.Count != 0) {
+				var customAttribute = _topLevelAttributes.Dequeue ();
+
+				// If an attribute's module has not been marked after processing all types in all assemblies and the attribute itself has not been marked,
+				// then surely nothing is using this attribute and there is no need to mark it
+				if (!Annotations.IsMarked (customAttribute.AttributeType.Resolve ().Module) && !Annotations.IsMarked (customAttribute.AttributeType))
+					continue;
+
+				MarkCustomAttribute (customAttribute);
 			}
 		}
 
@@ -622,7 +656,7 @@ namespace Mono.Linker.Steps {
 		{
 		}
 
-		void MarkAssemblySpecialCustomAttributes (AssemblyDefinition assembly)
+		void MarkAssemblyCustomAttributes (AssemblyDefinition assembly)
 		{
 			if (!assembly.HasCustomAttributes)
 				return;
@@ -635,6 +669,9 @@ namespace Mono.Linker.Steps {
 					break;
 				case "System.Diagnostics.DebuggerTypeProxyAttribute":
 					StoreDebuggerTypeTarget (assembly, attribute, _assemblyDebuggerTypeProxyAttributes);
+					break;
+				default:
+					_topLevelAttributes.Enqueue (attribute);
 					break;
 				}
 			}

@@ -28,11 +28,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			// This will end up becoming more complicated as we get into more complex test cases that require additional
 			// data
-			var value = "skip";
-			var coreLinkAttribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (CoreLinkAttribute));
-			if (coreLinkAttribute != null)
-				value = (string) coreLinkAttribute.ConstructorArguments.First ().Value;
-			return new TestCaseLinkerOptions {CoreLink = value};
+			var coreLink = GetOptionAttributeValue (nameof (CoreLinkAttribute), "skip");
+			var il8n = GetOptionAttributeValue (nameof (Il8nAttribute), string.Empty);
+			var blacklist = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), string.Empty);
+			return new TestCaseLinkerOptions {CoreLink = coreLink, Il8n = il8n, IncludeBlacklistStep = blacklist};
 		}
 
 		public virtual IEnumerable<string> GetReferencedAssemblies ()
@@ -70,6 +69,15 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				var relativeDepPath = ((string) attr.ConstructorArguments.First ().Value).ToNPath ();
 				yield return _testCase.SourceFile.Parent.Combine (relativeDepPath);
 			}
+		}
+
+		T GetOptionAttributeValue<T> (string attributeName, T defaultValue)
+		{
+			var attribute = _testCaseTypeDefinition.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == attributeName);
+			if (attribute != null)
+				return (T) attribute.ConstructorArguments.First ().Value;
+
+			return defaultValue;
 		}
 	}
 }

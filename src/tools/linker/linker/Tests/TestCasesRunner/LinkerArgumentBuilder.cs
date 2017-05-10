@@ -29,6 +29,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (value);
 		}
 
+		public virtual void IncludeBlacklist (string value)
+		{
+			Append ("-z");
+			Append (value);
+		}
+
+		public virtual void AddIl8n (string value)
+		{
+			Append ("-l");
+			Append (value);
+		}
+
 		public string [] ToArgs ()
 		{
 			return _arguments.ToArray ();

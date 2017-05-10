@@ -4,6 +4,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.References {
 	[CoreLink ("link")]
+	// Il8n & the blacklist step pollute the results with extra stuff that didn't need to be
+	// preserved for this test case so we need to disable them
+	[Il8n("none")]
+	[IncludeBlacklistStep("false")]
 	[Reference ("System.dll")]
 	[RemovedAssembly ("System.dll")]
 	class ReferencesAreRemovedWhenAllUsagesAreRemoved {
