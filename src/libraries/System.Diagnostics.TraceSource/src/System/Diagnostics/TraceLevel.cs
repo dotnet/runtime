@@ -11,7 +11,6 @@ namespace System.Diagnostics
     ///    <para>Specifies what messages to output for debugging
     ///       and tracing.</para>
     /// </devdoc>
-    [Serializable]
     public enum TraceLevel
     {
         /// <devdoc>

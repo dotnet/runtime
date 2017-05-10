@@ -834,7 +834,6 @@ namespace System.Runtime.InteropServices
         public TypeLibImportClassAttribute(Type importClass) { }
         public String Value { get { throw null; } }
     }
-    [Serializable]
     [Flags()]
     public enum TypeLibTypeFlags
     {
@@ -853,7 +852,6 @@ namespace System.Runtime.InteropServices
         FDispatchable   = 0x1000,
         FReverseBind    = 0x2000,
     }
-    [Serializable]
     [Flags()]
     public enum TypeLibFuncFlags
     {
@@ -871,7 +869,6 @@ namespace System.Runtime.InteropServices
         FReplaceable        = 0x0800,
         FImmediateBind      = 0x1000,
     }
-    [Serializable]
     [Flags()]
     public enum TypeLibVarFlags
     {

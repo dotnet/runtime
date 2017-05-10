@@ -4,7 +4,6 @@
 
 namespace System.CodeDom.Compiler
 {
-    [Serializable]
     [Flags]
     public enum GeneratorSupport
     {

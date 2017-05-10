@@ -11,7 +11,6 @@ namespace System.Security.Cryptography
     //  electronic code book (ECB),
     //  ciphertext-stealing (CTS).
     // Not all implementations will support all modes.
-    [Serializable]
     public enum CipherMode
     {
         CBC = 1,

@@ -649,7 +649,6 @@ namespace System.Resources
         }
     }
 
-    [Serializable]
     internal enum ResourceTypeCode {
         // Primitives
         Null = 0,

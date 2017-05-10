@@ -9,7 +9,6 @@
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public enum PrincipalPolicy 
     {
         // Note: it's important that the default policy has the value 0.

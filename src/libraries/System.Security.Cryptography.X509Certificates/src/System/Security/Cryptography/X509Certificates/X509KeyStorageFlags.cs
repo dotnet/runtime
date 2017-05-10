@@ -6,7 +6,6 @@ namespace System.Security.Cryptography.X509Certificates
 {
     // DefaultKeySet, UserKeySet and MachineKeySet are mutually exclusive
     // PersistKeySet and EphemeralKeySet are mutually exclusive
-    [Serializable]
     [Flags]
     public enum X509KeyStorageFlags
     {

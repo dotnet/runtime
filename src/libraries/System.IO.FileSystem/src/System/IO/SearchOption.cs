@@ -11,7 +11,6 @@ namespace System.IO
     ///   retrieve files/directories from the current directory alone
     ///   or should include all the subdirectories also.
     /// </devdoc>
-    [Serializable]
     public enum SearchOption
     {
         /// <devdoc>
