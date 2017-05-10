@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "$(PB_SourcesDirectory)/Tools/msbuild.sh",
-        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
+        "arguments": "$(PB_SourcesDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=OSX",
         "workingFolder": "$(PB_SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -220,6 +220,13 @@
       "value": "sourcebuild"
     },
     "PB_AzureAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_ChecksumAzureAccountName": {
+      "value": "dotnetclichecksums"
+    },
+    "PB_ChecksumAzureAccessToken": {
       "value": null,
       "isSecret": true
     },
