@@ -1,12 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  
+
   <PropertyGroup>
     <PackageVersion>$(PlatformPackageVersion)</PackageVersion>
     <SkipValidatePackage>true</SkipValidatePackage>
+    <!-- We don't need to harvest the stable packages to build this -->
+    <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <File Include="runtime.json" />
     <!-- make this package installable and noop in a packages.config-based project -->
