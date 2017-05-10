@@ -6170,68 +6170,64 @@ ves_icall_RuntimeType_MakePointerType (MonoReflectionTypeHandle ref_type, MonoEr
 	return mono_type_get_object_handle (domain, &pklass->byval_arg, error);
 }
 
-ICALL_EXPORT MonoObject *
-ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
-						   MonoReflectionMethod *info, MonoBoolean throwOnBindFailure)
+ICALL_EXPORT MonoObjectHandle
+ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_type, MonoObjectHandle target,
+						   MonoReflectionMethodHandle info, MonoBoolean throwOnBindFailure, MonoError *error)
 {
-	MonoError error;
-	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
-	MonoObject *delegate;
+	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass *delegate_class = mono_class_from_mono_type (type);
 	gpointer func;
-	MonoMethod *method = info->method;
+	MonoMethod *method = MONO_HANDLE_GETVAL (info, method);
 	MonoMethodSignature *sig = mono_method_signature(method);
 
-	mono_class_init_checked (delegate_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	mono_class_init_checked (delegate_class, error);
+	return_val_if_nok (error, NULL_HANDLE);
 
 	if (!(delegate_class->parent == mono_defaults.multicastdelegate_class)) {
 		/* FIXME improve this exception message */
-		mono_error_set_execution_engine (&error, "file %s: line %d (%s): assertion failed: (%s)", __FILE__, __LINE__,
+		mono_error_set_execution_engine (error, "file %s: line %d (%s): assertion failed: (%s)", __FILE__, __LINE__,
 						 __func__,
 						 "delegate_class->parent == mono_defaults.multicastdelegate_class");
-		mono_error_set_pending_exception (&error);
-		return NULL;
+		return NULL_HANDLE;
 	}
 
 	if (mono_security_core_clr_enabled ()) {
-		if (!mono_security_core_clr_ensure_delegate_creation (method, &error)) {
+		MonoError security_error;
+		if (!mono_security_core_clr_ensure_delegate_creation (method, &security_error)) {
 			if (throwOnBindFailure)
-				mono_error_set_pending_exception (&error);
+				mono_error_move (error, &security_error);
 			else
-				mono_error_cleanup (&error);
-			return NULL;
+				mono_error_cleanup (&security_error);
+			return NULL_HANDLE;
 		}
 	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		if (!method->is_inflated) {
-			mono_set_pending_exception(mono_get_exception_argument("method", " Cannot bind to the target method because its signature differs from that of the delegate type"));
-			return NULL;
+			mono_error_set_argument (error, "method", " Cannot bind to the target method because its signature differs from that of the delegate type");
+			return NULL_HANDLE;
 		}
 	}
 
-	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoObjectHandle delegate = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (MONO_HANDLE_DOMAIN (ref_type), delegate_class, error));
+	return_val_if_nok (error, NULL_HANDLE);
 
 	if (method_is_dynamic (method)) {
 		/* Creating a trampoline would leak memory */
-		func = mono_compile_method_checked (method, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		func = mono_compile_method_checked (method, error);
+		return_val_if_nok (error, NULL_HANDLE);
 	} else {
-		if (target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_object_class (target))
-			method = mono_object_get_virtual_method (target, method);
-		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		if (!MONO_HANDLE_IS_NULL (target) && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_handle_class (target)) {
+			method = mono_object_handle_get_virtual_method (target, method, error);
+			return_val_if_nok (error, NULL_HANDLE);
+		}
+		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
+		return_val_if_nok (error, NULL_HANDLE);
 		func = mono_create_ftnptr (mono_domain_get (), trampoline);
 	}
 
-	mono_delegate_ctor_with_method (delegate, target, func, method, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	mono_delegate_ctor_with_method (delegate, target, func, method, error);
+	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }
 

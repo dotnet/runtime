@@ -7803,6 +7803,17 @@ mono_print_unhandled_exception (MonoObject *exc)
 		g_free (message);
 }
 
+gboolean
+mono_delegate_ctor_with_method_fixme (MonoObject *this_obj_raw, MonoObject *target_raw, gpointer addr, MonoMethod *method, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	MONO_HANDLE_DCL (MonoObject, this_obj);
+	MONO_HANDLE_DCL (MonoObject, target);
+	gboolean res = mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
+	HANDLE_FUNCTION_RETURN_VAL (res);
+}
+
 /**
  * mono_delegate_ctor_with_method:
  * \param this pointer to an uninitialized delegate object
@@ -7817,43 +7828,44 @@ mono_print_unhandled_exception (MonoObject *exc)
  * On failure returns FALSE and sets \p error.
  */
 gboolean
-mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method, MonoError *error)
+mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
-	MonoDelegate *delegate = (MonoDelegate *)this_obj;
+	MonoDelegateHandle delegate = MONO_HANDLE_CAST (MonoDelegate, this_obj);
 
-	g_assert (this_obj);
+	g_assert (!MONO_HANDLE_IS_NULL (this_obj));
 	g_assert (addr);
 
-	g_assert (mono_class_has_parent (mono_object_class (this_obj), mono_defaults.multicastdelegate_class));
+	MonoClass *klass = mono_handle_class (this_obj);
+	g_assert (mono_class_has_parent (klass, mono_defaults.multicastdelegate_class));
 
 	if (method)
-		delegate->method = method;
+		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
 
 	mono_stats.delegate_creations++;
 
 #ifndef DISABLE_REMOTING
-	if (target && mono_object_is_transparent_proxy (target)) {
+	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {
 		g_assert (method);
 		method = mono_marshal_get_remoting_invoke (method);
 #ifdef ENABLE_INTERPRETER
 		//g_error ("need RuntimeMethod in method_ptr when using interpreter");
 #endif
-		delegate->method_ptr = mono_compile_method_checked (method, error);
+		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, mono_compile_method_checked (method, error));
 		return_val_if_nok (error, FALSE);
-		MONO_OBJECT_SETREF (delegate, target, target);
+		MONO_HANDLE_SET (delegate, target, target);
 	} else
 #endif
 	{
-		delegate->method_ptr = addr;
-		MONO_OBJECT_SETREF (delegate, target, target);
+		MONO_HANDLE_SETVAL (delegate, method_ptr, gpointer, addr);
+		MONO_HANDLE_SET (delegate, target, target);
 	}
 
-	delegate->invoke_impl = callbacks.create_delegate_trampoline (delegate->object.vtable->domain, delegate->object.vtable->klass);
+	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, callbacks.create_delegate_trampoline (MONO_HANDLE_DOMAIN (delegate), mono_handle_class (delegate)));
 	if (callbacks.init_delegate)
-		callbacks.init_delegate (delegate);
+		callbacks.init_delegate (MONO_HANDLE_RAW (delegate)); /* FIXME: update init_delegate callback to take a MonoDelegateHandle */
 	return TRUE;
 }
 
@@ -7887,7 +7899,7 @@ mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, Mon
 		g_assert (!mono_class_is_gtd (method->klass));
 	}
 
-	return mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
+	return mono_delegate_ctor_with_method_fixme (this_obj, target, addr, method, error);
 }
 
 /**
