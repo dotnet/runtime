@@ -38,7 +38,6 @@ namespace System.Net
         private X509Certificate2 _clientCertificate;
         private int _clientCertificateError;
         private RequestContextBase _memoryBlob;
-        private CookieCollection _cookies;
         private HttpListenerContext _httpContext;
         private bool _isDisposed = false;
         internal const uint CertBoblSize = 1500;
@@ -341,34 +340,6 @@ namespace System.Net
         }
 
         public TransportContext TransportContext => new HttpListenerRequestContext(this);
-
-        private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
-            CookieContainer container = new CookieContainer();
-            container.SetCookies(uri, setCookieHeader);
-            return container.GetCookies(uri);
-        }
-
-        public CookieCollection Cookies
-        {
-            get
-            {
-                if (_cookies == null)
-                {
-                    string cookieString = GetKnownHeader(HttpRequestHeader.Cookie);
-                    if (cookieString != null && cookieString.Length > 0)
-                    {
-                        _cookies = ParseCookies(RequestUri, cookieString);
-                    }
-                    if (_cookies == null)
-                    {
-                        _cookies = new CookieCollection();
-                    }
-                }
-                return _cookies;
-            }
-        }
 
         public bool HasEntityBody
         {

@@ -960,7 +960,7 @@ namespace System.Net
 
             optCookie2 = cookies.IsOtherVersionSeen ?
                           (Cookie.SpecialAttributeLiteral +
-                           Cookie.VersionAttributeName +
+                           CookieFields.VersionAttributeName +
                            Cookie.EqualsLiteral +
                            Cookie.MaxSupportedVersionString) : string.Empty;
 
