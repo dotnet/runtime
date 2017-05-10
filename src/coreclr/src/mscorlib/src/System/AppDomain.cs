@@ -566,17 +566,6 @@ namespace System
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
-            // SetData should only be used to set values that don't already exist.
-            object currentVal;
-            lock (((ICollection)LocalStore).SyncRoot)
-            {
-                LocalStore.TryGetValue(name, out currentVal);
-            }
-            if (currentVal != null)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_SetData_OnlyOnce);
-            }
-
             lock (((ICollection)LocalStore).SyncRoot)
             {
                 LocalStore[name] = data;
@@ -590,38 +579,14 @@ namespace System
                 throw new ArgumentNullException(nameof(name));
             Contract.EndContractBlock();
 
-            int key = AppDomainSetup.Locate(name);
-            if (key == -1)
+            object data;
+            lock (((ICollection)LocalStore).SyncRoot)
             {
-                if (name.Equals(AppDomainSetup.LoaderOptimizationKey))
-                    return FusionStore.LoaderOptimization;
-                else
-                {
-                    object data;
-                    lock (((ICollection)LocalStore).SyncRoot)
-                    {
-                        LocalStore.TryGetValue(name, out data);
-                    }
-                    if (data == null)
-                        return null;
-                    return data;
-                }
+                LocalStore.TryGetValue(name, out data);
             }
-            else
-            {
-                // Be sure to call these properties, not Value, so
-                // that the appropriate permission demand will be done
-                switch (key)
-                {
-                    case (int)AppDomainSetup.LoaderInformation.ApplicationBaseValue:
-                        return FusionStore.ApplicationBase;
-                    case (int)AppDomainSetup.LoaderInformation.ApplicationNameValue:
-                        return FusionStore.ApplicationName;
-                    default:
-                        Debug.Assert(false, "Need to handle new LoaderInformation value in AppDomain.GetData()");
-                        return null;
-                }
-            }
+            if (data == null)
+                return null;
+            return data;
         }
 
         [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
