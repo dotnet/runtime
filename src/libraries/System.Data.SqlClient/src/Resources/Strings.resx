@@ -1042,4 +1042,7 @@
   <data name="LocalDBNotSupported" xml:space="preserve">
     <value>LocalDB is not supported on this Platform.</value>
   </data>
+  <data name="PlatformNotSupported_DataSqlClient" xml:space="preserve">
+    <value>System.Data.SqlClient is not supported on this platform.</value>
+  </data>
 </root>
