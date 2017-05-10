@@ -12,7 +12,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
 
     <!-- NOTE: this test simply takes too long to complete under GC stress/heap verify; it is not fundamentally incompatible -->
-    <GCStressIncompatible Condition="'$(Platform)' == 'x86'">true</GCStressIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
     <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
