@@ -76,7 +76,4 @@
   <data name="InvalidOperation_NativeOverlappedReused" xml:space="preserve">
     <value>NativeOverlapped cannot be reused for multiple operations.</value>
   </data>
-  <data name="PlatformNotSupported_ThreadingOverlapped" xml:space="preserve">
-    <value>System.Threading.Overlapped APIs are specific to the way in which Windows handles asynchronous I/O, and are not supported on this platform.</value>
-  </data>
 </root>
