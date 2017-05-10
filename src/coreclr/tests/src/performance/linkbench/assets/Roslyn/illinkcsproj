@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
-    <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp1.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="ILLink.Tasks" Version="0.1.0-preview" />
+    <PackageReference Include="Microsoft.NETCore.ILLink" Version="0.1.9-preview" />
   </ItemGroup>
 </Project>
+
