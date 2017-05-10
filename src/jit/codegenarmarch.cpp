@@ -1362,6 +1362,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if (tree->gtFlags & GTF_IND_VOLATILE)
     {
+        // issue a full memory barrier after a volatile LdInd operation
         instGen_MemoryBarrier();
     }
 }
@@ -1386,15 +1387,17 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
     }
 #endif // _TARGET_ARM64_
 
-    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
+        // issue a full memory barrier before & after a volatile CpBlkUnroll operation
         instGen_MemoryBarrier();
     }
 
     genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
 
-    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
+        // issue a full memory barrier before & after a volatile CpBlkUnroll operation
         instGen_MemoryBarrier();
     }
 }
@@ -1434,8 +1437,9 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
-    if (initBlkNode->gtFlags & GTF_IND_VOLATILE)
+    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
+        // issue a full memory barrier before a volatile initBlock Operation
         instGen_MemoryBarrier();
     }
 

@@ -2522,6 +2522,12 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 
     genConsumeOperands(initBlkNode);
 
+    if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before volatile an initBlockUnroll operation
+        instGen_MemoryBarrier();
+    }
+
     regNumber valReg = initVal->IsIntegralConst(0) ? REG_ZR : initVal->gtRegNum;
 
     assert(!initVal->IsIntegralConst(0) || (valReg == REG_ZR));
@@ -2664,8 +2670,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     emitter* emit = getEmitter();
 
-    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
+        // issue a full memory barrier before & after a volatile CpBlkUnroll operation
         instGen_MemoryBarrier();
     }
 
@@ -2748,8 +2755,9 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
         }
     }
 
-    if (cpBlkNode->gtFlags & GTF_IND_VOLATILE)
+    if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
+        // issue a full memory barrier before & after a volatile CpBlkUnroll operation
         instGen_MemoryBarrier();
     }
 }
@@ -2830,8 +2838,9 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(tmpReg2 != REG_WRITE_BARRIER_SRC_BYREF);
     }
 
-    if (cpObjNode->gtFlags & GTF_IND_VOLATILE)
+    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
     {
+        // issue a full memory barrier before & after a volatile CpObj operation
         instGen_MemoryBarrier();
     }
 
@@ -2907,15 +2916,16 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         assert(gcPtrCount == 0);
     }
 
+    if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
+    {
+        // issue a full memory barrier before & after a volatile CpObj operation
+        instGen_MemoryBarrier();
+    }
+
     // Clear the gcInfo for REG_WRITE_BARRIER_SRC_BYREF and REG_WRITE_BARRIER_DST_BYREF.
     // While we normally update GC info prior to the last instruction that uses them,
     // these actually live into the helper call.
     gcInfo.gcMarkRegSetNpt(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
-
-    if (cpObjNode->gtFlags & GTF_IND_VOLATILE)
-    {
-        instGen_MemoryBarrier();
-    }
 }
 
 // generate code do a switch statement based on a table of ip-relative offsets
@@ -3586,6 +3596,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         if (tree->gtFlags & GTF_IND_VOLATILE)
         {
+            // issue a full memory barrier a before volatile StInd
             instGen_MemoryBarrier();
         }
 
