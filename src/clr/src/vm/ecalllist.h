@@ -1271,6 +1271,15 @@ FCFuncStart(gEventLogger)
 FCFuncEnd()
 #endif // defined(FEATURE_EVENTSOURCE_XPLAT)
 
+#ifdef FEATURE_PERFTRACING
+FCFuncStart(gEventPipeInternalFuncs)
+    QCFuncElement("CreateProvider", EventPipeInternal::CreateProvider)
+    QCFuncElement("AddEvent", EventPipeInternal::AddEvent)
+    QCFuncElement("DeleteProvider", EventPipeInternal::DeleteProvider)
+    QCFuncElement("WriteEvent", EventPipeInternal::WriteEvent)
+FCFuncEnd()
+#endif // FEATURE_PERFTRACING
+
 #ifdef FEATURE_COMINTEROP
 FCFuncStart(gRuntimeClassFuncs)
     FCFuncElement("GetRedirectedGetHashCodeMD", ComObject::GetRedirectedGetHashCodeMD)
@@ -1374,6 +1383,9 @@ FCClassElement("Environment", "System", gEnvironmentFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("EventArgsMarshaler", "System.StubHelpers", gEventArgsMarshalerFuncs)
 #endif // FEATURE_COMINTEROP
+#if defined(FEATURE_PERFTRACING)
+FCClassElement("EventPipeInternal", "System.Diagnostics.Tracing", gEventPipeInternalFuncs)
+#endif // FEATURE_PERFTRACING
 FCClassElement("Exception", "System", gExceptionFuncs)
 FCClassElement("FileLoadException", "System.IO", gFileLoadExceptionFuncs)
 FCClassElement("FormatterServices", "System.Runtime.Serialization", gSerializationFuncs)
