@@ -66,7 +66,17 @@
     <Compile Include="Generics\MethodWithParameterWhichHasGenericParametersAndOverrideUsesADifferentNameForGenericParameterNestedCase.cs" />
     <Compile Include="Generics\MethodWithParameterWhichHasGenericParametersAndOverrideUsesADifferentNameForGenericParameterNestedCase2.cs" />
     <Compile Include="Generics\OverrideWithAnotherVirtualMethodOfSameNameWithDifferentParameterType.cs" />
+    <Compile Include="Interop\InternalCalls\Com\DefaultConstructorOfParameterIsRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\Com\FieldsOfParameterAreRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\Com\FieldsOfReturnTypeAreRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\Com\FieldsOfThisAreRemoved.cs" />
     <Compile Include="Interop\InternalCalls\DefaultConstructorOfReturnTypeIsNotRemoved.cs" />
+    <Compile Include="Interop\InternalCalls\Com\DefaultConstructorOfReturnTypeIsRemoved.cs" />
+    <Compile Include="Interop\PInvoke\Com\DefaultConstructorOfParameterIsRemoved.cs" />
+    <Compile Include="Interop\PInvoke\Com\DefaultConstructorOfReturnTypeIsRemoved.cs" />
+    <Compile Include="Interop\PInvoke\Com\FieldsOfParameterAreRemoved.cs" />
+    <Compile Include="Interop\PInvoke\Com\FieldsOfReturnTypeAreRemoved.cs" />
+    <Compile Include="Interop\PInvoke\Com\FieldsOfThisAreRemoved.cs" />
     <Compile Include="Interop\PInvoke\DefaultConstructorOfReturnTypeIsNotRemoved.cs" />
     <Compile Include="Interop\InternalCalls\UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved.cs" />
     <Compile Include="Interop\PInvoke\UnusedDefaultConstructorOfTypePassedByRefIsNotRemoved.cs" />
