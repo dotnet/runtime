@@ -36,9 +36,6 @@
     <Compile Include="ServerAsyncAuthenticateTest.cs" />
     <Compile Include="ServerNoEncryptionTest.cs" />
     <Compile Include="ServerRequireEncryptionTest.cs" />
-    <Compile Include="SslStreamCredentialCacheTest.cs" />
-    <Compile Include="SslStreamEKUTest.cs" />
-    <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
     <Compile Include="SslStreamStreamToStreamTest.cs" />
     <Compile Include="SslStreamNetworkStreamTest.cs" />
     <Compile Include="TransportContextTest.cs" />
@@ -101,6 +98,9 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <!-- TODO #13070: Add net463 to the condition after the TFM gets updated to the actual .Net 4.6.3.-->
     <Compile Include="SslStreamAlertsTest.cs" />
+    <Compile Include="SslStreamEKUTest.cs" />
+    <Compile Include="SslStreamSchSendAuxRecordTest.cs" />
+    <Compile Include="SslStreamCredentialCacheTest.cs" />
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
   <ItemGroup>
