@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
     // "ISO 10126" is the same as PKCS5 except that it fills the bytes before the last one with 
     // random bytes. 
     // "ANSI X.923" fills the bytes with zeros and puts the number of padding  bytes in the last byte.
-    [Serializable]
     public enum PaddingMode
     {
         None = 1,

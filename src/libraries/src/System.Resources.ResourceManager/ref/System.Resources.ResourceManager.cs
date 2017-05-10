@@ -105,7 +105,6 @@ namespace System.Resources
         public SatelliteContractVersionAttribute(string version) { }
         public string Version { get { throw null; } }
     }
-    [System.Serializable]
     public enum UltimateResourceFallbackLocation
     {
         MainAssembly,

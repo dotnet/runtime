@@ -6,7 +6,6 @@ using System;
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public enum TokenImpersonationLevel
     {
         None = 0,

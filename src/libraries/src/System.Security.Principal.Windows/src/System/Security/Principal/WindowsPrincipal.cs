@@ -11,7 +11,6 @@ using System.Security.Claims;
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public enum WindowsBuiltInRole
     {
         Administrator = 0x220,

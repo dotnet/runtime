@@ -5,7 +5,6 @@
 namespace System.Runtime.Serialization.Formatters.Binary
 {
     // BinaryHeaderEnum is the first byte on binary records (except for primitive types which do not have a header)
-    [Serializable]
     internal enum BinaryHeaderEnum
     {
         SerializedStreamHeader = 0,
@@ -34,7 +33,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
     }
 
     // BinaryTypeEnum is used specify the type on the wire. Additional information is transmitted with Primitive and Object types
-    [Serializable]
     internal enum BinaryTypeEnum
     {
         Primitive = 0,
@@ -47,7 +45,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         PrimitiveArray = 7,
     }
 
-    [Serializable]
     internal enum BinaryArrayTypeEnum
     {
         Single = 0,
@@ -61,7 +58,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
     // Enums are for internal use by the XML and Binary Serializers
 
     // Formatter Enums
-    [Serializable]
     internal enum InternalSerializerTypeE
     {
         Soap = 1,
@@ -69,7 +65,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
     }
 
     // ParseRecord Enums
-    [Serializable]
     internal enum InternalParseTypeE
     {
         Empty = 0,
@@ -87,7 +82,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         BodyEnd = 12,
     }
 
-    [Serializable]
     internal enum InternalObjectTypeE
     {
         Empty = 0,
@@ -95,7 +89,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         Array = 2,
     }
 
-    [Serializable]
     internal enum InternalObjectPositionE
     {
         Empty = 0,
@@ -104,7 +97,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         Headers = 3,
     }
 
-    [Serializable]
     internal enum InternalArrayTypeE
     {
         Empty = 0,
@@ -114,7 +106,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         Base64 = 4,
     }
 
-    [Serializable]
     internal enum InternalMemberTypeE
     {
         Empty = 0,
@@ -123,7 +114,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
         Item = 3,
     }
 
-    [Serializable]
     internal enum InternalMemberValueE
     {
         Empty = 0,
@@ -134,7 +124,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
     }
 
     // Data Type Enums
-    [Serializable]
     internal enum InternalPrimitiveTypeE
     {
         Invalid = 0,
@@ -161,7 +150,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
     }
 
     // ValueType Fixup Enum
-    [Serializable]
     internal enum ValueFixupEnum
     {
         Empty = 0,
@@ -171,7 +159,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
     }
 
     // name space
-    [Serializable]
     internal enum InternalNameSpaceE
     {
         None = 0,

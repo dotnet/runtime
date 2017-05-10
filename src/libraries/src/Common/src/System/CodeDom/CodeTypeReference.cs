@@ -12,7 +12,6 @@ namespace System.CodeDom
 namespace System.Runtime.Serialization
 #endif
 {
-    [Serializable]
     [Flags]
 #if !FEATURE_SERIALIZATION
     public enum CodeTypeReferenceOptions

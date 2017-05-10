@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlTypes
 {
-    [Serializable]
     internal enum SqlBytesCharsState
     {
         Null = 0,
