@@ -2,102 +2,140 @@
 
 REM Usage: Build.cmd <LinkBench assets directory>
 setlocal
-call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools\VsDevCmd.bat"
 
-set ROOT=%cd%\LinkBench
 set AssetDir=%1
 set ExitCode=0
 mkdir LinkBench 2> nul
-pushd %ROOT%
+pushd %LinkBenchRoot%
 
+set __CORFLAGS="%VS140COMNTOOLS%\..\..\..\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.6.1 Tools\CorFlags.exe"
+if not exist %__CORFLAGS% (
+    echo corflags.exe not found
+    exit /b -1
+)
+
+if defined __test_HelloWorld call :HelloWorld
+if defined __test_WebAPI call :WebAPI
+if defined __test_MusicStore call :MusicStore
+if defined __test_MusicStore_R2R call :MusicStore_R2R 
+if defined __test_CoreFx call :CoreFx
+if defined __test_Roslyn call :Roslyn
+
+popd
+exit /b %ExitCode%
+
+:HelloWorld
 echo Build ** HelloWorld **
-cd %ROOT%\HelloWorld
-dotnet restore -r win10-x64
-dotnet publish -c release -r win10-x64
-dotnet msbuild /t:Link /p:LinkerMode=sdk /p:RuntimeIdentifier=win10-x64 /v:n /p:Configuration=release
+pushd %LinkBenchRoot%\HelloWorld
+%__dotnet2% restore -r win10-x64
+%__dotnet2% publish -c release -r win10-x64 /p:LinkDuringPublish=false --output bin\release\netcoreapp2.0\win10-x64\Unlinked
+%__dotnet2% publish -c release -r win10-x64 --output bin\release\netcoreapp2.0\win10-x64\Linked
 if errorlevel 1 set ExitCode=1 
-echo -- Done -- 
+popd
+exit /b
 
+:WebAPI
 echo Build ** WebAPI **
-cd %ROOT%\WebAPI
-dotnet restore -r win10-x64
-dotnet publish -c release -r win10-x64
-dotnet msbuild /t:Link /p:LinkerMode=sdk /p:RuntimeIdentifier=win10-x64 /v:n /p:Configuration=release
+pushd %LinkBenchRoot%\WebAPI
+%__dotnet2% restore -r win10-x64
+%__dotnet2% publish -c release -r win10-x64 /p:LinkDuringPublish=false --output bin\release\netcoreapp2.0\win10-x64\unlinked
+%__dotnet2% publish -c release -r win10-x64 --output bin\release\netcoreapp2.0\win10-x64\linked
 if errorlevel 1 set ExitCode=1 
-echo -- Done -- 
+popd
+exit /b
 
+:MusicStore
 echo Build ** MusicStore **
-cd %ROOT%\JitBench\src\MusicStore
+pushd %LinkBenchRoot%\JitBench\src\MusicStore
 copy %AssetDir%\MusicStore\MusicStoreReflection.xml .
-dotnet restore -r win10-x64 
-dotnet publish -c release -r win10-x64
-dotnet msbuild /t:Link /p:LinkerMode=sdk /p:RuntimeIdentifier=win10-x64 /v:n /p:LinkerRootFiles=MusicStoreReflection.xml /p:Configuration=release
+%__dotnet2% restore -r win10-x64 
+%__dotnet2% publish -c release -r win10-x64 /p:LinkerRootDescriptors=MusicStoreReflection.xml /p:LinkDuringPublish=false --output bin\release\netcoreapp2.0\win10-x64\unlinked
+%__dotnet2% publish -c release -r win10-x64 /p:LinkerRootDescriptors=MusicStoreReflection.xml --output bin\release\netcoreapp2.0\win10-x64\linked
 if errorlevel 1 set ExitCode=1 
-echo -- Done -- 
+popd
+exit /b
 
+:MusicStore_R2R
+REM Since the musicstore benchmark has a workaround to use an old framework (to get non-crossgen'd packages), 
+REM we need to run crossgen on these assemblies manually for now. 
+REM Even once we have the linker running on R2R assemblies and remove this workaround, 
+REM we'll need a way to get the pre-crossgen assemblies for the size comparison. 
+REM We need to use it to crossgen the linked assemblies for the size comparison, 
+REM since the linker targets don't yet include a way to crossgen the linked assemblies.
 echo Build ** MusicStore Ready2Run **
-cd %ROOT%\JitBench\src\MusicStore
+pushd %LinkBenchRoot%\JitBench\src\MusicStore
+copy %AssetDir%\MusicStore\Get-Crossgen.ps1
 powershell -noprofile -executionPolicy RemoteSigned -file Get-Crossgen.ps1
 pushd  bin\release\netcoreapp2.0\win10-x64\
-call :SetupR2R publish
+mkdir R2R 2> nul
+call :SetupR2R unlinked
 if errorlevel 1 set ExitCode=1 
 call :SetupR2R linked
 if errorlevel 1 set ExitCode=1 
-echo -- Done -- 
+popd
+exit /b
 
+:CoreFx
 echo Build ** CoreFX **
-cd %ROOT%\corefx
+pushd %LinkBenchRoot%\corefx
 set BinPlaceILLinkTrimAssembly=true
 call build.cmd -release
 if errorlevel 1 set ExitCode=1 
-echo -- Done -- 
+popd
+exit /b
 
+:Roslyn
 echo Build ** Roslyn **
-cd %ROOT%\roslyn
-copy %AssetDir%\Roslyn\RoslynRoots.txt .
-copy %AssetDir%\Roslyn\RoslynRoots.xml .
-set RoslynRoot=%cd%
-REM Build Roslyn
-call restore.cmd
-msbuild /m Roslyn.sln  /p:Configuration=Release
+pushd %LinkBenchRoot%\roslyn
+
 REM Fetch ILLink
-mkdir illink
+if not exist illink mkdir illink
 cd illink
-copy %AssetDir%\Roslyn\illinkcsproj illink.csproj
-dotnet restore illink.csproj -r win10-x64 --packages bin
+copy %AssetDir%\Roslyn\illinkcsproj illink.csproj >nul
+%__dotnet1% restore --packages pkg
+if errorlevel 1 set ExitCode=1 
+set __IlLinkDll=%cd%\pkg\microsoft.netcore.illink\0.1.9-preview\lib\netcoreapp1.1\illink.dll
 cd ..
+
+REM Build CscCore
+call Restore.cmd
+cd src\Compilers\CSharp\CscCore
+%__dotnet1% publish -c Release -r win7-x64
+if errorlevel 1 set ExitCode=1 
+REM Published CscCore to Binaries\Release\Exes\CscCore\win7-x64\publish
+cd ..\..\..\..
+
 REM Create Linker Directory
-cd Binaries\Release\Exes
+cd Binaries\Release\Exes\CscCore\win7-x64\
 mkdir Linked
-cd CscCore
+
 REM Copy Unmanaged Assets
+cd publish
 FOR /F "delims=" %%I IN ('DIR /b *') DO (
-    corflags %%I >nul 2> nul
+    %__CORFLAGS% %%I >nul 2> nul
     if errorlevel 1 copy %%I ..\Linked >nul
 )
 copy *.ni.dll ..\Linked
-REM Run Linker
-dotnet %RoslynRoot%\illink\bin\illink.tasks\0.1.0-preview\tools\illink.dll -t -c link -a @%RoslynRoot%\RoslynRoots.txt -x %RoslynRoot%\RoslynRoots.xml -l none -out ..\Linked
-if errorlevel 1 set ExitCode=1 
-echo -- Done -- 
-popd
 
-:Done
-exit /b %ExitCode%
+REM Run Linker
+%__dotnet1% %__IlLinkDll% -t -c link -a @%AssetDir%\Roslyn\RoslynRoots.txt -x %AssetDir%\Roslyn\RoslynRoots.xml -l none -out ..\Linked
+if errorlevel 1 set ExitCode=1 
+popd
+exit /b
 
 :SetupR2R
 REM Create R2R directory and copy all contents from MSIL to R2R directory
-mkdir %1_r2r
-xcopy /E /Y /Q %1 %1_r2r
+mkdir R2R\%1
+xcopy /E /Y /Q %1 R2R\%1
 REM Generate Ready2Run images for all MSIL files by running crossgen
-cd %1_r2r
-copy ..\..\..\..\..\crossgen.exe 
+pushd R2R\%1
+copy ..\..\..\..\..\..\crossgen.exe
 FOR /F %%I IN ('dir /b *.dll ^| find /V /I ".ni.dll"  ^| find /V /I "System.Private.CoreLib" ^| find /V /I "mscorlib.dll"') DO (
     REM Don't crossgen Corlib, since the native image already exists.
     REM For all other MSIL files (corflags returns 0), run crossgen
-    corflags %%I >nul 2>nul
+    %__CORFLAGS% %%I >nul 2>nul
     if not errorlevel 1 (
-        crossgen /Platform_Assemblies_Paths . %%I >nul 2>nul
+        crossgen.exe /Platform_Assemblies_Paths . %%I >nul 2>nul
         if errorlevel 1 (
             exit /b 1
         )
@@ -112,5 +150,5 @@ FOR /F "delims=" %%I IN ('dir /b *.dll') DO (
         ren %%~nI.ni.dll %%I
     )
 )
-cd ..
+popd
 exit /b 0
