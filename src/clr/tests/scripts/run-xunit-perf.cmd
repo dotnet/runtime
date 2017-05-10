@@ -21,6 +21,9 @@ setlocal
   set COLLECTION_FLAGS=stopwatch
   set ETW_COLLECTION=Off
   set STABILITY_PREFIX=
+  set BENCHVIEW_GROUP=CoreCLR
+  set HAS_WARMUP_RUN=--drop-first-value
+  set BETTER=desc
 
   call :parse_command_line_arguments %*
   if defined USAGE_DISPLAYED exit /b %ERRORLEVEL%
@@ -68,8 +71,6 @@ rem ****************************************************************************
 setlocal
   set BENCHNAME=%~n1
   set BENCHDIR=%~p1
-  set PERFOUT=perf-%BENCHNAME%
-  set XMLOUT=%PERFOUT%.xml
 
   rem copy benchmark and any input files
   call :run_cmd xcopy /s %~1 . >> %RUNLOG%  || exit /b 1
@@ -102,16 +103,14 @@ setlocal
   rem optionally generate results for benchview
   if exist "%BENCHVIEW_PATH%" (
     call :generate_results_for_benchview || exit /b 1
-  ) else (
-    type "%XMLOUT%" | findstr /i /c:"test name"
-  )
+  ) 
 
   rem Save off the results to the root directory for recovery later in Jenkins
-  IF EXIST "Perf-%BENCHNAME%.xml" (
-    call :run_cmd copy "Perf-%BENCHNAME%.xml" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.xml" || exit /b 1
+  IF EXIST "Perf-*%BENCHNAME%.xml" (
+    call :run_cmd copy "Perf-*%BENCHNAME%.xml" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.xml" || exit /b 1
   )
-  IF EXIST "Perf-%BENCHNAME%.etl" (
-    call :run_cmd copy "Perf-%BENCHNAME%.etl" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.etl" || exit /b 1
+  IF EXIST "Perf-*%BENCHNAME%.etl" (
+    call :run_cmd copy "Perf-*%BENCHNAME%.etl" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.etl" || exit /b 1
   )
 
   exit /b 0
@@ -139,6 +138,17 @@ rem ****************************************************************************
   )
   IF /I [%~1] == [-uploadtobenchview] (
     set SHOULD_UPLOAD_TO_BENCHVIEW=1
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-nowarmup] (
+    set HAS_WARMUP_RUN=
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-better] (
+    set BETTER=%~2
+    shift
     shift
     goto :parse_command_line_arguments
   )
@@ -183,7 +193,12 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
-
+  IF /I [%~1] == [-group] (
+    set BENCHVIEW_GROUP=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
   if /I [%~1] == [-?] (
     call :USAGE
     exit /b 0
@@ -273,15 +288,19 @@ rem ****************************************************************************
 
   set LV_MEASUREMENT_ARGS=
   set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% %BENCHVIEW_MEASUREMENT_PARSER%
-  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% "Perf-%BENCHNAME%.xml"
-  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --better desc
-  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --drop-first-value
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --better %BETTER%
+  set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% %HAS_WARMUP_RUN%
   set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --append
-  call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS%
-  IF %ERRORLEVEL% NEQ 0 (
-    call :print_error Failed to generate BenchView measurement data.
-    exit /b 1
+
+  for /f %%f in ('dir /b Perf-*%BENCHNAME%.xml 2^>nul') do (
+    call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% %%f 
+
+    IF !ERRORLEVEL! NEQ 0 (
+      call :print_error Failed to generate BenchView measurement data.
+      exit /b 1
+    )
   )
+
 endlocal& exit /b %ERRORLEVEL%
 
 :upload_to_benchview
@@ -293,7 +312,7 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --build ..\build.json
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machine-data ..\machinedata.json
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --metadata ..\submission-metadata.json
-  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --group "CoreCLR"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --group "%BENCHVIEW_GROUP%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --type "%BENCHVIEW_RUN_TYPE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config-name "%TEST_CONFIG%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Configuration "%TEST_CONFIG%"
@@ -301,7 +320,9 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Profile "%ETW_COLLECTION%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --arch "%TEST_ARCHITECTURE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
+
   call :run_cmd py.exe "%BENCHVIEW_PATH%\submission.py" measurement.json %LV_SUBMISSION_ARGS%
+  
   IF %ERRORLEVEL% NEQ 0 (
     call :print_error Creating BenchView submission data failed.
     exit /b 1
@@ -321,7 +342,7 @@ rem ****************************************************************************
 rem   Script's usage.
 rem ****************************************************************************
   set USAGE_DISPLAYED=1
-  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^>
+  echo run-xunit-perf.cmd -testBinLoc ^<path_to_tests^> [-library] [-arch] ^<x86^|x64^> [-configuration] ^<Release^|Debug^> [-generateBenchviewData] ^<path_to_benchview_tools^> [-warmup] [-better] ^<asc ^| desc^> [-group] ^<group^> [-runtype] ^<rolling^|private^> [-scenarioTest] [-collectionFlags] ^<default^+CacheMisses^+InstructionRetired^+BranchMispredictions^+gcapi^>
   echo/
   echo For the path to the tests you can pass a parent directory and the script will grovel for
   echo all tests in subdirectories and run them.
@@ -330,6 +351,9 @@ rem ****************************************************************************
   echo -generateBenchviewData is used to specify a path to the Benchview tooling and when this flag is
   echo set we will generate the results for upload to benchview.
   echo -uploadToBenchview If this flag is set the generated benchview test data will be uploaded.
+  echo -nowarmup specifies not to discard the results of the first run
+  echo -better whether it is better to have ascending or descending numbers for the benchmark
+  echo -group specifies the Benchview group to which this data should be uploaded (default CoreCLR)
   echo Runtype sets the runtype that we upload to Benchview, rolling for regular runs, and private for
   echo PRs.
   echo -scenarioTest should be included if you are running a scenario benchmark.

@@ -1,12 +1,11 @@
+setlocal ENABLEDELAYEDEXPANSION 
 @echo off
 
-set ROOT=%cd%\LinkBench
 set EXITCODE=0
-
-if not exist %LinkBenchRoot% mkdir %LinkBenchRoot% 
 pushd %LinkBenchRoot%
 
-if not exist .dotnet call :DotNet
+if not exist %__dotnet1% call :DotNet
+
 if defined __test_HelloWorld call :HelloWorld
 if defined __test_WebAPI call :WebAPI
 if defined __test_MusicStore call :MusicStore
@@ -19,22 +18,19 @@ exit /b %EXITCODE%
 
 :DotNet
 REM Roslyn needs SDK 1.0.0, other benchmarks need SDK 2.0.0
-mkdir .dotnet
-cd .dotnet
-mkdir 1.0.0
-mkdir 2.0.0
+mkdir .Net1
+mkdir .Net2
 powershell -noprofile -executionPolicy RemoteSigned wget  https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1 -OutFile dotnet-install.ps1
-powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -InstallDir 1.0.0
-powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -Channel master -InstallDir 2.0.0
-if not exist %__dotnet1% set EXITCODE=1
-if not exist %__dotnet2% set EXITCODE=1
-cd ..
+powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -InstallDir .Net1
+powershell -noprofile -executionPolicy RemoteSigned -file dotnet-install.ps1 -Channel master -InstallDir .Net2 -version 2.0.0-preview2-005905
+if not exist %__dotnet1% set EXITCODE=1&& echo DotNet.1.0.0 uninstalled
+if not exist %__dotnet2% set EXITCODE=1&& echo DotNet.2.0.0 uninstalled
 exit /b 
 
 :HelloWorld
 mkdir HelloWorld
 cd HelloWorld
-dotnet new console
+call %__dotnet2% new console
 if errorlevel 1 set EXITCODE=1
 cd ..
 exit /b 
@@ -42,7 +38,7 @@ exit /b
 :WebAPI
 mkdir WebAPI
 cd WebAPI
-dotnet new webapi
+call %__dotnet2% new webapi
 if errorlevel 1 set EXITCODE=1
 cd ..
 exit /b
