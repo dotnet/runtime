@@ -143,6 +143,7 @@
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <SyncInfoDirectory>$(BaseIntermediateOutputPath)</SyncInfoDirectory>
 
     <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
     <RuntimeIdGraphDefinitionFile>$(PackagesDir)/Microsoft.NETCore.Platforms/1.0.2-beta-24224-02/runtime.json</RuntimeIdGraphDefinitionFile>

@@ -25,5 +25,9 @@
     <Project Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
   </ItemGroup>
 
+  <Import Project="$(ToolsDir)versioning.targets" />
+  <!-- Make sure we create version.txt file since it will be packaged -->
+  <Target Name="EnsureVersionInfoFileExists" BeforeTargets="Build" DependsOnTargets="CreateVersionInfoFile" />
+
   <Import Project="$(MSBuildThisFileDirectory)..\..\dir.traversal.targets" />
 </Project>
