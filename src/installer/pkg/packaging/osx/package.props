@@ -3,8 +3,8 @@
   <PropertyGroup>
     <OSXScriptRoot>$(PackagingRoot)osx/</OSXScriptRoot>
     <SharedHostComponentId>com.microsoft.dotnet.sharedhost.component.osx.x64</SharedHostComponentId>
-    <HostFxrComponentId>com.microsoft.dotnet.hostfxr.$(HostVersion).component.osx.x64</HostFxrComponentId>
-    <SharedFxComponentId>com.microsoft.dotnet.sharedframework.$(SharedFrameworkName).$(HostVersion).component.osx.x64</SharedFxComponentId>
-    <SharedPackageId>com.microsoft.dotnet.$(SharedFrameworkName).$(HostVersion).osx.x64</SharedPackageId>
+    <HostFxrComponentId>com.microsoft.dotnet.hostfxr.$(HostResolverVersion).component.osx.x64</HostFxrComponentId>
+    <SharedFxComponentId>com.microsoft.dotnet.sharedframework.$(SharedFrameworkName).$(SharedFrameworkNugetVersion).component.osx.x64</SharedFxComponentId>
+    <SharedPackageId>com.microsoft.dotnet.$(SharedFrameworkName).$(SharedFrameworkNugetVersion).osx.x64</SharedPackageId>
   </PropertyGroup>
 </Project>
