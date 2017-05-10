@@ -7508,38 +7508,34 @@ prelink_method (MonoMethod *method, MonoError *error)
 		return;
 	mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 	if (exc_class) {
-		mono_error_set_exception_instance (error,
-			mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
+		mono_error_set_generic_error (error, "System", exc_class, "%s", exc_arg);
 		return;
 	}
 	/* create the wrapper, too? */
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethod *method)
+ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethodHandle method, MonoError *error)
 {
-	MonoError error;
+	error_init (error);
 
-	prelink_method (method->method, &error);
-	mono_error_set_pending_exception (&error);
+	prelink_method (MONO_HANDLE_GETVAL (method, method), error);
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType *type)
+ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoError error;
-	MonoClass *klass = mono_class_from_mono_type (type->type);
+	error_init (error);
+	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (type, type));
 	MonoMethod* m;
 	gpointer iter = NULL;
 
-	mono_class_init_checked (klass, &error);
-	if (mono_error_set_pending_exception (&error))
-		return;
+	mono_class_init_checked (klass, error);
+	return_if_nok (error);
 
 	while ((m = mono_class_get_methods (klass, &iter))) {
-		prelink_method (m, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+		prelink_method (m, error);
+		return_if_nok (error);
 	}
 }
 

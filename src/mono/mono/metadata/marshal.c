@@ -11023,18 +11023,23 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 }
 
 guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rtype)
+ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
 	MonoClass *klass;
 	MonoType *type;
 	guint32 layout;
 
-	MONO_CHECK_ARG_NULL (rtype, 0);
+	error_init (error);
 
-	type = rtype->type;
+	if (MONO_HANDLE_IS_NULL (rtype)) {
+		mono_error_set_argument_null (error, "type", "");
+		return 0;
+	}
+
+	type = MONO_HANDLE_GETVAL (rtype, type);
 	klass = mono_class_from_mono_type (type);
 	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_for_class_failure (error, klass);
 		return 0;
 	}
 
@@ -11043,13 +11048,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 		return sizeof (gpointer);
 	} else if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		gchar *msg;
-		MonoException *exc;
-
-		msg = g_strdup_printf ("Type %s cannot be marshaled as an unmanaged structure.", klass->name);
-		exc = mono_get_exception_argument ("t", msg);
-		g_free (msg);
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "t", "Type %s cannot be marshaled as an unmanaged structure.", klass->name);
 		return 0;
 	}
 
@@ -11155,26 +11154,29 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name)
+ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHandle ref_type, MonoStringHandle field_name, MonoError *error)
 {
-	MonoError error;
-	MonoMarshalType *info;
-	MonoClass *klass;
-	char *fname;
-	int match_index = -1;
-	
-	MONO_CHECK_ARG_NULL (type, 0);
-	MONO_CHECK_ARG_NULL (field_name, 0);
-
-	fname = mono_string_to_utf8_checked (field_name, &error);
-	if (mono_error_set_pending_exception (&error))
+	error_init (error);
+	if (MONO_HANDLE_IS_NULL (ref_type)) {
+		mono_error_set_argument_null (error, "type", "");
 		return 0;
-	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+	}
+	if (MONO_HANDLE_IS_NULL (field_name)) {
+		mono_error_set_argument_null (error, "fieldName", "");
 		return 0;
 	}
 
+	char *fname = mono_string_handle_to_utf8 (field_name, error);
+	return_val_if_nok (error, 0);
+
+	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass *klass = mono_class_from_mono_type (type);
+	if (!mono_class_init (klass)) {
+		mono_error_set_for_class_failure (error, klass);
+		return 0;
+	}
+
+	int match_index = -1;
 	while (klass && match_index == -1) {
 		MonoClassField* field;
 		int i = 0;
@@ -11196,21 +11198,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	g_free (fname);
 
 	if(match_index == -1) {
-		MonoException* exc;
-		gchar *tmp;
-
 		/* Get back original class instance */
-		klass = mono_class_from_mono_type (type->type);
+		klass = mono_class_from_mono_type (type);
 
-		tmp = g_strdup_printf ("Field passed in is not a marshaled member of the type %s", klass->name);
-		exc = mono_get_exception_argument ("fieldName", tmp);
-		g_free (tmp);
- 
-		mono_set_pending_exception ((MonoException*)exc);
+		mono_error_set_argument (error, "fieldName", "Field passed in is not a marshaled member of the type %s", klass->name);
 		return 0;
 	}
 
-	info = mono_marshal_load_type_info (klass);     
+	MonoMarshalType *info = mono_marshal_load_type_info (klass);
 	return info->fields [match_index].offset;
 }
 
