@@ -128,7 +128,7 @@ namespace System.Net.Http
                         RequestTaskStatus = responseTask.Status
                     });
                 }
-                //if Activity events are disabled, try to write System.Net.Http.Response event (deprecated)
+                // Try to write System.Net.Http.Response event (deprecated)
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
                     long timestamp = Stopwatch.GetTimestamp();
