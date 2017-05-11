@@ -54,6 +54,12 @@
       "values": ["Release", "Debug"],
       "defaultValue": "Debug"
     },
+    "OfficialBuildId": {
+      "description": "Specifies the SeedDate and the revision of the build to generate the version of the libraries.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
     "MsBuildLogging": {
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
