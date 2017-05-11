@@ -894,6 +894,8 @@ void LazyMachState::unwindLazyState(LazyMachState* baseState,
 
             case 0x01:                           // ADD mod/rm
             case 0x03:
+            case 0x11:                           // ADC mod/rm
+            case 0x13:
             case 0x29:                           // SUB mod/rm
             case 0x2B:
                 datasize = 0;
