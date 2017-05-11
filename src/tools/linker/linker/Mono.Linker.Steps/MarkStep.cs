@@ -1382,9 +1382,15 @@ namespace Mono.Linker.Steps {
 			if (!method.HasBody)
 				return false;
 
-			AssemblyDefinition assembly = ResolveAssembly (method.DeclaringType.Scope);
-			return (Annotations.GetAction (method) == MethodAction.ForceParse ||
-				(Annotations.GetAction (assembly) == AssemblyAction.Link && Annotations.GetAction (method) == MethodAction.Parse));
+			switch (Annotations.GetAction (method)) {
+			case MethodAction.ForceParse:
+				return true;
+			case MethodAction.Parse:
+				AssemblyDefinition assembly = ResolveAssembly (method.DeclaringType.Scope);
+				return Annotations.GetAction (assembly) == AssemblyAction.Link;
+			default:
+				return false;
+			}
 		}
 
 		static internal bool IsPropertyMethod (MethodDefinition md)
