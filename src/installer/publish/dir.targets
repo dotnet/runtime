@@ -32,13 +32,13 @@
   <Target Name="GenerateDebRepoFiles"
           Condition="('$(TargetsUbuntu)' == 'true' or '$(TargetsDebian)' == 'true') and '$(TargetArchitecture)' == 'x64'">
     <ItemGroup>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-host-$(DistroRid)-$(SharedFrameworkNugetVersion).deb" >
+      <DebInstallerFile Include="$(SharedHostInstallerStart)$(ProductMoniker).deb" >
         <PackageName>dotnet-host</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-hostfxr-$(DistroRid)-$(SharedFrameworkNugetVersion).deb" >
+      <DebInstallerFile Include="$(HostFxrInstallerStart)$(HostResolverVersionMoniker).deb" >
         <PackageName>dotnet-hostfxr</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-sharedframework-$(DistroRid)-$(SharedFrameworkNugetVersion).deb">
+      <DebInstallerFile Include="$(SharedFrameworkInstallerStart)$(ProductMoniker).deb">
         <PackageName>dotnet-sharedframework</PackageName>
       </DebInstallerFile>
 

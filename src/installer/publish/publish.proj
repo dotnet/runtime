@@ -51,8 +51,7 @@
   </Target>
 
   <Target Name="PublishDebFilesToDebianRepo"
-          DependsOnTargets="GenerateDebRepoFiles"
-          Condition="'@(DebInstallerFile)' != ''">
+          DependsOnTargets="GenerateDebRepoFiles">
       <ItemGroup>
         <RepoIds Include="DebianId_ubuntu1404-x64">
           <Key>$(DebianId_ubuntu1404-x64)</Key>
@@ -73,7 +72,7 @@
       </PropertyGroup>
       <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
              Text=" Missing parameters for debian publish." />
-      <Exec Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
+      <Exec Condition="'@(DebInstallerFile)' != ''" Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
   <Target Name="FinalizeBuildInAzure"
