@@ -582,13 +582,13 @@ INST1(ldursh,  "ldursh", 0,LD, IF_LS_2C,  0x78800000)
 INST1(ldursw,  "ldursw", 0,LD, IF_LS_2C,  0xB8800000)  
                                    //  ldursw  Rt,[Xn+simm9]        LS_2C  10111000100iiiii iiii00nnnnnttttt   B880 0000   [Xn imm(-256..+255)]
 
-INST1(stlr,    "stlr",   0,LD, IF_LS_2A,  0x889FFC00)
+INST1(stlr,    "stlr",   0,ST, IF_LS_2A,  0x889FFC00)
                                    //  stlr    Rt,[Xn]              LS_2A  1X00100010011111 111111nnnnnttttt   889F FC00
 
-INST1(stlrb,   "stlrb",  0,LD, IF_LS_2A,  0x089FFC00)
+INST1(stlrb,   "stlrb",  0,ST, IF_LS_2A,  0x089FFC00)
                                    //  stlrb   Rt,[Xn]              LS_2A  0000100010011111 111111nnnnnttttt   089F FC00
 
-INST1(stlrh,   "stlrh",  0,LD, IF_LS_2A,  0x489FFC00)
+INST1(stlrh,   "stlrh",  0,ST, IF_LS_2A,  0x489FFC00)
                                    //  stlrh   Rt,[Xn]              LS_2A  0100100010011111 111111nnnnnttttt   489F FC00
 
 INST1(stur,    "stur",   0,ST, IF_LS_2C,  0xB8000000)  
