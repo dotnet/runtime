@@ -116,57 +116,34 @@
   <Target Name="GetFilesFromPackages" DependsOnTargets="GetPackagePaths">
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
-      <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
+      <FilesToPackage Include="@(ReferenceCopyLocalPaths)">
         <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native), 
              calculate it by looking for native in the path -->
         <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
-      </_FilesToPackage>
-      <_FilesToPackage>
-        <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
-        <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
-      </_FilesToPackage>
-      <_FilesToPackage Include="$(_runtimePackagePath)/tools/*.*">
+      </FilesToPackage>
+      <FilesToPackage>
+        <TargetPath Condition="'%(FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
+        <TargetPath Condition="'%(FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
+      </FilesToPackage>
+      <FilesToPackage Include="$(_runtimePackagePath)/tools/*.*">
         <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
         <TargetPath>tools</TargetPath>
-      </_FilesToPackage>
+      </FilesToPackage>
     </ItemGroup>
 
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
       <!-- Not RID-specific: include all reference files -->
-      <_FilesToPackage Include="@(Reference)">
+      <FilesToPackage Include="@(Reference)">
         <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
-      </_FilesToPackage>
+      </FilesToPackage>
+
+      <!-- include all doc files -->
+      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
+      
+      <FilesToPackage Include="@(_docFilesToPackage)">
+        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
+      </FilesToPackage>
     </ItemGroup>
-
-    <ItemGroup>
-      <!-- add metadata for source and package -->
-      <_FilesToPackage>
-        <SourcePath>%(Identity)</SourcePath>
-        <PackagePath>%(TargetPath)/%(FileName)%(Extension)</PackagePath>
-      </_FilesToPackage>
-
-      <!-- transform to package path for deduping -->
-      <_primaryFilesByPackagePath Include="@(_FilesToPackage->'%(PackagePath)')" Condition="$([System.String]::new('%(NuGetPackageId)').EndsWith('$(PrimaryPackage)'))"/>
-      <_secondaryFilesByPackagePath Include="@(_FilesToPackage->'%(PackagePath)')" Condition="!$([System.String]::new('%(NuGetPackageId)').EndsWith('$(PrimaryPackage)'))"/>
-
-      <!-- remove any secondary files with same package path as primary files -->
-      <_secondaryFilesByPackagePath Remove="@(_primaryFilesByPackagePath)" />
-
-      <_filesByPackagePath Include="@(_primaryFilesByPackagePath);@(_secondaryFilesByPackagePath)" />
-
-      <!-- transform back to source -->
-      <FilesToPackage Include="@(_filesByPackagePath->'%(SourcePath)')" />
-    </ItemGroup>
-
-    <!-- simple check to make sure we don't accidentally pull an old 
-         package that should have been merged to the primary package -->
-    <ItemGroup>
-      <PermittedSystemPackages Include="System.ValueTuple" />
-      <_secondarySystemPackages Include="@(_secondaryFilesByPackagePath->'%(NuGetPackageId)')"
-                                Condition="$([System.String]::new('%(NuGetPackageId)').Contains('System.'))" />
-      <_secondarySystemPackages Remove="@(PermittedSystemPackages)" />
-    </ItemGroup>
-    <Error Text="Unexpected System package(s) @(_secondarySystemPackages)" Condition="'@(_secondarySystemPackages)' != ''" />
 
     <ItemGroup>
       <!-- pick up any src our sources directory from packages contributing files -->
