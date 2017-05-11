@@ -181,7 +181,7 @@ mini_emit_memcpy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mono
 	/* FIXME: Optimize the case when src/dest is OP_LDADDR */
 
 	/* We can't do copies at a smaller granule than the provided alignment */
-	if (size_ins || ((size / align > MAX_INLINE_COPIES) && !(cfg->opt & MONO_OPT_INTRINS))) {
+	if (size_ins || (size / align > MAX_INLINE_COPIES) || !(cfg->opt & MONO_OPT_INTRINS)) {
 		MonoInst *iargs [3];
 		iargs [0] = dest;
 		iargs [1] = src;
@@ -201,7 +201,7 @@ mini_emit_memset_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *value_ins
 	/* FIXME: Optimize the case when dest is OP_LDADDR */
 
 	/* We can't do copies at a smaller granule than the provided alignment */
-	if (value_ins || size_ins || value != 0 || ((size / align > MAX_INLINE_COPIES) && !(cfg->opt & MONO_OPT_INTRINS))) {
+	if (value_ins || size_ins || value != 0 || (size / align > MAX_INLINE_COPIES) || !(cfg->opt & MONO_OPT_INTRINS)) {
 		MonoInst *iargs [3];
 		iargs [0] = dest;
 
