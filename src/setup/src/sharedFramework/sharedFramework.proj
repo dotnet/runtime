@@ -58,6 +58,9 @@
           DestinationFiles="$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json" />
     
     <!-- Use the muxer we intended to consume (either restored a shipped version or the one we built) -->
+    <!-- Ensure the host is executable.  See https://github.com/NuGet/Home/issues/4424 -->
+    <Exec Command="chmod u+x $(CoreHostLockedDir)dotnet$(ExeSuffix)"
+          Condition="'$(OSGroup)' != 'Windows_NT'" />
     <Copy SourceFiles="$(CoreHostLockedDir)dotnet$(ExeSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)" />
 
     <!--  Use the FXR Resolver we intended to consume (either restored a shipped version or the one we built) -->
