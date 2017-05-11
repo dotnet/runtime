@@ -4,7 +4,7 @@
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin 
-#if !ES_BUILD_STANDALONE && !CORECLR && !ES_BUILD_PN
+#if PLATFORM_WINDOWS && !ES_BUILD_STANDALONE && !CORECLR && !ES_BUILD_PN
 #define FEATURE_ACTIVITYSAMPLING
 #endif // !ES_BUILD_STANDALONE
 
