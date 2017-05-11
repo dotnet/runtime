@@ -68,7 +68,8 @@ function AddPackage
     fi
     packageUrl=$(grep "sourceUrl" $packageFile  | head -n 1 | awk '{print $2}')
     echo "Adding package to $server [$packageUrl]"
-    curl -i -k "$baseurl/v1/packages" --data @$packageFile -H "Content-Type: application/json"
+    #Workaround no curl on image
+    wget  --header "Content-Type: application/json" --post-file $packageFile --no-check-certificate "$baseurl/v1/packages"
     BailIf $?
     echo ""
 }
