@@ -6,7 +6,12 @@
     <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
   </PropertyGroup>
-
+  
+  <PropertyGroup>
+    <ProductMoniker>$(DistroRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
+    <HostResolverVersionMoniker>$(DistroRid).$(HostResolverVersion)</HostResolverVersionMoniker>
+  </PropertyGroup>
+  
   <ItemGroup>
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(InstallerExtension)" />
     <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CombinedInstallerExtension)" />
