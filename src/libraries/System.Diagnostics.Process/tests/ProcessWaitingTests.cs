@@ -155,7 +155,9 @@ namespace System.Diagnostics.Tests
             }, child1.Id.ToString());
             child2.StartInfo.RedirectStandardOutput = true;
             child2.Start();
-            Assert.Equal("Signal", child2.StandardOutput.ReadLine()); // wait for the signal before killing the peer
+            char[] output = new char[6];
+            child2.StandardOutput.Read(output, 0, output.Length);
+            Assert.Equal("Signal", new string(output)); // wait for the signal before killing the peer
 
             child1.Kill();
             Assert.True(child1.WaitForExit(WaitInMS));
