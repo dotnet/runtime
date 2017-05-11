@@ -5,11 +5,6 @@
 #
 
 # This is a VERY basic script for Create/Delete operations on repos and packages
-# 
-# Environment Dependencies:
-#   $REPO_SERVER
-#   $REPO_USER
-#   $REPO_PASS
 
 cmd=$5
 urls=urls.txt

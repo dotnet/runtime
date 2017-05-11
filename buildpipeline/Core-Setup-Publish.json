@@ -241,7 +241,12 @@
       "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
     },
     "NUGET_API_KEY": {
-      "value": "PassedViaPipeBuild"
+      "value": null,
+      "isSecret": true
+    },
+    "GITHUB_PASSWORD": {
+      "value": null,
+      "isSecret": true
     },
     "PB_DistroRid": {
       "value": "win7-x64"
