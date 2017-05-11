@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
+    <BaseUrl Condition="'$(BaseUrl)' == ''">https://dotnetcli.blob.core.windows.net/</BaseUrl>
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
   </PropertyGroup>
   
