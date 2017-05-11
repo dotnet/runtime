@@ -1,0 +1,8 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- XUnit reflects for ToString() as part of enumerating theory data -->
+    <Type Name="System.Security.HostProtectionException" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
+
