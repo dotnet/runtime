@@ -72,6 +72,15 @@
       <FilesToPackage Include="@(_filesByPackagePath->'%(SourcePath)')" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+      <!-- include all docs files -->
+      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
+      
+      <FilesToPackage Include="@(_docFilesToPackage)">
+        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+
     <!-- simple check to make sure we don't accidentally pull an old 
          package that should have been merged to the primary package -->
     <ItemGroup>
