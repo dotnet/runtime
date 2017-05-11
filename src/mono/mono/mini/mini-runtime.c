@@ -496,6 +496,13 @@ mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboo
 	if (info->unwind_ops) {
 		copy->uw_info = mono_unwind_ops_encode (info->unwind_ops, &copy->uw_info_len);
 		copy->owns_uw_info = TRUE;
+		if (domain) {
+			/* Move unwind info into the domain's memory pool so that it is removed once the domain is released. */
+			guint8 *temp = copy->uw_info;
+			copy->uw_info = mono_domain_alloc (domain, copy->uw_info_len);
+			memcpy (copy->uw_info, temp, copy->uw_info_len);
+			g_free (temp);
+		}
 	} else {
 		/* Trampolines from aot have the unwind ops already encoded */
 		copy->uw_info = info->uw_info;
