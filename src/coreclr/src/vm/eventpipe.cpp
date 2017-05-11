@@ -9,11 +9,6 @@
 #include "eventpipefile.h"
 #include "eventpipeprovider.h"
 #include "eventpipejsonfile.h"
-
-#ifdef PROFILING_SUPPORTED
-#include "eventpipeprofilerapi.h"
-#endif
-
 #include "sampleprofiler.h"
 
 #ifdef FEATURE_PAL
@@ -27,10 +22,6 @@ bool EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration* EventPipe::s_pConfig = NULL;
 EventPipeFile* EventPipe::s_pFile = NULL;
 EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
-
-#ifdef PROFILING_SUPPORTED
-EventPipeProfilerApi* EventPipe::s_pProfilerApi = NULL;
-#endif
 
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -107,10 +98,6 @@ void EventPipe::Enable()
     SString eventPipeFileOutputPath;
     eventPipeFileOutputPath.Printf("Process-%d.netperf", GetCurrentProcessId());
     s_pFile = new EventPipeFile(eventPipeFileOutputPath);
-
-#ifdef PROFILING_SUPPORTED
-    s_pProfilerApi = new EventPipeProfilerApi();
-#endif
 
     if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) == 2)
     {
@@ -200,12 +187,6 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
     _ASSERTE(s_pFile != NULL);
     s_pFile->WriteEvent(instance);
 
-#ifdef PROFILING_SUPPORTED
-    // Write to the EventPipeProfilerApi.
-    _ASSERTE(s_pProfilerApi != NULL);
-    s_pProfilerApi->WriteEvent(instance);
-#endif
-
     // Write to the EventPipeJsonFile if it exists.
     if(s_pJsonFile != NULL)
     {
@@ -228,14 +209,6 @@ void EventPipe::WriteSampleProfileEvent(SampleProfilerEventInstance &instance)
     {
         s_pFile->WriteEvent(instance);
     }
-
-#ifdef PROFILING_SUPPORTED
-    // Write to the EventPipeProfilerApi.
-    if(s_pProfilerApi != NULL)
-    {
-        s_pProfilerApi->WriteEvent(instance);
-    }
-#endif
 
     // Write to the EventPipeJsonFile if it exists.
     if(s_pJsonFile != NULL)
