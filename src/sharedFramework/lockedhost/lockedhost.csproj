@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.DotNetHostResolver" Version="$(HostResolverVersion)" />
+    <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(HostVersion)" />
+  </ItemGroup>
+
+</Project>
