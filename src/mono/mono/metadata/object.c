@@ -7879,7 +7879,7 @@ mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle targ
  * On failure returns FALSE and sets \p error.
  */
 gboolean
-mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoError *error)
+mono_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7899,7 +7899,7 @@ mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr, Mon
 		g_assert (!mono_class_is_gtd (method->klass));
 	}
 
-	return mono_delegate_ctor_with_method_fixme (this_obj, target, addr, method, error);
+	return mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
 }
 
 /**

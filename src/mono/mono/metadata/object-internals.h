@@ -661,7 +661,7 @@ gboolean
 mono_delegate_ctor_with_method_fixme (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method, MonoError *error);
 
 gboolean
-mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoError *error);
+mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error);
 
 void*
 mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
