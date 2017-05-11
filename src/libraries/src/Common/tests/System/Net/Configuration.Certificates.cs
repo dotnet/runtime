@@ -25,9 +25,21 @@ namespace System.Net.Test.Common
 
             public static X509Certificate2 GetClientCertificate() => GetCertWithPrivateKey(GetClientCertificateCollection());
 
-            public static X509Certificate2Collection GetServerCertificateCollection() => GetCertificateCollection("contoso.com.pfx");
+            public static X509Certificate2 GetNoEKUCertificate() => GetCertWithPrivateKey(GetNoEKUCertificateCollection());
 
-            public static X509Certificate2Collection GetClientCertificateCollection() => GetCertificateCollection("testclient1_at_contoso.com.pfx");
+            public static X509Certificate2 GetSelfSignedServerCertificate() => GetCertWithPrivateKey(GetSelfSignedServerCertificateCollection());
+
+            public static X509Certificate2 GetSelfSignedClientCertificate() => GetCertWithPrivateKey(GetSelfSignedClientCertificateCollection());
+
+            public static X509Certificate2Collection GetServerCertificateCollection() => GetCertificateCollection("testservereku.contoso.com.pfx");
+
+            public static X509Certificate2Collection GetClientCertificateCollection() => GetCertificateCollection("testclienteku.contoso.com.pfx");
+
+            public static X509Certificate2Collection GetNoEKUCertificateCollection() => GetCertificateCollection("testnoeku.contoso.com.pfx");
+
+            public static X509Certificate2Collection GetSelfSignedServerCertificateCollection() => GetCertificateCollection("testselfsignedservereku.contoso.com.pfx");
+
+            public static X509Certificate2Collection GetSelfSignedClientCertificateCollection() => GetCertificateCollection("testselfsignedclienteku.contoso.com.pfx");
 
             private static X509Certificate2Collection GetCertificateCollection(string certificateFileName)
             {

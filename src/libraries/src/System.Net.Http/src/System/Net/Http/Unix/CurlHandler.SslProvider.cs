@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,7 @@ namespace System.Net.Http
         {
             private static readonly Interop.Http.SslCtxCallback s_sslCtxCallback = SslCtxCallback;
             private static readonly Interop.Ssl.AppVerifyCallback s_sslVerifyCallback = VerifyCertChain;
+            private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1");
 
             internal static void SetSslOptions(EasyRequest easy, ClientCertificateOption clientCertOption)
             {
@@ -326,6 +328,9 @@ namespace System.Net.Http
                             }
                             else
                             {
+                                // Authenticate the remote party: (e.g. when operating in client mode, authenticate the server).
+                                chain.ChainPolicy.ApplicationPolicy.Add(s_serverAuthOid);
+
                                 SslPolicyErrors errors = CertificateValidation.BuildChainAndVerifyProperties(chain, leafCert,
                                     checkCertName: true, hostName: easy._requestMessage.RequestUri.Host); // we disabled automatic host verification, so we do it here
                                 try

@@ -149,9 +149,9 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            var innerException = WinHttpException.CreateExceptionUsingError((int)asyncResult.dwError);
+            var innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
 
-            switch ((uint)asyncResult.dwResult.ToInt32())
+            switch (unchecked((uint)asyncResult.dwResult.ToInt32()))
             {
                 case Interop.WinHttp.API_SEND_REQUEST:
                 case Interop.WinHttp.API_RECEIVE_RESPONSE:
@@ -176,7 +176,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(state != null, "OnRequestSecureFailure: state is null");
 
-            var innerException = WinHttpException.CreateExceptionUsingError((int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE);
+            var innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE));
 
             var exception = new WebSocketException(
                 WebSocketError.Success,
@@ -241,7 +241,7 @@ namespace System.Net.WebSockets
                         "WebSocketCallback: statusInformationLength must be sizeof(uint).");
 
                     // statusInformation contains a flag: WINHTTP_CALLBACK_STATUS_FLAG_*
-                    uint flags = (uint)statusInformation;
+                    uint flags = unchecked((uint)statusInformation);
                     OnRequestSecureFailure(state, flags);
                     return;
             }
@@ -311,7 +311,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(state != null, "OnWebSocketError: state is null");
 
-            var innerException = WinHttpException.CreateExceptionUsingError((int)(asyncResult.AsyncResult.dwError));
+            var innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)(asyncResult.AsyncResult.dwError)));
 
             if (asyncResult.AsyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
             {
@@ -362,7 +362,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(state != null, "OnWebSocketSecureFailure: state is null");
 
-            var innerException = WinHttpException.CreateExceptionUsingError((int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE);
+            var innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)Interop.WinHttp.ERROR_WINHTTP_SECURE_FAILURE));
             var exception = new WebSocketException(WebSocketError.ConnectionClosedPrematurely, innerException);
 
             // TODO (Issue 2509): handle SSL related exceptions.

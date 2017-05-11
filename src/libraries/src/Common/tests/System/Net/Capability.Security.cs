@@ -32,6 +32,11 @@ namespace System.Net.Test.Common
             return !(Configuration.Security.NegotiateServer == null);
         }
 
+        public static bool AreHostsFileNamesInstalled()
+        {
+            return !(Configuration.Security.HostsFileNamesInstalled == null);
+        }
+
         private static bool InitializeTrustedRootCertificateCapability()
         {
             using (var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
