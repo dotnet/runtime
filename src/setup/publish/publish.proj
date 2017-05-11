@@ -52,26 +52,6 @@
 
   <Target Name="PublishDebFilesToDebianRepo"
           DependsOnTargets="GenerateDebRepoFiles">
-      <ItemGroup>
-        <RepoIds Include="DebianId_ubuntu1404-x64">
-          <Key>$(DebianId_ubuntu1404-x64)</Key>
-        </RepoIds>
-        <RepoIds Include="DebianId_debian8-x64">
-          <Key>$(DebianId_debian8-x64)</Key>
-        </RepoIds>
-        <RepoIds Include="DebianId_ubuntu1604-x64">
-          <Key>$(DebianId_ubuntu1604-x64)</Key>
-        </RepoIds>
-        <RepoIds Include="DebianId_ubuntu1610-x64">
-          <Key>$(DebianId_ubuntu1610-x64)</Key>
-        </RepoIds>
-      </ItemGroup>
-      <PropertyGroup>
-        <RidWithoutDots>$([System.String]::Copy($(DistroRid)).Replace('.', ''))</RidWithoutDots>
-        <DebRepoId Condition="$([System.String]::Copy(%(RepoIds.Identity)).EndsWith('$(RidWithoutDots)'))">%(RepoIds.Key)</DebRepoId>
-      </PropertyGroup>
-      <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
-             Text=" Missing parameters for debian publish." />
       <Exec Condition="'@(DebInstallerFile)' != ''" Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
