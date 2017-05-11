@@ -7,8 +7,6 @@ namespace Microsoft.DotNet.Cli.Build
     {
         public static readonly bool Verbose = GetBool("DOTNET_BUILD_VERBOSE");
 
-        public static readonly bool PublishRidAgnosticPackages = GetBool("PUBLISH_RID_AGNOSTIC_PACKAGES");
-
         private static bool GetBool(string name, bool defaultValue = false)
         {
             var str = Environment.GetEnvironmentVariable(name);
@@ -30,17 +28,6 @@ namespace Microsoft.DotNet.Cli.Build
                 default:
                     return defaultValue;
             }
-        }
-
-        public static string EnsureVariable(string variableName)
-        {
-            string value = Environment.GetEnvironmentVariable(variableName);
-            if (string.IsNullOrEmpty(value))
-            {
-                throw new BuildFailureException($"'{variableName}' environment variable was not found.");
-            }
-
-            return value;
         }
     }
 }
