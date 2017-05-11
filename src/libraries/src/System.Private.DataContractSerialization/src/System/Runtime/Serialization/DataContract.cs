@@ -80,6 +80,12 @@ namespace System.Runtime.Serialization
                     }
                 }
             }
+
+            if (dataContract is InvalidDataContract && DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+            {
+                return null;
+            }
+
             return dataContract;
 #else
             return null;
