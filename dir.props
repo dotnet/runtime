@@ -312,6 +312,12 @@
     <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <SharedHostInstallerStart>$(PackagesOutDir)dotnet-host-</SharedHostInstallerStart>
+    <HostFxrInstallerStart>$(PackagesOutDir)dotnet-hostfxr-</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart>$(PackagesOutDir)dotnet-sharedframework-</SharedFrameworkInstallerStart>
+  </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
   <PropertyGroup>
