@@ -9,7 +9,8 @@
     <ResourcesSourceOutputDirectory Condition="'$(IsPartialFacadeAssembly)' == 'true'">None</ResourcesSourceOutputDirectory>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_CryptographyPkcs</GeneratePlatformNotSupportedAssemblyMessage>
     <UsePackageTargetRuntimeDefaults Condition="'$(IsPartialFacadeAssembly)' != 'true'">true</UsePackageTargetRuntimeDefaults>
-  </PropertyGroup>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>  
+</PropertyGroup>
   <!-- Don't delete these clauses even if they look useless. They tell the VS IDE that "Windows_Debug", etc., are
        valid configuration for this project and stop it from trying to "fix up" the .sln file -->
   <!-- API types (platform independent) -->
