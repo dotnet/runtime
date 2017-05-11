@@ -124,6 +124,8 @@ namespace System.Diagnostics.Tracing
             m_eventProvider = new EtwEventProvider();
 #elif FEATURE_PERFTRACING
             m_eventProvider = new EventPipeEventProvider();
+#else
+            m_eventProvider = new NoOpEventProvider();
 #endif
         }
 
@@ -475,7 +477,7 @@ namespace System.Diagnostics.Tracing
                 providerInstance = (UnsafeNativeMethods.ManifestEtw.TRACE_PROVIDER_INSTANCE_INFO*)&structBase[providerInstance->NextOffset];
             }
 #else 
-#if !ES_BUILD_PCL && !FEATURE_PAL  // TODO command arguments don't work on PCL builds...
+#if !ES_BUILD_PCL && PLATFORM_WINDOWS  // TODO command arguments don't work on PCL builds...
             // This code is only used in the Nuget Package Version of EventSource.  because
             // the code above is using APIs baned from UWP apps.     
             // 
@@ -559,7 +561,7 @@ namespace System.Diagnostics.Tracing
             dataStart = 0;
             if (filterData == null)
             {
-#if (!ES_BUILD_PCL && !ES_BUILD_PN && !FEATURE_PAL)
+#if (!ES_BUILD_PCL && !ES_BUILD_PN && PLATFORM_WINDOWS)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
                 if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + @"\Wow6432Node" + regKey;
@@ -1259,6 +1261,41 @@ namespace System.Diagnostics.Tracing
             return UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
                 ControlCode,
                 ref ActivityId);
+        }
+    }
+
+#elif !FEATURE_PERFTRACING
+
+    internal sealed class NoOpEventProvider : IEventProvider
+    {
+        unsafe uint IEventProvider.EventRegister(
+            ref Guid providerId,
+            UnsafeNativeMethods.ManifestEtw.EtwEnableCallback enableCallback,
+            void* callbackContext,
+            ref long registrationHandle)
+        {
+            return 0;
+        }
+
+        uint IEventProvider.EventUnregister(long registrationHandle)
+        {
+            return 0;
+        }
+
+        unsafe int IEventProvider.EventWriteTransferWrapper(
+            long registrationHandle,
+            ref EventDescriptor eventDescriptor,
+            Guid* activityId,
+            Guid* relatedActivityId,
+            int userDataCount,
+            EventProvider.EventData* userData)
+        {
+            return 0;
+        }
+
+        int IEventProvider.EventActivityIdControl(UnsafeNativeMethods.ManifestEtw.ActivityControl ControlCode, ref Guid ActivityId)
+        {
+            return 0;
         }
     }
 
