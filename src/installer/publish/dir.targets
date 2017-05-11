@@ -31,6 +31,28 @@
 
   <Target Name="GenerateDebRepoFiles"
           Condition="('$(TargetsUbuntu)' == 'true' or '$(TargetsDebian)' == 'true') and '$(TargetArchitecture)' == 'x64'">
+          
+    <ItemGroup>
+      <RepoIds Include="DebianId_ubuntu1404-x64">
+        <Key>$(DebianId_ubuntu1404-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_debian8-x64">
+        <Key>$(DebianId_debian8-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1604-x64">
+        <Key>$(DebianId_ubuntu1604-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1610-x64">
+        <Key>$(DebianId_ubuntu1610-x64)</Key>
+      </RepoIds>
+    </ItemGroup>
+    <PropertyGroup>
+      <RidWithoutDots>$([System.String]::Copy($(DistroRid)).Replace('.', ''))</RidWithoutDots>
+      <DebRepoId Condition="$([System.String]::Copy(%(RepoIds.Identity)).EndsWith('$(RidWithoutDots)'))">%(RepoIds.Key)</DebRepoId>
+    </PropertyGroup>
+    <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
+           Text=" Missing parameters for debian publish." />
+           
     <ItemGroup>
       <DebInstallerFile Include="$(SharedHostInstallerStart)$(ProductMoniker).deb" >
         <PackageName>dotnet-host</PackageName>
