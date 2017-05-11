@@ -14,6 +14,7 @@ set __VCBuildArch=x86_amd64
 set CMAKE_BUILD_TYPE=Debug
 set "__LinkArgs= "
 set "__LinkLibraries= "
+set __PortableBuild=0
 
 :Arg_Loop
 if [%1] == [] goto :ToolsVersion
@@ -27,13 +28,14 @@ if /i [%1] == [x64]         ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&
 if /i [%1] == [amd64]       ( set __BuildArch=x64&&set __VCBuildArch=x86_amd64&&shift&goto Arg_Loop)
 if /i [%1] == [arm64]       ( set __BuildArch=arm64&&set __VCBuildArch=arm64&&shift&goto Arg_Loop)
 
+if /i [%1] == [portable]    ( set __PortableBuild=1&&shift&goto Arg_Loop)
 if /i [%1] == [rid]         ( set __TargetRid=%2&&shift&&shift&goto Arg_Loop)
 if /i [%1] == [toolsetDir]  ( set "__ToolsetDir=%2"&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [hostver] (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [apphostver] (set __AppHostVersion=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [fxrver] (set __HostResolverVersion=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [policyver] (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
-if /i [%1] == [commit] (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [hostver]     (set __HostVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [apphostver]  (set __AppHostVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [fxrver]      (set __HostResolverVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [policyver]   (set __HostPolicyVersion=%2&&shift&&shift&goto Arg_Loop)
+if /i [%1] == [commit]      (set __CommitSha=%2&&shift&&shift&goto Arg_Loop)
 
 shift
 goto :Arg_Loop
@@ -108,7 +110,7 @@ if /i "%__BuildArch%" == "arm64" (
 
 echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%"
 pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion%
+call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__VSVersion% %__BuildArch% %__CommitSha% %__HostVersion% %__AppHostVersion% %__HostResolverVersion% %__HostPolicyVersion% %__PortableBuild%
 popd
 
 :CheckForProj

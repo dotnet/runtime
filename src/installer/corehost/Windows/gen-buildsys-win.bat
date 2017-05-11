@@ -5,7 +5,7 @@ rem This file invokes cmake and generates the build system for windows.
 set argC=0
 for %%x in (%*) do Set /A argC+=1
 
-if NOT %argC%==8 GOTO :USAGE
+if NOT %argC%==9 GOTO :USAGE
 if %1=="/?" GOTO :USAGE
 
 setlocal
@@ -14,16 +14,22 @@ set __sourceDir=%~dp0..
 set __VSString=14 2015
 
 :: Set the target architecture to a format cmake understands. ANYCPU defaults to x64
-if /i "%3" == "x86"     (set cm_BaseRid=win7-x86&&set cm_Arch=I386&&set __VSString=%__VSString%)
-if /i "%3" == "x64"     (set cm_BaseRid=win7-x64&&set cm_Arch=AMD64&&set __VSString=%__VSString% Win64)
-if /i "%3" == "arm"     (set cm_BaseRid=win8-arm&&set cm_Arch=ARM&&set __VSString=%__VSString% ARM)
-if /i "%3" == "arm64"   (set cm_BaseRid=win10-arm64&&set cm_Arch=ARM64&&set __VSString=%__VSString% Win64)
+set __RIDArch=%3
+if /i "%3" == "x86"     (set cm_BaseRid=win7&&set cm_Arch=I386&&set __VSString=%__VSString%)
+if /i "%3" == "x64"     (set cm_BaseRid=win7&&set cm_Arch=AMD64&&set __VSString=%__VSString% Win64)
+if /i "%3" == "arm"     (set cm_BaseRid=win8&&set cm_Arch=ARM&&set __VSString=%__VSString% ARM)
+if /i "%3" == "arm64"   (set cm_BaseRid=win10&&set cm_Arch=ARM64&&set __VSString=%__VSString% Win64)
 
 set __LatestCommit=%4
 set __HostVersion=%5
 set __AppHostVersion=%6
 set __HostResolverVersion=%7
 set __HostPolicyVersion=%8
+
+:: Form the base RID to be used if we are doing a portable build
+if /i "%9" == "1"       (set cm_BaseRid=win)
+set cm_BaseRid=%cm_BaseRid%-%__RIDArch%
+echo "Computed RID for native build is %cm_BaseRid%"
 
 if defined CMakePath goto DoGen
 
