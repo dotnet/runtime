@@ -14,10 +14,5 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         public static readonly string[] RunnableSuffixes = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                                                          ? new string[] { ".exe", ".cmd", ".bat" }
                                                          : new string[] { string.Empty };
-
-        public static readonly string DynamicLibPrefix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "" : "lib";
-
-        public static readonly string DynamicLibSuffix = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".dll" :
-                                                         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? ".dylib" : ".so";
     }
 }
