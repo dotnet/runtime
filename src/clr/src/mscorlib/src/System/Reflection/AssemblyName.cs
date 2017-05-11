@@ -19,6 +19,7 @@ namespace System.Reflection
     using System;
     using System.IO;
     using System.Configuration.Assemblies;
+    using System.Reflection.Runtime.Assemblies;
     using System.Runtime.CompilerServices;
     using CultureInfo = System.Globalization.CultureInfo;
     using System.Runtime.Serialization;
@@ -279,7 +280,9 @@ namespace System.Reflection
         {
             get
             {
-                return nToString();
+                if (this.Name == null)
+                    return string.Empty;
+                return AssemblyNameHelpers.ComputeDisplayName(this);
             }
         }
 
