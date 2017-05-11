@@ -30,6 +30,12 @@
       "values": [ "True", "False"],
       "defaultValue": "False"
     },
+    "CrossBuild": {
+      "description": "Indicates if this is a linux cross build.",
+      "valueType": "property",
+      "values": [ "True", "False"],
+      "defaultValue": "False"
+    },
     "DistroRid": {
       "description": "Specifies the distro rid for Unix OS.",
       "valueType": "property",
