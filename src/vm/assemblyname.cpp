@@ -57,20 +57,11 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     SString sFileName(gc.filename->GetBuffer());
     PEImageHolder pImage = PEImage::OpenImage(sFileName, MDInternalImport_NoCache);
 
-    EX_TRY
-    {
-        // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
-        if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
-            pImage->VerifyIsNIAssembly();
-        else
-            pImage->VerifyIsAssembly();
-    }
-    EX_CATCH
-    {
-        Exception *ex = GET_EXCEPTION();
-        EEFileLoadException::Throw(sFileName,ex->GetHR(),ex);
-    }
-    EX_END_CATCH_UNREACHABLE;
+    // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
+    if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
+        pImage->VerifyIsNIAssembly();
+    else
+        pImage->VerifyIsAssembly();
 
     SString sUrl = sFileName;
     PEAssembly::PathToUrl(sUrl);

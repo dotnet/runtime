@@ -18,7 +18,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     [Serializable]
-    public class BadImageFormatException : SystemException
+    public partial class BadImageFormatException : SystemException
     {
         private String _fileName;  // The name of the corrupt PE file.
         private String _fusionLog;  // fusion log (when applicable)
