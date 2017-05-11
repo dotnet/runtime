@@ -2657,6 +2657,7 @@ MonoInst*         mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoI
 void              mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoInst *value, int ins_flag);
 void              mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoInst *size, int ins_flag);
 void              mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag);
+void              mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag);
 
 MonoMethod*       mini_get_memcpy_method (void);
 MonoMethod*       mini_get_memset_method (void);

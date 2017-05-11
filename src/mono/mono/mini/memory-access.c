@@ -8,10 +8,12 @@
 
 #ifndef DISABLE_JIT
 
+#include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-memory-model.h>
 
 #include "mini.h"
 #include "ir-emit.h"
+#include "jit-icalls.h"
 
 #define MAX_INLINE_COPIES 10
 
@@ -231,6 +233,99 @@ mini_emit_memset_const_size (MonoCompile *cfg, MonoInst *dest, int value, int si
 	mini_emit_memset_internal (cfg, dest, NULL, value, NULL, size, align);
 }
 
+static void
+mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native)
+{
+	MonoInst *iargs [4];
+	int size;
+	guint32 align = 0;
+	MonoInst *size_ins = NULL;
+	MonoInst *memcpy_ins = NULL;
+
+	g_assert (klass);
+	g_assert (!(native && klass->has_references));
+
+	if (cfg->gshared)
+		klass = mono_class_from_mono_type (mini_get_underlying_type (&klass->byval_arg));
+
+	/*
+	 * This check breaks with spilled vars... need to handle it during verification anyway.
+	 * g_assert (klass && klass == src->klass && klass == dest->klass);
+	 */
+
+	if (mini_is_gsharedvt_klass (klass)) {
+		g_assert (!native);
+		size_ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_VALUE_SIZE);
+		memcpy_ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_MEMCPY);
+	}
+
+	if (native)
+		size = mono_class_native_size (klass, &align);
+	else
+		size = mono_class_value_size (klass, &align);
+
+	if (!align)
+		align = SIZEOF_VOID_P;
+
+	if (mini_type_is_reference (&klass->byval_arg)) {
+		MonoInst *store, *load;
+		int dreg = alloc_ireg_ref (cfg);
+
+		NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, dreg, src->dreg, 0);
+		MONO_ADD_INS (cfg->cbb, load);
+
+		NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, dest->dreg, 0, dreg);
+		MONO_ADD_INS (cfg->cbb, store);
+
+		mini_emit_write_barrier (cfg, dest, src);
+	} else if (cfg->gen_write_barriers && (klass->has_references || size_ins) && !native) { 	/* if native is true there should be no references in the struct */
+		/* Avoid barriers when storing to the stack */
+		if (!((dest->opcode == OP_ADD_IMM && dest->sreg1 == cfg->frame_reg) ||
+			  (dest->opcode == OP_LDADDR))) {
+			int context_used;
+
+			iargs [0] = dest;
+			iargs [1] = src;
+
+			context_used = mini_class_check_context_used (cfg, klass);
+
+			/* It's ok to intrinsify under gsharing since shared code types are layout stable. */
+			if (!size_ins && (cfg->opt & MONO_OPT_INTRINS) && mini_emit_wb_aware_memcpy (cfg, klass, iargs, size, align)) {
+			} else if (size_ins || align < SIZEOF_VOID_P) {
+				if (context_used) {
+					iargs [2] = mini_emit_get_rgctx_klass (cfg, context_used, klass, MONO_RGCTX_INFO_KLASS);
+				}  else {
+					iargs [2] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_CLASS, klass);
+					if (!cfg->compile_aot)
+						mono_class_compute_gc_descriptor (klass);
+				}
+				if (size_ins)
+					mono_emit_jit_icall (cfg, mono_gsharedvt_value_copy, iargs);
+				else
+					mono_emit_jit_icall (cfg, mono_value_copy, iargs);
+			} else {
+				/* We don't unroll more than 5 stores to avoid code bloat. */
+				/*This is harmless and simplify mono_gc_get_range_copy_func */
+				size += (SIZEOF_VOID_P - 1);
+				size &= ~(SIZEOF_VOID_P - 1);
+
+				EMIT_NEW_ICONST (cfg, iargs [2], size);
+				mono_emit_jit_icall (cfg, mono_gc_get_range_copy_func (), iargs);
+			}
+			return;
+		}
+	}
+
+	if (size_ins) {
+		iargs [0] = dest;
+		iargs [1] = src;
+		iargs [2] = size_ins;
+		mini_emit_calli (cfg, mono_method_signature (mini_get_memcpy_method ()), iargs, memcpy_ins, NULL, NULL);
+	} else {
+		mini_emit_memcpy_const_size (cfg, dest, src, size, align);
+	}
+}
+
 MonoInst*
 mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offset, int ins_flag)
 {
@@ -317,6 +412,31 @@ mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, 
 		mini_emit_memset_internal (cfg, dest, value, 0, size, 0, align);
 	}
 
+}
+
+/* If @klass is a VT it copies it's value, if it's a ref type, it copies the pointer itself.  */
+void
+mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag)
+{
+	/*
+	 * FIXME: It's unclear whether we should be emitting both the acquire
+	 * and release barriers for cpblk. It is technically both a load and
+	 * store operation, so it seems like that's the sensible thing to do.
+	 *
+	 * FIXME: We emit full barriers on both sides of the operation for
+	 * simplicity. We should have a separate atomic memcpy method instead.
+	 */
+	if (ins_flag & MONO_INST_VOLATILE) {
+		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+	}
+
+	mini_emit_memory_copy_internal (cfg, dest, src, klass, native);
+
+	if (ins_flag & MONO_INST_VOLATILE) {
+		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
+	}
 }
 
 #endif
