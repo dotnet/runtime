@@ -10,7 +10,7 @@
 
   <ItemGroup>
     <Compile Remove="tool\**\*" />
-    <Compile Include="..\..\..\src\test\build\Microsoft.DotNet.Cli.Build.Framework\ArgumentEscaper.cs" />
+    <Compile Include="..\..\..\src\test\TestUtils\ArgumentEscaper.cs" />
 
     <Content Include="tool\**">
       <PackagePath>lib/$(TargetFramework)/tool/%(RecursiveDir)%(FileName)%(Extension)</PackagePath>
