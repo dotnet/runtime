@@ -29,8 +29,6 @@ platformList.each { platform ->
     def dockerContainer = ''
     def dockerWorkingDirectory = "/src/core-setup"
     def dockerCommand = ''
-    def portableArgs = ''
-
     // Calculate build command
     if (os == 'Windows_NT') {
         buildCommand = ".\\build.cmd -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
@@ -46,18 +44,17 @@ platformList.each { platform ->
         else if (os == 'Ubuntu16.04') {
             dockerContainer = "ubuntu-16.04-cross-ef0ac75-20175511035548"
         }
-        portableArgs = " -portable cross skiptests disablecrossgen"
         dockerCommand = "docker run --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh ${configuration} ${architecture}${portableArgs}"
+        buildCommand = "${dockerCommand} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true"
     }
     else if (os == "Ubuntu") {
         dockerContainer = "ubuntu-14.04-debpkg-e5cf912-20175003025046"
         dockerCommand = "docker run --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh ${configuration} ${architecture}${portableArgs}"
+        buildCommand = "${dockerCommand} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
     }
     else if (os == "PortableLinux") {
         // Jenkins non-Ubuntu CI machines don't have docker
-        buildCommand = "./build.sh ${configuration} ${architecture} -portable"
+        buildCommand = "./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -PortableBuild=true"
         
         // Trigger a portable Linux build that runs on RHEL7.2
         osForGHTrigger = "PortableLinux"
@@ -65,7 +62,7 @@ platformList.each { platform ->
     }
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
-        buildCommand = "./build.sh ${configuration} ${architecture}"
+        buildCommand = "./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
     }
 
     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {

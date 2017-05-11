@@ -194,7 +194,7 @@
       "allowOverride": true
     },
     "PB_BuildArguments": {
-      "value": "--skip-prereqs --configuration $(BuildConfiguration) $(PB_PortableBuildArg)",
+      "value": "-ConfigurationGroup=$(BuildConfiguration) $(PB_PortableBuildArg)",
       "allowOverride": true
     },
     "CONNECTION_STRING": {
@@ -243,7 +243,7 @@
       "value": "x64"
     },
     "PB_PortableBuildArg": {
-      "value": "-portable"
+      "value": "-PortableBuild=true"
     },
     "PB_PortableBuild": {
       "value": "true"
