@@ -7803,17 +7803,6 @@ mono_print_unhandled_exception (MonoObject *exc)
 		g_free (message);
 }
 
-gboolean
-mono_delegate_ctor_with_method_fixme (MonoObject *this_obj_raw, MonoObject *target_raw, gpointer addr, MonoMethod *method, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	error_init (error);
-	MONO_HANDLE_DCL (MonoObject, this_obj);
-	MONO_HANDLE_DCL (MonoObject, target);
-	gboolean res = mono_delegate_ctor_with_method (this_obj, target, addr, method, error);
-	HANDLE_FUNCTION_RETURN_VAL (res);
-}
-
 /**
  * mono_delegate_ctor_with_method:
  * \param this pointer to an uninitialized delegate object
