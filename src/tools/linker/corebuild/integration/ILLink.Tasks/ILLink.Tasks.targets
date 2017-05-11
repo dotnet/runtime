@@ -44,6 +44,7 @@
   <!-- Used to enable incremental build for the link target. -->
   <PropertyGroup>
     <_LinkSemaphore>$(IntermediateOutputPath)Link.semaphore</_LinkSemaphore>
+    <_LinkDepsSemaphore>$(IntermediateOutputPath)LinkDeps.semaphore</_LinkDepsSemaphore>
   </PropertyGroup>
 
   
@@ -272,8 +273,8 @@
           DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies"
           AfterTargets="GeneratePublishDependencyFile"
           Condition=" '$(LinkDuringPublish)' == 'true' "
-          Inputs="@(_ManagedResolvedAssembliesToPublish);@(_LinkedResolvedAssemblies)"
-          Outputs="$(PublishDepsFilePath)">
+          Inputs="@(_ManagedResolvedAssembliesToPublish);@(_LinkedResolvedAssemblies);$(PublishDepsFilePath)"
+          Outputs="$(_LinkDepsSemaphore)">
     <!-- DepsJsonLinker expects inputs in the form of filename.dll. -->
     <!-- We pass _ManagedResolvedAssembliesToPublish, which doesn't
          contain any .ni files. This correctly prevents stripping of
@@ -285,7 +286,9 @@
                     OutputDepsFilePath="$(PublishDepsFilePath)"
                     ManagedPublishAssemblies="@(_ManagedResolvedAssembliesToPublish->'%(Filename)%(Extension)')"
                     KeptAssemblies="@(_LinkedResolvedAssemblies->'%(Filename)%(Extension)')" />
+    <Touch Files="$(_LinkDepsSemaphore)" AlwaysCreate="true">
+      <Output TaskParameter="TouchedFiles" ItemName="FileWrites" />
+    </Touch>
   </Target>
-
 
 </Project>
