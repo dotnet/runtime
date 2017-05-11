@@ -666,7 +666,7 @@ namespace System.Net.Tests
         }
 
         [OuterLoop("Networking test talking to remote server: issue #11345")]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadFile_Success(Uri echoServer)
         {

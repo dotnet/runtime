@@ -872,7 +872,7 @@ namespace System.Net.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [Theory]
         [MemberData(nameof(EchoServers))]
         public void UseDefaultCredentials_SetGetResponse_ExpectSuccess(Uri remoteServer)
         {
@@ -1064,8 +1064,8 @@ namespace System.Net.Tests
                 Assert.True(strContent.Contains(RequestBody));
             }
         }
-
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        
+        [Theory] 
         [MemberData(nameof(EchoServers))]
         public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
         {
@@ -1123,7 +1123,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task Headers_GetResponseHeaders_ContainsExpectedValue(Uri remoteServer)
         {
