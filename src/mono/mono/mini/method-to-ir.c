@@ -2863,6 +2863,8 @@ mini_emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 	if (!cfg->gen_write_barriers)
 		return;
 
+	//method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1])
+
 	card_table = mono_gc_get_card_table (&card_table_shift_bits, &card_table_mask);
 
 	mono_gc_get_nursery (&nursery_shift_bits, &nursery_size);
@@ -9853,23 +9855,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 			sp -= 2;
-			if (generic_class_is_reference_type (cfg, klass)) {
-				MonoInst *store, *load;
-				int dreg = alloc_ireg_ref (cfg);
-
-				NEW_LOAD_MEMBASE (cfg, load, OP_LOAD_MEMBASE, dreg, sp [1]->dreg, 0);
-				load->flags |= ins_flag;
-				MONO_ADD_INS (cfg->cbb, load);
-
-				NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, sp [0]->dreg, 0, dreg);
-				store->flags |= ins_flag;
-				MONO_ADD_INS (cfg->cbb, store);
-
-				if (cfg->gen_write_barriers && cfg->method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER)
-					mini_emit_write_barrier (cfg, sp [0], sp [1]);
-			} else {
-				mini_emit_stobj (cfg, sp [0], sp [1], klass, FALSE);
-			}
+			mini_emit_memory_copy (cfg, sp [0], sp [1], klass, FALSE, ins_flag);
 			ins_flag = 0;
 			ip += 5;
 			break;
@@ -9918,14 +9904,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			/* Optimize the ldobj+stobj combination */
-			/* The reference case ends up being a load+store anyway */
-			/* Skip this if the operation is volatile. */
-			if (((ip [5] == CEE_STOBJ) && ip_in_bb (cfg, cfg->cbb, ip + 5) && read32 (ip + 6) == token) && !generic_class_is_reference_type (cfg, klass) && !(ins_flag & MONO_INST_VOLATILE)) {
+			if (((ip [5] == CEE_STOBJ) && ip_in_bb (cfg, cfg->cbb, ip + 5) && read32 (ip + 6) == token)) {
 				CHECK_STACK (1);
 
 				sp --;
 
-				mini_emit_stobj (cfg, sp [0], sp [1], klass, FALSE);
+				mini_emit_memory_copy (cfg, sp [0], sp [1], klass, FALSE, ins_flag);
 
 				ip += 5 + 5;
 				ins_flag = 0;
@@ -10582,7 +10566,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						dreg = alloc_ireg_mp (cfg);
 						EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, sp [0]->dreg, offset_ins->dreg);
 						wbarrier_ptr_ins = ins;
-						/* The decomposition will call mini_emit_stobj () which will emit a wbarrier if needed */
+						/* The decomposition will call mini_emit_memory_copy () which will emit a wbarrier if needed */
 						EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, dreg, 0, sp [1]->dreg);
 					} else {
 						EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
@@ -11843,7 +11827,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					temp = mono_compile_create_var (cfg, &klass->byval_arg, OP_LOCAL);
 					temp->backend.is_pinvoke = 1;
 					EMIT_NEW_TEMPLOADA (cfg, dest, temp->inst_c0);
-					mini_emit_stobj (cfg, dest, src, klass, TRUE);
+					mini_emit_memory_copy (cfg, dest, src, klass, TRUE, 0);
 
 					EMIT_NEW_TEMPLOAD (cfg, dest, temp->inst_c0);
 					dest->type = STACK_VTYPE;
@@ -11874,7 +11858,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else {
 					EMIT_NEW_RETLOADA (cfg, ins);
 				}
-				mini_emit_stobj (cfg, ins, sp [0], klass, TRUE);
+				mini_emit_memory_copy (cfg, ins, sp [0], klass, TRUE, 0);
 				
 				if (sp != stack_start)
 					UNVERIFIED;
