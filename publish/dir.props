@@ -18,8 +18,8 @@
     <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CompressedFileExtension)" />
     <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).nupkg" />
     <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).symbols.nupkg" />
-    <IdentityPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).nupkg" Exclude="@(RuntimePackageFile)" />
-    <IdentityPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" />
+    <RidAgnosticPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).nupkg" Exclude="@(RuntimePackageFile)" />
+    <RidAgnosticPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" />
   </ItemGroup>
 
   <ItemGroup>

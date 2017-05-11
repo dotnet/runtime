@@ -3,11 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <UsingTask TaskName="GetBuildArgsByFrameworks" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
-
   <Target Name="Build">
-    
-    <MakeDir  Condition="!Exists('$(pOutDir)')" Directories="$(pOutDir)" /> 
+    <MakeDir  Condition="!Exists('$(pOutDir)')" Directories="$(pOutDir)" />
 
     <PropertyGroup>
       <Args>/p:Configuration=$(ConfigurationGroup)</Args>
@@ -18,13 +15,7 @@
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel/Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
-    <GetBuildArgsByFrameworks
-      OSGroup="$(OSGroup)"
-      ProjectPaths="@(PackageProjects)">
-      <Output ItemName="buildCmdArgs" TaskParameter="BuildArgs" />
-    </GetBuildArgsByFrameworks>
-
-    <Exec Command="$(DotnetSdkToolCommand) build $(Args) %(buildCmdArgs.Identity)" 
+    <Exec Command="$(DotnetSdkToolCommand) build $(Args) %(PackageProjects.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
   </Target>
 </Project>

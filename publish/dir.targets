@@ -9,7 +9,7 @@
     <ItemGroup>
       <PublishFile Include="@(CompressedFile)" />
       <PublishFile Include="@(RuntimePackageFile)" />
-      <PublishFile Condition="'$(PublishRidAgnosticPackages)' == 'true'" Include="@(IdentityPackageFile)" />
+      <PublishFile Condition="'$(PublishRidAgnosticPackages)' == 'true'" Include="@(RidAgnosticPackageFile)" />
       <Project Include="publish.proj">
         <PublishTarget>UploadToAzure</PublishTarget>
         <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(PublishFile);$(OutputVersionBadge);RelativeBlobPath=$(RelativeBlobPath)</AdditionalProperties>

@@ -4,6 +4,7 @@
   <PropertyGroup>
     <Description>Abstractions for reading `.deps` files.</Description>
     <TargetFrameworks>net451;netstandard1.3;netstandard1.6</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'">netstandard1.3;netstandard1.6</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
