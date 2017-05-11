@@ -55,5 +55,9 @@
       <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
     </XmlUpdateStep>
+
+    <!-- project.json files to update -->
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json.template" />
+    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\deps\project.json" />
   </ItemGroup>
 </Project>
