@@ -1366,58 +1366,57 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
         }
         else
         {
+            // Arm64 allows any arbitrary 16-bit constant to be loaded into a register halfword
+            // There are three forms
+            //    movk which loads into any halfword preserving the remaining halfwords
+            //    movz which loads into any halfword zeroing the remaining halfwords
+            //    movn which loads into any halfword zeroing the remaining halfwords then bitwise inverting the register
+            // In some cases it is preferable to use movn, because it has the side effect of filling the other halfwords
+            // with ones
+
             // Determine whether movn or movz will require the fewest instructions to populate the immediate
             int preferMovn = 0;
 
             for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
             {
-                if (((imm >> i) & 0xffffLL) == 0xffffLL)
-                    ++preferMovn;
-                else if (((imm >> i) & 0xffffLL) == 0x0000)
-                    --preferMovn;
+                if (uint16_t(imm >> i) == 0xffff)
+                    ++preferMovn; // a single movk 0xffff could be skipped if movn was used
+                else if (uint16_t(imm >> i) == 0x0000)
+                    --preferMovn; // a single movk 0 could be skipped if movz was used
             }
+
+            // Select the first instruction.  Any additional instruction will use movk
+            instruction ins = (preferMovn > 0) ? INS_movn : INS_movz;
 
             // Initial movz or movn will fill the remaining bytes with the skipVal
-            // This can allow skipping mov* which will be effectively nop.
-            ssize_t skipVal = (preferMovn > 0) ? 0xffffLL : 0;
+            // This can allow skipping filling a halfword
+            uint16_t skipVal = (preferMovn > 0) ? 0xffff : 0;
 
-            instruction ins = (skipVal) ? INS_movn : INS_movz;
+            unsigned bits = (size == EA_8BYTE) ? 64 : 32;
 
-            ssize_t imm16 = (((ins != INS_movn) ? imm : ~imm) >> (0)) & 0xffffLL;
-
-            if (imm16 != skipVal)
+            for (unsigned i = 0; i < bits; i += 16)
             {
-                getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 0, INS_OPTS_LSL);
-                ins = INS_movk;
-            }
-
-            imm16 = (((ins != INS_movn) ? imm : ~imm) >> (16)) & 0xffffLL;
-
-            if (imm16 != skipVal)
-            {
-                getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 16, INS_OPTS_LSL);
-                ins = INS_movk;
-            }
-
-            if (size == EA_8BYTE)
-            {
-                imm16 = (((ins != INS_movn) ? imm : ~imm) >> (32)) & 0xffffLL;
+                uint16_t imm16 = uint16_t(imm >> i);
 
                 if (imm16 != skipVal)
                 {
-                    getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 32, INS_OPTS_LSL);
-                    ins = INS_movk;
-                }
+                    if (ins == INS_movn)
+                    {
+                        // For the movn case, we need to bitwise invert the immediate.  This is because
+                        //   (movn x0, ~imm16) === (movz x0, imm16; or x0, x0, #0xffff`ffff`ffff`0000)
+                        imm16 = ~imm16;
+                    }
 
-                imm16 = (((ins != INS_movn) ? imm : ~imm) >> (48)) & 0xffffLL;
+                    getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, i, INS_OPTS_LSL);
 
-                if (imm16 != skipVal)
-                {
-                    getEmitter()->emitIns_R_I_I(ins, size, reg, imm16, 48, INS_OPTS_LSL);
+                    // Once the initial movz/movn is emitted the remaining instructions will all use movk
                     ins = INS_movk;
                 }
             }
 
+            // We must emit a movn or movz or we have not done anything
+            // The cases which hit this assert should be (emitIns_valid_imm_for_mov() == true) and
+            // should not be in this else condition
             assert(ins == INS_movk);
         }
         // The caller may have requested that the flags be set on this mov (rarely/never)
