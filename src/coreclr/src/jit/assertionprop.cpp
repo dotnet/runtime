@@ -627,12 +627,12 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
         vnStore->vnDump(this, curAssertion->op1.bnd.vnLen);
         printf("]");
     }
-    else if (curAssertion->op1.kind == O1K_ARRLEN_OPER_BND)
+    else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
     {
         printf("Oper_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
     }
-    else if (curAssertion->op1.kind == O1K_ARRLEN_LOOP_BND)
+    else if (curAssertion->op1.kind == O1K_BOUND_LOOP_BND)
     {
         printf("Loop_Bnd");
         vnStore->vnDump(this, curAssertion->op1.vn);
@@ -711,12 +711,12 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                     printf("MT(%08X)", dspPtr(curAssertion->op2.u1.iconVal));
                     assert(curAssertion->op2.u1.iconFlags != 0);
                 }
-                else if (curAssertion->op1.kind == O1K_ARRLEN_OPER_BND)
+                else if (curAssertion->op1.kind == O1K_BOUND_OPER_BND)
                 {
                     assert(!optLocalAssertionProp);
                     vnStore->vnDump(this, curAssertion->op2.vn);
                 }
-                else if (curAssertion->op1.kind == O1K_ARRLEN_LOOP_BND)
+                else if (curAssertion->op1.kind == O1K_BOUND_LOOP_BND)
                 {
                     assert(!optLocalAssertionProp);
                     vnStore->vnDump(this, curAssertion->op2.vn);
@@ -1625,8 +1625,8 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
         case O1K_ARR_BND:
             // It would be good to check that bnd.vnIdx and bnd.vnLen are valid value numbers.
             break;
-        case O1K_ARRLEN_OPER_BND:
-        case O1K_ARRLEN_LOOP_BND:
+        case O1K_BOUND_OPER_BND:
+        case O1K_BOUND_LOOP_BND:
         case O1K_CONSTANT_LOOP_BND:
         case O1K_VALUE_NUMBER:
             assert(!optLocalAssertionProp);
@@ -1702,7 +1702,7 @@ void Compiler::optCreateComplementaryAssertion(AssertionIndex assertionIndex, Ge
     }
 
     AssertionDsc& candidateAssertion = *optGetAssertion(assertionIndex);
-    if (candidateAssertion.op1.kind == O1K_ARRLEN_OPER_BND || candidateAssertion.op1.kind == O1K_ARRLEN_LOOP_BND ||
+    if (candidateAssertion.op1.kind == O1K_BOUND_OPER_BND || candidateAssertion.op1.kind == O1K_BOUND_LOOP_BND ||
         candidateAssertion.op1.kind == O1K_CONSTANT_LOOP_BND)
     {
         AssertionDsc dsc  = candidateAssertion;
@@ -1768,17 +1768,17 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
 
     ValueNum vn = op1->gtVNPair.GetConservative();
 
-    ValueNumStore::ArrLenUnsignedBoundInfo arrLenUnsignedBnd;
-    // Cases where op1 holds the condition with array arithmetic and op2 is 0.
-    // Loop condition like: "i < a.len +/-k == 0"
-    // Assertion: "i < a.len +/- k == 0"
-    if (vnStore->IsVNArrLenArithBound(vn) &&
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    // Cases where op1 holds the upper bound arithmetic and op2 is 0.
+    // Loop condition like: "i < bnd +/-k == 0"
+    // Assertion: "i < bnd +/- k == 0"
+    if (vnStore->IsVNCompareCheckedBoundArith(vn) &&
         op2->gtVNPair.GetConservative() == vnStore->VNZeroForType(op2->TypeGet()) &&
         (relop->gtOper == GT_EQ || relop->gtOper == GT_NE))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind         = O1K_ARRLEN_OPER_BND;
+        dsc.op1.kind         = O1K_BOUND_OPER_BND;
         dsc.op1.vn           = vn;
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
@@ -1788,16 +1788,16 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Cases where op1 holds the condition array length and op2 is 0.
-    // Loop condition like: "i < a.len == 0"
-    // Assertion: "i < a.len == false"
-    else if (vnStore->IsVNArrLenBound(vn) &&
+    // Cases where op1 holds the upper bound and op2 is 0.
+    // Loop condition like: "i < bnd == 0"
+    // Assertion: "i < bnd == false"
+    else if (vnStore->IsVNCompareCheckedBound(vn) &&
              (op2->gtVNPair.GetConservative() == vnStore->VNZeroForType(op2->TypeGet())) &&
              (relop->gtOper == GT_EQ || relop->gtOper == GT_NE))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = relop->gtOper == GT_EQ ? OAK_EQUAL : OAK_NOT_EQUAL;
-        dsc.op1.kind         = O1K_ARRLEN_LOOP_BND;
+        dsc.op1.kind         = O1K_BOUND_LOOP_BND;
         dsc.op1.vn           = vn;
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(op2->TypeGet());
@@ -1807,14 +1807,14 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Cases where op1 holds the lhs of the condition op2 holds rhs.
-    // Loop condition like "i < a.len"
-    // Assertion: "i < a.len != 0"
-    else if (vnStore->IsVNArrLenBound(relop->gtVNPair.GetConservative()))
+    // Cases where op1 holds the lhs of the condition op2 holds the bound.
+    // Loop condition like "i < bnd"
+    // Assertion: "i < bnd != 0"
+    else if (vnStore->IsVNCompareCheckedBound(relop->gtVNPair.GetConservative()))
     {
         AssertionDsc dsc;
         dsc.assertionKind    = OAK_NOT_EQUAL;
-        dsc.op1.kind         = O1K_ARRLEN_LOOP_BND;
+        dsc.op1.kind         = O1K_BOUND_LOOP_BND;
         dsc.op1.vn           = relop->gtVNPair.GetConservative();
         dsc.op2.kind         = O2K_CONST_INT;
         dsc.op2.vn           = vnStore->VNZeroForType(TYP_INT);
@@ -1824,28 +1824,28 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree)
         optCreateComplementaryAssertion(index, nullptr, nullptr);
         return index;
     }
-    // Loop condition like "(uint)i < (uint)a.len" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < a.len (on the appropiate edge)
-    else if (vnStore->IsVNArrLenUnsignedBound(relop->gtVNPair.GetConservative(), &arrLenUnsignedBnd))
+    // Loop condition like "(uint)i < (uint)bnd" or equivalent
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropiate edge)
+    else if (vnStore->IsVNUnsignedCompareCheckedBound(relop->gtVNPair.GetConservative(), &unsignedCompareBnd))
     {
-        assert(arrLenUnsignedBnd.vnIdx != ValueNumStore::NoVN);
-        assert((arrLenUnsignedBnd.cmpOper == VNF_LT_UN) || (arrLenUnsignedBnd.cmpOper == VNF_GE_UN));
-        assert(vnStore->IsVNArrLen(arrLenUnsignedBnd.vnLen));
+        assert(unsignedCompareBnd.vnIdx != ValueNumStore::NoVN);
+        assert((unsignedCompareBnd.cmpOper == VNF_LT_UN) || (unsignedCompareBnd.cmpOper == VNF_GE_UN));
+        assert(vnStore->IsVNCheckedBound(unsignedCompareBnd.vnBound));
 
         AssertionDsc dsc;
         dsc.assertionKind = OAK_NO_THROW;
         dsc.op1.kind      = O1K_ARR_BND;
         dsc.op1.vn        = relop->gtVNPair.GetConservative();
-        dsc.op1.bnd.vnIdx = arrLenUnsignedBnd.vnIdx;
-        dsc.op1.bnd.vnLen = arrLenUnsignedBnd.vnLen;
+        dsc.op1.bnd.vnIdx = unsignedCompareBnd.vnIdx;
+        dsc.op1.bnd.vnLen = unsignedCompareBnd.vnBound;
         dsc.op2.kind      = O2K_INVALID;
         dsc.op2.vn        = ValueNumStore::NoVN;
 
         AssertionIndex index = optAddAssertion(&dsc);
-        if (arrLenUnsignedBnd.cmpOper == VNF_GE_UN)
+        if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
-            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= a.len but we're really
-            // after i < a.len so we need to change the assertion edge to "next".
+            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= bnd but we're really
+            // after i < bnd so we need to change the assertion edge to "next".
             return AssertionInfo::ForNextEdge(index);
         }
         return index;
