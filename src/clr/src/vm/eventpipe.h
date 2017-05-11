@@ -15,10 +15,6 @@ class EventPipeEvent;
 class EventPipeFile;
 class EventPipeJsonFile;
 
-#ifdef PROFILING_SUPPORTED
-class EventPipeProfilerApi;
-#endif
-
 class MethodDesc;
 class SampleProfilerEventInstance;
 

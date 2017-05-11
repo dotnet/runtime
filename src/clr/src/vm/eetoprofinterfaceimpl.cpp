@@ -6390,36 +6390,5 @@ HRESULT EEToProfInterfaceImpl::GetAssemblyReferences(LPCWSTR wszAssemblyPath, IA
     return hr;
 }
 
-HRESULT EEToProfInterfaceImpl::EventPipeEventDelivered(
-    REFGUID eventGuid,
-    DWORD eventId,
-    DWORD eventVersion,
-    DWORD eventThreadId,
-    LARGE_INTEGER eventTimestamp,
-    ULONG cbEventData,
-    LPCBYTE eventData,
-    ULONG numStackFrames,
-    UINT_PTR stackFrames[])
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
-        LL_INFO1000,
-        "**PROF: EventPipeEventDelivered.\n"));
-
-    if (m_pCallback9 == NULL)
-    {
-        return S_OK;
-    }
-
-    return m_pCallback9->EventPipeEventDelivered(eventGuid, eventId, eventVersion, eventThreadId, eventTimestamp, cbEventData, eventData, numStackFrames, stackFrames);
-}
-
 
 #endif // PROFILING_SUPPORTED

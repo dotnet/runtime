@@ -483,21 +483,6 @@ public:
 
     HRESULT GetAssemblyReferences(LPCWSTR wszAssemblyPath, IAssemblyBindingClosure * pClosure, AssemblyReferenceClosureWalkContextForProfAPI * pContext);
 
-    //
-    // Event Pipe
-    // 
-
-    HRESULT EventPipeEventDelivered(
-        REFGUID eventGuid,
-        DWORD eventId,
-        DWORD eventVersion,
-        DWORD eventThreadId,
-        LARGE_INTEGER eventTimestamp,
-        ULONG cbEventData,
-        LPCBYTE eventData,
-        ULONG numStackFrames,
-        UINT_PTR stackFrames[]);
-
 private:
 
     //
