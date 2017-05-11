@@ -414,7 +414,11 @@ mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, 
 
 }
 
-/* If @klass is a VT it copies it's value, if it's a ref type, it copies the pointer itself.  */
+/*
+ * If @klass is a valuetype, emit code to copy a value with source address in @src and destination address in @dest.
+ * If @klass is a ref type, copy a pointer instead.
+ */
+
 void
 mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag)
 {
