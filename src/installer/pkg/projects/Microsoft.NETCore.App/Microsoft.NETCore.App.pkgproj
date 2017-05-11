@@ -53,6 +53,9 @@
     <File Include="$(PlatformManifestFile)">
       <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
     </File>
+    <File Include="$(MSBuildProjectName).targets">
+      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
+    </File>
   </ItemGroup>
 
   <!-- Redistributed package content from other nuget packages-->
@@ -75,6 +78,7 @@
     
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="$(Id)"
+                              PackageVersion="$(Version)"
                               PlatformManifestFile="$(PlatformManifestFile)"
                               PropsFile="$(PropsFile)"
                               PreferredPackages="$(Id);@(RuntimeDependency)" />
