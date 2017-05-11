@@ -29,6 +29,8 @@ platformList.each { platform ->
     def dockerContainer = ''
     def dockerWorkingDirectory = "/src/core-setup"
     def dockerCommand = ''
+    def crossbuildargs = ''
+
     // Calculate build command
     if (os == 'Windows_NT') {
         buildCommand = ".\\build.cmd -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
@@ -38,14 +40,16 @@ platformList.each { platform ->
     }
     else if ((os.startsWith("Ubuntu")) && 
              (architecture == 'arm' || architecture == 'armel')) {
+          
         if (os == 'Ubuntu') {
             dockerContainer = "ubuntu-14.04-cross-0cd4667-20172211042239"
+            crossbuildargs = " -CrossBuild=true"
         }
         else if (os == 'Ubuntu16.04') {
             dockerContainer = "ubuntu-16.04-cross-ef0ac75-20175511035548"
         }
         dockerCommand = "docker run --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true"
+        buildCommand = "${dockerCommand} -e ROOTFS_DIR=/crossrootfs/${architecture} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true${crossbuildargs}"
     }
     else if (os == "Ubuntu") {
         dockerContainer = "ubuntu-14.04-debpkg-e5cf912-20175003025046"

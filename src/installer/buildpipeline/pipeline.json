@@ -98,7 +98,7 @@
             "PB_DistroRid": "ubuntu.14.04-arm", 
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239", 
             "PB_TargetArchitecture": "arm", 
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true",
             "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
             "PB_PortableBuild": "true" 
           }, 
