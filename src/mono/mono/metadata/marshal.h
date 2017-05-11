@@ -514,8 +514,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (void *ptr);
 void*
 ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement (MonoArray *arrayobj, int index);
 
-MonoDelegate*
-ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type);
+MonoDelegateHandle
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error);
 
 gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegate *delegate);

@@ -182,6 +182,9 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate);
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
 
+MonoDelegateHandle
+mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error);
+
 gpointer
 mono_array_to_savearray (MonoArray *array);
 
@@ -586,12 +589,23 @@ parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piin
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
+	MonoDelegateHandle result = mono_ftnptr_to_delegate_handle (klass, ftn, &error);
+	mono_error_set_pending_exception (&error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
+
+MonoDelegateHandle
+mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
 	guint32 gchandle;
-	MonoDelegate *d;
+	MonoDelegateHandle d = MONO_HANDLE_NEW (MonoDelegate, NULL);
 
 	if (ftn == NULL)
-		return NULL;
+		goto leave;
 
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
@@ -601,30 +615,26 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, ftn));
 		mono_marshal_unlock ();
 		if (gchandle)
-			d = (MonoDelegate*)mono_gchandle_get_target (gchandle);
-		else
-			d = NULL;
+			MONO_HANDLE_ASSIGN (d, MONO_HANDLE_CAST (MonoDelegate, mono_gchandle_get_target_handle (gchandle)));
 	} else {
-		d = (MonoDelegate *)g_hash_table_lookup (delegate_hash_table, ftn);
+		MONO_HANDLE_ASSIGN (d, MONO_HANDLE_NEW (MonoDelegate, g_hash_table_lookup (delegate_hash_table, ftn)));
 		mono_marshal_unlock ();
 	}
-	if (d == NULL) {
+	if (MONO_HANDLE_IS_NULL (d)) {
 		/* This is a native function, so construct a delegate for it */
 		MonoMethodSignature *sig;
 		MonoMethod *wrapper;
 		MonoMarshalSpec **mspecs;
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
 		MonoMethodPInvoke piinfo;
-		MonoObject *this_obj;
+		MonoObjectHandle  this_obj;
 		int i;
 
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-			this_obj = mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, &error);
-			if (!is_ok (&error)) {
-				mono_error_set_pending_exception (&error);
-				return NULL;
-			}
+			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, error));
+			if (!is_ok (error))
+				goto leave;
 		} else {
 			memset (&piinfo, 0, sizeof (piinfo));
 			parse_unmanaged_function_pointer_attr (klass, &piinfo);
@@ -636,7 +646,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			sig->hasthis = 0;
 
 			wrapper = mono_marshal_get_native_func_wrapper (klass->image, sig, &piinfo, mspecs, ftn);
-			this_obj = NULL;
+			this_obj = MONO_HANDLE_NEW (MonoObject, NULL);
 
 			for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
 				if (mspecs [i])
@@ -645,25 +655,24 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			g_free (sig);
 		}
 
-		d = (MonoDelegate*)mono_object_new_checked (mono_domain_get (), klass, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
-		gpointer compiled_ptr = mono_compile_method_checked (wrapper, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-		mono_delegate_ctor_with_method_fixme ((MonoObject*)d, this_obj, compiled_ptr, wrapper, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		MONO_HANDLE_ASSIGN (d, MONO_HANDLE_NEW (MonoDelegate, mono_object_new_checked (mono_domain_get (), klass, error)));
+		if (!is_ok (error))
+			goto leave;
+		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
+		if (!is_ok (error))
+			goto leave;
+
+		mono_delegate_ctor_with_method (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
+		if (!is_ok (error))
+			goto leave;
 	}
 
-	if (d->object.vtable->domain != mono_domain_get ()) {
-		mono_set_pending_exception (mono_get_exception_not_supported ("Delegates cannot be marshalled from native code into a domain other than their home domain"));
-		return NULL;
-	}
+	g_assert (!MONO_HANDLE_IS_NULL (d));
+	if (MONO_HANDLE_DOMAIN (d) != mono_domain_get ())
+		mono_error_set_not_supported (error, "Delegates cannot be marshalled from native code into a domain other than their home domain");
 
-	return d;
+leave:
+	HANDLE_FUNCTION_RETURN_REF (MonoDelegate, d);
 }
 
 void
@@ -11431,16 +11440,17 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 	return mono_array_addr_with_size_fast (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
 }
 
-MonoDelegate*
-ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type)
+MonoDelegateHandle
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoClass *klass = mono_type_get_class (type->type);
+	error_init (error);
+	MonoClass *klass = mono_type_get_class (MONO_HANDLE_GETVAL (type, type));
 	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_for_class_failure (error, klass);
 		return NULL;
 	}
 
-	return mono_ftnptr_to_delegate (klass, ftn);
+	return mono_ftnptr_to_delegate_handle (klass, ftn, error);
 }
 
 gpointer
