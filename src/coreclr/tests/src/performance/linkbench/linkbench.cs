@@ -62,8 +62,8 @@ namespace LinkBench
             UnlinkedDirSize = GetDirSize(unlinkedDirInfo);
             LinkedDirSize = GetDirSize(linkedDirInfo);
 
-            MsilSizeReduction = (UnlinkedMsilSize - LinkedMsilSize) / UnlinkedMsilSize * 100;
-            DirSizeReduction = (UnlinkedDirSize - LinkedDirSize) / UnlinkedDirSize * 100;
+            MsilSizeReduction = LinkedMsilSize / UnlinkedMsilSize;
+            DirSizeReduction = LinkedDirSize / UnlinkedDirSize;
         }
 
         // Compute total size of a directory, in MegaBytes
@@ -233,7 +233,7 @@ namespace LinkBench
     {
         private static ScenarioConfiguration scenarioConfiguration = new ScenarioConfiguration(new TimeSpan(2000000));
         private static MetricModel SizeMetric = new MetricModel { Name = "Size", DisplayName = "File Size", Unit = "MB" };
-        private static MetricModel PercMetric = new MetricModel { Name = "Perc", DisplayName = "Reduction", Unit = "%" };
+        private static MetricModel PercMetric = new MetricModel { Name = "Ratio", DisplayName = "Reduction", Unit = "Linked/Unlinked" };
         public static string Workspace;
         public static string ScriptDir;
         public static string AssetsDir;
