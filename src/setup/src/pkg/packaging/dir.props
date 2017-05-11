@@ -14,6 +14,7 @@
 
   <PropertyGroup>
     <ProductMoniker>$(PackageTargetRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
+    <HostResolverVersionMoniker>$(PackageTargetRid).$(HostResolverVersion)</HostResolverVersionMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -26,9 +27,9 @@
   <PropertyGroup>
     <CombinedInstallerFile>$(PackagesOutDir)dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
     <CombinedInstallerEngine>$(PackagesOutDir)dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
-    <SharedHostInstallerFile>$(PackagesOutDir)dotnet-host-$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile>$(PackagesOutDir)dotnet-hostfxr-$(PackageTargetRid).$(HostResolverVersion)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile>$(PackagesOutDir)dotnet-sharedframework-$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
   </PropertyGroup>
 
   <PropertyGroup>
