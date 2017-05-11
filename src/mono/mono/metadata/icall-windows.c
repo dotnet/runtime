@@ -197,10 +197,12 @@ mono_icall_get_windows_folder_path (int folder, MonoError *error)
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-void
-mono_icall_broadcast_setting_change (void)
+MonoBoolean
+mono_icall_broadcast_setting_change (MonoError *error)
 {
+	error_init (error);
 	SendMessageTimeout (HWND_BROADCAST, WM_SETTINGCHANGE, (WPARAM)NULL, (LPARAM)L"Environment", SMTO_ABORTIFHUNG, 2000, 0);
+	return TRUE;
 }
 
 gint32

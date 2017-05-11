@@ -33,6 +33,9 @@ mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, Mo
 gboolean
 mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token);
 
+MonoObjectHandle
+mono_dynamic_image_get_registered_token (MonoDynamicImage *dynimage, guint32 token, MonoError *error);
+
 MonoDynamicImage*
 mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, char *module_name);
 

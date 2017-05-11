@@ -216,9 +216,16 @@ IsMemberOf (gid_t user, struct group *g)
 
 #ifndef HOST_WIN32
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (void)
+mono_security_principal_windows_identity_get_current_token ()
 {
 	return GINT_TO_POINTER (geteuid ());
+}
+
+gpointer
+ves_icall_System_Security_Principal_WindowsIdentity_GetCurrentToken (MonoError *error)
+{
+	error_init (error);
+	return mono_security_principal_windows_identity_get_current_token ();
 }
 
 static gint32
@@ -237,38 +244,37 @@ internal_get_token_name (gpointer token, gunichar2 ** uniname)
 	return size;
 }
 
-MonoString*
-ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token)
+MonoStringHandle
+ves_icall_System_Security_Principal_WindowsIdentity_GetTokenName (gpointer token, MonoError *error)
 {
-	MonoError error;
-	MonoString *result = NULL;
+	MonoStringHandle result;
 	gunichar2 *uniname = NULL;
 	gint32 size = 0;
 
-	error_init (&error);
+	error_init (error);
 
 	size = internal_get_token_name (token, &uniname);
 
 	if (size > 0) {
-		result = mono_string_new_utf16_checked (mono_domain_get (), uniname, size, &error);
+		result = mono_string_new_utf16_handle (mono_domain_get (), uniname, size, error);
 	}
 	else
-		result = mono_string_new_checked (mono_domain_get (), "", &error);
+		result = mono_string_new_handle (mono_domain_get (), "", error);
 
 	if (uniname)
 		g_free (uniname);
 
-	mono_error_set_pending_exception (&error);
 	return result;
 }
 #endif  /* !HOST_WIN32 */
 
 #ifndef HOST_WIN32
 gpointer
-ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *username)
+ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoStringHandle username, MonoError *error)
 {
 	gpointer token = (gpointer)-2;
 
+	error_init (error);
 #ifdef HAVE_PWD_H
 
 #ifdef HAVE_GETPWNAM_R
@@ -281,7 +287,8 @@ ves_icall_System_Security_Principal_WindowsIdentity_GetUserToken (MonoString *us
 	gchar *utf8_name;
 	gboolean result;
 
-	utf8_name = mono_unicode_to_external (mono_string_chars (username));
+	utf8_name = mono_string_handle_to_utf8 (username, error);
+	return_val_if_nok (error, NULL);
 
 #ifdef HAVE_GETPWNAM_R
 #ifdef _SC_GETPW_R_SIZE_MAX

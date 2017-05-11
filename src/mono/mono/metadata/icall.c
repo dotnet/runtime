@@ -6885,17 +6885,19 @@ ves_icall_System_Environment_get_HasShutdownStarted (void)
 }
 
 #ifndef HOST_WIN32
-static inline void
-mono_icall_broadcast_setting_change (void)
+static inline MonoBoolean
+mono_icall_broadcast_setting_change (MonoError *error)
 {
-	return;
+	error_init (error);
+	return TRUE;
 }
 #endif /* !HOST_WIN32 */
 
 ICALL_EXPORT void
-ves_icall_System_Environment_BroadcastSettingChange (void)
+ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 {
-	mono_icall_broadcast_setting_change ();
+	error_init (error);
+	mono_icall_broadcast_setting_change (error);
 }
 
 ICALL_EXPORT
@@ -7089,12 +7091,10 @@ ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
 #endif /* PLATFORM_NO_DRIVEINFO */
 
 ICALL_EXPORT gpointer
-ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method)
+ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
-	MonoError error;
-	gpointer result = mono_compile_method_checked (method, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	error_init (error);
+	return mono_compile_method_checked (method, error);
 }
 
 ICALL_EXPORT MonoStringHandle
