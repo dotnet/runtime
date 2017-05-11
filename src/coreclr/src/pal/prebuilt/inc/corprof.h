@@ -513,10 +513,9 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0006
         COR_PRF_HIGH_MONITOR_NONE	= 0,
         COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES	= 0x1,
         COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED	= 0x2,
-        COR_PRF_HIGH_MONITOR_EVENT_PIPE	= 0x4,
-        COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS	= 0x8,
+        COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS	= 0x4,
         COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE	= 0,
-        COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH	= ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_EVENT_PIPE )  | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS ) ,
+        COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH	= ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS ) ,
         COR_PRF_HIGH_MONITOR_IMMUTABLE	= 0
     } 	COR_PRF_HIGH_MONITOR;
 
@@ -6638,17 +6637,6 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
         virtual HRESULT STDMETHODCALLTYPE DynamicMethodUnloaded( 
             /* [in] */ FunctionID functionId) = 0;
         
-        virtual HRESULT STDMETHODCALLTYPE EventPipeEventDelivered( 
-            /* [in] */ REFGUID eventGuid,
-            /* [in] */ DWORD eventId,
-            /* [in] */ DWORD eventVersion,
-            /* [in] */ DWORD eventThreadId,
-            /* [in] */ LARGE_INTEGER eventTimestamp,
-            /* [in] */ ULONG cbEventData,
-            /* [size_is][in] */ LPCBYTE eventData,
-            /* [in] */ ULONG numStackFrames,
-            /* [length_is][in] */ UINT_PTR stackFrames[  ]) = 0;
-        
     };
     
     
@@ -7097,18 +7085,6 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
             ICorProfilerCallback9 * This,
             /* [in] */ FunctionID functionId);
         
-        HRESULT ( STDMETHODCALLTYPE *EventPipeEventDelivered )( 
-            ICorProfilerCallback9 * This,
-            /* [in] */ REFGUID eventGuid,
-            /* [in] */ DWORD eventId,
-            /* [in] */ DWORD eventVersion,
-            /* [in] */ DWORD eventThreadId,
-            /* [in] */ LARGE_INTEGER eventTimestamp,
-            /* [in] */ ULONG cbEventData,
-            /* [size_is][in] */ LPCBYTE eventData,
-            /* [in] */ ULONG numStackFrames,
-            /* [length_is][in] */ UINT_PTR stackFrames[  ]);
-        
         END_INTERFACE
     } ICorProfilerCallback9Vtbl;
 
@@ -7415,9 +7391,6 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
 
 #define ICorProfilerCallback9_DynamicMethodUnloaded(This,functionId)	\
     ( (This)->lpVtbl -> DynamicMethodUnloaded(This,functionId) ) 
-
-#define ICorProfilerCallback9_EventPipeEventDelivered(This,eventGuid,eventId,eventVersion,eventThreadId,eventTimestamp,cbEventData,eventData,numStackFrames,stackFrames)	\
-    ( (This)->lpVtbl -> EventPipeEventDelivered(This,eventGuid,eventId,eventVersion,eventThreadId,eventTimestamp,cbEventData,eventData,numStackFrames,stackFrames) ) 
 
 #endif /* COBJMACROS */
 
