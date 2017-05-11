@@ -233,6 +233,107 @@ mini_emit_memset_const_size (MonoCompile *cfg, MonoInst *dest, int value, int si
 	mini_emit_memset_internal (cfg, dest, NULL, value, NULL, size, align);
 }
 
+
+static void
+create_write_barrier_bitmap (MonoCompile *cfg, MonoClass *klass, unsigned *wb_bitmap, int offset)
+{
+	MonoClassField *field;
+	gpointer iter = NULL;
+
+	while ((field = mono_class_get_fields (klass, &iter))) {
+		int foffset;
+
+		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
+			continue;
+		foffset = klass->valuetype ? field->offset - sizeof (MonoObject): field->offset;
+		if (mini_type_is_reference (mono_field_get_type (field))) {
+			g_assert ((foffset % SIZEOF_VOID_P) == 0);
+			*wb_bitmap |= 1 << ((offset + foffset) / SIZEOF_VOID_P);
+		} else {
+			MonoClass *field_class = mono_class_from_mono_type (field->type);
+			if (field_class->has_references)
+				create_write_barrier_bitmap (cfg, field_class, wb_bitmap, offset + foffset);
+		}
+	}
+}
+
+static gboolean
+mini_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4], int size, int align)
+{
+	int dest_ptr_reg, tmp_reg, destreg, srcreg, offset;
+	unsigned need_wb = 0;
+
+	if (align == 0)
+		align = 4;
+
+	/*types with references can't have alignment smaller than sizeof(void*) */
+	if (align < SIZEOF_VOID_P)
+		return FALSE;
+
+	if (size > 5 * SIZEOF_VOID_P)
+		return FALSE;
+
+	create_write_barrier_bitmap (cfg, klass, &need_wb, 0);
+
+	destreg = iargs [0]->dreg;
+	srcreg = iargs [1]->dreg;
+	offset = 0;
+
+	dest_ptr_reg = alloc_preg (cfg);
+	tmp_reg = alloc_preg (cfg);
+
+	/*tmp = dreg*/
+	EMIT_NEW_UNALU (cfg, iargs [0], OP_MOVE, dest_ptr_reg, destreg);
+
+	while (size >= SIZEOF_VOID_P) {
+		MonoInst *load_inst;
+		MONO_INST_NEW (cfg, load_inst, OP_LOAD_MEMBASE);
+		load_inst->dreg = tmp_reg;
+		load_inst->inst_basereg = srcreg;
+		load_inst->inst_offset = offset;
+		MONO_ADD_INS (cfg->cbb, load_inst);
+
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREP_MEMBASE_REG, dest_ptr_reg, 0, tmp_reg);
+
+		if (need_wb & 0x1)
+			mini_emit_write_barrier (cfg, iargs [0], load_inst);
+
+		offset += SIZEOF_VOID_P;
+		size -= SIZEOF_VOID_P;
+		need_wb >>= 1;
+
+		/*tmp += sizeof (void*)*/
+		if (size >= SIZEOF_VOID_P) {
+			NEW_BIALU_IMM (cfg, iargs [0], OP_PADD_IMM, dest_ptr_reg, dest_ptr_reg, SIZEOF_VOID_P);
+			MONO_ADD_INS (cfg->cbb, iargs [0]);
+		}
+	}
+
+	/* Those cannot be references since size < sizeof (void*) */
+	while (size >= 4) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, tmp_reg, srcreg, offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI4_MEMBASE_REG, destreg, offset, tmp_reg);
+		offset += 4;
+		size -= 4;
+	}
+
+	while (size >= 2) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI2_MEMBASE, tmp_reg, srcreg, offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI2_MEMBASE_REG, destreg, offset, tmp_reg);
+		offset += 2;
+		size -= 2;
+	}
+
+	while (size >= 1) {
+		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI1_MEMBASE, tmp_reg, srcreg, offset);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI1_MEMBASE_REG, destreg, offset, tmp_reg);
+		offset += 1;
+		size -= 1;
+	}
+
+	return TRUE;
+}
+
 static void
 mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native)
 {
