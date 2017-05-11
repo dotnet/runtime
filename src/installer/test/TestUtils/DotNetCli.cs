@@ -10,8 +10,6 @@ namespace Microsoft.DotNet.Cli.Build
 {
     public partial class DotNetCli
     {
-        public static readonly DotNetCli Stage0 = new DotNetCli(GetStage0Path());
-
         public string BinPath { get; }
         public string GreatestVersionSharedFxPath { get; private set; }
         public string GreatestVersionHostFxrPath { get; private set; } 
@@ -41,38 +39,6 @@ namespace Microsoft.DotNet.Cli.Build
         public Command Pack(params string[] args) => Exec("pack", args);
         public Command Test(params string[] args) => Exec("test", args);
         public Command Publish(params string[] args) => Exec("publish", args);
-
-        public string GetRuntimeId()
-        {
-            string info = Exec("", "--info").CaptureStdOut().Execute().StdOut;
-            string rid = Array.Find<string>(info.Split(Environment.NewLine.ToCharArray()), (e) => e.Contains("RID:"))?.Replace("RID:", "").Trim();
-
-            if (string.IsNullOrEmpty(rid))
-            {
-                throw new BuildFailureException("Could not find the Runtime ID from Stage0 --info or --version");
-            }
-
-            return rid;
-        }
-
-        public static string GetStage0Path(string repoRoot = null)
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return Path.Combine(
-                    repoRoot ?? Directory.GetCurrentDirectory(), 
-                    ".dotnet_stage0",
-                    RuntimeEnvironment.OperatingSystemPlatform.ToString(),
-                    RuntimeEnvironment.RuntimeArchitecture);
-            }
-            else
-            {
-                return Path.Combine(
-                    repoRoot ?? Directory.GetCurrentDirectory(), 
-                    ".dotnet_stage0", 
-                    RuntimeEnvironment.OperatingSystemPlatform.ToString());
-            }
-        }
 
         private void ComputeSharedFxPaths()
         {
