@@ -14,7 +14,6 @@ class EventPipeConfiguration;
 class EventPipeEvent;
 class EventPipeFile;
 class EventPipeJsonFile;
-
 class MethodDesc;
 class SampleProfilerEventInstance;
 
@@ -173,11 +172,6 @@ class EventPipe
         static EventPipeConfiguration *s_pConfig;
         static EventPipeFile *s_pFile;
         static EventPipeJsonFile *s_pJsonFile;
-
-#ifdef PROFILING_SUPPORTED
-        static EventPipeProfilerApi *s_pProfilerApi;
-#endif
-
 };
 
 #endif // FEATURE_PERFTRACING
