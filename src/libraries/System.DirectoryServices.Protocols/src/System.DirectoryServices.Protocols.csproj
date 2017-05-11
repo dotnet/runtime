@@ -8,6 +8,7 @@
     <NoWarn>$(NoWarn);0649</NoWarn>
     <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
     <UWPCompatible>false</UWPCompatible>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />

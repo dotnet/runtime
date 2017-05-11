@@ -9,6 +9,7 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Although we have a NS configuration, the actual UWP implementation is a shim over WinRT: so just validate against OneCore -->
     <UWPCompatible>false</UWPCompatible>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
