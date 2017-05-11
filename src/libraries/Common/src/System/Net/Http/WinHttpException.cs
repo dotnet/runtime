@@ -23,7 +23,7 @@ namespace System.Net.Http
             // of HttpClient under the same error conditions. Clients would access
             // HttpRequestException.InnerException.HRESULT to discover what caused
             // the exception.
-            switch ((uint)error)
+            switch (unchecked((uint)error))
             {
                 case Interop.WinHttp.ERROR_WINHTTP_CONNECTION_ERROR:
                     return unchecked((int)Interop.WinHttp.WININET_E_CONNECTION_RESET);
