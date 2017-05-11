@@ -263,6 +263,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public void SetData_SameKeyMultipleTimes_ReplacesOldValue()
+        {
+            string key = Guid.NewGuid().ToString("N");
+            for (int i = 0; i < 3; i++)
+            {
+                AppDomain.CurrentDomain.SetData(key, i.ToString());
+                Assert.Equal(i.ToString(), AppDomain.CurrentDomain.GetData(key));
+            }
+            AppDomain.CurrentDomain.SetData(key, null);
+        }
+
+        [Fact]
         public void IsCompatibilitySwitchSet()
         {
             Assert.Throws<ArgumentNullException>(() => { AppDomain.CurrentDomain.IsCompatibilitySwitchSet(null); });
