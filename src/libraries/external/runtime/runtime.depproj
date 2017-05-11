@@ -37,10 +37,10 @@
       <Version>4.4.0-$(CoreFxExpectedPrerelease)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.DotNetHost">
-      <Version>1.2.0-beta-001259-00</Version>
+      <Version>2.0.0-preview2-25310-02</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>1.2.0-beta-001259-00</Version>
+      <Version>2.0.0-preview2-25310-02</Version>
     </PackageReference>
   </ItemGroup>
 
