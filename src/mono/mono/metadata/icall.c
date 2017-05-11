@@ -6248,17 +6248,15 @@ ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegate *delegate)
 	return ret;
 }
 
-ICALL_EXPORT MonoReflectionMethod*
-ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegate *delegate)
+ICALL_EXPORT MonoReflectionMethodHandle
+ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegateHandle delegate, MonoError *error)
 {
-	MonoReflectionMethod *ret = NULL;
-	MonoError error;
-	MonoMethod *m;
+	error_init (error);
 
-	m = mono_object_get_virtual_method (delegate->target, delegate->method);
-	ret = mono_method_get_object_checked (mono_domain_get (), m, m->klass, &error);
-	mono_error_set_pending_exception (&error);
-	return ret;
+	MonoObjectHandle delegate_target = MONO_HANDLE_NEW_GET (MonoObject, delegate, target);
+	MonoMethod *m = mono_object_handle_get_virtual_method (delegate_target, MONO_HANDLE_GETVAL (delegate, method), error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
+	return mono_method_get_object_handle (mono_domain_get (), m, m->klass, error);
 }
 
 /* System.Buffer */

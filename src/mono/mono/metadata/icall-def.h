@@ -209,7 +209,7 @@ ICALL(DECIMAL_13, "ToSingle", mono_decimal_to_float)
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
 ICALL(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal)
 HANDLES(ICALL(DELEGATE_2, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal))
-ICALL(DELEGATE_3, "GetVirtualMethod_internal", ves_icall_System_Delegate_GetVirtualMethod_internal)
+HANDLES(ICALL(DELEGATE_3, "GetVirtualMethod_internal", ves_icall_System_Delegate_GetVirtualMethod_internal))
 
 ICALL_TYPE(DEBUGR, "System.Diagnostics.Debugger", DEBUGR_1)
 ICALL(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_Debugger_IsAttached_internal)
