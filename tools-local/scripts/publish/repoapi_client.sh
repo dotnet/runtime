@@ -169,18 +169,18 @@ if [[ "$1" == "-listrepos" ]]; then
   echo "Fetching repo list from $server..."
   curl -k "$baseurl/v1/repositories" | sed 's/,/,\n/g' | sed 's/^"/\t"/g'
   echo ""
-elif [[ "$1" == "-listpkgs" ]]; then
+elif [[ "$5" == "-listpkgs" ]]; then
   echo "Fetching package list from $server"
   ListPackages $6
-elif [[ "$1" == "-addrepo" ]]; then
+elif [[ "$5" == "-addrepo" ]]; then
   AddRepo $6
-elif [[ "$1" == "-addpkg" ]]; then
+elif [[ "$5" == "-addpkg" ]]; then
   AddPackage $6
-elif [[ "$1" == "-addpkgs" ]]; then
+elif [[ "$5" == "-addpkgs" ]]; then
   AddPackages $6
-elif [[ "$1" == "-delrepo" ]]; then
+elif [[ "$5" == "-delrepo" ]]; then
   DeleteRepo $6
-elif [[ "$1" == "-delpkg" ]]; then
+elif [[ "$5" == "-delpkg" ]]; then
   DeletePackage $6
 else
   echo "USAGE: ./repotool.sh [username] [password] [repository id] [server] -OPTION"

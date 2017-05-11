@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="GenerateDebRepoUploadJsonFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+
   <Target Name="GatherPublishToAzureBinaries">
     <PropertyGroup>
       <RelativeBlobPath>$(Channel)/Binaries/$(SharedFrameworkNugetVersion)</RelativeBlobPath>
@@ -30,13 +32,13 @@
   <Target Name="GenerateDebRepoFiles"
           Condition="('$(TargetsUbuntu)' == 'true' or '$(TargetsDebian)' == 'true') and '$(TargetArchitecture)' == 'x64'">
     <ItemGroup>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-host-*$(SharedFrameworkNugetVersion).deb" >
+      <DebInstallerFile Include="$(PackagesOutDir)dotnet-host-$(DistroRid)-$(SharedFrameworkNugetVersion).deb" >
         <PackageName>dotnet-host</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-hostfxr-*$(SharedFrameworkNugetVersion).deb" >
+      <DebInstallerFile Include="$(PackagesOutDir)dotnet-hostfxr-$(DistroRid)-$(SharedFrameworkNugetVersion).deb" >
         <PackageName>dotnet-hostfxr</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-sharedframework-*$(SharedFrameworkNugetVersion).deb">
+      <DebInstallerFile Include="$(PackagesOutDir)dotnet-sharedframework-$(DistroRid)-$(SharedFrameworkNugetVersion).deb">
         <PackageName>dotnet-sharedframework</PackageName>
       </DebInstallerFile>
 
