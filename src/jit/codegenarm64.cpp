@@ -1394,6 +1394,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
 
             unsigned bits = (size == EA_8BYTE) ? 64 : 32;
 
+            // Iterate over imm examining 16 bits at a time
             for (unsigned i = 0; i < bits; i += 16)
             {
                 uint16_t imm16 = uint16_t(imm >> i);
