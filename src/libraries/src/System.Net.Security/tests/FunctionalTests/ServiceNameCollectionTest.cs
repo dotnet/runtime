@@ -83,9 +83,11 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         [Fact]
         public void Contains_Found()
         {
-            var collection = new ServiceNameCollection(new[] { "first", "second" });
+            var collection = new ServiceNameCollection(new[] { "first", "second", "localhost:3000/test", "www.test.com" });
             Assert.True(collection.Contains("first"));
             Assert.True(collection.Contains("second"));
+            Assert.True(collection.Contains("localhost:3000/test"));
+            Assert.True(collection.Contains("www.test.com"));
         }
 
         [Fact]
@@ -95,6 +97,7 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
             Assert.False(collection.Contains(null));
             Assert.False(collection.Contains(string.Empty));
             Assert.False(collection.Contains("third"));
+            Assert.False(collection.Contains("localhost:3000//test"));
         }
 
         [Fact]
