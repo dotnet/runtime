@@ -295,7 +295,7 @@ void Lowering::LowerCast(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// LowerRotate: Lower GT_ROL and GT_ROL nodes.
+// LowerRotate: Lower GT_ROL and GT_ROR nodes.
 //
 // Arguments:
 //    tree - the node to lower

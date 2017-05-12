@@ -1760,4 +1760,39 @@ void CodeGen::genEmitCall(int                   callType,
 }
 // clang-format on
 
+//------------------------------------------------------------------------
+// genCodeForCast: Generates the code for GT_CAST.
+//
+// Arguments:
+//    tree - the GT_CAST node.
+//
+void CodeGen::genCodeForCast(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_CAST));
+
+    var_types targetType = tree->TypeGet();
+
+    if (varTypeIsFloating(targetType) && varTypeIsFloating(tree->gtOp1))
+    {
+        // Casts float/double <--> double/float
+        genFloatToFloatCast(tree);
+    }
+    else if (varTypeIsFloating(tree->gtOp1))
+    {
+        // Casts float/double --> int32/int64
+        genFloatToIntCast(tree);
+    }
+    else if (varTypeIsFloating(targetType))
+    {
+        // Casts int32/uint32/int64/uint64 --> float/double
+        genIntToFloatCast(tree);
+    }
+    else
+    {
+        // Casts int <--> int
+        genIntToIntCast(tree);
+    }
+    // The per-case functions call genProduceReg()
+}
+
 #endif // !LEGACY_BACKEND
