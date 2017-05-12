@@ -35,7 +35,7 @@ private:
     bool m_needStack;
 
     // True if the event is current enabled.
-    bool m_enabled;
+    Volatile<bool> m_enabled;
 
     // Refreshes the runtime state for this event.
     // Called by EventPipeProvider when the provider configuration changes.

@@ -54,6 +54,10 @@
 #include "olecontexthelpers.h"
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
+#ifdef FEATURE_PERFTRACING
+#include "eventpipebuffermanager.h"
+#endif // FEATURE_PERFTRACING
+
 
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
@@ -988,6 +992,16 @@ void DestroyThread(Thread *th)
         th->SetThreadState(Thread::TS_ReportDead);
         th->OnThreadTerminate(FALSE);
     }
+
+#ifdef FEATURE_PERFTRACING
+    // Before the thread dies, mark its buffers as no longer owned
+    // so that they can be cleaned up after the thread dies.
+    EventPipeBufferList *pBufferList = th->GetEventPipeBufferList();
+    if(pBufferList != NULL)
+    {
+        pBufferList->SetOwnedByThread(false);
+    }
+#endif // FEATURE_PERFTRACING
 }
 
 //-------------------------------------------------------------------------
@@ -1083,6 +1097,16 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
 #ifdef ENABLE_CONTRACTS_DATA
     m_pClrDebugState = NULL;
 #endif //ENABLE_CONTRACTS_DATA
+
+#ifdef FEATURE_PERFTRACING
+    // Before the thread dies, mark its buffers as no longer owned
+    // so that they can be cleaned up after the thread dies.
+    EventPipeBufferList *pBufferList = m_pEventPipeBufferList.Load();
+    if(pBufferList != NULL)
+    {
+        pBufferList->SetOwnedByThread(false);
+    }
+#endif // FEATURE_PERFTRACING
 
     FastInterlockOr((ULONG*)&m_State, (int) (Thread::TS_Detached | Thread::TS_ReportDead));
     // Do not touch Thread object any more.  It may be destroyed.
@@ -2008,6 +2032,11 @@ Thread::Thread()
 #endif
 
     m_pAllLoggedTypes = NULL;
+
+#ifdef FEATURE_PERFTRACING
+    m_pEventPipeBufferList = NULL;
+    m_eventWriteInProgress = false;
+#endif // FEATURE_PERFTRACING
     m_HijackReturnKind = RT_Illegal;
 }
 
