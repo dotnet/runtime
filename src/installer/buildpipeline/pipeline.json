@@ -123,10 +123,11 @@
           }
         },
         {
-          "Name": "Core-Setup-Windows-BT",
+          "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
             "PB_AdditionalBuildArguments": "/p:SkipTests=true",
             "PB_TargetArchitecture": "arm",
+            "PB_DistroRid": "win-arm",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -137,10 +138,11 @@
           }
         },
         {
-          "Name": "Core-Setup-Windows-BT",
+          "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
             "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
             "PB_TargetArchitecture": "arm64",
+            "PB_DistroRid": "win-arm64",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -151,7 +153,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Signing-Windows-BT",
+          "Name": "Core-Setup-Windows-BT",
           "Parameters": {
             "PB_DistroRid": "win7-x64",
             "PB_TargetArchitecture": "x64",
@@ -167,7 +169,7 @@
           }
         },
         {
-          "Name": "Core-Setup-Signing-Windows-BT",
+          "Name": "Core-Setup-Windows-BT",
           "Parameters": {
             "PB_DistroRid": "win7-x86",
             "PB_TargetArchitecture": "x86",
