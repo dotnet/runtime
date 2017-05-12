@@ -555,6 +555,15 @@ INST2(sli,     "sli",    0, 0, IF_EN2N,   0x7F005400,  0x2F005400)
                                    //  sli     Vd,Vn,imm            DV_2N  011111110iiiiiii 010101nnnnnddddd   7F00 5400   Vd Vn imm  (shift - scalar)
                                    //  sli     Vd,Vn,imm            DV_2O  0Q1011110iiiiiii 010101nnnnnddddd   2F00 5400   Vd,Vn imm  (shift - vector)
 
+INST1(ldar,    "ldar",   0,LD, IF_LS_2A,  0x88DFFC00)
+                                   //  ldar    Rt,[Xn]              LS_2A  1X00100011011111 111111nnnnnttttt   88DF FC00
+
+INST1(ldarb,   "ldarb",  0,LD, IF_LS_2A,  0x08DFFC00)
+                                   //  ldarb   Rt,[Xn]              LS_2A  0000100011011111 111111nnnnnttttt   08DF FC00
+
+INST1(ldarh,   "ldarh",  0,LD, IF_LS_2A,  0x48DFFC00)
+                                   //  ldarh   Rt,[Xn]              LS_2A  0100100011011111 111111nnnnnttttt   48DF FC00
+
 INST1(ldur,    "ldur",   0,LD, IF_LS_2C,  0xB8400000)  
                                    //  ldur    Rt,[Xn+simm9]        LS_2C  1X111000010iiiii iiii00nnnnnttttt   B840 0000   [Xn imm(-256..+255)]
 
@@ -572,6 +581,15 @@ INST1(ldursh,  "ldursh", 0,LD, IF_LS_2C,  0x78800000)
 
 INST1(ldursw,  "ldursw", 0,LD, IF_LS_2C,  0xB8800000)  
                                    //  ldursw  Rt,[Xn+simm9]        LS_2C  10111000100iiiii iiii00nnnnnttttt   B880 0000   [Xn imm(-256..+255)]
+
+INST1(stlr,    "stlr",   0,ST, IF_LS_2A,  0x889FFC00)
+                                   //  stlr    Rt,[Xn]              LS_2A  1X00100010011111 111111nnnnnttttt   889F FC00
+
+INST1(stlrb,   "stlrb",  0,ST, IF_LS_2A,  0x089FFC00)
+                                   //  stlrb   Rt,[Xn]              LS_2A  0000100010011111 111111nnnnnttttt   089F FC00
+
+INST1(stlrh,   "stlrh",  0,ST, IF_LS_2A,  0x489FFC00)
+                                   //  stlrh   Rt,[Xn]              LS_2A  0100100010011111 111111nnnnnttttt   489F FC00
 
 INST1(stur,    "stur",   0,ST, IF_LS_2C,  0xB8000000)  
                                    //  stur    Rt,[Xn+simm9]        LS_2C  1X111000000iiiii iiii00nnnnnttttt   B800 0000   [Xn imm(-256..+255)]
