@@ -26,8 +26,8 @@
   <ItemGroup Condition="'$(BuildExePhase)' == '1' and '$(BuildProjectName)' != 'CoreSys'">
 
     <!-- Build the "FrankenJit" (RyuJIT front-end, legacy back-end) and "FrankenAltjit". These can't conflict with the names of the JIT32 directory outputs. -->
-    <ProjectFile Condition="'$(BuildArchitecture)' == 'i386' or '$(BuildArchitecture)' == 'arm'"  Include="frankenjit\frankenjit.nativeproj" />
-    <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"                                     Include="frankenaltjit\frankenaltjit.nativeproj" />
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'arm'"  Include="frankenjit\frankenjit.nativeproj" />
+    <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'" Include="frankenaltjit\frankenaltjit.nativeproj" />
 
     <!-- This might be useful, to help make sure JIT devs build all configurations of the JIT (including crossgen), but
          it appears to cause problems with the build system, and it slows down normal JIT developer productivity by adding a seldom-useful build.
