@@ -83,8 +83,11 @@ namespace System.ComponentModel.Tests
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => stack.Append(null));
             Assert.Equal(typeof(ArgumentNullException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.NotNull(ex.Message);
-            Assert.Equal("context", ex.ParamName);
+            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            {
+                Assert.NotNull(ex.Message);
+                Assert.Equal("context", ex.ParamName);
+            }
         }
 
         [Fact] // Item (Int32)
@@ -118,15 +121,21 @@ namespace System.ComponentModel.Tests
             ex = Assert.Throws<ArgumentOutOfRangeException>(() => stack[-1]);
             Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.Equal(new ArgumentOutOfRangeException("level").Message, ex.Message);
-            Assert.Equal("level", ex.ParamName);
+            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            {
+                Assert.Equal(new ArgumentOutOfRangeException("level").Message, ex.Message);
+                Assert.Equal("level", ex.ParamName);
+            }
 
 
             ex = Assert.Throws<ArgumentOutOfRangeException>(() => stack[-5]);
             Assert.Equal(typeof(ArgumentOutOfRangeException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.Equal(new ArgumentOutOfRangeException("level").Message, ex.Message);
-            Assert.Equal("level", ex.ParamName);
+            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            {
+                Assert.Equal(new ArgumentOutOfRangeException("level").Message, ex.Message);
+                Assert.Equal("level", ex.ParamName);
+            }
         }
 
         [Fact] // Item (Type)
@@ -156,8 +165,11 @@ namespace System.ComponentModel.Tests
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => stack[(Type)null]);
             Assert.Equal(typeof(ArgumentNullException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.NotNull(ex.Message);
-            Assert.Equal("type", ex.ParamName);
+            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            {
+                Assert.NotNull(ex.Message);
+                Assert.Equal("type", ex.ParamName);
+            }
         }
 
         [Fact]
@@ -167,8 +179,11 @@ namespace System.ComponentModel.Tests
             ArgumentNullException ex= Assert.Throws<ArgumentNullException>(()=> stack.Push(null));
             Assert.Equal(typeof(ArgumentNullException), ex.GetType());
             Assert.Null(ex.InnerException);
-            Assert.NotNull(ex.Message);
-            Assert.Equal("context", ex.ParamName);
+            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            {
+                Assert.NotNull(ex.Message);
+                Assert.Equal("context", ex.ParamName);
+            }
         }
 
         public interface IFoo
