@@ -139,4 +139,123 @@
       <argu name="XmlInput" value="ReaderWriter_C14N_BaselineXML_Binary.xml" />
     </input>
   </testcase>
+  <testcase name="CryptoCanonicalization">
+    <input>
+      <argu name="FilePath" value="Boundary.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="Boundary.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="n3" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="#default n3" />
+      <argu name="StartAtElement" value="y3" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="False" />
+    </input>
+    <input>
+      <argu name="FilePath" value="InclusiveImport.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="#default" />
+      <argu name="StartAtElement" value="n1:y5" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="AttrNorm.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="LineFeedNorm.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="ExcC14nSpecExample1.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />     
+    </input>
+    <input>
+      <argu name="FilePath" value="ExcC14nSpecExample2.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+    <input>
+      <argu name="FilePath" value="AttrSort.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />      
+    </input>
+    <input>
+      <argu name="FilePath" value="SoapMessage1.xml" />
+      <argu name="IncludeComments" value="False" />
+      <argu name="InclusivePrefixes" value="wsse" />
+      <argu name="StartAtElement" value="ds:SignedInfo" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="False" />
+    </input>
+    <input>
+      <argu name="FilePath" value="CharEntities.xml" />
+      <argu name="IncludeComments" value="True" />
+      <argu name="InclusivePrefixes" value="#default" />
+      <argu name="StartAtElement" value="" />
+      <argu name="Result1" value="True" />
+      <argu name="Result2" value="True" />
+      <argu name="Result3" value="True" />
+    </input>
+  </testcase>
 </testcases>

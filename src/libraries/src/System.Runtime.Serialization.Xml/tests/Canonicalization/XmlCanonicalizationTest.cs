@@ -358,6 +358,61 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
             Assert.Equal(params1.Inputs.Count * params2.Inputs.Count * params3.Inputs.Count + params4.Inputs.Count + 1, count);
         }
 
+        [Fact]
+        public static void CryptoCanonicalizationTest()
+        {
+            Engine engine;
+            TestMode mode;
+            XmlBuffer xmlBuffer;
+            bool includeComments;
+            string inclusivePrefixes;
+            string startAt;
+            TestCase tc = TestConfigHelper.GetTest("CryptoCanonicalization");
+
+            foreach (var input in tc.Inputs)
+            {
+                includeComments = input.Arguments[1].Value.ToLower() == "true";
+                inclusivePrefixes = input.Arguments[2].Value;
+                startAt = input.Arguments[3].Value;
+
+                if (startAt.Equals(""))
+                {
+                    mode = TestMode.FullDocument;
+                }
+                else
+                {
+                    mode = TestMode.StartAtSpecifiedElement;
+                }
+
+                xmlBuffer = new XmlBuffer(Path.Combine("baselines", input.Arguments[0].Value));
+                engine = new Engine(includeComments, inclusivePrefixes, mode == TestMode.FullDocument);
+
+                XmlReader reader = CreateReader(mode, xmlBuffer, startAt);
+                //Canonicalization using Dictionary writer
+                byte[] dr = engine.CanonicalizeUsingDictionaryReader(reader);
+
+                reader = CreateReader(mode, xmlBuffer, startAt);
+                //Canonicalization using writer
+                byte[] w = engine.CanonicalizeUsingWriter(reader);
+
+                reader = CreateReader(mode, xmlBuffer, startAt);
+                //Canonicalization using Dictionary writer
+                byte[] dw = engine.CanonicalizeUsingDictionaryWriter(reader);
+
+                //Canonicalization using CLR
+                byte[] c = CanonicalizeUsingClrLibrary(engine, mode, xmlBuffer, startAt);
+
+                string dicReaderOutput = dr == null ? null : Encoding.UTF8.GetString(dr);
+                string writerOutput = w == null ? null : Encoding.UTF8.GetString(w);
+                string dicWriterOutput = dw == null ? null : Encoding.UTF8.GetString(dw);
+                string clrOutput = Encoding.UTF8.GetString(c);
+                
+                Assert.Equal(input.Arguments[4].Value.ToLower() == "true", dicReaderOutput == writerOutput);
+                Assert.Equal(input.Arguments[5].Value.ToLower() == "true", dicWriterOutput == writerOutput);
+                Assert.Equal(input.Arguments[6].Value.ToLower() == "true", clrOutput == writerOutput);
+            }
+        }
+
         private static byte[] StreamToByteArray(Stream stream)
         {
             MemoryStream ms = new MemoryStream();
@@ -439,6 +494,37 @@ namespace System.Runtime.Serialization.Xml.Canonicalization.Tests
                         w.WriteFullEndElement();
                         break;
                 }
+            }
+        }
+
+        private enum TestMode
+        {
+            FullDocument,
+            StartAtSpecifiedElement
+        }
+
+        private static XmlReader CreateReader(TestMode mode, XmlBuffer xmlBuffer, string startAt)
+        {
+            switch (mode)
+            {
+                case TestMode.FullDocument:
+                    return xmlBuffer.CreateReader();
+                case TestMode.StartAtSpecifiedElement:
+                    return xmlBuffer.CreateReaderAt(startAt);
+                default:
+                    throw new InvalidOperationException("Reader cannot be created in mode " + mode);
+            }
+        }
+
+        private static byte[] CanonicalizeUsingClrLibrary(Engine engine, TestMode mode, XmlBuffer xmlBuffer, string startAt)
+        {
+            if (mode == TestMode.FullDocument)
+            {
+                return engine.CanonicalizeUsingClrLibrary(xmlBuffer.CreateStream());
+            }
+            else
+            {
+                return engine.CanonicalizeUsingClrLibrary(xmlBuffer.CreateSubtreeNodeList(startAt));
             }
         }
     }

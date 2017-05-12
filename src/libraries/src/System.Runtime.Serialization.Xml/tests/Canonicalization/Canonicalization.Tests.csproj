@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{D3AD82FC-051D-4121-8E48-B13CE8024776}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -19,6 +20,15 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
+    <Compile Include="CryptoCanonicalization\AncestralNamespaceContextProviderProxy.cs" />
+    <Compile Include="CryptoCanonicalization\CanonicalEncoder.cs" />
+    <Compile Include="CryptoCanonicalization\CanonicalWriter.cs" />
+    <Compile Include="CryptoCanonicalization\Engine.cs" />
+    <Compile Include="CryptoCanonicalization\ExclusiveCanonicalNamespaceManager.cs" />
+    <Compile Include="CryptoCanonicalization\Pool.cs" />
+    <Compile Include="CryptoCanonicalization\SimpleXmlNodeList.cs" />
+    <Compile Include="CryptoCanonicalization\XmlBuffer.cs" />
+    <Compile Include="CryptoCanonicalization\XPathHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(TestSourceFolder)baselines\ReaderWriter_C14N_BaselineXML.xml">
@@ -37,6 +47,33 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(TestSourceFolder)TestsConfig.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\AttrNorm.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\AttrSort.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\Boundary.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\CharEntities.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\ExcC14nSpecExample1.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\ExcC14nSpecExample2.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\InclusiveImport.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\LineFeedNorm.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="baselines\SoapMessage1.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
