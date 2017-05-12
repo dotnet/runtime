@@ -784,10 +784,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
         if (blkNode->OperGet() == GT_STORE_OBJ)
         {
             // CopyObj
-            NYI_ARM("GT_STORE_OBJ is needed of write barriers implementation");
-
-#ifdef _TARGET_ARM64_
-
             // We don't need to materialize the struct size but we still need
             // a temporary register to perform the sequence of loads and stores.
             blkNode->gtLsraInfo.internalIntCount = 1;
@@ -813,8 +809,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             {
                 srcAddrOrFill->gtLsraInfo.setSrcCandidates(l, RBM_WRITE_BARRIER_SRC_BYREF);
             }
-
-#endif // _TARGET_ARM64_
         }
         else
         {
