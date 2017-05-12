@@ -207,7 +207,7 @@ ICALL(DECIMAL_13, "ToSingle", mono_decimal_to_float)
 #endif
 
 ICALL_TYPE(DELEGATE, "System.Delegate", DELEGATE_1)
-ICALL(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal)
+HANDLES(ICALL(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_AllocDelegateLike_internal))
 HANDLES(ICALL(DELEGATE_2, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal))
 HANDLES(ICALL(DELEGATE_3, "GetVirtualMethod_internal", ves_icall_System_Delegate_GetVirtualMethod_internal))
 

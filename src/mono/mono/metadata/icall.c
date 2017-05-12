@@ -6231,19 +6231,18 @@ ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_
 	return delegate;
 }
 
-ICALL_EXPORT MonoMulticastDelegate *
-ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegate *delegate)
+ICALL_EXPORT MonoMulticastDelegateHandle
+ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegateHandle delegate, MonoError *error)
 {
-	MonoError error;
-	MonoMulticastDelegate *ret;
+	error_init (error);
 
-	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
+	MonoClass *klass = mono_handle_class (delegate);
+	g_assert (mono_class_has_parent (klass, mono_defaults.multicastdelegate_class));
 
-	ret = (MonoMulticastDelegate*) mono_object_new_checked (mono_object_domain (delegate), mono_object_class (delegate), &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoMulticastDelegateHandle ret = MONO_HANDLE_NEW (MonoMulticastDelegate,  mono_object_new_checked (MONO_HANDLE_DOMAIN (delegate), klass, error));
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoMulticastDelegate, NULL_HANDLE));
 
-	ret->delegate.invoke_impl = mono_runtime_create_delegate_trampoline (mono_object_class (delegate));
+	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, ret), invoke_impl, gpointer, mono_runtime_create_delegate_trampoline (klass));
 
 	return ret;
 }
