@@ -79,9 +79,9 @@
         <SharedFxParams>$(MsiVersionString) $(SharedFrameworkName) $(SharedFrameworkNugetVersion) $(SharedFxUpgradeCode) $(ArchParams)</SharedFxParams>
       </PropertyGroup>
 
-      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs.Filename)\generatemsi.ps1 %(WixOutputs.InputDir) %(WixOutputs.InstallerName) $(WixToolsDir) %(WixOutputs.BrandName) $(CommonParams) %(WixOutputs.Identity) %(WixOutputs.UpgradeCode)" />
+      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs.Filename)\generatemsi.ps1 %(WixOutputs.InputDir) %(WixOutputs.InstallerName) $(WixToolsDir) '%(WixOutputs.BrandName)' $(CommonParams) %(WixOutputs.Identity) %(WixOutputs.UpgradeCode)" />
       <!-- shared framework -->
-      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs2.Filename)\generatemsi.ps1 %(WixOutputs2.InputDir) %(WixOutputs2.InstallerName) $(WixToolsDir) %(WixOutputs2.BrandName) $(SharedFxParams) %(WixOutputs2.Identity)" />
+      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs2.Filename)\generatemsi.ps1 %(WixOutputs2.InputDir) %(WixOutputs2.InstallerName) $(WixToolsDir) '%(WixOutputs2.BrandName)' $(SharedFxParams) %(WixOutputs2.Identity)" />
   </Target>
 
   <Target Name="GenerateBundles"
@@ -93,7 +93,7 @@
         <HostMsi>$(SharedHostInstallerFile)</HostMsi>
         <HostFxrMsi>$(HostFxrInstallerFile)</HostFxrMsi>
         <SharedBundle>$(CombinedInstallerFile)</SharedBundle>
-        <SharedBrandName>'$(ProductBrandPrefix) Runtime'</SharedBrandName>
+        <SharedBrandName>$(ProductBrandPrefix) Runtime</SharedBrandName>
         <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
      </PropertyGroup>
 
@@ -102,7 +102,7 @@
      </GenerateGuidFromName>
 
      <PropertyGroup>
-        <BundleParameters>$(ShareFXMsi) $(HostMsi) $(HostFxrMsi) $(SharedBundle) $(WixToolsDir) $(SharedBrandName) $(MsiVersionString) $(BundleDisplayVersion) $(SharedFrameworkName) $(SharedFrameworkNugetVersion) $(SharedBundleCode) $(ArchParams)</BundleParameters>
+        <BundleParameters>$(ShareFXMsi) $(HostMsi) $(HostFxrMsi) $(SharedBundle) $(WixToolsDir) '$(SharedBrandName)' $(MsiVersionString) $(BundleDisplayVersion) $(SharedFrameworkName) $(SharedFrameworkNugetVersion) $(SharedBundleCode) $(ArchParams)</BundleParameters>
      </PropertyGroup>
 
      <Exec Command="powershell -NoProfile -NoLogo $(SharedFxBundleScript) $(BundleParameters)" />
