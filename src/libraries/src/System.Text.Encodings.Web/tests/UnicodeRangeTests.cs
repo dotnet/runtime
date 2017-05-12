@@ -16,8 +16,7 @@ namespace Microsoft.Framework.WebEncoders
         [InlineData(0x10000, 16)]
         public void Ctor_FailureCase_FirstCodePoint(int firstCodePoint, int rangeSize)
         {
-            var ex = Assert.Throws<ArgumentOutOfRangeException>(() => new UnicodeRange(firstCodePoint, rangeSize));
-            Assert.Equal("firstCodePoint", ex.ParamName);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("firstCodePoint", () => new UnicodeRange(firstCodePoint, rangeSize));
         }
 
         [Theory]
@@ -25,8 +24,7 @@ namespace Microsoft.Framework.WebEncoders
         [InlineData(0x0100, 0x10000)]
         public void Ctor_FailureCase_RangeSize(int firstCodePoint, int rangeSize)
         {
-            var ex = Assert.Throws<ArgumentOutOfRangeException>(() => new UnicodeRange(firstCodePoint, rangeSize));
-            Assert.Equal("length", ex.ParamName);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => new UnicodeRange(firstCodePoint, rangeSize));
         }
 
         [Fact]
@@ -43,8 +41,7 @@ namespace Microsoft.Framework.WebEncoders
         [Fact]
         public void FromSpan_FailureCase()
         {
-            var ex = Assert.Throws<ArgumentOutOfRangeException>(() => UnicodeRange.Create('\u0020', '\u0010'));
-            Assert.Equal("lastCharacter", ex.ParamName);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lastCharacter", () => UnicodeRange.Create('\u0020', '\u0010'));
         }
 
         [Fact]
