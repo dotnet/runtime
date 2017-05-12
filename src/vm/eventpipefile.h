@@ -16,7 +16,13 @@
 class EventPipeFile : public FastSerializableObject
 {
     public:
-        EventPipeFile(SString &outputFilePath);
+
+        EventPipeFile(SString &outputFilePath
+#ifdef _DEBUG
+            ,
+            bool lockOnWrite = false
+#endif // _DEBUG
+        );
         ~EventPipeFile();
 
         // Write an event to the file.
@@ -68,6 +74,10 @@ class EventPipeFile : public FastSerializableObject
 
         // Hashtable of metadata labels.
         MapSHashWithRemove<EventPipeEvent*, StreamLabel> *m_pMetadataLabels;
+
+#ifdef _DEBUG
+        bool m_lockOnWrite;
+#endif // _DEBUG
 };
 
 #endif // FEATURE_PERFTRACING

@@ -185,6 +185,10 @@ typedef DPTR(PTR_ThreadLocalBlock) PTR_PTR_ThreadLocalBlock;
 #include "interoputil.h"
 #include "eventtrace.h"
 
+#ifdef FEATURE_PERFTRACING
+class EventPipeBufferList;
+#endif // FEATURE_PERFTRACING
+
 #ifdef CROSSGEN_COMPILE
 
 #include "asmconstants.h"
@@ -5333,6 +5337,40 @@ public:
         _ASSERTE(pAllLoggedTypes != NULL ? m_pAllLoggedTypes == NULL : TRUE);
         m_pAllLoggedTypes = pAllLoggedTypes;
     }
+
+#ifdef FEATURE_PERFTRACING
+private:
+    // The object that contains the list write buffers used by this thread.
+    Volatile<EventPipeBufferList*> m_pEventPipeBufferList;
+
+    // Whether or not the thread is currently writing an event.
+    Volatile<bool> m_eventWriteInProgress;
+
+public:
+    EventPipeBufferList* GetEventPipeBufferList()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pEventPipeBufferList;
+    }
+
+    void SetEventPipeBufferList(EventPipeBufferList *pList)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pEventPipeBufferList = pList;
+    }
+
+    bool GetEventWriteInProgress() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_eventWriteInProgress;
+    }
+
+    void SetEventWriteInProgress(bool value)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_eventWriteInProgress = value;
+    }
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_HIJACK
 private:
