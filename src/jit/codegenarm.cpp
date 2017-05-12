@@ -820,6 +820,124 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     genProduceReg(tree);
 }
 
+// Generate code for CpObj nodes wich copy structs that have interleaved
+// GC pointers.
+// For this case we'll generate a sequence of loads/stores in the case of struct
+// slots that don't contain GC pointers.  The generated code will look like:
+// ldr tempReg, [R13, #8]
+// str tempReg, [R14, #8]
+//
+// In the case of a GC-Pointer we'll call the ByRef write barrier helper
+// who happens to use the same registers as the previous call to maintain
+// the same register requirements and register killsets:
+// bl CORINFO_HELP_ASSIGN_BYREF
+//
+// So finally an example would look like this:
+// ldr tempReg, [R13, #8]
+// str tempReg, [R14, #8]
+// bl CORINFO_HELP_ASSIGN_BYREF
+// ldr tempReg, [R13, #8]
+// str tempReg, [R14, #8]
+// bl CORINFO_HELP_ASSIGN_BYREF
+// ldr tempReg, [R13, #8]
+// str tempReg, [R14, #8]
+void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
+{
+    GenTreePtr dstAddr       = cpObjNode->Addr();
+    GenTreePtr source        = cpObjNode->Data();
+    var_types  srcAddrType   = TYP_BYREF;
+    bool       sourceIsLocal = false;
+    regNumber  dstReg        = REG_NA;
+    regNumber  srcReg        = REG_NA;
+
+    assert(source->isContained());
+    if (source->gtOper == GT_IND)
+    {
+        GenTree* srcAddr = source->gtGetOp1();
+        assert(!srcAddr->isContained());
+        srcAddrType = srcAddr->TypeGet();
+    }
+    else
+    {
+        noway_assert(source->IsLocal());
+        sourceIsLocal = true;
+    }
+
+    bool dstOnStack = dstAddr->OperIsLocalAddr();
+
+#ifdef DEBUG
+    assert(!dstAddr->isContained());
+
+    // This GenTree node has data about GC pointers, this means we're dealing
+    // with CpObj.
+    assert(cpObjNode->gtGcPtrCount > 0);
+#endif // DEBUG
+
+    // Consume the operands and get them into the right registers.
+    // They may now contain gc pointers (depending on their type; gcMarkRegPtrVal will "do the right thing").
+    genConsumeBlockOp(cpObjNode, REG_WRITE_BARRIER_DST_BYREF, REG_WRITE_BARRIER_SRC_BYREF, REG_NA);
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, srcAddrType);
+    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, dstAddr->TypeGet());
+
+    // Temp register used to perform the sequence of loads and stores.
+    regNumber tmpReg = cpObjNode->ExtractTempReg();
+    assert(genIsValidIntReg(tmpReg));
+
+    unsigned slots = cpObjNode->gtSlots;
+    emitter* emit  = getEmitter();
+
+    BYTE* gcPtrs = cpObjNode->gtGcPtrs;
+
+    // If we can prove it's on the stack we don't need to use the write barrier.
+    emitAttr attr = EA_PTRSIZE;
+    if (dstOnStack)
+    {
+        for (unsigned i = 0; i < slots; ++i)
+        {
+            if (gcPtrs[i] == GCT_GCREF)
+                attr = EA_GCREF;
+            else if (gcPtrs[i] == GCT_BYREF)
+                attr = EA_BYREF;
+            emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
+            emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
+        }
+    }
+    else
+    {
+        unsigned gcPtrCount = cpObjNode->gtGcPtrCount;
+
+        unsigned i = 0;
+        while (i < slots)
+        {
+            switch (gcPtrs[i])
+            {
+                case TYPE_GC_NONE:
+                    emit->emitIns_R_R_I(INS_ldr, attr, tmpReg, REG_WRITE_BARRIER_SRC_BYREF, TARGET_POINTER_SIZE,
+                                        INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
+                    emit->emitIns_R_R_I(INS_str, attr, tmpReg, REG_WRITE_BARRIER_DST_BYREF, TARGET_POINTER_SIZE,
+                                        INS_FLAGS_DONT_CARE, INS_OPTS_LDST_POST_INC);
+                    break;
+
+                default:
+                    // In the case of a GC-Pointer we'll call the ByRef write barrier helper
+                    genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
+
+                    gcPtrCount--;
+                    break;
+            }
+            ++i;
+        }
+        assert(gcPtrCount == 0);
+    }
+
+    // Clear the gcInfo for registers of source and dest.
+    // While we normally update GC info prior to the last instruction that uses them,
+    // these actually live into the helper call.
+    gcInfo.gcMarkRegSetNpt(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
+}
+
 //------------------------------------------------------------------------
 // genCodeForShiftLong: Generates the code sequence for a GenTree node that
 // represents a three operand bit shift or rotate operation (<<Hi, >>Lo).
