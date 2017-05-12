@@ -2357,18 +2357,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
     assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-#ifdef _TARGET_ARM_
-    NYI_IF(blkOp->OperIs(GT_STORE_OBJ), "GT_STORE_OBJ");
-#endif // _TARGET_ARM_
-
-#ifndef _TARGET_ARM_ // NYI for ARM
     if (blkOp->OperIs(GT_STORE_OBJ) && blkOp->OperIsCopyBlkOp())
     {
         assert(blkOp->AsObj()->gtGcPtrCount != 0);
         genCodeForCpObj(blkOp->AsObj());
         return;
     }
-#endif // !_TARGET_ARM_
 
     if (blkOp->gtBlkOpGcUnsafe)
     {

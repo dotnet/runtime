@@ -1357,6 +1357,13 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define RBM_WRITE_BARRIER        RBM_R1
 #endif
 
+  //In the ARM case, registers of write barrier use the normal argument registers.
+  #define REG_WRITE_BARRIER_SRC_BYREF    REG_ARG_1
+  #define RBM_WRITE_BARRIER_SRC_BYREF    RBM_ARG_1
+
+  #define REG_WRITE_BARRIER_DST_BYREF    REG_ARG_0
+  #define RBM_WRITE_BARRIER_DST_BYREF    RBM_ARG_0
+
   // GenericPInvokeCalliHelper VASigCookie Parameter 
   #define REG_PINVOKE_COOKIE_PARAM          REG_R4
   #define RBM_PINVOKE_COOKIE_PARAM          RBM_R4
