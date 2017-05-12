@@ -1001,14 +1001,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 			add_general (&gr, &stack_size, ainfo);
+			ainfo->byte_arg_size = 1;
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 			add_general (&gr, &stack_size, ainfo);
+			ainfo->byte_arg_size = 2;
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 			add_general (&gr, &stack_size, ainfo);
+			ainfo->byte_arg_size = 4;
 			break;
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
