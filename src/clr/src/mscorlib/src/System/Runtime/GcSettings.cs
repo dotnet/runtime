@@ -13,14 +13,12 @@ namespace System.Runtime
     // These settings are the same format as in clr\src\vm\gcpriv.h
     // make sure you change that file if you change this file!
 
-    [Serializable]
     public enum GCLargeObjectHeapCompactionMode
     {
         Default = 1,
         CompactOnce = 2
     }
 
-    [Serializable]
     public enum GCLatencyMode
     {
         Batch = 0,

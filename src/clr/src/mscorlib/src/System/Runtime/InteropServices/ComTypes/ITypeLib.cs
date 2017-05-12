@@ -15,7 +15,6 @@ using System;
 
 namespace System.Runtime.InteropServices.ComTypes
 {
-    [Serializable]
     public enum SYSKIND
     {
         SYS_WIN16 = 0,
@@ -24,7 +23,6 @@ namespace System.Runtime.InteropServices.ComTypes
         SYS_WIN64 = SYS_MAC + 1
     }
 
-    [Serializable]
     [Flags()]
     public enum LIBFLAGS : short
     {

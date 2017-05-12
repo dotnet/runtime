@@ -8,7 +8,6 @@ using System;
 namespace System.Reflection.Emit
 {
     // This Enum matchs the CorFieldAttr defined in CorHdr.h
-    [Serializable]
     public enum PEFileKinds
     {
         Dll = 0x0001,

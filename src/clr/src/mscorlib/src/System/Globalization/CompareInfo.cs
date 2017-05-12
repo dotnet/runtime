@@ -20,7 +20,6 @@ using System.Runtime.Serialization;
 namespace System.Globalization
 {
     [Flags]
-    [Serializable]
     public enum CompareOptions
     {
         None = 0x00000000,

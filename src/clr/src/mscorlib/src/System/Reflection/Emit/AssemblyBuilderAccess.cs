@@ -9,7 +9,6 @@ using System;
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     [Flags]
     public enum AssemblyBuilderAccess
     {

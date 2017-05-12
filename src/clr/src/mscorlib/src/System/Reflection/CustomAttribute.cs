@@ -965,7 +965,6 @@ namespace System.Reflection
         internal MetadataToken tkCtor;
     }
 
-    [Serializable]
     internal enum CustomAttributeEncoding : int
     {
         Undefined = 0,

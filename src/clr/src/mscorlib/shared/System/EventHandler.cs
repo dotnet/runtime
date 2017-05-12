@@ -6,9 +6,7 @@ using System;
 
 namespace System
 {
-    [Serializable]
     public delegate void EventHandler(Object sender, EventArgs e);
 
-    [Serializable]
     public delegate void EventHandler<TEventArgs>(Object sender, TEventArgs e); // Removed TEventArgs constraint post-.NET 4
 }

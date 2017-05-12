@@ -13,7 +13,6 @@
 
 namespace System
 {
-    [Serializable]
     internal enum LoaderOptimization
     {
         NotSpecified = 0,
