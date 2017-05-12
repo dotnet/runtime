@@ -89,7 +89,7 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLa
     }
     CONTRACTL_END;
 
-#ifdef _DEBUG
+#ifdef EVENTPIPE_EVENT_MARKER
     // Useful for diagnosing serialization bugs.
     const unsigned int value = 0xDEADBEEF;
     pSerializer->WriteBuffer((BYTE*)&value, sizeof(value));
