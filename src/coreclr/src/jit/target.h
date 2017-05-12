@@ -1957,7 +1957,7 @@ inline bool genIsValidFloatReg(regNumber reg)
     return reg >= REG_FP_FIRST && reg <= REG_FP_LAST;
 }
 
-#if defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#ifdef _TARGET_ARM_
 
 /*****************************************************************************
  * Return true if the register is a valid floating point double register
@@ -1967,7 +1967,7 @@ inline bool genIsValidDoubleReg(regNumber reg)
     return genIsValidFloatReg(reg) && (((reg - REG_FP_FIRST) & 0x1) == 0);
 }
 
-#endif // defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#endif // _TARGET_ARM_
 
 //-------------------------------------------------------------------------------------------
 // hasFixedRetBuffReg:

@@ -229,8 +229,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     JITDUMP("TreeNodeInfoInit for: ");
     DISPNODE(tree);
 
-    NYI_IF(tree->TypeGet() == TYP_DOUBLE, "lowering double");
-
     switch (tree->OperGet())
     {
         GenTree* op1;
