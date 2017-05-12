@@ -128,6 +128,19 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     InvokeCallback();
 }
 
+EventPipeEvent* EventPipeProvider::AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    return AddEvent(keywords, eventID, eventVersion, level, true /* needStack */);
+}
+
 EventPipeEvent* EventPipeProvider::AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack)
 {
     CONTRACTL

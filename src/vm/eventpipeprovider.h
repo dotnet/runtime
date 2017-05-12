@@ -26,6 +26,7 @@ class EventPipeProvider
 {
     // Declare friends.
     friend class EventPipeConfiguration;
+    friend class SampleProfiler;
 
 private:
     // The GUID of the provider.
@@ -71,9 +72,16 @@ public:
     bool EventEnabled(INT64 keywords, EventPipeEventLevel eventLevel) const;
 
     // Create a new event.
-    EventPipeEvent* AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack);
+    EventPipeEvent* AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level);
 
 private:
+
+    // Create a new event, but allow needStack to be specified.
+    // In general, we want stack walking to be controlled by the consumer and not the producer of events.
+    // However, there are a couple of cases that we know we don't want to do a stackwalk that would affect performance significantly:
+    // 1. Sample profiler events: The sample profiler already does a stack walk of the target thread.  Doing one of the sampler thread is a waste.
+    // 2. Metadata events: These aren't as painful but because we have to keep this functionality around, might as well use it.
+    EventPipeEvent* AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack);
 
     // Add an event to the provider.
     void AddEvent(EventPipeEvent &event);
