@@ -32,14 +32,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			try
 			{
-				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath);
+				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
 				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath);
+				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
 				new AssemblyChecker (original, linked).Verify ();
 
-				VerifyLinkingOfOtherAssemblies (original, linkResult.OutputAssemblyPath.Parent);
+				VerifyLinkingOfOtherAssemblies (original);
 			}
 			finally
 			{
@@ -54,14 +54,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			_linkedResolver.AddSearchDirectory (linkedResult.OutputAssemblyPath.Parent.ToString ());
 		}
 
-		AssemblyDefinition ResolveLinkedAssembly (NPath assemblyPath)
+		AssemblyDefinition ResolveLinkedAssembly (string assemblyName)
 		{
-			return _linkedResolver.Resolve (new AssemblyNameReference (assemblyPath.FileNameWithoutExtension, null));
-		}
-
-		AssemblyDefinition ResolveOriginalsAssembly (NPath assemblyPath)
-		{
-			return _originalsResolver.Resolve (new AssemblyNameReference (assemblyPath.FileNameWithoutExtension, null));
+			var cleanAssemblyName = assemblyName;
+			if (assemblyName.EndsWith(".exe") || assemblyName.EndsWith(".dll"))
+				cleanAssemblyName = System.IO.Path.GetFileNameWithoutExtension (assemblyName);
+			return _linkedResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null));
 		}
 
 		AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
@@ -83,12 +81,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
-		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original, NPath outputDirectory)
+		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
 		{
 			var checks = BuildOtherAssemblyCheckTable (original);
 
 			foreach (var assemblyName in checks.Keys) {
-				using (var linkedAssembly = ResolveLinkedAssembly (outputDirectory.Combine (assemblyName))) {
+				using (var linkedAssembly = ResolveLinkedAssembly (assemblyName)) {
 					foreach (var checkAttrInAssembly in checks [assemblyName]) {
 						var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
 						var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
