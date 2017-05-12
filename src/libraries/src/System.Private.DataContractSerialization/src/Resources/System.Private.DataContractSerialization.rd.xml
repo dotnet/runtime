@@ -42,5 +42,9 @@
         </Type>
       </Namespace>
     </Assembly>
+    <Namespace Name="System.Collections">
+      <Type Name="IEnumerable" Dynamic="Required All" />
+      <Type Name="IEnumerator" Dynamic="Required All" />
+    </Namespace>
   </Library>
 </Directives>
