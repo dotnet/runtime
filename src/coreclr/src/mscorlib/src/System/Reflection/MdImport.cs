@@ -20,7 +20,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal enum CorElementType : byte
     {
         End = 0x00,
@@ -61,7 +60,6 @@ namespace System.Reflection
         Pinned = 0x45,
     }
 
-    [Serializable]
     [Flags()]
     internal enum MdSigCallingConvention : byte
     {
@@ -85,7 +83,6 @@ namespace System.Reflection
     }
 
 
-    [Serializable]
     [Flags()]
     internal enum PInvokeAttributes
     {
@@ -122,7 +119,6 @@ namespace System.Reflection
     }
 
 
-    [Serializable]
     [Flags()]
     internal enum MethodSemanticsAttributes
     {
@@ -135,7 +131,6 @@ namespace System.Reflection
     }
 
 
-    [Serializable]
     internal enum MetadataTokenType
     {
         Module = 0x00000000,

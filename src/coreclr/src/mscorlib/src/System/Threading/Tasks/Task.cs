@@ -6254,7 +6254,6 @@ namespace System.Threading.Tasks
     // NOTE: These options are a subset of TaskContinuationsOptions, thus before adding a flag check it is
     // not already in use.
     [Flags]
-    [Serializable]
     public enum TaskCreationOptions
     {
         /// <summary>
@@ -6306,7 +6305,6 @@ namespace System.Threading.Tasks
     /// Task creation flags which are only used internally.
     /// </summary>
     [Flags]
-    [Serializable]
     internal enum InternalTaskOptions
     {
         /// <summary> Specifies "No internal task options" </summary>
@@ -6338,7 +6336,6 @@ namespace System.Threading.Tasks
     /// Specifies flags that control optional behavior for the creation and execution of continuation tasks.
     /// </summary>
     [Flags]
-    [Serializable]
     public enum TaskContinuationOptions
     {
         /// <summary>

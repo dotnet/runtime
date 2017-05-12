@@ -15,7 +15,6 @@ using System;
 
 namespace System.Runtime.InteropServices.ComTypes
 {
-    [Serializable]
     public enum DESCKIND
     {
         DESCKIND_NONE = 0,

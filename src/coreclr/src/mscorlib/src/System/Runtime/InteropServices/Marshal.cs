@@ -33,7 +33,6 @@ namespace System.Runtime.InteropServices
     using System.Runtime.InteropServices.ComTypes;
     using System.StubHelpers;
 
-    [Serializable]
     public enum CustomQueryInterfaceMode
     {
         Ignore = 0,
