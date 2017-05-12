@@ -25,7 +25,9 @@ namespace System.IO.Pipes.Tests
         {
             using (var server = new AnonymousPipeServerStream(PipeDirection.Out))
             using (var client = new AnonymousPipeClientStream(server.GetClientHandleAsString()))
-            { }
+            {
+                SuppressClientHandleFinalizationIfNetFramework(server);
+            }
         }
 
         [Theory]
