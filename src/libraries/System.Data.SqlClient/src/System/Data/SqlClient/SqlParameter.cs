@@ -54,7 +54,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    public sealed partial class SqlParameter : DbParameter, ICloneable
+    public sealed partial class SqlParameter : DbParameter, IDbDataParameter, ICloneable
     {
         private MetaType _metaType;
 
