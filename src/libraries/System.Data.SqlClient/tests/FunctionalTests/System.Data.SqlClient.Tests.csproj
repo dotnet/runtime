@@ -18,6 +18,7 @@
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="FakeDiagnosticListenerObserver.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />
+    <Compile Include="SqlClientFactoryTest.cs" />
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />

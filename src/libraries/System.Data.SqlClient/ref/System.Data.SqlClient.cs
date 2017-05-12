@@ -273,6 +273,7 @@ namespace System.Data.SqlClient
         public override System.Data.Common.DbCommand CreateCommand() { throw null; }
         public override System.Data.Common.DbConnection CreateConnection() { throw null; }
         public override System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder() { throw null; }
+        public override System.Data.Common.DbDataAdapter CreateDataAdapter() { throw null; }
         public override System.Data.Common.DbParameter CreateParameter() { throw null; }
     }
     public sealed partial class SqlCommand : System.Data.Common.DbCommand, System.ICloneable
