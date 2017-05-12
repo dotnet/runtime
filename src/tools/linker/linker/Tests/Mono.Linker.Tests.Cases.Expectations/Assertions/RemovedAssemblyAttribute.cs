@@ -6,11 +6,11 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 	/// </summary>
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
 	public class RemovedAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute {
-		public readonly string FileName;
 
 		public RemovedAssemblyAttribute (string fileName)
 		{
-			FileName = fileName;
+			if (string.IsNullOrEmpty (fileName))
+				throw new ArgumentException ("Value cannot be null or empty.", nameof (fileName));
 		}
 	}
 }
