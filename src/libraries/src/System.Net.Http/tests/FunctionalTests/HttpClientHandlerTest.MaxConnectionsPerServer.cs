@@ -16,6 +16,7 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandler_MaxConnectionsPerServer_Test
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxConnectionsPerServer either returns two or int.MaxValue depending if ctor of HttpClientHandlerTest executed first. Disabling cause of random xunit execution order.")]
         public void Default_ExpectedValue()
         {
             using (var handler = new HttpClientHandler())
