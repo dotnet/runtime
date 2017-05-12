@@ -1333,24 +1333,60 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 {
     assert(tree->OperIs(GT_IND));
 
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->gtRegNum;
-    emitter*  emit       = getEmitter();
+    var_types   targetType = tree->TypeGet();
+    regNumber   targetReg  = tree->gtRegNum;
+    emitter*    emit       = getEmitter();
+    emitAttr    attr       = emitTypeSize(tree);
+    instruction ins        = ins_Load(targetType);
 
     genConsumeAddress(tree->Addr());
-    emit->emitInsLoadStoreOp(ins_Load(targetType), emitTypeSize(tree), targetReg, tree);
-    genProduceReg(tree);
-
     if (tree->gtFlags & GTF_IND_VOLATILE)
     {
 #ifdef _TARGET_ARM64_
-        // issue a INS_BARRIER_LD after a volatile LdInd operation
-        instGen_MemoryBarrier(INS_BARRIER_LD);
+        GenTree* addr           = tree->Addr();
+        bool     useLoadAcquire = (targetReg >= REG_INT_FIRST) && (targetReg <= REG_ZR) && !addr->isContained() &&
+                              varTypeIsUnsigned(targetType) &&
+                              ((attr == EA_1BYTE) || !(tree->gtFlags & GTF_IND_UNALIGNED));
+
+        if (useLoadAcquire)
+        {
+            switch (EA_SIZE(attr))
+            {
+                case EA_1BYTE:
+                    assert(ins == INS_ldrb);
+                    ins = INS_ldarb;
+                    break;
+                case EA_2BYTE:
+                    assert(ins == INS_ldrh);
+                    ins = INS_ldarh;
+                    break;
+                case EA_4BYTE:
+                case EA_8BYTE:
+                    assert(ins == INS_ldr);
+                    ins = INS_ldar;
+                    break;
+                default:
+                    assert(false); // We should not get here
+            }
+        }
+
+        emit->emitInsLoadStoreOp(ins, attr, targetReg, tree);
+
+        if (!useLoadAcquire) // issue a INS_BARRIER_OSHLD after a volatile LdInd operation
+            instGen_MemoryBarrier(INS_BARRIER_OSHLD);
 #else
+        emit->emitInsLoadStoreOp(ins, attr, targetReg, tree);
+
         // issue a full memory barrier after a volatile LdInd operation
         instGen_MemoryBarrier();
 #endif // _TARGET_ARM64_
     }
+    else
+    {
+        emit->emitInsLoadStoreOp(ins, attr, targetReg, tree);
+    }
+
+    genProduceReg(tree);
 }
 
 // Generate code for a CpBlk node by the means of the VM memcpy helper call
