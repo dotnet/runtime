@@ -15,7 +15,7 @@
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel/Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
-    <Exec Command="$(DotnetSdkToolCommand) build $(Args) %(PackageProjects.Identity)"
+    <Exec Command="$(DotnetToolCommand) build $(Args) %(PackageProjects.Identity)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
   </Target>
 </Project>

@@ -28,11 +28,11 @@
 
     <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
 
-    <Exec Command="$(SdkRestoreCommand) --source $(PackagesOutDir) $(CommonSharedFrameworkArgs)"
+    <Exec Command="$(DotnetRestoreCommand) --source $(PackagesOutDir) $(CommonSharedFrameworkArgs)"
           WorkingDirectory="$(SharedFrameworkSourceRoot)" />
 
     <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
-    <Exec Command="$(DotnetSdkToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
+    <Exec Command="$(DotnetToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
           WorkingDirectory="$(SharedFrameworkSourceRoot)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
 
@@ -136,11 +136,11 @@
 
     <RemoveDir Directories="$(CoreHostLockedDir)" />
 
-    <Exec Command="$(SdkRestoreCommand) --source $(PackagesOutDir) $(CommonLockedHostArgs)"
+    <Exec Command="$(DotnetRestoreCommand) --source $(PackagesOutDir) $(CommonLockedHostArgs)"
           WorkingDirectory="$(LockedHostSourceRoot)" />
 
 
-    <Exec Command="$(DotnetSdkToolCommand) publish --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
+    <Exec Command="$(DotnetToolCommand) publish --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
           WorkingDirectory="$(LockedHostSourceRoot)"
           EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
   </Target>
