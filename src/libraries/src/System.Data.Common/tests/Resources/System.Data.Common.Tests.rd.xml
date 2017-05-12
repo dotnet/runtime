@@ -1,0 +1,7 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Tests create an XmlSerializer on type System.Data.DataTable. -->
+    <Type Name="System.Data.DataTable" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
