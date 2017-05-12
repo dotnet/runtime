@@ -127,7 +127,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             additionalValidation?.Invoke(c);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CopyTo_NonZeroLowerBound_ThrowsIndexOutOfRangeException()
         {
             Oid item = new Oid(Sha1Oid, Sha1Name);
