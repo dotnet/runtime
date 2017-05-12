@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices
     //====================================================================
     // The enum of the return value of IQuerable.GetInterface
     //====================================================================
-    [Serializable]
     public enum CustomQueryInterfaceResult
     {
         Handled = 0,

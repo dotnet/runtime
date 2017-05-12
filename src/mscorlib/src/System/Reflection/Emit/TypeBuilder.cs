@@ -20,7 +20,6 @@ namespace System.Reflection.Emit
     using System.Diagnostics.Contracts;
 
 
-    [Serializable]
     public enum PackingSize
     {
         Unspecified = 0,

@@ -16,7 +16,6 @@ using System;
 namespace System.Runtime.InteropServices
 {
     // This Enum matchs the CorPinvokeMap defined in CorHdr.h
-    [Serializable]
     internal enum PInvokeMap
     {
         NoMangle = 0x0001,   // Pinvoke is to use the member name as specified.
