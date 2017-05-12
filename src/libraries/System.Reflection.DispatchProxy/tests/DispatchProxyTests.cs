@@ -70,7 +70,7 @@ namespace DispatchProxyTests
             Assert.NotNull(proxy1);
             Assert.NotNull(proxy2);
             Assert.False(object.ReferenceEquals(proxy1, proxy2),
-                        String.Format("First and second instance of proxy type {0} were the same instance", proxy1.GetType().Name));
+                        String.Format("First and second instance of proxy type {0} were the same instance", proxy1.GetType().ToString()));
         }
 
 
