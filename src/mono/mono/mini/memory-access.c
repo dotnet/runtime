@@ -262,7 +262,7 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 	}
 
-	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST)) {
+	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST) && size->inst_c0 < 10000) {
 		mini_emit_memcpy_const_size (cfg, dest, src, size->inst_c0, align);
 	} else {
 		if (cfg->verbose_level > 3)
