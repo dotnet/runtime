@@ -55,36 +55,50 @@ internal static partial class Interop
             StoreEnumerator userEnumerator,
             StoreEnumerator machineEnumerator)
         {
-            int result;
-            SafeCFArrayHandle matches;
-            int osStatus;
+            const int RetryLimit = 3;
+            int osStatus = 0;
 
-            if (location == StoreLocation.CurrentUser)
+            // Occasionally calls to enumerate the trust list get errSecInvalidRecord.
+            // So, if we fail with result 0 ("see osStatus") just retry and see if the
+            // intermediate state has flushed itself.
+            for (int i = 0; i < RetryLimit; i++)
             {
-                result = userEnumerator(out matches, out osStatus);
-            }
-            else if (location == StoreLocation.LocalMachine)
-            {
-                result = machineEnumerator(out matches, out osStatus);
-            }
-            else
-            {
-                Debug.Fail($"Unrecognized StoreLocation value: {location}");
+                int result;
+                SafeCFArrayHandle matches;
+
+                if (location == StoreLocation.CurrentUser)
+                {
+                    result = userEnumerator(out matches, out osStatus);
+                }
+                else if (location == StoreLocation.LocalMachine)
+                {
+                    result = machineEnumerator(out matches, out osStatus);
+                }
+                else
+                {
+                    Debug.Fail($"Unrecognized StoreLocation value: {location}");
+                    throw new CryptographicException();
+                }
+
+                if (result == 1)
+                {
+                    return matches;
+                }
+
+                matches.Dispose();
+
+                if (result == 0)
+                {
+                    // Instead of limiting it to particular error codes, just try it again.
+                    // A permanent error will be stable, a temporary one will hopefully go away.
+                    continue;
+                }
+
+                Debug.Fail($"Unexpected result from {location} trust store enumeration: {result}");
                 throw new CryptographicException();
             }
 
-            if (result == 1)
-            {
-                return matches;
-            }
-
-            matches.Dispose();
-
-            if (result == 0)
-                throw CreateExceptionForOSStatus(osStatus);
-
-            Debug.Fail($"Unexpected result from {location} trust store enumeration: {result}");
-            throw new CryptographicException();
+            throw CreateExceptionForOSStatus(osStatus);
         }
     }
 }
