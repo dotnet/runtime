@@ -28,6 +28,7 @@ using System.ComponentModel;
 
 using System.Collections;
 using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Tests;
 using System.Xml;
 using System.Xml.Schema;
 using System.IO;
@@ -745,15 +746,7 @@ namespace System.Data.Tests
             ds1.DataTable1.AddDataTable1Row("test");
             ds1.DataTable1.AddDataTable1Row("test2");
 
-            global::System.Runtime.Serialization.Formatters.Binary.BinaryFormatter formatter =
-              new global::System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            MemoryStream stream = new MemoryStream();
-
-            formatter.Serialize(stream, ds1);
-
-            stream.Seek(0, SeekOrigin.Begin);
-
-            DataSet1 ds1load = (DataSet1)formatter.Deserialize(stream);
+            DataSet1 ds1load = BinaryFormatterHelpers.Clone(ds1);
 
             Assert.True(ds1load.Tables.Contains("DataTable1"));
             Assert.Equal("DataTable1DataTable", ds1load.Tables["DataTable1"].GetType().Name);
@@ -775,13 +768,7 @@ namespace System.Data.Tests
             //now test when the mode is exclude schema
             ds1.SchemaSerializationMode = global::System.Data.SchemaSerializationMode.ExcludeSchema;
 
-            stream = new MemoryStream();
-
-            formatter.Serialize(stream, ds1);
-
-            stream.Seek(0, SeekOrigin.Begin);
-
-            ds1load = (DataSet1)formatter.Deserialize(stream);
+            ds1load = BinaryFormatterHelpers.Clone(ds1);
 
             Assert.True(ds1load.Tables.Contains("DataTable1"));
             Assert.Equal("DataTable1DataTable", ds1load.Tables["DataTable1"].GetType().Name);
