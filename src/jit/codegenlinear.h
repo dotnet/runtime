@@ -19,6 +19,7 @@ void genCodeForLongUMod(GenTreeOp* node);
 #endif // _TARGET_X86_
 
 void genCodeForDivMod(GenTreeOp* treeNode);
+void genCodeForMul(GenTreeOp* treeNode);
 void genCodeForMulHi(GenTreeOp* treeNode);
 void genLeaInstruction(GenTreeAddrMode* lea);
 void genSetRegToCond(regNumber dstReg, GenTreePtr tree);
@@ -180,6 +181,7 @@ void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
 void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
 void genCodeForPhysReg(GenTreePhysReg* tree);
 void genCodeForNullCheck(GenTreeOp* tree);
+void genCodeForCmpXchg(GenTreeCmpXchg* tree);
 
 void genAlignStackBeforeCall(GenTreePutArgStk* putArgStk);
 void genAlignStackBeforeCall(GenTreeCall* call);
@@ -254,7 +256,6 @@ void genTableBasedSwitch(GenTree* tree);
 void genCodeForArrIndex(GenTreeArrIndex* treeNode);
 void genCodeForArrOffset(GenTreeArrOffs* treeNode);
 instruction genGetInsForOper(genTreeOps oper, var_types type);
-void genStoreInd(GenTreePtr node);
 bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
 void genCallInstruction(GenTreeCall* call);
 void genJmpMethod(GenTreePtr jmp);
