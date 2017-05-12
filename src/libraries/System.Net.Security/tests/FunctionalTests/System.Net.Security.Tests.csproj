@@ -44,7 +44,7 @@
     <Compile Include="NegotiateStreamStreamToStreamTest.cs" />
     <Compile Include="ServiceNameCollectionTest.cs" />
     <Compile Include="NegotiateStreamKerberosTest.cs" />
-  
+
     <!-- Common test files -->
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
