@@ -15,7 +15,7 @@
     <ExternalCurrentRef>9be29f5804c4798d8b51bd3fed99ea076041aeb2</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>1117fab956560c88ebb3fbaa339b6fa04c29a364</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>1117fab956560c88ebb3fbaa339b6fa04c29a364</ProjectNTfsTestILCCurrentRef>
-    <SniCurrentRef>ca04b94304beb477534b4fa0d6080089c21a0284</SniCurrentRef>
+    <SniCurrentRef>97059fa979a3c8fb8b9fba127c526f15e48c9dde</SniCurrentRef>
     <StandardCurrentRef>1117fab956560c88ebb3fbaa339b6fa04c29a364</StandardCurrentRef>
   </PropertyGroup>
 
@@ -31,7 +31,7 @@
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.0.0-preview2-25310-02</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
-    <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
+    <SniPackageVersion>4.4.0-preview2-25312-01</SniPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
@@ -125,7 +125,7 @@
     <XmlUpdateStep Include="Sni">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>SniPackageVersion</ElementName>
-      <PackageId>runtime.win7-x64.runtime.native.System.Data.SqlClient.sni</PackageId>
+      <PackageId>runtime.win-x64.runtime.native.System.Data.SqlClient.sni</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreSetup">
       <Path>$(MSBuildThisFileFullPath)</Path>
