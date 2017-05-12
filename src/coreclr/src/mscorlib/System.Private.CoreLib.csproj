@@ -456,10 +456,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Runtime\Assemblies\AssemblyNameHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Runtime\Assemblies\AssemblyNameLexer.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
