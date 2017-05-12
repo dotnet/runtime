@@ -4,22 +4,25 @@
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
 	public class KeptMemberInAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute {
-		public readonly string AssemblyFileName;
-		public readonly string TypeName;
-		public readonly string [] MemberNames;
 
 		public KeptMemberInAssemblyAttribute (string assemblyFileName, Type type, params string [] memberNames)
 		{
-			AssemblyFileName = assemblyFileName;
-			TypeName = type.ToString ();
-			MemberNames = memberNames;
+			if (string.IsNullOrEmpty (assemblyFileName))
+				throw new ArgumentNullException (nameof (assemblyFileName));
+			if (type == null)
+				throw new ArgumentNullException (nameof (type));
+			if (memberNames == null)
+				throw new ArgumentNullException (nameof (memberNames));
 		}
 
 		public KeptMemberInAssemblyAttribute (string assemblyFileName, string typeName, params string [] memberNames)
 		{
-			AssemblyFileName = assemblyFileName;
-			TypeName = typeName;
-			MemberNames = memberNames;
+			if (string.IsNullOrEmpty (assemblyFileName))
+				throw new ArgumentNullException (nameof (assemblyFileName));
+			if (typeName == null)
+				throw new ArgumentNullException (nameof (typeName));
+			if (memberNames == null)
+				throw new ArgumentNullException (nameof (memberNames));
 		}
 	}
 }

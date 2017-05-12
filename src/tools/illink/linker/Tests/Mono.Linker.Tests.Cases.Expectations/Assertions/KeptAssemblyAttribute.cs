@@ -6,11 +6,11 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 	/// </summary>
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
 	public class KeptAssemblyAttribute : KeptAttribute {
-		public readonly string FileName;
 
 		public KeptAssemblyAttribute (string fileName)
 		{
-			FileName = fileName;
+			if (string.IsNullOrEmpty (fileName))
+				throw new ArgumentException ("Value cannot be null or empty.", nameof (fileName));
 		}
 	}
 }
