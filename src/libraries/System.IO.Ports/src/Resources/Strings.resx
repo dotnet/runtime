@@ -130,9 +130,6 @@
   <data name="NotSupported_UnseekableStream" xml:space="preserve">
     <value>Stream does not support seeking.</value>
   </data>
-  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
-    <value>Unable to read beyond the end of the stream.</value>
-  </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Can not access a closed Stream.</value>
   </data>
