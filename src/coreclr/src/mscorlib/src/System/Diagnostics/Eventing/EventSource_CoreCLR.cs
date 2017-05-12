@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tracing
         {
             if (TplEtwProvider.Log != null)
                 TplEtwProvider.Log.SetActivityId(activityId);
-#if FEATURE_MANAGED_ETW
+#if FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
 #if FEATURE_ACTIVITYSAMPLING
             Guid newId = activityId;
 #endif // FEATURE_ACTIVITYSAMPLING
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tracing
                 }
 #endif // FEATURE_ACTIVITYSAMPLING
             }
-#endif // FEATURE_MANAGED_ETW
+#endif // FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
         }
 
         /// <summary>
