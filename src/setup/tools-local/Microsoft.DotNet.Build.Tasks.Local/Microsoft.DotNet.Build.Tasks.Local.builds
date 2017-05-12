@@ -2,7 +2,9 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).csproj" />
+    <Project Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).csproj">
+      <AdditionalProperties>TargetGroup=netstandard1.5</AdditionalProperties>
+    </Project>
     <Project Include="$(MSBuildThisFileDirectory)$(MSBuildProjectName).csproj">
       <AdditionalProperties>TargetGroup=net45</AdditionalProperties>
     </Project>

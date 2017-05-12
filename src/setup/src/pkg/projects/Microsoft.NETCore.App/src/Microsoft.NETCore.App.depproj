@@ -8,13 +8,36 @@
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
     <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
     <PackageTargetFramework>netcoreapp2.0</PackageTargetFramework>
     <PrimaryPackage>Microsoft.Private.CoreFx.NETCoreApp</PrimaryPackage>
     <CrossGenOutputPath>$(CrossGenRootPath)/$(MSBuildProjectName)/$(NuGetRuntimeIdentifier)</CrossGenOutputPath>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <RestorePackages>true</RestorePackages>
+    <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
+    <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
+    <AdditionalRestoreArgs>/p:HasRuntimePackages=false /p:IntermediateOutputPath=$(IntermediateOutputPath)</AdditionalRestoreArgs>
   </PropertyGroup>
+
   <ItemGroup>
-    <None Include="project.json" />
+    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
+      <Version>$(CoreFxVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.DiaSymReader.Native">
+      <Version>$(DiaSymReaderNativeVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Platforms">
+      <Version>$(PlatformPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="NETStandard.Library">
+      <Version>$(NETStandardVersion)</Version>
+    </PackageReference>
   </ItemGroup>
+
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
     <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
          Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
@@ -43,7 +66,7 @@
     <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
       <_runtimePackageId>%(_runtimeCLR.NuGetPackageId)</_runtimePackageId>
       <_runtimePackageVersion>%(_runtimeCLR.NuGetPackageVersion)</_runtimePackageVersion>
-      <_runtimePackagePath>$(PackagesDir)/$(_runtimePackageId)/$(_runtimePackageVersion)</_runtimePackagePath>
+      <_runtimePackagePath>$(PackagesDir)/$(_runtimePackageId.ToLowerInvariant())/$(_runtimePackageVersion)</_runtimePackagePath>
       
       <_crossGenPath>$(_runtimePackagePath)/tools$(_crossDir)/crossgen$(ApplicationFileExtension)</_crossGenPath>
       <_runtimeDirectory>%(_runtimeCLR.RootDir)%(_runtimeCLR.Directory)</_runtimeDirectory>
@@ -56,7 +79,7 @@
     <PropertyGroup Condition="'@(_runtimeJIT)' != ''">
       <_jitPackageId>%(_runtimeJIT.NuGetPackageId)</_jitPackageId>
       <_jitPackageVersion>%(_runtimeJIT.NuGetPackageVersion)</_jitPackageVersion>
-      <_jitPackagePath>$(PackagesDir)/$(_jitPackageId)/$(_jitPackageVersion)</_jitPackagePath>
+      <_jitPackagePath>$(PackagesDir)/$(_jitPackageId.ToLowerInvariant())/$(_jitPackageVersion)</_jitPackagePath>
       <_jitPath>%(_runtimeJIT.FullPath)</_jitPath>
       <_jitPath Condition="'$(_crossDir)' != ''">$(_jitPackagePath)/runtimes$(_crossDir)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
     </PropertyGroup>
@@ -78,7 +101,7 @@
     <PropertyGroup>
       <CoreFxVersionFile 
         Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))">
-          $(PackagesDir)%(Reference.NuGetPackageId)/%(Reference.NuGetPackageVersion)/version.txt
+          $(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt
       </CoreFxVersionFile>
       <CoreClrVersionFile Condition="'$(NuGetRuntimeIdentifier)' != ''">
           $(_runtimePackagePath)/version.txt
@@ -178,6 +201,9 @@
     <PropertyGroup>
       <_crossGenIntermediatePath>$(IntermediateOutputPath)/crossgen</_crossGenIntermediatePath>
     </PropertyGroup>
+    <!-- Ensure crossgen is executable.  See https://github.com/NuGet/Home/issues/4424 -->
+    <Exec Command="chmod u+x $(_crossGenPath)"
+          Condition="'$(OSGroup)' != 'Windows_NT'" />
     <ItemGroup>
       <_filesToCrossGen Include="@(FilesToPackage)" 
                         Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
@@ -232,24 +258,9 @@
   <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen" Returns="@(FilesToPackage)" />
 
   <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
-    <!-- hack because current nuget task doesn't return version for ReferencedNuGetPackages,
-         can be removed once we switch to msbuild-based nuget & use PackageReference-->
-    <ReadLinesFromFile File="$(ProjectJson)">
-      <Output TaskParameter="Lines" ItemName="ProjectJsonLines" />
-    </ReadLinesFromFile>
-
     <ItemGroup>
-      <PackageMatch Include="@(ProjectJsonLines)">
-        <PackageId>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\w[^:&quot;]*)'))</PackageId>
-        <PackageVersion>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\d+\.\d+.\d+[^&quot;]*)'))</PackageVersion>
-      </PackageMatch>
-
-      <ReferencedPackage Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageMatch.PackageVersion)' != ''">
-        <Version>%(PackageMatch.PackageVersion)</Version>
-      </ReferencedPackage>
-      
       <!-- intersect ReferencedPackage with DependenciesToPackage -->
-      <_DependenciesToPackageWithVersion Include="@(ReferencedPackage)" Condition="'@(ReferencedPackage)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
+      <_DependenciesToPackageWithVersion Include="@(PackageReference)" Condition="'@(PackageReference)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
         <TargetFramework>$(PackageTargetFramework)</TargetFramework>
       </_DependenciesToPackageWithVersion>
     </ItemGroup>

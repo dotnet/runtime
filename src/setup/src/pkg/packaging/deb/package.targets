@@ -12,8 +12,8 @@
   </PropertyGroup>
 
   <Target Name="InitializeDotnetDebTool">
-    <Exec Command="$(SdkRestoreCommand) $(dotnetDebToolSource)"/>
-    <Exec Command="$(DotnetSdkToolCommand) pack $(dotnetDebToolSource) --output $(PackagesOutDir)intermediate/ --version-suffix $(VersionSuffix)"/>
+    <Exec Command="$(DotnetRestoreCommand) $(dotnetDebToolSource)"/>
+    <Exec Command="$(DotnetToolCommand) pack $(dotnetDebToolSource) --output $(PackagesOutDir)intermediate/ --version-suffix $(VersionSuffix)"/>
 
     <ItemGroup>
       <pkFiles Include="$(PackagesOutDir)intermediate/dotnet-deb-tool.*.nupkg"
@@ -34,7 +34,7 @@
     <Copy SourceFiles="$(MSBuildThisFileDirectory)/$(toolConsumerProjectName)"
           DestinationFiles="$(consumingProjectDirectory)/$(toolConsumerProjectName)" />
 
-    <Exec Command="$(SdkRestoreCommand) -s $(dotnetDebToolPackageSource)"
+    <Exec Command="$(DotnetRestoreCommand) -s $(dotnetDebToolPackageSource)"
           WorkingDirectory="$(consumingProjectDirectory)" />
 
   </Target>
@@ -99,7 +99,7 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedHostTokenValue)" />
 
-    <Exec Command="$(DotnetSdkToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
           WorkingDirectory="$(consumingProjectDirectory)" />
 
     <!-- Copy package to output -->
@@ -175,7 +175,7 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(HostFxrTokenValue)" />
 
-    <Exec Command="$(DotnetSdkToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
           WorkingDirectory="$(consumingProjectDirectory)" />
 
     <!-- Copy package to output -->
@@ -254,7 +254,7 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
-    <Exec Command="$(DotnetSdkToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+    <Exec Command="$(DotnetToolCommand) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
           WorkingDirectory="$(consumingProjectDirectory)" />
 
     <!-- Copy package to output -->

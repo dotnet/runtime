@@ -12,12 +12,17 @@
     <CoreFxCurrentRef>f37bb2d81830cefb80a785a2b2ce1bd664ab8a68</CoreFxCurrentRef>
     <CoreClrCurrentRef>a44d1158c8f2cf53d54cf35567f2ec59057b3093</CoreClrCurrentRef>
     <StandardCurrentRef>1117fab956560c88ebb3fbaa339b6fa04c29a364</StandardCurrentRef>
+    <WCFCurrentRef>284ab8a84d40ad2d42e6f3680ce159aaea82d77d</WCFCurrentRef>
   </PropertyGroup>
   
   <PropertyGroup>
+    <CoreFxVersion>4.4.0-preview2-25311-04</CoreFxVersion>
     <PlatformPackageVersion>2.0.0-preview2-25311-04</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.0.0-preview2-25309-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
+    <NETStandardVersion>2.0.0-preview2-25311-01</NETStandardVersion>
+    <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
+    <WcfVersion>4.4.0-preview2-25311-02</WcfVersion>
   </PropertyGroup>
   
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -40,11 +45,20 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(StandardCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="WCF">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)wcf/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(WCFCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
     
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxVersion</ElementName>
+      <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
+    </XmlUpdateStep>
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>PlatformPackageVersion</ElementName>
@@ -55,9 +69,15 @@
       <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
       <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
     </XmlUpdateStep>
-
-    <!-- project.json files to update -->
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json.template" />
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\deps\project.json" />
+    <XmlUpdateStep Include="Standard">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>NETStandardVersion</ElementName>
+      <PackageId>NETStandard.Library</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="WCF">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>WcfVersion</ElementName>
+      <PackageId>System.ServiceModel.Duplex</PackageId>
+    </XmlUpdateStep>
   </ItemGroup>
 </Project>
