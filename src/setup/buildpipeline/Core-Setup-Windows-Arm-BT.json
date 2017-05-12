@@ -268,168 +268,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Build and run tests",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\src\\test\\dir.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs) /flp:v=diag;LogFile=$(PB_SourcesDirectory)\\tests.log",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Sign MSI and cab",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\sign.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignMsiAndCab $(PB_CommonMSBuildArgs) $(MsbuildSigningArguments)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Extract engine from bundle",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\src\\pkg\\packaging\\dir.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:ExtractEngineBundle $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\extractengine.log",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Sign engine",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\sign.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignEngine $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\signengine.log",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Reattach engine to bundle",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\src\\pkg\\packaging\\dir.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:ReattachEngineToBundle $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\reattachengine.log",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Sign Bundle",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\sign.proj",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignBundle $(MsbuildSigningArguments) $(PB_CommonMSBuildArgs) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\signbundle.log",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Publish",
       "timeoutInMinutes": 0,
       "task": {
@@ -441,7 +279,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs)  /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:PublishRidAgnosticPackages=$(PB_PublishRidAgnosticPackages) /p:BuildFullPlatformManifest=$(PB_BuildFullPlatformManifest) /flp:v=detailed;LogFile=$(PB_SourcesDirectory)\\publish.log",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:NuGetFeedUrl=$(NUGET_FEED_URL) /p:NuGetSymbolsFeedUrl=$(NUGET_SYMBOLS_FEED_URL) /p:NuGetApiKey=$(NUGET_API_KEY) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -639,27 +477,29 @@
       "value": "real"
     },
     "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
+      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild) /p:DisableCrossgen=true $(PB_AdditionalBuildArguments)"
+    },
+    "PB_AdditionalBuildArguments": {
+      "value": ""
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)"
     },
     "PB_TargetArchitecture": {
-      "value": "x64",
+      "value": "arm",
       "allowOverride": true
     },
     "PB_CleanAgent": {
       "value": "true"
-    },
-    "PB_PublishRidAgnosticPackages": {
-      "value": "false"
     },
     "PB_BuildFullPlatformManifest": {
       "value": "false"
     }
   },
   "demands": [
-    "Agent.OS -equals Windows_NT"
+    "Agent.OS -equals Windows_NT",
+    "DotNetFramework",
+    "Cmd"
   ],
   "retentionRules": [
     {
@@ -671,15 +511,15 @@
         "FilePath",
         "SymbolStore"
       ],
-      "daysToKeep": 2,
+      "daysToKeep": 7,
       "minimumToKeep": 1,
       "deleteBuildRecord": true,
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(Date:yyyyMMdd)$(Rev:-rr)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
-  "jobTimeoutInMinutes": 120,
+  "jobTimeoutInMinutes": 90,
   "jobCancelTimeoutInMinutes": 5,
   "badgeEnabled": true,
   "repository": {
@@ -689,7 +529,7 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "3"
+      "cleanOptions": "0"
     },
     "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
     "type": "TfsGit",
@@ -699,6 +539,7 @@
     "clean": "false",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
   "queue": {
     "id": 36,
@@ -708,8 +549,8 @@
       "name": "DotNet-Build"
     }
   },
-  "id": 6102,
-  "name": "Core-Setup-Signing-Windows-BT",
+  "id": 4371,
+  "name": "Core-Setup-Windows-Arm-BT",
   "path": "\\",
   "type": "build",
   "project": {
