@@ -10,8 +10,8 @@ this experience. Make sure to consult this document often.
 
 1. Acquire the latest nightly .NET Core SDK 2.0
 
-- [Win 64-bit Latest Zip](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.zip) [Installer](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.exe)
-- [macOS 64-bit Latest Tar](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-osx-x64.latest.tar.gz) [Installer](https://dotnetcli.blob.core.windows.net/dotnet/Sdk/master/dotnet-dev-osx-x64.latest.pkg)
+- [Win 64-bit Latest Zip](https://dotnetcli.azureedge.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.zip) [Installer](https://dotnetcli.azureedge.net/dotnet/Sdk/master/dotnet-dev-win-x64.latest.exe)
+- [macOS 64-bit Latest Tar](https://dotnetcli.azureedge.net/dotnet/Sdk/master/dotnet-dev-osx-x64.latest.tar.gz) [Installer](https://dotnetcli.azureedge.net/dotnet/Sdk/master/dotnet-dev-osx-x64.latest.pkg)
 - [Others](https://github.com/dotnet/cli/blob/master/README.md#installers-and-binaries)
 
 To setup the SDK download the zip and extract it somewhere and add the root folder to your path or always fully
