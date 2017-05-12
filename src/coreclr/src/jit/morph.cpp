@@ -6099,7 +6099,7 @@ GenTreePtr Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varTyp
  *  Transform the given GT_LCL_VAR tree for code generation.
  */
 
-GenTreePtr Compiler::fgMorphLocalVar(GenTreePtr tree)
+GenTreePtr Compiler::fgMorphLocalVar(GenTreePtr tree, bool forceRemorph)
 {
     noway_assert(tree->gtOper == GT_LCL_VAR);
 
@@ -6129,7 +6129,7 @@ GenTreePtr Compiler::fgMorphLocalVar(GenTreePtr tree)
 
     /* If not during the global morphing phase bail */
 
-    if (!fgGlobalMorph)
+    if (!fgGlobalMorph && !forceRemorph)
     {
         return tree;
     }
@@ -8523,7 +8523,8 @@ GenTreePtr Compiler::fgMorphLeaf(GenTreePtr tree)
 
     if (tree->gtOper == GT_LCL_VAR)
     {
-        return fgMorphLocalVar(tree);
+        const bool forceRemorph = false;
+        return fgMorphLocalVar(tree, forceRemorph);
     }
 #ifdef _TARGET_X86_
     else if (tree->gtOper == GT_LCL_FLD)
@@ -13195,6 +13196,25 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                     }
                     DEBUG_DESTROY_NODE(op1);  // GT_ADD or GT_ADDR
                     DEBUG_DESTROY_NODE(tree); // GT_IND
+
+                    // If the result of the fold is a local var, we may need to perform further adjustments e.g. for
+                    // normalization.
+                    if (temp->OperIs(GT_LCL_VAR))
+                    {
+#ifdef DEBUG
+                        // We clear this flag on `temp` because `fgMorphLocalVar` may assert that this bit is clear
+                        // and the node in question must have this bit set (as it has already been morphed).
+                        temp->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
+                        const bool forceRemorph = true;
+                        temp                    = fgMorphLocalVar(temp, forceRemorph);
+#ifdef DEBUG
+                        // We then set this flag on `temp` because `fgMorhpLocalVar` may not set it itself, and the
+                        // caller of `fgMorphSmpOp` may assert that this flag is set on `temp` once this function
+                        // returns.
+                        temp->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
+#endif // DEBUG
+                    }
 
                     return temp;
                 }
