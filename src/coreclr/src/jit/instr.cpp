@@ -2900,17 +2900,15 @@ void CodeGen::inst_mov_RV_ST(regNumber reg, GenTreePtr tree)
 
     if (size < EA_4BYTE)
     {
-        if ((tree->gtFlags & GTF_SMALL_OK) && (size == EA_1BYTE)
-#if CPU_HAS_BYTE_REGS
-            && (genRegMask(reg) & RBM_BYTE_REGS)
-#endif
-                )
+#if CPU_HAS_BYTE_REGS && defined(LEGACY_BACKEND)
+        if ((tree->gtFlags & GTF_SMALL_OK) && (size == EA_1BYTE) && (genRegMask(reg) & RBM_BYTE_REGS))
         {
             /* We only need to load the actual size */
 
             inst_RV_TT(INS_mov, reg, tree, 0, EA_1BYTE);
         }
         else
+#endif // CPU_HAS_BYTE_REGS && defined(LEGACY_BACKEND)
         {
             /* Generate the "movsx/movzx" opcode */
 
