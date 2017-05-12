@@ -861,13 +861,12 @@ namespace System.Net.Tests
         }
 
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "request stream not allowed for GET on netfx")]
-        public void BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsInvalidOperationException(Uri remoteServer)
+        public void BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsProtocolViolationException(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
 
             IAsyncResult asyncResult = request.BeginGetResponse(null, null);
-            Assert.Throws<InvalidOperationException>(() =>
+            Assert.Throws<ProtocolViolationException>(() =>
             {
                 request.BeginGetRequestStream(null, null);
             });
