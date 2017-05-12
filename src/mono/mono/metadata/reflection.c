@@ -1888,10 +1888,12 @@ _mono_reflection_get_type_from_info (MonoTypeNameParse *info, MonoImage *image, 
 static MonoType*
 mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoClass *klass;
 	GList *mod;
 	int modval;
 	gboolean bounded = FALSE;
+	MonoType* type = NULL;
 	
 	error_init (error);
 	if (!image)
@@ -1906,7 +1908,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		klass = mono_class_from_name_checked (image, info->name_space, info->name, error);
 
 	if (!klass)
-		return NULL;
+		goto leave;
 
 	for (mod = info->nested; mod; mod = mod->next) {
 		gpointer iter = NULL;
@@ -1966,7 +1968,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 			break;
 	}
 	if (!klass)
-		return NULL;
+		goto leave;
 
 	if (info->type_arguments) {
 		MonoType **type_args = g_new0 (MonoType *, info->type_arguments->len);
@@ -1980,20 +1982,20 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 			type_args [i] = _mono_reflection_get_type_from_info (subinfo, rootimage, ignorecase, error);
 			if (!type_args [i]) {
 				g_free (type_args);
-				return NULL;
+				goto leave;
 			}
 		}
 
 		the_type = mono_type_get_object_handle (mono_domain_get (), &klass->byval_arg, error);
 		if (!is_ok (error) || MONO_HANDLE_IS_NULL (the_type))
-			return NULL;
+			goto leave;
 
 		instance = mono_reflection_bind_generic_parameters (
 			the_type, info->type_arguments->len, type_args, error);
 
 		g_free (type_args);
 		if (!instance)
-			return NULL;
+			goto leave;
 
 		klass = mono_class_from_mono_type (instance);
 	}
@@ -2001,7 +2003,8 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	for (mod = info->modifiers; mod; mod = mod->next) {
 		modval = GPOINTER_TO_UINT (mod->data);
 		if (!modval) { /* byref: must be last modifier */
-			return &klass->this_arg;
+			type = &klass->this_arg;
+			goto leave;
 		} else if (modval == -1) {
 			klass = mono_ptr_class_get (&klass->byval_arg);
 		} else if (modval == -2) {
@@ -2011,7 +2014,10 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		}
 	}
 
-	return &klass->byval_arg;
+	type = &klass->byval_arg;
+
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (type);
 }
 
 /**
