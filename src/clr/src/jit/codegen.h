@@ -959,7 +959,11 @@ public:
 
     void instGen_Return(unsigned stkArgSize);
 
+#ifdef _TARGET_ARM64_
+    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_SY);
+#else
     void instGen_MemoryBarrier();
+#endif
 
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
