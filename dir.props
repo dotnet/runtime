@@ -54,11 +54,10 @@
     <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
-    <DotnetSdkPath Condition="'$(DotnetSdkPath)'==''">$(ToolsDir)dotnetclisdk/</DotnetSdkPath>
   </PropertyGroup>
 
-  <!-- Setting up Versioning -->
-  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
+  <!-- Import Build tools common props file where repo-independent properties are found -->
+  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
   <!-- Versioning --> 
   <PropertyGroup>
@@ -116,54 +115,30 @@
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
   </PropertyGroup>
 
-  <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
-
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup>
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DnuSourceList Include="$(OverridePackageSource)" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
+    <DotnetSourceList Include="$(OverridePackageSource)" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
   </ItemGroup>
 
-  <!-- list of directories to perform batch restore -->
+  <!-- list of projects to perform batch restore -->
   <ItemGroup>
-    <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\projects\**\project.json" />
-    <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\test\**\project.json" />
-    <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)Bin\**\project.json" />
-    
-    <_ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json" Exclude="@(_DnuExcludeProjectJsonFiles)" />
-    <DnuRestoreDirs Include="@(_ProjectJsonFiles->'%(RootDir)%(Directory)')">
-      <AdditionalArgs>%(AdditionalArgs) --disable-parallel</AdditionalArgs>
-    </DnuRestoreDirs>
-    <DnuRestoreDirs Include="$(MSBuildThisFileDirectory)src/pkg/deps" />
-
+    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj">
       <!-- Workaround https://github.com/NuGet/Home/issues/4337 -->
       <ExtraRestoreArgs>/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
     </SdkRestoreProjects>
   </ItemGroup>
-
   <PropertyGroup>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
-    <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetSdkPath)dotnet.exe</DotnetSdkToolCommand>
-    <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetSdkPath)dotnet</DotnetSdkToolCommand>
-    <OverrideToolHost Condition="'$(MSBuildRuntimeType)' == 'Core'">$(DotnetToolCommand)</OverrideToolHost>
-    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestorePrefix Condition="'$(OsEnvironment)' != 'Windows_NT'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1</DnuRestorePrefix>
-    <DnuRestoreCommand>$(DnuRestorePrefix) "$(DotnetToolCommand)"</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
-
-    <SdkRestoreCommand>$(DotnetSdkToolCommand) restore --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</SdkRestoreCommand>
+    <DotnetRestorePrefix Condition="'$(RunningOnUnix)' == 'true'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 </DotnetRestorePrefix>
+    <DotnetRestoreCommand>$(DotnetRestorePrefix)$(DotnetRestoreCommand)</DotnetRestoreCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">

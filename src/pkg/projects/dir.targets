@@ -6,25 +6,6 @@
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
-  <Target
-    Name="GenerateProjectJsonFromTemplates"
-    BeforeTargets="RestorePackages"
-    Inputs="$(ProjectJsonTemplate)"
-    Outputs="$(ProjectJson)"
-    Condition="Exists('$(ProjectJsonTemplate)')"
-    >
-    <!-- Update project.json template -->
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(ProjectJson)'))" />
-    <WriteLinesToFile
-      File="$(ProjectJson)"
-      Lines="$([System.IO.File]::ReadAllText('project.json.template').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)))"
-      Overwrite="true"
-                      />
-    <ItemGroup>
-      <FileWrites Include="$(ProjectJson)" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="PreserveSymbols"
           AfterTargets="CreatePackage">
     <PropertyGroup>
