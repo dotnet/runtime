@@ -39,7 +39,7 @@ namespace System.IO.Pipes.Tests
                 using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out, serverBase.SafePipeHandle, serverBase.ClientSafePipeHandle))
                 {
                     Assert.True(server.IsConnected);
-                    using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.GetClientHandleAsString()))
+                    using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
                     {
                         Assert.True(server.IsConnected);
                         Assert.True(client.IsConnected);
@@ -61,7 +61,7 @@ namespace System.IO.Pipes.Tests
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
             {
-                using (AnonymousPipeClientStream clientBase = new AnonymousPipeClientStream(PipeDirection.In, server.GetClientHandleAsString()))
+                using (AnonymousPipeClientStream clientBase = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
                 {
                     using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, clientBase.SafePipeHandle))
                     {
@@ -162,7 +162,7 @@ namespace System.IO.Pipes.Tests
         public void ReadModeToByte_Accepted(PipeDirection serverDirection, PipeDirection clientDirection)
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(serverDirection))
-            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(clientDirection, server.GetClientHandleAsString()))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(clientDirection, server.ClientSafePipeHandle))
             {
                 server.ReadMode = PipeTransmissionMode.Byte;
                 client.ReadMode = PipeTransmissionMode.Byte;
@@ -175,7 +175,7 @@ namespace System.IO.Pipes.Tests
         public void MessageReadMode_Throws_NotSupportedException()
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
-            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.GetClientHandleAsString()))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
             {
                 Assert.Throws<NotSupportedException>(() => server.ReadMode = PipeTransmissionMode.Message);
                 Assert.Throws<NotSupportedException>(() => client.ReadMode = PipeTransmissionMode.Message);
@@ -186,7 +186,7 @@ namespace System.IO.Pipes.Tests
         public void InvalidReadMode_Throws_ArgumentOutOfRangeException()
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(PipeDirection.Out))
-            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.GetClientHandleAsString()))
+            using (AnonymousPipeClientStream client = new AnonymousPipeClientStream(PipeDirection.In, server.ClientSafePipeHandle))
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.ReadMode = (PipeTransmissionMode)999);
                 Assert.Throws<ArgumentOutOfRangeException>(() => client.ReadMode = (PipeTransmissionMode)999);
