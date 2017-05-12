@@ -9232,11 +9232,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 break;
 
             case GT_NO_OP:
-
-                if (tree->gtFlags & GTF_NO_OP_NO)
-                {
-                    chars += printf("[NO_OP_NO]");
-                }
                 break;
 
             case GT_FIELD:
@@ -9354,10 +9349,13 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
             case GT_MOD:
             case GT_UMOD:
 
+#ifdef LEGACY_BACKEND
                 if (tree->gtFlags & GTF_MOD_INT_RESULT)
                 {
                     chars += printf("[MOD_INT_RESULT]");
                 }
+#endif // LEGACY_BACKEND
+
                 break;
 
             case GT_EQ:
@@ -9545,10 +9543,12 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[CALL_HOISTABLE]");
                 }
+#ifdef LEGACY_BACKEND
                 if (tree->gtFlags & GTF_CALL_REG_SAVE)
                 {
                     chars += printf("[CALL_REG_SAVE]");
                 }
+#endif // LEGACY_BACKEND
 
                 // More flags associated with calls.
 
@@ -9744,10 +9744,12 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         {
             chars += printf("[BOOLEAN]");
         }
+#if CPU_HAS_BYTE_REGS && defined(LEGACY_BACKEND)
         if (tree->gtFlags & GTF_SMALL_OK)
         {
             chars += printf("[SMALL_OK]");
         }
+#endif
         if (tree->gtFlags & GTF_UNSIGNED)
         {
             chars += printf("[SMALL_UNSIGNED]");
@@ -9759,10 +9761,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_SPILL)
         {
             chars += printf("[SPILL]");
-        }
-        if (tree->gtFlags & GTF_SPILL_HIGH)
-        {
-            chars += printf("[SPILL_HIGH]");
         }
         if (tree->gtFlags & GTF_REUSE_REG_VAL)
         {
