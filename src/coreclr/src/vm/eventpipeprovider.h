@@ -7,6 +7,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
+#include "eventpipeconfiguration.h"
 #include "slist.h"
 
 class EventPipeEvent;
@@ -20,16 +21,6 @@ typedef void (*EventPipeCallback)(
     ULONGLONG MatchAllKeywords,
     void *FilterData,
     void *CallbackContext);
-
-enum class EventPipeEventLevel
-{
-    LogAlways,
-    Critical,
-    Error,
-    Warning,
-    Informational,
-    Verbose
-};
 
 class EventPipeProvider
 {
@@ -58,6 +49,9 @@ private:
 
     // The optional provider callback data pointer.
     void *m_pCallbackData;
+
+    // The configuration object.
+    EventPipeConfiguration *m_pConfig;
 
 public:
 

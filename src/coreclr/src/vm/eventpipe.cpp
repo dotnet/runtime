@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "eventpipe.h"
+#include "eventpipebuffermanager.h"
 #include "eventpipeconfiguration.h"
 #include "eventpipeevent.h"
 #include "eventpipefile.h"
@@ -20,8 +21,17 @@
 CrstStatic EventPipe::s_configCrst;
 bool EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration* EventPipe::s_pConfig = NULL;
+EventPipeBufferManager* EventPipe::s_pBufferManager = NULL;
 EventPipeFile* EventPipe::s_pFile = NULL;
+#ifdef _DEBUG
+EventPipeFile* EventPipe::s_pSyncFile = NULL;
 EventPipeJsonFile* EventPipe::s_pJsonFile = NULL;
+#endif // _DEBUG
+
+#ifdef FEATURE_PAL
+// This function is auto-generated from /src/scripts/genEventPipe.py
+extern "C" void InitProvidersAndEvents();
+#endif
 
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -38,6 +48,8 @@ void EventPipe::Initialize()
 
     s_pConfig = new EventPipeConfiguration();
     s_pConfig->Initialize();
+
+    s_pBufferManager = new EventPipeBufferManager();
 
 #ifdef FEATURE_PAL
     // This calls into auto-generated code to initialize the runtime providers
@@ -57,9 +69,15 @@ void EventPipe::EnableOnStartup()
     CONTRACTL_END;
 
     // Test COMPLUS variable to enable tracing at start-up.
-    if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) != 0)
+    if((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) & 1) == 1)
     {
-        Enable();
+        SString outputPath;
+        outputPath.Printf("Process-%d.netperf", GetCurrentProcessId());
+        Enable(
+            outputPath.GetUnicode(),
+            1024 /* 1 GB circular buffer */,
+            NULL /* pProviders */,
+            0 /* numProviders */);
     }
 }
 
@@ -74,9 +92,24 @@ void EventPipe::Shutdown()
     CONTRACTL_END;
 
     Disable();
+
+    if(s_pConfig != NULL)
+    {
+        delete(s_pConfig);
+        s_pConfig = NULL;
+    }
+    if(s_pBufferManager != NULL)
+    {
+        delete(s_pBufferManager);
+        s_pBufferManager = NULL;
+    }
 }
 
-void EventPipe::Enable()
+void EventPipe::Enable(
+    LPCWSTR strOutputPath,
+    uint circularBufferSizeInMB,
+    EventPipeProviderConfiguration *pProviders,
+    int numProviders)
 {
     CONTRACTL
     {
@@ -86,7 +119,8 @@ void EventPipe::Enable()
     }
     CONTRACTL_END;
 
-    if(!s_tracingInitialized)
+    // If tracing is not initialized or is already enabled, bail here.
+    if(!s_tracingInitialized || s_pConfig->Enabled())
     {
         return;
     }
@@ -95,26 +129,29 @@ void EventPipe::Enable()
     CrstHolder _crst(GetLock());
 
     // Create the event pipe file.
-    SString eventPipeFileOutputPath;
-    eventPipeFileOutputPath.Printf("Process-%d.netperf", GetCurrentProcessId());
+    SString eventPipeFileOutputPath(strOutputPath);
     s_pFile = new EventPipeFile(eventPipeFileOutputPath);
 
-    if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) == 2)
+#ifdef _DEBUG
+    if((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) & 2) == 2)
     {
-        // File placed in current working directory.
+        // Create a synchronous file.
+        SString eventPipeSyncFileOutputPath;
+        eventPipeSyncFileOutputPath.Printf("Process-%d.sync.netperf", GetCurrentProcessId());
+        s_pSyncFile = new EventPipeFile(eventPipeSyncFileOutputPath);
+
+        // Create a JSON file.
         SString outputFilePath;
         outputFilePath.Printf("Process-%d.PerfView.json", GetCurrentProcessId());
         s_pJsonFile = new EventPipeJsonFile(outputFilePath);
     }
+#endif // _DEBUG
 
     // Enable tracing.
-    s_pConfig->Enable();
+    s_pConfig->Enable(circularBufferSizeInMB, pProviders, numProviders);
 
     // Enable the sample profiler
     SampleProfiler::Enable();
-
-    // TODO: Iterate through the set of providers, enable them as appropriate.
-    // This in-turn will iterate through all of the events and set their isEnabled bits.
 }
 
 void EventPipe::Disable()
@@ -133,28 +170,41 @@ void EventPipe::Disable()
     // Take the lock before disabling tracing.
     CrstHolder _crst(GetLock());
 
-    // Disable the profiler.
-    SampleProfiler::Disable();
-
-    // Disable tracing.
-    s_pConfig->Disable();
-
-    if(s_pJsonFile != NULL)
+    if(s_pConfig->Enabled())
     {
-        delete(s_pJsonFile);
-        s_pJsonFile = NULL;
-    }
+        // Disable the profiler.
+        SampleProfiler::Disable();
 
-    if(s_pFile != NULL)
-    {
-        delete(s_pFile);
-        s_pFile = NULL;
-    }
+        // Disable tracing.
+        s_pConfig->Disable();
 
-    if(s_pConfig != NULL)
-    {
-        delete(s_pConfig);
-        s_pConfig = NULL;
+        // Flush all write buffers to make sure that all threads see the change.
+        FlushProcessWriteBuffers();
+
+        // Write to the file.
+        LARGE_INTEGER disableTimeStamp;
+        QueryPerformanceCounter(&disableTimeStamp);
+        s_pBufferManager->WriteAllBuffersToFile(s_pFile, disableTimeStamp);
+        if(s_pFile != NULL)
+        {
+            delete(s_pFile);
+            s_pFile = NULL;
+        }
+#ifdef _DEBUG
+        if(s_pSyncFile != NULL)
+        {
+            delete(s_pSyncFile);
+            s_pSyncFile = NULL;
+        }
+        if(s_pJsonFile != NULL)
+        {
+            delete(s_pJsonFile);
+            s_pJsonFile = NULL;
+        }
+#endif // _DEBUG
+
+        // De-allocate buffers.
+        s_pBufferManager->DeAllocateBuffers();
     }
 }
 
@@ -165,6 +215,7 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(s_pBufferManager != NULL);
     }
     CONTRACTL_END;
 
@@ -174,29 +225,50 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
         return;
     }
 
-    DWORD threadID = GetCurrentThreadId();
-
-    // Create an instance of the event.
-    EventPipeEventInstance instance(
-        event,
-        threadID,
-        pData,
-        length);
-
-    // Write to the EventPipeFile.
-    if(s_pFile != NULL)
+    // Get the current thread;
+    Thread *pThread = GetThread();
+    if(pThread == NULL)
     {
-        s_pFile->WriteEvent(instance);
+        // We can't write an event without the thread object.
+        return;
     }
 
-    // Write to the EventPipeJsonFile if it exists.
-    if(s_pJsonFile != NULL)
+    if(s_pBufferManager != NULL)
     {
-        s_pJsonFile->WriteEvent(instance);
+        if(!s_pBufferManager->WriteEvent(pThread, event, pData, length))
+        {
+            // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
+            return;
+        }
     }
+
+#ifdef _DEBUG
+    {
+        GCX_PREEMP();
+
+        // Create an instance of the event for the synchronous path.
+        EventPipeEventInstance instance(
+            event,
+            pThread->GetOSThreadId(),
+            pData,
+            length);
+
+        // Write to the EventPipeFile if it exists.
+        if(s_pSyncFile != NULL)
+        {
+            s_pSyncFile->WriteEvent(instance);
+        }
+ 
+        // Write to the EventPipeJsonFile if it exists.
+        if(s_pJsonFile != NULL)
+        {
+            s_pJsonFile->WriteEvent(instance);
+        }
+    }
+#endif // _DEBUG
 }
 
-void EventPipe::WriteSampleProfileEvent(SampleProfilerEventInstance &instance)
+void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, Thread *pTargetThread, StackContents &stackContents)
 {
     CONTRACTL
     {
@@ -206,17 +278,39 @@ void EventPipe::WriteSampleProfileEvent(SampleProfilerEventInstance &instance)
     }
     CONTRACTL_END;
 
-    // Write to the EventPipeFile.
-    if(s_pFile != NULL)
+    // Write the event to the thread's buffer.
+    if(s_pBufferManager != NULL)
     {
-        s_pFile->WriteEvent(instance);
+        // Specify the sampling thread as the "current thread", so that we select the right buffer.
+        // Specify the target thread so that the event gets properly attributed.
+        if(!s_pBufferManager->WriteEvent(pSamplingThread, *SampleProfiler::s_pThreadTimeEvent, NULL, 0, pTargetThread, &stackContents))
+        {
+            // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
+            return;
+        }
     }
 
-    // Write to the EventPipeJsonFile if it exists.
-    if(s_pJsonFile != NULL)
+#ifdef _DEBUG
     {
-        s_pJsonFile->WriteEvent(instance);
+        GCX_PREEMP();
+
+        // Create an instance for the synchronous path.
+        SampleProfilerEventInstance instance(pTargetThread);
+        stackContents.CopyTo(instance.GetStack());
+
+        // Write to the EventPipeFile.
+        if(s_pSyncFile != NULL)
+        {
+            s_pSyncFile->WriteEvent(instance);
+        }
+
+        // Write to the EventPipeJsonFile if it exists.
+        if(s_pJsonFile != NULL)
+        {
+            s_pJsonFile->WriteEvent(instance);
+        }
     }
+#endif // _DEBUG
 }
 
 bool EventPipe::WalkManagedStackForCurrentThread(StackContents &stackContents)
@@ -306,6 +400,28 @@ CrstStatic* EventPipe::GetLock()
     LIMITED_METHOD_CONTRACT;
 
     return &s_configCrst;
+}
+
+void QCALLTYPE EventPipeInternal::Enable(
+        __in_z LPCWSTR outputFile,
+        unsigned int circularBufferSizeInMB,
+        EventPipeProviderConfiguration *pProviders,
+        int numProviders)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    EventPipe::Enable(outputFile, circularBufferSizeInMB, pProviders, numProviders);
+    END_QCALL;
+}
+
+void QCALLTYPE EventPipeInternal::Disable()
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    EventPipe::Disable();
+    END_QCALL;
 }
 
 INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(

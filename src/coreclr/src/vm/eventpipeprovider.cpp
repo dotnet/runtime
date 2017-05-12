@@ -27,11 +27,11 @@ EventPipeProvider::EventPipeProvider(const GUID &providerID, EventPipeCallback p
     m_pEventList = new SList<SListElem<EventPipeEvent*>>();
     m_pCallbackFunction = pCallbackFunction;
     m_pCallbackData = pCallbackData;
+    m_pConfig = EventPipe::GetConfiguration();
+    _ASSERTE(m_pConfig != NULL);
 
     // Register the provider.
-    EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
-    _ASSERTE(pConfig != NULL);
-    pConfig->RegisterProvider(*this);
+    m_pConfig->RegisterProvider(*this);
 }
 
 EventPipeProvider::~EventPipeProvider()
@@ -46,6 +46,9 @@ EventPipeProvider::~EventPipeProvider()
 
     // Unregister the provider.
     // This call is re-entrant.
+    // NOTE: We don't use the cached event pipe configuration pointer
+    // in case this runs during shutdown and the configuration has already
+    // been freed.
     EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
     _ASSERTE(pConfig != NULL);
     pConfig->UnregisterProvider(*this);
@@ -81,7 +84,7 @@ bool EventPipeProvider::Enabled() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_enabled;
+    return (m_pConfig->Enabled() && m_enabled);
 }
 
 bool EventPipeProvider::EventEnabled(INT64 keywords) const
@@ -163,6 +166,7 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     CrstHolder _crst(EventPipe::GetLock());
 
     m_pEventList->InsertTail(new SListElem<EventPipeEvent*>(&event));
+    event.RefreshState();
 }
 
 void EventPipeProvider::InvokeCallback()
