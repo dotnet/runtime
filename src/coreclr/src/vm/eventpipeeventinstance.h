@@ -14,6 +14,8 @@
 
 class EventPipeEventInstance
 {
+    // Declare friends.
+    friend EventPipeConfiguration;
 
 public:
 
@@ -25,6 +27,9 @@ public:
     // Get the stack contents object to either read or write to it.
     StackContents* GetStack();
 
+    // Get the timestamp.
+    LARGE_INTEGER GetTimeStamp() const;
+
     // Get a pointer to the data payload.
     BYTE* GetData() const;
 
@@ -34,10 +39,18 @@ public:
     // Serialize this object using FastSerialization.
     void FastSerialize(FastSerializer *pSerializer, StreamLabel metadataLabel);
 
+#ifdef _DEBUG
     // Serialize this event to the JSON file.
     void SerializeToJsonFile(EventPipeJsonFile *pFile);
 
+    bool EnsureConsistency();
+#endif // _DEBUG
+
 protected:
+
+#ifdef _DEBUG
+    unsigned int m_debugEventStart;
+#endif // _DEBUG
 
     EventPipeEvent *m_pEvent;
     DWORD m_threadID;
@@ -46,6 +59,17 @@ protected:
     BYTE *m_pData;
     unsigned int m_dataLength;
     StackContents m_stackContents;
+
+#ifdef _DEBUG
+    unsigned int m_debugEventEnd;
+#endif // _DEBUG
+
+private:
+
+    // This is used for metadata events by EventPipeConfiguration because
+    // the metadata event is created after the first instance of the event
+    // but must be inserted into the file before the first instance of the event.
+    void SetTimeStamp(LARGE_INTEGER timeStamp);
 };
 
 // A specific type of event instance for use by the SampleProfiler.

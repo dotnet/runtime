@@ -63,24 +63,4 @@ namespace System.Diagnostics.Tracing
             return 0;
         }
     }
-
-    // PInvokes into the runtime used to interact with the EventPipe.
-    internal static class EventPipeInternal
-    {
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        internal static extern IntPtr CreateProvider(Guid providerID, UnsafeNativeMethods.ManifestEtw.EtwEnableCallback callbackFunc);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        internal static extern IntPtr AddEvent(IntPtr provHandle, Int64 keywords, uint eventID, uint eventVersion, uint level, bool needStack);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        internal static extern void DeleteProvider(IntPtr provHandle);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        internal static extern unsafe void WriteEvent(IntPtr eventHandle, void* data, uint length);
-    }
 }

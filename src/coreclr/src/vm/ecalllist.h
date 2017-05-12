@@ -1273,6 +1273,8 @@ FCFuncEnd()
 
 #ifdef FEATURE_PERFTRACING
 FCFuncStart(gEventPipeInternalFuncs)
+    QCFuncElement("Enable", EventPipeInternal::Enable)
+    QCFuncElement("Disable", EventPipeInternal::Disable)
     QCFuncElement("CreateProvider", EventPipeInternal::CreateProvider)
     QCFuncElement("AddEvent", EventPipeInternal::AddEvent)
     QCFuncElement("DeleteProvider", EventPipeInternal::DeleteProvider)

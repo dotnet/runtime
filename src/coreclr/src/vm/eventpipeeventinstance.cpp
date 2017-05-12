@@ -24,6 +24,10 @@ EventPipeEventInstance::EventPipeEventInstance(
     }
     CONTRACTL_END;
 
+#ifdef _DEBUG
+    m_debugEventStart = 0xDEADBEEF;
+    m_debugEventEnd = 0xCAFEBABE;
+#endif // _DEBUG
     m_pEvent = &event;
     m_threadID = threadID;
     m_pData = pData;
@@ -34,6 +38,10 @@ EventPipeEventInstance::EventPipeEventInstance(
     {
         EventPipe::WalkManagedStackForCurrentThread(m_stackContents);
     }
+
+#ifdef _DEBUG
+    EnsureConsistency();
+#endif // _DEBUG
 }
 
 StackContents* EventPipeEventInstance::GetStack()
@@ -48,6 +56,13 @@ EventPipeEvent* EventPipeEventInstance::GetEvent() const
     LIMITED_METHOD_CONTRACT;
 
     return m_pEvent;
+}
+
+LARGE_INTEGER EventPipeEventInstance::GetTimeStamp() const
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return m_timeStamp;
 }
 
 BYTE* EventPipeEventInstance::GetData() const
@@ -113,6 +128,7 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLa
     }
 }
 
+#ifdef _DEBUG
 void EventPipeEventInstance::SerializeToJsonFile(EventPipeJsonFile *pFile)
 {
     CONTRACTL
@@ -147,6 +163,35 @@ void EventPipeEventInstance::SerializeToJsonFile(EventPipeJsonFile *pFile)
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
+#endif
+
+void EventPipeEventInstance::SetTimeStamp(LARGE_INTEGER timeStamp)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_timeStamp = timeStamp;
+}
+
+#ifdef _DEBUG
+bool EventPipeEventInstance::EnsureConsistency()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Validate event start.
+    _ASSERTE(m_debugEventStart == 0xDEADBEEF);
+
+    // Validate event end.
+    _ASSERTE(m_debugEventEnd == 0xCAFEBABE);
+
+    return true;
+}
+#endif // _DEBUG
 
 SampleProfilerEventInstance::SampleProfilerEventInstance(Thread *pThread)
     :EventPipeEventInstance(*SampleProfiler::s_pThreadTimeEvent, pThread->GetOSThreadId(), NULL, 0)
