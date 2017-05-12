@@ -26241,7 +26241,7 @@ RelativePath=GC\Stress\Framework\ReliabilityFramework\ReliabilityFramework.cmd
 WorkingDir=GC\Stress\Framework\ReliabilityFramework
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [csgen.1.cmd_3473]
@@ -62041,7 +62041,7 @@ RelativePath=JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Roslyn\CscBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;LONG_RUNNING;EXPECTED_PASS
+Categories=Pri0;LONG_RUNNING;EXPECTED_FAIL;11533
 HostStyle=0
 
 [SciMark.cmd_8027]
@@ -75881,7 +75881,7 @@ RelativePath=readytorun\generics\generics.cmd
 WorkingDir=readytorun\generics
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [callgenericctor.cmd_9788]
@@ -75889,7 +75889,7 @@ RelativePath=readytorun\genericsload\callgenericctor\callgenericctor.cmd
 WorkingDir=readytorun\genericsload\callgenericctor
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [usegenericfield.cmd_9789]
@@ -75897,7 +75897,7 @@ RelativePath=readytorun\genericsload\usegenericfield\usegenericfield.cmd
 WorkingDir=readytorun\genericsload\usegenericfield
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [mainv1.cmd_9790]
@@ -75905,7 +75905,7 @@ RelativePath=readytorun\mainv1\mainv1.cmd
 WorkingDir=readytorun\mainv1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=UNSTABLE;EXPECTED_PASS
+Categories=UNSTABLE;EXPECTED_FAIL;11534
 HostStyle=0
 
 [mainv2.cmd_9791]
@@ -75913,7 +75913,7 @@ RelativePath=readytorun\mainv2\mainv2.cmd
 WorkingDir=readytorun\mainv2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=UNSTABLE;EXPECTED_PASS
+Categories=UNSTABLE;EXPECTED_FAIL;11534
 HostStyle=0
 
 [Dev10_629953.cmd_9792]
