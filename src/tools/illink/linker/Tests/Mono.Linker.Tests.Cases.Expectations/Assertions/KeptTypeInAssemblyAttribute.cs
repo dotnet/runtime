@@ -6,12 +6,18 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	public class KeptTypeInAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute
 	{
 		public readonly string AssemblyFileName;
-		public readonly Type Type;
+		public readonly string TypeName;
 
-		public KeptTypeInAssemblyAttribute(string assemblyFileName, Type type)
+		public KeptTypeInAssemblyAttribute (string assemblyFileName, Type type)
 		{
 			AssemblyFileName = assemblyFileName;
-			Type = type;
+			TypeName = type.ToString ();
+		}
+
+		public KeptTypeInAssemblyAttribute (string assemblyFileName, string typeName)
+		{
+			AssemblyFileName = assemblyFileName;
+			TypeName = typeName;
 		}
 	}
 }
