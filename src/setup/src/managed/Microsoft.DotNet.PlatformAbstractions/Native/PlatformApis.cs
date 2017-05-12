@@ -128,11 +128,11 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
         // are backwards compatible.
         private static DistroInfo NormalizeDistroInfo(DistroInfo distroInfo)
         {
-            if (distroInfo.Id == "gentoo")
+            if (string.IsNullOrEmpty(distroInfo.VersionId))
             {
-                // Gentoo does not have versions, since they use rolling releases.
-                // Workaround this by setting VersionId to the current year and month.
-                distroInfo.VersionId = DateTime.Today.ToString("yyyy.MM");
+                // Some distribution does not have VERSION_ID defined.
+                // Since we need it, we workaround this by giving it the value "unavailable".
+                distroInfo.VersionId = "unavailable";
             }
 
             int minorVersionNumberSeparatorIndex = distroInfo.VersionId.IndexOf('.');
