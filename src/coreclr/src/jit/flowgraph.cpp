@@ -3863,9 +3863,9 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     {
         createdPollBlocks = false;
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
-#if GTF_CALL_REG_SAVE
-        call->gtCallMoreFlags |= GTF_CALL_REG_SAVE;
-#endif // GTF_CALL_REG_SAVE
+#ifdef LEGACY_BACKEND
+        call->gtFlags |= GTF_CALL_REG_SAVE;
+#endif // LEGACY_BACKEND
 
         // for BBJ_ALWAYS I don't need to insert it before the condition.  Just append it.
         if (block->bbJumpKind == BBJ_ALWAYS)
@@ -3944,9 +3944,9 @@ bool Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
 
         //  2) Add a GC_CALL node to Poll.
         GenTreeCall* call = gtNewHelperCallNode(CORINFO_HELP_POLL_GC, TYP_VOID);
-#if GTF_CALL_REG_SAVE
-        call->gtCallMoreFlags |= GTF_CALL_REG_SAVE;
-#endif // GTF_CALL_REG_SAVE
+#ifdef LEGACY_BACKEND
+        call->gtFlags |= GTF_CALL_REG_SAVE;
+#endif // LEGACY_BACKEND
         fgInsertStmtAtEnd(poll, call);
 
         //  3) Remove the last statement from Top and add it to Bottom.

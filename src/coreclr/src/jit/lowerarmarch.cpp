@@ -201,12 +201,8 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         }
-        else
+        else // CopyBlk
         {
-            // CopyBlk
-            short     internalIntCount      = 0;
-            regMaskTP internalIntCandidates = RBM_NONE;
-
 #ifdef _TARGET_ARM64_
             // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
             // we should unroll the loop to improve CQ.
