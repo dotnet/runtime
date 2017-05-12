@@ -303,6 +303,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        [ActiveIssue(19689)]
         public void SendAsync_ExpectedDiagnosticSourceActivityLogging()
         {
             RemoteInvoke(() =>
