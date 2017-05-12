@@ -3852,7 +3852,11 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
  *     Note: all MemoryBarriers instructions can be removed by
  *           SET COMPlus_JitNoMemoryBarriers=1
  */
+#ifdef _TARGET_ARM64_
+void CodeGen::instGen_MemoryBarrier(insBarrier barrierType)
+#else
 void CodeGen::instGen_MemoryBarrier()
+#endif
 {
 #ifdef DEBUG
     if (JitConfig.JitNoMemoryBarriers() == 1)
@@ -3867,7 +3871,7 @@ void CodeGen::instGen_MemoryBarrier()
 #elif defined(_TARGET_ARM_)
     getEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
 #elif defined(_TARGET_ARM64_)
-    getEmitter()->emitIns_BARR(INS_dmb, INS_BARRIER_SY);
+    getEmitter()->emitIns_BARR(INS_dmb, barrierType);
 #else
 #error "Unknown _TARGET_"
 #endif
