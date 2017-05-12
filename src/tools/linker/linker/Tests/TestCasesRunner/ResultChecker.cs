@@ -1,5 +1,6 @@
 ﻿﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
@@ -7,31 +8,68 @@ using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner {
-	public class ResultChecker {
+	public class ResultChecker
+	{
+		readonly BaseAssemblyResolver _originalsResolver;
+		readonly BaseAssemblyResolver _linkedResolver;
+
+		public ResultChecker ()
+			: this(new DefaultAssemblyResolver (), new DefaultAssemblyResolver ())
+		{
+		}
+
+		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver)
+		{
+			_originalsResolver = originalsResolver;
+			_linkedResolver = linkedResolver;
+		}
 
 		public virtual void Check (LinkedTestCaseResult linkResult)
 		{
 			Assert.IsTrue (linkResult.OutputAssemblyPath.FileExists (), $"The linked output assembly was not found.  Expected at {linkResult.OutputAssemblyPath}");
 
-			using (var original = ReadAssembly (linkResult.ExpectationsAssemblyPath)) {
-				PerformOutputAssemblyChecks (original.Definition, linkResult.OutputAssemblyPath.Parent);
+			InitializeResolvers (linkResult);
 
-				using (var linked = ReadAssembly (linkResult.OutputAssemblyPath)) {
-					var checker = new AssemblyChecker (original.Definition, linked.Definition);
-					checker.Verify (); 
-				}
+			try
+			{
+				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath);
+				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 
-				VerifyLinkingOfOtherAssemblies (original.Definition, linkResult.OutputAssemblyPath.Parent);
+				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath);
+
+				new AssemblyChecker (original, linked).Verify ();
+
+				VerifyLinkingOfOtherAssemblies (original, linkResult.OutputAssemblyPath.Parent);
+			}
+			finally
+			{
+				_originalsResolver.Dispose ();
+				_linkedResolver.Dispose ();
 			}
 		}
 
-		static AssemblyContainer ReadAssembly (NPath assemblyPath)
+		void InitializeResolvers (LinkedTestCaseResult linkedResult)
 		{
-			var readerParams = new ReaderParameters ();
-			var resolver = new AssemblyResolver ();
-			readerParams.AssemblyResolver = resolver;
-			resolver.AddSearchDirectory (assemblyPath.Parent.ToString ());
-			return new AssemblyContainer (AssemblyDefinition.ReadAssembly (assemblyPath.ToString (), readerParams), resolver);
+			_originalsResolver.AddSearchDirectory (linkedResult.ExpectationsAssemblyPath.Parent.ToString ());
+			_linkedResolver.AddSearchDirectory (linkedResult.OutputAssemblyPath.Parent.ToString ());
+		}
+
+		AssemblyDefinition ResolveLinkedAssembly (NPath assemblyPath)
+		{
+			return _linkedResolver.Resolve (new AssemblyNameReference (assemblyPath.FileNameWithoutExtension, null));
+		}
+
+		AssemblyDefinition ResolveOriginalsAssembly (NPath assemblyPath)
+		{
+			return _originalsResolver.Resolve (new AssemblyNameReference (assemblyPath.FileNameWithoutExtension, null));
+		}
+
+		AssemblyDefinition ResolveOriginalsAssembly (string assemblyName)
+		{
+			var cleanAssemblyName = assemblyName;
+			if (assemblyName.EndsWith (".exe") || assemblyName.EndsWith (".dll"))
+				cleanAssemblyName = Path.GetFileNameWithoutExtension (assemblyName);
+			return _originalsResolver.Resolve (new AssemblyNameReference (cleanAssemblyName, null));
 		}
 
 		void PerformOutputAssemblyChecks (AssemblyDefinition original, NPath outputDirectory)
@@ -50,10 +88,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var checks = BuildOtherAssemblyCheckTable (original);
 
 			foreach (var assemblyName in checks.Keys) {
-				using (var linkedAssembly = ReadAssembly (outputDirectory.Combine (assemblyName))) {
+				using (var linkedAssembly = ResolveLinkedAssembly (outputDirectory.Combine (assemblyName))) {
 					foreach (var checkAttrInAssembly in checks [assemblyName]) {
 						var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
-						var linkedType = linkedAssembly.Definition.MainModule.GetType (expectedTypeName);
+						var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
 
 						if (checkAttrInAssembly.AttributeType.Name == nameof (RemovedTypeInAssemblyAttribute)) {
 							if (linkedType != null)
@@ -79,9 +117,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
-		static void VerifyRemovedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		void VerifyRemovedMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
 		{
-			var originalType = ((TypeReference) inAssemblyAttribute.ConstructorArguments [1].Value).Resolve ();
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
 			foreach (var memberNameAttr in (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments [2].Value) {
 				string memberName = (string) memberNameAttr.Value;
 
@@ -118,9 +156,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
-		static void VerifyKeptMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
+		void VerifyKeptMemberInAssembly (CustomAttribute inAssemblyAttribute, TypeDefinition linkedType)
 		{
-			var originalType = ((TypeReference) inAssemblyAttribute.ConstructorArguments [1].Value).Resolve ();
+			var originalType = GetOriginalTypeFromInAssemblyAttribute (inAssemblyAttribute);
 			foreach (var memberNameAttr in (CustomAttributeArgument[]) inAssemblyAttribute.ConstructorArguments [2].Value) {
 				string memberName = (string) memberNameAttr.Value;
 
@@ -157,6 +195,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
+		TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
+		{
+			var attributeValueAsTypeReference = inAssemblyAttribute.ConstructorArguments [1].Value as TypeReference;
+			if (attributeValueAsTypeReference != null)
+				return attributeValueAsTypeReference.Resolve ();
+
+			var assembly = ResolveOriginalsAssembly (inAssemblyAttribute.ConstructorArguments [0].Value.ToString ());
+			return assembly.MainModule.GetType (inAssemblyAttribute.ConstructorArguments [1].Value.ToString ());
+		}
+
 		static Dictionary<string, List<CustomAttribute>> BuildOtherAssemblyCheckTable (AssemblyDefinition original)
 		{
 			var checks = new Dictionary<string, List<CustomAttribute>> ();
@@ -181,24 +229,6 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				|| attr.AttributeType.Name == nameof (KeptTypeInAssemblyAttribute)
 				|| attr.AttributeType.Name == nameof (RemovedMemberInAssemblyAttribute)
 				|| attr.AttributeType.Name == nameof (KeptMemberInAssemblyAttribute);
-		}
-
-		struct AssemblyContainer : IDisposable
-		{
-			public readonly AssemblyResolver Resolver;
-			public readonly AssemblyDefinition Definition;
-
-			public AssemblyContainer (AssemblyDefinition definition, AssemblyResolver resolver)
-			{
-				Definition = definition;
-				Resolver = resolver;
-			}
-
-			public void Dispose ()
-			{
-				Resolver?.Dispose ();
-				Definition?.Dispose ();
-			}
 		}
 	}
 }
