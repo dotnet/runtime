@@ -11,7 +11,6 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Tests hang on .NET Framework")]
     public class RequestStreamTest
     {
         readonly byte[] buffer = new byte[1];
@@ -19,48 +18,48 @@ namespace System.Net.Tests
         #region Write
 
         [Fact]
-        public void Write_BufferIsNull_ThrowsArgumentNullException()
+        public async Task Write_BufferIsNull_ThrowsArgumentNullException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentNullException>("buffer", () => stream.Write(null, 0, 1));
-            }
+            });
         }
 
         [Fact]
-        public void Write_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
+        public async Task Write_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.Write(buffer, -1, buffer.Length));
-            }
+            });
         }
 
         [Fact]
-        public void Write_CountIsNegative_ThrowsArgumentOutOfRangeException()
+        public async Task Write_CountIsNegative_ThrowsArgumentOutOfRangeException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.Write(buffer, 0, -1));
-            }
+            });
         }
 
         [Fact]
-        public void Write_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
+        public async Task Write_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.Write(buffer, 0, buffer.Length + 1));
-            }
+            });
         }
 
         [Fact]
-        public void Write_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
+        public async Task Write_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.Write(buffer, int.MaxValue, int.MaxValue));
-            }
+            });
         }
 
 #endregion
@@ -68,70 +67,70 @@ namespace System.Net.Tests
         #region WriteAsync
 
         [Fact]
-        public void WriteAsync_BufferIsNull_ThrowsArgumentNullException()
+        public async Task WriteAsync_BufferIsNull_ThrowsArgumentNullException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentNullException>("buffer", () => { Task t = stream.WriteAsync(null, 0, 1); });
-            }
+            });
         }
 
         [Fact]
-        public void WriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
+        public async Task WriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => { Task t = stream.WriteAsync(buffer, -1, buffer.Length); });
-            }
+            });
         }
 
         [Fact]
-        public void WriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
+        public async Task WriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => { Task t = stream.WriteAsync(buffer, 0, -1); });
-            }
+            });
         }
 
         [Fact]
-        public void WriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
+        public async Task WriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => { Task t = stream.WriteAsync(buffer, 0, buffer.Length + 1); });
-            }
+            });
         }
 
         [Fact]
-        public void WriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
+        public async Task WriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => { Task t = stream.WriteAsync(buffer, int.MaxValue, int.MaxValue); });
-            }
+            });
         }
 
         [Fact]
-        public void WriteAsync_ValidParameters_TaskRanToCompletion()
+        public async Task WriteAsync_ValidParameters_TaskRanToCompletion()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Task t = stream.WriteAsync(buffer, 0, buffer.Length);
                 Assert.Equal(TaskStatus.RanToCompletion, t.Status);
-            }
+            });
         }
 
         [Fact]
-        public void WriteAsync_TokenIsCanceled_TaskIsCanceled()
+        public async Task WriteAsync_TokenIsCanceled_TaskIsCanceled()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
                 Task t = stream.WriteAsync(buffer, 0, buffer.Length, cts.Token);
                 Assert.True(t.IsCanceled);
-            }
+            });
         }
 
         #endregion
@@ -139,92 +138,100 @@ namespace System.Net.Tests
         #region BeginWrite
 
         [Fact]
-        public void BeginWriteAsync_BufferIsNull_ThrowsArgumentNullException()
+        public async Task BeginWriteAsync_BufferIsNull_ThrowsArgumentNullException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentNullException>("buffer", () => stream.BeginWrite(null, 0, 1, null, null));
-            }
+            });
         }
 
         [Fact]
-        public void BeginWriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
+        public async Task BeginWriteAsync_OffsetIsNegative_ThrowsArgumentOutOfRangeException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.BeginWrite(buffer, -1, buffer.Length, null, null));
-            }
+            });
         }
 
         [Fact]
-        public void BeginWriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
+        public async Task BeginWriteAsync_CountIsNegative_ThrowsArgumentOutOfRangeException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.BeginWrite(buffer, 0, -1, null, null));
-            }
+            });
         }
 
         [Fact]
-        public void BeginWriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
+        public async Task BeginWriteAsync_OffsetPlusCountExceedsBufferLength_ThrowsArgumentException()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", "size", () => stream.BeginWrite(buffer, 0, buffer.Length + 1, null, null));
-            }
+            });
         }
 
         [Fact]
-        public void BeginWriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
+        public async Task BeginWriteAsync_OffsetPlusCountMaxValueExceedsBufferLength_Throws()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Assert.Throws<ArgumentOutOfRangeException>("offset", () => stream.BeginWrite(buffer, int.MaxValue, int.MaxValue, null, null));
-            }
+            });
         }
 
         [Fact]
-        public void BeginWriteAsync_ValidParameters_TaskRanToCompletion()
+        public async Task BeginWriteAsync_ValidParameters_TaskRanToCompletion()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 object state = new object();
                 IAsyncResult result = stream.BeginWrite(buffer, 0, buffer.Length, null, state);
                 stream.EndWrite(result);
                 Assert.True(result.IsCompleted);
-            }
+            });
         }
 
         #endregion
 
         [Fact]
-        public void FlushAsync_TaskRanToCompletion()
+        public async Task FlushAsync_TaskRanToCompletion()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 Task t = stream.FlushAsync();
                 Assert.Equal(TaskStatus.RanToCompletion, t.Status);
-            }
+            });
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "cancellation token ignored on netfx")]
         [Fact]
-        public void FlushAsync_TokenIsCanceled_TaskIsCanceled()
+        public async Task FlushAsync_TokenIsCanceled_TaskIsCanceled()
         {
-            using (Stream stream = GetRequestStream())
+            await GetRequestStream((stream) =>
             {
                 var cts = new CancellationTokenSource();
                 cts.Cancel();
                 Task t = stream.FlushAsync(cts.Token);
                 Assert.True(t.IsCanceled);
-            }
+            });
         }
 
-        private Stream GetRequestStream()
+        private async Task GetRequestStream(Action<Stream> requestAction)
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
-            request.Method = "POST";
-            return request.GetRequestStream();
+            await LoopbackServer.CreateServerAsync((server, url) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                request.Method = "POST";
+                using (Stream requestStream = request.GetRequestStream())
+                {
+                    requestAction(requestStream);
+                }
+
+                return Task.FromResult<object>(null);
+            });
         }
     }
 }

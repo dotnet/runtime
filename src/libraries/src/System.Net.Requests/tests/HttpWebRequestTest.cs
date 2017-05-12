@@ -28,10 +28,6 @@ namespace System.Net.Tests
         public HttpWebRequestTest(ITestOutputHelper output)
         {
             _output = output;
-            // On .NET Framework, the default limit for connections/server is very low (2). 
-            // On .NET Core, the default limit is higher. Since these tests run in parallel,
-            // the limit needs to be increased to avoid timeouts when running the tests.
-            System.Net.ServicePointManager.DefaultConnectionLimit = int.MaxValue;
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -121,7 +117,6 @@ namespace System.Net.Tests
             Assert.True(request.AllowReadStreamBuffering);
         }
 
-        [OuterLoop]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task ContentLength_Get_ExpectSameAsGetResponseStream(Uri remoteServer)
         {
@@ -133,22 +128,7 @@ namespace System.Net.Tests
                 string strContent = sr.ReadToEnd();
                 long length = response.ContentLength;
                 Assert.Equal(strContent.Length, length);
-            }               
-        }
-
-        [Fact]
-        public async Task ContentLength_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.ContentLength = 255);
-                }
-            });
+            }
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -185,7 +165,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        public async Task MaximumResponseHeadersLength_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
+        public async Task Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
@@ -194,7 +174,14 @@ namespace System.Net.Tests
                 await LoopbackServer.ReadRequestAndSendResponseAsync(server);
                 using (WebResponse response = await getResponse)
                 {
+                    Assert.Throws<InvalidOperationException>(() => request.AutomaticDecompression = DecompressionMethods.Deflate);
+                    Assert.Throws<InvalidOperationException>(() => request.ContentLength = 255);
+                    Assert.Throws<InvalidOperationException>(() => request.ContinueTimeout = 255);
+                    Assert.Throws<InvalidOperationException>(() => request.Host = "localhost");
                     Assert.Throws<InvalidOperationException>(() => request.MaximumResponseHeadersLength = 255);
+                    Assert.Throws<InvalidOperationException>(() => request.SendChunked = true);
+                    Assert.Throws<InvalidOperationException>(() => request.Proxy = WebRequest.DefaultWebProxy);
+                    Assert.Throws<InvalidOperationException>(() => request.Headers = null);
                 }
             });
         }
@@ -230,21 +217,6 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.MaximumAutomaticRedirections = MaximumAutomaticRedirections;
             Assert.Equal(MaximumAutomaticRedirections, request.MaximumAutomaticRedirections);
-        }
-
-        [Fact]
-        public async Task ContinueTimeout_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.ContinueTimeout = 255);
-                }
-            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -315,12 +287,7 @@ namespace System.Net.Tests
                 request.Timeout = 10; // ms.
 
                 var sw = Stopwatch.StartNew();
-                WebException exception = Assert.Throws<WebException>(() =>
-                {
-                    var response = request.GetResponse();
-                    response.Dispose();
-                });
-                
+                WebException exception = Assert.Throws<WebException>(() => request.GetResponse());
                 sw.Stop();
 
                 Assert.InRange(sw.ElapsedMilliseconds, 1, 15 * 1000);
@@ -346,21 +313,6 @@ namespace System.Net.Tests
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             request.UserAgent = UserAgent;
             Assert.Equal(UserAgent, request.UserAgent);
-        }
-
-        [Fact]
-        public async Task Host_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.Host = "localhost");
-                }
-            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -505,21 +457,6 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        public async Task AutomaticDecompression_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.AutomaticDecompression = DecompressionMethods.Deflate);
-                }
-            });
-        }
-
         [Theory, MemberData(nameof(EchoServers))]
         public void AutomaticDecompression_SetAndGetDeflate_ValuesMatch(Uri remoteServer)
         {
@@ -552,7 +489,7 @@ namespace System.Net.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "ConnectionGroupName isn't implemented in Core")]
         public void ConnectionGroupName_SetAndGetGroup_ValuesMatch(Uri remoteServer)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);            
+            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
 
             if (!PlatformDetection.IsFullFramework)
             {
@@ -717,21 +654,6 @@ namespace System.Net.Tests
             DateTime date = DateTime.MinValue;
             request.Date = date;
             Assert.Equal(date, request.Date);
-        }
-
-        [Fact]
-        public async Task SendChunked_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.SendChunked = true);
-                }
-            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -951,15 +873,14 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
+        public async Task BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException()
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-
-            IAsyncResult asyncResult = request.BeginGetResponse(null, null);
-            Assert.Throws<InvalidOperationException>(() =>
+            await LoopbackServer.CreateServerAsync((server, url) =>
             {
-                request.BeginGetResponse(null, null);
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                IAsyncResult asyncResult = request.BeginGetResponse(null, null);
+                Assert.Throws<InvalidOperationException>(() => request.BeginGetResponse(null, null));
+                return Task.FromResult<object>(null);
             });
         }
 
@@ -973,37 +894,43 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.RequestCanceled, ex.Status);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException(Uri remoteServer)
+        public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            request.Method = HttpMethod.Post.Method;
-            using (Stream requestStream = await request.GetRequestStreamAsync())
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
-                Assert.Throws<ArgumentException>(() => new StreamReader(requestStream));
-            }            
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                request.Method = HttpMethod.Post.Method;
+                using (Stream requestStream = await request.GetRequestStreamAsync())
+                {
+                    requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
+                    Assert.Throws<ArgumentException>(() => new StreamReader(requestStream));
+                }
+            });
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull(Uri remoteServer)
+        public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            request.Method = HttpMethod.Post.Method;
-            using (Stream requestStream = await request.GetRequestStreamAsync())
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                Assert.NotNull(requestStream);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                request.Method = HttpMethod.Post.Method;
+                using (Stream requestStream = await request.GetRequestStreamAsync())
+                {
+                    Assert.NotNull(requestStream);
+                }
+            });
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task GetResponseAsync_GetResponseStream_ExpectNotNull(Uri remoteServer)
+        public async Task GetResponseAsync_GetResponseStream_ExpectNotNull()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = await request.GetResponseAsync())
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                Assert.NotNull(response.GetResponseStream());
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(url);
+                using (WebResponse response = await request.GetResponseAsync())
+                {
+                    Assert.NotNull(response.GetResponseStream());
+                }
+            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1020,7 +947,7 @@ namespace System.Net.Tests
                 {
                     string strContent = sr.ReadToEnd();
                     Assert.True(strContent.Contains("\"Host\": \"" + System.Net.Test.Common.Configuration.Http.Host + "\""));
-                }                
+                }
             }
         }
 
@@ -1077,11 +1004,11 @@ namespace System.Net.Tests
 
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
         [Fact]
-        public void GetResponseAsync_ServerNameNotInDns_ThrowsWebException()
+        public async Task GetResponseAsync_ServerNameNotInDns_ThrowsWebException()
         {
             string serverUrl = string.Format("http://www.{0}.com/", Guid.NewGuid().ToString());
             HttpWebRequest request = WebRequest.CreateHttp(serverUrl);
-            WebException ex = Assert.Throws<WebException>(() => request.GetResponseAsync().GetAwaiter().GetResult());
+            WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
             Assert.Equal(WebExceptionStatus.NameResolutionFailure, ex.Status);
         }
 
@@ -1106,21 +1033,6 @@ namespace System.Net.Tests
             {
                 Assert.True(request.HaveResponse);
             }
-        }
-
-        [Fact]
-        public async Task Headers_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.Headers = null);
-                }
-            });
         }
 
         [Theory]
@@ -1159,21 +1071,6 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentException>("value", () => request.Method = null);
             Assert.Throws<ArgumentException>("value", () => request.Method = string.Empty);
             Assert.Throws<ArgumentException>("value", () => request.Method = "Method(2");
-        }
-
-        [Fact]
-        public async Task Proxy_SetAfterRequestSubmitted_ThrowsInvalidOperationException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, uri) =>
-            {
-                HttpWebRequest request = WebRequest.CreateHttp(uri);
-                Task<WebResponse> getResponse = request.GetResponseAsync();
-                await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-                using (WebResponse response = await getResponse)
-                {
-                    Assert.Throws<InvalidOperationException>(() => request.Proxy = WebRequest.DefaultWebProxy);
-                }
-            });
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1256,7 +1153,7 @@ namespace System.Net.Tests
 
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 Assert.True(responseBody.Contains($"\"Content-Type\": \"{ContentType}\""));
-            }            
+            }
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1268,24 +1165,28 @@ namespace System.Net.Tests
             Assert.Equal(MediaType, request.MediaType);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void HttpWebRequest_EndGetRequestStreamContext_ExpectedValue(Uri remoteServer)
+        public async Task HttpWebRequest_EndGetRequestStreamContext_ExpectedValue()
         {
-            System.Net.TransportContext context;
-            HttpWebRequest httpWebRequest = HttpWebRequest.CreateHttp(remoteServer);
-            httpWebRequest.Method = "POST";
-
-            using (httpWebRequest.EndGetRequestStream(httpWebRequest.BeginGetRequestStream(null, null), out context))
+            await LoopbackServer.CreateServerAsync((server, url) =>
             {
-                if (PlatformDetection.IsFullFramework)
+                System.Net.TransportContext context;
+                HttpWebRequest request = HttpWebRequest.CreateHttp(url);
+                request.Method = "POST";
+
+                using (request.EndGetRequestStream(request.BeginGetRequestStream(null, null), out context))
                 {
-                    Assert.NotNull(context);
+                    if (PlatformDetection.IsFullFramework)
+                    {
+                        Assert.NotNull(context);
+                    }
+                    else
+                    {
+                        Assert.Null(context);
+                    }
                 }
-                else
-                {
-                    Assert.Null(context);
-                }
-            }
+
+                return Task.FromResult<object>(null);
+            });
         }
 
         [ActiveIssue(19083)]
@@ -1301,7 +1202,7 @@ namespace System.Net.Tests
                 state.Request = request;
 
                 request.BeginGetResponse(new AsyncCallback(RequestStreamCallback), state);
-                
+
                 request.Abort();
                 Assert.Equal(1, state.RequestStreamCallbackCallCount);
                 WebException wex = state.SavedRequestStreamException as WebException;
@@ -1374,15 +1275,15 @@ namespace System.Net.Tests
 
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
         {
-            RequestState state = (RequestState) asynchronousResult.AsyncState;
+            RequestState state = (RequestState)asynchronousResult.AsyncState;
             state.RequestStreamCallbackCallCount++;
 
             try
             {
                 HttpWebRequest request = state.Request;
-                state.Response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
-      
-                Stream stream = (Stream) request.EndGetRequestStream(asynchronousResult);
+                state.Response = (HttpWebResponse)request.EndGetResponse(asynchronousResult);
+
+                Stream stream = request.EndGetRequestStream(asynchronousResult);
                 stream.Dispose();
             }
             catch (Exception ex)
@@ -1393,12 +1294,12 @@ namespace System.Net.Tests
 
         private void ResponseCallback(IAsyncResult asynchronousResult)
         {
-            RequestState state = (RequestState) asynchronousResult.AsyncState;
+            RequestState state = (RequestState)asynchronousResult.AsyncState;
             state.ResponseCallbackCallCount++;
 
             try
             {
-                using (HttpWebResponse response = (HttpWebResponse) state.Request.EndGetResponse(asynchronousResult))
+                using (HttpWebResponse response = (HttpWebResponse)state.Request.EndGetResponse(asynchronousResult))
                 {
                     state.SavedResponseHeaders = response.Headers;
                 }
@@ -1436,12 +1337,12 @@ namespace System.Net.Tests
 
     public class RequestState
     {
-      public HttpWebRequest Request;
-      public HttpWebResponse Response;
-      public WebHeaderCollection SavedResponseHeaders;
-      public int RequestStreamCallbackCallCount;
-      public int ResponseCallbackCallCount;
-      public Exception SavedRequestStreamException;
-      public Exception SavedResponseException;
-    }    
+        public HttpWebRequest Request;
+        public HttpWebResponse Response;
+        public WebHeaderCollection SavedResponseHeaders;
+        public int RequestStreamCallbackCallCount;
+        public int ResponseCallbackCallCount;
+        public Exception SavedRequestStreamException;
+        public Exception SavedResponseException;
+    }
 }
