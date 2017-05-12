@@ -36,7 +36,6 @@ namespace System
     using System.Diagnostics.Contracts;
     using System.Runtime.ExceptionServices;
 
-    [Serializable]
     internal delegate void AppDomainInitializer(string[] args);
 
     internal class AppDomainInitializerInfo

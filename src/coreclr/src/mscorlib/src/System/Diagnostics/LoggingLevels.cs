@@ -21,7 +21,6 @@ namespace System.Diagnostics
     // Constants representing the importance level of messages to be logged.
     // This level can be used to organize messages, and also to filter which
     // messages are displayed.
-    [Serializable]
     internal enum LoggingLevels
     {
         TraceLevel0 = 0,

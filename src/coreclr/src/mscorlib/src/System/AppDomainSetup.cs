@@ -25,7 +25,6 @@ namespace System
     [Serializable]
     internal sealed class AppDomainSetup
     {
-        [Serializable]
         internal enum LoaderInformation
         {
             // If you add a new value, add the corresponding property

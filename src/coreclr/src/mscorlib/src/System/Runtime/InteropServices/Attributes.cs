@@ -46,7 +46,6 @@ namespace System.Runtime.InteropServices
         public int Value { get { return _val; } }
     }
 
-    [Serializable]
     public enum ComInterfaceType
     {
         InterfaceIsDual = 0,
@@ -84,7 +83,6 @@ namespace System.Runtime.InteropServices
         public Type Value { get { return _val; } }
     }
 
-    [Serializable]
     public enum ClassInterfaceType
     {
         None = 0,

@@ -18,7 +18,6 @@ namespace System.Runtime.InteropServices
     // IMPORTANT: These must match the definitions in ObjectHandle.h in the EE. 
     // IMPORTANT: If new values are added to the enum the GCHandle::MaxHandleType
     //            constant must be updated.
-    [Serializable]
     public enum GCHandleType
     {
         Weak = 0,

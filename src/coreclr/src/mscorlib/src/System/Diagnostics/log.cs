@@ -19,7 +19,6 @@ namespace System.Diagnostics
     // NOTE: These are NOT triggered when the log switch setting is changed from the 
     // attached debugger.
     // 
-    [Serializable]
     internal delegate void LogSwitchLevelHandler(LogSwitch ls, LoggingLevels newLevel);
 
 
