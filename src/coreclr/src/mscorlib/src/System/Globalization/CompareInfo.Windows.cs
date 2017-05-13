@@ -199,7 +199,7 @@ namespace System.Globalization
             {
                 if (matchLengthPtr != null)
                     *matchLengthPtr = 0;
-                return 0;
+                return startIndex;
             }
 
             if (source.Length == 0)
