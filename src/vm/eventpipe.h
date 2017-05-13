@@ -7,10 +7,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-#include "crst.h"
-#include "eventpipeprovider.h"
-#include "stackwalk.h"
-
+class CrstStatic;
 class EventPipeConfiguration;
 class EventPipeEvent;
 class EventPipeFile;
@@ -19,6 +16,17 @@ class EventPipeBuffer;
 class EventPipeBufferManager;
 class MethodDesc;
 class SampleProfilerEventInstance;
+struct EventPipeProviderConfiguration;
+
+// Define the event pipe callback to match the ETW callback signature.
+typedef void (*EventPipeCallback)(
+    LPCGUID SourceID,
+    ULONG IsEnabled,
+    UCHAR Level,
+    ULONGLONG MatchAnyKeywords,
+    ULONGLONG MatchAllKeywords,
+    void *FilterData,
+    void *CallbackContext);
 
 class StackContents
 {
@@ -168,6 +176,9 @@ class EventPipe
         // Disable tracing via the event pipe.
         static void Disable();
 
+        // Specifies whether or not the event pipe is enabled.
+        static bool Enabled();
+
         // Write out an event.
         // Data is written as a serialized blob matching the ETW serialization conventions.
         static void WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length);
@@ -214,6 +225,25 @@ private:
     unsigned int m_loggingLevel;
 
 public:
+
+    EventPipeProviderConfiguration()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pProviderName = NULL;
+        m_keywords = NULL;
+        m_loggingLevel = 0;
+    }
+
+    EventPipeProviderConfiguration(
+        LPCWSTR pProviderName,
+        UINT64 keywords,
+        unsigned int loggingLevel)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pProviderName = pProviderName;
+        m_keywords = keywords;
+        m_loggingLevel = loggingLevel;
+    }
 
     LPCWSTR GetProviderName() const
     {

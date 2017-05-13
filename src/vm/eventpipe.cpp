@@ -185,6 +185,19 @@ void EventPipe::Disable()
         LARGE_INTEGER disableTimeStamp;
         QueryPerformanceCounter(&disableTimeStamp);
         s_pBufferManager->WriteAllBuffersToFile(s_pFile, disableTimeStamp);
+
+        // Before closing the file, do rundown.
+        s_pConfig->EnableRundown();
+
+        // Ask the runtime to emit rundown events.
+        if(g_fEEStarted && !g_fEEShutDown)
+        {
+            ETW::EnumerationLog::EndRundown();
+        }
+
+        // Disable the event pipe now that rundown is complete.
+        s_pConfig->Disable();
+
         if(s_pFile != NULL)
         {
             delete(s_pFile);
@@ -206,6 +219,19 @@ void EventPipe::Disable()
         // De-allocate buffers.
         s_pBufferManager->DeAllocateBuffers();
     }
+}
+
+bool EventPipe::Enabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool enabled = false;
+    if(s_pConfig != NULL)
+    {
+        enabled = s_pConfig->Enabled();
+    }
+
+    return enabled;
 }
 
 void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length)
@@ -233,12 +259,27 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
         return;
     }
 
-    if(s_pBufferManager != NULL)
+    if(!s_pConfig->RundownEnabled() && s_pBufferManager != NULL)
     {
         if(!s_pBufferManager->WriteEvent(pThread, event, pData, length))
         {
             // This is used in DEBUG to make sure that we don't log an event synchronously that we didn't log to the buffer.
             return;
+        }
+    }
+    else if(s_pConfig->RundownEnabled())
+    {
+        // Write synchronously to the file.
+        // We're under lock and blocking the disabling thread.
+        EventPipeEventInstance instance(
+            event,
+            pThread->GetOSThreadId(),
+            pData,
+            length);
+
+        if(s_pFile != NULL)
+        {
+            s_pFile->WriteEvent(instance);
         }
     }
 
