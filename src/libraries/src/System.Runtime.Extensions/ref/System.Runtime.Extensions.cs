@@ -857,13 +857,13 @@ namespace System
     }
     public enum PlatformID
     {
-        Win32S = 0,
-        Win32Windows = 1,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] Win32S = 0,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] Win32Windows = 1,
         Win32NT = 2,
-        WinCE = 3,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] WinCE = 3,
         Unix = 4,
-        Xbox = 5,
-        MacOSX = 6
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] Xbox = 5,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] MacOSX = 6
     }
     public partial class Progress<T> : System.IProgress<T>
     {
