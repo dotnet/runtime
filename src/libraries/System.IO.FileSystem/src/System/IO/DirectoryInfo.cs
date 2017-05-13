@@ -379,7 +379,7 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]
-        public void MoveTo(String destDirName)
+        public void MoveTo(string destDirName)
         {
             if (destDirName == null)
                 throw new ArgumentNullException(nameof(destDirName));
@@ -387,11 +387,12 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
             Contract.EndContractBlock();
 
-            String fullDestDirName = Path.GetFullPath(destDirName);
-            if (fullDestDirName[fullDestDirName.Length - 1] != Path.DirectorySeparatorChar)
-                fullDestDirName = fullDestDirName + PathHelpers.DirectorySeparatorCharAsString;
+            string destination = Path.GetFullPath(destDirName);
+            string destinationWithSeparator = destination;
+            if (destinationWithSeparator[destinationWithSeparator.Length - 1] != Path.DirectorySeparatorChar)
+                destinationWithSeparator = destinationWithSeparator + PathHelpers.DirectorySeparatorCharAsString;
 
-            String fullSourcePath;
+            string fullSourcePath;
             if (FullPath.Length > 0 && FullPath[FullPath.Length - 1] == Path.DirectorySeparatorChar)
                 fullSourcePath = FullPath;
             else
@@ -400,28 +401,30 @@ namespace System.IO
             if (PathInternal.IsDirectoryTooLong(fullSourcePath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            if (PathInternal.IsDirectoryTooLong(fullDestDirName))
+            if (PathInternal.IsDirectoryTooLong(destinationWithSeparator))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
             StringComparison pathComparison = PathInternal.StringComparison;
-            if (String.Equals(fullSourcePath, fullDestDirName, pathComparison))
+            if (string.Equals(fullSourcePath, destinationWithSeparator, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            String sourceRoot = Path.GetPathRoot(fullSourcePath);
-            String destinationRoot = Path.GetPathRoot(fullDestDirName);
+            string sourceRoot = Path.GetPathRoot(fullSourcePath);
+            string destinationRoot = Path.GetPathRoot(destinationWithSeparator);
 
-            if (!String.Equals(sourceRoot, destinationRoot, pathComparison))
+            if (!string.Equals(sourceRoot, destinationRoot, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
-            if (!Exists)
+            // Windows will throw if the source file/directory doesn't exist, we preemptively check
+            // to make sure our cross platform behavior matches NetFX behavior.
+            if (!Exists && !FileSystem.Current.FileExists(FullPath))
                 throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, FullPath));
 
-            if (FileSystem.Current.DirectoryExists(fullDestDirName))
-                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, fullDestDirName));
+            if (FileSystem.Current.DirectoryExists(destinationWithSeparator))
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destinationWithSeparator));
 
-            FileSystem.Current.MoveDirectory(FullPath, fullDestDirName);
+            FileSystem.Current.MoveDirectory(FullPath, destination);
 
-            FullPath = fullDestDirName;
+            FullPath = destinationWithSeparator;
             OriginalPath = destDirName;
             DisplayPath = GetDisplayName(OriginalPath);
 

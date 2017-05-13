@@ -81,6 +81,31 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PathEndsInAltTrailingSlash_Windows()
+        {
+            string path = GetTestFilePath() + Path.DirectorySeparatorChar;
+            Assert.False(Exists(path));
+        }
+
+        [Fact]
+        public void PathEndsInTrailingSlash_AndExists()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.False(Exists(path + Path.DirectorySeparatorChar));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PathEndsInAltTrailingSlash_AndExists_Windows()
+        {
+            string path = GetTestFilePath();
+            File.Create(path).Dispose();
+            Assert.False(Exists(path + Path.DirectorySeparatorChar));
+        }
+
+        [Fact]
         public void PathAlreadyExistsAsDirectory()
         {
             string path = GetTestFilePath();
