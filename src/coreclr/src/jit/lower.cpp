@@ -167,6 +167,14 @@ GenTree* Lowering::LowerNode(GenTree* node)
             LowerRotate(node);
             break;
 
+#ifdef _TARGET_XARCH_
+        case GT_LSH:
+        case GT_RSH:
+        case GT_RSZ:
+            LowerShift(node->AsOp());
+            break;
+#endif
+
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
