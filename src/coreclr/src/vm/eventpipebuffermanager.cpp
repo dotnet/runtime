@@ -760,7 +760,12 @@ bool EventPipeBufferList::EnsureConsistency()
         nodeCount++;
 
         // Check for consistency of the buffer itself.
-        _ASSERTE(pIter->EnsureConsistency());
+        // NOTE: We can't check the last buffer because the owning thread could
+        // be writing to it, which could result in false asserts.
+        if(pIter->GetNext() != NULL)
+        {
+            _ASSERTE(pIter->EnsureConsistency());
+        }
 
         // Check for cycles.
         _ASSERTE(nodeCount <= m_bufferCount);

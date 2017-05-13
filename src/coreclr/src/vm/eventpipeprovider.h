@@ -7,6 +7,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
+#include "eventpipe.h"
 #include "eventpipeconfiguration.h"
 #include "slist.h"
 
