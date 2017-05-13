@@ -32,41 +32,27 @@ namespace System.Data.SqlClient.Tests
             builder.ConnectTimeout = 1;
         }
 
-        [ActiveIssue(19028)]
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // NP NonAzure connection with no protocol fails correctly on Windows
-        public static void NonAzureNoProtocolConnectionTestOnWindows()
+        public static void NonAzureNoProtocolConnectionTest()
         {
             builder.DataSource = InvalidHostname;
-            Assert.True(IsConnectionFailedOn(builder.ConnectionString, NP));
+            CheckConnectionFailure(builder.ConnectionString, null); // Managed and Native SNI have different default protocols for plain server names
         }
-
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // TCP NonAzure connection with no protocol fails correctly on Unix
-        public static void NonAzureNoProtocolConnectionTestOnUnix()
-        {
-            builder.DataSource = InvalidHostname;
-            Assert.True(IsConnectionFailedOn(builder.ConnectionString, TCP));
-        }
-
 
         [Fact]
         public static void NonAzureTcpConnectionTest()
         {
             builder.DataSource = "tcp:" + InvalidHostname;
-            Assert.True(IsConnectionFailedOn(builder.ConnectionString, TCP));
+            CheckConnectionFailure(builder.ConnectionString, TCP);
         }
-
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // NP NonAzure connection fails correctly on Windows
         public static void NonAzureNpConnectionTest()
         {
             builder.DataSource = "np:\\\\" + InvalidHostname + "\\pipe\\sql\\query";
-            Assert.True(IsConnectionFailedOn(builder.ConnectionString, NP));
+            CheckConnectionFailure(builder.ConnectionString, NP);
         }
-
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
@@ -75,10 +61,9 @@ namespace System.Data.SqlClient.Tests
             foreach (string extension in AzureExtensions)
             {
                 builder.DataSource = InvalidHostname + extension;
-                Assert.True(IsConnectionFailedOn(builder.ConnectionString, TCP));
+                CheckConnectionFailure(builder.ConnectionString, TCP);
             }
         }
-
 
         [Fact]
         public static void AzureTcpConnectionTest()
@@ -86,10 +71,9 @@ namespace System.Data.SqlClient.Tests
             foreach (string extension in AzureExtensions)
             {
                 builder.DataSource = "tcp:" + InvalidHostname + extension;
-                Assert.True(IsConnectionFailedOn(builder.ConnectionString, TCP));
+                CheckConnectionFailure(builder.ConnectionString, TCP);
             }
         }
-
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // NP Azure connection fails correctly on Windows
@@ -98,24 +82,26 @@ namespace System.Data.SqlClient.Tests
             foreach (string extension in AzureExtensions)
             {
                 builder.DataSource = "np:\\\\" + InvalidHostname + extension + "\\pipe\\sql\\query";
-                Assert.True(IsConnectionFailedOn(builder.ConnectionString, NP));
+                CheckConnectionFailure(builder.ConnectionString, NP);
             }
         }
 
-
-        private static bool IsConnectionFailedOn(string connString, string protocol)
+        private static void CheckConnectionFailure(string connString, string protocol)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(connString));
-            Debug.Assert(!string.IsNullOrWhiteSpace(protocol));
-            Debug.Assert(protocol == NP || protocol == TCP);
 
             string errorMessage = Connect(connString);
 
-            return errorMessage != null &&
-                    errorMessage.Contains(ErrorMessage) &&
-                    errorMessage.Contains(String.Format("provider: {0}, error", protocol));
-        }
+            Assert.True(errorMessage != null, "Did not receive any error message");
+            Assert.True(errorMessage.Contains(ErrorMessage), string.Format("Expected error message {0}, but received: {1}", ErrorMessage, errorMessage));
 
+            if (protocol != null)
+            {
+                Assert.True(
+                    errorMessage.Contains(string.Format("provider: {0}, error", protocol)),
+                    string.Format("Expected protocol {0} in the error message, but received: {1}", protocol, errorMessage));
+            }
+        }
 
         private static string Connect(string connString)
         {
