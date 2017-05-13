@@ -258,6 +258,7 @@ namespace System.Reflection.Tests
             yield return new object[] { new Version(255, 1, 2, 3), "255.1.2.3" };
         }
 
+        [ActiveIssue(19179)]
         [Theory]
         [MemberData(nameof(Version_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19179")]
