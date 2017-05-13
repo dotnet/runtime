@@ -9,6 +9,9 @@
     <ProjectGuid>@PROJECTGUID@</ProjectGuid>
     <OutputType>@OUTPUTTYPE@</OutputType>
     <NoWarn>@DISABLEDWARNINGS@</NoWarn>
+    <HostPlatform Condition=" '$(HostPlatform)' == '' and '$(OS)' == 'Windows_NT'">win32</HostPlatform>
+    <HostPlatform Condition=" '$(HostPlatform)' == '' and '$(OS)' == 'Unix' and $([System.IO.File]::Exists('/usr/lib/libc.dylib'))">darwin</HostPlatform>
+    <HostPlatform Condition=" '$(HostPlatform)' == '' and '$(OS)' == 'Unix'">linux</HostPlatform>
     <OutputPath>@OUTPUTDIR@</OutputPath>
     <IntermediateOutputPath>obj-@OUTPUTSUFFIX@</IntermediateOutputPath>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>

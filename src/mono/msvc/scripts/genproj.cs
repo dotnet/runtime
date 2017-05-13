@@ -900,6 +900,12 @@ class MsbuildGenerator {
 		else
 			build_output_dir = "bin\\Debug\\" + library;
 
+		if (build_output_dir.Contains ("-linux") || build_output_dir.Contains ("-darwin") || build_output_dir.Contains ("-win32"))
+			build_output_dir = build_output_dir
+				.Replace ("-linux", "-$(HostPlatform)")
+				.Replace ("-darwin", "-$(HostPlatform)")
+				.Replace ("-win32", "-$(HostPlatform)");
+
 		bool basic_or_build = (library.Contains ("-basic") || library.Contains ("-build"));
 
 		//
