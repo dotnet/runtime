@@ -62,6 +62,12 @@ public:
     // Get the status of the event pipe.
     bool Enabled() const;
 
+    // Determine if rundown is enabled.
+    bool RundownEnabled() const;
+
+    // Enable the well-defined symbolic rundown configuration.
+    void EnableRundown();
+
     // Get the event used to write metadata to the event stream.
     EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance, BYTE *pPayloadData = NULL, unsigned int payloadLength = 0);
 
@@ -92,6 +98,9 @@ private:
     // The provider ID for the configuration event pipe provider.
     // This provider is used to emit configuration events.
     static const GUID s_configurationProviderID;
+
+    // True if rundown is enabled.
+    Volatile<bool> m_rundownEnabled;
 };
 
 class EventPipeEnabledProviderList
