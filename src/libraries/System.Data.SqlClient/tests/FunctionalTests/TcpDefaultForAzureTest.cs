@@ -36,14 +36,14 @@ namespace System.Data.SqlClient.Tests
         public static void NonAzureNoProtocolConnectionTest()
         {
             builder.DataSource = InvalidHostname;
-            IsConnectionFailedOn(builder.ConnectionString, null); // Managed and Native SNI have different default protocols for plain server names
+            CheckConnectionFailure(builder.ConnectionString, null); // Managed and Native SNI have different default protocols for plain server names
         }
 
         [Fact]
         public static void NonAzureTcpConnectionTest()
         {
             builder.DataSource = "tcp:" + InvalidHostname;
-            IsConnectionFailedOn(builder.ConnectionString, TCP);
+            CheckConnectionFailure(builder.ConnectionString, TCP);
         }
 
         [Fact]
@@ -51,7 +51,7 @@ namespace System.Data.SqlClient.Tests
         public static void NonAzureNpConnectionTest()
         {
             builder.DataSource = "np:\\\\" + InvalidHostname + "\\pipe\\sql\\query";
-            IsConnectionFailedOn(builder.ConnectionString, NP);
+            CheckConnectionFailure(builder.ConnectionString, NP);
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.Data.SqlClient.Tests
             foreach (string extension in AzureExtensions)
             {
                 builder.DataSource = InvalidHostname + extension;
-                IsConnectionFailedOn(builder.ConnectionString, TCP);
+                CheckConnectionFailure(builder.ConnectionString, TCP);
             }
         }
 
@@ -71,7 +71,7 @@ namespace System.Data.SqlClient.Tests
             foreach (string extension in AzureExtensions)
             {
                 builder.DataSource = "tcp:" + InvalidHostname + extension;
-                IsConnectionFailedOn(builder.ConnectionString, TCP);
+                CheckConnectionFailure(builder.ConnectionString, TCP);
             }
         }
 
@@ -82,11 +82,11 @@ namespace System.Data.SqlClient.Tests
             foreach (string extension in AzureExtensions)
             {
                 builder.DataSource = "np:\\\\" + InvalidHostname + extension + "\\pipe\\sql\\query";
-                IsConnectionFailedOn(builder.ConnectionString, NP);
+                CheckConnectionFailure(builder.ConnectionString, NP);
             }
         }
 
-        private static void IsConnectionFailedOn(string connString, string protocol)
+        private static void CheckConnectionFailure(string connString, string protocol)
         {
             Debug.Assert(!string.IsNullOrWhiteSpace(connString));
 
