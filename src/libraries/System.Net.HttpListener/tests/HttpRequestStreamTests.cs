@@ -466,7 +466,6 @@ namespace System.Net.Tests
                 HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Shutdown(SocketShutdown.Both);
                 Helpers.WaitForSocketShutdown(client);
 
                 // Reading from a closed connection should fail.
@@ -497,7 +496,6 @@ namespace System.Net.Tests
                 HttpListenerContext context = await _listener.GetContextAsync();
 
                 // Disconnect the Socket from the HttpListener.
-                client.Shutdown(SocketShutdown.Both);
                 Helpers.WaitForSocketShutdown(client);
 
                 // Reading from a closed connection should fail.
