@@ -29,7 +29,6 @@ namespace System.Net
         private long _contentLength;
         private Stream _requestStream;
         private string _httpMethod;
-        private bool? _keepAlive;
         private WebHeaderCollection _webHeaders;
         private IPEndPoint _localEndPoint;
         private IPEndPoint _remoteEndPoint;
@@ -88,7 +87,6 @@ namespace System.Net
             }
             _version = new Version(memoryBlob.RequestBlob->Version.MajorVersion, memoryBlob.RequestBlob->Version.MinorVersion);
             _clientCertState = ListenerClientCertState.NotInitialized;
-            _keepAlive = null;
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Info(this, $"RequestId:{RequestId} ConnectionId:{_connectionId} RawConnectionId:{memoryBlob.RequestBlob->RawConnectionId} UrlContext:{memoryBlob.RequestBlob->UrlContext} RawUrl:{_rawUrl} Version:{_version} Secure:{_sslStatus}");
@@ -167,7 +165,7 @@ namespace System.Net
             {
                 if (_boundaryType == BoundaryType.None)
                 {
-                    string transferEncodingHeader = GetKnownHeader(HttpRequestHeader.TransferEncoding);
+                    string transferEncodingHeader = Headers[HttpKnownHeaderNames.TransferEncoding];
                     if (transferEncodingHeader != null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
                     {
                         _boundaryType = BoundaryType.Chunked;
@@ -177,7 +175,7 @@ namespace System.Net
                     {
                         _contentLength = 0;
                         _boundaryType = BoundaryType.ContentLength;
-                        string length = GetKnownHeader(HttpRequestHeader.ContentLength);
+                        string length = Headers[HttpKnownHeaderNames.ContentLength];
                         if (length != null)
                         {
                             bool success = long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out _contentLength);
@@ -348,43 +346,6 @@ namespace System.Net
                 // accessing the ContentLength property delay creates m_BoundaryType
                 return (ContentLength64 > 0 && _boundaryType == BoundaryType.ContentLength) ||
                     _boundaryType == BoundaryType.Chunked || _boundaryType == BoundaryType.Multipart;
-            }
-        }
-
-        public bool KeepAlive
-        {
-            get
-            {
-                if (!_keepAlive.HasValue)
-                {
-                    string header = Headers[HttpKnownHeaderNames.ProxyConnection];
-                    if (string.IsNullOrEmpty(header))
-                    {
-                        header = GetKnownHeader(HttpRequestHeader.Connection);
-                    }
-                    if (string.IsNullOrEmpty(header))
-                    {
-                        if (ProtocolVersion >= HttpVersion.Version11)
-                        {
-                            _keepAlive = true;
-                        }
-                        else
-                        {
-                            header = GetKnownHeader(HttpRequestHeader.KeepAlive);
-                            _keepAlive = !string.IsNullOrEmpty(header);
-                        }
-                    }
-                    else
-                    {
-                        header = header.ToLower(CultureInfo.InvariantCulture);
-                        _keepAlive =
-                            header.IndexOf("close", StringComparison.InvariantCultureIgnoreCase) < 0 ||
-                            header.IndexOf("keep-alive", StringComparison.InvariantCultureIgnoreCase) >= 0;
-                    }
-                }
-
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
-                return _keepAlive.Value;
             }
         }
 
@@ -650,11 +611,6 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_requestUri:{_requestUri}");
                 return _requestUri;
             }
-        }
-
-        private string GetKnownHeader(HttpRequestHeader header)
-        {
-            return Interop.HttpApi.GetKnownHeader(RequestBuffer, OriginalBlobAddress, (int)header);
         }
 
         internal ChannelBinding GetChannelBinding()
