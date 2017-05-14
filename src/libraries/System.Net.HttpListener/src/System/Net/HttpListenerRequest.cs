@@ -17,6 +17,7 @@ namespace System.Net
         private string[] _acceptTypes;
         private string[] _userLanguages;
         private CookieCollection _cookies;
+        private bool? _keepAlive;
         private string _rawUrl;
         private Uri _requestUri;
         private Version _version;
@@ -190,6 +191,43 @@ namespace System.Net
                 }
 
                 return false;
+            }
+        }
+
+        public bool KeepAlive
+        {
+            get
+            {
+                if (!_keepAlive.HasValue)
+                {
+                    string header = Headers[HttpKnownHeaderNames.ProxyConnection];
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        header = Headers[HttpKnownHeaderNames.Connection];
+                    }
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        if (ProtocolVersion >= HttpVersion.Version11)
+                        {
+                            _keepAlive = true;
+                        }
+                        else
+                        {
+                            header = Headers[HttpKnownHeaderNames.KeepAlive];
+                            _keepAlive = !string.IsNullOrEmpty(header);
+                        }
+                    }
+                    else
+                    {
+                        header = header.ToLower(CultureInfo.InvariantCulture);
+                        _keepAlive =
+                            header.IndexOf("close", StringComparison.InvariantCultureIgnoreCase) < 0 ||
+                            header.IndexOf("keep-alive", StringComparison.InvariantCultureIgnoreCase) >= 0;
+                    }
+                }
+
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
+                return _keepAlive.Value;
             }
         }
 

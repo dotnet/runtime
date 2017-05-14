@@ -58,8 +58,6 @@ namespace System.Net
         private Stream _inputStream;
         private HttpListenerContext _context;
         private bool _isChunked;
-        private bool _kaSet;
-        private bool _keepAlive;
 
         private static byte[] s_100continue = Encoding.ASCII.GetBytes("HTTP/1.1 100 Continue\r\n\r\n");
 
@@ -346,36 +344,6 @@ namespace System.Net
         public bool IsAuthenticated => false;
 
         public bool IsSecureConnection => _context.Connection.IsSecure;
-
-        public bool KeepAlive
-        {
-            get
-            {
-                if (_kaSet)
-                    return _keepAlive;
-
-                _kaSet = true;
-                // 1. Connection header
-                // 2. Protocol (1.1 == keep-alive by default)
-                // 3. Keep-Alive header
-                string cnc = Headers[HttpKnownHeaderNames.Connection];
-                if (!String.IsNullOrEmpty(cnc))
-                {
-                    _keepAlive = string.Equals(cnc, "keep-alive", StringComparison.OrdinalIgnoreCase);
-                }
-                else if (_version == HttpVersion.Version11)
-                {
-                    _keepAlive = true;
-                }
-                else
-                {
-                    cnc = Headers[HttpKnownHeaderNames.KeepAlive];
-                    if (!String.IsNullOrEmpty(cnc))
-                        _keepAlive = !string.Equals(cnc, "closed", StringComparison.OrdinalIgnoreCase);
-                }
-                return _keepAlive;
-            }
-        }
 
         public IPEndPoint LocalEndPoint => _context.Connection.LocalEndPoint;
 
