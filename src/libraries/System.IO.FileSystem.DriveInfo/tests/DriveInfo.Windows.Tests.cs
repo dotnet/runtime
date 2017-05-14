@@ -60,10 +60,37 @@ namespace System.IO.FileSystem.DriveInfoTests
         }
 
         [Fact]
+        public void TestDriveProperties_AppContainer()
+        {
+            DriveInfo validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
+            bool isReady = validDrive.IsReady;
+            Assert.NotNull(validDrive.Name);
+            Assert.NotNull(validDrive.RootDirectory.Name);
+
+            if (PlatformDetection.IsWinRT)
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => validDrive.AvailableFreeSpace);
+                Assert.Throws<UnauthorizedAccessException>(() => validDrive.DriveFormat);
+                Assert.Throws<UnauthorizedAccessException>(() => validDrive.TotalFreeSpace);
+                Assert.Throws<UnauthorizedAccessException>(() => validDrive.TotalSize);
+                Assert.Throws<UnauthorizedAccessException>(() => validDrive.VolumeLabel);
+            }
+            else
+            {
+                Assert.NotNull(validDrive.DriveFormat);
+                Assert.True(validDrive.AvailableFreeSpace > 0);
+                Assert.True(validDrive.TotalFreeSpace > 0);
+                Assert.True(validDrive.TotalSize > 0);
+                Assert.NotNull(validDrive.VolumeLabel);
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "Accessing drive format is not permitted inside an AppContainer.")]
         public void TestDriveFormat()
         {
-            var validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
+            DriveInfo validDrive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
             const int volNameLen = 50;
             StringBuilder volumeName = new StringBuilder(volNameLen);
             const int fileSystemNameLen = 50;
@@ -71,6 +98,7 @@ namespace System.IO.FileSystem.DriveInfoTests
             int serialNumber, maxFileNameLen, fileSystemFlags;
             bool r = GetVolumeInformation(validDrive.Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
             var fileSystem = fileSystemName.ToString();
+
             if (r)
             {
                 Assert.Equal(fileSystem, validDrive.DriveFormat);
@@ -191,6 +219,13 @@ namespace System.IO.FileSystem.DriveInfoTests
         public void SetVolumeLabel_Roundtrips()
         {
             DriveInfo drive = DriveInfo.GetDrives().Where(d => d.DriveType == DriveType.Fixed).First();
+            // Inside an AppContainer access to VolumeLabel is denied.
+            if (PlatformDetection.IsWinRT)
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => drive.VolumeLabel);
+                return;
+            }
+
             string currentLabel = drive.VolumeLabel;
             try
             {
