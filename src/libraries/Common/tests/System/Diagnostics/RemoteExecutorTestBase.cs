@@ -93,6 +93,37 @@ namespace System.Diagnostics
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
+        /// <param name="arg1">The first argument to pass to the method.</param>
+        /// <param name="arg2">The second argument to pass to the method.</param>
+        /// <param name="arg3">The third argument to pass to the method.</param>
+        /// <param name="arg4">The fourth argument to pass to the method.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        internal static RemoteInvokeHandle RemoteInvoke(
+            Func<string, string, string, string, int> method, 
+            string arg1, string arg2, string arg3, string arg4, 
+            RemoteInvokeOptions options = null)
+        {
+            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3, arg4 }, options);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
+        /// <param name="arg1">The first argument to pass to the method.</param>
+        /// <param name="arg2">The second argument to pass to the method.</param>
+        /// <param name="arg3">The third argument to pass to the method.</param>
+        /// <param name="arg4">The fourth argument to pass to the method.</param>
+        /// <param name="arg5">The fifth argument to pass to the method.</param>
+        /// <param name="options">Options to use for the invocation.</param>
+        internal static RemoteInvokeHandle RemoteInvoke(
+            Func<string, string, string, string, string, int> method, 
+            string arg1, string arg2, string arg3, string arg4, string arg5, 
+            RemoteInvokeOptions options = null)
+        {
+            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3, arg4, arg5 }, options);
+        }
+
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <param name="method">The method to invoke.</param>
         /// <param name="args">The arguments to pass to the method.</param>
         /// <param name="options">Options to use for the invocation.</param>
         internal static RemoteInvokeHandle RemoteInvokeRaw(Delegate method, string unparsedArg,
