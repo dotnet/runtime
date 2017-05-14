@@ -165,7 +165,7 @@ namespace System.Net
             {
                 if (_boundaryType == BoundaryType.None)
                 {
-                    string transferEncodingHeader = GetKnownHeader(HttpRequestHeader.TransferEncoding);
+                    string transferEncodingHeader = Headers[HttpKnownHeaderNames.TransferEncoding];
                     if (transferEncodingHeader != null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
                     {
                         _boundaryType = BoundaryType.Chunked;
@@ -175,7 +175,7 @@ namespace System.Net
                     {
                         _contentLength = 0;
                         _boundaryType = BoundaryType.ContentLength;
-                        string length = GetKnownHeader(HttpRequestHeader.ContentLength);
+                        string length = Headers[HttpKnownHeaderNames.ContentLength];
                         if (length != null)
                         {
                             bool success = long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out _contentLength);
@@ -611,11 +611,6 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_requestUri:{_requestUri}");
                 return _requestUri;
             }
-        }
-
-        private string GetKnownHeader(HttpRequestHeader header)
-        {
-            return Interop.HttpApi.GetKnownHeader(RequestBuffer, OriginalBlobAddress, (int)header);
         }
 
         internal ChannelBinding GetChannelBinding()
