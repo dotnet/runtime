@@ -5406,8 +5406,9 @@ void CodeGen::genJmpMethod(GenTreePtr jmp)
         // assert should hold.
         assert(varDsc->lvRegNum != REG_STK);
 
-        var_types loadType = varDsc->lvaArgType();
-        getEmitter()->emitIns_S_R(ins_Store(loadType), emitTypeSize(loadType), varDsc->lvRegNum, varNum, 0);
+        assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
+        var_types storeType = genActualType(varDsc->lvaArgType()); // We own the memory and can use the full move.
+        getEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->lvRegNum, varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
