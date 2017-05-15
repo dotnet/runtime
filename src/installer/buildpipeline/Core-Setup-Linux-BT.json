@@ -67,7 +67,7 @@
       },
       "inputs": {
         "SourceFolder": "$(PB_SourcesDirectory)",
-        "Contents": "init-tools.sh\nBuildToolsVersion.txt\nDotnetCLIVersion.txt",
+        "Contents": "init-tools.sh\nBuildToolsVersion.txt\nDotnetCLIVersion.txt\ninit-tools.msbuild",
         "TargetFolder": "$(PB_DockerHost_Sandbox)",
         "CleanTargetFolder": "false",
         "OverWrite": "false",
