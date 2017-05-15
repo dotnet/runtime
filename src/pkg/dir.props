@@ -14,8 +14,9 @@
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
     <SymbolPackageOutputPath>$(SymbolPackagesOutDir)</SymbolPackageOutputPath>
-    <PackageLicenseFile>$(ProjectDir)src/pkg/projects/dotnet_library_license.txt</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(ProjectDir)src/pkg/projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+    <LicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</LicenseUrl>
     <PackageDescriptionFile>$(ProjectDir)src/pkg/projects/descriptions.json</PackageDescriptionFile>
     <!-- This link should be updated for each release milestone, currently this points to 1.0.0 -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799417</ReleaseNotes>
