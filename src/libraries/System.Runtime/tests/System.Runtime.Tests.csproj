@@ -42,6 +42,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\TestBase.NonGeneric.cs">
       <Link>Common\System\Collections\TestBase.NonGeneric.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
+    </Compile>
     <Compile Include="Helpers.cs" />
     <Compile Include="System\ActivatorTests.cs" />
     <Compile Include="System\ArrayTests.cs" />
