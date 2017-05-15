@@ -62041,7 +62041,7 @@ RelativePath=JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Roslyn\CscBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;LONG_RUNNING;EXPECTED_FAIL;11533
+Categories=Pri0;LONG_RUNNING;EXPECTED_PASS
 HostStyle=0
 
 [SciMark.cmd_8027]
@@ -75873,7 +75873,7 @@ RelativePath=managed\Compilation\Compilation\Compilation.cmd
 WorkingDir=managed\Compilation\Compilation
 Expected=0
 MaxAllowedDurationSeconds=800
-Categories=RT;Pri0;LONG_RUNNING;NATIVE_INTEROP;EXPECTED_FAIL;11533
+Categories=RT;Pri0;LONG_RUNNING;NATIVE_INTEROP;EXPECTED_PASS
 HostStyle=0
 
 [generics.cmd_9787]
