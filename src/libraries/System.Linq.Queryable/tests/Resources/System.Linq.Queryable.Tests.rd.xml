@@ -1,0 +1,8 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- MatchSequencePattern() test audits extensions members on these types so none them can be reduced away -->
+    <Type Name="System.Linq.Enumerable" Dynamic="Required Public" />
+    <Type Name="System.Linq.Queryable" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
