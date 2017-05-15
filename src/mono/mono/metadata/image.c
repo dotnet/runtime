@@ -1122,7 +1122,7 @@ typedef enum {
 	SYS_NET_HTTP = 3, //System.Net.Http
 	SYS_TEXT_ENC_CODEPAGES = 4, //System.Text.Encoding.CodePages
 	SYS_REF_DISP_PROXY = 5, //System.Reflection.DispatchProxy
-	SYS_THREADING_OVERLAPPED = 7, //System.Threading.Overlapped
+	SYS_THREADING_OVERLAPPED = 6, //System.Threading.Overlapped
 } IgnoredAssemblyNames;
 
 typedef struct {
