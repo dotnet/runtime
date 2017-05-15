@@ -138,11 +138,11 @@
 
   <!-- Packaging properties -->
   <PropertyGroup>
-    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
+    <LicenseUrl>https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT</LicenseUrl>
     <PreReleaseLabel>preview2</PreReleaseLabel>
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <SyncInfoDirectory>$(BaseIntermediateOutputPath)</SyncInfoDirectory>
 
     <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
