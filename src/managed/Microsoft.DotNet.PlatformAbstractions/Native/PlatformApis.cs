@@ -128,7 +128,8 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
         // are backwards compatible.
         private static DistroInfo NormalizeDistroInfo(DistroInfo distroInfo)
         {
-            int minorVersionNumberSeparatorIndex = distroInfo.VersionId.IndexOf('.');
+            // Handle if VersionId is null by just setting the index to -1.
+            int minorVersionNumberSeparatorIndex = distroInfo.VersionId?.IndexOf('.') ?? -1;
 
             if (distroInfo.Id == "rhel" && minorVersionNumberSeparatorIndex != -1)
             {
