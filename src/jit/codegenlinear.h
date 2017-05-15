@@ -23,6 +23,10 @@ void genCodeForMulHi(GenTreeOp* treeNode);
 void genLeaInstruction(GenTreeAddrMode* lea);
 void genSetRegToCond(regNumber dstReg, GenTreePtr tree);
 
+#if defined(_TARGET_ARM_)
+void genCodeForMulLong(GenTreeMulLong* treeNode);
+#endif // _TARGET_ARM_
+
 #if !defined(_TARGET_64BIT_)
 void genLongToIntCast(GenTreePtr treeNode);
 #endif

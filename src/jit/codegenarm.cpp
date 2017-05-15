@@ -1977,11 +1977,32 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     {
         assert((op1->gtFlags & GTF_MUL_64RSLT) != 0);
 
+        GenTreeMulLong* mul = op1->AsMulLong();
+
         // Stack store
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_LO, lclNum, 0);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), REG_LNGRET_HI, lclNum,
+        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), mul->gtRegNum, lclNum, 0);
+        getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), mul->gtOtherReg, lclNum,
                                   genTypeSize(TYP_INT));
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForMulLong: Generates code for int*int->long multiplication
+//
+// Arguments:
+//    node - the GT_MUL_LONG node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genCodeForMulLong(GenTreeMulLong* node)
+{
+    genConsumeOperands(node);
+    GenTree*    src1 = node->gtOp1;
+    GenTree*    src2 = node->gtOp2;
+    instruction ins  = node->IsUnsigned() ? INS_umull : INS_smull;
+    getEmitter()->emitIns_R_R_R_R(ins, EA_4BYTE, node->gtRegNum, node->gtOtherReg, src1->gtRegNum, src2->gtRegNum);
+    genProduceReg(node);
 }
 
 #endif // _TARGET_ARM_

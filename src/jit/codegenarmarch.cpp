@@ -189,6 +189,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForIndir(treeNode->AsIndir());
             break;
 
+#ifdef _TARGET_ARM_
+        case GT_MUL_LONG:
+            genCodeForMulLong(treeNode->AsMulLong());
+            break;
+#endif // _TARGET_ARM_
+
 #ifdef _TARGET_ARM64_
 
         case GT_MULHI:
