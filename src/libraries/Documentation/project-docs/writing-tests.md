@@ -1,9 +1,14 @@
 This document provides an overview of paradigm we are using in our tests.
 
 # RemoteExecutor
-We usually run tests fixtures in parallel, unless we add an exception to the root of the project. That mean that test cases in different test fixtures execute at the same time in random order. Therefore we need to be careful to avoid possible side-effects when manipulating static members (e.g. properties). Examples of problematic values: CurrentCulture, ServicePointManager.DefaultConnectionLimit, SetErrorMode (Windows).
-We use `RemoteInvoke` which is defined in `RemoteExecutorTestBase.cs` to run test cases which need to be isolated. We mostly do this when we need to modify static members.
-RemoteExecutor is a simple console application which accepts arguments that point to an existing method in the test assembly and additional arguments you might need in your test. For additional information see https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Diagnostics/RemoteExecutorTestBase.cs and https://xunit.github.io/docs/running-tests-in-parallel.html
+In a variety of situations, it's useful to run some code in another process.  Some examples:
+- Being able to test things that require environment changes, e.g. how environment variables impact the app
+- Being able to isolate changes to statics so that they don't affect concurrently or subsequently running tests, and to do so without needing to serialize all tests in the process
+- Being able to verify that things that should crash do crash
+- Being able to verify that things don't depend on state that's been configured previously, e.g. that some code you're calling doesn't require that some previous related code ran (e.g. that you can deserialize some state without it having previously been serialized in the same process)
+- Being able to test cross-process support for various things, e.g. cross-process synchronization, cross-process memory-mapped files, that file locking works correctly cross-process, cross-process communication via stdin/stdout/stderr, etc.
+
+To achieve, this we use `RemoteInvoke` which is defined in `RemoteExecutorTestBase.cs`. It passes information about a static method to be executed and the arguments to be passed to it out to a spawned process that invokes the method.  Lambdas / anonymous methods may be used, but they must not close over any state (including `this`); accidentally closing over state will likely result in strange errors. For additional information see https://github.com/dotnet/corefx/blob/master/src/Common/tests/System/Diagnostics/RemoteExecutorTestBase.cs and https://xunit.github.io/docs/running-tests-in-parallel.html
 
 Example (skipping additional usings):
 ```cs
