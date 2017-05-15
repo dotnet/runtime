@@ -272,6 +272,7 @@ public:
     static void QCALLTYPE Enable(
         __in_z LPCWSTR outputFile,
         unsigned int circularBufferSizeInMB,
+        long profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
         int numProviders);
 
