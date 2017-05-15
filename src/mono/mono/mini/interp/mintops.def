@@ -490,6 +490,9 @@ OPDEF(MINT_CLT_UN_I8, "clt.un.i8", 1, MintOpNoArgs)
 OPDEF(MINT_CLT_UN_R8, "clt.un.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CKFINITE, "ckfinite", 1, MintOpNoArgs)
+OPDEF(MINT_MKREFANY, "mkrefany", 2, MintOpClassToken)
+OPDEF(MINT_REFANYTYPE, "refanytype", 1, MintOpNoArgs)
+OPDEF(MINT_REFANYVAL, "refanyval", 1, MintOpNoArgs)
 
 OPDEF(MINT_CKNULL, "cknull", 1, MintOpNoArgs)
 

@@ -4291,17 +4291,50 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDELEM) 
 		MINT_IN_CASE(MINT_STELEM) 
 		MINT_IN_CASE(MINT_UNBOX_ANY) 
-
-		MINT_IN_CASE(MINT_REFANYVAL) ves_abort(); MINT_IN_BREAK;
 #endif
 		MINT_IN_CASE(MINT_CKFINITE)
 			if (!isfinite(sp [-1].data.f))
 				THROW_EX (mono_get_exception_arithmetic (), ip);
 			++ip;
 			MINT_IN_BREAK;
-#if 0
-		MINT_IN_CASE(MINT_MKREFANY) ves_abort(); MINT_IN_BREAK;
-#endif
+		MINT_IN_CASE(MINT_MKREFANY) {
+			c = rtm->data_items [*(guint16 *)(ip + 1)];
+
+			/* The value address is on the stack */
+			gpointer addr = sp [-1].data.p;
+			/* Push the typedref value on the stack */
+			sp [-1].data.p = vt_sp;
+			vt_sp += sizeof (MonoTypedRef);
+
+			MonoTypedRef *tref = sp [-1].data.p;
+			tref->klass = c;
+			tref->type = &c->byval_arg;
+			tref->value = addr;
+
+			ip += 2;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_REFANYTYPE) {
+			MonoTypedRef *tref = sp [-1].data.p;
+			MonoType *type = tref->type;
+
+			vt_sp -= sizeof (MonoTypedRef);
+			sp [-1].data.p = vt_sp;
+			vt_sp += 8;
+			*(gpointer*)sp [-1].data.p = type;
+			ip ++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_REFANYVAL) {
+			MonoTypedRef *tref = sp [-1].data.p;
+			gpointer addr = tref->value;
+
+			vt_sp -= sizeof (MonoTypedRef);
+
+			sp [-1].data.p = addr;
+			ip ++;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDTOKEN)
 			sp->data.p = vt_sp;
 			vt_sp += 8;

@@ -321,6 +321,8 @@ enum_type:
 			goto enum_type;
 		} else
 			return MINT_TYPE_VT;
+	case MONO_TYPE_TYPEDBYREF:
+		return MINT_TYPE_VT;
 	case MONO_TYPE_GENERICINST:
 		type = &type->data.generic_class->container_class->byval_arg;
 		goto enum_type;
@@ -793,7 +795,8 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	CHECK_STACK (td, csignature->param_count + csignature->hasthis);
 	if (!calli && (!virtual || (target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0) &&
 		(target_method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 && 
-		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0) {
+		(target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) == 0 &&
+		!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING)) {
 		int called_inited = mono_class_vtable (domain, target_method->klass)->initialized;
 		MonoMethodHeader *mheader = mono_method_get_header (target_method);
 
@@ -817,9 +820,10 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (mheader && *mheader->code == CEE_RET && called_inited) {
 				if (mono_interp_traceopt)
 					g_print ("Inline (empty) call of %s.%s\n", target_method->klass->name, target_method->name);
-				for (i = 0; i < csignature->param_count; i++)
+				for (i = 0; i < csignature->param_count; i++) {
 					ADD_CODE (td, MINT_POP); /*FIX: vt */
 					ADD_CODE (td, 0);
+				}
 				if (csignature->hasthis) {
 					if (virtual)
 						ADD_CODE(td, MINT_CKNULL);
@@ -2632,12 +2636,37 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 #if SIZEOF_VOID_P == 8
 		case CEE_CONV_OVF_U:
 #endif
-		case CEE_REFANYVAL: ves_abort(); break;
 #endif
 		case CEE_CKFINITE:
 			CHECK_STACK (&td, 1);
 			SIMPLE_OP (td, MINT_CKFINITE);
 			break;
+		case CEE_MKREFANY:
+			CHECK_STACK (&td, 1);
+			ENSURE_I4 (&td, 2);
+			token = read32 (td.ip + 1);
+			klass = mini_get_class (method, token, generic_context);
+
+			ADD_CODE (&td, MINT_MKREFANY);
+			ADD_CODE (&td, get_data_item_index (&td, klass));
+
+			td.ip += 5;
+			PUSH_VT (&td, sizeof (MonoTypedRef));
+			SET_TYPE(td.sp - 1, STACK_TYPE_VT, mono_defaults.typed_reference_class);
+			break;
+		case CEE_REFANYVAL: {
+			CHECK_STACK (&td, 1);
+			ENSURE_I4 (&td, 2);
+			token = read32 (td.ip + 1);
+
+			ADD_CODE (&td, MINT_REFANYVAL);
+
+			POP_VT (&td, sizeof (MonoTypedRef));
+			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
+
+			td.ip += 5;
+			break;
+		}
 		case CEE_CONV_OVF_I1:
 		case CEE_CONV_OVF_I1_UN:
 			CHECK_STACK (&td, 1);
@@ -3287,9 +3316,13 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				PUSH_SIMPLE_TYPE(&td, STACK_TYPE_I4);
 				break;
 			}
-#if 0
-			case CEE_REFANYTYPE: ves_abort(); break;
-#endif
+			case CEE_REFANYTYPE:
+				ADD_CODE (&td, MINT_REFANYTYPE);
+				td.ip += 1;
+				POP_VT (&td, sizeof (MonoTypedRef));
+				PUSH_VT (&td, sizeof (gpointer));
+				SET_TYPE(td.sp - 1, STACK_TYPE_VT, NULL);
+				break;
 			default:
 				g_error ("transform.c: Unimplemented opcode: 0xFE %02x (%s) at 0x%x\n", *td.ip, mono_opcode_name (256 + *td.ip), td.ip-header->code);
 			}

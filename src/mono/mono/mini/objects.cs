@@ -1809,6 +1809,25 @@ ncells ) {
 
         return 0;
     }
+
+	public static int test_0_typedref () {
+		int i = 5;
+		System.TypedReference r = __makeref(i);
+		System.Type t = __reftype(r);
+
+		if (t != typeof (int))
+			return 1;
+		int j = __refvalue(r, int);
+		if (j != 5)
+			return 2;
+
+		try {
+			object o = __refvalue (r, object);
+		} catch (InvalidCastException) {
+		}
+
+		return 0;
+	}
 }
 
 #if __MOBILE__
