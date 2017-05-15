@@ -18,6 +18,7 @@
     <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
     <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
     <AdditionalRestoreArgs>/p:HasRuntimePackages=false /p:IntermediateOutputPath=$(IntermediateOutputPath)</AdditionalRestoreArgs>
+    <CrossGenSymbolsOutputPath>$(PackageSymbolsBinDir)/$(MSBuildProjectName)</CrossGenSymbolsOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -208,7 +209,13 @@
     <ItemGroup>
       <_filesToCrossGen Include="@(FilesToPackage)" 
                         Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
+        <CrossGenedDirectory>$(CrossGenOutputPath)/%(TargetPath)/</CrossGenedDirectory>
         <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
+        
+        <!-- Note on non-Windows this path isn't accurate because crossgen inserts the hash of the crossgen'd image
+             into the symbol's file name. So incremental build won't work correctly on non-Windows.
+        -->
+        <CrossGenSymbolPath>$(CrossGenSymbolsOutputPath)/%(TargetPath)/%(FileName)$(CrossGenSymbolExtension)</CrossGenSymbolPath>
       </_filesToCrossGen>
 
       <FilesToPackage Remove="@(_filesToCrossGen)" />
@@ -235,6 +242,9 @@
   </Target>
 
   <Target Name="CrossGen"
+          DependsOnTargets="CreateCrossGenImages;CreateCrossGenSymbols" />
+
+  <Target Name="CreateCrossGenImages"
           DependsOnTargets="PrepareForCrossGen"
           Inputs="@(_filesToCrossGen)"
           Outputs="%(_filesToCrossGen.CrossGenedPath)">
@@ -256,7 +266,47 @@
     <Exec Command="$(_crossGenPath) @$(_crossGenResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
   </Target>
   
-  <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen" Returns="@(FilesToPackage)" />
+  <Target Name="CreateCrossGenSymbols"
+          Condition="'$(CrossGenSymbolExtension)' != ''"
+          DependsOnTargets="CreateCrossGenImages"
+          Inputs="%(_filesToCrossGen.CrossGenedPath)"
+          Outputs="%(_filesToCrossGen.CrossGenSymbolPath)">
+    <PropertyGroup>
+      <_crossGenSymbolsResponseFile>$(_crossGenIntermediatePath)/%(_filesToCrossGen.FileName).symbols.rsp</_crossGenSymbolsResponseFile>
+      <_crossGenSymbolsOptionName Condition="'$(OS)' == 'Windows_NT'">CreatePDB</_crossGenSymbolsOptionName>
+      <_crossGenSymbolsOptionName Condition="'$(_crossGenSymbolsOptionName)' == ''">CreatePerfMap</_crossGenSymbolsOptionName>
+      <_crossGenSymbolsOutputDirectory>$([System.IO.Path]::GetDirectoryName('%(_filesToCrossGen.CrossGenSymbolPath)'))</_crossGenSymbolsOutputDirectory>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <_crossGenSymbolsArgs Include="-readytorun" />
+      <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)" />
+      <_crossGenSymbolsArgs Include="-$(_crossGenSymbolsOptionName)" />
+      <_crossGenSymbolsArgs Include="$(_crossGenSymbolsOutputDirectory)" />
+      <_crossGenSymbolsArgs Include="%(_filesToCrossGen.CrossGenedPath)" />
+    </ItemGroup>
+
+    <WriteLinesToFile File="$(_crossGenSymbolsResponseFile)" Lines="@(_crossGenSymbolsArgs)" Overwrite="true" />
+    
+    <MakeDir Directories="$(_crossGenSymbolsOutputDirectory)" />
+    
+    <Exec Command="$(_crossGenPath) @$(_crossGenSymbolsResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
+  </Target>
+
+  <Target Name="GetCrossGenSymbolsFiles"
+          Condition="'$(CrossGenSymbolExtension)' != ''"
+          DependsOnTargets="CreateCrossGenSymbols">
+    <ItemGroup>
+      <FilesToPackage Include="$(CrossGenSymbolsOutputPath)/**/*$(CrossGenSymbolExtension)">
+        <IsSymbolFile>true</IsSymbolFile>
+        <TargetPath>runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="GetFilesToPackage"
+          DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen;GetCrossGenSymbolsFiles"
+          Returns="@(FilesToPackage)" />
 
   <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
     <ItemGroup>
