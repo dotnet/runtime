@@ -558,7 +558,7 @@ typedef struct _UNWIND_INFO {
  *	OPTIONAL ULONG ExceptionData[]; */
 } UNWIND_INFO, *PUNWIND_INFO;
 
-inline guint
+static inline guint
 mono_arch_unwindinfo_get_size (guchar code_count)
 {
 	// Returned size will be used as the allocated size for unwind data trailing the memory used by compiled method.

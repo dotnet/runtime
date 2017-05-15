@@ -1481,7 +1481,7 @@ mono_arch_unwindinfo_find_rt_func_in_table (const gpointer code, gsize code_size
 	return found_rt_func;
 }
 
-inline PRUNTIME_FUNCTION
+static inline PRUNTIME_FUNCTION
 mono_arch_unwindinfo_find_pc_rt_func_in_table (const gpointer pc)
 {
 	return mono_arch_unwindinfo_find_rt_func_in_table (pc, 0);
