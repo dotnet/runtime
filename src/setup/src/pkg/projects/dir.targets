@@ -74,7 +74,7 @@
   <!-- OverrideLicenseUrl is temporary till we update the buildtools to v2 -->  
   <Target Name="OverrideLicenseUrl" BeforeTargets="GenerateNuSpec">
     <PropertyGroup>
-      <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
+      <LicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</LicenseUrl>
     </PropertyGroup>
   </Target>
 
