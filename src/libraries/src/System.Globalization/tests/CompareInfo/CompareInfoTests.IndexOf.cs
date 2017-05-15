@@ -18,6 +18,7 @@ namespace System.Globalization.Tests
         {
             // Empty string
             yield return new object[] { s_invariantCompare, "foo", "", 0, 3, CompareOptions.None, 0 };
+            yield return new object[] { s_invariantCompare, "foo", "", 2, 1, CompareOptions.None, 2 };
             yield return new object[] { s_invariantCompare, "", "", 0, 0, CompareOptions.None, 0 };
 
             // OrdinalIgnoreCase
