@@ -231,7 +231,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)] //Fix for this edge case was only made in NetCore
         public void InsertAfterThrowsArgumentOutOfRangeExceptionForDupRefAttrAtTheEnd_OldBehavior()
         {
             const string attributeName = "existingAttr";
@@ -276,7 +276,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)] //Fix for this edge case was only made in NetCore
         public void InsertAfterDoesNotReplaceDupRefAttr_OldBehavior()
         {
             const string attributeName = "existingAttr";
