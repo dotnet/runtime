@@ -101,6 +101,7 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLa
         sizeof(m_threadID) +        // Thread ID
         sizeof(m_timeStamp) +       // TimeStamp
         m_dataLength +              // Event payload data length
+        sizeof(unsigned int) +      // Prepended stack payload size in bytes
         m_stackContents.GetSize();  // Stack payload size
 
     // Write the size of the event to the file.
@@ -121,10 +122,14 @@ void EventPipeEventInstance::FastSerialize(FastSerializer *pSerializer, StreamLa
         pSerializer->WriteBuffer(m_pData, m_dataLength);
     }
 
+    // Write the size of the stack in bytes.
+    unsigned int stackSize = m_stackContents.GetSize();
+    pSerializer->WriteBuffer((BYTE*)&stackSize, sizeof(stackSize));
+
     // Write the stack if present.
-    if(m_stackContents.GetSize() > 0)
+    if(stackSize > 0)
     {
-        pSerializer->WriteBuffer(m_stackContents.GetPointer(), m_stackContents.GetSize());
+        pSerializer->WriteBuffer(m_stackContents.GetPointer(), stackSize);
     }
 }
 
