@@ -20,7 +20,7 @@ sub INST_MAX   () {return 6;}
 
 # this must include all the #defines used in mini-ops.h
 my @defines = qw (__i386__ __x86_64__ __ppc__ __powerpc__ __ppc64__ __arm__ 
-	__sparc__ sparc __s390__ s390 __ia64__ __alpha__ __mips__ __aarch64__);
+	__sparc__ sparc __s390__ s390 __alpha__ __mips__ __aarch64__);
 my %table =();
 my %template_table =();
 my @opcodes = ();

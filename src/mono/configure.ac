@@ -3162,15 +3162,6 @@ case "$host" in
 				;;
 		esac
 		;;
-	ia64-*-*)
-		TARGET=IA64
-		arch_target=ia64
-		ACCESS_UNALIGNED="no"
-		LIBC="libc.so.6.1"
-		INTL="libc.so.6.1"
-		AC_CHECK_LIB(unwind, _U_dyn_register, [], [AC_MSG_ERROR(library libunwind not found)])
-		libmono_ldflags="-lunwind"
-		;;
 	sparc*-*-*)
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
 		   TARGET=SPARC64
@@ -3468,9 +3459,6 @@ S390X)
 MIPS)
 	AC_DEFINE(TARGET_MIPS, 1, [...])
 	;;
-IA64)
-	AC_DEFINE(TARGET_IA64, 1, [...])
-	;;
 SPARC)
 	AC_DEFINE(TARGET_SPARC, 1, [...])
 	;;
@@ -3504,9 +3492,6 @@ S390X)
 	;;
 MIPS)
 	AC_DEFINE(HOST_MIPS, 1, [...])
-	;;
-IA64)
-	AC_DEFINE(HOST_IA64, 1, [...])
 	;;
 SPARC)
 	AC_DEFINE(HOST_SPARC, 1, [...])
@@ -4192,7 +4177,6 @@ AM_CONDITIONAL(SPARC, test x$TARGET = xSPARC)
 AM_CONDITIONAL(SPARC64, test x$TARGET = xSPARC64)
 AM_CONDITIONAL(X86, test x$TARGET = xX86)
 AM_CONDITIONAL(AMD64, test x$TARGET = xAMD64)
-AM_CONDITIONAL(IA64, test x$TARGET = xIA64)
 AM_CONDITIONAL(MIPS, test x$TARGET = xMIPS)
 AM_CONDITIONAL(POWERPC, test x$TARGET = xPOWERPC)
 AM_CONDITIONAL(POWERPC64, test x$TARGET = xPOWERPC64)
@@ -4435,7 +4419,6 @@ mono/arch/sparc/Makefile
 mono/arch/s390x/Makefile
 mono/arch/arm/Makefile
 mono/arch/arm64/Makefile
-mono/arch/ia64/Makefile
 mono/arch/mips/Makefile
 mono/sgen/Makefile
 mono/tests/Makefile

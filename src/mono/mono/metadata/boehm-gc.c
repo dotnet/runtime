@@ -138,12 +138,6 @@ mono_gc_base_init (void)
 		pthread_attr_getstack (&attr, &sstart, &size);
 		pthread_attr_destroy (&attr); 
 		/*g_print ("stackbottom pth is: %p\n", (char*)sstart + size);*/
-#ifdef __ia64__
-		/*
-		 * The calculation above doesn't seem to work on ia64, also we need to set
-		 * GC_register_stackbottom as well, but don't know how.
-		 */
-#else
 		/* apparently with some linuxthreads implementations sstart can be NULL,
 		 * fallback to the more imprecise method (bug# 78096).
 		 */
@@ -156,7 +150,6 @@ mono_gc_base_init (void)
 			stack_bottom &= ~4095;
 			GC_stackbottom = (char*)stack_bottom;
 		}
-#endif
 	}
 #elif defined(HAVE_PTHREAD_GET_STACKSIZE_NP) && defined(HAVE_PTHREAD_GET_STACKADDR_NP)
 		GC_stackbottom = (char*)pthread_get_stackaddr_np (pthread_self ());

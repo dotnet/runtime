@@ -79,9 +79,6 @@
 #elif defined(__aarch64__)
 #define CONFIG_CPU "armv8"
 #define CONFIG_WORDSIZE "64"
-#elif defined(__ia64__)
-#define CONFIG_CPU "ia64"
-#define CONFIG_WORDSIZE "64"
 #elif defined(mips) || defined(__mips) || defined(_mips)
 #define CONFIG_CPU "mips"
 #define CONFIG_WORDSIZE "32"

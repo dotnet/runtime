@@ -43,7 +43,7 @@ static MonoCodeManagerCallbacks code_manager_callbacks;
 
 #define MIN_PAGES 16
 
-#if defined(__ia64__) || defined(__x86_64__) || defined (_WIN64)
+#if defined(__x86_64__) || defined (_WIN64)
 /*
  * We require 16 byte alignment on amd64 so the fp literals embedded in the code are 
  * properly aligned for SSE2.

@@ -518,10 +518,6 @@ if X86
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
 endif
 
-if IA64
-TESTS_CS_SRC += async-exc-compilation.cs filter-stack.cs
-endif
-
 TESTS_IL_SRC=			\
 	field-access.il		\
 	method-access.il	\
@@ -656,12 +652,6 @@ if HOST_WIN32
 PLATFORM_DISABLED_TESTS += w32message.exe
 endif
 
-endif
-
-if IA64
-# bug #319249
-PLATFORM_DISABLED_TESTS=exception17.exe
-PLATFORM_DISABLED_TESTS+=winx64structs.exe
 endif
 
 if X86

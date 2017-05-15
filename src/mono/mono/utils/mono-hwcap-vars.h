@@ -19,10 +19,6 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 // Nothing here yet.
 
-#elif defined (TARGET_IA64)
-
-// Nothing here yet.
-
 #elif defined (TARGET_MIPS)
 
 // Nothing here yet.

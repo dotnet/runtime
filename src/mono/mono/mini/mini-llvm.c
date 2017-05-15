@@ -9238,7 +9238,7 @@ default_mono_llvm_unhandled_exception (void)
     The mono JIT uses pointer sized iregs/double fregs, while LLVM uses precisely
     typed registers, so we have to keep track of the precise LLVM type of each vreg.
     This is made easier because the IR is already in SSA form.
-    An additional problem is that our IR is not consistent with types, i.e. i32/ia64 
+    An additional problem is that our IR is not consistent with types, i.e. i32/i64 
 	types are frequently used incorrectly.
 */
 

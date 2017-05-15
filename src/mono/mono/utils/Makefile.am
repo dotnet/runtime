@@ -240,10 +240,6 @@ if SPARC64
 arch_sources += mono-hwcap-sparc.c
 endif
 
-if IA64
-arch_sources += mono-hwcap-ia64.c
-endif
-
 if S390X
 arch_sources += mono-hwcap-s390x.c
 endif

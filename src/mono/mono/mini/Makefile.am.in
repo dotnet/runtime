@@ -604,12 +604,6 @@ arch_built=cpu-s390x.h
 arch_define=__s390__
 endif
 
-if IA64
-arch_sources = $(ia64_sources)
-arch_built = cpu-ia64.h
-arch_define=__ia64__
-endif
-
 if HOST_WIN32
 os_sources = $(windows_sources)
 monobin_platform_ldflags=
