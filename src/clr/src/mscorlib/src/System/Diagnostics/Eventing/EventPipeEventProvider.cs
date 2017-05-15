@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using Microsoft.Win32;
+using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace System.Diagnostics.Tracing
 {
@@ -49,11 +51,40 @@ namespace System.Diagnostics.Tracing
         unsafe int IEventProvider.EventWriteTransferWrapper(
             long registrationHandle,
             ref EventDescriptor eventDescriptor,
+            IntPtr eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
             EventProvider.EventData* userData)
         {
+            uint eventID = (uint)eventDescriptor.EventId;
+            if(eventID != 0 && eventHandle != IntPtr.Zero)
+            {
+                if (userDataCount == 0)
+                {
+                    EventPipeInternal.WriteEvent(eventHandle, eventID, null, 0);
+                    return 0;
+                }
+
+                uint length = 0;
+                for (int i = 0; i < userDataCount; i++)
+                {
+                    length += userData[i].Size;
+                }
+
+                byte[] data = new byte[length];
+                fixed (byte *pData = data)
+                {
+                    uint offset = 0;
+                    for (int i = 0; i < userDataCount; i++)
+                    {
+                        byte * singleUserDataPtr = (byte *)(userData[i].Ptr);
+                        uint singleUserDataSize = userData[i].Size;
+                        WriteToBuffer(pData, length, ref offset, singleUserDataPtr, singleUserDataSize);
+                    }
+                    EventPipeInternal.WriteEvent(eventHandle, eventID, pData, length);
+                }
+            }
             return 0;
         }
 
@@ -61,6 +92,25 @@ namespace System.Diagnostics.Tracing
         int IEventProvider.EventActivityIdControl(UnsafeNativeMethods.ManifestEtw.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return 0;
+        }
+
+        // Define an EventPipeEvent handle.
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, Int64 keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        {
+            IntPtr eventHandlePtr = EventPipeInternal.DefineEvent(m_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
+            return eventHandlePtr;
+        }
+
+        // Copy src to buffer and modify the offset.
+        // Note: We know the buffer size ahead of time to make sure no buffer overflow.
+        private static unsafe void WriteToBuffer(byte *buffer, uint bufferLength, ref uint offset, byte *src, uint srcLength)
+        {
+            Debug.Assert(bufferLength >= (offset + srcLength));
+            for (int i = 0; i < srcLength; i++)
+            {
+                *(byte *)(buffer + offset + i) = *(byte *)(src + i);
+            }
+            offset += srcLength;
         }
     }
 }
