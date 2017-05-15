@@ -83,7 +83,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/974
+        [Fact]
         [PlatformSpecific(~TestPlatforms.OSX)] // OSX throws PNSE from StartTime
         public async Task TestStartTimeProperty()
         {
