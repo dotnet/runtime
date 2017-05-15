@@ -575,6 +575,20 @@
             "#import": [ "gentoo", "linux-x64" ]
         },
 
+        "buildroot": {
+            "#import": [ "linux" ]
+        },
+        "buildroot-x64": {
+            "#import": [ "buildroot", "linux-x64" ]
+        },
+
+        "buildroot.2017.02.2": {
+            "#import": [ "buildroot" ]
+        },
+        "buildroot.2017.02.2-x64": {
+            "#import": [ "buildroot.2017.02.2", "buildroot-x64" ]
+        },
+
         "corert": {
             "#import": [ "any" ]
         },
