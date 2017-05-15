@@ -282,19 +282,21 @@ public:
         GUID providerID,
         EventPipeCallback pCallbackFunc);
 
-    static INT_PTR QCALLTYPE AddEvent(
+    static INT_PTR QCALLTYPE DefineEvent(
         INT_PTR provHandle,
-        __int64 keywords,
         unsigned int eventID,
+        __int64 keywords,
         unsigned int eventVersion,
         unsigned int level,
-        bool needStack);
+        void *pMetadata,
+        unsigned int metadataLength);
 
     static void QCALLTYPE DeleteProvider(
         INT_PTR provHandle);
 
     static void QCALLTYPE WriteEvent(
         INT_PTR eventHandle,
+        unsigned int eventID,
         void *pData,
         unsigned int length);
 };

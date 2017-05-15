@@ -63,8 +63,8 @@ void EventPipeConfiguration::Initialize()
 
     // Create the metadata event.
     m_pMetadataEvent = m_pConfigProvider->AddEvent(
-        0,      /* keywords */
         0,      /* eventID */
+        0,      /* keywords */
         0,      /* eventVersion */
         EventPipeEventLevel::LogAlways,
         false); /* needStack */
@@ -315,7 +315,7 @@ void EventPipeConfiguration::EnableRundown()
     Enable(1 /* circularBufferSizeInMB */, rundownProviders, numRundownProviders);
 }
 
-EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance, BYTE *pPayloadData, unsigned int payloadLength)
+EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance)
 {
     CONTRACTL
     {
@@ -336,6 +336,8 @@ EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPip
     const GUID &providerID = sourceEvent.GetProvider()->GetProviderID();
     unsigned int eventID = sourceEvent.GetEventID();
     unsigned int eventVersion = sourceEvent.GetEventVersion();
+    BYTE *pPayloadData = sourceEvent.GetMetadata();
+    unsigned int payloadLength = sourceEvent.GetMetadataLength();
     unsigned int instancePayloadSize = sizeof(providerID) + sizeof(eventID) + sizeof(eventVersion) + sizeof(payloadLength) + payloadLength;
 
     // Allocate the payload.
@@ -398,7 +400,7 @@ EventPipeEnabledProviderList::EventPipeEnabledProviderList(
     if((CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerformanceTracing) & 1) == 1)
     {
         m_pCatchAllProvider = new EventPipeEnabledProvider();
-        m_pCatchAllProvider->Set(NULL, 0xFFFFFFFF, EventPipeEventLevel::Verbose);
+        m_pCatchAllProvider->Set(NULL, 0xFFFFFFFFFFFFFFFF, EventPipeEventLevel::Verbose);
         return;
     }
 

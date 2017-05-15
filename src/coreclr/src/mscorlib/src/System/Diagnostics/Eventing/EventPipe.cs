@@ -162,7 +162,7 @@ namespace System.Diagnostics.Tracing
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        internal static extern IntPtr AddEvent(IntPtr provHandle, Int64 keywords, uint eventID, uint eventVersion, uint level, bool needStack);
+        internal static extern unsafe IntPtr DefineEvent(IntPtr provHandle, uint eventID, Int64 keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
@@ -170,6 +170,6 @@ namespace System.Diagnostics.Tracing
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        internal static extern unsafe void WriteEvent(IntPtr eventHandle, void* data, uint length);
+        internal static extern unsafe void WriteEvent(IntPtr eventHandle, uint eventID, void* pData, uint length);
     }
 }

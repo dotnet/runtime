@@ -27,6 +27,7 @@ namespace System.Diagnostics.Tracing
         unsafe int EventWriteTransferWrapper(
             long registrationHandle,
             ref EventDescriptor eventDescriptor,
+            IntPtr eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
@@ -34,5 +35,8 @@ namespace System.Diagnostics.Tracing
 
         // Get or set the per-thread activity ID.
         int EventActivityIdControl(UnsafeNativeMethods.ManifestEtw.ActivityControl ControlCode, ref Guid ActivityId);
+
+        // Define an EventPipeEvent handle.
+        unsafe IntPtr DefineEventHandle(uint eventID, string eventName, Int64 keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength);
     }
 }
