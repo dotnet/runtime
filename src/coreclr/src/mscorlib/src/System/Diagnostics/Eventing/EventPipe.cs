@@ -56,6 +56,7 @@ namespace System.Diagnostics.Tracing
         private string m_outputFile;
         private uint m_circularBufferSizeInMB;
         private List<EventPipeProviderConfiguration> m_providers;
+        private TimeSpan m_minTimeBetweenSamples = TimeSpan.FromMilliseconds(1);
 
         internal EventPipeConfiguration(
             string outputFile,
@@ -89,12 +90,28 @@ namespace System.Diagnostics.Tracing
             get { return m_providers.ToArray(); }
         }
 
+        internal long ProfilerSamplingRateInNanoseconds
+        {
+            // 100 nanoseconds == 1 tick.
+            get { return m_minTimeBetweenSamples.Ticks * 100; }
+        }
+
         internal void EnableProvider(string providerName, UInt64 keywords, uint loggingLevel)
         {
             m_providers.Add(new EventPipeProviderConfiguration(
                 providerName,
                 keywords,
                 loggingLevel));
+        }
+
+        internal void SetProfilerSamplingRate(TimeSpan minTimeBetweenSamples)
+        {
+            if(minTimeBetweenSamples.Ticks <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(minTimeBetweenSamples));
+            }
+
+            m_minTimeBetweenSamples = minTimeBetweenSamples;
         }
     }
 
@@ -112,6 +129,7 @@ namespace System.Diagnostics.Tracing
             EventPipeInternal.Enable(
                 configuration.OutputFile,
                 configuration.CircularBufferSizeInMB,
+                configuration.ProfilerSamplingRateInNanoseconds,
                 providers,
                 providers.Length);
         }
@@ -129,7 +147,7 @@ namespace System.Diagnostics.Tracing
         //
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        internal static extern void Enable(string outputFile, uint circularBufferSizeInMB, EventPipeProviderConfiguration[] providers, int numProviders);
+        internal static extern void Enable(string outputFile, uint circularBufferSizeInMB, long profilerSamplingRateInNanoseconds, EventPipeProviderConfiguration[] providers, int numProviders);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
