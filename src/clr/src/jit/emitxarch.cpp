@@ -4821,6 +4821,12 @@ void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int va
     UNATIVE_OFFSET sz  = emitInsSizeSV(insCodeMR(ins), varx, offs);
     insFormat      fmt = emitInsModeFormat(ins, IF_SRD_RRD);
 
+#ifdef _TARGET_X86_
+    if (attr == EA_1BYTE)
+    {
+        assert(isByteReg(ireg));
+    }
+#endif
     // 16-bit operand instructions will need a prefix
     if (EA_SIZE(attr) == EA_2BYTE)
     {

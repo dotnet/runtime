@@ -1833,7 +1833,10 @@ bool Compiler::lvaShouldPromoteStructVar(unsigned lclNum, lvaStructPromotionInfo
 
             // TODO-PERF - Implement struct promotion for incoming multireg structs
             //             Currently it hits assert(lvFieldCnt==1) in lclvar.cpp line 4417
-
+            //             Also the implementation of jmp uses the 4 byte move to store
+            //             byte parameters to the stack, so that if we have a byte field
+            //             with something else occupying the same 4-byte slot, it will
+            //             overwrite other fields.
             if (structPromotionInfo->fieldCnt != 1)
         {
             JITDUMP("Not promoting promotable struct local V%02u, because lvIsParam is true and #fields = "
