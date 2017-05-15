@@ -10209,7 +10209,7 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
                 goto DASH;
 
             case GT_MUL:
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
             case GT_MUL_LONG:
 #endif
                 if (tree->gtFlags & GTF_MUL_64RSLT)
