@@ -9,7 +9,7 @@
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
     <BinariesRelativePath>$(Channel)/Binaries/$(SharedFrameworkNugetVersion)</BinariesRelativePath>
     <InstallersRelativePath>$(Channel)/Installers/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
-    <ChecksumsRelativePath>Runtime/Checksums/$(ProductVersion)</ChecksumsRelativePath>
+    <ChecksumsRelativePath>Runtime/$(ProductVersion)</ChecksumsRelativePath>
     <ChecksumExtension>.sha512<ChecksumExtension>
   </PropertyGroup>
   
