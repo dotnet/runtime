@@ -60,6 +60,7 @@
     <Compile Include="System\Net\HttpListenerContext.cs" />
     <Compile Include="System\Net\HttpListenerException.cs" />
     <Compile Include="System\Net\HttpListenerResponse.cs" />
+    <Compile Include="System\Net\ListenerClientCertState.cs" />
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
@@ -87,6 +88,9 @@
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
@@ -108,7 +112,6 @@
     <Compile Include="System\Net\Windows\HttpListenerRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerClientCertAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Windows\AsyncRequestContext.cs" />
-    <Compile Include="System\Net\Windows\ListenerClientCertState.cs" />
     <Compile Include="System\Net\Windows\EntitySendFormat.cs" />
     <Compile Include="System\Net\Windows\RequestContextBase.cs" />
     <Compile Include="System\Net\Windows\SyncRequestContext.cs" />
@@ -121,9 +124,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\WebHeaderEncoding.cs">
       <Link>Common\System\Net\WebHeaderEncoding.cs</Link>

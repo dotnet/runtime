@@ -33,11 +33,9 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
-using System.Net.WebSockets;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace System.Net
 {
@@ -294,18 +292,17 @@ namespace System.Net
             }
         }
 
-        public int ClientCertificateError
+        private X509Certificate2 GetClientCertificateCore() => ClientCertificate = _context.Connection.ClientCertificate;
+
+        private int GetClientCertificateErrorCore()
         {
-            get
-            {
-                HttpConnection cnc = _context.Connection;
-                if (cnc.ClientCertificate == null)
-                    return 0;
-                int[] errors = cnc.ClientCertificateErrors;
-                if (errors != null && errors.Length > 0)
-                    return errors[0];
+            HttpConnection cnc = _context.Connection;
+            if (cnc.ClientCertificate == null)
                 return 0;
-            }
+            int[] errors = cnc.ClientCertificateErrors;
+            if (errors != null && errors.Length > 0)
+                return errors[0];
+            return 0;
         }
 
         public long ContentLength64
@@ -351,32 +348,47 @@ namespace System.Net
 
         public Guid RequestTraceIdentifier => Guid.Empty;
 
-        public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
+        private IAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
         {
-            Task<X509Certificate2> getClientCertificate = new Task<X509Certificate2>(() => GetClientCertificate());
-            return TaskToApm.Begin(getClientCertificate, requestCallback, state);
+            var asyncResult = new GetClientCertificateAsyncResult(this, state, requestCallback);
+
+            // The certificate is already retrieved by the time this method is called. GetClientCertificateCore() evaluates to
+            // a simple member access, so this will always complete immediately.
+            ClientCertState = ListenerClientCertState.Completed;
+            asyncResult.InvokeCallback(GetClientCertificateCore());
+
+            return asyncResult;
         }
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
-            
-            return TaskToApm.End<X509Certificate2>(asyncResult);
-        }
 
-        public X509Certificate2 GetClientCertificate() => _context.Connection.ClientCertificate;
+            GetClientCertificateAsyncResult clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
+            if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
+            {
+                throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
+            }
+            if (clientCertAsyncResult.EndCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndGetClientCertificate)));
+            }
+            clientCertAsyncResult.EndCalled = true;
+
+            return (X509Certificate2)clientCertAsyncResult.Result;
+        }
 
         public string ServiceName => null;
 
         public TransportContext TransportContext => new Context();
 
-        public Task<X509Certificate2> GetClientCertificateAsync()
-        {
-            return Task<X509Certificate2>.Factory.FromAsync(BeginGetClientCertificate, EndGetClientCertificate, null);
-        }
-
         private Uri RequestUri => _requestUri;
         private bool SupportsWebSockets => true;
+
+        private class GetClientCertificateAsyncResult : LazyAsyncResult
+        {
+            public GetClientCertificateAsyncResult(object myObject, object myState, AsyncCallback myCallBack) : base(myObject, myState, myCallBack) { }
+        }
     }
 }
