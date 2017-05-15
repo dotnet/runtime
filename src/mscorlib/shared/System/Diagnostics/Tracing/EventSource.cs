@@ -2197,32 +2197,26 @@ namespace System.Diagnostics.Tracing
 #endif //!ES_BUILD_PCL
         }
 
-        private int GetParamLenghtIncludingByteArray(ParameterInfo[] parameters)
-        {
-            int sum = 0;
-            foreach (ParameterInfo info in parameters)
-            {
-                if (info.ParameterType == typeof(byte[]))
-                {
-                    sum += 2;
-                }
-                else
-                {
-                    sum++;
-                }
-            }
-
-            return sum;
-        }
-
         unsafe private void WriteToAllListeners(int eventId, Guid* childActivityID, int eventDataCount, EventSource.EventData* data)
         {
             // We represent a byte[] as a integer denoting the length  and then a blob of bytes in the data pointer. This causes a spurious
             // warning because eventDataCount is off by one for the byte[] case since a byte[] has 2 items associated it. So we want to check
             // that the number of parameters is correct against the byte[] case, but also we the args array would be one too long if
             // we just used the modifiedParamCount here -- so we need both.
-            int paramCount = m_eventData[eventId].Parameters.Length;
-            int modifiedParamCount = GetParamLenghtIncludingByteArray(m_eventData[eventId].Parameters);
+            int paramCount = GetParameterCount(m_eventData[eventId]);
+            int modifiedParamCount = 0;
+            for (int i = 0; i < paramCount; i++)
+            {
+                Type parameterType = GetDataType(m_eventData[eventId], i);
+                if (parameterType == typeof(byte[]))
+                {
+                    modifiedParamCount += 2;
+                }
+                else
+                {
+                    modifiedParamCount++;
+                }
+            }
             if (eventDataCount != modifiedParamCount)
             {
                 ReportOutOfBandMessage(Resources.GetResourceString("EventSource_EventParametersMismatch", eventId, eventDataCount, paramCount), true);
