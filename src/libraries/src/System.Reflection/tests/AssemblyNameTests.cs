@@ -282,7 +282,6 @@ namespace System.Reflection.Tests
             yield return new object[] { new Version(1, 2, 0x1ffff, 4), "1.2" };
         }
 
-        [ActiveIssue(19179)]
         [Theory]
         [MemberData(nameof(Version_TestData))]
         public void Version(Version version, string versionString)
