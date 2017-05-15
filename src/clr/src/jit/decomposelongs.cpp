@@ -1554,7 +1554,8 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
 // these nodes, we convert them into GT_MUL_LONGs, undo the cast from int to long by
 // stripping out the lo ops, and force them into the form var = mul, as we do for
 // GT_CALLs. In codegen, we then produce a mul instruction that produces the result
-// in edx:eax, and store those registers on the stack in genStoreLongLclVar.
+// in edx:eax on x86 or in any two chosen by RA registers on arm32, and store those
+// registers on the stack in genStoreLongLclVar.
 //
 // All other GT_MULs have been converted to helper calls in morph.cpp
 //
@@ -1587,7 +1588,7 @@ GenTree* DecomposeLongs::DecomposeMul(LIR::Use& use)
 
     tree->gtOp.gtOp1 = op1->gtGetOp1();
     tree->gtOp.gtOp2 = op2->gtGetOp1();
-    tree->SetOperRaw(GT_MUL_LONG);
+    tree->SetOper(GT_MUL_LONG);
 
     return StoreNodeToVar(use);
 }
