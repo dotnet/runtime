@@ -236,7 +236,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
-            if (tree->gtGetOp1()->OperGet() == GT_LONG)
+            if (varTypeIsLong(tree->gtGetOp1()))
             {
                 info->srcCount = 2;
             }
@@ -455,6 +455,11 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             info->dstCount = 1;
         }
         break;
+
+        case GT_MUL_LONG:
+            info->srcCount = 2;
+            info->dstCount = 2;
+            break;
 
         case GT_LIST:
         case GT_FIELD_LIST:
@@ -739,7 +744,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     } // end switch (tree->OperGet())
 
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
-    assert((info->dstCount < 2) || tree->IsMultiRegCall());
+    assert((info->dstCount < 2) || tree->IsMultiRegNode());
 }
 
 #endif // _TARGET_ARM_
