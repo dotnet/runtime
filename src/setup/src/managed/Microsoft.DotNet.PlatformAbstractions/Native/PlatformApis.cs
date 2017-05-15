@@ -128,14 +128,8 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
         // are backwards compatible.
         private static DistroInfo NormalizeDistroInfo(DistroInfo distroInfo)
         {
-            if (string.IsNullOrEmpty(distroInfo.VersionId))
-            {
-                // Some distribution does not have VERSION_ID defined.
-                // Since we need it, we workaround this by giving it the value "unavailable".
-                distroInfo.VersionId = "unavailable";
-            }
-
-            int minorVersionNumberSeparatorIndex = distroInfo.VersionId.IndexOf('.');
+            // Handle if VersionId is null by just setting the index to -1.
+            int minorVersionNumberSeparatorIndex = distroInfo.VersionId?.IndexOf('.') ?? -1;
 
             if (distroInfo.Id == "rhel" && minorVersionNumberSeparatorIndex != -1)
             {

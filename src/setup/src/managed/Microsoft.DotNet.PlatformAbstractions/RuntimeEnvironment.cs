@@ -52,6 +52,11 @@ namespace Microsoft.DotNet.PlatformAbstractions
                 case Platform.Windows:
                     return GetWindowsProductVersion();
                 case Platform.Linux:
+                    if (string.IsNullOrEmpty(OperatingSystemVersion))
+                    {
+                        return string.Empty;
+                    }
+
                     return $".{OperatingSystemVersion}";
                 case Platform.Darwin:
                     return $".{OperatingSystemVersion}";
