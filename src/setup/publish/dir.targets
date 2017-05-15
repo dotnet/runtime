@@ -40,7 +40,6 @@
       <ItemsToChecksum Include="@(InstallerFile)" />
       <ArtifactsForGeneratingChecksums Include="@(ItemsToChecksum)">
         <DestinationPath>%(ItemsToChecksum.FullPath)$(ChecksumExtension)</DestinationPath>
-        <RelativeBlobPath>%(ItemsToChecksum.RelativeBlobPath)$(ChecksumExtension)</RelativeBlobPath>
       </ArtifactsForGeneratingChecksums>
     </ItemGroup>
     <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
