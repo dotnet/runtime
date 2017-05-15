@@ -1013,6 +1013,7 @@ INTERP_DISABLED_TESTS = \
 	abort-cctor.exe \
 	appdomain-async-invoke.exe \
 	appdomain-exit.exe \
+	appdomain-serialize-exception.exe \
 	appdomain-unload-callback.exe \
 	appdomain-unload-doesnot-raise-pending-events.exe \
 	appdomain-unload.exe \
