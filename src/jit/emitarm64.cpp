@@ -1037,6 +1037,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
 
     switch (ins)
     {
+        case INS_ldarb:
+        case INS_stlrb:
         case INS_ldrb:
         case INS_strb:
         case INS_ldurb:
@@ -1046,6 +1048,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             result = EA_1BYTE;
             break;
 
+        case INS_ldarh:
+        case INS_stlrh:
         case INS_ldrh:
         case INS_strh:
         case INS_ldurh:
@@ -1068,6 +1072,8 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             result = id->idOpSize();
             break;
 
+        case INS_ldar:
+        case INS_stlr:
         case INS_ldr:
         case INS_str:
         case INS_ldur:
