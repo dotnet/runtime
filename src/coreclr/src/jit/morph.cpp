@@ -13665,7 +13665,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
     GenTree*   op2  = tree->gtOp2;
     var_types  typ  = tree->TypeGet();
 
-    if (GenTree::OperIsCommutative(oper))
+    if (fgGlobalMorph && GenTree::OperIsCommutative(oper))
     {
         /* Swap the operands so that the more expensive one is 'op1' */
 
@@ -13703,7 +13703,7 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
     /* Change "((x+icon)+y)" to "((x+y)+icon)"
        Don't reorder floating-point operations */
 
-    if ((oper == GT_ADD) && !tree->gtOverflow() && (op1->gtOper == GT_ADD) && !op1->gtOverflow() &&
+    if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && (op1->gtOper == GT_ADD) && !op1->gtOverflow() &&
         varTypeIsIntegralOrI(typ))
     {
         GenTreePtr ad2 = op1->gtOp.gtOp2;
