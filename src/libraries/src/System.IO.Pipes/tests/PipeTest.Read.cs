@@ -140,7 +140,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/975
+        [Fact]
         public async Task ReadWithZeroLengthBuffer_Nop()
         {
             using (ServerClientPair pair = CreateServerClientPair())

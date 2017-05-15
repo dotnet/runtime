@@ -493,7 +493,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void Send_Receive_Success(bool ipv4)
@@ -535,7 +535,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void Send_Available_Success(bool ipv4)
@@ -555,7 +555,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void BeginEndSend_BeginEndReceive_Success(bool ipv4)
@@ -597,7 +597,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SendAsync_ReceiveAsync_Success(bool ipv4)

@@ -12,7 +12,7 @@ namespace System.Numerics.Tests
         private static int s_samples = 10;
         private static Random s_random = new Random(100);
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void RunZeroTests()
         {
             BigInteger bigInteger;
