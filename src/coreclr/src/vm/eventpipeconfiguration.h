@@ -69,7 +69,7 @@ public:
     void EnableRundown();
 
     // Get the event used to write metadata to the event stream.
-    EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance, BYTE *pPayloadData = NULL, unsigned int payloadLength = 0);
+    EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance);
 
 private:
 

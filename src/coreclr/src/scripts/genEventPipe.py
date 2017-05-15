@@ -138,7 +138,7 @@ def generateClrEventPipeWriteEventsImpl(
         taskName = eventNode.getAttribute('task')
 
         initEvent = """    EventPipeEvent%s = EventPipeProvider%s->AddEvent(%s,%s,%s,%s);
-""" % (eventName, providerPrettyName, eventKeywordsMask, eventValue, eventVersion, eventLevel)
+""" % (eventName, providerPrettyName, eventValue, eventKeywordsMask, eventVersion, eventLevel)
 
         WriteEventImpl.append(initEvent)
     WriteEventImpl.append("}")

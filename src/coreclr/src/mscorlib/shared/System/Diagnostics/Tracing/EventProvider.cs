@@ -54,6 +54,7 @@ namespace System.Diagnostics.Tracing
         // subclasses of EventProvider use when creating efficient (but unsafe) version of
         // EventWrite.   We do make it a nested type because we really don't expect anyone to use 
         // it except subclasses (and then only rarely).  
+        [StructLayout(LayoutKind.Sequential)]
         public struct EventData
         {
             internal unsafe ulong Ptr;
@@ -78,7 +79,7 @@ namespace System.Diagnostics.Tracing
 
         private static bool m_setInformationMissing;
 
-        private IEventProvider m_eventProvider;          // The interface that implements the specific logging mechanism functions.
+        internal IEventProvider m_eventProvider;         // The interface that implements the specific logging mechanism functions.
         UnsafeNativeMethods.ManifestEtw.EtwEnableCallback m_etwCallback;     // Trace Callback function
         private long m_regHandle;                        // Trace Registration Handle
         private byte m_level;                            // Tracing Level
@@ -936,7 +937,7 @@ namespace System.Diagnostics.Tracing
         // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification = "Performance-critical code")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
-        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, params object[] eventPayload)
+        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, params object[] eventPayload)
         {
             int status = 0;
 
@@ -1064,7 +1065,7 @@ namespace System.Diagnostics.Tracing
                                 userDataPtr[refObjPosition[7]].Ptr = (ulong)v7;
                             }
 
-                            status = m_eventProvider.EventWriteTransferWrapper(m_regHandle, ref eventDescriptor, activityID, childActivityID, argCount, userData);
+                            status = m_eventProvider.EventWriteTransferWrapper(m_regHandle, ref eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
                         }
                     }
                     else
@@ -1090,7 +1091,7 @@ namespace System.Diagnostics.Tracing
                             }
                         }
 
-                        status = m_eventProvider.EventWriteTransferWrapper(m_regHandle, ref eventDescriptor, activityID, childActivityID, argCount, userData);
+                        status = m_eventProvider.EventWriteTransferWrapper(m_regHandle, ref eventDescriptor, eventHandle, activityID, childActivityID, argCount, userData);
 
                         for (int i = 0; i < refObjIndex; ++i)
                         {
@@ -1132,7 +1133,7 @@ namespace System.Diagnostics.Tracing
         // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ManifestEtw.EventWrite(System.Int64,EventDescriptor&,System.UInt32,System.Void*):System.UInt32" />
         // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
-        internal unsafe protected bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
+        internal unsafe protected bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
             if (childActivityID != null)
             {
@@ -1143,7 +1144,7 @@ namespace System.Diagnostics.Tracing
                                 (EventOpcode)eventDescriptor.Opcode == EventOpcode.Stop);
             }
 
-            int status = m_eventProvider.EventWriteTransferWrapper(m_regHandle, ref eventDescriptor, activityID, childActivityID, dataCount, (EventData*)data);
+            int status = m_eventProvider.EventWriteTransferWrapper(m_regHandle, ref eventDescriptor, eventHandle, activityID, childActivityID, dataCount, (EventData*)data);
 
             if (status != 0)
             {
@@ -1166,6 +1167,7 @@ namespace System.Diagnostics.Tracing
             status = m_eventProvider.EventWriteTransferWrapper(
                 m_regHandle,
                 ref eventDescriptor,
+                IntPtr.Zero,
                 activityID,
                 relatedActivityID,
                 dataCount,
@@ -1241,6 +1243,7 @@ namespace System.Diagnostics.Tracing
         unsafe int IEventProvider.EventWriteTransferWrapper(
             long registrationHandle,
             ref EventDescriptor eventDescriptor,
+            IntPtr eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
@@ -1261,6 +1264,12 @@ namespace System.Diagnostics.Tracing
             return UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
                 ControlCode,
                 ref ActivityId);
+        }
+
+        // Define an EventPipeEvent handle.
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, Int64 keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        {
+            throw new System.NotSupportedException();
         }
     }
 
@@ -1285,6 +1294,7 @@ namespace System.Diagnostics.Tracing
         unsafe int IEventProvider.EventWriteTransferWrapper(
             long registrationHandle,
             ref EventDescriptor eventDescriptor,
+            IntPtr eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
             int userDataCount,
@@ -1296,6 +1306,12 @@ namespace System.Diagnostics.Tracing
         int IEventProvider.EventActivityIdControl(UnsafeNativeMethods.ManifestEtw.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return 0;
+        }
+
+        // Define an EventPipeEvent handle.
+        unsafe IntPtr IEventProvider.DefineEventHandle(uint eventID, string eventName, Int64 keywords, uint eventVersion, uint level, byte *pMetadata, uint metadataLength)
+        {
+            throw new System.NotSupportedException();
         }
     }
 
