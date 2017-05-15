@@ -446,12 +446,14 @@ CrstStatic* EventPipe::GetLock()
 void QCALLTYPE EventPipeInternal::Enable(
         __in_z LPCWSTR outputFile,
         unsigned int circularBufferSizeInMB,
+        long profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
         int numProviders)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
+    SampleProfiler::SetSamplingRate(profilerSamplingRateInNanoseconds);
     EventPipe::Enable(outputFile, circularBufferSizeInMB, pProviders, numProviders);
     END_QCALL;
 }

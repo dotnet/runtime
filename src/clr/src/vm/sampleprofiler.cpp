@@ -17,9 +17,7 @@ const GUID SampleProfiler::s_providerID = {0x3c530d44,0x97ae,0x513a,{0x1e,0x6d,0
 EventPipeProvider* SampleProfiler::s_pEventPipeProvider = NULL;
 EventPipeEvent* SampleProfiler::s_pThreadTimeEvent = NULL;
 CLREventStatic SampleProfiler::s_threadShutdownEvent;
-#ifdef FEATURE_PAL
 long SampleProfiler::s_samplingRateInNs = 1000000; // 1ms
-#endif
 
 void SampleProfiler::Enable()
 {
@@ -88,6 +86,12 @@ void SampleProfiler::Disable()
     s_threadShutdownEvent.Wait(0, FALSE /* bAlertable */);
 }
 
+void SampleProfiler::SetSamplingRate(long nanoseconds)
+{
+    LIMITED_METHOD_CONTRACT;
+    s_samplingRateInNs = nanoseconds;
+}
+
 DWORD WINAPI SampleProfiler::ThreadProc(void *args)
 {
     CONTRACTL
@@ -111,11 +115,7 @@ DWORD WINAPI SampleProfiler::ThreadProc(void *args)
             if(ThreadSuspend::SysIsSuspendInProgress() || (ThreadSuspend::GetSuspensionThread() != 0))
             {
                 // Skip the current sample.
-#ifdef FEATURE_PAL
                 PAL_nanosleep(s_samplingRateInNs);
-#else
-                ClrSleepEx(1, FALSE);
-#endif
                 continue;
             }
 
@@ -129,11 +129,7 @@ DWORD WINAPI SampleProfiler::ThreadProc(void *args)
             ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
 
             // Wait until it's time to sample again.
-#ifdef FEATURE_PAL
             PAL_nanosleep(s_samplingRateInNs);
-#else
-            ClrSleepEx(1, FALSE);
-#endif
         }
     }
 
