@@ -79,7 +79,7 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Move(testDir.FullName, Path.Combine(testDir.FullName, "..")));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         public void BasicMove()
         {
             string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
@@ -90,7 +90,7 @@ namespace System.IO.Tests
             Assert.True(Directory.Exists(testDirDest));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         public void MultipleMoves()
         {
             string testDir = GetTestFilePath();
@@ -106,7 +106,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDirSource));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         public void DirectoryNameWithSpaces()
         {
             string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
@@ -117,7 +117,7 @@ namespace System.IO.Tests
             Assert.True(Directory.Exists(testDirDest));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         public void TrailingDirectorySeparators()
         {
             string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
@@ -128,7 +128,7 @@ namespace System.IO.Tests
             Assert.True(Directory.Exists(testDirDest));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         public void IncludeSubdirectories()
         {
             string testDirSource = Path.Combine(TestDirectory, GetTestFileName());
@@ -196,7 +196,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*Test"));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Wild characters in path are allowed
         public void UnixWildCharacterPath()
         {
@@ -236,7 +236,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => Move(testDir.FullName, "\t"));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1008
+        [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace path allowed
         public void UnixWhitespacePath()
         {
