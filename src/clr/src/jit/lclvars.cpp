@@ -3406,6 +3406,12 @@ var_types LclVarDsc::lvaArgType()
     var_types type = TypeGet();
 
 #ifdef _TARGET_AMD64_
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+    if (type == TYP_STRUCT)
+    {
+        NYI("lvaArgType");
+    }
+#else  //! FEATURE_UNIX_AMD64_STRUCT_PASSING
     if (type == TYP_STRUCT)
     {
         switch (lvExactSize)
@@ -3443,6 +3449,12 @@ var_types LclVarDsc::lvaArgType()
                 type = TYP_BYREF;
                 break;
         }
+    }
+#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
+#elif defined(_TARGET_ARM64_)
+    if (type == TYP_STRUCT)
+    {
+        NYI("lvaArgType");
     }
 #elif defined(_TARGET_X86_)
 // Nothing to do; use the type as is.
