@@ -170,11 +170,48 @@ chunk_element_to_chunk_idx (HandleStack *stack, HandleChunkElem *elem, int *out_
 #define SET_OWNER(chunk,idx) do { } while (0)
 #endif
 
+#ifdef MONO_HANDLE_TRACK_SP
+#define SET_SP(handles,chunk,idx) do { (chunk)->elems[(idx)].alloc_sp = handles->stackmark_sp; } while (0)
+#else
+#define SET_SP(handles,chunk,idx) do { } while (0)
+#endif
+
+#ifdef MONO_HANDLE_TRACK_SP
+void
+mono_handle_chunk_leak_check (HandleStack *handles) {
+	if (handles->stackmark_sp) {
+		/* walk back from the top to the topmost non-empty chunk */
+		HandleChunk *c = handles->top;
+		while (c && c->size <= 0 && c != handles->bottom) {
+			c = c->prev;
+		}
+		if (c == NULL || c->size == 0)
+			return;
+		g_assert (c && c->size > 0);
+		HandleChunkElem *e = chunk_element (c, c->size - 1);
+		if (e->alloc_sp < handles->stackmark_sp) {
+			/* If we get here, the topmost object on the handle stack was
+			 * allocated from a function that is deeper in the call stack than
+			 * the most recent HANDLE_FUNCTION_ENTER.  That means it was
+			 * probably not wrapped in a HANDLE_FUNCTION_ENTER/_RETURN pair
+			 * and will never be reclaimed. */
+			g_warning ("Handle %p (object = %p) (allocated from \"%s\") is leaking.\n", e, e->o,
+#ifdef MONO_HANDLE_TRACK_OWNER
+				   e->owner
+#else
+				   "<unknown owner>"
+#endif
+				);
+		}
+	}
+}
+#endif
+
 MonoRawHandle
 #ifndef MONO_HANDLE_TRACK_OWNER
 mono_handle_new (MonoObject *object)
 #else
-mono_handle_new (MonoObject *object const char *owner)
+mono_handle_new (MonoObject *object, const char *owner)
 #endif
 {
 #ifndef MONO_HANDLE_TRACK_OWNER
@@ -194,6 +231,9 @@ mono_handle_new_full (gpointer rawptr, gboolean interior, const char *owner)
 	MonoThreadInfo *info = mono_thread_info_current ();
 	HandleStack *handles = (HandleStack *)info->handle_stack;
 	HandleChunk *top = handles->top;
+#ifdef MONO_HANDLE_TRACK_SP
+	mono_handle_chunk_leak_check (handles);
+#endif
 
 retry:
 	if (G_LIKELY (top->size < OBJECTS_PER_HANDLES_CHUNK)) {
@@ -213,6 +253,7 @@ retry:
 		mono_memory_write_barrier ();
 		*objslot = rawptr;
 		SET_OWNER (top,idx);
+		SET_SP (handles, top, idx);
 		return objslot;
 	}
 	if (G_LIKELY (top->next)) {
@@ -248,6 +289,9 @@ mono_handle_stack_alloc (void)
 	chunk->prev = chunk->next = NULL;
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
+#ifdef MONO_HANDLE_TRACK_OWNER
+	stack->stackmark_sp = NULL;
+#endif
 	return stack;
 }
 
@@ -268,9 +312,48 @@ mono_handle_stack_free (HandleStack *stack)
 	g_free (stack);
 }
 
+static void
+check_handle_stack_monotonic (HandleStack *stack)
+{
+	/* check that every allocated handle in the current handle stack is at no higher in the native stack than its predecessors */
+#ifdef MONO_HANDLE_TRACK_SP
+	HandleChunk *cur = stack->bottom;
+	HandleChunk *last = stack->top;
+	if (!cur)
+		return;
+	HandleChunkElem *prev = NULL;
+	gboolean monotonic = TRUE;
+	while (cur) {
+		for (int i = 0;i < cur->size; ++i) {
+			HandleChunkElem *elem = chunk_element (cur, i);
+			if (prev && elem->alloc_sp < prev->alloc_sp) {
+				monotonic = FALSE;
+				g_warning ("Handle %p (object %p) (allocated from \"%s\") is was allocated deeper in the call stack than its successor (allocated from \"%s\").", prev, prev->o,
+#ifdef MONO_HANDLE_TRACK_OWNER
+					   prev->owner,
+					   elem->owner
+#else
+					   "unknown owner",
+					   "unknown owner"
+#endif
+					);
+				
+			}
+			prev = elem;
+		}
+		if (cur == last)
+			break;
+		cur = cur->next;
+	}
+	g_assert (monotonic);
+#endif
+}
+
 void
 mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise)
 {
+	if (precise) /* run just once (per handle stack) per GC */
+		check_handle_stack_monotonic (stack);
 	/*
 	  We're called twice - on the imprecise pass we call func to pin the
 	  objects where the handle points to its interior.  On the precise

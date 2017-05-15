@@ -215,6 +215,9 @@ mono_icall_start (HandleStackMark *stackmark, MonoError *error);
 static void
 mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *error);
 
+static MonoObjectHandle
+mono_icall_handle_new_full (gpointer rawobj, MonoBoolean interior);
+
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (string_builder, "System.Text", "StringBuilder");
 static GENERATE_GET_CLASS_WITH_CACHE (date_time, "System", "DateTime");
@@ -373,7 +376,7 @@ mono_marshal_init (void)
 		register_icall (mono_threads_detach_coop, "mono_threads_detach_coop", "void ptr ptr", TRUE);
 		register_icall (mono_icall_start, "mono_icall_start", "ptr ptr ptr", TRUE);
 		register_icall (mono_icall_end, "mono_icall_end", "void ptr ptr ptr", TRUE);
-		register_icall (mono_handle_new_full, "mono_handle_new_full", "ptr ptr bool", TRUE);
+		register_icall (mono_icall_handle_new_full, "mono_icall_handle_new_full", "ptr ptr bool", TRUE);
 
 		mono_cominterop_init ();
 		mono_remoting_init ();
@@ -8105,7 +8108,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				/* TODO support adding wrappers to non-static struct methods */
 				g_assert (!mono_class_is_valuetype(mono_method_get_class (method)));
 				mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-				mono_mb_emit_icall (mb, mono_handle_new_full);
+				mono_mb_emit_icall (mb, mono_icall_handle_new_full);
 			}
 			for (i = 0; i < sig->param_count; i++) {
 				/* load each argument. references into the managed heap get wrapped in handles */
@@ -8118,13 +8121,13 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 					/* argI = mono_handle_new_full (argI_raw, FALSE) */
 					mono_mb_emit_ldarg (mb, j);
 					mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-					mono_mb_emit_icall (mb, mono_handle_new_full);
+					mono_mb_emit_icall (mb, mono_icall_handle_new_full);
 					break;
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 					/* handleI = argI = mono_handle_new_full (NULL, FALSE) */
 					mono_mb_emit_byte (mb, CEE_LDNULL);
 					mono_mb_emit_byte (mb, CEE_LDC_I4_0);
-					mono_mb_emit_icall (mb, mono_handle_new_full);
+					mono_mb_emit_icall (mb, mono_icall_handle_new_full);
 					/* tmp = argI */
 					mono_mb_emit_byte (mb, CEE_DUP);
 					/* handleI = tmp */
@@ -8135,7 +8138,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 					mono_mb_emit_ldarg (mb, j);
 					mono_mb_emit_byte (mb, CEE_DUP);
 					mono_mb_emit_byte (mb, CEE_LDC_I4_1);
-					mono_mb_emit_icall (mb, mono_handle_new_full);
+					mono_mb_emit_icall (mb, mono_icall_handle_new_full);
 					mono_mb_emit_byte (mb, CEE_POP);
 #if 0
 					fprintf (stderr, " Method %s.%s.%s has byref valuetype argument %d\n", method->klass->name_space, method->klass->name, method->name, i);
@@ -12311,4 +12314,14 @@ mono_icall_end (MonoThreadInfo *info, HandleStackMark *stackmark, MonoError *err
 	mono_stack_mark_pop (info, stackmark);
 	if (G_UNLIKELY (!is_ok (error)))
 		mono_error_set_pending_exception (error);
+}
+
+static MonoObjectHandle
+mono_icall_handle_new_full (gpointer rawobj, MonoBoolean interior)
+{
+#ifdef MONO_HANDLE_TRACK_OWNER
+	return mono_handle_new_full (rawobj, interior, "<marshal args>");
+#else
+	return mono_handle_new_full (rawobj, interior);
+#endif
 }

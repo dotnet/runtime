@@ -54,12 +54,22 @@ typedef struct _HandleChunk HandleChunk;
 /* define MONO_HANDLE_TRACK_OWNER to store the file and line number of each call to MONO_HANDLE_NEW
  * in the handle stack.  (This doubles the amount of memory used for handles, so it's only useful for debugging).
  */
-/* #define MONO_HANDLE_TRACK_OWNER */
+/*#define MONO_HANDLE_TRACK_OWNER*/
+
+/* define MONO_HANDLE_TRACK_SP to record the C stack pointer at the time of each HANDLE_FUNCTION_ENTER and
+ * to ensure that when a new handle is allocated the previous newest handle is not lower in the stack.
+ * This is useful to catch missing HANDLE_FUNCTION_ENTER / HANDLE_FUNCTION_RETURN pairs which could cause
+ * handle leaks.
+ */
+/*#define MONO_HANDLE_TRACK_SP*/
 
 typedef struct {
 	gpointer o; /* MonoObject ptr or interior ptr */
 #ifdef MONO_HANDLE_TRACK_OWNER
 	const char *owner;
+#endif
+#ifdef MONO_HANDLE_TRACK_SP
+	gpointer alloc_sp; /* sp from HandleStack:stackmark_sp at time of allocation */
 #endif
 } HandleChunkElem;
 
@@ -77,11 +87,17 @@ struct _HandleChunk {
 typedef struct {
 	HandleChunk *top; //alloc from here
 	HandleChunk *bottom; //scan from here
+#ifdef MONO_HANDLE_TRACK_SP
+	gpointer stackmark_sp; // C stack pointer top when from most recent mono_stack_mark_init
+#endif
 } HandleStack;
 
 typedef struct {
 	int size;
 	HandleChunk *chunk;
+#ifdef MONO_HANDLE_TRACK_SP
+	gpointer prev_sp; // C stack pointer from prior mono_stack_mark_init
+#endif
 } HandleStackMark;
 
 typedef void *MonoRawHandle;
@@ -105,12 +121,23 @@ void mono_handle_stack_free (HandleStack *handlestack);
 MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
 void mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
 
+#ifdef MONO_HANDLE_TRACK_SP
+void mono_handle_chunk_leak_check (HandleStack *handles);
+#endif
+
 static inline void
 mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
+#ifdef MONO_HANDLE_TRACK_SP
+	gpointer sptop = (gpointer)(intptr_t)&stackmark;
+#endif
 	HandleStack *handles = (HandleStack *)info->handle_stack;
 	stackmark->size = handles->top->size;
 	stackmark->chunk = handles->top;
+#ifdef MONO_HANDLE_TRACK_SP
+	stackmark->prev_sp = handles->stackmark_sp;
+	handles->stackmark_sp = sptop;
+#endif
 }
 
 static inline void
@@ -121,6 +148,10 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 	old_top->size = stackmark->size;
 	mono_memory_write_barrier ();
 	handles->top = old_top;
+#ifdef MONO_HANDLE_TRACK_SP
+	mono_memory_write_barrier (); /* write to top before prev_sp */
+	handles->stackmark_sp = stackmark->prev_sp;
+#endif
 }
 
 /*
