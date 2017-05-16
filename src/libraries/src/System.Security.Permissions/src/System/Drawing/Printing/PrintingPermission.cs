@@ -7,7 +7,6 @@ using System.Security.Permissions;
 
 namespace System.Drawing.Printing
 {
-    [Serializable]
     public sealed class PrintingPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public PrintingPermission(PrintingPermissionLevel printingLevel) { }

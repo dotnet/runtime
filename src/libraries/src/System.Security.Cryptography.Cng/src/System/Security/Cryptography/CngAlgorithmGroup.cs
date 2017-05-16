@@ -14,7 +14,6 @@ namespace System.Security.Cryptography
     ///     provide a list of well known algorithm group names, which helps Intellisense users find a set of
     ///     good algorithm group names to use.
     /// </summary>
-    [Serializable]
     public sealed class CngAlgorithmGroup : IEquatable<CngAlgorithmGroup>
     {
         public CngAlgorithmGroup(string algorithmGroup)

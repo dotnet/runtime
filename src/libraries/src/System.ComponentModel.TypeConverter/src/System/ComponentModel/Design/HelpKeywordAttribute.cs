@@ -44,7 +44,6 @@ namespace System.ComponentModel.Design
     ///
     /// </summary>
     [AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = false)]
-    [Serializable]
     public sealed class HelpKeywordAttribute : Attribute
     {
         /// <summary>

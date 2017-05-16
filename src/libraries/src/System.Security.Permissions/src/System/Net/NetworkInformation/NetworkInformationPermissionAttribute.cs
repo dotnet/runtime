@@ -8,7 +8,6 @@ using System.Security.Permissions;
 namespace System.Net.NetworkInformation
 {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
-    [Serializable]
     public sealed class NetworkInformationPermissionAttribute : CodeAccessSecurityAttribute
     {
         public NetworkInformationPermissionAttribute(SecurityAction action) : base(action) { }

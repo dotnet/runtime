@@ -14,7 +14,6 @@ namespace System.ComponentModel
     ///    <para>Represents the exception thrown when a component cannot be granted a license.</para>
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1032:ImplementStandardExceptionConstructors")] // must not, a Type is required in all constructors.
-    [Serializable]
     public class LicenseException : SystemException
     {
         private object _instance;

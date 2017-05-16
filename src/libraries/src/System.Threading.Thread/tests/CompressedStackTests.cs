@@ -48,22 +48,5 @@ namespace System.Threading.Tests
                 obj);
             Assert.True(callbackRan);
         }
-
-        [Fact]
-        public static void SerializationTest()
-        {
-            CompressedStack compressedStack = CompressedStack.Capture();
-            Assert.Throws<ArgumentNullException>(() => compressedStack.GetObjectData(null, new StreamingContext()));
-
-            var binaryFormatter = new BinaryFormatter();
-            var memoryStream = new MemoryStream();
-            binaryFormatter.Serialize(memoryStream, compressedStack);
-            memoryStream.Close();
-            byte[] binaryData = memoryStream.ToArray();
-
-            memoryStream = new MemoryStream(binaryData);
-            compressedStack = (CompressedStack)binaryFormatter.Deserialize(memoryStream);
-            memoryStream.Close();
-        }
     }
 }

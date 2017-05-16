@@ -31,7 +31,6 @@
     <Compile Include="Regex.UnicodeChar.Tests.cs" />
     <Compile Include="Regex.Groups.Tests.cs" />
     <Compile Include="Regex.Replace.Tests.cs" />
-    <Compile Include="Regex.Serialization.cs" />
     <Compile Include="Regex.Split.Tests.cs" />
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />

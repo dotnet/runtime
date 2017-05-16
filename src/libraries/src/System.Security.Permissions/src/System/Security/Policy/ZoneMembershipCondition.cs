@@ -4,7 +4,6 @@
 
 namespace System.Security.Policy
 {
-    [Serializable]
     public sealed partial class ZoneMembershipCondition : ISecurityEncodable, IMembershipCondition
     {
         public ZoneMembershipCondition(SecurityZone zone) { }

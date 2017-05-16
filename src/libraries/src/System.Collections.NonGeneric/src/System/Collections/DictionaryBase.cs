@@ -15,7 +15,6 @@
 namespace System.Collections
 {
     // Useful base class for typed read/write collections where items derive from object
-    [Serializable]
     public abstract class DictionaryBase : IDictionary
     {
         private Hashtable _hashtable;

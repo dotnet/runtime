@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeVariableDeclarationStatement : CodeStatement
     {
         private CodeTypeReference _type;

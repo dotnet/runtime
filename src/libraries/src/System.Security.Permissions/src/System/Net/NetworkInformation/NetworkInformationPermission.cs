@@ -7,7 +7,6 @@ using System.Security.Permissions;
 
 namespace System.Net.NetworkInformation
 {
-    [Serializable]
     public sealed class NetworkInformationPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public NetworkInformationPermission(PermissionState state) { }

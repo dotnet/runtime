@@ -13,7 +13,6 @@ using System.Xml;
 
 namespace System.Configuration
 {
-    [Serializable]
     public class ConfigurationErrorsException : ConfigurationException
     {
         // Constants

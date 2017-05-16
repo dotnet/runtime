@@ -6,7 +6,6 @@ using System.Collections;
 
 namespace System.Data.Odbc
 {
-    [Serializable]
     public sealed class OdbcErrorCollection : ICollection
     {
         private ArrayList _items = new ArrayList();

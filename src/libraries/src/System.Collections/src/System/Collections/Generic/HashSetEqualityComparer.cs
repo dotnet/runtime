@@ -13,7 +13,6 @@ namespace System.Collections.Generic
     /// Equality comparer for hashsets of hashsets
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    [Serializable]
     internal sealed class HashSetEqualityComparer<T> : IEqualityComparer<HashSet<T>>
     {
         private readonly IEqualityComparer<T> _comparer;

@@ -9,7 +9,6 @@ namespace System.ComponentModel.DataAnnotations
     /// <summary>
     ///     Exception used for validation using <see cref="ValidationAttribute" />.
     /// </summary>
-    [Serializable]
     public class ValidationException : Exception
     {
         private ValidationResult _validationResult;

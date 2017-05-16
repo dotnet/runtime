@@ -554,7 +554,6 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-        [Serializable]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private SortedDictionary<TKey, TValue> _dictionary;
@@ -739,7 +738,6 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-        [Serializable]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private SortedDictionary<TKey, TValue> _dictionary;
@@ -923,7 +921,7 @@ namespace System.Collections.Generic
         }
 
         [Serializable]
-        internal sealed class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
+        public sealed class KeyValuePairComparer : Comparer<KeyValuePair<TKey, TValue>>
         {
             internal IComparer<TKey> keyComparer;
 
@@ -957,7 +955,7 @@ namespace System.Collections.Generic
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [Serializable]
-    internal sealed class TreeSet<T> : SortedSet<T>
+    public sealed class TreeSet<T> : SortedSet<T>
     {
         public TreeSet()
             : base()
@@ -965,7 +963,7 @@ namespace System.Collections.Generic
 
         public TreeSet(IComparer<T> comparer) : base(comparer) { }
 
-        public TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
+        private TreeSet(SerializationInfo siInfo, StreamingContext context) : base(siInfo, context) { }
 
         internal override bool AddIfNotPresent(T item)
         {

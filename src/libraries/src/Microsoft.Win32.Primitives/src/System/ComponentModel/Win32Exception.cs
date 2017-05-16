@@ -10,7 +10,6 @@ namespace System.ComponentModel
     /// <devdoc>
     ///    <para>The exception that is thrown for a Win32 error code.</para>
     /// </devdoc>
-    [Serializable]
     public partial class Win32Exception : ExternalException, ISerializable
     {
         /// <devdoc>

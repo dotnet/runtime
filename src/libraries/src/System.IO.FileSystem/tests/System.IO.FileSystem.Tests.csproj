@@ -14,11 +14,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="FileInfo\Serialization.cs" />
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileStream\Handle.cs" />
     <Compile Include="Directory\GetLogicalDrives.cs" />
-    <Compile Include="DirectoryInfo\Serialization.cs" />
     <Compile Include="FileStream\EndRead.cs" />
     <Compile Include="FileStream\EndWrite.cs" />
     <Compile Include="FileStream\LockUnlock.cs" />

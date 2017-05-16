@@ -13,7 +13,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlTypes
 {
-    [Serializable, XmlSchemaProvider("GetXsdType")]
+    [XmlSchemaProvider("GetXsdType")]
     public sealed class SqlChars : INullable, IXmlSerializable, ISerializable
     {
         // --------------------------------------------------------------

@@ -25,16 +25,6 @@ namespace System.Collections.ObjectModel.Tests
             ReadOnlyDictionary<string, string> clone = BinaryFormatterHelpers.Clone(d);
             Assert.NotSame(d, clone);
             Assert.Equal(d, clone);
-
-            ReadOnlyDictionary<string, string>.KeyCollection keys = d.Keys;
-            ReadOnlyDictionary<string, string>.KeyCollection keysClone = BinaryFormatterHelpers.Clone(keys);
-            Assert.NotSame(keys, keysClone);
-            Assert.Equal(keys, keysClone);
-
-            ReadOnlyDictionary<string, string>.ValueCollection values = d.Values;
-            ReadOnlyDictionary<string, string>.ValueCollection valuesClone = BinaryFormatterHelpers.Clone(values);
-            Assert.NotSame(values, valuesClone);
-            Assert.Equal(values, valuesClone);
         }
     }
 }

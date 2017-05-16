@@ -13,7 +13,6 @@ namespace System.Collections.Generic
         /// This class represents a subset view into the tree. Any changes to this view
         /// are reflected in the actual tree. It uses the comparer of the underlying tree.
         /// </summary>
-        [Serializable]
         internal sealed class TreeSubSet : SortedSet<T>, ISerializable, IDeserializationCallback
         {
             private SortedSet<T> _underlying;

@@ -7,7 +7,6 @@ using System.Security.Permissions;
 
 namespace System.Data.SqlClient
 {
-    [Serializable]
     public sealed class SqlClientPermission : DBDataPermission
     {
         public SqlClientPermission() : base(default(PermissionState)) { }

@@ -15,6 +15,13 @@ namespace System.Collections.Tests
         public void IGenericSharedAPI_SerializeDeserialize(int count)
         {
             IEnumerable<T> expected = GenericIEnumerableFactory(count);
+
+            // Not all IEnumerables are intended to be Serializable
+            if (!expected.GetType().IsSerializable)
+            {
+                return;
+            }
+
             IEnumerable<T> actual = BinaryFormatterHelpers.Clone(expected);
 
             if (Order == EnumerableOrder.Sequential)

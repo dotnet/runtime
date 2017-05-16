@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 
 namespace System.Net
 {
-    [Serializable]
     public class WebProxy : IWebProxy, ISerializable
     {
         private ArrayList _bypassList;

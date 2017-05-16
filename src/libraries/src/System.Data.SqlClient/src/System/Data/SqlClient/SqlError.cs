@@ -9,7 +9,6 @@
 
 namespace System.Data.SqlClient
 {
-    [Serializable]
     public sealed class SqlError
     {
         private string _source = TdsEnums.SQL_PROVIDER_NAME;

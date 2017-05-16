@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-    [Serializable]
     public class ObjectIDGenerator
     {
         private const int NumBins = 4;

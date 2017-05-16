@@ -19,7 +19,6 @@ namespace System.Net
     ///    <see cref='System.Net.WebResponse'/> class.
     /// </para>
     /// </devdoc>
-    [Serializable]
     public class HttpWebResponse : WebResponse, ISerializable
     {
         private HttpResponseMessage _httpResponseMessage;

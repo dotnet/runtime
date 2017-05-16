@@ -8,7 +8,6 @@ namespace System.DirectoryServices.Protocols
     using System.Runtime.Serialization;
     using System.Security.Permissions;
 
-    [Serializable]
     public class DirectoryException : Exception
     {
         protected DirectoryException(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -28,7 +27,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [Serializable]
     public class DirectoryOperationException : DirectoryException, ISerializable
     {
         internal DirectoryResponse response = null;
@@ -72,7 +70,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [Serializable]
     public class BerConversionException : DirectoryException
     {
         protected BerConversionException(SerializationInfo info, StreamingContext context) : base(info, context)

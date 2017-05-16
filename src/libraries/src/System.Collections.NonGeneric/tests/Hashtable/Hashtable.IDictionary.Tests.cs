@@ -14,6 +14,7 @@ namespace System.Collections.Tests
     public class HashtableSynchronizedTests : HashtableIDictionaryTestBase
     {
         protected override bool ExpectedIsSynchronized => true;
+        protected override bool SupportsSerialization => false;
 
         protected override IDictionary NonGenericIDictionaryFactory() => Hashtable.Synchronized(new Hashtable());
     }

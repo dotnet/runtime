@@ -14,7 +14,6 @@ namespace System.Net.NetworkInformation
     ///       Provides NetworkInformation exceptions to the application.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public class NetworkInformationException : Win32Exception
     {
         /// <devdoc>

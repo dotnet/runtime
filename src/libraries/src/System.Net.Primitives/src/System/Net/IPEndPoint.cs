@@ -12,7 +12,6 @@ namespace System.Net
     ///       Provides an IP address.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public class IPEndPoint : EndPoint
     {
         /// <devdoc>

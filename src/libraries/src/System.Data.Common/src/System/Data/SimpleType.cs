@@ -11,7 +11,6 @@ using System.Data.Common;
 
 namespace System.Data
 {
-    [Serializable]
     internal sealed class SimpleType : ISerializable
     {
         private string _baseType = null;                 // base type name
