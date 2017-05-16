@@ -1422,6 +1422,7 @@ namespace System.Diagnostics.Tracing
             if (disposing)
             {
 #if FEATURE_MANAGED_ETW
+#if !FEATURE_PERFTRACING
                 // Send the manifest one more time to ensure circular buffers have a chance to get to this information
                 // even in scenarios with a high volume of ETW events.
                 if (m_eventSourceEnabled)
@@ -1434,6 +1435,7 @@ namespace System.Diagnostics.Tracing
                     { }           // If it fails, simply give up.   
                     m_eventSourceEnabled = false;
                 }
+#endif
                 if (m_provider != null)
                 {
                     m_provider.Dispose();
@@ -2295,7 +2297,7 @@ namespace System.Diagnostics.Tracing
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
         private unsafe void WriteEventString(EventLevel level, long keywords, string msgString)
         {
-#if FEATURE_MANAGED_ETW
+#if FEATURE_MANAGED_ETW && !FEATURE_PERFTRACING
             if (m_provider != null)
             {
                 string eventName = "EventSourceMessage";
@@ -2331,7 +2333,7 @@ namespace System.Diagnostics.Tracing
                         data.Ptr = (ulong)msgStringPtr;
                         data.Size = (uint)(2 * (msgString.Length + 1));
                         data.Reserved = 0;
-                        m_provider.WriteEvent(ref descr, m_eventData[0].EventHandle, null, null, 1, (IntPtr)((void*)&data));
+                        m_provider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
                     }
                 }
             }
@@ -2779,11 +2781,13 @@ namespace System.Diagnostics.Tracing
                     {
                         // eventSourceDispatcher == null means this is the ETW manifest
 
+#if !FEATURE_PERFTRACING
                         // Note that we unconditionally send the manifest whenever we are enabled, even if
                         // we were already enabled.   This is because there may be multiple sessions active
                         // and we can't know that all the sessions have seen the manifest.  
                         if (!SelfDescribingEvents)
                             SendManifest(m_rawManifest);
+#endif
                     }
 
 #if FEATURE_ACTIVITYSAMPLING
@@ -2907,12 +2911,14 @@ namespace System.Diagnostics.Tracing
                 }
                 else
                 {
+#if !FEATURE_PERFTRACING
                     if (commandArgs.Command == EventCommand.SendManifest)
                     {
                         // TODO: should we generate the manifest here if we hadn't already?
                         if (m_rawManifest != null)
                             SendManifest(m_rawManifest);
                     }
+#endif
 
                     // These are not used for non-update commands and thus should always be 'default' values
                     // Debug.Assert(enable == true);
@@ -3132,6 +3138,7 @@ namespace System.Diagnostics.Tracing
                 {
                     // GetMetadata failed, so we have to set it via reflection.
                     Debug.Assert(m_rawManifest == null);
+
                     m_rawManifest = CreateManifestAndDescriptors(this.GetType(), Name, this);
                     Debug.Assert(m_eventData != null);
 
@@ -3168,7 +3175,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
                 // Initialize the EventPipe event handles.
                 DefineEventPipeEvents();
-#endif                
+#endif
             }
             if (s_currentPid == 0)
             {
@@ -3701,11 +3708,7 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentException(msg, exception);
             }
 
-#if FEATURE_PERFTRACING
-            return null;
-#else
             return bNeedsManifest ? res : null;
-#endif
         }
 
         private static bool RemoveFirstArgIfRelatedActivityId(ref ParameterInfo[] args)
