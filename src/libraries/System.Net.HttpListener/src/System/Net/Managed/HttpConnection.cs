@@ -450,7 +450,7 @@ namespace System.Net
                 else
                     str = string.Format("<h1>{0}</h1>", description);
 
-                byte[] error = _context.Response.ContentEncoding.GetBytes(str);
+                byte[] error = Encoding.Default.GetBytes(str);
                 response.Close(error, false);
             }
             catch
