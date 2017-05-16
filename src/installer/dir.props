@@ -29,8 +29,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
-    <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'OSX'"></CrossGenSymbolExtension> <!-- OSX doesn't have crossgen symbols, yet -->
-    <CrossGenSymbolExtension Condition="'$(OSGroup)' != 'Windows_NT' and '$(OSGroup)' != 'OSX'">.map</CrossGenSymbolExtension>
+    <!-- OSX doesn't have crossgen symbols, yet -->
+    <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'OSX'"></CrossGenSymbolExtension>
   </PropertyGroup>
 </Project>
