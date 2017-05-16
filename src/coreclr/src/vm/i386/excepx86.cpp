@@ -2040,6 +2040,27 @@ VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
     *GetThread()->GetExceptionListPtr() = pSEH;
 }
 
+// Note that this logic is copied below, in PopSEHRecords
+__declspec(naked)
+VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
+{
+    // No CONTRACT possible on naked functions
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    __asm{
+        mov     ecx, [esp+4]        ;; ecx <- pTargetSP
+        mov     eax, fs:[0]         ;; get current SEH record
+  poploop:
+        cmp     eax, ecx
+        jge     done
+        mov     eax, [eax]          ;; get next SEH record
+        jmp     poploop
+  done:
+        mov     fs:[0], eax
+        retn
+    }
+}
 
 //
 // Unwind pExinfo, pops FS:[0] handlers until the interception context SP, and
