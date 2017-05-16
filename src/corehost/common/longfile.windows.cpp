@@ -16,9 +16,13 @@ const pal::string_t LongFile::DevicePathPrefix = _X("\\\\.\\");
 const pal::string_t LongFile::UNCExtendedPathPrefix = _X("\\\\?\\UNC\\");
 const pal::string_t LongFile::UNCPathPrefix = _X("\\\\");
 
+bool LongFile::IsNormalized(const pal::string_t& path)
+{
+    return path.empty() || LongFile::IsDevice(path) || LongFile::IsExtended(path) || LongFile::IsUNCExtended(path);
+}
 bool ShouldNormalizeWorker(const pal::string_t& path)
 {
-    if (path.empty() || LongFile::IsDevice(path) || LongFile::IsExtended(path) || LongFile::IsUNCExtended(path))
+    if (LongFile::IsNormalized(path))
         return false;
 
     if (!LongFile::IsPathNotFullyQualified(path) && path.size() < MAX_PATH)
@@ -65,6 +69,19 @@ bool AssertRepeatingDirSeparator(const pal::string_t& path)
 
     assert(path_to_check.find(altDirSeparator) == pal::string_t::npos);
 
+    pal::string_t combDirSeparator1;
+    combDirSeparator1.push_back(LongFile::DirectorySeparatorChar);
+    combDirSeparator1.push_back(LongFile::AltDirectorySeparatorChar);
+
+    assert(path_to_check.find(combDirSeparator1) == pal::string_t::npos);
+
+    pal::string_t combDirSeparator2;
+    combDirSeparator2.push_back(LongFile::AltDirectorySeparatorChar);
+    combDirSeparator2.push_back(LongFile::DirectorySeparatorChar);
+
+    assert(path_to_check.find(combDirSeparator2) == pal::string_t::npos);
+
+    assert(path_to_check.find(_X("..")) == pal::string_t::npos);
     return true;
 }
 bool  LongFile::ShouldNormalize(const pal::string_t& path)
