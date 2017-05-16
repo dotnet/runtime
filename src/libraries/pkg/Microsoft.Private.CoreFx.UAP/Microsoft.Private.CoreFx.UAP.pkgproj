@@ -35,6 +35,8 @@
     <ExcludeFromClosure Include="System.Net" />
     <ExcludeFromClosure Include="System.Transactions" />
 
+    <ExcludeFromDuplicateTypes Include="System.Private.Reflection.Metadata.Ecma335" />
+
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
       <Value>
