@@ -31,8 +31,7 @@ namespace System.Diagnostics.Tests
                 FileName = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName),
                 FilePrivatePart = 1,
                 FileVersion = "4.3.2.1",
-                //https://github.com/dotnet/corefx/issues/19784  InternalName different behavior on Unix.
-                InternalName = PlatformDetection.IsWindows ? OriginalTestAssemblyFileName : TestAssemblyFileName,
+                InternalName = OriginalTestAssemblyFileName,
                 IsDebug = false,
                 IsPatched = false,
                 IsPrivateBuild = false,
@@ -41,8 +40,7 @@ namespace System.Diagnostics.Tests
                 Language = GetFileVersionLanguage(0x0000),
                 LegalCopyright = "Copyright, you betcha!",
                 LegalTrademarks = "TM",
-                //https://github.com/dotnet/corefx/issues/19784  OriginalFilename different behavior on Unix.
-                OriginalFilename = PlatformDetection.IsWindows ? OriginalTestAssemblyFileName : TestAssemblyFileName,
+                OriginalFilename = OriginalTestAssemblyFileName,
                 PrivateBuild = "",
                 ProductBuildPart = 3,
                 ProductMajorPart = 1,
