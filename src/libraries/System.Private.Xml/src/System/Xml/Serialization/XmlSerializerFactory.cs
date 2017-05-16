@@ -18,6 +18,7 @@ namespace System.Xml.Serialization
     using System.Globalization;
     using System.Xml.Serialization.Configuration;
     using System.Diagnostics;
+    using System.Xml.Serialization;
 
 
     /// <include file='doc\XmlSerializerFactory.uex' path='docs/doc[@for="XmlSerializerFactory"]/*' />
