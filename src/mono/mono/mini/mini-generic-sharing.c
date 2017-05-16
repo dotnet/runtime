@@ -390,7 +390,17 @@ info_has_identity (MonoRgctxInfoType info_type)
 /*
  * LOCKING: loader lock
  */
+#if defined(PLATFORM_ANDROID) && defined(TARGET_ARM)
+/* work around for HW bug on Nexus9 when running on armv7 */
+#ifdef __clang__
+static __attribute__ ((optnone)) void
+#else
+/* gcc */
+static __attribute__ ((optimize("O0"))) void
+#endif
+#else
 static void
+#endif
 rgctx_template_set_slot (MonoImage *image, MonoRuntimeGenericContextTemplate *template_, int type_argc,
 	int slot, gpointer data, MonoRgctxInfoType info_type)
 {
