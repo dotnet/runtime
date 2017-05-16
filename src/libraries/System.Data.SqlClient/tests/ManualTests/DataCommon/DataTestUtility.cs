@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,22 +13,22 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     {
         public static readonly string NpConnStr = null;
         public static readonly string TcpConnStr = null;
+        private static readonly Assembly s_systemDotData = typeof(System.Data.SqlClient.SqlConnection).GetTypeInfo().Assembly;
+        private static readonly Type s_tdsParserStateObjectFactory = s_systemDotData.GetType("System.Data.SqlClient.TdsParserStateObjectFactory");
+        private static readonly PropertyInfo s_useManagedSNI = s_tdsParserStateObjectFactory.GetProperty("UseManagedSNI", BindingFlags.Static | BindingFlags.Public);
 
         static DataTestUtility()
         {
             NpConnStr = Environment.GetEnvironmentVariable("TEST_NP_CONN_STR");
             TcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR");
-
-            if (!AreConnStringsSetup())
-            {
-                Console.WriteLine("INFO: Test connection strings not defined! Tests cannot be run. Refer README.md of Manual tests for more information. ");
-            }
         }
 
         public static bool AreConnStringsSetup()
         {
             return !string.IsNullOrEmpty(NpConnStr) && !string.IsNullOrEmpty(TcpConnStr);
         }
+
+        public static bool IsUsingManagedSNI() => (bool)s_useManagedSNI.GetValue(null);
 
         // the name length will be no more then (16 + prefix.Length + escapeLeft.Length + escapeRight.Length)
         // some providers does not support names (Oracle supports up to 30)

@@ -36,7 +36,7 @@ namespace System.Data.SqlClient.Tests
         public static void NonAzureNoProtocolConnectionTest()
         {
             builder.DataSource = InvalidHostname;
-            CheckConnectionFailure(builder.ConnectionString, null); // Managed and Native SNI have different default protocols for plain server names
+            CheckConnectionFailure(builder.ConnectionString, ManualTesting.Tests.DataTestUtility.IsUsingManagedSNI() ? TCP : NP);
         }
 
         [Fact]
