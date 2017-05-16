@@ -960,7 +960,7 @@ public:
     void instGen_Return(unsigned stkArgSize);
 
 #ifdef _TARGET_ARM64_
-    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_SY);
+    void instGen_MemoryBarrier(insBarrier barrierType = INS_BARRIER_ISH);
 #else
     void instGen_MemoryBarrier();
 #endif
