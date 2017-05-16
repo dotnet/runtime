@@ -175,6 +175,7 @@ namespace System.Reflection.Tests
             Assert.True(false, "Expected to find ComVisibleAttribute");
         }
 
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19852")]
         [Fact]
         public void TestEquality_Multiple()
         {
