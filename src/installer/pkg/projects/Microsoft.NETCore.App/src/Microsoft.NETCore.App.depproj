@@ -207,15 +207,11 @@
     <Exec Command="chmod u+x $(_crossGenPath)"
           Condition="'$(OSGroup)' != 'Windows_NT'" />
     <ItemGroup>
-      <_filesToCrossGen Include="@(FilesToPackage)" 
+      <_filesToCrossGen Include="@(FilesToPackage)"
                         Condition="'%(FilesToPackage.IsNative)' != 'true' AND '%(FileName)' != 'System.Private.CoreLib' AND '%(FileName)' != 'mscorlib' AND '%(Extension)' == '.dll'">
         <CrossGenedDirectory>$(CrossGenOutputPath)/%(TargetPath)/</CrossGenedDirectory>
         <CrossGenedPath>$(CrossGenOutputPath)/%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
-        
-        <!-- Note on non-Windows this path isn't accurate because crossgen inserts the hash of the crossgen'd image
-             into the symbol's file name. So incremental build won't work correctly on non-Windows.
-        -->
-        <CrossGenSymbolPath>$(CrossGenSymbolsOutputPath)/%(TargetPath)/%(FileName)$(CrossGenSymbolExtension)</CrossGenSymbolPath>
+        <CrossGenSymbolSemaphorePath>$(_crossGenIntermediatePath)/%(FileName).symbol.semaphore</CrossGenSymbolSemaphorePath>
       </_filesToCrossGen>
 
       <FilesToPackage Remove="@(_filesToCrossGen)" />
@@ -270,12 +266,12 @@
           Condition="'$(CrossGenSymbolExtension)' != ''"
           DependsOnTargets="CreateCrossGenImages"
           Inputs="%(_filesToCrossGen.CrossGenedPath)"
-          Outputs="%(_filesToCrossGen.CrossGenSymbolPath)">
+          Outputs="%(_filesToCrossGen.CrossGenSymbolSemaphorePath)">
     <PropertyGroup>
       <_crossGenSymbolsResponseFile>$(_crossGenIntermediatePath)/%(_filesToCrossGen.FileName).symbols.rsp</_crossGenSymbolsResponseFile>
       <_crossGenSymbolsOptionName Condition="'$(OS)' == 'Windows_NT'">CreatePDB</_crossGenSymbolsOptionName>
       <_crossGenSymbolsOptionName Condition="'$(_crossGenSymbolsOptionName)' == ''">CreatePerfMap</_crossGenSymbolsOptionName>
-      <_crossGenSymbolsOutputDirectory>$([System.IO.Path]::GetDirectoryName('%(_filesToCrossGen.CrossGenSymbolPath)'))</_crossGenSymbolsOutputDirectory>
+      <_crossGenSymbolsOutputDirectory>$(CrossGenSymbolsOutputPath)/%(_filesToCrossGen.TargetPath)</_crossGenSymbolsOutputDirectory>
     </PropertyGroup>
     
     <ItemGroup>
@@ -291,11 +287,17 @@
     <MakeDir Directories="$(_crossGenSymbolsOutputDirectory)" />
     
     <Exec Command="$(_crossGenPath) @$(_crossGenSymbolsResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
+
+    <Touch Files="%(_filesToCrossGen.CrossGenSymbolSemaphorePath)" AlwaysCreate="true" />
   </Target>
 
+  <!--
+    Note this target should not build anything since it will run during packaging, so it
+    cannot depend on CreateCrossGenSymbols.  It assumes that this project has already
+    gotten "Build" called on it to generate the symbol files.
+  -->
   <Target Name="GetCrossGenSymbolsFiles"
-          Condition="'$(CrossGenSymbolExtension)' != ''"
-          DependsOnTargets="CreateCrossGenSymbols">
+          Condition="'$(CrossGenSymbolExtension)' != ''">
     <ItemGroup>
       <FilesToPackage Include="$(CrossGenSymbolsOutputPath)/**/*$(CrossGenSymbolExtension)">
         <IsSymbolFile>true</IsSymbolFile>
