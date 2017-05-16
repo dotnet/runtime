@@ -16,6 +16,8 @@ namespace System.Net.WebSockets
             TimeSpan keepAliveInterval,
             ArraySegment<byte>? internalBuffer = null)
         {
+            ValidateOptions(subProtocol, receiveBufferSize, MinSendBufferSize, keepAliveInterval);
+
             // get property will create a new response if one doesn't exist.
             HttpListenerResponse response = context.Response;
             HttpListenerRequest request = context.Request;
@@ -75,45 +77,7 @@ namespace System.Net.WebSockets
             return webSocketContext;
         }
 
-        private static void ValidateWebSocketHeaders(HttpListenerContext context)
-        {
-            if (!context.Request.IsWebSocketRequest)
-            {
-                throw new WebSocketException(WebSocketError.NotAWebSocket,
-                    SR.Format(SR.net_WebSockets_AcceptNotAWebSocket,
-                    nameof(ValidateWebSocketHeaders),
-                    HttpKnownHeaderNames.Connection,
-                    HttpKnownHeaderNames.Upgrade,
-                    HttpWebSocket.WebSocketUpgradeToken,
-                    context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
-            }
-
-            string secWebSocketVersion = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
-            if (string.IsNullOrEmpty(secWebSocketVersion))
-            {
-                throw new WebSocketException(WebSocketError.HeaderError,
-                    SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
-                    nameof(ValidateWebSocketHeaders),
-                    HttpKnownHeaderNames.SecWebSocketVersion));
-            }
-
-            if (!string.Equals(secWebSocketVersion, SupportedVersion))
-            {
-                throw new WebSocketException(WebSocketError.UnsupportedVersion,
-                    SR.Format(SR.net_WebSockets_AcceptUnsupportedWebSocketVersion,
-                    nameof(ValidateWebSocketHeaders),
-                    secWebSocketVersion,
-                    SupportedVersion));
-            }
-
-            if (string.IsNullOrWhiteSpace(context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey]))
-            {
-                throw new WebSocketException(WebSocketError.HeaderError,
-                    SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
-                    nameof(ValidateWebSocketHeaders),
-                    HttpKnownHeaderNames.SecWebSocketKey));
-            }
-        }
+        private const bool WebSocketsSupported = true;
     }
 }
 
