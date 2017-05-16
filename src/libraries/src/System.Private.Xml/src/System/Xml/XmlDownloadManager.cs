@@ -18,8 +18,6 @@ namespace System.Xml
     //
     internal partial class XmlDownloadManager
     {
-        private Hashtable _connections;
-
         internal Stream GetStream(Uri uri, ICredentials credentials, IWebProxy proxy,
             RequestCachePolicy cachePolicy)
         {
@@ -36,22 +34,28 @@ namespace System.Xml
         private Stream GetNonFileStream(Uri uri, ICredentials credentials, IWebProxy proxy,
             RequestCachePolicy cachePolicy)
         {
-            HttpClient client = new HttpClient();
-            HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, uri);
-
-            lock (this)
+            WebRequest req = WebRequest.Create(uri);
+            if (credentials != null)
             {
-                if (_connections == null)
-                {
-                    _connections = new Hashtable();
-                }
+                req.Credentials = credentials;
+            }
+            if (proxy != null)
+            {
+                req.Proxy = proxy;
+            }
+            if (cachePolicy != null)
+            {
+                req.CachePolicy = cachePolicy;
             }
 
-            HttpResponseMessage resp = client.SendAsync(req).GetAwaiter().GetResult();
-
-            Stream respStream = new MemoryStream();
-            resp.Content.CopyToAsync(respStream);
-            return respStream;
+            using (WebResponse resp = req.GetResponse())
+            using (Stream respStream = resp.GetResponseStream())
+            {
+                var result = new MemoryStream();
+                respStream.CopyTo(result);
+                result.Position = 0;
+                return result;
+            }
         }
     }
 }

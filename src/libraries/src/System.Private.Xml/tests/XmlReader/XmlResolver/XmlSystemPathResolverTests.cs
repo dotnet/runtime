@@ -86,16 +86,8 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap |    //[ActiveIssue(13121)]  // Access to path is denied in UWP
-        TargetFrameworkMonikers.NetFramework)]    //[ActiveIssue(19806)] // Full framework uses WebRequest instead of HttpRequest
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]    //[ActiveIssue(13121)]  // Access to path is denied in UWP
         public static void TestResolveInvalidPath()
-        {
-            Assert.Throws<System.ArgumentException>(() => XmlReader.Create("ftp://www.bing.com")); // Only 'http' and 'https' schemes are allowed.
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // Full framework uses WebRequest instead of HttpRequest
-        public static void TestResolveInvalidPath_FullFramework()
         {
             Assert.Throws<System.Net.WebException>(() => XmlReader.Create("ftp://www.bing.com"));
         }
