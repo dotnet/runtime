@@ -7,7 +7,7 @@
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
 
   <Target Name="Build"
-          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishFinalOutput" />
+          DependsOnTargets="PublishToAzure;PublishDebFilesToDebianRepo;PublishDebToolPackageToFeed;PublishFinalOutput" />
   
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
@@ -141,8 +141,8 @@
     
     <Message Text="Pushing CoreHost packages to $(NuGetFeedUrl)" />
     <PropertyGroup>
-      <NuGetPushCommand>$(DnuRestorePrefix)$(DotnetToolCommand) nuget push --source $(NuGetFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
-      <NuGetPushSymbolsCommand>$(DnuRestorePrefix)$(DotnetToolCommand) nuget push --source $(NuGetSymbolsFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
+      <NuGetPushCommand>$(DotnetToolCommand) nuget push --source $(NuGetFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
+      <NuGetPushSymbolsCommand>$(DotnetToolCommand) nuget push --source $(NuGetSymbolsFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
     </PropertyGroup>
 
       <!-- ToDo: look at moving this to an msbuild task so that we can include retry logic, parallelize it, and hide the api key -->
@@ -150,6 +150,19 @@
 
     <Message Condition="'@(_DownloadedSymbolsPackages)' != ''" Text="Pushing CoreHost symbols packages to $(NuGetSymbolsFeedUrl)" />
     <Exec Condition="'@(_DownloadedSymbolsPackages)' != ''" Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)" />
+  </Target>
+  
+  <Target Name="PublishDebToolPackageToFeed"
+          Condition="'$(PublishDebToolToFeed)' == 'true'">
+    <Error Condition="'$(CliNuGetFeedUrl)' ==''" Text="Missing required property CliNuGetFeedUrl" />
+    <Error Condition="'$(CliNuGetApiKey)' == ''" Text="Missing required property CliNuGetApiKey" />
+    <ItemGroup>
+      <DebToolPackages Include="$(PackagesOutDir)/dotnet-deb-tool.*.nupkg" />
+    </ItemGroup>
+    <PropertyGroup>
+      <NuGetPushCommand>$(DotnetToolCommand) nuget push --source $(CliNuGetFeedUrl) --api-key $(CliNuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
+    </PropertyGroup>
+    <Exec Command="$(NuGetPushCommand) %(DebToolPackages.Identity)" />
   </Target>
   
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
