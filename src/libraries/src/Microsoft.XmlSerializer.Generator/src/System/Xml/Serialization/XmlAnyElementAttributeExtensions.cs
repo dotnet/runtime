@@ -19,7 +19,7 @@ namespace Microsoft.XmlSerializer.Generator
         {
             if(s_NamespaceSpecifiedPropertyInfo == null)
             {
-                s_NamespaceSpecifiedPropertyInfo = typeof(XmlAnyElementAttribute).GetType().GetProperty("NamespaceSpecified", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_NamespaceSpecifiedPropertyInfo = typeof(XmlAnyElementAttribute).GetProperty("NamespaceSpecified", BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
             return (bool)s_NamespaceSpecifiedPropertyInfo.GetValue(xmlAnyElementAtt);
