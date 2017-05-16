@@ -92,26 +92,6 @@
     <Compile Include="Mono.Linker\XApiReader.cs" />
     <Compile Include="Mono.Linker.Steps\TypeMapStep.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(DoNotEmbedDescriptors)' == '' AND ! $(NetCoreBuild) ">
-    <EmbeddedResource Include="Descriptors\mscorlib.xml">
-      <LogicalName>mscorlib.xml</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Descriptors\System.Web.xml">
-      <LogicalName>System.web.xml</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Descriptors\System.xml">
-      <LogicalName>System.xml</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Descriptors\Mono.Posix.xml">
-      <LogicalName>Mono.Posix.xml</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Descriptors\System.Drawing.xml">
-      <LogicalName>System.Drawing.xml</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Descriptors\System.Core.xml">
-      <LogicalName>System.Core.xml</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="README" />
