@@ -9,38 +9,38 @@ namespace Functions
 {
     public static partial class MathTests
     {
-        // Tests Math.Abs(single) over 5000 iterations for the domain -1, +1
+        // Tests MathF.Ceiling(float) over 5000 iterations for the domain -1, +1
 
-        private const float absSingleDelta = 0.0004f;
-        private const float absSingleExpectedResult = 2500.03125f;
+        private const float ceilingSingleDelta = 0.0004f;
+        private const float ceilingSingleExpectedResult = 2502.0f;
 
         [Benchmark]
-        public static void AbsSingleBenchmark()
+        public static void CeilingSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    AbsSingleTest();
+                    CeilingSingleTest();
                 }
             }
         }
 
-        public static void AbsSingleTest()
+        public static void CeilingSingleTest()
         {
             var result = 0.0f; var value = -1.0f;
 
             for (var iteration = 0; iteration < iterations; iteration++)
             {
-                value += absSingleDelta;
-                result += Math.Abs(value);
+                value += ceilingSingleDelta;
+                result += MathF.Ceiling(value);
             }
 
-            var diff = Math.Abs(absSingleExpectedResult - result);
+            var diff = MathF.Abs(ceilingSingleExpectedResult - result);
 
             if (diff > singleEpsilon)
             {
-                throw new Exception($"Expected Result {absSingleExpectedResult,10:g9}; Actual Result {result,10:g9}");
+                throw new Exception($"Expected Result {ceilingSingleExpectedResult,10:g9}; Actual Result {result,10:g9}");
             }
         }
     }
