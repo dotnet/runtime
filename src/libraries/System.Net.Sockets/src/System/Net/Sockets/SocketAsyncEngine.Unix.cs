@@ -48,7 +48,7 @@ namespace System.Net.Sockets
 
         private const int EventBufferCount =
 #if DEBUG
-            64;
+            32;
 #else
             1024;
 #endif
