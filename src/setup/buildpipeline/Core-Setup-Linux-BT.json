@@ -820,7 +820,7 @@
       "value": "/flp:v=diag /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:OSGroup=Linux"
     },
     "CommonMSBuildPublishArgs": {
-      "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) $(PB_DebianKeys)"
+      "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) $(PB_DebianKeys)"
     },
     "PB_DebianKeys": {
       "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64)"
