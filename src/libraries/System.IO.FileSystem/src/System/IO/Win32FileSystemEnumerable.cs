@@ -112,6 +112,7 @@ namespace System.IO
         private readonly string _fullPath;
         private readonly string _normalizedSearchPath;
         private readonly uint _oldMode;
+        private readonly bool _setBackOldMode;
 
         [SecuritySafeCritical]
         internal Win32FileSystemEnumerableIterator(string path, string originalUserPath, string searchPattern, SearchOption searchOption, SearchResultHandler<TSource> resultHandler)
@@ -122,7 +123,7 @@ namespace System.IO
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
             Debug.Assert(resultHandler != null);
 
-            _oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+            _setBackOldMode = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out _oldMode);
 
             string normalizedSearchPattern = PathHelpers.NormalizeSearchPattern(searchPattern);
 
@@ -251,7 +252,11 @@ namespace System.IO
             }
             finally
             {
-                Interop.Kernel32.SetErrorMode(_oldMode);
+                if (_setBackOldMode)
+                {
+                    uint _ignore;
+                    Interop.Kernel32.SetThreadErrorMode(_oldMode, out _ignore);
+                }
                 base.Dispose(disposing);
             }
         }
