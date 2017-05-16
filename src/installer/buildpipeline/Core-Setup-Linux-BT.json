@@ -293,7 +293,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1404) $(CommonMSBuildArguments) $(CommonMSBuildPublishArgs)",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1404) /p:PublishDebToolToFeed=true /p:CliNuGetFeedUrl=$(CLI_NUGET_FEED_URL) /p:CliNuGetApiKey=$(CLI_NUGET_API_KEY) $(CommonMSBuildArguments) $(CommonMSBuildPublishArgs)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -874,10 +874,14 @@
       "value": "--name $(PB_DockerContainerName)$(DockerTag_Debian8) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Debian8)"
     },
     "CLI_NUGET_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
+      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v2/package"
     },
     "CLI_NUGET_SYMBOLS_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
+      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/symbols/api/v2/package"
+    },
+    "CliNuGetApiKey": {
+      "value": null,
+      "isSecret": true
     }
   },
   "demands": [
