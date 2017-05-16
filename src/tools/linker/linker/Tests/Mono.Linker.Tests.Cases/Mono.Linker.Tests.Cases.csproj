@@ -96,6 +96,7 @@
     <Compile Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.cs" />
+    <Compile Include="LinkXml\UnusedTypeIsPresservedWhenEntireAssemblyIsPreserved.cs" />
     <Compile Include="LinkXml\UnusedTypePreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithPreserveAllHasAllMembersPreserved.cs" />
     <Compile Include="LinkXml\UnusedTypeWithPreserveFieldsHasMethodsRemoved.cs" />
@@ -128,6 +129,7 @@
     <Content Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedPropertyPreservedByLinkXmlIsKept.xml" />
+    <Content Include="LinkXml\UnusedTypeIsPresservedWhenEntireAssemblyIsPreserved.xml" />
     <Content Include="LinkXml\UnusedTypePreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveAllHasAllMembersPreserved.xml" />
     <Content Include="LinkXml\UnusedTypeWithPreserveFieldsHasMethodsRemoved.xml" />
