@@ -399,6 +399,7 @@ typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, v
 typedef void (* fq_walk_fn)(bool, void*);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
+typedef bool (* async_pin_enum_fn)(Object* object, void* context);
 
 // Opaque type for tracking object pointers
 #ifndef DACCESS_COMPILE
@@ -425,6 +426,10 @@ public:
     virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo) = 0;
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) = 0;
+
+    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget) = 0;
+
+    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context) = 0;
 
     virtual ~IGCHandleStore() {};
 };

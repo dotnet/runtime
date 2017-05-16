@@ -23,6 +23,10 @@ public:
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
 
+    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget);
+
+    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context);
+
     virtual ~GCHandleStore();
 
     HandleTableBucket _underlyingBucket;
