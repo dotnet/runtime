@@ -1384,8 +1384,8 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
     if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
 #ifdef _TARGET_ARM64_
-        // issue a INS_BARRIER_LD after a volatile CpBlk operation
-        instGen_MemoryBarrier(INS_BARRIER_LD);
+        // issue a INS_BARRIER_ISHLD after a volatile CpBlk operation
+        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
 #else
         // issue a full memory barrier after a volatile CpBlk operation
         instGen_MemoryBarrier();
