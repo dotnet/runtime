@@ -87,10 +87,34 @@ namespace System.Xml.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap |    //[ActiveIssue(13121)]  // Access to path is denied in UWP
-        TargetFrameworkMonikers.NetFramework)]    // Full framework uses XmlUrlResolver instead of SystemPathResolver (which doesn't allow access to this path)
+        TargetFrameworkMonikers.NetFramework)]    //[ActiveIssue(19806)] // Full framework uses WebRequest instead of HttpRequest
         public static void TestResolveInvalidPath()
         {
-            AssertInvalidPath("ftp://www.bing.com");
+            Assert.Throws<System.ArgumentException>(() => XmlReader.Create("ftp://www.bing.com")); // Only 'http' and 'https' schemes are allowed.
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // Full framework uses WebRequest instead of HttpRequest
+        public static void TestResolveInvalidPath_FullFramework()
+        {
+            Assert.Throws<System.Net.WebException>(() => XmlReader.Create("ftp://www.bing.com"));
+        }
+
+        [Fact]
+        public static void TestResolveDTD_Default()
+        {
+            XmlReaderSettings settings = new XmlReaderSettings();
+            XmlReader reader = XmlReader.Create("TestFiles/ResolveDTD_1.xml", settings);
+            Assert.Throws<XmlException>(() => reader.ReadToDescendant("baz")); // For security reasons DTD is prohibited in this XML document.
+        }
+
+        [Fact]
+        public static void TestResolveDTD_AllowDTDProcessing()
+        {
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.DtdProcessing = DtdProcessing.Parse;
+            XmlReader reader = XmlReader.Create("TestFiles/ResolveDTD_1.xml", settings);
+            reader.ReadToDescendant("baz");
         }
     }
 }
