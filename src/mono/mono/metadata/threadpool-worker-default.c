@@ -118,7 +118,11 @@ typedef union {
 		gint16 parked; /* parked */
 	} _;
 	gint64 as_gint64;
-} ThreadPoolWorkerCounter;
+} ThreadPoolWorkerCounter
+#ifdef __GNUC__
+__attribute__((aligned(64)))
+#endif
+;
 
 typedef struct {
 	MonoRefCount ref;
