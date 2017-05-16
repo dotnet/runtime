@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<linker>
-	<assembly fullname="System.Core">
-		<type fullname="System.Runtime.CompilerServices.CallSiteOps" preserve="methods" feature="dynamic" />
-	</assembly>
-</linker>
