@@ -1286,9 +1286,9 @@ uint32_t HndCountAllHandles(BOOL fUseLocks)
     return uCount;
 }
 
-#ifndef FEATURE_REDHAWK
-BOOL  Ref_HandleAsyncPinHandles()
+BOOL  Ref_HandleAsyncPinHandles(async_pin_enum_fn asyncPinCallback, void* context)
 {
+#ifndef FEATURE_REDHAWK
     CONTRACTL
     {
         NOTHROW;
@@ -1297,22 +1297,27 @@ BOOL  Ref_HandleAsyncPinHandles()
     }
     CONTRACTL_END;
 
+    AsyncPinCallbackContext callbackCtx(asyncPinCallback, context);
     HandleTableBucket *pBucket = g_HandleTableMap.pBuckets[0];
     BOOL result = FALSE;
     int limit = getNumberOfSlots();
     for (int n = 0; n < limit; n ++ )
     {
-        if (TableHandleAsyncPinHandles(Table(pBucket->pTable[n])))
+        if (TableHandleAsyncPinHandles(Table(pBucket->pTable[n]), callbackCtx))
         {
             result = TRUE;
         }
     }
 
     return result;
+#else
+    return true;
+#endif // !FEATURE_REDHAWK
 }
 
 void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket *pTarget)
 {
+#ifndef FEATURE_REDHAWK
     CONTRACTL
     {
         NOTHROW;
@@ -1325,8 +1330,8 @@ void  Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket 
     {
         TableRelocateAsyncPinHandles(Table(pSource->pTable[n]), Table(pTarget->pTable[n]));
     }
-}
 #endif // !FEATURE_REDHAWK
+}
 
 /*--------------------------------------------------------------------------*/
 
