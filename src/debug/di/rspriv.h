@@ -1607,8 +1607,8 @@ public:
 
 // IUnknown interface
     virtual COM_METHOD QueryInterface(REFIID riid, VOID** ppInterface);
-    virtual ULONG __stdcall AddRef();
-    virtual ULONG __stdcall Release();
+    virtual ULONG STDMETHODCALLTYPE AddRef();
+    virtual ULONG STDMETHODCALLTYPE Release();
 
 // ICorDebugEnum interface
     virtual COM_METHOD Clone(ICorDebugEnum **ppEnum);
