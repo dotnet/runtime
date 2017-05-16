@@ -40,10 +40,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			var compiler = _factory.CreateCompiler ();
 			var sourceFiles = sandbox.SourceFiles.Select(s => s.ToString()).ToArray();
 
-			var references = metadataProvider.GetReferencedAssemblies ().Concat (sandbox.InputDirectoryReferences.Select (r => r.ToString ())).ToArray ();
+			var references = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory);
 			var inputAssemblyPath = compiler.CompileTestIn (sandbox.InputDirectory, sourceFiles, references, null);
 
-			references = metadataProvider.GetReferencedAssemblies ().Concat (sandbox.ExpectationsDirectoryReferences.Select (r => r.ToString ())).ToArray ();
+			references = metadataProvider.GetReferencedAssemblies(sandbox.ExpectationsDirectory);
 			var expectationsAssemblyPath = compiler.CompileTestIn (sandbox.ExpectationsDirectory, sourceFiles, references, new [] { "INCLUDE_EXPECTATIONS" });
 			return new ManagedCompilationResult (inputAssemblyPath, expectationsAssemblyPath);
 		}

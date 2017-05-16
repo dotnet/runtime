@@ -47,14 +47,6 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			get { return _directory.Files ("*.cs"); }
 		}
 
-		public IEnumerable<NPath> InputDirectoryReferences {
-			get { return InputDirectory.Files ("*.dll"); }
-		}
-
-		public IEnumerable<NPath> ExpectationsDirectoryReferences {
-			get { return ExpectationsDirectory.Files ("*.dll"); }
-		}
-
 		public IEnumerable<NPath> LinkXmlFiles {
 			get { return InputDirectory.Files ("*.xml"); }
 		}
@@ -66,18 +58,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (_testCase.HasLinkXmlFile)
 				_testCase.LinkXmlFile.Copy (InputDirectory);
 
-			GetExpectationsAssemblyPath ().Copy (InputDirectory);
+			CopyToInputAndExpectations (GetExpectationsAssemblyPath ());
 
 			foreach (var dep in metadataProvider.AdditionalFilesToSandbox ()) {
 				dep.FileMustExist ().Copy (_directory);
 			}
-
-			InputDirectoryReferences.Copy (ExpectationsDirectory);
 		}
 
 		private static NPath GetExpectationsAssemblyPath ()
 		{
 			return new Uri (typeof (KeptAttribute).Assembly.CodeBase).LocalPath.ToNPath ();
+		}
+
+		protected void CopyToInputAndExpectations (NPath source)
+		{
+			source.Copy (InputDirectory);
+			source.Copy (ExpectationsDirectory);
 		}
 	}
 }
