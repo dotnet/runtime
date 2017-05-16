@@ -22,6 +22,8 @@
 //     true.
 
 // clang-format off
+//                 enumName                      stringName                        shortName hasChildren measureIR
+//                                                                                                   parent
 CompPhaseNameMacro(PHASE_PRE_IMPORT,             "Pre-import",                     "PRE-IMP",  false, -1, false)
 CompPhaseNameMacro(PHASE_IMPORTATION,            "Importation",                    "IMPORT",   false, -1, true)
 CompPhaseNameMacro(PHASE_POST_IMPORT,            "Post-import",                    "POST-IMP", false, -1, false)

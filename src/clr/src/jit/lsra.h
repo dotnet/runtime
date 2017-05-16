@@ -121,7 +121,7 @@ inline bool RefTypeIsDef(RefType refType)
     return ((refType & RefTypeDef) == RefTypeDef);
 }
 
-typedef regNumber* VarToRegMap;
+typedef regNumberSmall* VarToRegMap;
 
 template <typename ElementType, CompMemKind MemKind>
 class ListElementAllocator
@@ -854,6 +854,7 @@ private:
     Interval* getIntervalForLocalVar(unsigned varIndex)
     {
         assert(varIndex < compiler->lvaTrackedCount);
+        assert(localVarIntervals[varIndex] != nullptr);
         return localVarIntervals[varIndex];
     }
 
@@ -958,6 +959,7 @@ private:
     void setOutVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
     VarToRegMap getInVarToRegMap(unsigned int bbNum);
     VarToRegMap getOutVarToRegMap(unsigned int bbNum);
+    void setVarReg(VarToRegMap map, unsigned int trackedVarIndex, regNumber reg);
     regNumber getVarReg(VarToRegMap map, unsigned int trackedVarIndex);
     // Initialize the incoming VarToRegMap to the given map values (generally a predecessor of
     // the block)
@@ -1073,6 +1075,7 @@ private:
         LSRA_STAT_SPILL, LSRA_STAT_COPY_REG, LSRA_STAT_RESOLUTION_MOV, LSRA_STAT_SPLIT_EDGE,
     };
 
+    unsigned regCandidateVarCount;
     void updateLsraStat(LsraStat stat, unsigned currentBBNum);
 
     void dumpLsraStats(FILE* file);
@@ -1162,6 +1165,9 @@ private:
     // True if the method contains any critical edges.
     bool hasCriticalEdges;
 
+    // True if there are any register candidate lclVars available for allocation.
+    bool enregisterLocalVars;
+
     // Ordered list of RefPositions
     RefPositionList refPositions;
 
@@ -1177,8 +1183,10 @@ private:
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
 
-    // Current set of live tracked vars, used during building of RefPositions to determine whether
-    // to preference to callee-save
+    // The set of all register candidates. Note that this may be a subset of tracked vars.
+    VARSET_TP registerCandidateVars;
+    // Current set of live register candidate vars, used during building of RefPositions to determine
+    // whether to preference to callee-save.
     VARSET_TP currentLiveVars;
     // Set of variables that may require resolution across an edge.
     // This is first constructed during interval building, to contain all the lclVars that are live at BB edges.
