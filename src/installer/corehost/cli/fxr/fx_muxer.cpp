@@ -589,10 +589,10 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
     trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
     if (pal::directory_exists(sdk_path))
     {
-        retval = sdk_path;
+        retval = max_ver_str;
     }
 
-    trace::verbose(_X("Resolved SDK dir is [%s]"), retval.c_str());
+    trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
     return retval;
 }
 
@@ -661,25 +661,23 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
 
     pal::string_t retval;
     bool cli_version_specified = false;
-    bool cli_version_found = false;
     pal::string_t cli_version;
 
     for (pal::string_t dir : hive_dir)
     {
         trace::verbose(_X("Searching SDK directory in [%s]"), dir.c_str());
+        pal::string_t sdk_path = dir;
+        append_path(&sdk_path, _X("sdk"));
         if (!global.empty())
         {
             cli_version = resolve_cli_version(global);
             if (!cli_version.empty())
             {
                 cli_version_specified = true;
-                pal::string_t sdk_path = dir;
-                append_path(&sdk_path, _X("sdk"));
                 append_path(&sdk_path, cli_version.c_str());
 
                 if (pal::directory_exists(sdk_path))
                 {
-                    cli_version_found = true;
                     trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
                     retval = sdk_path;
                 }
@@ -691,9 +689,9 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         }
         if (retval.empty() && !cli_version_specified)
         {
-            pal::string_t sdk_path = dir;
-            append_path(&sdk_path, _X("sdk"));
-            retval = resolve_sdk_version(sdk_path);
+            cli_version = resolve_sdk_version(sdk_path);
+            append_path(&sdk_path, cli_version.c_str());
+            retval = sdk_path;
         }
         if (!retval.empty())
         {
