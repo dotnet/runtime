@@ -271,6 +271,8 @@ void *mono_mmap_open_file (MonoString *path, int mode, MonoString *mapName, gint
 	result = open_handle (hFile, mapName, mode, capacity, access, options, error);
 
 done:
+	if (hFile != INVALID_HANDLE_VALUE)
+		CloseHandle (hFile);
 	if (!result && delete_on_error)
 		DeleteFileW (w_path);
 	if (w_path)
