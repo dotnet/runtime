@@ -2012,7 +2012,7 @@ combinedScenarios.each { scenario ->
 
                                     // Copy the Windows test binaries and the Corefx build binaries
                                     copyArtifacts(WindowTestsName) {
-                                        excludePatterns('**/testResults.xml', '**/*.ni.dll')
+                                        includePatterns('bin/tests/tests.zip')
                                         buildSelector {
                                             latestSuccessful(true)
                                         }
