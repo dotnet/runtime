@@ -18,7 +18,7 @@
 
 
 // This typedef is for a function which will create a new instance of an object.
-typedef HRESULT (__stdcall * PFN_CREATE_OBJ)(REFIID riid, void **ppvObject);
+typedef HRESULT (STDMETHODCALLTYPE * PFN_CREATE_OBJ)(REFIID riid, void **ppvObject);
 
 
 //*****************************************************************************

@@ -40,7 +40,7 @@ int CeeGenTokenMapper::IndexForType(mdToken tk)
 // This value is recorded in the m_rgMap array based on type and rid of the
 // from token value.
 //*****************************************************************************
-HRESULT __stdcall CeeGenTokenMapper::Map(
+HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::Map(
     mdToken     tkFrom, 
     mdToken     tkTo)
 {
@@ -144,7 +144,7 @@ HRESULT CeeGenTokenMapper::GetMetaData(
 }
 
 
-HRESULT __stdcall CeeGenTokenMapper::QueryInterface(REFIID iid, PVOID *ppIUnk)
+HRESULT STDMETHODCALLTYPE CeeGenTokenMapper::QueryInterface(REFIID iid, PVOID *ppIUnk)
 {
     if (iid == IID_IUnknown || iid == IID_IMapToken)
         *ppIUnk = static_cast<IMapToken*>(this);
