@@ -276,7 +276,6 @@ void Lowering::LowerCast(GenTree* tree)
     // Case of src is a small type and dst is a floating point type.
     if (varTypeIsSmall(srcType) && varTypeIsFloating(dstType))
     {
-        NYI_ARM("Lowering for cast from small type to float"); // Not tested yet.
         // These conversions can never be overflow detecting ones.
         noway_assert(!tree->gtOverflow());
         tmpType = TYP_INT;
