@@ -20,7 +20,7 @@ namespace Microsoft.XmlSerializer.Generator
         {
             if(s_IsNullableSpecifiedPropertyInfo == null)
             {
-                s_IsNullableSpecifiedPropertyInfo = typeof(XmlElementAttribute).GetType().GetProperty("IsNullableSpecified", BindingFlags.NonPublic | BindingFlags.Instance);
+                s_IsNullableSpecifiedPropertyInfo = typeof(XmlElementAttribute).GetProperty("IsNullableSpecified", BindingFlags.NonPublic | BindingFlags.Instance);
             }
 
             return (bool)s_IsNullableSpecifiedPropertyInfo.GetValue(xmlElementAtt);
