@@ -81,6 +81,8 @@
       <templateSvg>$(ProjectDir)resources/images/version_badge.svg</templateSvg>
     </PropertyGroup>
 
+    <MakeDir  Condition="!Exists('$(BaseOutputRootPath)')" Directories="$(BaseOutputRootPath)" />
+    
     <WriteLinesToFile
       File="$(OutputVersionBadge)"
       Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(ProductVersion)'))"
@@ -88,7 +90,7 @@
                       />
   </Target>
   
-  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" />
+  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" Condition="'$(UsePrebuiltPortableBinaries)' == 'false'"/>
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="GenerateZip"
@@ -156,9 +158,9 @@
      GenerateDebs;
    </InstallerDependsOn>
   </PropertyGroup>
-  <Target Name="GenerateInstallers" DependsOnTargets="$(InstallerDependsOn)" />
+  <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
 
-  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage">
+  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinaries)' == 'false'">
     <ItemGroup>
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />

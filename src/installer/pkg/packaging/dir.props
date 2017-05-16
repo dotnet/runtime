@@ -4,6 +4,9 @@
 
   <PropertyGroup>
     <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
+
+    <!-- Package prebuilt binaries -->
+    <UsingPrebuiltPortableBinariesForInstallers>false</UsingPrebuiltPortableBinariesForInstallers>
     
     <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
     <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
