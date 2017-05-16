@@ -4,8 +4,13 @@
 
   <PropertyGroup>
     <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
+    <ChecksumContainerName Condition="'$(ChecksumContainerName)' == ''">dotnet</ChecksumContainerName>
     <BaseUrl Condition="'$(BaseUrl)' == ''">https://dotnetcli.blob.core.windows.net/</BaseUrl>
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
+    <BinariesRelativePath>$(Channel)/Binaries/$(SharedFrameworkNugetVersion)</BinariesRelativePath>
+    <InstallersRelativePath>$(Channel)/Installers/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
+    <ChecksumsRelativePath>Runtime/$(ProductVersion)</ChecksumsRelativePath>
+    <ChecksumExtension>.sha512<ChecksumExtension>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -14,13 +19,27 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(InstallerExtension)" />
-    <InstallerFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CombinedInstallerExtension)" />
-    <CompressedFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion)$(CompressedFileExtension)" />
-    <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).nupkg" />
-    <RuntimePackageFile Include="$(PackagesOutDir)runtime.*$(SharedFrameworkNuGetVersion).symbols.nupkg" />
-    <RidAgnosticPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).nupkg" Exclude="@(RuntimePackageFile)" />
-    <RidAgnosticPackageFile Include="$(PackagesOutDir)*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" />
+    <CompressedFile Include="$(PackagesOutDir)**/*$(CompressedFileExtension)">
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </CompressedFile>
+    <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.nupkg" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </RuntimePackageFile>
+    <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.symbols.nupkg" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </RuntimePackageFile>
+    <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </RidAgnosticPackageFile>
+    <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </RidAgnosticPackageFile>
+    <InstallerFile Include="$(PackagesOutDir)**/*$(InstallerExtension)" >
+      <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
+    </InstallerFile>
+    <InstallerFile Include="$(PackagesOutDir)**/*$(CombinedInstallerExtension)" >
+      <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
+    </InstallerFile>
   </ItemGroup>
 
   <ItemGroup>
