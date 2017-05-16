@@ -9,6 +9,7 @@ using Xunit;
 public partial class ThreadPoolBoundHandleTests
 {
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void FreeNativeOverlapped_NullAsNativeOverlapped_ThrowsArgumentNullException()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -21,6 +22,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void FreeNativeOverlapped_WhenDisposed_DoesNotThrow()
     {
         ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle();
@@ -30,6 +32,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void FreeNativeOverlapped_WithWrongHandle_ThrowsArgumentException()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())

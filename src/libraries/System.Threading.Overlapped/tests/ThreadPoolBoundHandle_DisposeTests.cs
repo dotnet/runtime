@@ -8,6 +8,7 @@ using Xunit;
 public partial class ThreadPoolBoundHandleTests
 {
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle();
@@ -17,6 +18,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void Dispose_DoesNotDisposeHandle()
     {
         ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle();
@@ -29,6 +31,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void Dispose_WithoutFreeingNativeOverlapped_DoesNotThrow()
     {
         ThreadPoolBoundHandle boundHandle = CreateThreadPoolBoundHandle();
