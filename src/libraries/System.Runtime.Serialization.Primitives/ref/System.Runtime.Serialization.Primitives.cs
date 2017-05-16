@@ -72,7 +72,6 @@ namespace System.Runtime.Serialization
     {
         public IgnoreDataMemberAttribute() { }
     }
-    [Serializable]
     public partial class InvalidDataContractException : System.Exception
     {
         public InvalidDataContractException() { }

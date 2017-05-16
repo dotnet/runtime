@@ -7,7 +7,6 @@ using System.Diagnostics;
 
 namespace System.Data.Common
 {
-    [Serializable] // MDAC 83147
     internal sealed class NameValuePermission : IComparable
     {
         // reused as both key and value nodes

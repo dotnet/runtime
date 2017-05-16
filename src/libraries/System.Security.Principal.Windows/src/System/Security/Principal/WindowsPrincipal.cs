@@ -24,7 +24,6 @@ namespace System.Security.Principal
         Replicator = 0x228
     }
 
-    [Serializable]
     public class WindowsPrincipal : ClaimsPrincipal
     {
         private WindowsIdentity _identity = null;

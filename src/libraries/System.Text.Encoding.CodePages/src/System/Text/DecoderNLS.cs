@@ -21,7 +21,6 @@ namespace System.Text
     // class are typically obtained through calls to the GetDecoder method
     // of Encoding objects.
     //
-    [Serializable]
     internal class DecoderNLS : Decoder, ISerializable
     {
         // Remember our encoding
@@ -53,7 +52,6 @@ namespace System.Text
             info.SetType(typeof(DecoderNLSSurrogate));
         }
 
-        [Serializable]
         internal sealed class DecoderNLSSurrogate : IObjectReference, ISerializable
         {
             internal const string EncodingKey = "Encoding";

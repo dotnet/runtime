@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 
 namespace System.Net
 {
-    [Serializable]
     public class HttpListenerException : Win32Exception
     {
         public HttpListenerException() : base(Marshal.GetLastWin32Error())

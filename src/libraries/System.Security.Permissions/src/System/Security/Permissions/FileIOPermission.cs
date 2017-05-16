@@ -4,7 +4,6 @@
 
 namespace System.Security.Permissions
 {
-    [Serializable]
     public sealed partial class FileIOPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public FileIOPermission(FileIOPermissionAccess access, string path) { }

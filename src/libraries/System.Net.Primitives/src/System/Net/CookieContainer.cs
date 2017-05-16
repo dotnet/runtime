@@ -981,7 +981,6 @@ namespace System.Net
         }
     }
 
-    [Serializable]
     internal struct PathList
     {
         // Usage of PathList depends on it being shallowly immutable;
@@ -1059,7 +1058,6 @@ namespace System.Net
             }
         }
 
-        [Serializable]
         private sealed class PathListComparer : IComparer<string>
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();

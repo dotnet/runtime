@@ -6,7 +6,6 @@ using System.Collections;
 
 namespace System.Security.Policy
 {
-    [Serializable]
     public abstract partial class CodeGroup
     {
         protected CodeGroup(IMembershipCondition membershipCondition, PolicyStatement policy) { }

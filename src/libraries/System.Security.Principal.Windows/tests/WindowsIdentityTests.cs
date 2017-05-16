@@ -51,9 +51,7 @@ public class WindowsIdentityTests
     }
 
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public static void CloneAndProperties(bool cloneViaSerialization)
+    public static void CloneAndProperties()
     {
         SafeAccessTokenHandle token = WindowsIdentity.GetCurrent().AccessToken;
         bool gotRef = false;
@@ -63,9 +61,7 @@ public class WindowsIdentityTests
             IntPtr logonToken = token.DangerousGetHandle();
             WindowsIdentity winId = new WindowsIdentity(logonToken);
 
-            WindowsIdentity cloneWinId = cloneViaSerialization ?
-                BinaryFormatterHelpers.Clone(winId) :
-                winId.Clone() as WindowsIdentity;
+            WindowsIdentity cloneWinId = winId.Clone() as WindowsIdentity;
             Assert.NotNull(cloneWinId);
 
             Assert.Equal(winId.IsSystem, cloneWinId.IsSystem);

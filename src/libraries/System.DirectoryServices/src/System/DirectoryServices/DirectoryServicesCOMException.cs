@@ -12,7 +12,6 @@ namespace System.DirectoryServices
     using System.Security.Permissions;
     using System.Globalization;
 
-    [Serializable]
     public class DirectoryServicesCOMException : COMException, ISerializable
     {
         private int _extendederror = 0;

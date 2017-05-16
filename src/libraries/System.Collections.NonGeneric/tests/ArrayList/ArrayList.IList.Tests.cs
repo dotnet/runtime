@@ -9,6 +9,7 @@ namespace System.Collections.Tests
 {
     public class ArrayListBasicTests : ArrayListIListTestBase
     {
+        protected override bool SupportsSerialization => true;
         protected override IList NonGenericIListFactory() => new ArrayList();
     }
 
@@ -77,6 +78,8 @@ namespace System.Collections.Tests
     public abstract class ArrayListIListTestBase : IList_NonGeneric_Tests
     {
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
+        // ArrayList supports serialization, but its nested types don't
+        protected override bool SupportsSerialization => false;
 
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(InvalidCastException);
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(InvalidCastException);

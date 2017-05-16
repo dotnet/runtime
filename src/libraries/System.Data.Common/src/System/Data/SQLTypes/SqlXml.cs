@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace System.Data.SqlTypes
 {
-    [Serializable, XmlSchemaProvider("GetXsdType")]
+    [XmlSchemaProvider("GetXsdType")]
     public sealed class SqlXml : INullable, IXmlSerializable
     {
         private static readonly Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> s_sqlReaderDelegate = CreateSqlReaderDelegate();

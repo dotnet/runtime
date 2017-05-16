@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeArrayCreateExpression : CodeExpression
     {
         private readonly CodeExpressionCollection _initializers = new CodeExpressionCollection();

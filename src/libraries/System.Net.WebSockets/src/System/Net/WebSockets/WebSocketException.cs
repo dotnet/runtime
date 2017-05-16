@@ -9,7 +9,6 @@ using System.Runtime.Serialization;
 
 namespace System.Net.WebSockets
 {
-    [Serializable]
     public sealed class WebSocketException : Win32Exception
     {
         private readonly WebSocketError _webSocketErrorCode;

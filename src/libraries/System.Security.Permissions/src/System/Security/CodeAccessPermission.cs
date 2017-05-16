@@ -4,7 +4,6 @@
 
 namespace System.Security
 {
-    [Serializable]
     public abstract partial class CodeAccessPermission : IPermission, ISecurityEncodable, IStackWalk
     {
         protected CodeAccessPermission() { }

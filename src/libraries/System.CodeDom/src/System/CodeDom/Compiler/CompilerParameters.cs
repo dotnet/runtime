@@ -6,7 +6,6 @@ using System.Collections.Specialized;
 
 namespace System.CodeDom.Compiler
 {
-    [Serializable]
     public partial class CompilerParameters
     {
         private readonly StringCollection _assemblyNames = new StringCollection();

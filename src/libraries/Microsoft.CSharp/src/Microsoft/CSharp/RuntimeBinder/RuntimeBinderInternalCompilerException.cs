@@ -12,7 +12,6 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// <see cref="RuntimeBinderException"/> represents a failure to bind in the sense of a usual compiler error, whereas <see cref="RuntimeBinderInternalCompilerException"/>
     /// represents a malfunctioning of the runtime binder itself.
     /// </summary>
-    [Serializable]
     public class RuntimeBinderInternalCompilerException : Exception
     {
         /// <summary>

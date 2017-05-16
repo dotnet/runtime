@@ -4,7 +4,6 @@
 
 namespace System.Security.Permissions
 {
-    [Serializable]
     public sealed partial class UIPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public UIPermission(PermissionState state) { }

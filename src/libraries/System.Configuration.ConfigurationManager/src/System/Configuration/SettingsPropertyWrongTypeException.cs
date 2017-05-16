@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Configuration
 {
-    [Serializable]
     public class SettingsPropertyWrongTypeException : Exception
     {
         public SettingsPropertyWrongTypeException(String message)

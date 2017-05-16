@@ -51,7 +51,6 @@ namespace System.IO
         protected override void Dispose(bool disposing) { }
         public void EndInit() { }
     }
-    [Serializable]
     public partial class InternalBufferOverflowException : System.SystemException
     {
         public InternalBufferOverflowException() { }

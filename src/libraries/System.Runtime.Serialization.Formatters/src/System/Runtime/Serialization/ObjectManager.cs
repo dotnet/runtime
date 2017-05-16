@@ -1366,7 +1366,6 @@ namespace System.Runtime.Serialization
         internal long ContainerID => _valueFixup != null ? _valueFixup.ContainerID : 0;
     }
 
-    [Serializable]
     internal sealed class FixupHolder
     {
         internal const int ArrayFixup = 0x1;
@@ -1389,7 +1388,6 @@ namespace System.Runtime.Serialization
         }
     }
 
-    [Serializable]
     internal sealed class FixupHolderList
     {
         internal const int InitialSize = 2;
@@ -1434,7 +1432,6 @@ namespace System.Runtime.Serialization
         }
     }
 
-    [Serializable]
     internal sealed class LongList
     {
         private const int InitialSize = 2;

@@ -49,6 +49,8 @@ namespace System.Collections.Concurrent.Tests
 
         protected override bool IDictionary_NonGeneric_Keys_Values_Enumeration_ResetImplemented => true;
 
+        protected override bool SupportsSerialization => false;
+
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfIncorrectReferenceType_ThrowType => typeof(ArrayTypeMismatchException);
 
         #endregion

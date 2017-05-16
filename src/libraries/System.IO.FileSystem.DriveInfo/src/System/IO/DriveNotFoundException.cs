@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 namespace System.IO
 {
     //Thrown when trying to access a drive that is not available.
-    [Serializable]
     public class DriveNotFoundException : IOException
     {
         public DriveNotFoundException()

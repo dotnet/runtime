@@ -11,7 +11,6 @@ using System.Xml.Serialization;
 
 namespace System.Data.SqlTypes
 {
-    [Serializable]
     [XmlSchemaProvider("GetXsdType")]
     public struct SqlBinary : INullable, IComparable, IXmlSerializable
     {

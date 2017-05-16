@@ -12,7 +12,6 @@ namespace System.Net
     ///       protocol.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public class ProtocolViolationException : InvalidOperationException, ISerializable
     {
         /// <devdoc>

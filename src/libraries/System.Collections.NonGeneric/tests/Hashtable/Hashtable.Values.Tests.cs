@@ -16,6 +16,7 @@ namespace System.Collections.Tests
 
         protected override bool IsReadOnly => true;
         protected override EnumerableOrder Order => EnumerableOrder.Unspecified;
+        protected override bool SupportsSerialization => false;
 
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override IEnumerable<ModifyEnumerable> ModifyEnumerables => new List<ModifyEnumerable>();

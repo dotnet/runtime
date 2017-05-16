@@ -37,13 +37,11 @@ namespace System.Collections.Concurrent
     /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(IProducerConsumerCollectionDebugView<>))]
-    [Serializable]
     public class ConcurrentStack<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         /// <summary>
         /// A simple (internal) node type used to store elements of concurrent stacks and queues.
         /// </summary>
-        [Serializable]
         private class Node
         {
             internal readonly T _value; // Value of the node.

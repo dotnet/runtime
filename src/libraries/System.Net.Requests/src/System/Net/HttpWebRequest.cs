@@ -19,7 +19,6 @@ namespace System.Net
 {
     public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
 
-    [Serializable]
     public class HttpWebRequest : WebRequest, ISerializable
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.

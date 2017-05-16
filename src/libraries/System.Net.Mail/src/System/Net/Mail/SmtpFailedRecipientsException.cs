@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 
 namespace System.Net.Mail
 {
-    [Serializable]
     public class SmtpFailedRecipientsException : SmtpFailedRecipientException, ISerializable
     {
         private SmtpFailedRecipientException[] _innerExceptions;

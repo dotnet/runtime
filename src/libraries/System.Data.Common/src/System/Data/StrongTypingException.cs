@@ -9,7 +9,6 @@ namespace System.Data
     /// <summary>
     /// DEV: The exception that is throwing from strong typed DataSet when user access to DBNull value.
     /// </summary>
-    [Serializable]
     public class StrongTypingException : DataException
     {
         protected StrongTypingException(SerializationInfo info, StreamingContext context)

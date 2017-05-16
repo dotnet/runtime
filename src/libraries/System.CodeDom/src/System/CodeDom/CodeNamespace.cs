@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeNamespace : CodeObject
     {
         private string _name;

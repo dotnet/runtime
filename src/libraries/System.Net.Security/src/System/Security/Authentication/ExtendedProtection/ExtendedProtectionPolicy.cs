@@ -13,7 +13,6 @@ namespace System.Security.Authentication.ExtendedProtection
     /// This class contains the necessary settings for specifying how Extended Protection 
     /// should behave. Use one of the Build* methods to create an instance of this type.
     /// </summary>
-    [Serializable]
     public class ExtendedProtectionPolicy : ISerializable
     {
         private const string policyEnforcementName = "policyEnforcement";

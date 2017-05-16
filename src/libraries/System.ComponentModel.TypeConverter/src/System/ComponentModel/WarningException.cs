@@ -14,7 +14,6 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>Specifies an exception that is handled as a warning instead of an error.</para>
     /// </summary>
-    [Serializable]
     public class WarningException : SystemException
     {
         /// <summary>

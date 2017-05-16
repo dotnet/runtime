@@ -6,7 +6,6 @@ using System.Collections.Generic;
 
 namespace System.Collections.Specialized
 {
-    [Serializable]
     internal sealed class DictionaryWrapper : IDictionary<string, string>, IDictionary
     {
         private readonly Dictionary<string, string> _contents;

@@ -13,7 +13,6 @@ namespace System.Security.Claims
     /// <summary>
     /// Concrete IPrincipal supporting multiple claims-based identities
     /// </summary>
-    [Serializable]
     public class ClaimsPrincipal : IPrincipal
     {
         private enum SerializationMask

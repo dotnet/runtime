@@ -24,7 +24,6 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public class WindowsIdentity : ClaimsIdentity, IDisposable, ISerializable, IDeserializationCallback
     {
         private string _name = null;

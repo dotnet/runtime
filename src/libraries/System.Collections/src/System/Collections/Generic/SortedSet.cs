@@ -1718,7 +1718,6 @@ namespace System.Collections.Generic
 
         #region Helper classes
 
-        [Serializable]
         internal sealed class Node
         {
             public Node(T item, bool isRed)
@@ -1851,7 +1850,6 @@ namespace System.Collections.Generic
         }
 
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
-        [Serializable]
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private static readonly Node s_dummyNode = new Node(default(T), isRed: true);
