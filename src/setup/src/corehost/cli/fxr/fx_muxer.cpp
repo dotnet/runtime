@@ -661,8 +661,8 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
 
     pal::string_t retval;
     bool cli_version_specified = false;
-	bool cli_version_found = false;
-	pal::string_t cli_version;
+    bool cli_version_found = false;
+    pal::string_t cli_version;
 
     for (pal::string_t dir : hive_dir)
     {
@@ -672,14 +672,14 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
             cli_version = resolve_cli_version(global);
             if (!cli_version.empty())
             {
-			    cli_version_specified = true;
+                cli_version_specified = true;
                 pal::string_t sdk_path = dir;
                 append_path(&sdk_path, _X("sdk"));
                 append_path(&sdk_path, cli_version.c_str());
 
                 if (pal::directory_exists(sdk_path))
                 {
-				    cli_version_found = true;
+                    cli_version_found = true;
                     trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
                     retval = sdk_path;
                 }
@@ -703,11 +703,14 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         }
     }
     
-    trace::verbose(_X("It was not possible to find any SDK version"));
-	if (cli_version_specified && !cli_version_found)
-	{
-	    trace::error(_X("The specified SDK version [%s] from global.json [%s] doesn't exist; install specified SDK version [%s]"), cli_version.c_str(), global.c_str(), cli_version.c_str());
-	}
+    if (cli_version_specified)
+    {
+        trace::error(_X("The specified SDK version [%s] from global.json [%s] not found; install specified SDK version"), cli_version.c_str(), global.c_str());
+    }
+    else
+    {
+        trace::verbose(_X("It was not possible to find any SDK version"));
+    }
     return false;
 }
 
