@@ -814,7 +814,7 @@
       "value": "azure-apt-cat.cloudapp.net"
     },
     "AdditionalMSBuildProperties": {
-      "value": "/p:UsePrebuiltPortableBinaries=true /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/"
+      "value": "/p:UsePrebuiltPortableBinariesForInstallers=true /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/"
     },
     "CommonMSBuildArguments": {
       "value": "/flp:v=diag /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:OSGroup=Linux /p:OfficialBuildId=$(OfficialBuildId)"
