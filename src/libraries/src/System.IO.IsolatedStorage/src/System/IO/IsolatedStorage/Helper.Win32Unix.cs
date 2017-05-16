@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using System.Security;
+using System.Threading;
 
 namespace System.IO.IsolatedStorage
 {
@@ -78,6 +79,71 @@ namespace System.IO.IsolatedStorage
                 hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(codeBase);
                 identity = codeBase;
             }
+        }
+
+        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
+        {
+            string randomDirectory = GetExistingRandomDirectory(rootDirectory);
+            if (string.IsNullOrEmpty(randomDirectory))
+            {
+                using (Mutex m = CreateMutexNotOwned(rootDirectory))
+                {
+                    if (!m.WaitOne())
+                    {
+                        throw new IsolatedStorageException(SR.IsolatedStorage_Init);
+                    }
+
+                    try
+                    {
+                        randomDirectory = GetExistingRandomDirectory(rootDirectory);
+                        if (string.IsNullOrEmpty(randomDirectory))
+                        {
+                            // Someone else hasn't created the directory before we took the lock
+                            randomDirectory = Path.Combine(rootDirectory, Path.GetRandomFileName(), Path.GetRandomFileName());
+                            CreateDirectory(randomDirectory, scope);
+                        }
+                    }
+                    finally
+                    {
+                        m.ReleaseMutex();
+                    }
+                }
+            }
+
+            return randomDirectory;
+        }
+
+        internal static string GetExistingRandomDirectory(string rootDirectory)
+        {
+            // Look for an existing random directory at the given root
+            // (a set of nested directories that were created via Path.GetRandomFileName())
+
+            // Older versions of the desktop framework created longer (24 character) random paths and would
+            // migrate them if they could not find the new style directory.
+
+            if (!Directory.Exists(rootDirectory))
+                return null;
+
+            foreach (string directory in Directory.GetDirectories(rootDirectory))
+            {
+                if (Path.GetFileName(directory)?.Length == 12)
+                {
+                    foreach (string subdirectory in Directory.GetDirectories(directory))
+                    {
+                        if (Path.GetFileName(subdirectory)?.Length == 12)
+                        {
+                            return subdirectory;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static Mutex CreateMutexNotOwned(string pathName)
+        {
+            return new Mutex(initiallyOwned: false, name: @"Global\" + IdentityHelper.GetStrongHashSuitableForObjectName(pathName));
         }
     }
 }

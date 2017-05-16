@@ -80,7 +80,8 @@ namespace System.IO.IsolatedStorage
                 };
 
                 // https://github.com/dotnet/corefx/issues/12628
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                    && !PlatformDetection.IsWinRT)
                 {
                     validScopes.Add(PresetScopes.MachineStoreForApplication);
                     validScopes.Add(PresetScopes.MachineStoreForAssembly);

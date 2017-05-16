@@ -15,16 +15,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-      <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
-      <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32Unix.cs">
       <Link>Internals\Helper.Win32Unix.cs</Link>
     </Compile>
+    <Compile Include="System\IO\IsolatedStorage\HelperTests.Win32Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetsWindows)' == 'true'">
-	  <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs">
+    <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs">
       <Link>Internals\Helper.Win32.cs</Link>
     </Compile>
   </ItemGroup>
@@ -54,6 +55,9 @@
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="StoreTestsFixture.cs" />
     <Compile Include="System\IO\IsolatedStorage\ContainsUnknownFilesTests.cs" />
@@ -76,6 +80,10 @@
     <Compile Include="System\IO\IsolatedStorage\OpenFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Reference Include="mscorlib" />
+    <Reference Include="Windows" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
