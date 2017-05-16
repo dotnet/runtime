@@ -2565,7 +2565,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
 
     if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
-        // issue a full memory barrier before a volatile an initBlockUnroll operation
+        // issue a full memory barrier before a volatile initBlockUnroll operation
         instGen_MemoryBarrier();
     }
 
@@ -2794,8 +2794,8 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
-        // issue a INS_BARRIER_LD after a volatile CpBlkUnroll operation
-        instGen_MemoryBarrier(INS_BARRIER_LD);
+        // issue a INS_BARRIER_ISHLD after a volatile CpBlkUnroll operation
+        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
     }
 }
 
@@ -2955,8 +2955,8 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
 
     if (cpObjNode->gtFlags & GTF_BLK_VOLATILE)
     {
-        // issue a INS_BARRIER_LD after a volatile CpObj operation
-        instGen_MemoryBarrier(INS_BARRIER_LD);
+        // issue a INS_BARRIER_ISHLD after a volatile CpObj operation
+        instGen_MemoryBarrier(INS_BARRIER_ISHLD);
     }
 
     // Clear the gcInfo for REG_WRITE_BARRIER_SRC_BYREF and REG_WRITE_BARRIER_DST_BYREF.
