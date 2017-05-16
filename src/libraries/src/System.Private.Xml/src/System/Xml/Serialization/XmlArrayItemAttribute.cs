@@ -6,11 +6,7 @@ using System;
 using System.Xml.Schema;
 
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -113,6 +109,11 @@ namespace System.Xml.Serialization
         internal bool IsNullableSpecified
         {
             get { return _nullableSpecified; }
+        }
+
+        internal bool GetIsNullableSpecified()
+        {
+            return IsNullableSpecified;
         }
 
         /// <devdoc>

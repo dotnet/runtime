@@ -7,11 +7,7 @@ using System.Xml.Schema;
 using System.Reflection;
 
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -50,6 +46,16 @@ namespace System.Xml.Serialization
         {
             get { return _memberInfo; }
             set { _memberInfo = value; }
+        }
+
+        internal MemberInfo GetMemberInfo()
+        {
+            return MemberInfo;
+        }
+
+        internal void SetMemberInfo(MemberInfo memberInfo)
+        {
+            MemberInfo = memberInfo;
         }
     }
 }

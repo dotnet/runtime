@@ -2074,12 +2074,21 @@ namespace Microsoft.XmlSerializer.Generator
                     Writer.Write(((DateTime)value).Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write(")");
                 }
+                else if (type == typeof(TimeSpan))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(")");
+                }
                 else
                 {
                     if (type.IsEnum)
                     {
                         Writer.Write(((int)value).ToString(null, NumberFormatInfo.InvariantInfo));
                     }
+
                     else
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));

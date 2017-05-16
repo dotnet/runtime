@@ -270,7 +270,7 @@ namespace System.Xml.Serialization
                     {
                         {
                             XmlSerializerImplementation contract = null;
-                            Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, null, out contract);
+                            Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, defaultNamespace, out contract);
                             if (assembly == null)
                             {
                                 // need to reflect and generate new serialization assembly

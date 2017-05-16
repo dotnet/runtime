@@ -6,11 +6,7 @@ using System;
 using System.Xml.Schema;
 
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
@@ -87,6 +83,11 @@ namespace System.Xml.Serialization
         internal bool NamespaceSpecified
         {
             get { return _nsSpecified; }
+        }
+
+        internal bool GetNamespaceSpecified()
+        {
+            return NamespaceSpecified;
         }
     }
 }
