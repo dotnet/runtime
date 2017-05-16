@@ -64,7 +64,7 @@ namespace System.Diagnostics
                         MetadataReader metadataReader = peReader.GetMetadataReader();
                         if (metadataReader.IsAssembly)
                         {
-                            LoadManagedAssemblyMetadata(metadataReader);
+                            LoadManagedAssemblyMetadata(metadataReader, peReader.PEHeaders.IsExe);
                             return true;
                         }
                     }
@@ -75,13 +75,21 @@ namespace System.Diagnostics
         }
 
         /// <summary>Load our fields from the metadata of the file as represented by the provided metadata reader.</summary>
-        /// <param name="metadataReader">The metadata reader for the CLI file this represents.</param>
-        private void LoadManagedAssemblyMetadata(MetadataReader metadataReader)
+        /// <param name="metadataReader">The metadata reader for the CLI file this represents.</param>\
+        /// <param name="isExe">true if the assembly represents an executable; false if it's a dll.</param>
+        private void LoadManagedAssemblyMetadata(MetadataReader metadataReader, bool isExe)
         {
             AssemblyDefinition assemblyDefinition = metadataReader.GetAssemblyDefinition();
 
-            // Set the internal and original names based on the file name.
-            _internalName = _originalFilename = Path.GetFileName(_fileName);
+            // Set the internal and original names based on the assembly name.  We avoid using the
+            // current filename for determinism and better alignment with behavior on Windows.
+            string assemblyName = metadataReader.GetString(assemblyDefinition.Name);
+            if (!assemblyName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
+                !assemblyName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                assemblyName += isExe ? ".exe" : ".dll";
+            }
+            _internalName = _originalFilename = assemblyName;
 
             // Set the product version based on the assembly's version (this may be overwritten 
             // later in the method).
