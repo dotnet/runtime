@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,6 +16,7 @@ namespace System.Net.Security.Tests
 
     public class SslStreamCredentialCacheTest
     {
+        [ActiveIssue(19699, TestPlatforms.Windows)]
         [Fact]
         public void SslStream_SameCertUsedForClientAndServer_Ok()
         {
