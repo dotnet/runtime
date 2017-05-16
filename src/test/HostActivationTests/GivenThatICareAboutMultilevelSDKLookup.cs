@@ -198,7 +198,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("global.json] doesn't exist; install specified SDK version [9999.0.0-global-dummy]");
+                .HaveStdErrContaining("global.json] not found; install specified SDK version");
 
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-global-dummy");
