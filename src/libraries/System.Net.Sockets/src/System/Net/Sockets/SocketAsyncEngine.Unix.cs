@@ -46,33 +46,29 @@ namespace System.Net.Sockets
             }
         }
 
+        private const int EventBufferCount =
 #if DEBUG
-        private const int EventBufferCount = 64;
+            64;
 #else
-        private const int EventBufferCount = 1024;
+            1024;
 #endif
 
         private static readonly object s_lock = new object();
 
+        // In debug builds, force there to be 2 engines. In release builds, use half the number of processors when
+        // there are at least 6. The lower bound is to avoid using multiple engines on systems which aren't servers.
+        private static readonly int EngineCount =
 #if DEBUG
-        //
-        // In debug builds, force there to number of engines to 2
-        //
-        private static readonly int EngineCount = 2;
+            2;
 #else
-        //
-        // In release builds, use half the number of processors when there are at least 6 processors.
-        // The lower bound is to avoid spinning up many engines on systems which aren't servers.
-        //
-        private static readonly int EngineCount = Environment.ProcessorCount >= 6 ? Environment.ProcessorCount >> 1 : 1;
+            Environment.ProcessorCount >= 6 ? Environment.ProcessorCount / 2 : 1;
 #endif
         //
-        // The current engines.  We replace this an engine when we run out of "handle" values for the current
-        // engine.
+        // The current engines. We replace an engine when it runs out of "handle" values.
         // Must be accessed under s_lock.
         //
-        private static int s_allocateFromEngine = 0;
         private static readonly SocketAsyncEngine[] s_currentEngines = new SocketAsyncEngine[EngineCount];
+        private static int s_allocateFromEngine = 0;
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
@@ -147,8 +143,7 @@ namespace System.Net.Sockets
                 engine = s_currentEngines[s_allocateFromEngine];
                 if (engine == null)
                 {
-                    engine = new SocketAsyncEngine();
-                    s_currentEngines[s_allocateFromEngine] = engine;
+                    s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
                 }
 
                 handle = engine.AllocateHandle(context);
@@ -158,6 +153,7 @@ namespace System.Net.Sockets
                     // We'll need to create a new event port for the next handle.
                     s_currentEngines[s_allocateFromEngine] = null;
                 }
+
                 // Round-robin to the next engine
                 s_allocateFromEngine = (s_allocateFromEngine + 1) % EngineCount;
             }
