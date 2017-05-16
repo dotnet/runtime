@@ -23,7 +23,7 @@
 
   <Target Name="PublishToAzure"
           Condition="'$(Finalize)' != 'true'"
-          DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers">
+          DependsOnTargets="GatherPublishToAzureBinaries;GatherPublishToAzureInstallers;GatherPublishToAzureChecksums">
     <MSBuild Targets="%(Project.PublishTarget)"
              Projects="%(Project.Identity)"
              Properties="%(Project.AdditionalProperties)"
@@ -46,6 +46,26 @@
     <UploadToAzure AccountName="$(AzureAccountName)"
                    AccountKey="$(AzureAccessToken)"
                    ContainerName="$(ContainerName)"
+                   Items="@(ItemsToPublish)" 
+                   Overwrite="false" />
+  </Target>
+  
+  <Target Name="UploadChecksumsToAzure"
+          Condition="'$(ItemsToPublish)' != ''">
+    <Error Condition="'$(ChecksumAzureAccessToken)' == ''" Text="Missing required property 'ChecksumAzureAccessToken'" />
+    <Error Condition="'$(ChecksumAzureAccountName)' == ''" Text="Missing required property 'ChecksumAzureAccountName'" />
+    <Error Condition="'$(ChecksumContainerName)' == ''" Text="Missing required property 'ChecksumContainerName'" />
+    <Error Condition="'$(RelativeBlobPath)' == ''" Text="Missing required property 'RelativeBlobPath'" />
+
+    <ItemGroup>
+      <ItemsToPublish Include="$(ItemsToPublish)" />
+      <ItemsToPublish>
+        <RelativeBlobPath>$(RelativeBlobPath)/%(Filename)%(Extension)</RelativeBlobPath>
+      </ItemsToPublish>
+    </ItemGroup>
+    <UploadToAzure AccountName="$(ChecksumAzureAccountName)"
+                   AccountKey="$(ChecksumAzureAccessToken)"
+                   ContainerName="$(ChecksumContainerName)"
                    Items="@(ItemsToPublish)" 
                    Overwrite="false" />
   </Target>
