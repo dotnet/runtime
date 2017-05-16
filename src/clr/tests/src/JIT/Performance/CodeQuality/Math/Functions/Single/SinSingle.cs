@@ -9,38 +9,38 @@ namespace Functions
 {
     public static partial class MathTests
     {
-        // Tests Math.Tan(double) over 5000 iterations for the domain -PI/2, +PI/2
+        // Tests MathF.Sin(float) over 5000 iterations for the domain -PI/2, +PI/2
 
-        private const double tanDoubleDelta = 0.0004;
-        private const double tanDoubleExpectedResult = 1.5574077243051505;
+        private const float sinSingleDelta = 0.000628318531f;
+        private const float sinSingleExpectedResult = 1.03592682f;
 
         [Benchmark]
-        public static void TanDoubleBenchmark()
+        public static void SinSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    TanDoubleTest();
+                    SinSingleTest();
                 }
             }
         }
 
-        public static void TanDoubleTest()
+        public static void SinSingleTest()
         {
-            var result = 0.0; var value = -1.0;
+            var result = 0.0f; var value = -1.57079633f;
 
             for (var iteration = 0; iteration < iterations; iteration++)
             {
-                value += tanDoubleDelta;
-                result += Math.Tan(value);
+                value += sinSingleDelta;
+                result += MathF.Sin(value);
             }
 
-            var diff = Math.Abs(tanDoubleExpectedResult - result);
+            var diff = MathF.Abs(sinSingleExpectedResult - result);
 
-            if (diff > doubleEpsilon)
+            if (diff > singleEpsilon)
             {
-                throw new Exception($"Expected Result {tanDoubleExpectedResult,20:g17}; Actual Result {result,20:g17}");
+                throw new Exception($"Expected Result {sinSingleExpectedResult,10:g9}; Actual Result {result,10:g9}");
             }
         }
     }

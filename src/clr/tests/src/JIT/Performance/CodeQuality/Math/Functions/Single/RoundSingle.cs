@@ -9,38 +9,38 @@ namespace Functions
 {
     public static partial class MathTests
     {
-        // Tests Math.Abs(single) over 5000 iterations for the domain -1, +1
+        // Tests MathF.Round(float) over 5000 iterations for the domain -PI/2, +PI/2
 
-        private const float absSingleDelta = 0.0004f;
-        private const float absSingleExpectedResult = 2500.03125f;
+        private const float roundSingleDelta = 0.000628318531f;
+        private const float roundSingleExpectedResult = 2.0f;
 
         [Benchmark]
-        public static void AbsSingleBenchmark()
+        public static void RoundSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    AbsSingleTest();
+                    RoundSingleTest();
                 }
             }
         }
 
-        public static void AbsSingleTest()
+        public static void RoundSingleTest()
         {
-            var result = 0.0f; var value = -1.0f;
+            var result = 0.0f; var value = -1.57079633f;
 
             for (var iteration = 0; iteration < iterations; iteration++)
             {
-                value += absSingleDelta;
-                result += Math.Abs(value);
+                value += roundSingleDelta;
+                result += MathF.Round(value);
             }
 
-            var diff = Math.Abs(absSingleExpectedResult - result);
+            var diff = MathF.Abs(roundSingleExpectedResult - result);
 
             if (diff > singleEpsilon)
             {
-                throw new Exception($"Expected Result {absSingleExpectedResult,10:g9}; Actual Result {result,10:g9}");
+                throw new Exception($"Expected Result {roundSingleExpectedResult,10:g9}; Actual Result {result,10:g9}");
             }
         }
     }

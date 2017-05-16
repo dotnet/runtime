@@ -40,7 +40,7 @@ namespace Functions
 
             if (diff > doubleEpsilon)
             {
-                throw new Exception($"Expected Result {log10DoubleExpectedResult}; Actual Result {result}");
+                throw new Exception($"Expected Result {log10DoubleExpectedResult,20:g17}; Actual Result {result,20:g17}");
             }
         }
     }
