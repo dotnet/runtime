@@ -28,9 +28,6 @@
     <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
-    <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*$(SharedFrameworkNuGetVersion).symbols.nupkg" Exclude="@(RuntimePackageFile)" >
-      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
-    </RidAgnosticPackageFile>
     <InstallerFile Include="$(PackagesOutDir)**/*$(InstallerExtension)" >
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
