@@ -50,12 +50,25 @@ namespace System.Net.Sockets
 
         private static readonly object s_lock = new object();
 
+#if DEBUG
         //
-        // The current engine.  We replace this with a new engine when we run out of "handle" values for the current
+        // In debug builds, force there to number of engines to 2
+        //
+        private static readonly int EngineCount = 2;
+#else
+        //
+        // In release builds, use half the number of processors when there are at least 6 processors.
+        // The lower bound is to avoid spinning up many engines on systems which aren't servers.
+        //
+        private static readonly int EngineCount = Environment.ProcessorCount >= 6 ? Environment.ProcessorCount >> 1 : 1;
+#endif
+        //
+        // The current engines.  We replace this an engine when we run out of "handle" values for the current
         // engine.
         // Must be accessed under s_lock.
         //
-        private static SocketAsyncEngine s_currentEngine;
+        private static int s_allocateFromEngine = 0;
+        private static readonly SocketAsyncEngine[] s_currentEngines = new SocketAsyncEngine[EngineCount];
 
         private readonly IntPtr _port;
         private readonly Interop.Sys.SocketEvent* _buffer;
@@ -127,13 +140,22 @@ namespace System.Net.Sockets
         {
             lock (s_lock)
             {
-                if (s_currentEngine == null)
+                engine = s_currentEngines[s_allocateFromEngine];
+                if (engine == null)
                 {
-                    s_currentEngine = new SocketAsyncEngine();
+                    engine = new SocketAsyncEngine();
+                    s_currentEngines[s_allocateFromEngine] = engine;
                 }
 
-                engine = s_currentEngine;
-                handle = s_currentEngine.AllocateHandle(context);
+                handle = engine.AllocateHandle(context);
+
+                if (engine.IsFull)
+                {
+                    // We'll need to create a new event port for the next handle.
+                    s_currentEngines[s_allocateFromEngine] = null;
+                }
+                // Round-robin to the next engine
+                s_allocateFromEngine = (s_allocateFromEngine + 1) % EngineCount;
             }
         }
 
@@ -147,12 +169,6 @@ namespace System.Net.Sockets
 
             _nextHandle = IntPtr.Add(_nextHandle, 1);
             _outstandingHandles = IntPtr.Add(_outstandingHandles, 1);
-
-            if (IsFull)
-            {
-                // We'll need to create a new event port for the next handle.
-                s_currentEngine = null;
-            }
 
             Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
             return handle;
