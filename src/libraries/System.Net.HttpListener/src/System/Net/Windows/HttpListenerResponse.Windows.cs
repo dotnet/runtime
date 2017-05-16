@@ -199,10 +199,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (_responseState >= ResponseState.SentHeaders)
-                {
-                    throw new InvalidOperationException(SR.net_rspsubmitted);
-                }
+                CheckSentHeaders();
                 if (value == EntitySendFormat.Chunked && HttpListenerRequest.ProtocolVersion.Minor == 0)
                 {
                     throw new ProtocolViolationException(SR.net_nochunkuploadonhttp10);
@@ -239,10 +236,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (_responseState >= ResponseState.SentHeaders)
-                {
-                    throw new InvalidOperationException(SR.net_rspsubmitted);
-                }
+                CheckSentHeaders();
                 if (value >= 0)
                 {
                     _contentLength = value;
@@ -279,7 +273,7 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
             try
             {
-                if (_responseState >= ResponseState.Closed)
+                if (Disposed)
                 {
                     return;
                 }
@@ -318,7 +312,7 @@ namespace System.Net
                     throw new ArgumentNullException(nameof(responseEntity));
                 }
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
-                if (_responseState < ResponseState.SentHeaders && _boundaryType != BoundaryType.Chunked)
+                if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
                 {
                     ContentLength64 = responseEntity.Length;
                 }
@@ -352,7 +346,7 @@ namespace System.Net
 
         private void Dispose()
         {
-            if (_responseState >= ResponseState.Closed)
+            if (Disposed)
             {
                 return;
             }
@@ -364,10 +358,6 @@ namespace System.Net
         }
 
         internal BoundaryType BoundaryType => _boundaryType;
-
-        internal bool SentHeaders => _responseState >= ResponseState.SentHeaders;
-
-        internal bool ComputedHeaders => _responseState >= ResponseState.ComputedHeaders;
 
         private void EnsureResponseStream()
         {
@@ -842,17 +832,13 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             }
         }
 
-        private void CheckDisposed()
-        {
-            if (_responseState >= ResponseState.Closed)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
-        }
-
         internal void CancelLastWrite(SafeHandle requestQueueHandle)
         {
             _responseStream?.CancelLastWrite(requestQueueHandle);
         }
+
+        internal bool ComputedHeaders => _responseState >= ResponseState.ComputedHeaders;
+        internal bool SentHeaders => _responseState >= ResponseState.SentHeaders;
+        private bool Disposed => _responseState >= ResponseState.Closed;
     }
 }

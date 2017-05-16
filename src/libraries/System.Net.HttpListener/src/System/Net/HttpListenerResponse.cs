@@ -82,5 +82,21 @@ namespace System.Net
         }
 
         void IDisposable.Dispose() => Dispose();
+
+        private void CheckDisposed()
+        {
+            if (Disposed)
+            {
+                throw new ObjectDisposedException(GetType().FullName);
+            }
+        }
+
+        private void CheckSentHeaders()
+        {
+            if (SentHeaders)
+            {
+                throw new InvalidOperationException(SR.net_rspsubmitted);
+            }
+        }
     }
 }
