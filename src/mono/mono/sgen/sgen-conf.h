@@ -38,13 +38,6 @@ typedef mword SgenDescriptor;
 #endif
 
 /*
- * Define this to allow the user to change the nursery size by
- * specifying its value in the MONO_GC_PARAMS environmental
- * variable. See mono_gc_base_init for details.
- */
-#define USER_CONFIG 1
-
-/*
  * The binary protocol enables logging a lot of the GC ativity in a way that is not very
  * intrusive and produces a compact file that can be searched using a custom tool.  This
  * option enables very fine-grained binary protocol events, which will make the GC a tiny
@@ -210,5 +203,20 @@ typedef mword SgenDescriptor;
 #define SGEN_CEMENT_HASH_SIZE	(1 << SGEN_CEMENT_HASH_SHIFT)
 #define SGEN_CEMENT_HASH(hv)	(((hv) ^ ((hv) >> SGEN_CEMENT_HASH_SHIFT)) & (SGEN_CEMENT_HASH_SIZE - 1))
 #define SGEN_CEMENT_THRESHOLD	1000
+
+/*
+ * Default values for the nursery size
+ */
+#define SGEN_DEFAULT_NURSERY_MIN_SIZE	(1 << 19)
+#define SGEN_DEFAULT_NURSERY_SIZE	(1 << 22)
+#define SGEN_DEFAULT_NURSERY_MAX_SIZE	(1 << 25)
+
+/*
+ * We are trying to keep pauses lower than this (ms). We use it for dynamic nursery
+ * sizing heuristics. We are keeping leeway in order to be prepared for work-load
+ * variations.
+ */
+#define SGEN_MAX_PAUSE_TIME 30
+#define SGEN_MAX_PAUSE_MARGIN 0.66f
 
 #endif

@@ -2665,7 +2665,7 @@ void*
 mono_gc_get_nursery (int *shift_bits, size_t *size)
 {
 	*size = sgen_nursery_size;
-	*shift_bits = DEFAULT_NURSERY_BITS;
+	*shift_bits = sgen_nursery_bits;
 	return sgen_get_nursery_start ();
 }
 

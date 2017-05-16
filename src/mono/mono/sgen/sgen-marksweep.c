@@ -306,7 +306,7 @@ ms_find_block_obj_size_index (size_t size)
 	 ms_find_block_obj_size_index ((s)))
 
 static void*
-major_alloc_heap (mword nursery_size, mword nursery_align, int the_nursery_bits)
+major_alloc_heap (mword nursery_size, mword nursery_align)
 {
 	char *start;
 	if (nursery_align)

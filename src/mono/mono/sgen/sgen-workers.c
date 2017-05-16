@@ -22,6 +22,7 @@
 
 static int workers_num;
 static int active_workers_num;
+static volatile gboolean started;
 static volatile gboolean forced_stop;
 static WorkerData *workers_data;
 static SgenWorkerCallback worker_init_cb;
@@ -313,7 +314,7 @@ should_work_func (void *data_untyped)
 	WorkerData *data = (WorkerData*)data_untyped;
 	int current_worker = (int) (data - workers_data);
 
-	return current_worker < active_workers_num;
+	return started && current_worker < active_workers_num;
 }
 
 static void
@@ -415,6 +416,8 @@ sgen_workers_stop_all_workers (void)
 	sgen_thread_pool_wait_for_all_jobs (pool);
 	sgen_thread_pool_idle_wait (pool);
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can only signal enqueue work when in no work state");
+
+	started = FALSE;
 }
 
 void
@@ -431,11 +434,14 @@ sgen_workers_set_num_active_workers (int num_workers)
 void
 sgen_workers_start_all_workers (SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback callback)
 {
+	SGEN_ASSERT (0, !started, "Why are we starting to work without finishing previous cycle");
+
 	idle_func_object_ops_par = object_ops_par;
 	idle_func_object_ops_nopar = object_ops_nopar;
 	forced_stop = FALSE;
 	finish_callback = callback;
 	worker_awakenings = 0;
+	started = TRUE;
 	mono_memory_write_barrier ();
 
 	/*
@@ -461,6 +467,8 @@ sgen_workers_join (void)
 	SGEN_ASSERT (0, sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue), "Why is there still work left to do?");
 	for (i = 0; i < active_workers_num; ++i)
 		SGEN_ASSERT (0, sgen_gray_object_queue_is_empty (&workers_data [i].private_gray_queue), "Why is there still work left to do?");
+
+	started = FALSE;
 }
 
 /*
@@ -528,7 +536,8 @@ sgen_workers_take_from_queue (SgenGrayQueue *queue)
 SgenObjectOperations*
 sgen_workers_get_idle_func_object_ops (void)
 {
-	return (idle_func_object_ops_par) ? idle_func_object_ops_par : idle_func_object_ops_nopar;
+	g_assert (idle_func_object_ops);
+	return idle_func_object_ops;
 }
 
 /*

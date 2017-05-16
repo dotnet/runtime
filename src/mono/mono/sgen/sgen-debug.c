@@ -325,7 +325,7 @@ static void
 setup_valid_nursery_objects (void)
 {
 	if (!valid_nursery_objects)
-		valid_nursery_objects = (GCObject **)sgen_alloc_os_memory (DEFAULT_NURSERY_SIZE, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "debugging data", MONO_MEM_ACCOUNT_SGEN_DEBUGGING);
+		valid_nursery_objects = (GCObject **)sgen_alloc_os_memory (sgen_nursery_max_size, (SgenAllocFlags)(SGEN_ALLOC_INTERNAL | SGEN_ALLOC_ACTIVATE), "debugging data", MONO_MEM_ACCOUNT_SGEN_DEBUGGING);
 	valid_nursery_object_count = 0;
 	sgen_scan_area_with_callback (nursery_section->data, nursery_section->end_data, setup_mono_sgen_scan_area_with_callback, NULL, FALSE, FALSE);
 }
@@ -1065,10 +1065,10 @@ void
 sgen_dump_section (GCMemSection *section, const char *type)
 {
 	char *start = section->data;
-	char *end = section->data + section->size;
+	char *end = section->end_data;
 	char *occ_start = NULL;
 
-	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)section->size);
+	fprintf (heap_dump_file, "<section type=\"%s\" size=\"%lu\">\n", type, (unsigned long)(section->end_data - section->data));
 
 	while (start < end) {
 		guint size;
@@ -1083,7 +1083,6 @@ sgen_dump_section (GCMemSection *section, const char *type)
 			start += sizeof (void*); /* should be ALLOC_ALIGN, really */
 			continue;
 		}
-		g_assert (start < section->next_data);
 
 		if (!occ_start)
 			occ_start = start;
