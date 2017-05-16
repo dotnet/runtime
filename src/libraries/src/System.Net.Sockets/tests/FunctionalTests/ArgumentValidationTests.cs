@@ -1132,7 +1132,7 @@ namespace System.Net.Sockets.Tests
         public void BeginSend_Buffers_NullBuffers_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().BeginSend(null, SocketFlags.None, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().SendAsync(null, SocketFlags.None); });
+            Assert.Throws<ArgumentNullException>(() => { GetSocket().SendAsync((IList<ArraySegment<byte>>)null, SocketFlags.None); });
         }
 
         [Fact]
@@ -1239,7 +1239,7 @@ namespace System.Net.Sockets.Tests
         public void BeginReceive_Buffers_NullBuffers_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().BeginReceive(null, SocketFlags.None, TheAsyncCallback, null));
-            Assert.Throws<ArgumentNullException>(() => { GetSocket().ReceiveAsync(null, SocketFlags.None); });
+            Assert.Throws<ArgumentNullException>(() => { GetSocket().ReceiveAsync((IList<ArraySegment<byte>>)null, SocketFlags.None); });
         }
 
         [Fact]
