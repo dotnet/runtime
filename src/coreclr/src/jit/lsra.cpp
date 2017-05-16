@@ -2465,36 +2465,6 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
     return inVarToRegMap;
 }
 
-// find the last node in the tree in execution order
-// TODO-Throughput: this is inefficient!
-GenTree* lastNodeInTree(GenTree* tree)
-{
-    // There is no gtprev on the top level tree node so
-    // apparently the way to walk a tree backwards is to walk
-    // it forward, find the last node, and walk back from there.
-
-    GenTree* last = nullptr;
-    if (tree->OperGet() == GT_STMT)
-    {
-        GenTree* statement = tree;
-
-        foreach_treenode_execution_order(tree, statement)
-        {
-            last = tree;
-        }
-        return last;
-    }
-    else
-    {
-        while (tree)
-        {
-            last = tree;
-            tree = tree->gtNext;
-        }
-        return last;
-    }
-}
-
 // given a tree node
 RefType refTypeForLocalRefNode(GenTree* node)
 {
@@ -2513,15 +2483,23 @@ RefType refTypeForLocalRefNode(GenTree* node)
     }
 }
 
-// This function sets RefPosition last uses by walking the RefPositions, instead of walking the
-// tree nodes in execution order (as was done in a previous version).
-// This is because the execution order isn't strictly correct, specifically for
-// references to local variables that occur in arg lists.
+//------------------------------------------------------------------------
+// checkLastUses: Check correctness of last use flags
 //
-// TODO-Throughput: This function should eventually be eliminated, as we should be able to rely on last uses
-// being set by dataflow analysis.  It is necessary to do it this way only because the execution
-// order wasn't strictly correct.
-
+// Arguments:
+//    The block for which we are checking last uses.
+//
+// Notes:
+//    This does a backward walk of the RefPositions, starting from the liveOut set.
+//    This method was previously used to set the last uses, which were computed by
+//    liveness, but were not create in some cases of multiple lclVar references in the
+//    same tree. However, now that last uses are computed as RefPositions are created,
+//    that is no longer necessary, and this method is simply retained as a check.
+//    The exception to the check-only behavior is when LSRA_EXTEND_LIFETIMES if set via
+//    COMPlus_JitStressRegs. In that case, this method is required, because even though
+//    the RefPositions will not be marked lastUse in that case, we still need to correclty
+//    mark the last uses on the tree nodes, which is done by this method.
+//
 #ifdef DEBUG
 void LinearScan::checkLastUses(BasicBlock* block)
 {
@@ -2577,6 +2555,8 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     // GTF_VAR_DEATH on the node for a ref position. If this bit is not set correctly even when
                     // extending lifetimes, the code generator will assert as it expects to have accurate last
                     // use information. To avoid these asserts, set the GTF_VAR_DEATH bit here.
+                    // Note also that extendLifetimes() is an LSRA stress mode, so it will only be true for
+                    // Checked or Debug builds, for which this method will be executed.
                     if (tree != nullptr)
                     {
                         tree->gtFlags |= GTF_VAR_DEATH;
