@@ -34,22 +34,28 @@ namespace System.Xml
         private async Task<Stream> GetNonFileStreamAsync(Uri uri, ICredentials credentials, IWebProxy proxy,
             RequestCachePolicy cachePolicy)
         {
-            HttpClient client = new HttpClient();
-            HttpRequestMessage req = new HttpRequestMessage(HttpMethod.Get, uri);
-
-            lock (this)
+            WebRequest req = WebRequest.Create(uri);
+            if (credentials != null)
             {
-                if (_connections == null)
-                {
-                    _connections = new Hashtable();
-                }
+                req.Credentials = credentials;
+            }
+            if (proxy != null)
+            {
+                req.Proxy = proxy;
+            }
+            if (cachePolicy != null)
+            {
+                req.CachePolicy = cachePolicy;
             }
 
-            HttpResponseMessage resp = await client.SendAsync(req).ConfigureAwait(false);
-
-            Stream respStream = new MemoryStream();
-            await resp.Content.CopyToAsync(respStream);
-            return respStream;
+            using (WebResponse resp = await req.GetResponseAsync().ConfigureAwait(false))
+            using (Stream respStream = resp.GetResponseStream())
+            {
+                var result = new MemoryStream();
+                await respStream.CopyToAsync(result).ConfigureAwait(false);
+                result.Position = 0;
+                return result;
+            }
         }
     }
 }
