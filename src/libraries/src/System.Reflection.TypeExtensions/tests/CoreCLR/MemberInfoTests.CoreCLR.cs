@@ -27,7 +27,7 @@ namespace System.Reflection.Tests
             new object[] { typeof(Test<>).GetGenericArguments()[0].GetTypeInfo(), 0x2A }
         };
 
-        [Theory]
+        [ConditionalTheory(nameof(GetMetadataTokenSupported))]
         [MemberData(nameof(MembersWithExpectedTableIndex))]
         public void SuccessImpliesNonNilWithCorrectTable(MemberInfo member, int expectedTableIndex)
         {
@@ -37,7 +37,7 @@ namespace System.Reflection.Tests
             Assert.NotEqual(0, TableIndex(token));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(GetMetadataTokenSupported), nameof(IsReflectionEmitSupported))]
         public static void UnbakedReflectionEmitType_HasNoMetadataToken()
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("dynamic"), AssemblyBuilderAccess.Run);
@@ -47,6 +47,20 @@ namespace System.Reflection.Tests
             Assert.False(method.HasMetadataToken());
             Assert.Throws<InvalidOperationException>(() => method.GetMetadataToken());
         }
+
+        public static bool GetMetadataTokenSupported
+        {
+            get
+            {
+                if (!PlatformDetection.IsNetNative)
+                    return true;
+
+                // Expected false but in case .Net Native ever changes its mind...
+                return typeof(MetadataTokenTests).HasMetadataToken();
+            }
+        }
+
+        public static bool IsReflectionEmitSupported => PlatformDetection.IsReflectionEmitSupported;
 
         private static int TableIndex(int token) => token >> 24;
         private static int RowIndex(int token) => token & 0x00FFFFFF;
