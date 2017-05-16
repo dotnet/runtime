@@ -21,6 +21,7 @@ public:
     static bool IsDirectorySeparator(const pal::char_t c);
     static bool IsPathNotFullyQualified(const pal::string_t& path);
     static bool IsDevice(const pal::string_t& path);
+    static bool IsNormalized(const pal::string_t& path);
     static bool ShouldNormalize(const pal::string_t& path);
 };
 #endif //_LONG_FILE_SUPPORT
