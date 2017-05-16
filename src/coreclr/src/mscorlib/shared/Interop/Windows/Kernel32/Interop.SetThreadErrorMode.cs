@@ -8,8 +8,8 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = false, EntryPoint = "SetErrorMode", ExactSpelling = true)]
-        internal static extern uint SetErrorMode(uint newMode);
+        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        internal static extern bool SetThreadErrorMode(uint dwNewMode, out uint lpOldMode);
 
         internal const uint SEM_FAILCRITICALERRORS = 1;
     }
