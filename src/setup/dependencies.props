@@ -11,8 +11,8 @@
   <PropertyGroup>
     <CoreFxCurrentRef>703d40525af4a09f5566cd3d8f334b3736b68fae</CoreFxCurrentRef>
     <CoreClrCurrentRef>703d40525af4a09f5566cd3d8f334b3736b68fae</CoreClrCurrentRef>
-    <StandardCurrentRef>973abe81304e8047712106dd998bde1869c6a21a</StandardCurrentRef>
-    <WCFCurrentRef>973abe81304e8047712106dd998bde1869c6a21a</WCFCurrentRef>
+    <StandardCurrentRef>cddd078e3efc27b2fc23c38d8028e3b647cd4fe3</StandardCurrentRef>
+    <WCFCurrentRef>cddd078e3efc27b2fc23c38d8028e3b647cd4fe3</WCFCurrentRef>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -20,9 +20,9 @@
     <PlatformPackageVersion>2.0.0-preview2-25316-01</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.0.0-preview2-25316-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
-    <NETStandardVersion>2.0.0-preview2-25315-01</NETStandardVersion>
+    <NETStandardVersion>2.0.0-preview2-25316-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.4.0-preview2-25315-01</WcfVersion>
+    <WcfVersion>4.4.0-preview2-25316-01</WcfVersion>
   </PropertyGroup>
   
   <!-- Package dependency verification/auto-upgrade configuration. -->
