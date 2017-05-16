@@ -7986,16 +7986,16 @@ void JitTimer::PrintCsvHeader()
         if (ftell(fp) == 0)
         {
             fprintf(fp, "\"Method Name\",");
-            fprintf(fp, "\"Method Index\",");
+            fprintf(fp, "\"Assembly or SPMI Index\",");
             fprintf(fp, "\"IL Bytes\",");
             fprintf(fp, "\"Basic Blocks\",");
-            fprintf(fp, "\"Opt Level\",");
+            fprintf(fp, "\"Min Opts\",");
             fprintf(fp, "\"Loops Cloned\",");
 
             for (int i = 0; i < PHASE_NUMBER_OF; i++)
             {
                 fprintf(fp, "\"%s\",", PhaseNames[i]);
-                if (PhaseReportsIRSize[i])
+                if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
                 {
                     fprintf(fp, "\"Node Count After %s\",", PhaseNames[i]);
                 }
@@ -8039,7 +8039,16 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
 
     FILE* fp = _wfopen(jitTimeLogCsv, W("a"));
     fprintf(fp, "\"%s\",", methName);
-    fprintf(fp, "%d,", index);
+    if (index != 0)
+    {
+        fprintf(fp, "%d,", index);
+    }
+    else
+    {
+        const char* methodAssemblyName = comp->info.compCompHnd->getAssemblyName(
+            comp->info.compCompHnd->getModuleAssembly(comp->info.compCompHnd->getClassModule(comp->info.compClassHnd)));
+        fprintf(fp, "\"%s\",", methodAssemblyName);
+    }
     fprintf(fp, "%u,", comp->info.compILCodeSize);
     fprintf(fp, "%u,", comp->fgBBcount);
     fprintf(fp, "%u,", comp->opts.MinOpts());
@@ -8053,7 +8062,7 @@ void JitTimer::PrintCsvMethodStats(Compiler* comp)
         }
         fprintf(fp, "%I64u,", m_info.m_cyclesByPhase[i]);
 
-        if (PhaseReportsIRSize[i])
+        if ((JitConfig.JitMeasureIR() != 0) && PhaseReportsIRSize[i])
         {
             fprintf(fp, "%u,", m_info.m_nodeCountAfterPhase[i]);
         }
