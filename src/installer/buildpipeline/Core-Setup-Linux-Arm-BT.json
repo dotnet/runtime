@@ -404,6 +404,13 @@
     },
     "PB_DebRepoServer": {
       "value": "azure-apt-cat.cloudapp.net"
+    },
+    "PB_ChecksumAzureAccountName": {
+      "value": "dotnetclichecksums"
+    },
+    "PB_ChecksumAzureAccessToken": {
+      "value": null,
+      "isSecret": true
     }
   },
   "demands": [
