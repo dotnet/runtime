@@ -89,14 +89,14 @@
     <FinalizeBuild AccountName="$(AzureAccountName)"
                    AccountKey="$(AzureAccessToken)"
                    ContainerName="$(ContainerName)"
-                   SemaphoreBlob="$(Channel)/Binaries/sharedFxPublishSemaphore"
+                   SemaphoreBlob="Runtime/$(Channel)/sharedFxPublishSemaphore"
                    Channel="$(Channel)"
                    Version="$(SharedFrameworkNugetVersion)"
                    SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
                    SharedHostNuGetVersion="$(HostVersion)"
-                   PublishRids="@(PublishRid)"
+                   ProductVersion="$(ProductVersion)"
                    CommitHash="$(LatestCommit)"
-                   FinalizeContainer="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)"
+                   FinalizeContainer="Runtime/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  
                    Condition="'@(_MissingBlobNames)' == ''" />
   </Target>
@@ -113,7 +113,7 @@
     <GetAzureBlobList AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
-                      FilterblobNames="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)">
+                      FilterblobNames="Runtime/$(SharedFrameworkNugetVersion)">
       <Output TaskParameter="BlobNames" ItemName="_BlobList" />
     </GetAzureBlobList>
     <ItemGroup>

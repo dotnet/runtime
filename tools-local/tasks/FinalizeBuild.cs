@@ -35,9 +35,9 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string SharedHostNugetVersion { get; set; }
         [Required]
-        public string Version { get; set; }
+        public string ProductVersion { get; set; }
         [Required]
-        public ITaskItem [] PublishRids { get; set; }
+        public string Version { get; set; }
         [Required]
         public string CommitHash { get; set; }
         public bool ForcePublish { get; set; }
@@ -92,20 +92,11 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 try
                 {
-                    CopyBlobs($"{Channel}/Binaries/{SharedFrameworkNugetVersion}", $"{Channel}/Binaries/Latest/");
+                    CopyBlobs($"Runtime/{ProductVersion}", $"Runtime/{Channel}/");
 
-                    CopyBlobs($"{Channel}/Installers/{SharedFrameworkNugetVersion}", $"{Channel}/Installers/Latest/");
-
-                    CopyBlobs($"{Channel}/Installers/{SharedHostNugetVersion}", $"{Channel}/Installers/Latest/");
-
-                    // Generate the Sharedfx Version text files
-                    List<string> versionFiles = PublishRids.Select(p => $"{p.GetMetadata("VersionFileName")}.version").ToList();
-
+                    // Generate the latest version text file
                     string sfxVersion = GetSharedFrameworkVersionFileContent();
-                    foreach(string version in versionFiles)
-                    {
-                        PublishStringToBlob(ContainerName, $"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion, "text/plain");
-                    }
+                    PublishStringToBlob(ContainerName, $"Runtime/{Channel}/latest.version", sfxVersion, "text/plain");
                 }
                 finally
                 {
