@@ -90,7 +90,7 @@
                       />
   </Target>
   
-  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" Condition="'$(UsePrebuiltPortableBinaries)' == 'false'"/>
+  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'"/>
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="GenerateZip"
@@ -160,7 +160,7 @@
   </PropertyGroup>
   <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
 
-  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinaries)' == 'false'">
+  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
     <ItemGroup>
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
