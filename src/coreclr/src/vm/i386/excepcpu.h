@@ -97,10 +97,6 @@ EXTERN_C LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext);
 #ifdef WIN64EXCEPTIONS
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext);
-
-class FaultingExceptionFrame;
-
-FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext);
 #endif // WIN64EXCEPTIONS
 
 // Determine the address of the instruction that made the current call.
