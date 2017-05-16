@@ -10,7 +10,7 @@
     <BinariesRelativePath>$(Channel)/Binaries/$(SharedFrameworkNugetVersion)</BinariesRelativePath>
     <InstallersRelativePath>$(Channel)/Installers/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
     <ChecksumsRelativePath>Runtime/$(ProductVersion)</ChecksumsRelativePath>
-    <ChecksumExtension>.sha512<ChecksumExtension>
+    <ChecksumExtension>.sha512</ChecksumExtension>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -23,9 +23,6 @@
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </CompressedFile>
     <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.nupkg" >
-      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
-    </RuntimePackageFile>
-    <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.symbols.nupkg" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RuntimePackageFile>
     <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
