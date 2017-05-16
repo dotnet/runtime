@@ -67,7 +67,8 @@ namespace System.IO
                 StringBuilder fileSystemName = new StringBuilder(fileSystemNameLen);
                 int serialNumber, maxFileNameLen, fileSystemFlags;
 
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
@@ -78,7 +79,8 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (success)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
                 return fileSystemName.ToString();
             }
@@ -90,7 +92,8 @@ namespace System.IO
             get
             {
                 long userBytes, totalBytes, freeBytes;
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
@@ -99,7 +102,8 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (success)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
                 return userBytes;
             }
@@ -111,7 +115,8 @@ namespace System.IO
             get
             {
                 long userBytes, totalBytes, freeBytes;
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
@@ -120,7 +125,8 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (success)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
                 return freeBytes;
             }
@@ -134,7 +140,8 @@ namespace System.IO
                 // Don't cache this, to handle variable sized floppy drives
                 // or other various removable media drives.
                 long userBytes, totalBytes, freeBytes;
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.GetDiskFreeSpaceEx(Name, out userBytes, out totalBytes, out freeBytes);
@@ -143,7 +150,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
                 return totalBytes;
             }
@@ -174,7 +181,8 @@ namespace System.IO
                 StringBuilder fileSystemName = new StringBuilder(fileSystemNameLen);
                 int serialNumber, maxFileNameLen, fileSystemFlags;
 
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.GetVolumeInformation(Name, volumeName, volNameLen, out serialNumber, out maxFileNameLen, out fileSystemFlags, fileSystemName, fileSystemNameLen);
@@ -190,14 +198,16 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (success)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
                 return volumeName.ToString();
             }
             [System.Security.SecuritySafeCritical]  // auto-generated
             set
             {
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool r = Interop.Kernel32.SetVolumeLabel(Name, value);
@@ -212,7 +222,8 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (success)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
             }
         }
