@@ -508,9 +508,15 @@ namespace Mono.Linker.Steps {
 			while (_topLevelAttributes.Count != 0) {
 				var customAttribute = _topLevelAttributes.Dequeue ();
 
+				var resolved = customAttribute.AttributeType.Resolve ();
+				if (resolved == null) {
+					HandleUnresolvedType (customAttribute.AttributeType);
+					continue;
+				}
+
 				// If an attribute's module has not been marked after processing all types in all assemblies and the attribute itself has not been marked,
 				// then surely nothing is using this attribute and there is no need to mark it
-				if (!Annotations.IsMarked (customAttribute.AttributeType.Resolve ().Module) && !Annotations.IsMarked (customAttribute.AttributeType))
+				if (!Annotations.IsMarked (resolved.Module) && !Annotations.IsMarked (customAttribute.AttributeType))
 					continue;
 
 				MarkCustomAttribute (customAttribute);
