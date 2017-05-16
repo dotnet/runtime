@@ -379,7 +379,7 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 bool pal::realpath(string_t* path)
 {
 
-    if (!LongFile::ShouldNormalize(*path))
+    if (LongFile::IsNormalized(*path))
     {
         return true;
     }
