@@ -46,7 +46,11 @@ namespace System.Net.Sockets
             }
         }
 
+#if DEBUG
         private const int EventBufferCount = 64;
+#else
+        private const int EventBufferCount = 1024;
+#endif
 
         private static readonly object s_lock = new object();
 
