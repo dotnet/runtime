@@ -41,7 +41,7 @@ namespace Functions
 
             if (diff > doubleEpsilon)
             {
-                throw new Exception($"Expected Result {powDoubleExpectedResult}; Actual Result {result}");
+                throw new Exception($"Expected Result {powDoubleExpectedResult,20:g17}; Actual Result {result,20:g17}");
             }
         }
     }
