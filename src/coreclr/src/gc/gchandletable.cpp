@@ -56,6 +56,18 @@ OBJECTHANDLE GCHandleStore::CreateDependentHandle(Object* primary, Object* secon
     return handle;
 }
 
+void GCHandleStore::RelocateAsyncPinnedHandles(IGCHandleStore* pTarget)
+{
+    // assumption - the IGCHandleStore is an instance of GCHandleStore
+    GCHandleStore* other = static_cast<GCHandleStore*>(pTarget);
+    ::Ref_RelocateAsyncPinHandles(&_underlyingBucket, &other->_underlyingBucket);
+}
+
+bool GCHandleStore::EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context)
+{
+    return !!::Ref_HandleAsyncPinHandles(callback, context);
+}
+
 GCHandleStore::~GCHandleStore()
 {
     ::Ref_DestroyHandleTableBucket(&_underlyingBucket);

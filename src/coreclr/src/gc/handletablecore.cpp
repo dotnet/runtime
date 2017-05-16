@@ -908,7 +908,7 @@ void SegmentCompactAsyncPinHandles(TableSegment *pSegment, TableSegment **ppWork
 
 
 // Mark AsyncPinHandles ready to be cleaned when the marker job is processed
-BOOL SegmentHandleAsyncPinHandles (TableSegment *pSegment)
+BOOL SegmentHandleAsyncPinHandles (TableSegment *pSegment, const AsyncPinCallbackContext &callbackCtx)
 {
     CONTRACTL
     {
@@ -945,11 +945,10 @@ BOOL SegmentHandleAsyncPinHandles (TableSegment *pSegment)
             _UNCHECKED_OBJECTREF value = *pValue;
             if (!HndIsNullOrDestroyedHandle(value))
             {
-                _ASSERTE (value->GetMethodTable() == g_pOverlappedDataClass);
-                OVERLAPPEDDATAREF overlapped = (OVERLAPPEDDATAREF)(ObjectToOBJECTREF((Object*)value));
-                if (overlapped->GetAppDomainId() != DefaultADID && overlapped->HasCompleted())
+                // calls back into the VM using the callback given to
+                // Ref_HandleAsyncPinHandles
+                if (callbackCtx.Invoke((Object*)value))
                 {
-                    overlapped->HandleAsyncPinHandle();
                     result = TRUE;
                 }
             }
@@ -1024,7 +1023,7 @@ bool SegmentRelocateAsyncPinHandles (TableSegment *pSegment, HandleTable *pTarge
 // We will queue a marker Overlapped to io completion port.  We use the marker
 // to make sure that all iocompletion jobs before this marker have been processed.
 // After that we can free the async pinned handles.
-BOOL TableHandleAsyncPinHandles(HandleTable *pTable)
+BOOL TableHandleAsyncPinHandles(HandleTable *pTable, const AsyncPinCallbackContext &callbackCtx)
 {
     CONTRACTL
     {
@@ -1043,7 +1042,7 @@ BOOL TableHandleAsyncPinHandles(HandleTable *pTable)
 
     while (pSegment)
     {
-        if (SegmentHandleAsyncPinHandles (pSegment))
+        if (SegmentHandleAsyncPinHandles (pSegment, callbackCtx))
         {
             result = TRUE;
         }
