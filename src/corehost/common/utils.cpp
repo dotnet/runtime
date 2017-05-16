@@ -55,7 +55,7 @@ void append_path(pal::string_t* path1, const pal::char_t* path2)
     }
     else
     {
-        if (path1->empty() || path1->back() != DIR_SEPARATOR)
+        if (!path1->empty() && path1->back() != DIR_SEPARATOR)
         {
             path1->push_back(DIR_SEPARATOR);
         }
