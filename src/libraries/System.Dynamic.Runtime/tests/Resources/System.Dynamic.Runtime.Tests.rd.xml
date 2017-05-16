@@ -1,0 +1,9 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <Type Name="System.Func&lt;&gt;" Dynamic="Required Public" />
+    <Type Name="System.Func&lt;,&gt;" Dynamic="Required Public" />
+    <Type Name="System.Func&lt;,,,&gt;" Dynamic="Required Public" />
+    <Type Name="System.TimeoutException" Dynamic="Required Public" />
+  </Library>
+</Directives>
+

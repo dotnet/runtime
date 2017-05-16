@@ -118,6 +118,8 @@
       <Type Name="System.Linq.Expressions.ExpressionType" Serialize="Public"/>
       <!-- Every Expression<T> type must be visible to reflection -->
       <Type Name="System.Linq.Expressions.Expression&lt;&gt;" Activate="Public"/>
+      <!-- CachedReflectionInfo.cs obtains MemberInfo's for many DynamicObject members -->
+      <Type Name="System.Dynamic.DynamicObject" Dynamic="Required Public" />
     </Assembly>
     <Assembly Name="System.Private.CoreLib">
       <Namespace Name="System">
