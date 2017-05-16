@@ -89,7 +89,7 @@
         "solution": "$(PB_SourcesDirectory)\\publish\\publish.proj",
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken)",
+        "msbuildArguments": "$(PB_CommonMSBuildArgs) /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken)",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -215,6 +215,13 @@
       "value": "sourcebuild"
     },
     "PB_AzureAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_ChecksumAzureAccountName": {
+      "value": "dotnetclichecksums"
+    },
+    "PB_ChecksumAzureAccessToken": {
       "value": null,
       "isSecret": true
     },
