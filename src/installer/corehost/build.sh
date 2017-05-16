@@ -74,6 +74,7 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+RootRepo="$DIR/../.."
 
 __build_arch=
 __host_ver=
@@ -154,6 +155,13 @@ case $__build_arch in
         ;;
 esac
 __cmake_defines="${__cmake_defines} ${__arch_define}"
+
+# Configure environment if we are doing a cross compile.
+if [ "$__CrossBuild" == 1 ]; then
+    if ! [[ -n $ROOTFS_DIR ]]; then
+        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
+    fi
+fi
 
 # __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
 __rid_plat=
