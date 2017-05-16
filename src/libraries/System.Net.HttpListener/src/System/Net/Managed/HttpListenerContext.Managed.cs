@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Net.WebSockets;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -87,21 +88,12 @@ namespace System.Net
             }
         }
 
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol)
-        {
-            return AcceptWebSocketAsync(subProtocol, HttpWebSocket.DefaultReceiveBufferSize, WebSocket.DefaultKeepAliveInterval);
-        }
-
-        public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, TimeSpan keepAliveInterval)
-        {
-            return AcceptWebSocketAsync(subProtocol, HttpWebSocket.DefaultReceiveBufferSize, keepAliveInterval);
-        }
-
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, TimeSpan keepAliveInterval)
         {
             return HttpWebSocket.AcceptWebSocketAsyncCore(this, subProtocol, receiveBufferSize, keepAliveInterval);
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, TimeSpan keepAliveInterval, ArraySegment<byte> internalBuffer)
         {
             WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));

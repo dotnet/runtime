@@ -5,6 +5,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 
 namespace System.Net.WebSockets
 {
@@ -80,6 +81,99 @@ namespace System.Net.WebSockets
                 SR.Format(SR.net_WebSockets_AcceptUnsupportedProtocol,
                     clientSecWebSocketProtocol,
                     subProtocol));
+        }
+
+        internal static void ValidateOptions(string subProtocol, int receiveBufferSize, int sendBufferSize, TimeSpan keepAliveInterval)
+        {
+            if (subProtocol != null)
+            {
+                WebSocketValidate.ValidateSubprotocol(subProtocol);
+            }
+            
+            if (receiveBufferSize < MinReceiveBufferSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, MinReceiveBufferSize));
+            }
+
+            if (sendBufferSize < MinSendBufferSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, MinSendBufferSize));
+            }
+
+            if (receiveBufferSize > MaxBufferSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
+                        nameof(receiveBufferSize),
+                        receiveBufferSize,
+                        MaxBufferSize));
+            }
+
+            if (sendBufferSize > MaxBufferSize)
+            {
+                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
+                        nameof(sendBufferSize),
+                        sendBufferSize,
+                        MaxBufferSize));
+            }
+
+            if (keepAliveInterval < Timeout.InfiniteTimeSpan) // -1 millisecond
+            {
+                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, Timeout.InfiniteTimeSpan.ToString()));
+            }
+        }
+
+        internal const int MinSendBufferSize = 16;
+        internal const int MinReceiveBufferSize = 256;
+        internal const int MaxBufferSize = 64 * 1024;
+
+        private static void ValidateWebSocketHeaders(HttpListenerContext context)
+        {
+            if (!WebSocketsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);
+            }
+
+            if (!context.Request.IsWebSocketRequest)
+            {
+                throw new WebSocketException(WebSocketError.NotAWebSocket,
+                    SR.Format(SR.net_WebSockets_AcceptNotAWebSocket,
+                    nameof(ValidateWebSocketHeaders),
+                    HttpKnownHeaderNames.Connection,
+                    HttpKnownHeaderNames.Upgrade,
+                    HttpWebSocket.WebSocketUpgradeToken,
+                    context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
+            }
+
+            string secWebSocketVersion = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
+            if (string.IsNullOrEmpty(secWebSocketVersion))
+            {
+                throw new WebSocketException(WebSocketError.HeaderError,
+                    SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
+                    nameof(ValidateWebSocketHeaders),
+                    HttpKnownHeaderNames.SecWebSocketVersion));
+            }
+
+            if (!string.Equals(secWebSocketVersion, SupportedVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new WebSocketException(WebSocketError.UnsupportedVersion,
+                    SR.Format(SR.net_WebSockets_AcceptUnsupportedWebSocketVersion,
+                    nameof(ValidateWebSocketHeaders),
+                    secWebSocketVersion,
+                    SupportedVersion));
+            }
+
+            if (string.IsNullOrWhiteSpace(context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey]))
+            {
+                throw new WebSocketException(WebSocketError.HeaderError,
+                    SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
+                    nameof(ValidateWebSocketHeaders),
+                    HttpKnownHeaderNames.SecWebSocketKey));
+            }
         }
     }
 }
