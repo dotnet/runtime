@@ -115,7 +115,7 @@ namespace System.Net
             // SendHeaders works on shared headers
             lock (_response._headersLock)
             {
-                if (_response._headersSent)
+                if (_response.SentHeaders)
                 {
                     return null;
                 }

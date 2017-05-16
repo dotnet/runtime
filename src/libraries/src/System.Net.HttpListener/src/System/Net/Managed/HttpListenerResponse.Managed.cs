@@ -37,7 +37,6 @@ namespace System.Net
 {
     public sealed partial class HttpListenerResponse : IDisposable
     {
-        private bool _disposed;
         private long _contentLength;
         private bool _clSet;
         private string _contentType;
@@ -49,7 +48,6 @@ namespace System.Net
         private string _statusDescription = "OK";
         private bool _chunked;
         private HttpListenerContext _context;
-        internal bool _headersSent;
         internal object _headersLock = new object();
         private bool _forceCloseChunked;
 
@@ -65,11 +63,8 @@ namespace System.Net
             get => _contentLength;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
@@ -84,11 +79,8 @@ namespace System.Net
             get => _contentType;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 _contentType = value;
             }
@@ -99,11 +91,8 @@ namespace System.Net
             get => _keepAlive;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 _keepAlive = value;
             }
@@ -124,11 +113,8 @@ namespace System.Net
             get => _version;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 if (value == null)
                     throw new ArgumentNullException(nameof(value));
@@ -145,11 +131,8 @@ namespace System.Net
             get => _location;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 _location = value;
             }
@@ -160,11 +143,8 @@ namespace System.Net
             get => _chunked;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 _chunked = value;
             }
@@ -175,11 +155,8 @@ namespace System.Net
             get => _statusCode;
             set
             {
-                if (_disposed)
-                    throw new ObjectDisposedException(GetType().ToString());
-
-                if (_headersSent)
-                    throw new InvalidOperationException(SR.net_cannot_change_after_headers);
+                CheckDisposed();
+                CheckSentHeaders();
 
                 if (value < 100 || value > 999)
                     throw new ProtocolViolationException(SR.net_invalidstatus);
@@ -198,7 +175,7 @@ namespace System.Net
 
         public void Close()
         {
-            if (_disposed)
+            if (Disposed)
                 return;
 
             Close(false);
@@ -206,7 +183,7 @@ namespace System.Net
 
         public void Abort()
         {
-            if (_disposed)
+            if (Disposed)
                 return;
 
             Close(true);
@@ -214,13 +191,13 @@ namespace System.Net
 
         private void Close(bool force)
         {
-            _disposed = true;
+            Disposed = true;
             _context.Connection.Close(force);
         }
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            if (_disposed)
+            if (Disposed)
                 return;
 
             if (responseEntity == null)
@@ -364,7 +341,7 @@ namespace System.Net
 
             /* Assumes that the ms was at position 0 */
             ms.Position = preamble;
-            _headersSent = !isWebSocketHandshake;
+            SentHeaders = !isWebSocketHandshake;
         }
 
         private static string FormatHeaders(WebHeaderCollection headers)
@@ -429,6 +406,9 @@ namespace System.Net
             }
             return true;
         }
+
+        private bool Disposed { get; set; }
+        internal bool SentHeaders { get; set; }
     }
 }
 
