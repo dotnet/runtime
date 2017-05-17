@@ -758,22 +758,10 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 
 static MonoPIFunc mono_interp_enter_icall_trampoline = NULL;
 
-struct _MethodArguments {
-	size_t ilen;
-	gpointer *iargs;
-	size_t flen;
-	double *fargs;
-	gpointer *retval;
-	size_t is_float_ret;
-};
-
-typedef struct _MethodArguments MethodArguments;
-
 // TODO: this function is also arch dependent (register width).
-static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvocation *frame)
+static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvocation *frame)
 {
-	// TODO: don't malloc this data structure.
-	MethodArguments *margs = g_malloc0 (sizeof (MethodArguments));
+	InterpMethodArguments *margs = g_malloc0 (sizeof (InterpMethodArguments));
 
 	if (sig->hasthis)
 		margs->ilen++;
@@ -816,10 +804,10 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->flen > 0)
 		margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
 
-	if (margs->ilen > 12)
+	if (margs->ilen > INTERP_ICALL_TRAMP_IARGS)
 		g_error ("build_args_from_sig: TODO, allocate gregs: %d\n", margs->ilen);
 
-	if (margs->flen > 3)
+	if (margs->flen > INTERP_ICALL_TRAMP_FARGS)
 		g_error ("build_args_from_sig: TODO, allocate fregs: %d\n", margs->flen);
 
 
@@ -939,7 +927,7 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 		// mono_tramp_info_register (info, NULL);
 	}
 
-	MethodArguments *margs = build_args_from_sig (sig, frame);
+	InterpMethodArguments *margs = build_args_from_sig (sig, frame);
 #if DEBUG_INTERP
 	g_print ("ICALL: mono_interp_enter_icall_trampoline = %p, addr = %p\n", mono_interp_enter_icall_trampoline, addr);
 	g_print ("margs(out): ilen=%d, flen=%d\n", margs->ilen, margs->flen);

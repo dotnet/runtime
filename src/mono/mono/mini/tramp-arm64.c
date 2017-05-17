@@ -21,6 +21,11 @@
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/metadata/abi-details.h>
 
+#ifdef ENABLE_INTERPRETER
+#include "interp/interp.h"
+#endif
+
+
 #define ALIGN_TO(val,align) ((((guint64)val) + ((align) - 1)) & ~((align) - 1))
 
 void
@@ -668,10 +673,8 @@ gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 #ifdef ENABLE_INTERPRETER
-	/* sync with constants in interp.c */
-	/* TODO: should be shared with other platforms */
-	const int gregs_num = ARMREG_R12;
-	const int fregs_num = 3;
+	const int gregs_num = INTERP_ICALL_TRAMP_IARGS;
+	const int fregs_num = INTERP_ICALL_TRAMP_FARGS;
 
 	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
 	MonoJumpInfo *ji = NULL;
@@ -699,25 +702,26 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, stack_space);
 	arm_addx_imm (code, ARMREG_FP, ARMREG_SP, stack_space);
 
-	/* save MethodArguments* onto stack */
+	/* save InterpMethodArguments* onto stack */
 	arm_strx (code, ARMREG_R1, ARMREG_FP, off_methodargs);
 
 	/* save target address onto stack */
 	arm_strx (code, ARMREG_R0, ARMREG_FP, off_targetaddr);
 
-	/* load pointer to MethodArguments* into IP0 */
+	/* load pointer to InterpMethodArguments* into IP0 */
 	arm_movx (code, ARMREG_IP0, ARMREG_R1);
 
-	/* move flen into R9 */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, 16);
-	/* load pointer to fregs into R10 */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, 24);
+	/* move flen into R9 */
+	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, flen));
+	/* load pointer to fargs into R10 */
+	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, fargs));
 
 	for (i = 0; i < fregs_num; ++i) {
 		arm_cmpx_imm (code, ARMREG_R9, 0);
 		label_fexits [i] = code;
 		arm_bcc (code, ARMCOND_EQ, 0);
 
+		g_assert (i <= ARMREG_D7); /* otherwise, need to pass args on stack */
 		arm_ldrfpx (code, i, ARMREG_R10, i * sizeof (double));
 		arm_subx_imm (code, ARMREG_R9, ARMREG_R9, 1);
 	}
@@ -725,10 +729,10 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < fregs_num; i++)
 		mono_arm_patch (label_fexits [i], code, MONO_R_ARM64_BCC);
 
-	/* move ilen into R9 */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, 0);
-	/* load pointer to iregs into R10 */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, 8);
+	/* move ilen into R9 */
+	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, ilen));
+	/* load pointer to iargs into R10 */
+	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, iargs));
 
 	int stack_offset = 0;
 	for (i = 0; i < gregs_num; i++) {
@@ -755,11 +759,11 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	/* call into native function */
 	arm_blrx (code, ARMREG_R11);
 
-	/* load MethodArguments */
+	/* load InterpMethodArguments */
 	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_methodargs);
 
-	/* load is_float_ret */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, 0x28);
+	/* load is_float_ret */
+	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, is_float_ret));
 
 	/* check if a float return value is expected */
 	arm_cmpx_imm (code, ARMREG_R11, 0);
@@ -767,8 +771,8 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	arm_bcc (code, ARMCOND_NE, 0);
 
 	/* greg return */
-	/* load retval */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, 0x20);
+	/* load retval */
+	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, retval));
 
 	arm_cmpx_imm (code, ARMREG_R11, 0);
 	label_leave_tramp [0] = code;
@@ -782,8 +786,8 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	/* freg return */
 	mono_arm_patch (label_is_float_ret, code, MONO_R_ARM64_BCC);
-	/* load retval */ // TODO: struct offset
-	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, 0x20);
+	/* load retval */
+	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, MONO_STRUCT_OFFSET (InterpMethodArguments, retval));
 
 	arm_cmpx_imm (code, ARMREG_R11, 0);
 	label_leave_tramp [2] = code;
