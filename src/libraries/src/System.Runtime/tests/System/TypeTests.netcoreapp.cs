@@ -49,12 +49,9 @@ namespace System.Tests
         [Fact]
         public void IsSZArray_FalseForVariableBoundArrayTypes()
         {
-            if (!PlatformDetection.IsNetNative) // Multidim arrays of rank 1 not supported on UapAot: https://github.com/dotnet/corert/issues/3331
+            foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType(1)))
             {
-                foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType(1)))
-                {
-                    Assert.False(type.IsSZArray);
-                }
+                Assert.False(type.IsSZArray);
             }
 
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType(2)))
@@ -103,12 +100,9 @@ namespace System.Tests
         [Fact]
         public void IsVariableBoundArray_TrueForVariableBoundArrayTypes()
         {
-            if (!PlatformDetection.IsNetNative) // Multidim arrays of rank 1 not supported on UapAot: https://github.com/dotnet/corert/issues/3331
+            foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType(1)))
             {
-                foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType(1)))
-                {
-                    Assert.True(type.IsVariableBoundArray);
-                }
+                Assert.True(type.IsVariableBoundArray);
             }
 
             foreach (Type type in NonArrayBaseTypes.Select(nonArrayBaseType => nonArrayBaseType.MakeArrayType(2)))

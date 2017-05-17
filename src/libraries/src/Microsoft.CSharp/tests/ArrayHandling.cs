@@ -11,8 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 {
     public class ArrayHandling
     {
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corert/issues/3331")]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void SingleRankNonSZArray()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
@@ -25,58 +24,95 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [Fact]
         public void ArrayTypeNames()
         {
-            dynamic d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
-            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
-            Assert.Contains("int[*]", ex.Message);
+            dynamic d;
+            RuntimeBinderException ex;
+
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                d = Array.CreateInstance(typeof(int), new[] { 8 }, new[] { -2 });
+                ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+                {
+                    Assert.Contains("int[*]", ex.Message);
+                }
+            }
 
             d = new int[3];
             ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
-            Assert.Contains("int[]", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("int[]", ex.Message);
+            }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corert/issues/3331")]
         public void MultiDimArrayTypeNames()
         {
             dynamic d = new int[3, 2, 1];
             RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
-            Assert.Contains("int[,,]", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("int[,,]", ex.Message);
+            }
 
-            d = Array.CreateInstance(typeof(int), new[] { 3, 2, 1 }, new[] { -2, 2, -0 });
-            ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
-            Assert.Contains("int[,,]", ex.Message);
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                d = Array.CreateInstance(typeof(int), new[] { 3, 2, 1 }, new[] { -2, 2, -0 });
+                ex = Assert.Throws<RuntimeBinderException>(() => { string s = d; });
+                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+                {
+                    Assert.Contains("int[,,]", ex.Message);
+                }
+            }
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corert/issues/3331")]
         public void IncorrectNumberOfIndices()
         {
             dynamic d = new int[2, 2, 2];
             RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d[1] = 0);
-            Assert.Contains("[]", ex.Message);
-            Assert.Contains("'3'", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("[]", ex.Message);
+                Assert.Contains("'3'", ex.Message);
+            }
 
 
             ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4] = 0);
-            Assert.Contains("[]", ex.Message);
-            Assert.Contains("'3'", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("[]", ex.Message);
+                Assert.Contains("'3'", ex.Message);
+            }
 
             ex = Assert.Throws<RuntimeBinderException>(() => d[1]);
-            Assert.Contains("[]", ex.Message);
-            Assert.Contains("'3'", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("[]", ex.Message);
+                Assert.Contains("'3'", ex.Message);
+            }
 
             ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4]);
-            Assert.Contains("[]", ex.Message);
-            Assert.Contains("'3'", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("[]", ex.Message);
+                Assert.Contains("'3'", ex.Message);
+            }
 
             d = new int[2];
             ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4] = 0);
-            Assert.Contains("[]", ex.Message);
-            Assert.Contains("'1'", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("[]", ex.Message);
+                Assert.Contains("'1'", ex.Message);
+            }
 
             ex = Assert.Throws<RuntimeBinderException>(() => d[1, 2, 3, 4]);
-            Assert.Contains("[]", ex.Message);
-            Assert.Contains("'1'", ex.Message);
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages.
+            {
+                Assert.Contains("[]", ex.Message);
+                Assert.Contains("'1'", ex.Message);
+            }
         }
     }
 }

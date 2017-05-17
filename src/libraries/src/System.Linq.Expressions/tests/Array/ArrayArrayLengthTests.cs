@@ -1929,7 +1929,6 @@ namespace System.Linq.Expressions.Tests
         #region Regression tests
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim rank 1 arrays not supported: https://github.com/dotnet/corert/issues/3331")]
         public static void ArrayLength_MultiDimensionalOf1()
         {
             foreach (var e in new Expression[] { Expression.Parameter(typeof(int).MakeArrayType(1)), Expression.Constant(new int[2, 2]) })
