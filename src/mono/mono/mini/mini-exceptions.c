@@ -2131,6 +2131,10 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
 #if defined(TARGET_AMD64)
 						ctx->gregs [AMD64_RIP] ++;
+#elif defined(TARGET_ARM)
+						ctx->pc ++;
+						/* set thumb bit */
+						ctx->pc |= 1;
 #elif defined(TARGET_ARM64)
 						ctx->pc ++;
 #else
