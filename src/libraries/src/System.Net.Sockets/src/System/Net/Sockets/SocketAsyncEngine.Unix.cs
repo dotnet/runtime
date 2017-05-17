@@ -102,7 +102,7 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
-        private static readonly IntPtr MinHandlesAdditionalEngine = EngineCount == 1 ? MaxHandles : (IntPtr)32;
+        private static readonly IntPtr MinHandlesForAdditionalEngine = EngineCount == 1 ? MaxHandles : (IntPtr)32;
 
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
@@ -134,6 +134,16 @@ namespace System.Net.Sockets
         //
         private bool IsFull { get { return _nextHandle == MaxHandles; } }
 
+        // True if we've don't have sufficient active sockets to allow allocating a new engine.
+        private bool HasLowNumberOfSockets
+        {
+            get
+            {
+                return IntPtr.Size == 4 ? _outstandingHandles.ToInt32() < MinHandlesForAdditionalEngine.ToInt32() :
+                                          _outstandingHandles.ToInt64() < MinHandlesForAdditionalEngine.ToInt64();
+            }
+        }
+
         //
         // Allocates a new {SocketAsyncEngine, handle} pair.
         //
@@ -144,12 +154,11 @@ namespace System.Net.Sockets
                 engine = s_currentEngines[s_allocateFromEngine];
                 if (engine == null)
                 {
-                    // Minimize the number of engines on applications which have a low number of concurrent sockets.
+                    // We minimize the number of engines on applications that have a low number of concurrent sockets.
                     for (int i = 0; i < s_allocateFromEngine; i++)
                     {
                         var previousEngine = s_currentEngines[i];
-                        if (previousEngine == null ||
-                            previousEngine._outstandingHandles.ToInt64() < MinHandlesAdditionalEngine.ToInt64())
+                        if (previousEngine == null || previousEngine.HasLowNumberOfSockets)
                         {
                             s_allocateFromEngine = i;
                             engine = previousEngine;
@@ -170,8 +179,8 @@ namespace System.Net.Sockets
                     s_currentEngines[s_allocateFromEngine] = null;
                 }
 
-                // Round-robin to the next engine.
-                if (engine._outstandingHandles.ToInt64() >= MinHandlesAdditionalEngine.ToInt64())
+                // Round-robin to the next engine once we have sufficient sockets on this one.
+                if (!engine.HasLowNumberOfSockets)
                 {
                     s_allocateFromEngine = (s_allocateFromEngine + 1) % EngineCount;
                 }
