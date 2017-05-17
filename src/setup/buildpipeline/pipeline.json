@@ -15,22 +15,13 @@
         "BuildConfiguration": "Release"
       },
       "Definitions": [
-         {
-          "Name": "Core-Setup-OSX-x64",
-          "Parameters": {
-            "PB_PortableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "SubType": "PortableBuild",
-            "OperatingSystem": "OSX",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
         {
-          "Name": "Core-Setup-PortableLinux-x64",
+          "Name": "Core-Setup-Linux-BT",
           "Parameters": {
-            "PB_PortableBuild": "-portable"
+            "PB_DistroRid": "rhel.7.2-x64",
+            "PB_DockerTag": "rhel7_prereqs_2",
+            "PB_AdditionalBuildArguments":"-PortableBuild=true",
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "SubType": "PortableBuild",
@@ -40,9 +31,85 @@
           }
         },
         {
-          "Name": "Core-Setup-Signing-Windows-x86",
+          "Name": "Core-Setup-Linux-Arm-BT", 
+          "Parameters": { 
+            "PB_DistroRid": "ubuntu.14.04-arm", 
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239", 
+            "PB_TargetArchitecture": "arm", 
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true",
+            "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
+            "PB_PortableBuild": "true" 
+          }, 
+          "ReportingParameters": { 
+            "SubType": "PortableBuild", 
+            "OperatingSystem": "Ubuntu 14.04", 
+            "Type": "build/product/", 
+            "Platform": "arm" 
+          } 
+        },         
+        {
+          "Name": "Core-Setup-OSX-BT",
           "Parameters": {
-            "PB_PortableBuild": "-portable"
+            "PB_PortableBuildArg": "-PortableBuild=true",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "OSX",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-BT",
+          "Parameters": {
+            "PB_AdditionalBuildArguments": "/p:SkipTests=true",
+            "PB_TargetArchitecture": "arm",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-BT",
+          "Parameters": {
+            "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
+            "PB_TargetArchitecture": "arm64",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Windows",
+            "Type": "build/product/",
+            "Platform": "arm64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Signing-Windows-BT",
+          "Parameters": {
+            "PB_DistroRid": "win7-x64",
+            "PB_TargetArchitecture": "x64",
+            "PB_PortableBuild": "true",
+            "PB_PublishRidAgnosticPackages": "true",
+            "PB_BuildFullPlatformManifest": "true"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Signing-Windows-BT",
+          "Parameters": {
+            "PB_DistroRid": "win7-x86",
+            "PB_TargetArchitecture": "x86",
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -50,49 +117,11 @@
             "Type": "build/product/",
             "Platform": "x86"
           }
-        },
-        {
-          "Name": "Core-Setup-CrossBuild",
-          "Parameters": {
-            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
-            "PB_Architecture": "arm",
-            "TargetRid": "linux-arm",
-            "PB_PortableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "SubType": "PortableBuild",
-            "Type": "build/product/"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm32",
-          "Parameters": {
-            "PB_PortableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType": "PortableBuild",
-            "Type": "build/product/",
-            "Platform": "arm"
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm64",
-          "Parameters": {
-            "PB_PortableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType": "PortableBuild",
-            "Type": "build/product/",
-            "Platform": "arm64"
-          }
         }
       ]
     },
     {
-      "Name": "Trusted-Finalize-Release",
+      "Name": "Publish finalized build",
       "Parameters": {
         "TreatWarningsAsErrors": "false"
       },
@@ -101,13 +130,13 @@
       },
       "Definitions": [
         {
-          "Name": "Core-Setup-Signing-Windows-x64",
+          "Name": "Core-Setup-Publish",
           "Parameters": {
-            "PB_PortableBuild": "-portable"
+            "PB_TargetArchitecture": "x64",
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
-            "SubType": "PortableBuild",
+            "SubType": "Publish",
             "Type": "build/product/",
             "Platform": "x64"
           }
