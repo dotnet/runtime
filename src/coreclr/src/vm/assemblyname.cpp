@@ -57,20 +57,11 @@ FCIMPL1(Object*, AssemblyNameNative::GetFileInformation, StringObject* filenameU
     SString sFileName(gc.filename->GetBuffer());
     PEImageHolder pImage = PEImage::OpenImage(sFileName, MDInternalImport_NoCache);
 
-    EX_TRY
-    {
-        // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
-        if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
-            pImage->VerifyIsNIAssembly();
-        else
-            pImage->VerifyIsAssembly();
-    }
-    EX_CATCH
-    {
-        Exception *ex = GET_EXCEPTION();
-        EEFileLoadException::Throw(sFileName,ex->GetHR(),ex);
-    }
-    EX_END_CATCH_UNREACHABLE;
+    // Allow AssemblyLoadContext.GetAssemblyName for native images on CoreCLR
+    if (pImage->HasNTHeaders() && pImage->HasCorHeader() && pImage->HasNativeHeader())
+        pImage->VerifyIsNIAssembly();
+    else
+        pImage->VerifyIsAssembly();
 
     SString sUrl = sFileName;
     PEAssembly::PathToUrl(sUrl);
@@ -155,7 +146,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 FCIMPLEND
 
 
-FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fForIntrospection, CLR_BOOL fRaiseResolveEvent)
+FCIMPL3(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fRaiseResolveEvent)
 {
     FCALL_CONTRACT;
 
@@ -182,7 +173,7 @@ FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAss
     }
     else if ((hr == FUSION_E_INVALID_NAME) && fRaiseResolveEvent)
     {
-        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, fForIntrospection, FALSE);
+        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, FALSE, FALSE);
 
         if (pAssembly == NULL)
         {

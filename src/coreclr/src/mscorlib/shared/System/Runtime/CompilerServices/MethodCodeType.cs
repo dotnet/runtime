@@ -6,7 +6,6 @@ using System.Reflection;
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     public enum MethodCodeType
     {
         IL = MethodImplAttributes.IL,

@@ -19,6 +19,8 @@
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 
+#include "typestring.h"
+
 #ifndef FEATURE_PAL
 #include "dwreport.h"
 #endif // !FEATURE_PAL

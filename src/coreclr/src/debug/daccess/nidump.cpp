@@ -3721,18 +3721,6 @@ const WCHAR * g_sectionNames[] =
 #pragma warning(disable:21000) // Suppress PREFast warning about overly large function
 #endif
 
-const NativeImageDumper::EnumMnemonics s_MSDFlags[] =
-{
-#define MSD_ENTRY(f) NativeImageDumper::EnumMnemonics(ModuleSecurityDescriptorFlags_ ## f, W(#f))
-    MSD_ENTRY(IsComputed),
-    MSD_ENTRY(IsAllCritical),
-    MSD_ENTRY(IsAllTransparent),
-    MSD_ENTRY(IsTreatAsSafe),
-    MSD_ENTRY(IsOpportunisticallyCritical),
-    MSD_ENTRY(SkipFullTrustVerification)
-#undef MSD_ENTRY
-};
-
 void NativeImageDumper::DumpModule( PTR_Module module )
 {
 
@@ -4062,16 +4050,6 @@ void NativeImageDumper::DumpModule( PTR_Module module )
                               DataPtrToDisplay(dac_cast<TADDR>(module->m_debuggerSpecificData.m_pDynamicILCrst)),
                               Module, MODULE );
 
-
-    _ASSERTE(module->m_pModuleSecurityDescriptor);
-    PTR_ModuleSecurityDescriptor msd(TO_TADDR(module->m_pModuleSecurityDescriptor));
-    DisplayStartStructureWithOffset( m_pModuleSecurityDescriptor,
-                                     DPtrToPreferredAddr(msd), sizeof(*msd),
-                                     Module, MODULE );
-    DisplayWriteElementEnumerated("Flags", msd->GetRawFlags(), s_MSDFlags, W(", "), MODULE );
-
-    _ASSERTE(msd->GetModule() == module);
-    DisplayEndStructure(MODULE); //ModuleSecurityDescriptor
 
     /* REVISIT_TODO Wed 09/21/2005
      * Get me in the debugger and look at the activations and module/class
@@ -5627,7 +5605,6 @@ NativeImageDumper::EnumMnemonics s_MTFlags2[] =
     MTFLAG2_ENTRY(IsZapped),
     MTFLAG2_ENTRY(IsPreRestored),
     MTFLAG2_ENTRY(HasModuleDependencies),
-    MTFLAG2_ENTRY(NoSecurityProperties),
     MTFLAG2_ENTRY(RequiresDispatchTokenFat),
     MTFLAG2_ENTRY(HasCctor),
     MTFLAG2_ENTRY(HasCCWTemplate),
@@ -5816,25 +5793,6 @@ static NativeImageDumper::EnumMnemonics s_VMFlags[] =
         VMF_ENTRY(MARSHALINGTYPE_STANDARD),
 #endif        
 #undef VMF_ENTRY
-};
-static NativeImageDumper::EnumMnemonics s_SecurityProperties[] =
-{
-#define SP_ENTRY(x) NativeImageDumper::EnumMnemonics(DECLSEC_ ## x, W(#x))
-    SP_ENTRY(DEMANDS),
-    SP_ENTRY(ASSERTIONS),
-    SP_ENTRY(DENIALS),
-    SP_ENTRY(INHERIT_CHECKS),
-    SP_ENTRY(LINK_CHECKS),
-    SP_ENTRY(PERMITONLY),
-    SP_ENTRY(REQUESTS),
-    SP_ENTRY(UNMNGD_ACCESS_DEMAND),
-    SP_ENTRY(NONCAS_DEMANDS),
-    SP_ENTRY(NONCAS_LINK_DEMANDS),
-    SP_ENTRY(NONCAS_INHERITANCE),
-
-    SP_ENTRY(NULL_INHERIT_CHECKS),
-    SP_ENTRY(NULL_LINK_CHECKS),
-#undef SP_ENTRY
 };
 static NativeImageDumper::EnumMnemonics s_CorFieldAttr[] =
 {
@@ -8740,11 +8698,6 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
 
         DisplayWriteFieldInt( m_cbModuleDynamicID, pClassOptional->m_cbModuleDynamicID,
                               EEClassOptionalFields, EECLASSES );
-
-
-        DisplayWriteFieldEnumerated( m_SecProps, clazz->GetSecurityProperties()->dwFlags,
-                                     EEClassOptionalFields, s_SecurityProperties, W("|"),
-                                     EECLASSES );
 
         DisplayEndStructure( EECLASSES ); // EEClassOptionalFields
     }

@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tracing
         {
             if (TplEtwProvider.Log != null)
                 TplEtwProvider.Log.SetActivityId(activityId);
-#if FEATURE_MANAGED_ETW
+#if FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
 #if FEATURE_ACTIVITYSAMPLING
             Guid newId = activityId;
 #endif // FEATURE_ACTIVITYSAMPLING
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tracing
                 }
 #endif // FEATURE_ACTIVITYSAMPLING
             }
-#endif // FEATURE_MANAGED_ETW
+#endif // FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
         }
 
         /// <summary>
@@ -82,14 +82,14 @@ namespace System.Diagnostics.Tracing
         public static void SetCurrentThreadActivityId(Guid activityId, out Guid oldActivityThatWillContinue)
         {
             oldActivityThatWillContinue = activityId;
-#if FEATURE_MANAGED_ETW
+#if FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.  
 
             UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
                 UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
                     ref oldActivityThatWillContinue);
-#endif // FEATURE_MANAGED_ETW
+#endif // FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
 
             // We don't call the activityDying callback here because the caller has declared that
             // it is not dying.  
@@ -107,11 +107,11 @@ namespace System.Diagnostics.Tracing
                 // We ignore errors to keep with the convention that EventSources do not throw 
                 // errors. Note we can't access m_throwOnWrites because this is a static method.
                 Guid retVal = new Guid();
-#if FEATURE_MANAGED_ETW
+#if FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
                 UnsafeNativeMethods.ManifestEtw.EventActivityIdControl(
                     UnsafeNativeMethods.ManifestEtw.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
                     ref retVal);
-#endif // FEATURE_MANAGED_ETW
+#endif // FEATURE_MANAGED_ETW && PLATFORM_WINDOWS
                 return retVal;
             }
         }

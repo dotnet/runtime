@@ -2706,7 +2706,7 @@ void SystemDomain::LoadBaseSystemClasses()
     }
     // Only partially load the system assembly. Other parts of the code will want to access
     // the globals in this function before finishing the load.
-    m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemFile, FILE_LOAD_POST_LOADLIBRARY, NULL)->GetCurrentAssembly();
+    m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemFile, FILE_LOAD_POST_LOADLIBRARY)->GetCurrentAssembly();
 
     // Set up binder for mscorlib
     MscorlibBinder::AttachModule(m_pSystemAssembly->GetManifestModule());
@@ -3263,12 +3263,6 @@ void SystemDomain::InitializeDefaultDomain(
     {
         GCX_COOP();
 
-#ifndef CROSSGEN_COMPILE
-        if (!NingenEnabled())
-        {
-        }
-#endif // CROSSGEN_COMPILE
-
         pDefaultDomain->InitializeDomainContext(allowRedirects, pwsPath, pwsConfig);
 
 #ifndef CROSSGEN_COMPILE
@@ -3278,7 +3272,6 @@ void SystemDomain::InitializeDefaultDomain(
             if (!IsSingleAppDomain())
             {
                 pDefaultDomain->InitializeDefaultDomainManager();
-                pDefaultDomain->InitializeDefaultDomainSecurity();
             }
         }
 #endif // CROSSGEN_COMPILE
@@ -3397,7 +3390,8 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__LAZY_INITIALIZER,
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
-        CLASS__MULTICAST_DELEGATE
+        CLASS__MULTICAST_DELEGATE,
+        CLASS__APP_DOMAIN
     };
 
     static const BinderClassID genericReflectionInvocationTypes[] = {
@@ -3444,19 +3438,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         {
             if (MscorlibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
                 return true;
-        }
-
-        // AppDomain is an example of a type that is both used in the implementation of
-        // reflection, and also a type that contains methods that are clients of reflection
-        // (i.e., they instigate their own CreateInstance). Skip all AppDomain frames that
-        // are NOT known clients of reflection. NOTE: The ever-increasing complexity of this
-        // exclusion list is a sign that we need a better way--this is error-prone and
-        // unmaintainable as more changes are made to BCL types.
-        if ((pCaller == MscorlibBinder::GetExistingClass(CLASS__APP_DOMAIN))
-            && (pMeth != MscorlibBinder::GetMethod(METHOD__APP_DOMAIN__CREATE_APP_DOMAIN_MANAGER)) // This uses reflection to create an AppDomainManager
-            )
-        {
-            return true;
         }
     }
 
@@ -3795,8 +3776,6 @@ void SystemDomain::CreateDefaultDomain()
     SystemDomain::LockHolder lh;
     pDomain->Init();
 
-    Security::SetDefaultAppDomainProperty(pDomain->GetSecurityDescriptor());
-
     // need to make this assignment here since we'll be releasing
     // the lock before calling AddDomain. So any other thread
     // grabbing this lock after we release it will find that
@@ -4011,7 +3990,6 @@ AppDomain::AppDomain()
 
     m_cRef=1;
     m_pNextInDelayedUnloadList = NULL;
-    m_pSecContext = NULL;
     m_fRudeUnload = FALSE;
     m_pUnloadRequestThread = NULL;
     m_ADUnloadSink=NULL;
@@ -4028,7 +4006,6 @@ AppDomain::AppDomain()
     m_pwDynamicDir = NULL;
 
     m_dwFlags = 0;
-    m_pSecDesc = NULL;
     m_pDefaultContext = NULL;
 #ifdef FEATURE_COMINTEROP
     m_pComCallWrapperCache = NULL;
@@ -4093,9 +4070,6 @@ AppDomain::AppDomain()
     m_pWinRTFactoryCache = NULL;
 #endif // FEATURE_COMINTEROP
 
-    m_fAppDomainManagerSetInConfig = FALSE;
-    m_dwAppDomainManagerInitializeDomainFlags = eInitializeNewDomainFlags_None;
-
 #ifdef FEATURE_PREJIT
     m_pDomainFileWithNativeImageList = NULL;
 #endif
@@ -4130,9 +4104,6 @@ AppDomain::~AppDomain()
 
     if (m_ADUnloadSink)
         m_ADUnloadSink->Release();
-
-    if (m_pSecContext)
-        delete m_pSecContext;
 
     if(!g_fEEInit)
         Terminate();
@@ -4236,8 +4207,6 @@ void AppDomain::Init()
     // Set up the IL stub cache
     m_ILStubCache.Init(GetLoaderAllocator()->GetHighFrequencyHeap());
 
-    m_pSecContext = new SecurityContext (GetLowFrequencyHeap());
-
 // Set up the binding caches
     m_AssemblyCache.Init(&m_DomainCacheCrst, GetHighFrequencyHeap());
     m_UnmanagedCache.InitializeTable(this, &m_DomainCacheCrst);
@@ -4299,7 +4268,6 @@ void AppDomain::Init()
         m_clsidHash.Init(0,&CompareCLSID,true, &lock); // init hash table
     }
 
-    CreateSecurityDescriptor();
     SetStage(STAGE_READYFORMANAGEDCODE);
 
 #ifndef CROSSGEN_COMPILE
@@ -4443,12 +4411,6 @@ void AppDomain::Stop()
 #endif // DEBUGGING_SUPPORTED
 
     m_pRootAssembly = NULL; // This assembly is in the assembly list;
-
-    if (m_pSecDesc != NULL)
-    {
-        delete m_pSecDesc;
-        m_pSecDesc = NULL;
-    }
 
 #ifdef DEBUGGING_SUPPORTED
     if (NULL != g_pDebugInterface)
@@ -4896,15 +4858,6 @@ MethodTable* AppDomain::LoadRedirectedType(WinMDAdapter::RedirectedTypeIndex ind
 
 #ifndef DACCESS_COMPILE
 
-void AppDomain::CreateSecurityDescriptor()
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(m_pSecDesc == NULL);
-
-    m_pSecDesc = Security::CreateApplicationSecurityDescriptor(this);
-}
-
 bool IsPlatformAssembly(LPCSTR szName, DomainAssembly *pDomainAssembly)
 {
     CONTRACTL
@@ -5005,26 +4958,6 @@ BOOL AppDomain::ContainsAssembly(Assembly * assem)
 
     return FALSE;
 }
-
-BOOL AppDomain::HasSetSecurityPolicy()
-{
-    CONTRACT(BOOL)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    GCX_COOP();
-
-    if (NingenEnabled())
-    {
-        return FALSE;
-    }
-    RETURN ((APPDOMAINREF)GetExposedObject())->HasSetPolicy();
-}
-
 
 EEClassFactoryInfoHashTable* AppDomain::SetupClassFactHash()
 {
@@ -5575,8 +5508,7 @@ FileLoadLevel AppDomain::GetThreadFileLoadLevel()
 
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
                                   PEAssembly *pFile,
-                                  FileLoadLevel targetLevel,
-                                  AssemblyLoadSecurity *pLoadSecurity /* = NULL */)
+                                  FileLoadLevel targetLevel)
 {
     CONTRACT(Assembly *)
     {
@@ -5589,7 +5521,7 @@ Assembly *AppDomain::LoadAssembly(AssemblySpec* pIdentity,
     }
     CONTRACT_END;
 
-    DomainAssembly *pAssembly = LoadDomainAssembly(pIdentity, pFile, targetLevel, pLoadSecurity);
+    DomainAssembly *pAssembly = LoadDomainAssembly(pIdentity, pFile, targetLevel);
     PREFIX_ASSUME(pAssembly != NULL);
 
     RETURN pAssembly->GetAssembly();
@@ -5603,18 +5535,17 @@ public:
     AppDomain *pThis;
     AssemblySpec* pSpec;
     PEAssembly *pFile;
-    AssemblyLoadSecurity *pLoadSecurity;
     FileLoadLevel targetLevel;
 
-    LoadDomainAssemblyStress(AppDomain *pThis, AssemblySpec* pSpec, PEAssembly *pFile, FileLoadLevel targetLevel, AssemblyLoadSecurity *pLoadSecurity)
-        : pThis(pThis), pSpec(pSpec), pFile(pFile), pLoadSecurity(pLoadSecurity), targetLevel(targetLevel) {LIMITED_METHOD_CONTRACT;}
+    LoadDomainAssemblyStress(AppDomain *pThis, AssemblySpec* pSpec, PEAssembly *pFile, FileLoadLevel targetLevel)
+        : pThis(pThis), pSpec(pSpec), pFile(pFile), targetLevel(targetLevel) {LIMITED_METHOD_CONTRACT;}
 
     void Invoke()
     {
         WRAPPER_NO_CONTRACT;
         STATIC_CONTRACT_SO_INTOLERANT;
         SetupThread();
-        pThis->LoadDomainAssembly(pSpec, pFile, targetLevel, pLoadSecurity);
+        pThis->LoadDomainAssembly(pSpec, pFile, targetLevel);
     }
 };
 #endif // CROSSGEN_COMPILE
@@ -5623,21 +5554,20 @@ extern BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBin
 
 DomainAssembly* AppDomain::LoadDomainAssembly( AssemblySpec* pSpec,
                                                 PEAssembly *pFile, 
-                                                FileLoadLevel targetLevel,
-                                                AssemblyLoadSecurity *pLoadSecurity /* = NULL */)
+                                                FileLoadLevel targetLevel)
 {
     STATIC_CONTRACT_THROWS;
 
     if (pSpec == nullptr)
     {
         // skip caching, since we don't have anything to base it on
-        return LoadDomainAssemblyInternal(pSpec, pFile, targetLevel, pLoadSecurity);
+        return LoadDomainAssemblyInternal(pSpec, pFile, targetLevel);
     }
 
     DomainAssembly* pRetVal = NULL;
     EX_TRY
     {
-        pRetVal = LoadDomainAssemblyInternal(pSpec, pFile, targetLevel, pLoadSecurity);
+        pRetVal = LoadDomainAssemblyInternal(pSpec, pFile, targetLevel);
     }
     EX_HOOK
     {
@@ -5683,8 +5613,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly( AssemblySpec* pSpec,
 
 DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
                                               PEAssembly *pFile,
-                                              FileLoadLevel targetLevel,
-                                              AssemblyLoadSecurity *pLoadSecurity /* = NULL */)
+                                              FileLoadLevel targetLevel)
 {
     CONTRACT(DomainAssembly *)
     {
@@ -5692,7 +5621,6 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         THROWS;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
-        PRECONDITION(CheckPointer(pLoadSecurity, NULL_OK));
         PRECONDITION(pFile->IsSystem() || ::GetAppDomain()==this);
         POSTCONDITION(CheckPointer(RETVAL));
         POSTCONDITION(RETVAL->GetLoadLevel() >= GetThreadFileLoadLevel()
@@ -5706,7 +5634,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
     DomainAssembly * result;
 
 #ifndef CROSSGEN_COMPILE
-    LoadDomainAssemblyStress ts (this, pIdentity, pFile, targetLevel, pLoadSecurity);
+    LoadDomainAssemblyStress ts (this, pIdentity, pFile, targetLevel);
 #endif
 
     // Go into preemptive mode since this may take a while.
@@ -5721,7 +5649,7 @@ DomainAssembly *AppDomain::LoadDomainAssemblyInternal(AssemblySpec* pIdentity,
         // a rare redundant allocation by moving this closer to FileLoadLock::Create, but it's not worth it.
 
         NewHolder<DomainAssembly> pDomainAssembly;
-        pDomainAssembly = new DomainAssembly(this, pFile, pLoadSecurity, this->GetLoaderAllocator());
+        pDomainAssembly = new DomainAssembly(this, pFile, this->GetLoaderAllocator());
 
         LoadLockHolder lock(this);
 
@@ -6150,74 +6078,11 @@ DomainFile *AppDomain::LoadDomainNeutralModuleDependency(Module *pModule, FileLo
     RETURN pDomainFile;
 }
 
-void AppDomain::SetSharePolicy(SharePolicy policy)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    if ((int)policy > SHARE_POLICY_COUNT)
-        COMPlusThrow(kArgumentException,W("Argument_InvalidValue"));
-
-    // We cannot make all code domain neutral and still provide complete compatibility with regard
-    // to using custom security policy and assembly evidence.
-    //
-    // In particular, if you try to do either of the above AFTER loading a domain neutral assembly
-    // out of the GAC, we will now throw an exception.  The remedy would be to either not use SHARE_POLICY_ALWAYS
-    // (change LoaderOptimizationMultiDomain to LoaderOptimizationMultiDomainHost), or change the loading order
-    // in the app domain to do the policy set or evidence load earlier (which BTW will have the effect of
-    // automatically using MDH rather than MD, for the same result.)
-    //
-    // We include a compatibility flag here to preserve old functionality if necessary - this has the effect
-    // of never using SHARE_POLICY_ALWAYS.
-    if (policy == SHARE_POLICY_ALWAYS &&
-        (HasSetSecurityPolicy()
-         || GetCompatibilityFlag(compatOnlyGACDomainNeutral)))
-    {
-        // Never share assemblies not in the GAC
-        policy = SHARE_POLICY_GAC;
-    }
-
-    if (policy != m_SharePolicy)
-    {
-
-#ifdef FEATURE_PREJIT
-
-
-#endif // FEATURE_PREJIT
-
-        m_SharePolicy = policy;
-    }
-
-    return;
-}
-
-
 AppDomain::SharePolicy AppDomain::GetSharePolicy()
 {
     LIMITED_METHOD_CONTRACT;
-    // If the policy has been explicitly set for
-    // the domain, use that.
-    SharePolicy policy = m_SharePolicy;
 
-    // Pick up the a specified config policy
-    if (policy == SHARE_POLICY_UNSPECIFIED)
-        policy = (SharePolicy) g_pConfig->DefaultSharePolicy();
-
-    // Next, honor a host's request for global policy.
-    if (policy == SHARE_POLICY_UNSPECIFIED)
-        policy = (SharePolicy) g_dwGlobalSharePolicy;
-
-    // If all else fails, use the hardwired default policy.
-    if (policy == SHARE_POLICY_UNSPECIFIED)
-        policy = SHARE_POLICY_DEFAULT;
-
-    return policy;
+    return SHARE_POLICY_NEVER;
 }
 #endif // FEATURE_LOADER_OPTIMIZATION
 
@@ -7077,7 +6942,6 @@ PEAssembly * AppDomain::BindAssemblySpec(
     BOOL                   fThrowOnFileNotFound, 
     BOOL                   fRaisePrebindEvents, 
     StackCrawlMark *       pCallerStackMark, 
-    AssemblyLoadSecurity * pLoadSecurity,
     BOOL                   fUseHostBinderIfAvailable)
 {
     STATIC_CONTRACT_THROWS;
@@ -10234,104 +10098,19 @@ void AppDomain::InitializeDefaultDomainManager()
         THROWS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(GetId().m_dwId == DefaultADID);
-        PRECONDITION(!HasAppDomainManagerInfo());
-    }
-    CONTRACTL_END;
-
-    //
-    // The AppDomainManager for the default domain can be specified by:
-    //  1. Native hosting API
-    //  2. Application config file if the application is fully trusted
-    //  3. Environment variables
-    //
-
-
-    if (CorHost2::HasAppDomainManagerInfo())
-    {
-        SetAppDomainManagerInfo(CorHost2::GetAppDomainManagerAsm(),
-                                CorHost2::GetAppDomainManagerType(),
-                                CorHost2::GetAppDomainManagerInitializeNewDomainFlags());
-        m_fAppDomainManagerSetInConfig = FALSE;
-
-        LOG((LF_APPDOMAIN, LL_INFO10, "Setting default AppDomainManager '%S', '%S' from hosting API.\n", GetAppDomainManagerAsm(), GetAppDomainManagerType()));
-    }
-
-    // If we found an AppDomain manager to use, create and initialize it
-    // Otherwise, initialize the config flags.
-    if (HasAppDomainManagerInfo())
-    {
-        // If the initialization flags promise that the domain manager isn't going to modify security, then do a
-        // pre-resolution of the domain now so that we can do some basic verification of the state later.  We
-        // don't care about the actual result now, just that the resolution took place to compare against later.
-        if (GetAppDomainManagerInitializeNewDomainFlags() & eInitializeNewDomainFlags_NoSecurityChanges)
-        {
-            BOOL fIsFullyTrusted;
-            BOOL fIsHomogeneous;
-            GetSecurityDescriptor()->PreResolve(&fIsFullyTrusted, &fIsHomogeneous);
-        }
-
-        OBJECTREF orThis = GetExposedObject();
-        GCPROTECT_BEGIN(orThis);
-
-        MethodDescCallSite createDomainManager(METHOD__APP_DOMAIN__CREATE_APP_DOMAIN_MANAGER);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(orThis)
-        };
-
-        createDomainManager.Call(args);
-
-        GCPROTECT_END();
-    }
-    else
-    {
-        OBJECTREF orThis = GetExposedObject();
-        GCPROTECT_BEGIN(orThis);
-
-        MethodDescCallSite initCompatFlags(METHOD__APP_DOMAIN__INITIALIZE_COMPATIBILITY_FLAGS);
-        ARG_SLOT args[] =
-        {
-            ObjToArgSlot(orThis)
-        };
-
-        initCompatFlags.Call(args);
-
-        GCPROTECT_END();
-    }
-}
-
-
-//---------------------------------------------------------------------------------------
-//
-// Intialize the security settings in the default AppDomain.
-//
-
-void AppDomain::InitializeDefaultDomainSecurity()
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        GC_TRIGGERS;
-        THROWS;
-        PRECONDITION(GetId().m_dwId == DefaultADID);
     }
     CONTRACTL_END;
 
     OBJECTREF orThis = GetExposedObject();
     GCPROTECT_BEGIN(orThis);
 
-    MethodDescCallSite initializeSecurity(METHOD__APP_DOMAIN__INITIALIZE_DOMAIN_SECURITY);
+    MethodDescCallSite initCompatFlags(METHOD__APP_DOMAIN__INITIALIZE_COMPATIBILITY_FLAGS);
     ARG_SLOT args[] =
     {
-        ObjToArgSlot(orThis),
-        ObjToArgSlot(NULL),
-        ObjToArgSlot(NULL),
-        static_cast<ARG_SLOT>(FALSE),
-        ObjToArgSlot(NULL),
-        static_cast<ARG_SLOT>(FALSE)
+        ObjToArgSlot(orThis)
     };
 
-    initializeSecurity.Call(args);
+    initCompatFlags.Call(args);
 
     GCPROTECT_END();
 }
@@ -11403,29 +11182,10 @@ BOOL AppDomain::IsImageFromTrustedPath(PEImage* pPEImage)
     }
     CONTRACTL_END;
 
-    BOOL fIsInGAC = FALSE;
     const SString &sImagePath = pPEImage->GetPath();
 
-    if (!sImagePath.IsEmpty())
-    {
-        // If we're not in a sandboxed domain, everything is full trust all the time
-        if (GetSecurityDescriptor()->IsFullyTrusted())
-        {
-            return TRUE;
-        }
-        
-        fIsInGAC = GetTPABinderContext()->IsInTpaList(sImagePath);
-    }
-
-    return fIsInGAC;
+    return !sImagePath.IsEmpty();
 }
-
-BOOL AppDomain::IsImageFullyTrusted(PEImage* pPEImage)
-{
-    WRAPPER_NO_CONTRACT;
-    return IsImageFromTrustedPath(pPEImage);
-}
-
 
 #endif //!DACCESS_COMPILE
 

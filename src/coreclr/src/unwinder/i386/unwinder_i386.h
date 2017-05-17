@@ -18,6 +18,8 @@
 class OOPStackUnwinderX86 : public OOPStackUnwinder
 {
 public:
+    static BOOL Unwind(T_CONTEXT* pContextRecord, T_KNONVOLATILE_CONTEXT_POINTERS* pContextPointers);
+
     static HRESULT VirtualUnwind(__in DWORD HandlerType,
         __in DWORD ImageBase,
         __in DWORD ControlPc,

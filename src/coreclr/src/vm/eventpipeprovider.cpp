@@ -10,7 +10,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeProvider::EventPipeProvider(const GUID &providerID)
+EventPipeProvider::EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
     {
@@ -25,13 +25,13 @@ EventPipeProvider::EventPipeProvider(const GUID &providerID)
     m_keywords = 0;
     m_providerLevel = EventPipeEventLevel::Critical;
     m_pEventList = new SList<SListElem<EventPipeEvent*>>();
-    m_pCallbackFunction = NULL;
-    m_pCallbackData = NULL;
+    m_pCallbackFunction = pCallbackFunction;
+    m_pCallbackData = pCallbackData;
+    m_pConfig = EventPipe::GetConfiguration();
+    _ASSERTE(m_pConfig != NULL);
 
     // Register the provider.
-    EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
-    _ASSERTE(pConfig != NULL);
-    pConfig->RegisterProvider(*this);
+    m_pConfig->RegisterProvider(*this);
 }
 
 EventPipeProvider::~EventPipeProvider()
@@ -46,6 +46,9 @@ EventPipeProvider::~EventPipeProvider()
 
     // Unregister the provider.
     // This call is re-entrant.
+    // NOTE: We don't use the cached event pipe configuration pointer
+    // in case this runs during shutdown and the configuration has already
+    // been freed.
     EventPipeConfiguration* pConfig = EventPipe::GetConfiguration();
     _ASSERTE(pConfig != NULL);
     pConfig->UnregisterProvider(*this);
@@ -81,7 +84,7 @@ bool EventPipeProvider::Enabled() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_enabled;
+    return (m_pConfig->Enabled() && m_enabled);
 }
 
 bool EventPipeProvider::EventEnabled(INT64 keywords) const
@@ -125,7 +128,20 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     InvokeCallback();
 }
 
-EventPipeEvent* EventPipeProvider::AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack)
+EventPipeEvent* EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, BYTE *pMetadata, unsigned int metadataLength)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    return AddEvent(eventID, keywords, eventVersion, level, true /* needStack */, pMetadata, metadataLength);
+}
+
+EventPipeEvent* EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
 {
     CONTRACTL
     {
@@ -142,7 +158,9 @@ EventPipeEvent* EventPipeProvider::AddEvent(INT64 keywords, unsigned int eventID
         eventID,
         eventVersion,
         level,
-        needStack);
+        needStack,
+        pMetadata,
+        metadataLength);
 
     // Add it to the list of events.
     AddEvent(*pEvent);
@@ -163,46 +181,7 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     CrstHolder _crst(EventPipe::GetLock());
 
     m_pEventList->InsertTail(new SListElem<EventPipeEvent*>(&event));
-}
-
-void EventPipeProvider::RegisterCallback(EventPipeCallback pCallbackFunction, void *pData)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Take the config lock before setting the callback.
-    CrstHolder _crst(EventPipe::GetLock());
-
-    if(m_pCallbackFunction == NULL)
-    {
-        m_pCallbackFunction = pCallbackFunction;
-        m_pCallbackData = pData;
-    }
-}
-
-void EventPipeProvider::UnregisterCallback(EventPipeCallback pCallbackFunction)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Take the config lock before setting the callback.
-    CrstHolder _crst(EventPipe::GetLock());
-
-    if(m_pCallbackFunction == pCallbackFunction)
-    {
-        m_pCallbackFunction = NULL;
-        m_pCallbackData = NULL;
-    }
+    event.RefreshState();
 }
 
 void EventPipeProvider::InvokeCallback()
@@ -216,7 +195,7 @@ void EventPipeProvider::InvokeCallback()
     }
     CONTRACTL_END;
 
-    if(m_pCallbackFunction != NULL)
+    if(m_pCallbackFunction != NULL && !g_fEEShutDown)
     {
         (*m_pCallbackFunction)(
             &m_providerID,
@@ -227,6 +206,18 @@ void EventPipeProvider::InvokeCallback()
             NULL /* FilterData */,
             m_pCallbackData /* CallbackContext */);
     }
+}
+
+bool EventPipeProvider::GetDeleteDeferred() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_deleteDeferred;
+}
+
+void EventPipeProvider::SetDeleteDeferred()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_deleteDeferred = true;
 }
 
 void EventPipeProvider::RefreshAllEvents()

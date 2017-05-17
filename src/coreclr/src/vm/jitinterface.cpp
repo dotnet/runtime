@@ -25,7 +25,6 @@
 #include "float.h"      // for isnan
 #include "dbginterface.h"
 #include "security.h"
-#include "securitymeta.h"
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
@@ -154,18 +153,11 @@ BOOL ModifyCheckForDynamicMethod(DynamicResolver *pResolver,
     }
     else if (dwSecurityFlags & DynamicResolver::RestrictedSkipVisibilityChecks)
     {
-        *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccess;
-
-        // For compatibility, don't do transparency checks from dynamic methods in FT CoreCLR.
-        if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
-            *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
-
+        *pAccessCheckType = AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
     }
     else
     {
-        // For compatibility, don't do transparency checks from dynamic methods in FT CoreCLR.
-        if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
-            *pAccessCheckType = AccessCheckOptions::kNormalAccessNoTransparency;
+        *pAccessCheckType = AccessCheckOptions::kNormalAccessNoTransparency;
     }
 
     return doAccessCheck;
@@ -674,28 +666,7 @@ CorInfoCanSkipVerificationResult CEEInfo::canSkipMethodVerification(CORINFO_METH
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CorInfoCanSkipVerificationResult canSkipVerif = CORINFO_VERIFICATION_CANNOT_SKIP;
-
-    JIT_TO_EE_TRANSITION();
-
-    MethodDesc* pMD = GetMethod(ftnHnd);
-
-
-#ifdef _DEBUG
-    if (g_pConfig->IsVerifierOff())
-    {
-        canSkipVerif = CORINFO_VERIFICATION_CAN_SKIP;
-    }
-    else
-#endif // _DEBUG
-    {
-        canSkipVerif = Security::JITCanSkipVerification(pMD);
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return canSkipVerif;
-
+    return CORINFO_VERIFICATION_CAN_SKIP;
 }
 
 /*********************************************************************/
@@ -789,39 +760,7 @@ CorInfoCanSkipVerificationResult CEEInfo::canSkipVerification(
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    CorInfoCanSkipVerificationResult canSkipVerif = CORINFO_VERIFICATION_CANNOT_SKIP;
-
-    JIT_TO_EE_TRANSITION();
-
-    Assembly * pAssem = GetModule(moduleHnd)->GetAssembly();
-
-#ifdef _DEBUG
-    if (g_pConfig->IsVerifierOff())
-    {
-        canSkipVerif = CORINFO_VERIFICATION_CAN_SKIP;
-    }
-    else
-#endif // _DEBUG
-    {
-        //
-        // fQuickCheckOnly is set only by calls from Zapper::CompileAssembly
-        // because that allows us make a determination for the most
-        // common full trust scenarios (local machine) without actually
-        // resolving policy and bringing in a whole list of assembly
-        // dependencies.
-        //
-        // The scenario of interest here is determing whether or not an
-        // assembly MVID comparison is enough when loading an NGEN'd
-        // assembly or if a full binary hash comparison must be done.
-        //
-
-        DomainAssembly * pAssembly = pAssem->GetDomainAssembly();
-        canSkipVerif = Security::JITCanSkipVerification(pAssembly);
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return canSkipVerif;
+    return CORINFO_VERIFICATION_CAN_SKIP;
 }
 
 /*********************************************************************/
@@ -5557,15 +5496,6 @@ void CEEInfo::getCallInfo(
 
         TypeHandle callerTypeForSecurity = TypeHandle(pCallerForSecurity->GetMethodTable());
 
-        //This just throws.
-        if (pCalleeForSecurity->RequiresLinktimeCheck())
-        {
-            //hostProtectionAttribute(HPA) can be removed for coreclr mscorlib.dll
-            //So if the call to LinktimeCheckMethod() is only b'coz of HPA then skip it
-            if (!pCalleeForSecurity->RequiresLinkTimeCheckHostProtectionOnly())
-                Security::LinktimeCheckMethod(pCallerForSecurity->GetAssembly(), pCalleeForSecurity);
-        }
-
         //Passed various link-time checks.  Now do access checks.
 
         BOOL doAccessCheck = TRUE;
@@ -5651,69 +5581,7 @@ void CEEInfo::getCallInfo(
                     }
                 }
             }
-
-            //Only do this if we're allowed to access the method under any circumstance.
-            if (canAccessMethod)
-            {
-                BOOL fNeedsTransparencyCheck = TRUE;
-
-                // All LCG methods are transparent in CoreCLR. When we switch from PT
-                // to FT most user assemblies will become opportunistically critical.
-                // If a LCG method calls a method in such an assembly it will stop working.
-                // To avoid this we allow LCG methods to call user critical code in FT.
-                // There is no security concern because the domain is fully trusted anyway.
-                // There is nothing the LCG method can do that user code cannot do directly.
-                // This is also consistent with the desktop where a transparent->critical
-                // access will be converted to a demand and succeed in FT if the caller is
-                // level1 and the target is level2. 
-                // See also AccessCheckOptions::DemandMemberAccess.
-                if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted() && pCallerForSecurity->IsLCGMethod())
-                    fNeedsTransparencyCheck = FALSE;
-
-                if (fNeedsTransparencyCheck)
-                {
-                    CorInfoSecurityRuntimeChecks runtimeChecks = CORINFO_ACCESS_SECURITY_NONE;
-
-                    // See if transparency requires the runtime check too
-                    CorInfoIsAccessAllowedResult isCallAllowedResult = 
-                        Security::RequiresTransparentAssemblyChecks(pCallerForSecurity, pCalleeForSecurity, NULL);
-
-                    if (isCallAllowedResult != CORINFO_ACCESS_ALLOWED)
-                        runtimeChecks = CORINFO_ACCESS_SECURITY_TRANSPARENCY;
-
-                    DebugSecurityCalloutStress(getMethodBeingCompiled(), isCallAllowedResult, runtimeChecks);
-
-                    if (isCallAllowedResult == CORINFO_ACCESS_RUNTIME_CHECK)
-                    {
-                        pResult->accessAllowed = CORINFO_ACCESS_RUNTIME_CHECK;
-                        //Explain the callback to the JIT.
-                        pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_METHOD_ACCESS_CHECK;
-                        pResult->callsiteCalloutHelper.numArgs = 4;
-
-                        pResult->callsiteCalloutHelper.args[0].Set(CORINFO_METHOD_HANDLE(pCallerForSecurity));
-                        pResult->callsiteCalloutHelper.args[1].Set(CORINFO_METHOD_HANDLE(pCalleeForSecurity));
-                        pResult->callsiteCalloutHelper.args[2].Set(CORINFO_CLASS_HANDLE(calleeTypeForSecurity.AsPtr()));
-                        pResult->callsiteCalloutHelper.args[3].Set(runtimeChecks);
-
-                        if (IsCompilingForNGen())
-                        {
-                            //see code:CEEInfo::getCallInfo for more information.
-                            if (pCallerForSecurity->ContainsGenericVariables()
-                                || pCalleeForSecurity->ContainsGenericVariables())
-                            {
-                                COMPlusThrowNonLocalized(kNotSupportedException, W("Cannot embed generic MethodDesc"));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _ASSERTE(pResult->accessAllowed == CORINFO_ACCESS_ALLOWED);
-                        _ASSERTE(isCallAllowedResult == CORINFO_ACCESS_ALLOWED);
-                    }
-                }
-            }
         }
-
     }
 
     //We're pretty much done at this point.  Let's grab the rest of the information that the jit is going to
@@ -5967,18 +5835,7 @@ CorInfoHelpFunc CEEInfo::getNewHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, C
     }
 
     MethodTable* pMT = VMClsHnd.AsMethodTable();
-#ifdef FEATURE_COMINTEROP
-    if (pMT->IsComObjectType() && !GetMethod(callerHandle)->GetModule()->GetSecurityDescriptor()->CanCallUnmanagedCode())
-    {
-        // Caller does not have permission to make interop calls. Generate a
-        // special helper that will throw a security exception when called.
-        result = CORINFO_HELP_SEC_UNMGDCODE_EXCPT;
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    {
-        result = getNewHelperStatic(pMT);
-    }
+    result = getNewHelperStatic(pMT);
 
     _ASSERTE(result != CORINFO_HELP_UNDEF);
         
@@ -9734,18 +9591,7 @@ BOOL CEEInfo::isDelegateCreationAllowed (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    BOOL isCallAllowed = FALSE;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle delegateType(delegateHnd);
-    MethodDesc* pCallee = GetMethod(calleeHnd);
-
-    isCallAllowed = COMDelegate::ValidateSecurityTransparency(pCallee, delegateType.AsMethodTable());
-
-    EE_TO_JIT_TRANSITION();
-
-    return isCallAllowed;
+    return TRUE;
 }
 
 /*********************************************************************/

@@ -6419,9 +6419,6 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
             // With IL stubs, we don't have to do anything but ensure the DLL is loaded.
             //
 
-            if (!pMD->GetModule()->GetSecurityDescriptor()->CanCallUnmanagedCode())
-                Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSUNMANAGEDCODE);
-
             if (!pMD->IsZapped())
             {
                 PInvokeStaticSigInfo sigInfo;

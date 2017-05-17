@@ -4719,7 +4719,7 @@ private:
                                          const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structDescPtr));
 
     void fgFixupStructReturn(GenTreePtr call);
-    GenTreePtr fgMorphLocalVar(GenTreePtr tree);
+    GenTreePtr fgMorphLocalVar(GenTreePtr tree, bool forceRemorph);
     bool fgAddrCouldBeNull(GenTreePtr addr);
     GenTreePtr fgMorphField(GenTreePtr tree, MorphAddrContext* mac);
     bool fgCanFastTailCall(GenTreeCall* call);

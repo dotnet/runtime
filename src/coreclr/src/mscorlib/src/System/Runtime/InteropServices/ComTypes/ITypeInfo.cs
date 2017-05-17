@@ -15,7 +15,6 @@ using System;
 
 namespace System.Runtime.InteropServices.ComTypes
 {
-    [Serializable]
     public enum TYPEKIND
     {
         TKIND_ENUM = 0,
@@ -29,7 +28,6 @@ namespace System.Runtime.InteropServices.ComTypes
         TKIND_MAX = TKIND_UNION + 1
     }
 
-    [Serializable]
     [Flags()]
     public enum TYPEFLAGS : short
     {
@@ -50,7 +48,6 @@ namespace System.Runtime.InteropServices.ComTypes
         TYPEFLAG_FPROXY = 0x4000
     }
 
-    [Serializable]
     [Flags()]
     public enum IMPLTYPEFLAGS
     {
@@ -106,7 +103,6 @@ namespace System.Runtime.InteropServices.ComTypes
         public Int16 wFuncFlags;            //WORD wFuncFlags;
     }
 
-    [Serializable]
     [Flags()]
     public enum IDLFLAG : short
     {
@@ -125,7 +121,6 @@ namespace System.Runtime.InteropServices.ComTypes
         public IDLFLAG wIDLFlags;
     }
 
-    [Serializable]
     [Flags()]
     public enum PARAMFLAG : short
     {
@@ -173,7 +168,6 @@ namespace System.Runtime.InteropServices.ComTypes
         public DESCUNION desc;
     }
 
-    [Serializable]
     public enum VARKIND : int
     {
         VAR_PERINSTANCE = 0x0,
@@ -231,7 +225,6 @@ namespace System.Runtime.InteropServices.ComTypes
         public Int32 scode;
     }
 
-    [Serializable]
     public enum FUNCKIND : int
     {
         FUNC_VIRTUAL = 0,
@@ -241,7 +234,6 @@ namespace System.Runtime.InteropServices.ComTypes
         FUNC_DISPATCH = 4
     }
 
-    [Serializable]
     [Flags]
     public enum INVOKEKIND : int
     {
@@ -251,7 +243,6 @@ namespace System.Runtime.InteropServices.ComTypes
         INVOKE_PROPERTYPUTREF = 0x8
     }
 
-    [Serializable]
     public enum CALLCONV : int
     {
         CC_CDECL = 1,
@@ -266,7 +257,6 @@ namespace System.Runtime.InteropServices.ComTypes
         CC_MAX = 9
     }
 
-    [Serializable]
     [Flags()]
     public enum FUNCFLAGS : short
     {
@@ -285,7 +275,6 @@ namespace System.Runtime.InteropServices.ComTypes
         FUNCFLAG_FIMMEDIATEBIND = 0x1000
     }
 
-    [Serializable]
     [Flags()]
     public enum VARFLAGS : short
     {

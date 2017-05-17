@@ -72,13 +72,15 @@ WARNING:   When setting properties based on their current state (for example:
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%COMPlus_GCStress%"=="" (
   ECHO SKIPPING EXECUTION BECAUSE COMPlus_GCStress IS SET
+  popd
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(JitOptimizationSensitive)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMinOpts%"=="" goto :Compatible1
-  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts) IS SET
+IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMinOpts%"=="" IF "%COMPlus_TailcallStress%"=="" goto :Compatible1
+  ECHO SKIPPING EXECUTION BECAUSE ONE OR MORE OF (COMPlus_JitStress, COMPlus_JitStressRegs, COMPlus_JITMinOpts, COMPlus_TailcallStress) IS SET
+  popd
   Exit /b 0
 :Compatible1
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
@@ -86,6 +88,7 @@ IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_JITMi
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 IF NOT "%COMPlus_HeapVerify%"=="" (
   ECHO SKIPPING EXECUTION BECAUSE COMPlus_HeapVerify IS SET
+  popd
   Exit /b 0
 )
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
@@ -108,10 +111,12 @@ ECHO Actual: %CLRTestExitCode%
 IF NOT "%CLRTestExitCode%"=="%CLRTestExpectedExitCode%" (
   ECHO END EXECUTION - FAILED
   ECHO FAILED
+  popd
   Exit /b 1
 ) ELSE (
   ECHO END EXECUTION - PASSED
   ECHO PASSED
+  popd
   Exit /b 0
 )
 
@@ -182,6 +187,7 @@ set Assemblies=-a System.Private.CoreLib
 IF defined DoLink ( 
     IF NOT EXIST !ILLINK! (
       ECHO ILLink executable [%ILLINK%] Invalid
+      popd
       Exit /b 1
     )
     
@@ -208,6 +214,7 @@ IF defined DoLink (
       IF NOT defined KeepLinkedBinaries (
           IF EXIST %LinkBin% rmdir /s /q %LinkBin%
       )
+      popd
       Exit /b 1
     )
 
@@ -333,6 +340,7 @@ ECHO                         - OPTIONS -
 @(BatchCLRTestExecutionScriptArgument -> 'ECHO -%(Identity) %(ParamName)
 ECHO      %(Description)', '
 ')
+popd
 Exit /b 1
 
 :ArgsDone

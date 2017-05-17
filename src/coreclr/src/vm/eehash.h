@@ -38,10 +38,7 @@ class AllocMemTracker;
 class ClassLoader;
 struct LockOwner;
 class NameHandle;
-struct PsetCacheKey;
 class SigTypeContext;
-
-typedef PsetCacheKey* PPsetCacheKey;
 
 // The "blob" you get to store in the hash table
 
@@ -480,20 +477,6 @@ public:
 };
 
 typedef EEHashTable<EEStringData *, EEUnicodeStringLiteralHashTableHelper, TRUE> EEUnicodeStringLiteralHashTable;
-
-// Permission set hash table.
-
-class EEPsetHashTableHelper
-{
-public:
-    static EEHashEntry_t * AllocateEntry(PsetCacheKey *pKey, BOOL bDeepCopy, AllocationHeap Heap);
-    static void            DeleteEntry(EEHashEntry_t *pEntry, AllocationHeap Heap);
-    static BOOL            CompareKeys(EEHashEntry_t *pEntry, PsetCacheKey *pKey);
-    static DWORD           Hash(PsetCacheKey *pKey);
-    static PsetCacheKey *GetKey(EEHashEntry_t *pEntry);
-};
-
-typedef EEHashTable<PsetCacheKey *, EEPsetHashTableHelper, FALSE> EEPsetHashTable;
 
 
 // Generic pointer hash table helper.

@@ -689,7 +689,7 @@ RelativePath=baseservices\exceptions\regressions\Dev11\147911\test147911\test147
 WorkingDir=baseservices\exceptions\regressions\Dev11\147911\test147911
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;EXCLUDED
+Categories=EXPECTED_FAIL;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [dynamicmethodliveness.cmd_86]
@@ -865,7 +865,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\UnmanagedToManaged\Un
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\UnmanagedToManaged
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [UserException.cmd_108]
@@ -26241,7 +26241,7 @@ RelativePath=GC\Stress\Framework\ReliabilityFramework\ReliabilityFramework.cmd
 WorkingDir=GC\Stress\Framework\ReliabilityFramework
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [csgen.1.cmd_3473]
@@ -59193,7 +59193,7 @@ RelativePath=JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd
 WorkingDir=JIT\Methodical\tailcall_v4\smallFrame
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;9462;EXPECTED_FAIL;6881
+Categories=Pri0;JIT;9462;EXPECTED_FAIL;6881;EXCLUDED;ILLEGAL_IL_TAILCALL_POP_RET
 HostStyle=0
 
 [tailcall_AV.cmd_7668]
@@ -61457,7 +61457,7 @@ RelativePath=JIT\opt\perf\doublealign\Locals\Locals.cmd
 WorkingDir=JIT\opt\perf\doublealign\Locals
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_FAIL;8418
+Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 
 [objects.cmd_7953]
@@ -62041,7 +62041,7 @@ RelativePath=JIT\Performance\CodeQuality\Roslyn\CscBench\CscBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Roslyn\CscBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;LONG_RUNNING;EXPECTED_PASS
+Categories=Pri0;LONG_RUNNING;EXPECTED_FAIL;11533
 HostStyle=0
 
 [SciMark.cmd_8027]
@@ -75873,7 +75873,7 @@ RelativePath=managed\Compilation\Compilation\Compilation.cmd
 WorkingDir=managed\Compilation\Compilation
 Expected=0
 MaxAllowedDurationSeconds=800
-Categories=RT;Pri0;LONG_RUNNING;NATIVE_INTEROP;EXPECTED_FAIL;10108
+Categories=RT;Pri0;LONG_RUNNING;NATIVE_INTEROP;EXPECTED_FAIL;11533
 HostStyle=0
 
 [generics.cmd_9787]
@@ -75881,7 +75881,7 @@ RelativePath=readytorun\generics\generics.cmd
 WorkingDir=readytorun\generics
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [callgenericctor.cmd_9788]
@@ -75889,7 +75889,7 @@ RelativePath=readytorun\genericsload\callgenericctor\callgenericctor.cmd
 WorkingDir=readytorun\genericsload\callgenericctor
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [usegenericfield.cmd_9789]
@@ -75897,7 +75897,7 @@ RelativePath=readytorun\genericsload\usegenericfield\usegenericfield.cmd
 WorkingDir=readytorun\genericsload\usegenericfield
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_FAIL;11534
 HostStyle=0
 
 [mainv1.cmd_9790]
@@ -75905,7 +75905,7 @@ RelativePath=readytorun\mainv1\mainv1.cmd
 WorkingDir=readytorun\mainv1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=UNSTABLE;EXPECTED_PASS
+Categories=UNSTABLE;EXPECTED_FAIL;11534
 HostStyle=0
 
 [mainv2.cmd_9791]
@@ -75913,7 +75913,7 @@ RelativePath=readytorun\mainv2\mainv2.cmd
 WorkingDir=readytorun\mainv2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=UNSTABLE;EXPECTED_PASS
+Categories=UNSTABLE;EXPECTED_FAIL;11534
 HostStyle=0
 
 [Dev10_629953.cmd_9792]
@@ -76513,7 +76513,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated1156.cmd_9867]
@@ -76665,7 +76665,7 @@ RelativePath=JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847\b07847.cmd
 WorkingDir=JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2441;NEW
+Categories=EXPECTED_FAIL;2441;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated554.cmd_9886]
@@ -76681,7 +76681,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i60\mcc_i60.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i60
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1394.cmd_9888]
@@ -77105,7 +77105,7 @@ RelativePath=GC\Regressions\dev10bugs\536168\536168\536168.cmd
 WorkingDir=GC\Regressions\dev10bugs\536168\536168
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;3392;LONG_RUNNING;NEW
+Categories=EXPECTED_FAIL;11534;LONG_RUNNING;NEW
 HostStyle=0
 
 [Generated1498.cmd_9941]
@@ -77289,7 +77289,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic2\rvastatic2.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated748.cmd_9964]
@@ -77569,7 +77569,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b409748\b409748\b409748.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V2.0-Beta2\b409748\b409748
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1366.cmd_9999]
@@ -77889,7 +77889,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32374\b32374\b32374.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b32374\b32374
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [BestFitMapping.cmd_10039]
@@ -78049,7 +78049,7 @@ RelativePath=JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_d\nonrefsdarr
 WorkingDir=JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated987.cmd_10060]
@@ -78161,7 +78161,7 @@ RelativePath=JIT\Methodical\refany\_il_relseq\_il_relseq.cmd
 WorkingDir=JIT\Methodical\refany\_il_relseq
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1476.cmd_10074]
@@ -78313,7 +78313,7 @@ RelativePath=JIT\opt\Tailcall\TailcallVerifyWithPrefix\TailcallVerifyWithPrefix.
 WorkingDir=JIT\opt\Tailcall\TailcallVerifyWithPrefix
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;EXCLUDED;ILLEGAL_IL_TAILCALL_POP_RET
 HostStyle=0
 
 [Generated611.cmd_10093]
@@ -78337,7 +78337,7 @@ RelativePath=JIT\Directed\PREFIX\unaligned\2\arglist\arglist.cmd
 WorkingDir=JIT\Directed\PREFIX\unaligned\2\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated404.cmd_10096]
@@ -78433,7 +78433,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b102637\b102637\b102637.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b102637\b102637
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [ExecuteCodeWithGuaranteedCleanup.cmd_10108]
@@ -78577,7 +78577,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i32\mcc_i32.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i32
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated778.cmd_10126]
@@ -78801,7 +78801,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b28901\b28901\b28901.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b28901\b28901
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated659.cmd_10154]
@@ -78841,7 +78841,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i10\mcc_i10.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i10
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [overlap.cmd_10159]
@@ -78849,7 +78849,7 @@ RelativePath=JIT\Directed\RVAInit\overlap\overlap.cmd
 WorkingDir=JIT\Directed\RVAInit\overlap
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [b30838.cmd_10160]
@@ -78857,7 +78857,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30838\b30838\b30838.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30838\b30838
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1430.cmd_10161]
@@ -78889,7 +78889,7 @@ RelativePath=JIT\Directed\tls\mutualrecurthd-tls\mutualrecurthd-tls.cmd
 WorkingDir=JIT\Directed\tls\mutualrecurthd-tls
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2441;NEW
+Categories=EXPECTED_FAIL;2441;EXCLUDED;TLS
 HostStyle=0
 
 [Generated461.cmd_10165]
@@ -78961,7 +78961,7 @@ RelativePath=JIT\Directed\PREFIX\volatile\1\arglist\arglist.cmd
 WorkingDir=JIT\Directed\PREFIX\volatile\1\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated995.cmd_10174]
@@ -79073,7 +79073,7 @@ RelativePath=JIT\Directed\intrinsic\interlocked\rva_rvastatic1\rva_rvastatic1.cm
 WorkingDir=JIT\Directed\intrinsic\interlocked\rva_rvastatic1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated1145.cmd_10188]
@@ -79281,7 +79281,7 @@ RelativePath=JIT\Regression\JitBlue\DevDiv_359736\DevDiv_359736_ro\DevDiv_359736
 WorkingDir=JIT\Regression\JitBlue\DevDiv_359736\DevDiv_359736_ro
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10111;NEW
+Categories=EXPECTED_FAIL;8648;NEW
 HostStyle=0
 
 [Generated1104.cmd_10214]
@@ -79689,7 +79689,7 @@ RelativePath=JIT\Methodical\tailcall\_il_dbgpointer_i\_il_dbgpointer_i.cmd
 WorkingDir=JIT\Methodical\tailcall\_il_dbgpointer_i
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated376.cmd_10266]
@@ -79753,7 +79753,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-M01\b03689\b03689\b03689.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.2-M01\b03689\b03689
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2441;NEW
+Categories=EXPECTED_FAIL;2441;EXCLUDED;TLS
 HostStyle=0
 
 [FixedAddressValueType.cmd_10274]
@@ -80057,7 +80057,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26324\b26324a\b26324a.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26324\b26324a
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated563.cmd_10312]
@@ -80137,7 +80137,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i72\mcc_i72.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i72
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated277.cmd_10322]
@@ -80433,7 +80433,7 @@ RelativePath=JIT\Directed\coverage\importer\Desktop\bleref_il_r\bleref_il_r.cmd
 WorkingDir=JIT\Directed\coverage\importer\Desktop\bleref_il_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated1391.cmd_10359]
@@ -80489,7 +80489,7 @@ RelativePath=JIT\Methodical\cctor\misc\global_il_d\global_il_d.cmd
 WorkingDir=JIT\Methodical\cctor\misc\global_il_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10109;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated229.cmd_10367]
@@ -80521,7 +80521,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i51\mcc_i51.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i51
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1179.cmd_10371]
@@ -80609,7 +80609,7 @@ RelativePath=JIT\Directed\PREFIX\unaligned\1\arglist\arglist.cmd
 WorkingDir=JIT\Directed\PREFIX\unaligned\1\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated413.cmd_10382]
@@ -80809,7 +80809,7 @@ RelativePath=JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd
 WorkingDir=JIT\jit64\localloc\verify\verify01_small
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8156;NEW
+Categories=EXPECTED_FAIL;4581;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated962.cmd_10407]
@@ -80905,7 +80905,7 @@ RelativePath=JIT\Methodical\eh\deadcode\badcodeafterfinally_d\badcodeafterfinall
 WorkingDir=JIT\Methodical\eh\deadcode\badcodeafterfinally_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2444;NEW
+Categories=EXPECTED_FAIL;2444;EXCLUDED
 HostStyle=0
 
 [Generated1238.cmd_10419]
@@ -81065,7 +81065,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b49644\b49644\b49644.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b49644\b49644
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [global_il_r.cmd_10439]
@@ -81073,7 +81073,7 @@ RelativePath=JIT\Methodical\cctor\misc\global_il_r\global_il_r.cmd
 WorkingDir=JIT\Methodical\cctor\misc\global_il_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10109;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [dev10_865840.cmd_10440]
@@ -81081,7 +81081,7 @@ RelativePath=JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd
 WorkingDir=JIT\Regression\Dev11\dev10_865840\dev10_865840
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2445;NEW
+Categories=EXPECTED_FAIL;2445;EXCLUDED
 HostStyle=0
 
 [Generated728.cmd_10441]
@@ -81201,7 +81201,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i82\mcc_i82.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i82
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1333.cmd_10456]
@@ -81257,7 +81257,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic4\rvastatic4.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic4
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated944.cmd_10463]
@@ -81297,7 +81297,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b16423\b16423\b16423.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b16423\b16423
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [DevDiv_279829.cmd_10468]
@@ -81337,7 +81337,7 @@ RelativePath=JIT\Regression\CLR-x86-EJIT\V1-M12-Beta2\b26323\b26323\b26323.cmd
 WorkingDir=JIT\Regression\CLR-x86-EJIT\V1-M12-Beta2\b26323\b26323
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [smalloom.cmd_10473]
@@ -81473,7 +81473,7 @@ RelativePath=JIT\Methodical\xxobj\operand\_il_rellocalloc\_il_rellocalloc.cmd
 WorkingDir=JIT\Methodical\xxobj\operand\_il_rellocalloc
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2444;NEW
+Categories=EXPECTED_FAIL;2444;EXCLUDED
 HostStyle=0
 
 [Generated1025.cmd_10490]
@@ -81513,7 +81513,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b37646\b37646\b37646.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b37646\b37646
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1223.cmd_10495]
@@ -81545,7 +81545,7 @@ RelativePath=JIT\Methodical\tailcall\_il_dbgpointer\_il_dbgpointer.cmd
 WorkingDir=JIT\Methodical\tailcall\_il_dbgpointer
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated910.cmd_10499]
@@ -81569,7 +81569,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i52\mcc_i52.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i52
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1380.cmd_10502]
@@ -81721,7 +81721,7 @@ RelativePath=JIT\jit64\localloc\verify\verify01_large\verify01_large.cmd
 WorkingDir=JIT\jit64\localloc\verify\verify01_large
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated202.cmd_10522]
@@ -81945,7 +81945,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b31746\b31746\b31746.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b31746\b31746
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated158.cmd_10550]
@@ -82305,7 +82305,7 @@ RelativePath=JIT\Methodical\Coverage\arglist_pos\arglist_pos.cmd
 WorkingDir=JIT\Methodical\Coverage\arglist_pos
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [mcc_i03.cmd_10596]
@@ -82313,7 +82313,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i03\mcc_i03.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i03
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated126.cmd_10597]
@@ -82465,7 +82465,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic3\rvastatic3.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated1268.cmd_10616]
@@ -82705,7 +82705,7 @@ RelativePath=JIT\Methodical\tailcall\_il_relpointer\_il_relpointer.cmd
 WorkingDir=JIT\Methodical\tailcall\_il_relpointer
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated1472.cmd_10646]
@@ -82929,7 +82929,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i01\mcc_i01.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i01
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1017.cmd_10674]
@@ -83081,7 +83081,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i70\mcc_i70.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i70
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated335.cmd_10693]
@@ -83369,7 +83369,7 @@ RelativePath=JIT\jit64\regress\ndpw\21220\b21220\b21220.cmd
 WorkingDir=JIT\jit64\regress\ndpw\21220\b21220
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated1054.cmd_10730]
@@ -83889,7 +83889,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i53\mcc_i53.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i53
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [b37598.cmd_10795]
@@ -83897,7 +83897,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b37598\b37598\b37598.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b37598\b37598
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated647.cmd_10796]
@@ -83985,7 +83985,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i71\mcc_i71.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i71
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated790.cmd_10807]
@@ -84065,7 +84065,7 @@ RelativePath=JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd
 WorkingDir=JIT\Directed\coverage\importer\Desktop\bleref_il_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated113.cmd_10817]
@@ -84137,7 +84137,7 @@ RelativePath=JIT\Directed\RVAInit\extended\extended.cmd
 WorkingDir=JIT\Directed\RVAInit\extended
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated255.cmd_10826]
@@ -84297,7 +84297,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b46867\b46867\b46867.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b46867\b46867
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated635.cmd_10847]
@@ -84449,7 +84449,7 @@ RelativePath=JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_d\ldelemnu
 WorkingDir=JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_d
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated1080.cmd_10866]
@@ -84481,7 +84481,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b91248\b91248\b91248.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b91248\b91248
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated42.cmd_10870]
@@ -84497,7 +84497,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i33\mcc_i33.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i33
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated830.cmd_10872]
@@ -84681,7 +84681,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i63\mcc_i63.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i63
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated582.cmd_10895]
@@ -84713,7 +84713,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i02\mcc_i02.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i02
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1004.cmd_10900]
@@ -84897,7 +84897,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i00\mcc_i00.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i00
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1389.cmd_10923]
@@ -85049,7 +85049,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b36472\b36472\b36472.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b36472\b36472
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [mcc_i31.cmd_10942]
@@ -85057,7 +85057,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i31\mcc_i31.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i31
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated572.cmd_10943]
@@ -85137,7 +85137,7 @@ RelativePath=JIT\jit64\gc\misc\funclet\funclet.cmd
 WorkingDir=JIT\jit64\gc\misc\funclet
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated671.cmd_10953]
@@ -85153,7 +85153,7 @@ RelativePath=JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_r\ldelemnu
 WorkingDir=JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated1228.cmd_10956]
@@ -85337,7 +85337,7 @@ RelativePath=JIT\Regression\JitBlue\DevDiv_359736\DevDiv_359736_do\DevDiv_359736
 WorkingDir=JIT\Regression\JitBlue\DevDiv_359736\DevDiv_359736_do
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10111;NEW
+Categories=EXPECTED_FAIL;8648;NEW
 HostStyle=0
 
 [nonrefsdarr_il_r.cmd_10979]
@@ -85345,7 +85345,7 @@ RelativePath=JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_r\nonrefsdarr
 WorkingDir=JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated107.cmd_10980]
@@ -85433,7 +85433,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26324\b26324b\b26324b.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b26324\b26324b
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [b41391.cmd_10992]
@@ -85441,7 +85441,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41391\b41391\b41391.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b41391\b41391
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated814.cmd_10993]
@@ -85545,7 +85545,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046\b08046.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8156;NEW
+Categories=EXPECTED_FAIL;4849;EXCLUDED
 HostStyle=0
 
 [Generated1045.cmd_11006]
@@ -85913,7 +85913,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i81\mcc_i81.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i81
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated273.cmd_11052]
@@ -85969,7 +85969,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b31745\b31745\b31745.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b31745\b31745
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated463.cmd_11059]
@@ -86009,7 +86009,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i73\mcc_i73.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i73
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1198.cmd_11064]
@@ -86073,7 +86073,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30864\b30864\b30864.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M09.5-PDC\b30864\b30864
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated738.cmd_11072]
@@ -86257,7 +86257,7 @@ RelativePath=JIT\Methodical\eh\deadcode\badcodeafterfinally_r\badcodeafterfinall
 WorkingDir=JIT\Methodical\eh\deadcode\badcodeafterfinally_r
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2444;NEW
+Categories=EXPECTED_FAIL;2444;EXCLUDED
 HostStyle=0
 
 [Generated180.cmd_11095]
@@ -86321,7 +86321,7 @@ RelativePath=JIT\Directed\tls\test-tls\test-tls.cmd
 WorkingDir=JIT\Directed\tls\test-tls
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2441;NEW
+Categories=EXPECTED_FAIL;2441;EXCLUDED;TLS
 HostStyle=0
 
 [Generated1227.cmd_11103]
@@ -86481,7 +86481,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i11\mcc_i11.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i11
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated715.cmd_11124]
@@ -86633,7 +86633,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b41852\b41852\b41852.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M12-Beta2\b41852\b41852
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated78.cmd_11143]
@@ -86905,7 +86905,7 @@ RelativePath=JIT\Directed\PREFIX\unaligned\4\arglist\arglist.cmd
 WorkingDir=JIT\Directed\PREFIX\unaligned\4\arglist
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1384.cmd_11177]
@@ -86929,7 +86929,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b35784\b35784\b35784.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b35784\b35784
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated445.cmd_11180]
@@ -87353,7 +87353,7 @@ RelativePath=JIT\superpmi\superpmicollect\superpmicollect.cmd
 WorkingDir=JIT\superpmi\superpmicollect
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;NEW
+Categories=EXPECTED_FAIL;EXCLUDED;REQUIRES_SOURCES
 HostStyle=0
 
 [Generated483.cmd_11233]
@@ -87409,7 +87409,7 @@ RelativePath=JIT\Directed\intrinsic\interlocked\rva_rvastatic2\rva_rvastatic2.cm
 WorkingDir=JIT\Directed\intrinsic\interlocked\rva_rvastatic2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated993.cmd_11240]
@@ -87553,7 +87553,7 @@ RelativePath=JIT\Methodical\tailcall\_il_relpointer_i\_il_relpointer_i.cmd
 WorkingDir=JIT\Methodical\tailcall\_il_relpointer_i
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated955.cmd_11258]
@@ -87713,7 +87713,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic1\rvastatic1.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated708.cmd_11278]
@@ -87793,7 +87793,7 @@ RelativePath=JIT\Methodical\refany\_il_dbgseq\_il_dbgseq.cmd
 WorkingDir=JIT\Methodical\refany\_il_dbgseq
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [mcc_i61.cmd_11288]
@@ -87801,7 +87801,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i61\mcc_i61.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i61
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1500.cmd_11289]
@@ -87849,7 +87849,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i13\mcc_i13.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i13
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated568.cmd_11295]
@@ -88169,7 +88169,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i83\mcc_i83.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i83
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated858.cmd_11335]
@@ -88337,7 +88337,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i30\mcc_i30.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i30
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated597.cmd_11356]
@@ -88505,7 +88505,7 @@ RelativePath=JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd
 WorkingDir=JIT\jit64\localloc\verify\verify01_dynamic
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;4851;NEW
+Categories=EXPECTED_FAIL;4851;EXCLUDED;VERIFY
 HostStyle=0
 
 [Generated1094.cmd_11377]
@@ -88697,7 +88697,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i62\mcc_i62.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i62
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1398.cmd_11401]
@@ -88713,7 +88713,7 @@ RelativePath=JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd
 WorkingDir=JIT\Methodical\xxobj\operand\_il_dbglocalloc
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2444;NEW
+Categories=EXPECTED_FAIL;2444;EXCLUDED
 HostStyle=0
 
 [mcc_i50.cmd_11403]
@@ -88721,7 +88721,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i50\mcc_i50.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i50
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated341.cmd_11404]
@@ -89145,7 +89145,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic5\rvastatic5.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic5
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [pinvoke-bug.cmd_11457]
@@ -89321,7 +89321,7 @@ RelativePath=JIT\Directed\pinvoke\preemptive_cooperative\preemptive_cooperative.
 WorkingDir=JIT\Directed\pinvoke\preemptive_cooperative
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;R2R_FAIL;10069;2434
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;EXCLUDED;2434;KERNEL_32_DEPENDENCY
 HostStyle=0
 
 [Generated1089.cmd_11479]
@@ -89433,7 +89433,7 @@ RelativePath=JIT\Directed\intrinsic\interlocked\rva_rvastatic4\rva_rvastatic4.cm
 WorkingDir=JIT\Directed\intrinsic\interlocked\rva_rvastatic4
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated249.cmd_11493]
@@ -89505,7 +89505,7 @@ RelativePath=JIT\Directed\intrinsic\interlocked\rva_rvastatic3\rva_rvastatic3.cm
 WorkingDir=JIT\Directed\intrinsic\interlocked\rva_rvastatic3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;2451;NEW
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [Generated968.cmd_11502]
@@ -89593,7 +89593,7 @@ RelativePath=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b88793\b88793\b88793.cmd
 WorkingDir=JIT\Regression\CLR-x86-JIT\V1-M13-RTM\b88793\b88793
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated58.cmd_11513]
@@ -89649,7 +89649,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i12\mcc_i12.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i12
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated1282.cmd_11520]
@@ -89849,7 +89849,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i80\mcc_i80.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i80
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9462;NEW
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Generated652.cmd_11546]
@@ -90257,7 +90257,7 @@ RelativePath=JIT\CheckProjects\CheckProjects\CheckProjects.cmd
 WorkingDir=JIT\CheckProjects\CheckProjects
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10635;NEW
+Categories=EXPECTED_FAIL;10635;EXCLUDED;REQUIRES_SOURCES
 HostStyle=0
 
 [ArrayMD1.cmd_11597]

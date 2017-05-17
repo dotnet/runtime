@@ -103,7 +103,8 @@
     <NugetRestoreCommand>$(NugetRestoreCommand) install</NugetRestoreCommand>
     <!-- Trim off the last slash so that nuget doesn't get confused and say there are illegal characters on
          the path. -->
-    <NugetRestoreCommand>$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\\'))"</NugetRestoreCommand>
+    <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Windows_NT'">$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\\'))"</NugetRestoreCommand>
+    <NugetRestoreCommand Condition="'$(OsEnvironment)'!='Windows_NT'">$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\'))"</NugetRestoreCommand>
     <NugetRestoreCommand>$(NugetRestoreCommand) $(NuGetConfigCommandLine)</NugetRestoreCommand>
     <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
     <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
@@ -113,9 +114,10 @@
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
     <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
 
-    <DnuRestoreCommand>$(DnuRestoreCommand) "$(DotnetToolCommand)"</DnuRestoreCommand>
+    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand>
     <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(OsEnvironment)'=='Windows_NT'">$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
+    <DnuRestoreCommand Condition="'$(OsEnvironment)'!='Windows_NT'">$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\'))"</DnuRestoreCommand>
   </PropertyGroup>
 
   <!-- Setup common target properties that we use to conditionally include sources -->
@@ -138,15 +140,16 @@
 
   <!-- Packaging properties -->
   <PropertyGroup>
-    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE</LicenseUrl>
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <LicenseUrl>https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT</LicenseUrl>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(SourceDir).nuget/dotnet_library_license.txt</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(SourceDir).nuget/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <SyncInfoDirectory>$(BaseIntermediateOutputPath)</SyncInfoDirectory>
 
     <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
-    <RuntimeIdGraphDefinitionFile>$(PackagesDir)/Microsoft.NETCore.Platforms/1.0.2-beta-24224-02/runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionVersion>1.0.2-beta-24224-02</RuntimeIdGraphDefinitionVersion>
+    <RuntimeIdGraphDefinitionFile>$(PackagesDir)/microsoft.netcore.platforms/$(RuntimeIdGraphDefinitionVersion)/runtime.json</RuntimeIdGraphDefinitionFile>
 
     <!-- This link should be updated for each release milestone, currently this points to 1.1.0-beta -->
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
@@ -154,7 +157,7 @@
     <ProjectUrl>https://dot.net</ProjectUrl>
 
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">2.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">2.1.0</PackageVersion>
     
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>

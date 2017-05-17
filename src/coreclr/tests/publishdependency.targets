@@ -18,16 +18,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <CoreRootProjectLockJsonFiles Include="$(SourceDir)Common\test_runtime\project.lock.json"/>
-    <CoreRootProjectLockJsonFiles Include="$(SourceDir)Common\test_dependencies\project.lock.json"/>
+    <CoreRootProjectLockJsonFiles Include="$(SourceDir)Common\test_runtime\obj\project.assets.json"/>
+    <CoreRootProjectLockJsonFiles Include="$(SourceDir)Common\test_dependencies\obj\project.assets.json"/>
   </ItemGroup>
 
   <ItemGroup>
-    <RefProjectLockJsonFiles Include="$(SourceDir)Common\targeting_pack_ref\project.lock.json"/>
+    <RefProjectLockJsonFiles Include="$(SourceDir)Common\targeting_pack_ref\obj\project.assets.json"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProductProjectLockJsonFiles Include="$(SourceDir)Common\build_against_pkg_dependencies\project.lock.json"/>
+    <ProductProjectLockJsonFiles Include="$(SourceDir)Common\build_against_pkg_dependencies\obj\project.assets.json"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -42,10 +42,6 @@
   <Target Name="CopyDependecyToCoreRoot"
     Inputs="@(CoreRootProjectLockJsonFiles)"
     Outputs="$(CORE_ROOT)\*.*">
-
-    <MSBuild Projects="$(SourceDir)Common\test_runtime\test_runtime.csproj"/>
-
-    <MSBuild Projects="$(SourceDir)Common\test_dependencies\test_dependencies.csproj"/>
 
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
@@ -89,8 +85,6 @@
     Inputs="@(RefProjectLockJsonFiles)"
     Outputs="$(RefDestination)\*.*">
 
-    <MSBuild Projects="$(SourceDir)Common\targeting_pack_ref\targeting_pack_ref.csproj"/>
-
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
     <PrereleaseResolveNuGetPackageAssets AllowFallbackOnTargetSelection="true"
@@ -120,8 +114,6 @@
   <Target Name="CopyDependencyToProduct"
     Inputs="@(ProductProjectLockJsonFiles)"
     Outputs="$(ProductDestination)\*.*">
-
-    <MSBuild Projects="$(SourceDir)Common\build_against_pkg_dependencies\build_against_pkg_dependencies.csproj"/>
 
     <!-- This will use the overridden PrereleaseResolveNuGetPackageAssets, which outputs copy local items
          for the xunit wrapper projects -->
