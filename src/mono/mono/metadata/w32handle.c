@@ -25,7 +25,7 @@
 
 #undef DEBUG_REFS
 
-#define SLOT_MAX		(1024 * 16)
+#define SLOT_MAX		(1024 * 32)
 
 /* must be a power of 2 */
 #define HANDLE_PER_SLOT	(256)
