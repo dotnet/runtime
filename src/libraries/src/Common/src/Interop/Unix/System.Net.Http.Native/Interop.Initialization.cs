@@ -26,7 +26,7 @@ internal static partial class Interop
 #if !SYSNETHTTP_NO_OPENSSL
             string opensslVersion = Interop.Http.GetSslVersionDescription();
             if (string.IsNullOrEmpty(opensslVersion) ||
-                opensslVersion.IndexOf("openssl/1.0", StringComparison.OrdinalIgnoreCase) != -1)
+                opensslVersion.IndexOf(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) != -1)
             {
                 // CURL uses OpenSSL which me must initialize first to guarantee thread-safety
                 // Only initialize for OpenSSL/1.0, any newer versions may have mismatched
