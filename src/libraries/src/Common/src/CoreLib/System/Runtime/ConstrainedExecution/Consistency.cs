@@ -4,7 +4,6 @@
 
 namespace System.Runtime.ConstrainedExecution
 {
-    [Serializable]
     public enum Consistency : int
     {
         MayCorruptProcess = 0,

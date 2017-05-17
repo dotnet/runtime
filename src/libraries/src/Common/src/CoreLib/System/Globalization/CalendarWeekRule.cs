@@ -4,7 +4,6 @@
 
 namespace System.Globalization
 {
-    [Serializable]
     public enum CalendarWeekRule
     {
         FirstDay = 0,           // Week 1 begins on the first day of the year

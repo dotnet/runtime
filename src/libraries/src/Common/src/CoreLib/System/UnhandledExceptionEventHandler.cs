@@ -4,6 +4,5 @@
 
 namespace System
 {
-    [Serializable]
     public delegate void UnhandledExceptionEventHandler(Object sender, UnhandledExceptionEventArgs e);
 }

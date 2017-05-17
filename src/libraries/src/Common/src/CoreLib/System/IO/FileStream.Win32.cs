@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.IO
 {
@@ -38,7 +33,8 @@ namespace System.IO
             flagsAndAttributes |= (Interop.Kernel32.SecurityOptions.SECURITY_SQOS_PRESENT | Interop.Kernel32.SecurityOptions.SECURITY_ANONYMOUS);
 
             // Don't pop up a dialog for reading from an empty floppy drive
-            uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+            uint oldMode;
+            bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
             try
             {
                 SafeFileHandle fileHandle = Interop.Kernel32.CreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero);
@@ -70,7 +66,8 @@ namespace System.IO
             }
             finally
             {
-                Interop.Kernel32.SetErrorMode(oldMode);
+                if (success)
+                    Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
             }
         }
     }
