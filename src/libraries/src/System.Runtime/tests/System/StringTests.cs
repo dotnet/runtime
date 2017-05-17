@@ -13,7 +13,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public partial class StringTests : RemoteExecutorTestBase
+    public partial class StringTests
     {
         private const string SoftHyphen = "\u00AD";
 

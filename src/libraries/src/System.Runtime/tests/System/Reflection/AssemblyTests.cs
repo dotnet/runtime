@@ -30,15 +30,18 @@ namespace System.Reflection.Tests
         private string LoadFromTestPath { get; }
 
         public AssemblyTests() 
-            : base()
         {
-            DestTestAssemblyPath = Path.Combine(base.TestDirectory, "TestAssembly.dll");
-            File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
-
             // Assembly.Location not supported (properly) on uapaot.
-            string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Runtime.Tests.dll");
+            DestTestAssemblyPath = Path.Combine(base.TestDirectory, "TestAssembly.dll");
             LoadFromTestPath = Path.Combine(base.TestDirectory, "System.Runtime.Tests.dll");
-            File.Copy(currAssemblyPath, LoadFromTestPath, true);
+
+            // There is no dll to copy in ILC runs
+            if (!PlatformDetection.IsNetNative)
+            {
+                File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
+                string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Runtime.Tests.dll");
+                File.Copy(currAssemblyPath, LoadFromTestPath, true);
+            }
         }
 
         public static IEnumerable<object[]> Equality_TestData()
@@ -485,7 +488,7 @@ namespace System.Reflection.Tests
 
         private static Assembly LoadSystemCollectionsAssembly()
         {
-            // Force System.collections to be linkedally
+            // Force System.collections to be linked statically
             List<int> li = new List<int>();
             li.Add(1);
             return Assembly.Load(new AssemblyName(typeof(List<int>).GetTypeInfo().Assembly.FullName));
