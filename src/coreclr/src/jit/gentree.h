@@ -1003,6 +1003,14 @@ public:
 #define GTF_ICON_FIELD_OFF          0x08000000 // GT_CNS_INT -- constant is a field offset
 #define GTF_ICON_SIMD_COUNT         0x04000000 // GT_CNS_INT -- constant is Vector<T>.Count
 
+#define GTF_ICON_INITCLASS          0x02000000 // GT_CNS_INT -- Constant is used to access a static that requires preceding
+                                               //               class/static init helper.  In some cases, the constant is
+                                               //               the address of the static field itself, and in other cases
+                                               //               there's an extra layer of indirection and it is the address
+                                               //               of the cell that the runtime will fill in with the address
+                                               //               of the static field; in both of those cases, the constant
+                                               //               is what gets flagged.
+
 #define GTF_BLK_VOLATILE            GTF_IND_VOLATILE  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is a volatile block operation
 #define GTF_BLK_UNALIGNED           GTF_IND_UNALIGNED // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an unaligned block operation
 
