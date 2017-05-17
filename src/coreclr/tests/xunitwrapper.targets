@@ -6,13 +6,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Target Name="ResolveNuGetPackages">
  
-    <PrereleaseResolveNuGetPackageAssets Condition="Exists($(ProjectLockJson))"
+    <PrereleaseResolveNuGetPackageAssets Condition="Exists($(ProjectAssetsFile))"
                                          AllowFallbackOnTargetSelection="true"
                                          IncludeFrameworkReferences="false"
                                          NuGetPackagesDirectory="$(PackagesDir)"
                                          RuntimeIdentifier="$(TestNugetRuntimeId)"
                                          ProjectLanguage="$(Language)"
-                                         ProjectLockFile="$(ProjectLockJson)"
+                                         ProjectLockFile="$(ProjectAssetsFile)"
                                          TargetMonikers="$(TargetFrameworkMoniker)">
       <Output TaskParameter="ResolvedAnalyzers" ItemName="Analyzer" />
       <Output TaskParameter="ResolvedReferences" ItemName="Reference" />
