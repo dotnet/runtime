@@ -147,6 +147,16 @@ bool GCHandleManager::StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* obj
     return !!::HndFirstAssignHandle(handle, ObjectToOBJECTREF(object));
 }
 
+void GCHandleManager::SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object)
+{
+    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(object));
+}
+
+Object* GCHandleManager::GetDependentHandleSecondary(OBJECTHANDLE handle)
+{
+    return OBJECTREFToObject(::GetDependentHandleSecondary(handle));
+}
+
 Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject)
 {
     return (Object*)::HndInterlockedCompareExchangeHandle(handle, ObjectToOBJECTREF(object), ObjectToOBJECTREF(comparandObject));
