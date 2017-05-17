@@ -1231,9 +1231,9 @@ FCFuncStart(gStubHelperFuncs)
 #ifdef FEATURE_ARRAYSTUB_AS_IL
     FCFuncElement("ArrayTypeCheck", StubHelpers::ArrayTypeCheck)
 #endif //FEATURE_ARRAYSTUB_AS_IL
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
     FCFuncElement("MulticastDebuggerTraceHelper", StubHelpers::MulticastDebuggerTraceHelper)
-#endif //FEATURE_STUBS_AS_IL
+#endif //FEATURE_MULTICASTSTUB_AS_IL
 FCFuncEnd()
 
 FCFuncStart(gGCHandleFuncs)
