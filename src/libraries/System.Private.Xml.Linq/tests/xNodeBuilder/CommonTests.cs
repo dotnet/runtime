@@ -3413,12 +3413,14 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    string expectedMsg = "Cannot have ']]>' inside an XML CDATA block.";
-
                     using (XmlReader reader = doc.CreateReader())
                     {
                         Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
-                        Assert.Equal(expectedMsg, exception.Message);
+                        if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
+                        {
+                            string expectedMsg = "Cannot have ']]>' inside an XML CDATA block.";
+                            Assert.Equal(expectedMsg, exception.Message);
+                        }
                     }
                 }
 
@@ -3605,12 +3607,14 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    string expectedMsg = "An XML comment cannot contain '--', and '-' cannot be the last character.";
-
                     using (XmlReader reader = doc.CreateReader())
                     {
                         Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
-                        Assert.Equal(expectedMsg, exception.Message);
+                        if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
+                        {
+                            string expectedMsg = "An XML comment cannot contain '--', and '-' cannot be the last character.";
+                            Assert.Equal(expectedMsg, exception.Message);
+                        }
                     }
                 }
             }
@@ -4206,12 +4210,14 @@ namespace CoreXml.Test.XLinq
                         w.WriteEndElement();
                     }
 
-                    string expectedMsg = "Cannot have '?>' inside an XML processing instruction.";
-
                     using (XmlReader reader = doc.CreateReader())
                     {
                         Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
-                        Assert.Equal(expectedMsg, exception.Message);
+                        if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
+                        {
+                            string expectedMsg = "Cannot have '?>' inside an XML processing instruction.";
+                            Assert.Equal(expectedMsg, exception.Message);
+                        }
                     }
                 }
 
