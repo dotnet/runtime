@@ -723,6 +723,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 
 #ifdef TARGET_ARM
 	g_assert (mono_arm_eabi_supported ());
+	int i8_align = mono_arm_i8_align ();
 #endif
 
 	if (sig->hasthis)
@@ -757,7 +758,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 		case MONO_TYPE_I8:
 #ifdef TARGET_ARM
 			/* pairs begin at even registers */
-			if (margs->ilen & 1)
+			if (i8_align == 8 && margs->ilen & 1)
 				margs->ilen++;
 #endif
 			margs->ilen += 2;
@@ -834,7 +835,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 			stackval *sarg = &frame->stack_args [i];
 #ifdef TARGET_ARM
 			/* pairs begin at even registers */
-			if (int_i & 1)
+			if (i8_align == 8 && int_i & 1)
 				int_i++;
 #endif
 			margs->iargs [int_i] = (gpointer) sarg->data.pair.lo;

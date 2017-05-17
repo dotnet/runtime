@@ -4039,6 +4039,12 @@ mono_arm_eabi_supported (void)
 	return eabi_supported;
 }
 
+int
+mono_arm_i8_align (void)
+{
+	return i8_align;
+}
+
 #ifndef DISABLE_JIT
 
 static guint8*

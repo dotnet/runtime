@@ -393,6 +393,9 @@ mono_arm_thumb_supported (void);
 gboolean
 mono_arm_eabi_supported (void);
 
+int
+mono_arm_i8_align (void);
+
 GSList*
 mono_arm_get_exception_trampolines (gboolean aot);
 
