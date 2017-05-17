@@ -400,9 +400,7 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 			mono_value_copy (result->data.vt, data, type->data.klass);
 		return;
 	case MONO_TYPE_GENERICINST: {
-		MonoClass *container_class = type->data.generic_class->container_class;
-
-		if (container_class->valuetype && !container_class->enumtype) {
+		if (mono_type_generic_inst_is_valuetype (type)) {
 			mono_value_copy (result->data.vt, data, mono_class_from_mono_type (type));
 			return;
 		}
