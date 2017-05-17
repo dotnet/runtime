@@ -77,6 +77,4 @@ Loader/classloader/TypeGeneratorTests/TypeGeneratorTest614/Generated614/Generate
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest681/Generated681/Generated681.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest682/Generated682/Generated682.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest683/Generated683/Generated683.sh
-Loader/classloader/PrivateInterfaceImpl/Test6_ImplementingClass/Test6_ImplementingClass.sh
-Loader/classloader/regressions/440935/Test/Test.sh
 JIT/CheckProjects/CheckProjects/CheckProjects.sh
