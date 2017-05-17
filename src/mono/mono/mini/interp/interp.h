@@ -7,7 +7,7 @@
 #include <mono/mini/mini.h>
 
 #define INTERP_ICALL_TRAMP_IARGS 12
-#define INTERP_ICALL_TRAMP_FARGS 3
+#define INTERP_ICALL_TRAMP_FARGS 4
 
 struct _InterpMethodArguments {
 	size_t ilen;

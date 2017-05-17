@@ -709,7 +709,6 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 
 static MonoPIFunc mono_interp_enter_icall_trampoline = NULL;
 
-// TODO: this function is also arch dependent (register width).
 static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvocation *frame)
 {
 	InterpMethodArguments *margs = g_malloc0 (sizeof (InterpMethodArguments));
@@ -735,15 +734,29 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
-		case MONO_TYPE_I8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_I8:
+#endif
 			margs->ilen++;
 			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I8:
+			g_assert (0);
+			break;
+#endif
 		case MONO_TYPE_R4:
+#if SIZEOF_VOID_P == 8
 		case MONO_TYPE_R8:
+#endif
 			margs->flen++;
 			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_R8:
+			margs->flen += 2;
+			break;
+#endif
 		default:
 			g_error ("build_args_from_sig: not implemented yet (1): 0x%x\n", ptype);
 		}
@@ -788,15 +801,22 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
-		case MONO_TYPE_I8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
+#if SIZEOF_VOID_P == 8
+		case MONO_TYPE_I8:
+#endif
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->iargs [%d]: %p (frame @ %d)\n", int_i, margs->iargs [int_i], i);
 #endif
 			int_i++;
 			break;
+#if SIZEOF_VOID_P == 4
+		case MONO_TYPE_I8:
+			g_assert (0);
+			break;
+#endif
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			if (ptype == MONO_TYPE_R4)
@@ -806,7 +826,11 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 #if DEBUG_INTERP
 			g_print ("build_args_from_sig: margs->fargs [%d]: %p (%f) (frame @ %d)\n", int_f, margs->fargs [int_f], margs->fargs [int_f], i);
 #endif
+#if SIZEOF_VOID_P == 4
+			int_f += 2;
+#else
 			int_f++;
+#endif
 			break;
 		default:
 			g_error ("build_args_from_sig: not implemented yet (2): 0x%x\n", ptype);
@@ -833,6 +857,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_GENERICINST:
 			margs->retval = &(frame->retval->data.p);
+			margs->is_float_ret = 0;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
