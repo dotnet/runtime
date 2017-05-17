@@ -5,6 +5,7 @@
     <RuntimeFrameworkVersion>$(_RuntimeFrameworkVersion)</RuntimeFrameworkVersion>
     <CoreFxPackageVersion>4.4.0-$(CoreFxExpectedPrerelease)</CoreFxPackageVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <ItemGroup>

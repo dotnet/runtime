@@ -56,6 +56,41 @@
              ContinueOnError="ErrorAndStop" />
   </Target>
 
+  <UsingTask TaskName="GetNetCoreAppVersionsFromFile" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <Target Name="GetRepoVersionHashes">
+    <GetNetCoreAppVersionsFromFile 
+              PathToVersionsFile="$(PackagesDir)Microsoft.NETCore.App/$(MicrosoftNETCoreAppPackageVersion)/Microsoft.NETCore.App.versions.txt">
+      <Output TaskParameter="VersionHashes" ItemName="VersionHashes" /> 
+    </GetNetCoreAppVersionsFromFile>
+
+    <PropertyGroup>
+      <CoreFxHash Condition="'%(VersionHashes.Identity)' == 'corefx'">%(VersionHashes.VersionHash)</CoreFxHash>
+      <CoreFxCopyLocation>$(BinDir)corefxCopy</CoreFxCopyLocation>
+      <_RepoURL>https://github.com/dotnet/corefx.git</_RepoURL>
+    </PropertyGroup>
+
+    <!-- Windows script -->
+    <ItemGroup>
+      <_CloneRepoLines Include="@echo off" />
+      <_CloneRepoLines Include="pushd $(CoreFxCopyLocation.Replace('/', '\'))" />
+      <_CloneRepoLines Include="git clone $(_RepoURL)" />
+      <_CloneRepoLines Include="cd corefx" />
+      <_CloneRepoLines Include="git reset --hard $(CoreFxHash)" />
+      <_CloneRepoLines Include="call sync.cmd" />
+      <_CloneRepoLines Include="call build-tests.cmd -- /p:RefPath=$(BinDir)ref\SharedFrameworkValidation /p:RunningSharedFrameworkValidation=true /p:RuntimePath=$(BinDir)runtime\SharedFrameworkValidation\ /p:TestHostRootPath=$(TestHostRootPath)" />
+      <_CloneRepoLines Include="popd" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(BinDir);$(CoreFxCopyLocation)" />
+
+    <WriteLinesToFile
+      File="$(BinDir)CloneAndRunTests.cmd"
+      Lines="@(_CloneRepoLines)"
+      Overwrite="true"
+      Encoding="Ascii" />
+  </Target>
+
   <PropertyGroup>
     <BuildDependsOn>
       RestorePackagesProject;
@@ -64,12 +99,13 @@
       CopyXunitAssemblies;
       ReplaceTestingSharedFrameworkWithRestoredPackages;
       GenerateTestSharedFrameworkDepsFile;
+      GetRepoVersionHashes;
     </BuildDependsOn>
   </PropertyGroup>
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
   <Target Name="Clean">
-    <RemoveDir Directories="$(MSBuildThisFileDirectory)RestoreSDKProject\obj;$(MSBuildThisFileDirectory)RestoreSDKProject\bin;$(SharedFrameworkValidationRefPath);$(SharedFrameworkValidationRuntimePath)" />
+    <RemoveDir Directories="$(MSBuildThisFileDirectory)RestoreSDKProject\obj;$(MSBuildThisFileDirectory)RestoreSDKProject\bin;$(SharedFrameworkValidationRefPath);$(SharedFrameworkValidationRuntimePath);$(CoreFxCopyLocation)" />
   </Target>
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
