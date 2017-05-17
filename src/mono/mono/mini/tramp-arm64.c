@@ -659,6 +659,162 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	return buf;
 }
 
+/*
+ * mono_arch_get_enter_icall_trampoline:
+ *
+ *   See tramp-amd64.c for documentation.
+ */
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+{
+#ifdef ENABLE_INTERPRETER
+	/* sync with constants in interp.c */
+	/* TODO: should be shared with other platforms */
+	const int gregs_num = ARMREG_R12;
+	const int fregs_num = 3;
+
+	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
+	MonoJumpInfo *ji = NULL;
+	GSList *unwind_ops = NULL;
+	int buf_len, i, framesize = 0, off_methodargs, off_targetaddr;
+
+	buf_len = 512 + 1024;
+	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
+
+	/* save FP and LR */
+	framesize += 2 * sizeof (mgreg_t);
+
+	off_methodargs = framesize;
+	framesize += sizeof (mgreg_t);
+
+	off_targetaddr = framesize;
+	framesize += sizeof (mgreg_t);
+
+	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+
+	/* allocate space on stack for argument passing */
+	const int stack_space = ALIGN_TO (((gregs_num - ARMREG_R7) * sizeof (mgreg_t)), MONO_ARCH_FRAME_ALIGNMENT);
+
+	arm_subx_imm (code, ARMREG_SP, ARMREG_SP, stack_space + framesize);
+	arm_stpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, stack_space);
+	arm_addx_imm (code, ARMREG_FP, ARMREG_SP, stack_space);
+
+	/* save MethodArguments* onto stack */
+	arm_strx (code, ARMREG_R1, ARMREG_FP, off_methodargs);
+
+	/* save target address onto stack */
+	arm_strx (code, ARMREG_R0, ARMREG_FP, off_targetaddr);
+
+	/* load pointer to MethodArguments* into IP0 */
+	arm_movx (code, ARMREG_IP0, ARMREG_R1);
+
+	/* move flen into R9 */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, 16);
+	/* load pointer to fregs into R10 */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, 24);
+
+	for (i = 0; i < fregs_num; ++i) {
+		arm_cmpx_imm (code, ARMREG_R9, 0);
+		label_fexits [i] = code;
+		arm_bcc (code, ARMCOND_EQ, 0);
+
+		arm_ldrfpx (code, i, ARMREG_R10, i * sizeof (double));
+		arm_subx_imm (code, ARMREG_R9, ARMREG_R9, 1);
+	}
+
+	for (i = 0; i < fregs_num; i++)
+		mono_arm_patch (label_fexits [i], code, MONO_R_ARM64_BCC);
+
+	/* move ilen into R9 */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R9, ARMREG_IP0, 0);
+	/* load pointer to iregs into R10 */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R10, ARMREG_IP0, 8);
+
+	int stack_offset = 0;
+	for (i = 0; i < gregs_num; i++) {
+		arm_cmpx_imm (code, ARMREG_R9, 0);
+		label_gexits [i] = code;
+		arm_bcc (code, ARMCOND_EQ, 0);
+
+		if (i <= ARMREG_R7) {
+			arm_ldrx (code, i, ARMREG_R10, i * sizeof (mgreg_t));
+		} else {
+			arm_ldrx (code, ARMREG_R11, ARMREG_R10, i * sizeof (mgreg_t));
+			arm_strx (code, ARMREG_R11, ARMREG_SP, stack_offset);
+			stack_offset += sizeof (mgreg_t);
+		}
+		arm_subx_imm (code, ARMREG_R9, ARMREG_R9, 1);
+	}
+
+	for (i = 0; i < gregs_num; i++)
+		mono_arm_patch (label_gexits [i], code, MONO_R_ARM64_BCC);
+
+	/* load target addr */
+	arm_ldrx (code, ARMREG_R11, ARMREG_FP, off_targetaddr);
+
+	/* call into native function */
+	arm_blrx (code, ARMREG_R11);
+
+	/* load MethodArguments */
+	arm_ldrx (code, ARMREG_IP0, ARMREG_FP, off_methodargs);
+
+	/* load is_float_ret */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, 0x28);
+
+	/* check if a float return value is expected */
+	arm_cmpx_imm (code, ARMREG_R11, 0);
+	label_is_float_ret = code;
+	arm_bcc (code, ARMCOND_NE, 0);
+
+	/* greg return */
+	/* load retval */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, 0x20);
+
+	arm_cmpx_imm (code, ARMREG_R11, 0);
+	label_leave_tramp [0] = code;
+	arm_bcc (code, ARMCOND_EQ, 0);
+
+	/* store greg result */
+	arm_strx (code, ARMREG_R0, ARMREG_R11, 0);
+
+	label_leave_tramp [1] = code;
+	arm_bcc (code, ARMCOND_AL, 0);
+
+	/* freg return */
+	mono_arm_patch (label_is_float_ret, code, MONO_R_ARM64_BCC);
+	/* load retval */ // TODO: struct offset
+	arm_ldrx (code, ARMREG_R11, ARMREG_IP0, 0x20);
+
+	arm_cmpx_imm (code, ARMREG_R11, 0);
+	label_leave_tramp [2] = code;
+	arm_bcc (code, ARMCOND_EQ, 0);
+
+	/* store freg result */
+	arm_strfpx (code, ARMREG_D0, ARMREG_R11, 0);
+
+	for (i = 0; i < 3; i++)
+		mono_arm_patch (label_leave_tramp [i], code, MONO_R_ARM64_BCC);
+
+	arm_movspx (code, ARMREG_SP, ARMREG_FP);
+	arm_ldpx (code, ARMREG_FP, ARMREG_LR, ARMREG_SP, 0);
+	arm_addx_imm (code, ARMREG_SP, ARMREG_SP, framesize);
+	arm_retx (code, ARMREG_LR);
+
+	g_assert (code - start < buf_len);
+
+	mono_arch_flush_icache (start, code - start);
+	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
+
+	if (info)
+		*info = mono_tramp_info_create ("enter_icall_trampoline", start, code - start, ji, unwind_ops);
+
+	return start;
+#else
+	g_assert_not_reached ();
+	return NULL;
+#endif /* ENABLE_INTERPRETER */
+}
+
 #else /* DISABLE_JIT */
 
 guchar*
