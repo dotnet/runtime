@@ -45,7 +45,9 @@ set(SOURCES
 
 
 if(WIN32)
-    list(APPEND SOURCES ../../common/pal.windows.cpp)
+    list(APPEND SOURCES 
+        ../../common/pal.windows.cpp
+        ../../common/longfile.windows.cpp)
 else()
     list(APPEND SOURCES ../../common/pal.unix.cpp)
 endif()

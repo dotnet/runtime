@@ -128,10 +128,6 @@ fi
 if [ -d "$__RootfsDir" ]; then
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/*
-        if [ $? -ne 0 ]; then
-            echo "Failed to unmount RootfsDir."
-            exit 1
-        fi
     fi
     rm -rf $__RootfsDir
 fi

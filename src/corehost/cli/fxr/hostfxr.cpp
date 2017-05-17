@@ -29,7 +29,7 @@ int load_host_library(
     }
 
     // Load library
-    if (!pal::load_library(host_path.c_str(), h_host))
+    if (!pal::load_library(&host_path, h_host))
     {
         trace::info(_X("Load library of %s failed"), host_path.c_str());
         return StatusCode::CoreHostLibLoadFailure;

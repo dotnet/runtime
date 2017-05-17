@@ -25,7 +25,7 @@ namespace coreclr
         host_handle_t* host_handle,
         domain_id_t* domain_id);
 
-    pal::hresult_t shutdown(host_handle_t host_handle, domain_id_t domain_id);
+    pal::hresult_t shutdown(host_handle_t host_handle, domain_id_t domain_id, int* latchedExitCode);
 
     pal::hresult_t execute_assembly(
         host_handle_t host_handle,

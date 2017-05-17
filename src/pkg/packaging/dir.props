@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
+
+    <!-- Package prebuilt binaries -->
+    <UsePrebuiltPortableBinariesForInstallers>false</UsePrebuiltPortableBinariesForInstallers>
+    
+    <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
+    <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
+    <HostFxrPublishRoot>$(IntermediateOutputRootPath)hostFxr/</HostFxrPublishRoot>
+    <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
+    <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProductMoniker>$(PackageTargetRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
+    <HostResolverVersionMoniker>$(PackageTargetRid).$(HostResolverVersion)</HostResolverVersionMoniker>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CombinedCompressedFile>dotnet-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
+    <HostFxrCompressedFile>dotnet-hostfxr-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
+    <SharedFrameworkCompressedFile>dotnet-sharedframework-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+    <SharedFrameworkSymbolsCompressedFile>dotnet-sharedframework-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CombinedInstallerFile>$(PackagesOutDir)dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
+    <CombinedInstallerEngine>$(PackagesOutDir)dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
+    <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProductBrandPrefix>Microsoft .NET Core $(ProductionVersion)</ProductBrandPrefix>
+    <ProductBrandPrefix Condition="'$(ReleaseBrandSuffix)'!=''">Microsoft .NET Core $(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandPrefix>
+    <SharedHostBrandName>$(ProductBrandPrefix) Host</SharedHostBrandName>
+    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver</HostFxrBrandName>
+    <SharedFrameworkBrandName>$(ProductBrandPrefix)  Runtime</SharedFrameworkBrandName>
+  </PropertyGroup>
+</Project>
