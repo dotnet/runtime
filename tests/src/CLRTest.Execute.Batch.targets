@@ -126,13 +126,11 @@ IF NOT "!ERRORLEVEL!"=="0" (
 timeout /t 10 /nobreak
 goto :TakeLock
 )
-popd
 Exit /b 2
 
 
 :ReleaseLock
 if exist %lockFolder% rd /s /q %lockFolder%
-popd
 Exit /b 0
       ]]></BatchCLRTestExitCodeCheck>
     </PropertyGroup>
