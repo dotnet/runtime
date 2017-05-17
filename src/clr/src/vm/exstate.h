@@ -23,7 +23,6 @@ class EHClauseInfo;
 #define PRESERVE_WATSON_ACROSS_CONTEXTS 1
 #endif
 
-extern LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 extern StackWalkAction COMPlusUnwindCallback(CrawlFrame *pCf, ThrowCallbackType *pData);
 
 //
@@ -292,8 +291,6 @@ private:
                         CONTEXT*                        pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
                         Thread*                         pThread);
-
-    friend LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
 
     friend class Thread;
     // It it the following method that needs to be a friend.  But the prototype pulls in a lot more stuff,
