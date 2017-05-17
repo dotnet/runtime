@@ -66,7 +66,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Symlink_InvalidFile_Throws()
         {
-            string filePath = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
+            string sourcePath = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
+            string filePath = GetTestFilePath();
+            File.Copy(sourcePath, filePath);
             string linkPath = GetTestFilePath();
             Assert.Equal(0, symlink(filePath, linkPath));
             File.Delete(filePath);
