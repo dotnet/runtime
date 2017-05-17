@@ -2,6 +2,17 @@ project(createdump)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+# Set the RPATH of createdump so that it can find dependencies without needing to set LD_LIBRARY_PATH
+# For more information: http://www.cmake.org/Wiki/CMake_RPATH_handling.
+if (CORECLR_SET_RPATH)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  if(CLR_CMAKE_PLATFORM_DARWIN)
+    set(CMAKE_INSTALL_RPATH "@loader_path")
+  else()
+    set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+  endif(CLR_CMAKE_PLATFORM_DARWIN)
+endif (CORECLR_SET_RPATH)
+
 remove_definitions(-DUNICODE)
 remove_definitions(-D_UNICODE)
 
