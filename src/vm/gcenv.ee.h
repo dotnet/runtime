@@ -9,6 +9,9 @@
 
 #ifdef FEATURE_STANDALONE_GC
 
+namespace standalone
+{
+
 class GCToEEInterface : public IGCToCLR {
 public:
     GCToEEInterface() = default;
@@ -50,6 +53,8 @@ public:
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
 };
+
+} // namespace standalone
 
 #endif // FEATURE_STANDALONE_GC
 

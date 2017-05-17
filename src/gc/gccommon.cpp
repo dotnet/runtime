@@ -17,9 +17,9 @@
 IGCHeapInternal* g_theGCHeap;
 IGCHandleManager* g_theGCHandleManager;
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 IGCToCLR* g_theGCToCLR;
-#endif // FEATURE_STANDALONE_GC
+#endif // BUILD_AS_STANDALONE
 
 #ifdef GC_CONFIG_DRIVEN
 size_t gc_global_mechanisms[MAX_GLOBAL_GC_MECHANISMS_COUNT];
@@ -143,7 +143,30 @@ namespace SVR
     extern void PopulateDacVars(GcDacVars* dacVars);
 }
 
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars)
+//------------------------------------------------------------------
+// Externally-facing GC symbols, used to initialize the GC
+// -----------------------------------------------------------------
+
+#ifdef _MSC_VER
+#define DLLEXPORT __declspec(dllexport)
+#else
+#define DLLEXPORT __attribute__ ((visibility ("default")))
+#endif // _MSC_VER
+
+#ifdef BUILD_AS_STANDALONE
+#define GC_API extern "C" DLLEXPORT
+#else
+#define GC_API extern "C"
+#endif // BUILD_AS_STANDALONE
+
+GC_API
+bool
+InitializeGarbageCollector(
+    /* In */  IGCToCLR* clrToGC,
+    /* Out */ IGCHeap** gcHeap,
+    /* Out */ IGCHandleManager** gcHandleManager,
+    /* Out */ GcDacVars* gcDacVars
+    )
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -184,7 +207,7 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleMa
 
     g_theGCHeap = heap;
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
     assert(clrToGC != nullptr);
     g_theGCToCLR = clrToGC;
 #else

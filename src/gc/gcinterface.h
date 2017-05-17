@@ -171,15 +171,24 @@ class Object;
 class IGCHeap;
 class IGCHandleManager;
 
-// Initializes the garbage collector. Should only be called
-// once, during EE startup. Returns true if the initialization
-// was successful, false otherwise.
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleTable, GcDacVars* gcDacVars);
+// The function that initialzes the garbage collector.
+// Should only be called once: here, during EE startup.
+// Returns true if the initialization was successful, false otherwise.
+typedef bool (*InitializeGarbageCollectorFunction)(
+    /* In  */ IGCToCLR*,
+    /* Out */ IGCHeap**,
+    /* Out */ IGCHandleManager**,
+    /* Out */ GcDacVars*
+);
+
+// The name of the function that initializes the garbage collector,
+// to be used as an argument to GetProcAddress.
+#define INITIALIZE_GC_FUNCTION_NAME "InitializeGarbageCollector"
 
 // The runtime needs to know whether we're using workstation or server GC 
 // long before the GCHeap is created. This function sets the type of
 // heap that will be created, before InitializeGarbageCollector is called
-// and the heap is actually recated.
+// and the heap is actually created.
 void InitializeHeapType(bool bServerHeap);
 
 #ifdef WRITE_BARRIER_CHECK

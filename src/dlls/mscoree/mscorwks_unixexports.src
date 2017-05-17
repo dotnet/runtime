@@ -104,3 +104,6 @@ GlobalMemoryStatusEx
 VirtualQuery
 WideCharToMultiByte
 WriteFile
+
+; Function for initializing a standalone GC
+InitializeGarbageCollector
