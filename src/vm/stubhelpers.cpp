@@ -1970,11 +1970,11 @@ FCIMPL2(void, StubHelpers::ArrayTypeCheck, Object* element, PtrArray* arr)
 FCIMPLEND
 #endif // FEATURE_ARRAYSTUB_AS_IL
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL2(void, StubHelpers::MulticastDebuggerTraceHelper, Object* element, INT32 count)
 {
     FCALL_CONTRACT;
     FCUnique(0xa5);
 }
 FCIMPLEND
-#endif // FEATURE_STUBS_AS_IL
+#endif // FEATURE_MULTICASTSTUB_AS_IL
