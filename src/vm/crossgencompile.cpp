@@ -400,29 +400,6 @@ LONG ComCallWrapperTemplate::Release()
 }
 #endif
 
-//---------------------------------------------------------------------------------------
-//
-// Security-related functions. They are reachable in theory for legacy security attributes. The legacy security
-// attributes should not be used in code running on CoreCLR. We fail fast for number of these just in case somebody 
-// tries to use the legacy security attributes.
-//
-
-void SecurityDeclarative::FullTrustInheritanceDemand(Assembly *pTargetAssembly)
-{
-    CrossGenNotSupported("FullTrustInheritanceDemand");
-}
-
-void SecurityDeclarative::InheritanceLinkDemandCheck(Assembly *pTargetAssembly, MethodDesc * pMDLinkDemand)
-{
-    CrossGenNotSupported("InheritanceLinkDemandCheck");
-}
-
-void ApplicationSecurityDescriptor::PreResolve(BOOL *pfIsFullyTrusted, BOOL *pfIsHomogeneous)
-{
-    // virtual method unreachable in crossgen
-    UNREACHABLE();
-}
-
 extern "C" UINT_PTR STDCALL GetCurrentIP()
 { 
     return 0;

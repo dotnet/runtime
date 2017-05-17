@@ -21,7 +21,6 @@
 #include "float.h"      // for isnan
 #include "dbginterface.h"
 #include "security.h"
-#include "securitymeta.h"
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
@@ -5460,7 +5459,7 @@ HCIMPL1(void, JIT_SecurityUnmanagedCodeException, CORINFO_CLASS_HANDLE typeHnd_)
 
     HELPER_METHOD_FRAME_BEGIN_ATTRIB_NOPOLL(Frame::FRAME_ATTR_EXCEPTION);    // Set up a frame
 
-    Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSUNMANAGEDCODE);
+    COMPlusThrow(kSecurityException);
 
     HELPER_METHOD_FRAME_END();
 }
@@ -5654,328 +5653,47 @@ HCIMPLEND;
 //
 //========================================================================
 
-NOINLINE HCIMPL2(void, JIT_DelegateSecurityCheck_Internal, CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeMethodHnd)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    TypeHandle delegateType(delegateHnd);
-    MethodDesc* pCallee = GetMethod(calleeMethodHnd);
-
-    Security::EnforceTransparentDelegateChecks(delegateType.AsMethodTable(), pCallee);
-
-    HELPER_METHOD_FRAME_END_POLL();
-}
-HCIMPLEND
-
-#include <optsmallperfcritical.h>
-/*************************************************************/
 HCIMPL2(void, JIT_DelegateSecurityCheck, CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeMethodHnd)
 {
     FCALL_CONTRACT;
-
-    // If we're in full trust, then we don't enforce the delegate binding rules
-    if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
-    {
-        return;
-    }
-
-    // Tailcall to the real implementation
-    ENDFORBIDGC();
-    HCCALL2(JIT_DelegateSecurityCheck_Internal, delegateHnd, calleeMethodHnd);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-
-/*************************************************************/
-//Make sure to allow check of 0 for COMPlus_Security_AlwaysInsertCallout
-NOINLINE HCIMPL4(void, JIT_MethodAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_METHOD_HANDLE calleeMethodHnd, CORINFO_CLASS_HANDLE calleeTypeHnd, CorInfoSecurityRuntimeChecks check)
-{
-    FCALL_CONTRACT;
-
-    //
-    // Verify with the security at runtime whether call is allowed.
-    // Throws an exception if the call is not allowed, returns if it is allowed.
-    //
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    MethodDesc *pCaller = GetMethod(callerMethodHnd);
-    MethodDesc *pCallee = GetMethod(calleeMethodHnd);
-    // If we're being called because of a transparency violation (either a standard violation, or an attempt
-    // to call a conditional APTCA protected method from transparent code), process that now.
-    if (check & CORINFO_ACCESS_SECURITY_TRANSPARENCY)
-    {
-        Security::EnforceTransparentAssemblyChecks(pCaller, pCallee);
-    }
-
-    // Also make sure that we have access to the type that the method lives on
-    TypeHandle calleeTH(calleeTypeHnd);
-    Security::DoSecurityClassAccessChecks(pCaller, calleeTH, check);
-
-    // If the method has a generic instantiation, then we also need to do checks on its generic parameters
-    if (pCallee->HasMethodInstantiation())
-    {
-        Instantiation instantiation = pCallee->GetMethodInstantiation();
-        for (DWORD i = 0; i < instantiation.GetNumArgs(); i++)
-        {   
-            TypeHandle argTH = instantiation[i];
-            if (!argTH.IsGenericVariable())
-            {
-                Security::DoSecurityClassAccessChecks(pCaller, argTH, check);
-            }
-        }
-    }
-
-    HELPER_METHOD_FRAME_END_POLL();
 }
 HCIMPLEND
 
-
-#include <optsmallperfcritical.h>
-/*************************************************************/
-//Make sure to allow check of 0 for COMPlus_Security_AlwaysInsertCallout
 HCIMPL4(void, JIT_MethodAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_METHOD_HANDLE calleeMethodHnd, CORINFO_CLASS_HANDLE calleeTypeHnd, CorInfoSecurityRuntimeChecks check)
 {
     FCALL_CONTRACT;
-
-    MethodDesc *pCallerMD = GetMethod(callerMethodHnd);
-    _ASSERTE(GetMethod(callerMethodHnd)->IsRestored());
-    _ASSERTE(GetMethod(calleeMethodHnd)->IsRestored());
-
-
-    // If we don't need to process this callout, then exit early
-    if (Security::SecurityCalloutQuickCheck(pCallerMD))
-    {
-        return;
-    }
-
-    // Tailcall to the slow helper
-    ENDFORBIDGC();
-    HCCALL4(JIT_MethodAccessCheck_Internal, callerMethodHnd, calleeMethodHnd, calleeTypeHnd, check);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-
-// Slower checks (including failure paths) for determining if a method has runtime access to a field
-NOINLINE HCIMPL3(void, JIT_FieldAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_FIELD_HANDLE calleeFieldHnd, CorInfoSecurityRuntimeChecks check)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    MethodDesc *pCallerMD = GetMethod(callerMethodHnd);
-    FieldDesc *pFD = reinterpret_cast<FieldDesc *>(calleeFieldHnd);
-
-    // We can get caller checks of 0 if we're in AlwaysInsertCallout mode, so make sure to do all of our
-    // work under checks for specific flags
-    
-    if (check & CORINFO_ACCESS_SECURITY_TRANSPARENCY)
-    {
-        _ASSERTE(pCallerMD != NULL);
-        StaticAccessCheckContext accessContext(pCallerMD);
-
-        if (!Security::CheckCriticalAccess(&accessContext, NULL, pFD, NULL))
-        {
-            ThrowFieldAccessException(pCallerMD, pFD, TRUE, IDS_E_CRITICAL_FIELD_ACCESS_DENIED);
-        }
-    }
-
-    // Also make sure that we have access to the type that the field lives on
-    TypeHandle fieldTH(pFD->GetApproxEnclosingMethodTable());
-    Security::DoSecurityClassAccessChecks(pCallerMD, fieldTH, check);
-
-    HELPER_METHOD_FRAME_END_POLL();
 }
 HCIMPLEND
 
-#include <optsmallperfcritical.h>
-// Check to see if a method has runtime access to a field
 HCIMPL3(void, JIT_FieldAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_FIELD_HANDLE calleeFieldHnd, CorInfoSecurityRuntimeChecks check)
 {
     FCALL_CONTRACT;
-    _ASSERTE(GetMethod(callerMethodHnd)->IsRestored());
-    _ASSERTE(((FieldDesc*)calleeFieldHnd)->GetEnclosingMethodTable()->IsRestored_NoLogging());
-
-    // We want to try to exit JIT_FieldAccessCheck as soon as possible, preferably without
-    // entering JIT_FieldAccessCheck_Internal.  This method contains only quick checks to see if
-    // the access is definately allowed.  More complete checks are done in the Internal method.
-
-    MethodDesc *pCallerMD = GetMethod(callerMethodHnd);
-
-    // If we don't need to process this callout at all, exit early
-    if (Security::SecurityCalloutQuickCheck(pCallerMD))
-    {
-        return;
-    }
-
-    // If the callout is for conditional APTCA only and we know the target is enabled, then we can also exit
-    // early
-
-    // We couldn't quickly determine that this access is legal, so tailcall to the slower helper to do some
-    // more work to process the access.
-    ENDFORBIDGC();
-    HCCALL3(JIT_FieldAccessCheck_Internal, callerMethodHnd, calleeFieldHnd, check);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-// Slower checks (including failure paths) for determining if a method has runtime access to a type
-NOINLINE HCIMPL3(void, JIT_ClassAccessCheck_Internal, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_CLASS_HANDLE calleeClassHnd, CorInfoSecurityRuntimeChecks check)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    MethodDesc *pCallerMD = GetMethod(callerMethodHnd);
-    TypeHandle calleeClassTH(calleeClassHnd);
-
-    Security::DoSecurityClassAccessChecks(pCallerMD, calleeClassTH, check);
-
-    HELPER_METHOD_FRAME_END_POLL();
 }
 HCIMPLEND
 
-#include <optsmallperfcritical.h>
-// Check to see if a method has runtime access to a type
 HCIMPL3(void, JIT_ClassAccessCheck, CORINFO_METHOD_HANDLE callerMethodHnd, CORINFO_CLASS_HANDLE calleeClassHnd, CorInfoSecurityRuntimeChecks check)
 {
     FCALL_CONTRACT;
-    _ASSERTE(GetMethod(callerMethodHnd)->IsRestored());
-    _ASSERTE(TypeHandle(calleeClassHnd).IsRestored());
-
-    // We want to try to exit JIT_ClassAccessCheck as soon as possible, preferably without
-    // entering JIT_ClassAccessCheck_Internal.  This method contains only quick checks to see if
-    // the access is definately allowed.  More complete checks are done in the Internal method.
-
-    MethodDesc *pCallerMD = GetMethod(callerMethodHnd);
-       
-    // If we don't need to prrocess the callout at all, exit early
-    if (Security::SecurityCalloutQuickCheck(pCallerMD))
-    {
-        return;
-    }
-
-    // If the callout is for conditional APTCA only, and we know the target is enabled, then we can also
-    // exit early
-
-    // We couldn't quickly determine that this access is legal, so tailcall to the slower helper to do some
-    // more work processing the access.
-    ENDFORBIDGC();
-    HCCALL3(JIT_ClassAccessCheck_Internal, callerMethodHnd, calleeClassHnd, check);
-}
-HCIMPLEND
-#include <optdefault.h>
-
-NOINLINE HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd_, OBJECTREF* ppFrameSecDesc)
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-    {
-        ASSUME_BYREF_FROM_JIT_STACK_BEGIN(ppFrameSecDesc);
-
-        MethodDesc *pCurrent = GetMethod(methHnd_);
-
-        g_IBCLogger.LogMethodDescAccess(pCurrent);
-
-        // Note: This check is replicated in JIT_Security_Prolog
-        if ((pCurrent->IsInterceptedForDeclSecurity() &&
-            !(pCurrent->IsInterceptedForDeclSecurityCASDemandsOnly() &&
-                SecurityStackWalk::HasFlagsOrFullyTrusted(0)))
-                )
-        {
-            MethodSecurityDescriptor MDSecDesc(pCurrent);
-            MethodSecurityDescriptor::LookupOrCreateMethodSecurityDescriptor(&MDSecDesc);
-
-            // Do the Declarative CAS actions check
-            DeclActionInfo* pRuntimeDeclActionInfo = MDSecDesc.GetRuntimeDeclActionInfo();
-            if (pRuntimeDeclActionInfo != NULL || pCurrent->IsLCGMethod())
-            {
-                 // Tell the debugger not to start on any managed code that we call in this method    
-                FrameWithCookie<DebuggerSecurityCodeMarkFrame> __dbgSecFrame;
-
-                Security::DoDeclarativeActions(pCurrent, pRuntimeDeclActionInfo, ppFrameSecDesc, &MDSecDesc);
-
-                // Pop the debugger frame
-                __dbgSecFrame.Pop();
-            }
-        }
-
-        ASSUME_BYREF_FROM_JIT_STACK_END();
-    }  
-    HELPER_METHOD_FRAME_END_POLL();
 }
 HCIMPLEND
 
-/*************************************************************/
-#include <optsmallperfcritical.h>
 HCIMPL2(void, JIT_Security_Prolog, CORINFO_METHOD_HANDLE methHnd_, OBJECTREF* ppFrameSecDesc)
 {
     FCALL_CONTRACT;
-
-    //
-    // do the security prolog work
-    //
-
-    MethodDesc *pCurrent = GetMethod(methHnd_);
-
-    // Note: This check is replicated in JIT_Security_Prolog_Framed
-    if ((pCurrent->IsInterceptedForDeclSecurity() &&
-        !(pCurrent->IsInterceptedForDeclSecurityCASDemandsOnly() &&
-        SecurityStackWalk::HasFlagsOrFullyTrusted(0)))
-        // We don't necessarily need to do work for LCG methods, but we need a frame
-        // to find out for sure
-        || pCurrent->IsLCGMethod())
-    {
-        // Tailcall to the slow helper
-        ENDFORBIDGC();
-        HCCALL2(JIT_Security_Prolog_Framed, methHnd_, ppFrameSecDesc);
-    }
 }
 HCIMPLEND
-#include <optdefault.h>
 
-/*************************************************************/
-NOINLINE HCIMPL1(void, JIT_VerificationRuntimeCheck_Internal, CORINFO_METHOD_HANDLE methHnd_)
+HCIMPL2(void, JIT_Security_Prolog_Framed, CORINFO_METHOD_HANDLE methHnd_, OBJECTREF* ppFrameSecDesc)
 {
     FCALL_CONTRACT;
-
-    
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-    {
-        // Transparent methods that contains unverifiable code is not allowed.
-        MethodDesc *pMethod = GetMethod(methHnd_);
-        SecurityTransparent::ThrowMethodAccessException(pMethod);
-    }
-    HELPER_METHOD_FRAME_END_POLL();
 }
 HCIMPLEND
 
-#include <optsmallperfcritical.h>
-/*************************************************************/
 HCIMPL1(void, JIT_VerificationRuntimeCheck, CORINFO_METHOD_HANDLE methHnd_)
 {
     FCALL_CONTRACT;
-
-    if (SecurityStackWalk::HasFlagsOrFullyTrustedIgnoreMode(0)) 
-        return;
-    //
-    // inject a full-demand for unmanaged code permission at runtime
-    // around methods in transparent assembly that contains unverifiable code
-    {
-        // Tailcall to the slow helper
-        ENDFORBIDGC();
-        HCCALL1(JIT_VerificationRuntimeCheck_Internal, methHnd_);
-    }
-
 }
 HCIMPLEND
-#include <optdefault.h>
-
 
 
 //========================================================================

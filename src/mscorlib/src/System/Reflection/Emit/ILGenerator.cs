@@ -1605,7 +1605,6 @@ namespace System.Reflection.Emit
     * takes place.
     *
     ***************************/
-    [Serializable]
     internal enum ScopeAction
     {
         Open = 0x0,

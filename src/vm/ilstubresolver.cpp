@@ -87,8 +87,10 @@ LPCUTF8 ILStubResolver::GetStubMethodName()
 #ifdef FEATURE_ARRAYSTUB_AS_IL
         case ArrayOpStub:            return "IL_STUB_Array";
 #endif
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
         case MulticastDelegateStub:  return "IL_STUB_MulticastDelegate_Invoke";
+#endif
+#ifdef FEATURE_STUBS_AS_IL
         case UnboxingILStub:         return "IL_STUB_UnboxingStub";
         case InstantiatingStub:      return "IL_STUB_InstantiatingStub";
         case SecureDelegateStub:     return "IL_STUB_SecureDelegate_Invoke";

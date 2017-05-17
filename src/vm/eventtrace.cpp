@@ -197,7 +197,10 @@ BOOL IsRundownNgenKeywordEnabledAndNotSuppressed()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return 
+    return
+#ifdef FEATURE_PERFTRACING
+        EventPipeHelper::Enabled() ||
+#endif // FEATURE_PERFTRACING
     (
         ETW_TRACING_CATEGORY_ENABLED(
             MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, 
@@ -7385,3 +7388,12 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
 }
 
 #endif // !FEATURE_REDHAWK
+
+#ifdef FEATURE_PERFTRACING
+#include "eventpipe.h"
+bool EventPipeHelper::Enabled()
+{
+    LIMITED_METHOD_CONTRACT;
+    return EventPipe::Enabled();
+}
+#endif // FEATURE_PERFTRACING

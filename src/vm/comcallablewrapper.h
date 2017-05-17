@@ -1100,9 +1100,6 @@ protected:
         RETURN (LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext);
     }
 
-    // Helper to perform a security check for passing out CCWs late-bound to scripting code.
-    void DoScriptingSecurityCheck();
-
     // Helper to create a wrapper, pClassCCW must be specified if pTemplate->RepresentsVariantInterface()
     static ComCallWrapper* CreateWrapper(OBJECTREF* pObj, ComCallWrapperTemplate *pTemplate, ComCallWrapper *pClassCCW);
 
@@ -2329,13 +2326,8 @@ inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppO
         pMainWrap = pClassCCW;
     else
         pMainWrap = pWrap;
-    
+
     pMainWrap->CheckMakeAgile(*ppObj);
-    
-    // If the object is agile, and this domain doesn't have UmgdCodePermission
-    //  fail the call.
-    if (pMainWrap->GetSimpleWrapper()->IsAgile())
-        pMainWrap->DoScriptingSecurityCheck();
 
     pWrap->AddRef();
     

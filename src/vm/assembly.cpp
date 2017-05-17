@@ -129,8 +129,6 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
     m_winMDStatus(WinMDStatus_Unknown),
     m_pManifestWinMDImport(NULL),
 #endif // FEATURE_COMINTEROP
-    m_pSharedSecurityDesc(NULL),
-    m_pTransparencyBehavior(NULL),
     m_fIsDomainNeutral(pDomain == SharedDomain::GetDomain()),
 #ifdef FEATURE_LOADER_OPTIMIZATION
     m_bMissingDependenciesCheckDone(FALSE),
@@ -195,9 +193,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
 
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
-
-    m_pSharedSecurityDesc = Security::CreateSharedSecurityDescriptor(this);
-
 
     COUNTER_ONLY(GetPerfCounters().m_Loading.cAssemblies++);
 
@@ -400,9 +395,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 
     if (this->m_fTerminated)
         return;
-    
-    Security::DeleteSharedSecurityDescriptor(m_pSharedSecurityDesc);
-    m_pSharedSecurityDesc = NULL;
 
     if (m_pClassLoader != NULL)
     {
@@ -610,8 +602,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
     
     struct _gc
     {
-        OBJECTREF granted;
-        OBJECTREF denied;
         OBJECTREF cultureinfo;
         STRINGREF pString;
         OBJECTREF orArrayOrContainer;
@@ -709,25 +699,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         // Set it as the fallback load context binder for the dynamic assembly being created
         pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
-
-    }            
-    
-    AssemblyLoadSecurity loadSecurity;
-    // In SilverLight all dynamic assemblies should be transparent and partially trusted, even if they are
-    // created by platform assemblies. Thus they should inherit the grant sets from the appdomain not the 
-    // parent assembly.
-    IApplicationSecurityDescriptor *pCurrentDomainSecDesc = ::GetAppDomain()->GetSecurityDescriptor();
-    gc.granted = pCurrentDomainSecDesc->GetGrantedPermissionSet();
-    DWORD dwSpecialFlags = pCurrentDomainSecDesc->GetSpecialFlags();
-
-    // If the dynamic assembly creator did not specify evidence for the newly created assembly, then it
-    // should inherit the grant set of the creation assembly.
-    if (loadSecurity.m_pAdditionalEvidence == NULL)
-    {   
-
-        loadSecurity.m_pGrantSet = &gc.granted;
-        loadSecurity.m_pRefusedSet = &gc.denied;
-        loadSecurity.m_dwSpecialFlags = dwSpecialFlags;
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -757,7 +728,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pDomain, pFile, &loadSecurity, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pDomain, pFile, pLoaderAllocator);
     }
 
     // Start loading process
@@ -787,30 +758,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
 
         pAssem->m_dwDynamicAssemblyAccess = args->access;
 
-        // Making the dynamic assembly opportunistically critical in full trust CoreCLR and transparent otherwise.
-        if (!GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
-        {
-            args->flags = kTransparentAssembly;
-        }
-
-        // Fake up a module security descriptor for the assembly.
-        TokenSecurityDescriptorFlags tokenFlags = TokenSecurityDescriptorFlags_None;
-        if (args->flags & kAllCriticalAssembly)
-            tokenFlags |= TokenSecurityDescriptorFlags_AllCritical;
-        if (args->flags & kAptcaAssembly)
-            tokenFlags |= TokenSecurityDescriptorFlags_APTCA;
-        if (args->flags & kCriticalAssembly)
-            tokenFlags |= TokenSecurityDescriptorFlags_Critical;
-        if (args->flags & kTransparentAssembly)
-            tokenFlags |= TokenSecurityDescriptorFlags_Transparent;
-        if (args->flags & kTreatAsSafeAssembly)
-            tokenFlags |= TokenSecurityDescriptorFlags_TreatAsSafe;
-
-
-
-        _ASSERTE(pAssem->GetManifestModule()->m_pModuleSecurityDescriptor != NULL);
-        pAssem->GetManifestModule()->m_pModuleSecurityDescriptor->OverrideTokenFlags(tokenFlags); 
-
         // Set the additional strong name information
 
         pAssem->SetStrongNameLevel(Assembly::SN_NONE);
@@ -825,8 +772,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
                 // but we allow a couple of exceptions to reduce the compat risk: full trust, caller's own key.
                 // As usual we treat anonymously hosted dynamic methods as partial trust code.
                 DomainAssembly* pCallerDomainAssembly = pCallerAssembly->GetDomainAssembly(pCallersDomain);
-                if (!pCallerDomainAssembly->GetSecurityDescriptor()->IsFullyTrusted() ||
-                    pCallerDomainAssembly == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
+                if (pCallerDomainAssembly == pCallersDomain->GetAnonymouslyHostedDynamicMethodsAssembly())
                 {
                     DWORD cbKey = 0;
                     const void* pKey = pCallerAssembly->GetPublicKey(&cbKey);
@@ -854,11 +800,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, CreateDynamicAssemblyArgs 
             pDomainAssembly->ClearLoading();
             pDomainAssembly->m_level = FILE_ACTIVE;
         }
-
-        // Force the transparency of the module to be computed now, so that we can catch any errors due to
-        // inconsistent assembly level attributes during the assembly creation call, rather than at some
-        // later point.
-        pAssem->GetManifestModule()->m_pModuleSecurityDescriptor->VerifyDataComputed();
 
         {
             CANNOTTHROWCOMPLUSEXCEPTION();
@@ -901,11 +842,6 @@ void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
     CONTRACTL_END;
 
     GetManifestModule()->SetDomainFile(pDomainAssembly);
-
-    IAssemblySecurityDescriptor *pSec = pDomainAssembly->GetSecurityDescriptor();
-
-    GCX_COOP();
-    pSec->ResolvePolicy(GetSharedSecurityDescriptor(), pDomainAssembly->ShouldSkipPolicyResolution());
 
 } // Assembly::SetDomainAssembly
 
@@ -980,80 +916,8 @@ PTR_BaseDomain Assembly::GetDomain()
     _ASSERTE(m_pDomain);
     return (m_pDomain);
 }
-IAssemblySecurityDescriptor *Assembly::GetSecurityDescriptor(AppDomain *pDomain)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END
-
-    IAssemblySecurityDescriptor* pSecDesc;
-
-    if (pDomain == NULL)
-    {
-#ifndef DACCESS_COMPILE
-        pDomain = ::GetAppDomain();
-#else //DACCESS_COMPILE
-        DacNotImpl();
-#endif //DACCESS_COMPILE
-    }
-
-    PREFIX_ASSUME(FindDomainAssembly(pDomain) != NULL);
-    pSecDesc = FindDomainAssembly(pDomain)->GetSecurityDescriptor();
-
-    CONSISTENCY_CHECK(pSecDesc != NULL);
-
-    return pSecDesc;
-}
 
 #ifndef DACCESS_COMPILE
-
-const SecurityTransparencyBehavior *Assembly::GetSecurityTransparencyBehavior()
-{
-    CONTRACT(const SecurityTransparencyBehavior *)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    if (m_pTransparencyBehavior == NULL)
-    {
-        ModuleSecurityDescriptor *pModuleSecurityDescriptor = ModuleSecurityDescriptor::GetModuleSecurityDescriptor(this);
-        SetSecurityTransparencyBehavior(SecurityTransparencyBehavior::GetTransparencyBehavior(pModuleSecurityDescriptor->GetSecurityRuleSet()));
-    }
-
-    RETURN(m_pTransparencyBehavior);
-}
-
-// This method is like GetTransparencyBehavior, but will not attempt to get the transparency behavior if we
-// don't already know it, and therefore may return NULL
-const SecurityTransparencyBehavior *Assembly::TryGetSecurityTransparencyBehavior()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_pTransparencyBehavior;
-}
-
-
-// The transparency behavior object passed to this method must have a lifetime of at least as long
-// as the assembly itself.
-void Assembly::SetSecurityTransparencyBehavior(const SecurityTransparencyBehavior *pTransparencyBehavior)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pTransparencyBehavior));
-        PRECONDITION(m_pTransparencyBehavior == NULL || m_pTransparencyBehavior == pTransparencyBehavior);
-    }
-    CONTRACTL_END;
-
-    m_pTransparencyBehavior = pTransparencyBehavior;
-}
 
 void Assembly::SetParent(BaseDomain* pParent)
 {
@@ -1643,11 +1507,6 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
     }
 
     if (pAccessedAssembly->IsDisabledPrivateReflection())
-    {
-        return false;
-    }
-
-    if (!m_fIsDomainNeutral && !GetSecurityDescriptor(GetDomain()->AsAppDomain())->IsFullyTrusted())
     {
         return false;
     }
@@ -2388,21 +2247,6 @@ BOOL Assembly::CanBeShared(DomainAssembly *pDomainAssembly)
 
 
 #endif // FEATURE_LOADER_OPTIMIZATION
-
-#if defined(FEATURE_CORESYSTEM)
-BOOL Assembly::AllowUntrustedCaller()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-
-    return ModuleSecurityDescriptor::GetModuleSecurityDescriptor(this)->IsAPTCA();
-}
-#endif // defined(FEATURE_CORESYSTEM)
 
 void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszFullName, UINT resIDWhy)
 {

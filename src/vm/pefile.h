@@ -130,9 +130,6 @@ private:
     friend class NativeImageDumper;
 #endif
 
-    // Load actually triggers loading side effects of the module.  This should ONLY
-    // be done after validation has been passed
-    BOOL CanLoadLibrary();
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
 
@@ -147,9 +144,6 @@ private:
                                        LPVOID lpReserved,
                                        BOOL fFromThunk);
     void SetLoadedHMODULE(HMODULE hMod);
-
-    BOOL HasSkipVerification();
-    void SetSkipVerification();
 
     // DO NOT USE !!! this is to be removed when we move to new fusion binding API
     friend class DomainAssembly;
@@ -198,10 +192,6 @@ public:
 
     // Full name is the most descriptive name available (path, codebase, or name as appropriate)
     void GetCodeBaseOrName(SString &result);
-    
-    // Returns security information for the assembly based on the codebase
-    void GetSecurityIdentity(SString &codebase, SecZone *pdwZone, DWORD dwFlags, BYTE *pbUniqueID, DWORD *pcbUniqueID);
-    void InitializeSecurityManager();
 
 #ifdef LOGGING
     // This is useful for log messages
@@ -353,11 +343,6 @@ public:
 #endif // DACCESS_COMPILE
 
     PTR_CVOID GetLoadedImageContents(COUNT_T *pSize = NULL);
-    
-    // SetInProcSxSLoadVerified can run concurrently as we don't hold locks during LoadLibrary but
-    // it is the only flag that can be set during this phase so no mutual exclusion is necessary.
-    void SetInProcSxSLoadVerified() { LIMITED_METHOD_CONTRACT; m_flags |= PEFILE_SXS_LOAD_VERIFIED; }
-    BOOL IsInProcSxSLoadVerified() { LIMITED_METHOD_CONTRACT; return m_flags & PEFILE_SXS_LOAD_VERIFIED; }
 
     // ------------------------------------------------------------
     // Native image access
@@ -463,7 +448,7 @@ protected:
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
         PEFILE_MODULE                 = 0x04,
-        PEFILE_SKIP_VERIFICATION      = 0x08,
+        //                            = 0x08,
         PEFILE_SKIP_MODULE_HASH_CHECKS= 0x10,
         PEFILE_ISTREAM                = 0x100,
 #ifdef FEATURE_PREJIT        
@@ -472,7 +457,6 @@ protected:
         PEFILE_SAFE_TO_HARDBINDTO     = 0x4000, // NGEN-only flag
 #endif        
         PEFILE_INTROSPECTIONONLY      = 0x400,
-        PEFILE_SXS_LOAD_VERIFIED      = 0x2000
     };
 
     // ------------------------------------------------------------

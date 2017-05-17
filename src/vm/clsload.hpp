@@ -36,7 +36,6 @@ class PendingTypeLoadTable;
 class EEClass;
 class Thread;
 class EETypeHashTable;
-class IAssemblySecurityDescriptor;
 class DynamicResolver;
 class SigPointer;
 

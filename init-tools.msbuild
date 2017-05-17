@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp1.0</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Tools/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
+  </PropertyGroup>
+   <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.BuildTools">
+	  <Version>$(BuildToolsPackageVersion)</Version>
+	</PackageReference>
+    <PackageReference Include="Microsoft.DotNet.BuildTools.Coreclr">
+	  <Version>1.0.4-prerelease</Version>
+	</PackageReference>
+  </ItemGroup>
+</Project>

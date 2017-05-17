@@ -922,11 +922,15 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     loResult->gtType     = TYP_INT;
     loResult->gtOp.gtOp1 = loOp1;
 
-    GenTree* zero     = m_compiler->gtNewZeroConNode(TYP_INT);
+    GenTree* zero = m_compiler->gtNewZeroConNode(TYP_INT);
+#if defined(_TARGET_X86_)
     GenTree* hiAdjust = m_compiler->gtNewOperNode(GT_ADD_HI, TYP_INT, hiOp1, zero);
     GenTree* hiResult = m_compiler->gtNewOperNode(GT_NEG, TYP_INT, hiAdjust);
-
     Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
+#elif defined(_TARGET_ARM_)
+    GenTree* hiResult = m_compiler->gtNewOperNode(GT_SUB_HI, TYP_INT, zero, hiOp1);
+    Range().InsertAfter(loResult, zero, hiResult);
+#endif
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
 }

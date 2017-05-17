@@ -781,5 +781,5 @@ Crst InlineTrackingMap
 End
 
 Crst EventPipe
-    AcquiredBefore ThreadIdDispenser ThreadStore
+    AcquiredBefore ThreadIdDispenser ThreadStore DomainLocalBlock InstMethodHashTable
 End

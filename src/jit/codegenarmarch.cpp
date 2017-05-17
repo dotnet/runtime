@@ -343,7 +343,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LABEL:
             genPendingCallLabel       = genCreateTempLabel();
             treeNode->gtLabel.gtLabBB = genPendingCallLabel;
+#if defined(_TARGET_ARM_)
+            emit->emitIns_J_R(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#elif defined(_TARGET_ARM64_)
             emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
+#endif
             break;
 
         case GT_STORE_OBJ:
@@ -2353,18 +2357,12 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 {
     assert(blkOp->OperIs(GT_STORE_OBJ, GT_STORE_DYN_BLK, GT_STORE_BLK));
 
-#ifdef _TARGET_ARM_
-    NYI_IF(blkOp->OperIs(GT_STORE_OBJ), "GT_STORE_OBJ");
-#endif // _TARGET_ARM_
-
-#ifndef _TARGET_ARM_ // NYI for ARM
     if (blkOp->OperIs(GT_STORE_OBJ) && blkOp->OperIsCopyBlkOp())
     {
         assert(blkOp->AsObj()->gtGcPtrCount != 0);
         genCodeForCpObj(blkOp->AsObj());
         return;
     }
-#endif // !_TARGET_ARM_
 
     if (blkOp->gtBlkOpGcUnsafe)
     {

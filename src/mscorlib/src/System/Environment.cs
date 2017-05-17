@@ -131,26 +131,6 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern void FailFast(String message, Exception exception);
 
-        /*===============================CurrentDirectory===============================
-        **Action:  Provides a getter and setter for the current directory.  The original
-        **         current directory is the one from which the process was started.  
-        **Returns: The current directory (from the getter).  Void from the setter.
-        **Arguments: The current directory to which to switch to the setter.
-        **Exceptions: 
-        ==============================================================================*/
-        internal static String CurrentDirectory
-        {
-            get
-            {
-                return Directory.GetCurrentDirectory();
-            }
-
-            set
-            {
-                Directory.SetCurrentDirectory(value);
-            }
-        }
-
         // Returns the system directory (ie, C:\WinNT\System32).
         internal static String SystemDirectory
         {

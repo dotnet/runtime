@@ -3,82 +3,46 @@
 // See the LICENSE file in the project root for more information.
 // 
 
-// 
-
-
 #include "common.h"
 
 #include "security.h"
-#include "securitydescriptor.h"
-#include "securitydescriptorappdomain.h"
-#include "securitydescriptorassembly.h"
 
-IApplicationSecurityDescriptor * Security::CreateApplicationSecurityDescriptor(AppDomain * pDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    return static_cast<IApplicationSecurityDescriptor*>(new ApplicationSecurityDescriptor(pDomain));
-}    
-
-IAssemblySecurityDescriptor* Security::CreateAssemblySecurityDescriptor(AppDomain *pDomain, DomainAssembly *pAssembly, LoaderAllocator *pLoaderAllocator)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return static_cast<IAssemblySecurityDescriptor*>(new AssemblySecurityDescriptor(pDomain, pAssembly, pLoaderAllocator));
-}
-
-ISharedSecurityDescriptor* Security::CreateSharedSecurityDescriptor(Assembly* pAssembly)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return static_cast<ISharedSecurityDescriptor*>(new SharedSecurityDescriptor(pAssembly));
-}
-
-void Security::DeleteSharedSecurityDescriptor(ISharedSecurityDescriptor *descriptor)
-{
-    WRAPPER_NO_CONTRACT;
-
-    delete static_cast<SharedSecurityDescriptor *>(descriptor);
-}
-
-
-BOOL Security::IsTransparencyEnforcementEnabled()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // No transparency enforcement in .NET Core
-    return FALSE;
-}
-
-//---------------------------------------------------------------------------------------
 //
-// Determine if security checks should be bypassed for a method because the method is
-// being used by a profiler.
-//
-// Profilers often do things like inject unverifiable IL or P/Invoke which won't be allowed
-// if they're working with a transparent method.  This hook allows those checks to be
-// suppressed if we're currently profiling.
-//
-// Arguments:
-//    pMD - Method we're checking to see if security checks may be bypassed for
+// The method in this file have nothing to do with security. They historically lived in security subsystem.
+// TODO: Move them to move appropriate place.
 //
 
-BOOL Security::BypassSecurityChecksForProfiler(MethodDesc *pMD)
+void Security::CopyByteArrayToEncoding(IN U1ARRAYREF* pArray, OUT PBYTE* ppbData, OUT DWORD* pcbData)
 {
-    CONTRACTL
-    {
-        NOTHROW;
+    CONTRACTL {
+        THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pArray));
+        PRECONDITION(CheckPointer(ppbData));
+        PRECONDITION(CheckPointer(pcbData));
+        PRECONDITION(*pArray != NULL);
+    } CONTRACTL_END;
 
-#if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
-    return CORProfilerPresent() &&
-        CORProfilerBypassSecurityChecks() &&
-        pMD->GetAssembly()->GetSecurityDescriptor()->IsFullyTrusted();
-#else
-    return FALSE;
-#endif
+    DWORD size = (DWORD) (*pArray)->GetNumComponents();
+    *ppbData = new BYTE[size];
+    *pcbData = size;
+        
+    CopyMemory(*ppbData, (*pArray)->GetDirectPointerToNonObjectElements(), size);
+}
+
+void Security::CopyEncodingToByteArray(IN PBYTE   pbData, IN DWORD   cbData, IN OBJECTREF* pArray)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    U1ARRAYREF pObj;
+    _ASSERTE(pArray);
+
+    pObj = (U1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_U1,cbData);
+    memcpyNoGCRefs(pObj->m_Array, pbData, cbData);
+    *pArray = (OBJECTREF) pObj;
 }

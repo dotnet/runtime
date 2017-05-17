@@ -11,8 +11,6 @@
 #include "common.h"
 #include "excep.h"
 #include "eehash.h"
-#include "securityattributes.h"
-#include "securitydeclarativecache.h"
 #include "stringliteralmap.h"
 #include "clsload.hpp"
 #include "typectxt.h"
@@ -289,87 +287,6 @@ DWORD EEUnicodeStringLiteralHashTableHelper::Hash(EEStringData *pKey)
     LIMITED_METHOD_CONTRACT;
 
     return (HashBytes((const BYTE *) pKey->GetStringBuffer(), pKey->GetCharCount() * sizeof(WCHAR)));
-}
-
-// ============================================================================
-// Permission set hash table helper.
-// ============================================================================
-
-EEHashEntry_t * EEPsetHashTableHelper::AllocateEntry(PsetCacheKey *pKey, BOOL bDeepCopy, void *pHeap)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        INJECT_FAULT(return NULL;);
-    }
-    CONTRACTL_END
-
-    _ASSERTE(!bDeepCopy);
-
-    EEHashEntry_t *pEntry;
-
-    if (pHeap) {
-        
-        S_SIZE_T sizeEntry;
-        LoaderHeap *pLHeap;
-
-        sizeEntry = S_SIZE_T(sizeof (BYTE)) * (S_SIZE_T)SIZEOF_EEHASH_ENTRY +  
-            (S_SIZE_T)sizeof (PPsetCacheKey);
-
-        pLHeap = (LoaderHeap*) pHeap;
-
-         pEntry = (EEHashEntry_t *)
-             ((void*) pLHeap->AllocMem_NoThrow (sizeEntry));
-         
-    } else {
-        pEntry = (EEHashEntry_t *) new (nothrow) 
-            BYTE [SIZEOF_EEHASH_ENTRY + sizeof(PPsetCacheKey)];
-    }
-
-    if (pEntry) {
-        *((PPsetCacheKey*)pEntry->Key) = pKey;
-    }
-
-    return pEntry;
-}
-
-void EEPsetHashTableHelper::DeleteEntry(EEHashEntry_t *pEntry, void *pHeap)
-{
-    LIMITED_METHOD_CONTRACT;
-    
-    //
-    // If a heap is present, memory will be reclaimed as part of appdomain
-    // unload.
-    // 
-
-    if (pHeap == NULL) {
-        delete [] (BYTE*)pEntry;
-    }
-
-}
-
-BOOL EEPsetHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, PsetCacheKey *pKey)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PsetCacheKey *pThis = *((PPsetCacheKey*)pEntry->Key);
-    return pKey->IsEquiv(pThis);
-}
-
-DWORD EEPsetHashTableHelper::Hash(PsetCacheKey *pKey)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return pKey->Hash();
-}
-
-PsetCacheKey * EEPsetHashTableHelper::GetKey(EEHashEntry_t *pEntry)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    PsetCacheKey *pThis = *((PPsetCacheKey*)pEntry->Key);
-    return pThis;
 }
 
 

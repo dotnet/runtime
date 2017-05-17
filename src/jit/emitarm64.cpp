@@ -3878,6 +3878,26 @@ void emitter::emitIns_R_R(
             fmt = IF_DV_2M;
             break;
 
+        case INS_ldar:
+        case INS_stlr:
+            assert(isValidGeneralDatasize(size));
+
+            __fallthrough;
+
+        case INS_ldarb:
+        case INS_ldarh:
+        case INS_stlrb:
+        case INS_stlrh:
+            assert(isValidGeneralLSDatasize(size));
+            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegisterOrSP(reg2));
+            assert(insOptsNone(opt));
+
+            reg2 = encodingSPtoZR(reg2);
+
+            fmt = IF_LS_2A;
+            break;
+
         case INS_ldr:
         case INS_ldrb:
         case INS_ldrh:

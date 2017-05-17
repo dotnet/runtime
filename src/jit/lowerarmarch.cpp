@@ -175,11 +175,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (blkNode->OperGet() == GT_STORE_OBJ)
         {
             // CopyObj
-
-            NYI_ARM("Lowering for GT_STORE_OBJ isn't implemented");
-
-#ifdef _TARGET_ARM64_
-
             GenTreeObj* objNode = blkNode->AsObj();
 
             unsigned slots = objNode->gtSlots;
@@ -205,8 +200,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 #endif
 
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-
-#endif // _TARGET_ARM64_
         }
         else
         {

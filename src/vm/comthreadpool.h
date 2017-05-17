@@ -65,7 +65,6 @@ public:
     static BOOL QCALLTYPE DeleteAppDomainTimer(HANDLE hTimer);
 };
 
-void ResetThreadSecurityState(Thread* pThread);
 VOID QueueUserWorkItemManagedCallback(PVOID pArg);
 void WINAPI BindIoCompletionCallbackStub(DWORD ErrorCode,
                                          DWORD numBytesTransferred,
@@ -74,8 +73,5 @@ void SetAsyncResultProperties(
     OVERLAPPEDDATAREF overlapped,
     DWORD dwErrorCode, 
     DWORD dwNumBytes);
-
-// this holder resets our thread's security state
-typedef Holder<Thread*, DoNothing<Thread*>, ResetThreadSecurityState> ThreadSecurityStateHolder;
 
 #endif

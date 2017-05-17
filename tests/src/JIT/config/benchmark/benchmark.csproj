@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <NugetTargetMoniker>.NETStandard,Version=v1.4</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netstandard1.4</NugetTargetMonikerShort>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.performance.api">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.core">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.execution">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.performance.metrics">
+      <Version>1.0.0-beta-build0003</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
+      <Version>1.0.3-alpha-experimental</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Platforms">
+      <Version>2.0.0-preview2-25302-03</Version>
+    </PackageReference>
+    <PackageReference Include="System.Collections.NonGeneric">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Console">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.IO.FileSystem">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Linq">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Linq.Parallel">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Linq.Expressions">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Memory">
+      <Version>4.4.0-preview2-25302-03</Version>
+    </PackageReference>
+    <PackageReference Include="System.Numerics.Vectors">
+      <Version>4.4.0-preview2-25302-03</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.Extensions">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.TypeExtensions">
+      <Version>4.4.0-preview2-25302-03</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.4.0-preview2-25302-03</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.Extensions">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Runtime.Numerics">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Text.RegularExpressions">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Tasks">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.Tasks.Parallel">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Threading.ThreadPool">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Diagnostics.Process">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="System.Xml.XmlDocument">
+      <Version>4.4.0-beta-24913-02</Version>
+    </PackageReference>
+    <PackageReference Include="xunit">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.console.netcore">
+      <Version>1.0.2-prerelease-00177</Version>
+    </PackageReference>
+    <PackageReference Include="xunit.runner.utility">
+      <Version>$(XunitPackageVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>netstandard1.4</TargetFramework>
+    <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
+  </PropertyGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Target Name="Build"
+     DependsOnTargets="ResolveReferences" /> 
+</Project>

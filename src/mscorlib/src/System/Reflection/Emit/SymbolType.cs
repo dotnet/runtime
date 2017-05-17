@@ -12,7 +12,6 @@ namespace System.Reflection.Emit
     using System.Diagnostics.Contracts;
     using CultureInfo = System.Globalization.CultureInfo;
 
-    [Serializable]
     internal enum TypeKind
     {
         IsArray = 1,

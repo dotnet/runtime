@@ -103,7 +103,18 @@ enum EtwThreadFlags
 
 
 #else //defined(FEATURE_PAL)
+#if defined(FEATURE_PERFTRACING)
+#define ETW_INLINE
+#define ETWOnStartup(StartEventName, EndEventName)
+#define ETWFireEvent(EventName)
 
+#define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
+#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
+#define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
+#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
+#define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
+#else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE  
 #define ETWOnStartup(StartEventName, EndEventName)
 #define ETWFireEvent(EventName)
@@ -114,7 +125,7 @@ enum EtwThreadFlags
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
-
+#endif // defined(FEATURE_PERFTRACING)
 #endif // !defined(FEATURE_PAL)
 
 #else // FEATURE_EVENT_TRACE
@@ -216,6 +227,14 @@ extern BOOL g_fEEManagedEXEStartup;
 extern BOOL g_fEEIJWStartup;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
+
+#if defined(FEATURE_PERFTRACING)
+class EventPipeHelper
+{
+public:
+    static bool Enabled();
+};
+#endif // defined(FEATURE_PERFTRACING)
 
 #if defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT)
 

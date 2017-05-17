@@ -93,6 +93,7 @@
 
 #if defined(FEATURE_EVENTSOURCE_XPLAT)
 #include "nativeeventsource.h"
+#include "eventpipe.h"
 #endif //defined(FEATURE_EVENTSOURCE_XPLAT)
 
 #endif // CROSSGEN_MSCORLIB

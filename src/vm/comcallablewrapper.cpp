@@ -48,6 +48,7 @@
 #include "rcwwalker.h"
 #include "windowsruntimebufferhelper.h"
 #include "winrttypenameconverter.h"
+#include "typestring.h"
 
 #ifdef MDA_SUPPORTED
 const int DEBUG_AssertSlots = 50;
@@ -1933,28 +1934,6 @@ IUnknown* SimpleComCallWrapper::QIStandardInterface(REFIID riid)
         }
         break;
 
-    CASE_IID_INLINE(  enum_IObjectSafety            ,0xCB5BDC81,0x93C1,0x11cf,0x8F,0x20,0x00,0x80,0x5F,0x2C,0xD0,0x64)
-        {
-            // Don't implement IObjectSafety by default.
-            // Use IObjectSafety only for IE Hosting or similar hosts
-            // which create sandboxed AppDomains.
-            // Unconditionally implementing IObjectSafety would allow
-            // Untrusted scripts to use managed components.
-            // Managed components could implement their own IObjectSafety to
-            // override this.
-            BOOL bShouldProvideIObjectSafety=FALSE;
-            {
-                GCX_COOP();
-                AppDomainFromIDHolder pDomain(GetDomainID(), FALSE);
-                if (!pDomain.IsUnloaded()) 
-                    bShouldProvideIObjectSafety=!pDomain->GetSecurityDescriptor()->IsFullyTrusted();
-            }
-
-            if(bShouldProvideIObjectSafety)
-                RETURN QIStandardInterface(enum_IObjectSafety);
-        }
-        break;
-
     CASE_IID_INLINE(  enum_IAgileObject            ,0x94ea2b94,0xe9cc,0x49e0,0xc0,0xff,0xee,0x64,0xca,0x8f,0x5b,0x90)
         {
             // Don't implement IAgileObject if we are aggregated, if we are in a non AppX process, if the object explicitly implements IMarshal,
@@ -2663,32 +2642,6 @@ void ComCallWrapper::FreeWrapper(ComCallWrapperCache *pWrapperCache)
 
     // release ccw mgr
     pWrapperCache->Release();
-}
-
-void ComCallWrapper::DoScriptingSecurityCheck()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // If the object is shared or agile, and the current domain doesn't have
-    //  UmgdCodePermission, we fail the call.
-    AppDomain* pCurrDomain = GetThread()->GetDomain();
-    ADID currID = pCurrDomain->GetId();
-
-    ADID ccwID = m_pSimpleWrapper->GetRawDomainID();
-    
-    if (currID != ccwID)
-    {
-        IApplicationSecurityDescriptor* pASD = pCurrDomain->GetSecurityDescriptor();
-
-        if (!pASD->CanCallUnmanagedCode())
-            Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSUNMANAGEDCODE);
-    }
 }
 
 //--------------------------------------------------------------------------

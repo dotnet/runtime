@@ -486,10 +486,6 @@ void InitializeStartupFlags()
 
     InitializeHeapType((flags & STARTUP_SERVER_GC) != 0);
     g_heap_type = (flags & STARTUP_SERVER_GC) == 0 ? GC_HEAP_WKS : GC_HEAP_SVR;
-
-#ifdef FEATURE_LOADER_OPTIMIZATION            
-    g_dwGlobalSharePolicy = (flags&STARTUP_LOADER_OPTIMIZATION_MASK)>>1;
-#endif
 }
 #endif // CROSSGEN_COMPILE
 
@@ -1006,9 +1002,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
         StackwalkCache::Init();
 
-        // Start up security
-        Security::Start();
-
         AppDomain::CreateADUnloadStartEvent();
 
         // In coreclr, clrjit is compiled into it, but SO work in clrjit has not been done.
@@ -1103,10 +1096,6 @@ void EEStartupHelper(COINITIEE fFlags)
         g_MiniMetaDataBuffAddress = (TADDR) ClrVirtualAlloc(NULL, 
                                                 g_MiniMetaDataBuffMaxSize, MEM_COMMIT, PAGE_READWRITE);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-
-        // Load mscorsn.dll if the app requested the legacy mode in its configuration file.
-        if (g_pConfig->LegacyLoadMscorsnOnStartup())
-            IfFailGo(LoadMscorsn());
 
 #endif // CROSSGEN_COMPILE
 

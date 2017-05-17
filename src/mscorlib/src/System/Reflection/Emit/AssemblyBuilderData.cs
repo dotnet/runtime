@@ -28,21 +28,13 @@ namespace System.Reflection.Emit
         internal AssemblyBuilderData(
             InternalAssemblyBuilder assembly,
             String strAssemblyName,
-            AssemblyBuilderAccess access,
-            String dir)
+            AssemblyBuilderAccess access)
         {
             m_assembly = assembly;
             m_strAssemblyName = strAssemblyName;
             m_access = access;
             m_moduleBuilderList = new List<ModuleBuilder>();
             m_resWriterList = new List<ResWriterData>();
-
-            //Init to null/0 done for you by the CLR.  FXCop has spoken
-
-            if (dir == null && access != AssemblyBuilderAccess.Run)
-                m_strDir = Environment.CurrentDirectory;
-            else
-                m_strDir = dir;
 
             m_peFileKind = PEFileKinds.Dll;
         }
@@ -135,7 +127,6 @@ namespace System.Reflection.Emit
 
         internal bool m_isSaved;
         internal const int m_iInitialSize = 16;
-        internal String m_strDir;
 
         // hard coding the assembly def token
         internal const int m_tkAssembly = 0x20000001;
