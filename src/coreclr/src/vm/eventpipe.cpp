@@ -218,6 +218,10 @@ void EventPipe::Disable()
 
         // De-allocate buffers.
         s_pBufferManager->DeAllocateBuffers();
+
+        // Delete deferred providers.
+        // Providers can't be deleted during tracing because they may be needed when serializing the file.
+        s_pConfig->DeleteDeferredProviders();
     }
 }
 
@@ -232,6 +236,50 @@ bool EventPipe::Enabled()
     }
 
     return enabled;
+}
+
+EventPipeProvider* EventPipe::CreateProvider(const GUID &providerID, EventPipeCallback pCallbackFunction, void *pCallbackData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    return new EventPipeProvider(providerID, pCallbackFunction, pCallbackData);
+}
+
+void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Take the lock to make sure that we don't have a race
+    // between disabling tracing and deleting a provider
+    // where we hold a provider after tracing has been disabled.
+    CrstHolder _crst(GetLock());
+
+    if(pProvider != NULL)
+    {
+        if(Enabled())
+        {
+            // Save the provider until the end of the tracing session.
+            pProvider->SetDeleteDeferred();
+        }
+        else
+        {
+            // Delete the provider now.
+            // NOTE: This will remove it from all of the EventPipe data structures.
+            delete(pProvider);
+        }
+    }
 }
 
 void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length)
@@ -477,7 +525,7 @@ INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
 
     BEGIN_QCALL;
 
-    pProvider = new EventPipeProvider(providerID, pCallbackFunc, NULL);
+    pProvider = EventPipe::CreateProvider(providerID, pCallbackFunc, NULL);
 
     END_QCALL;
 
@@ -519,7 +567,7 @@ void QCALLTYPE EventPipeInternal::DeleteProvider(
     if(provHandle != NULL)
     {
         EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider*>(provHandle);
-        delete pProvider;
+        EventPipe::DeleteProvider(pProvider);
     }
 
     END_QCALL;
