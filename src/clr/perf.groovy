@@ -140,6 +140,8 @@ def static getOSGroup(def os) {
                     if (isSmoketest)
                     {
                         builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests Correctness")
+                        builder.triggerOnlyOnComment()
+                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+perf correctness.*")
                     }
                     else
                     {
