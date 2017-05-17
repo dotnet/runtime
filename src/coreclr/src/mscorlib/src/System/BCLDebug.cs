@@ -22,7 +22,6 @@ namespace System
     using System.Security;
     using System.Diagnostics.Contracts;
 
-    [Serializable]
     internal enum LogLevel
     {
         Trace = 0,

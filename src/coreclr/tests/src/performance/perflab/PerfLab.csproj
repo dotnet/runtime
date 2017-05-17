@@ -12,6 +12,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netstandard1.4</NuGetTargetMonikerShort>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -19,8 +20,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectJson>..\project.json</ProjectJson>
-    <ProjectLockJson>..\project.lock.json</ProjectLockJson>
+    <RestoreOutputPath>..\obj</RestoreOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">

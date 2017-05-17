@@ -21,25 +21,12 @@
 
 #include "exstatecommon.h"
 
-LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
-
 EXTERN_C EXCEPTION_DISPOSITION
 ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord
           WIN64_ARG(IN     ULONG64               MemoryStackFp)
       NOT_WIN64_ARG(IN     ULONG                 MemoryStackFp),
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
-
-
-#ifndef FEATURE_PAL
-void __declspec(noinline)
-ClrUnwindEx(EXCEPTION_RECORD* pExceptionRecord,
-                 UINT_PTR          ReturnValue,
-                 UINT_PTR          TargetIP,
-                 UINT_PTR          TargetFrameSp);
-#endif // !FEATURE_PAL
-
-typedef DWORD_PTR   (HandlerFn)(UINT_PTR uStackFrame, Object* pExceptionObj);
 
 enum CLRUnwindStatus { UnwindPending, FirstPassComplete, SecondPassComplete };
 

@@ -186,24 +186,6 @@ inline BOOL PEFile::PassiveDomainOnly()
 }
 
 // ------------------------------------------------------------
-// Loader support routines
-// ------------------------------------------------------------
-
-inline void PEFile::SetSkipVerification()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    m_flags |= PEFILE_SKIP_VERIFICATION; 
-}
-
-inline BOOL PEFile::HasSkipVerification()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (m_flags & (PEFILE_SKIP_VERIFICATION | PEFILE_SYSTEM)) != 0; 
-}
-
-// ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
 

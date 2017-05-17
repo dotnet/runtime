@@ -53,6 +53,7 @@ check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 check_function_exists(kqueue HAVE_KQUEUE)
 check_function_exists(getpwuid_r HAVE_GETPWUID_R)
 
+check_library_exists(c sched_getaffinity "" HAVE_SCHED_GETAFFINITY)
 check_library_exists(pthread pthread_create "" HAVE_LIBPTHREAD)
 check_library_exists(c pthread_create "" HAVE_PTHREAD_IN_LIBC)
 

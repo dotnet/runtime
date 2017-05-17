@@ -152,7 +152,6 @@ public:
     //@GENERICSVER: new (suitable for generics)
     // Method to do static validation of delegate .ctor
     static BOOL ValidateCtor(TypeHandle objHnd, TypeHandle ftnParentHnd, MethodDesc *pFtn, TypeHandle dlgtHnd, BOOL *pfIsOpenDelegate);
-    static BOOL ValidateSecurityTransparency(MethodDesc *pFtn, MethodTable *pdlgMT); // enforce the transparency rules
 
 private:
     static BOOL ValidateBeginInvoke(DelegateEEClass* pClass);   // make certain the BeginInvoke method is consistant with the Invoke Method

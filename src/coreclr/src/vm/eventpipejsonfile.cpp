@@ -4,7 +4,9 @@
 
 #include "common.h"
 #include "eventpipejsonfile.h"
+#include "typestring.h"
 
+#ifdef _DEBUG
 #ifdef FEATURE_PERFTRACING
 
 EventPipeJsonFile::EventPipeJsonFile(SString &outFilePath)
@@ -140,4 +142,5 @@ void EventPipeJsonFile::FormatCallStack(StackContents &stackContents, SString &r
     }
 }
 
+#endif // _DEBUG
 #endif // FEATURE_PERFTRACING

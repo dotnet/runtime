@@ -14,6 +14,7 @@ class SampleProfiler
 {
 
     // Declare friends.
+    friend class EventPipe;
     friend class SampleProfilerEventInstance;
 
     public:
@@ -23,6 +24,9 @@ class SampleProfiler
 
         // Disable profiling.
         static void Disable();
+
+        // Set the sampling rate.
+        static void SetSamplingRate(long nanoseconds);
 
     private:
 
@@ -46,10 +50,8 @@ class SampleProfiler
         // Thread shutdown event for synchronization between Disable() and the sampling thread.
         static CLREventStatic s_threadShutdownEvent;
 
-#ifdef FEATURE_PAL
         // The sampling rate.
         static long s_samplingRateInNs;
-#endif
 };
 
 #endif // FEATURE_PERFTRACING

@@ -9,7 +9,8 @@
     <OutputType>Exe</OutputType>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netcoreapp1.1</NuGetTargetMonikerShort>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -29,8 +30,9 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Functions.cs" />
+    <Compile Include="MathTests.cs" />
     <Compile Include="Double\AbsDouble.cs" />
-    <Compile Include="Single\AbsSingle.cs" />
     <Compile Include="Double\AcosDouble.cs" />
     <Compile Include="Double\AsinDouble.cs" />
     <Compile Include="Double\AtanDouble.cs" />
@@ -40,10 +42,8 @@
     <Compile Include="Double\CoshDouble.cs" />
     <Compile Include="Double\ExpDouble.cs" />
     <Compile Include="Double\FloorDouble.cs" />
-    <Compile Include="Functions.cs" />
     <Compile Include="Double\LogDouble.cs" />
     <Compile Include="Double\Log10Double.cs" />
-    <Compile Include="MathTests.cs" />
     <Compile Include="Double\PowDouble.cs" />
     <Compile Include="Double\RoundDouble.cs" />
     <Compile Include="Double\SinDouble.cs" />
@@ -51,11 +51,26 @@
     <Compile Include="Double\SqrtDouble.cs" />
     <Compile Include="Double\TanDouble.cs" />
     <Compile Include="Double\TanhDouble.cs" />
+    <Compile Include="Single\AbsSingle.cs" />
+    <Compile Include="Single\AcosSingle.cs" />
+    <Compile Include="Single\AsinSingle.cs" />
+    <Compile Include="Single\AtanSingle.cs" />
+    <Compile Include="Single\Atan2Single.cs" />
+    <Compile Include="Single\CeilingSingle.cs" />
+    <Compile Include="Single\CosSingle.cs" />
+    <Compile Include="Single\CoshSingle.cs" />
+    <Compile Include="Single\ExpSingle.cs" />
+    <Compile Include="Single\FloorSingle.cs" />
+    <Compile Include="Single\LogSingle.cs" />
+    <Compile Include="Single\Log10Single.cs" />
+    <Compile Include="Single\PowSingle.cs" />
+    <Compile Include="Single\RoundSingle.cs" />
+    <Compile Include="Single\SinSingle.cs" />
+    <Compile Include="Single\SinhSingle.cs" />
+    <Compile Include="Single\SqrtSingle.cs" />
+    <Compile Include="Single\TanSingle.cs" />
+    <Compile Include="Single\TanhSingle.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <ProjectJson>$(JitPackagesConfigFileDirectory)benchmark\project.json</ProjectJson>
-    <ProjectLockJson>$(JitPackagesConfigFileDirectory)benchmark\project.lock.json</ProjectLockJson>
-  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' ">
   </PropertyGroup>

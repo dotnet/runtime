@@ -243,19 +243,6 @@ enum { OPT_BLENDED,
     OPT_RANDOM,
     OPT_DEFAULT = OPT_BLENDED };
 
-/* Control of impersonation flow:
-    FASTFLOW means that impersonation is flowed only if it has been achieved through managed means. This is the default and avoids a kernel call.
-    NOFLOW is the Everett default where we don't flow the impersonation at all
-    ALWAYSFLOW is the (potentially) slow mode where we will always flow the impersonation, regardless of how it was achieved (managed or p/invoke). Includes
-    a kernel call.
-    Keep in sync with values in SecurityContext.cs
-    */
-enum { 
-    IMP_FASTFLOW = 0,
-    IMP_NOFLOW = 1,
-    IMP_ALWAYSFLOW = 2,
-    IMP_DEFAULT = IMP_FASTFLOW };
-
 enum ParseCtl {
     parseAll,               // parse entire config file
     stopAfterRuntimeSection // stop after <runtime>...</runtime> section
@@ -324,33 +311,6 @@ public:
     // Returns a bool to indicate if the legacy CSE (pre-v4) behaviour is enabled or not
     bool LegacyCorruptedStateExceptionsPolicy(void) const {LIMITED_METHOD_CONTRACT;  return fLegacyCorruptedStateExceptionsPolicy; }
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
-    
-    // SECURITY
-    unsigned    ImpersonationMode(void)           const 
-    { 
-        CONTRACTL 
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            // MODE_ANY;
-            SO_TOLERANT;
-        } CONTRACTL_END;
-        return iImpersonationPolicy ; 
-    }
-    void    SetLegacyImpersonationPolicy()              { LIMITED_METHOD_CONTRACT; iImpersonationPolicy = IMP_NOFLOW; }
-    void    SetAlwaysFlowImpersonationPolicy()              { LIMITED_METHOD_CONTRACT; iImpersonationPolicy = IMP_ALWAYSFLOW; }
-
-#ifdef _DEBUG
-    bool LogTransparencyErrors() const { LIMITED_METHOD_CONTRACT; return fLogTransparencyErrors; }
-    bool DisableTransparencyEnforcement() const { LIMITED_METHOD_CONTRACT; return fLogTransparencyErrors; }
-#endif // _DEBUG
-
-    void SetLegacyLoadMscorsnOnStartup(bool val) { LIMITED_METHOD_CONTRACT; fLegacyLoadMscorsnOnStartup = val; }
-    bool LegacyLoadMscorsnOnStartup(void) const { LIMITED_METHOD_CONTRACT; return fLegacyLoadMscorsnOnStartup; }
-    bool BypassTrustedAppStrongNames() const { LIMITED_METHOD_CONTRACT; return fBypassStrongNameVerification; } // See code:AssemblySecurityDescriptor::ResolveWorker#StrongNameBypass
-    bool GeneratePublisherEvidence(void) const { LIMITED_METHOD_CONTRACT; return fGeneratePublisherEvidence; }
-    bool EnforceFIPSPolicy() const { LIMITED_METHOD_CONTRACT; return fEnforceFIPSPolicy; }
-    bool LegacyHMACMode() const { LIMITED_METHOD_CONTRACT; return fLegacyHMACMode; }
 
 #ifdef FEATURE_COMINTEROP
     bool ComInsteadOfManagedRemoting()              const {LIMITED_METHOD_CONTRACT;  return m_fComInsteadOfManagedRemoting; } 
@@ -362,7 +322,6 @@ public:
     bool GenDebuggableCode(void)                    const {LIMITED_METHOD_CONTRACT;  return fDebuggable; }
     bool IsStressOn(void)                           const {LIMITED_METHOD_CONTRACT;  return fStressOn; }
     int GetAPIThreadStressCount(void)               const {LIMITED_METHOD_CONTRACT;  return apiThreadStressCount; }
-    bool TlbImpSkipLoading()                        const {LIMITED_METHOD_CONTRACT;  return fTlbImpSkipLoading; }
 
     bool ShouldExposeExceptionsInCOMToConsole()     const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 1) != 0; }
     bool ShouldExposeExceptionsInCOMToMsgBox()      const {LIMITED_METHOD_CONTRACT;  return (iExposeExceptionsInCOM & 2) != 0; }
@@ -546,12 +505,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return fUseLegacyIdentityFormat;
-    }
-
-    inline bool DisableFusionUpdatesFromADManager() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return fDisableFusionUpdatesFromADManager;
     }
 
     inline void SetDisableCommitThreadStack(bool val)
@@ -884,7 +837,6 @@ private: //----------------------------------------------------------------
     // will come as a result won't matter.
     bool fCacheBindingFailures;
     bool fUseLegacyIdentityFormat;
-    bool fDisableFusionUpdatesFromADManager;
     bool fInited;                   // have we synced to the registry at least once?
 
     // Jit-config
@@ -910,17 +862,6 @@ private: //----------------------------------------------------------------
     bool fLegacyComHierarchyVisibility;       // Old behavior allowing QIs for classes with invisible parents
     bool fLegacyComVTableLayout;              // Old behavior passing out IClassX interface for IUnknown and IDispatch.
     bool fNewComVTableLayout;                 // New behavior passing out Basic interface for IUnknown and IDispatch.
-    
-    // SECURITY
-    unsigned  iImpersonationPolicy; //control flow of impersonation in the SecurityContext. 0=FASTFLOW 1=
-#ifdef _DEBUG
-    bool fLogTransparencyErrors;            // don't throw on transparency errors, instead log to the CLR log file
-#endif // _DEBUG
-    bool fLegacyLoadMscorsnOnStartup; // load mscorsn.dll when starting up the runtime.
-    bool fBypassStrongNameVerification;     // bypass strong name verification of trusted app assemblies
-    bool fGeneratePublisherEvidence;        // verify Authenticode signatures of assemblies during load, generating publisher evidence for them
-    bool fEnforceFIPSPolicy;                // enforce that only FIPS certified crypto algorithms are created if the FIPS machine settting is enabled
-    bool fLegacyHMACMode;                   // HMACSHA384 and HMACSHA512 should default to the Whidbey block size
 
     LPUTF8 pszBreakOnClassLoad;         // Halt just before loading this class
 
@@ -970,9 +911,6 @@ private: //----------------------------------------------------------------
     bool   fSuppressChecks;             // Disable checks (including contracts)
 
     DWORD  iExposeExceptionsInCOM;      // Should we exposed exceptions that will be transformed into HRs?
-
-    // Tlb Tools
-    bool fTlbImpSkipLoading;
 
     unsigned m_SuspendThreadDeadlockTimeoutMs;  // Used in Thread::SuspendThread()
     unsigned m_SuspendDeadlockTimeout; // Used in Thread::SuspendRuntime. 
@@ -1179,8 +1117,6 @@ private: //----------------------------------------------------------------
 public:
 
     HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);
-    LPCWSTR  GetProcessBindingFile();  // All flavors must support this method
-    SIZE_T  GetSizeOfProcessBindingFile();  // All flavors must support this method
 
     DWORD GetConfigDWORDInternal_DontUse_ (__in_z LPCWSTR name, DWORD defValue,    //for getting data in the constructor of EEConfig
                                     DWORD level=(DWORD) REGUTIL::COR_CONFIG_ALL,

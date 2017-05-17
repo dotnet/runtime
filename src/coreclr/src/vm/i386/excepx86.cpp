@@ -370,7 +370,6 @@ CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef FEATURE_PAL
     PCODE f_IP = GetIP(pContext);
     if (Thread::IsAddrOfRedirectFunc((PVOID)f_IP)) {
 
@@ -427,9 +426,6 @@ CPFH_AdjustContextForThreadSuspensionRace(CONTEXT *pContext, Thread *pThread)
         SetIP(pContext, GetIP(pThread->m_OSContext) - 1);
         STRESS_LOG1(LF_EH, LL_INFO100, "CPFH_AdjustContextForThreadSuspensionRace: Case 4 setting IP = %x\n", pContext->Eip);
     }
-#else
-    PORTABILITY_ASSERT("CPFH_AdjustContextForThreadSuspensionRace");
-#endif
 }
 #endif // FEATURE_HIJACK
 
@@ -1147,7 +1143,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
 
     pExInfo->m_pExceptionPointers = &exceptionPointers;
 
-#ifndef FEATURE_PAL
     if (bRethrownException || bNestedException)
     {
         _ASSERTE(pExInfo->m_pPrevNestedInfo != NULL);
@@ -1156,7 +1151,6 @@ CPFH_RealFirstPassHandler(                  // ExceptionContinueSearch, etc.
         SetStateForWatsonBucketing(bRethrownException, pExInfo->GetPreviousExceptionTracker()->GetThrowableAsHandle());
         END_SO_INTOLERANT_CODE;
     }
-#endif
 
 #ifdef DEBUGGING_SUPPORTED
     //
@@ -1959,29 +1953,10 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     return esp;
 }
 
-#endif // !DACCESS_COMPILE
-
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    
-    UINT_PTR stackSlot = pContext->Ebp + REDIRECTSTUB_EBP_OFFSET_CONTEXT;
-    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
-    return *ppContext;
-}
-
-#if !defined(DACCESS_COMPILE)
-#ifdef FEATURE_PAL
-static PEXCEPTION_REGISTRATION_RECORD CurrentSEHRecord = EXCEPTION_CHAIN_END;
-#endif
-
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifdef FEATURE_PAL
-    LPVOID fs0 = CurrentSEHRecord;
-#else  // FEATURE_PAL
     LPVOID fs0 = (LPVOID)__readfsdword(0);
 
 #if 0  // This walk is too expensive considering we hit it every time we a CONTRACT(NOTHROW)
@@ -2013,24 +1988,18 @@ PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
     }
 #endif
 #endif // 0
-#endif // FEATURE_PAL
 
     return (EXCEPTION_REGISTRATION_RECORD*) fs0;
 }
 
 PEXCEPTION_REGISTRATION_RECORD GetFirstCOMPlusSEHRecord(Thread *pThread) {
     WRAPPER_NO_CONTRACT;
-#ifndef FEATURE_PAL
     EXCEPTION_REGISTRATION_RECORD *pEHR = *(pThread->GetExceptionListPtr());
     if (pEHR == EXCEPTION_CHAIN_END || IsUnmanagedToManagedSEHHandler(pEHR)) {
         return pEHR;
     } else {
         return GetNextCOMPlusSEHRecord(pEHR);
     }
-#else   // FEATURE_PAL
-    PORTABILITY_ASSERT("GetFirstCOMPlusSEHRecord");
-    return NULL;
-#endif  // FEATURE_PAL
 }
 
 
@@ -2056,13 +2025,30 @@ PEXCEPTION_REGISTRATION_RECORD GetPrevSEHRecord(EXCEPTION_REGISTRATION_RECORD *n
 VOID SetCurrentSEHRecord(EXCEPTION_REGISTRATION_RECORD *pSEH)
 {
     WRAPPER_NO_CONTRACT;
-#ifndef FEATURE_PAL
     *GetThread()->GetExceptionListPtr() = pSEH;
-#else  // FEATURE_PAL
-    _ASSERTE("NYI");
-#endif // FEATURE_PAL
 }
 
+// Note that this logic is copied below, in PopSEHRecords
+__declspec(naked)
+VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
+{
+    // No CONTRACT possible on naked functions
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    __asm{
+        mov     ecx, [esp+4]        ;; ecx <- pTargetSP
+        mov     eax, fs:[0]         ;; get current SEH record
+  poploop:
+        cmp     eax, ecx
+        jge     done
+        mov     eax, [eax]          ;; get next SEH record
+        jmp     poploop
+  done:
+        mov     fs:[0], eax
+        retn
+    }
+}
 
 //
 // Unwind pExinfo, pops FS:[0] handlers until the interception context SP, and
@@ -2097,7 +2083,6 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_SO_TOLERANT;
 
-#ifndef FEATURE_PAL
     PEXCEPTION_REGISTRATION_RECORD pEHR = GetCurrentSEHRecord();
 
     while ((LPVOID)pEHR < pTargetSP)
@@ -2153,10 +2138,6 @@ BOOL PopNestedExceptionRecords(LPVOID pTargetSP, BOOL bCheckForUnknownHandlers)
         SetCurrentSEHRecord(pEHR);
     }
     return FALSE;
-#else   // FEATURE_PAL
-    PORTABILITY_ASSERT("PopNestedExceptionRecords");
-    return FALSE;
-#endif  // FEATURE_PAL
 }
 
 //
@@ -2261,7 +2242,6 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
 
     int iFilt = 0;
 
-#ifndef FEATURE_PAL
     EX_TRY
     {
         GCPROTECT_BEGIN (throwable);
@@ -2290,10 +2270,6 @@ int COMPlusThrowCallbackHelper(IJitManager *pJitManager,
     EX_END_CATCH(SwallowAllExceptions)
 
     return iFilt;
-#else   // FEATURE_PAL
-    PORTABILITY_ASSERT("COMPlusThrowCallbackHelper");
-    return EXCEPTION_CONTINUE_SEARCH;
-#endif  // FEATURE_PAL
 }
 
 //******************************************************************************
@@ -3629,6 +3605,15 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandlerRevCom)
 #endif // FEATURE_COMINTEROP
 #endif // !DACCESS_COMPILE
 #endif // !WIN64EXCEPTIONS
+
+PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    UINT_PTR stackSlot = pContext->Ebp + REDIRECTSTUB_EBP_OFFSET_CONTEXT;
+    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
+    return *ppContext;
+}
 
 #ifndef DACCESS_COMPILE
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)

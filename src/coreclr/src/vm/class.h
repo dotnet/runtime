@@ -703,9 +703,6 @@ class EEClassOptionalFields
     #define    MODULE_NON_DYNAMIC_STATICS      ((DWORD)-1)
     DWORD m_cbModuleDynamicID;
 
-
-    SecurityProperties m_SecProps;
-
 #if defined(UNIX_AMD64_ABI) && defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     // Number of eightBytes in the following arrays
     int m_numberEightBytes; 
@@ -880,46 +877,6 @@ public:
 
     // class is blittable
     BOOL IsBlittable();
-
-    //
-    // Security properties accessor methods
-    //
-
-    inline BOOL RequiresLinktimeCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        PSecurityProperties psp = GetSecurityProperties();
-        return psp && psp->RequiresLinktimeCheck();
-    }
-
-    inline BOOL RequiresLinkTimeCheckHostProtectionOnly()
-    {
-        WRAPPER_NO_CONTRACT;
-        PSecurityProperties psp = GetSecurityProperties();
-        return psp && psp->RequiresLinkTimeCheckHostProtectionOnly();
-    }
-
-    inline BOOL RequiresInheritanceCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        PSecurityProperties psp = GetSecurityProperties();
-        return psp && psp->RequiresInheritanceCheck();
-    }
-
-    inline BOOL RequiresCasInheritanceCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        PSecurityProperties psp = GetSecurityProperties();
-        return psp && psp->RequiresCasInheritanceCheck();
-    }
-
-    inline BOOL RequiresNonCasInheritanceCheck()
-    {
-        WRAPPER_NO_CONTRACT;
-        PSecurityProperties psp = GetSecurityProperties();
-        return psp && psp->RequiresNonCasInheritanceCheck();
-    }
-
 
 #ifndef DACCESS_COMPILE
     void *operator new(size_t size, LoaderHeap* pHeap, AllocMemTracker *pamTracker);
@@ -1660,18 +1617,6 @@ public:
     BOOL HasExplicitSize();
 
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
-
-    /*
-     * Security attributes for the class are stored here.  Do not update this field after the
-     * class is constructed without also updating the enum_flag_NoSecurityProperties on the
-     * methodtable.
-     */
-    inline SecurityProperties* GetSecurityProperties()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return HasOptionalFields() ? &GetOptionalFields()->m_SecProps : NULL;
-    }
-
 
     /*
      * The CorElementType for this class (most classes = ELEMENT_TYPE_CLASS)

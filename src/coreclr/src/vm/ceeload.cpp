@@ -501,11 +501,6 @@ void Module::InitializeNativeImage(AllocMemTracker* pamTracker)
     }
     CONTRACTL_END;
 
-    if(m_pModuleSecurityDescriptor)
-    {
-        _ASSERTE(m_pModuleSecurityDescriptor->GetModule() == this);
-    }
-
     PEImageLayout * pNativeImage = GetNativeImage();
 
     ExecutionManager::AddNativeImageRange(dac_cast<TADDR>(pNativeImage->GetBase()), pNativeImage->GetVirtualSize(), this);
@@ -606,9 +601,6 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         {
             FastInterlockOr(&m_dwPersistedFlags, LOW_LEVEL_SYSTEM_ASSEMBLY_BY_NAME);
         }
-
-        _ASSERT(m_pModuleSecurityDescriptor == NULL);
-        m_pModuleSecurityDescriptor = new ModuleSecurityDescriptor(this);
     }
 
     m_dwTransientFlags &= ~((DWORD)CLASSES_FREED);  // Set flag indicating LookupMaps are now in a consistent and destructable state
@@ -1450,9 +1442,6 @@ void Module::Destruct()
 #endif // FEATURE_PREJIT
     {
         m_file->Release();
-
-        if (m_pModuleSecurityDescriptor)
-            delete m_pModuleSecurityDescriptor;
     }
 
     // If this module was loaded as domain-specific, then 
@@ -3554,13 +3543,6 @@ PTR_BaseDomain Module::GetDomain()
 
 #ifndef DACCESS_COMPILE 
 
-IAssemblySecurityDescriptor *Module::GetSecurityDescriptor()
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(m_pAssembly != NULL);
-    return m_pAssembly->GetSecurityDescriptor();
-}
-
 #ifndef CROSSGEN_COMPILE
 void Module::StartUnload()
 {
@@ -3815,7 +3797,6 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
     {
         INSTANCE_CHECK;
         POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        PRECONDITION(Security::IsResolved(GetAssembly()));
         THROWS;
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
@@ -4040,16 +4021,7 @@ BOOL Module::IsSymbolReadingEnabled()
 #endif // DEBUGGING_SUPPORTED
 
 
-    // Default policy - only read symbols corresponding to full-trust assemblies.
-    // Note that there is no strong (cryptographic) connection between a symbol file and its assembly.
-        // The intent here is just to ensure that the common high-risk scenarios (AppLaunch, etc)
-        // will never be able to load untrusted PDB files.
-    // 
-        if (GetSecurityDescriptor()->IsFullyTrusted())
-        {
-            return TRUE;
-        }
-    return FALSE;
+    return TRUE;
 }
 
 // At this point, this is only called when we're creating an appdomain
@@ -5713,7 +5685,7 @@ DomainAssembly * Module::LoadAssembly(
         {
             spec.SetWindowsRuntimeType(szWinRtTypeNamespace, szWinRtTypeClassName);
         }
-        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pFile, FILE_LOADED, NULL);
+        pDomainAssembly = GetAppDomain()->LoadDomainAssembly(&spec, pFile, FILE_LOADED);
     }
 
     if (pDomainAssembly != NULL)
@@ -6465,10 +6437,6 @@ BOOL Module::CanExecuteCode()
     // preferred base address. If they have any relocs, these may
     // not have been fixed up.
     if (!pPEAssembly->IsDll() && !pPEAssembly->IsILOnly())
-        return FALSE;
-
-    // If the assembly does not have FullTrust, we should not execute its code.
-    if (!pAssembly->GetSecurityDescriptor()->IsFullyTrusted())
         return FALSE;
 #endif // FEATURE_PREJIT
 
@@ -9042,12 +9010,6 @@ void Module::Save(DataImage *image)
                                           DataImage::ITEM_DYNAMIC_STATICS_INFO_TABLE);
     }
 
-    // save the module security descriptor
-    if (m_pModuleSecurityDescriptor)
-    {
-        m_pModuleSecurityDescriptor->Save(image);
-    }
-
     InlineTrackingMap *inlineTrackingMap = image->GetInlineTrackingMap();
     if (inlineTrackingMap) 
     {
@@ -10028,17 +9990,6 @@ void Module::Fixup(DataImage *image)
             // assembly being ngenned.
             image->ZeroPointerField(m_pDynamicStaticsInfo, (BYTE *)&pDSI->pEnclosingMT - (BYTE *)m_pDynamicStaticsInfo);
         }
-    }
-
-    // fix up module security descriptor
-    if (m_pModuleSecurityDescriptor)
-    {
-        image->FixupPointerField(this, offsetof(Module, m_pModuleSecurityDescriptor));
-        m_pModuleSecurityDescriptor->Fixup(image);
-    }
-    else
-    {
-        image->ZeroPointerField(this, offsetof(Module, m_pModuleSecurityDescriptor));
     }
 
     // If we failed to load some types we need to reset the pointers to the static offset tables so they'll be

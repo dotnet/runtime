@@ -201,6 +201,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyKeyNameAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyMetadataAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFlags.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFormatter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyProductAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblySignatureKeyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyTitleAttribute.cs" />
@@ -427,6 +428,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSourceException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IEventProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\StubEnvironment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\Winmeta.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />
@@ -489,7 +491,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SecurityOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetEndOfFile.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetErrorMode.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WideCharToMultiByte.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs"/>

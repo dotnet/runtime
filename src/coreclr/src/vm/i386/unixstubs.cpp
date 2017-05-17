@@ -56,9 +56,3 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispa
     PORTABILITY_ASSERT("GetCONTEXTFromRedirectedStubStackFrame");
     return NULL;
 }
-
-FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame(DISPATCHER_CONTEXT *pDispatcherContext)
-{
-    PORTABILITY_ASSERT("GetFrameFromRedirectedStubStackFrame");
-    return NULL;
-}
