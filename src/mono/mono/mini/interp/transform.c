@@ -2267,6 +2267,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			case STACK_TYPE_I4:
 #if SIZEOF_VOID_P == 8
 				ADD_CODE(&td, MINT_CONV_I8_U4);
+#elif SIZEOF_VOID_P == 4
+				if (*td.ip == CEE_CONV_OVF_I_UN)
+					ADD_CODE(&td, MINT_CONV_OVF_I4_U4);
 #endif
 				break;
 			default:
