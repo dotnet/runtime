@@ -59,6 +59,10 @@ public:
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
 
+    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object);
+
+    virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle);
+
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
 };
 
