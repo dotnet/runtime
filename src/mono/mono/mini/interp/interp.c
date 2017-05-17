@@ -104,7 +104,6 @@ GSList *jit_classes;
 
 void ves_exec_method (MonoInvocation *frame);
 
-static char* dump_stack (stackval *stack, stackval *sp);
 static char* dump_frame (MonoInvocation *inv);
 static MonoArray *get_trace_ips (MonoDomain *domain, MonoInvocation *top);
 static void ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, unsigned short *start_with_ip, MonoException *filter_exception, int exit_at_finally);
@@ -209,54 +208,6 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 		(context)->handler_frame = NULL;								\
 		goto main_loop;													\
 	} while (0)
-
-static void
-interp_ex_handler (MonoException *ex) {
-	MonoError error;
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	char *stack_trace;
-	if (context == NULL)
-		return;
-	stack_trace = dump_frame (context->current_frame);
-	ex->stack_trace = mono_string_new_checked (mono_domain_get(), stack_trace, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	g_free (stack_trace);
-	if (context->current_env == NULL || strcmp(ex->object.vtable->klass->name, "ExecutionEngineException") == 0) {
-		char *strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		fprintf(stderr, "Nothing can catch this exception: ");
-		fprintf(stderr, "%s", ex->object.vtable->klass->name);
-		if (ex->message != NULL) {
-			char *m = mono_string_to_utf8_checked (ex->message, &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			fprintf(stderr, ": %s", m);
-			g_free(m);
-		}
-		fprintf(stderr, "\n%s\n", strace);
-		g_free (strace);
-		if (ex->inner_ex != NULL) {
-			ex = (MonoException *)ex->inner_ex;
-			fprintf(stderr, "Inner exception: %s", ex->object.vtable->klass->name);
-			if (ex->message != NULL) {
-				char *m = mono_string_to_utf8_checked (ex->message, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-				fprintf(stderr, ": %s", m);
-				g_free(m);
-			}
-			strace = mono_string_to_utf8_checked (ex->stack_trace, &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			fprintf(stderr, "\n");
-			fprintf(stderr, "%s\n", strace);
-			g_free (strace);
-		}
-		/* wait for other threads to also collapse */
-		// Sleep(1000); // TODO: proper sleep
-		exit(1);
-	}
-	context->env_frame->ex = ex;
-	context->search_for_handler = 1;
-	longjmp (*context->current_env, 1);
-}
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
@@ -1026,6 +977,7 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 			method->name);
 }
 
+#if DEBUG_INTERP
 static char*
 dump_stack (stackval *stack, stackval *sp)
 {
@@ -1041,6 +993,7 @@ dump_stack (stackval *stack, stackval *sp)
 	}
 	return g_string_free (str, FALSE);
 }
+#endif
 
 static void
 dump_stackval (GString *str, stackval *s, MonoType *type)
@@ -1088,6 +1041,20 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	}
 }
 
+#if DEBUG_INTERP
+static char*
+dump_retval (MonoInvocation *inv)
+{
+	GString *str = g_string_new ("");
+	MonoType *ret = mono_method_signature (inv->runtime_method->method)->ret;
+
+	if (ret->type != MONO_TYPE_VOID)
+		dump_stackval (str, inv->retval, ret);
+
+	return g_string_free (str, FALSE);
+}
+#endif
+
 static char*
 dump_args (MonoInvocation *inv)
 {
@@ -1105,18 +1072,6 @@ dump_args (MonoInvocation *inv)
 
 	for (i = 0; i < signature->param_count; ++i)
 		dump_stackval (str, inv->stack_args + (!!signature->hasthis) + i, signature->params [i]);
-
-	return g_string_free (str, FALSE);
-}
-
-static char*
-dump_retval (MonoInvocation *inv)
-{
-	GString *str = g_string_new ("");
-	MonoType *ret = mono_method_signature (inv->runtime_method->method)->ret;
-
-	if (ret->type != MONO_TYPE_VOID)
-		dump_stackval (str, inv->retval, ret);
 
 	return g_string_free (str, FALSE);
 }
@@ -1692,12 +1647,12 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 
 	switch (op) {
 	case MINT_ICALL_V_V: {
-		void (*func)() = ptr;
+		void (*func)(void) = ptr;
         	func ();
 		break;
 	}
 	case MINT_ICALL_V_P: {
-		gpointer (*func)() = ptr;
+		gpointer (*func)(void) = ptr;
 		sp++;
 		sp [-1].data.p = func ();
 		break;
@@ -2042,6 +1997,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 #if DEBUG_INTERP
 	gint tracing = global_tracing;
 	unsigned char *vtalloc;
+#else
+	gint tracing = 0;
 #endif
 	int i32;
 	unsigned char *vt_sp;
@@ -2062,9 +2019,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 	frame->ip = NULL;
 	context->current_frame = frame;
 
-#if DEBUG_INTERP
 	debug_enter (frame, &tracing);
-#endif
 
 	if (!frame->runtime_method->transformed) {
 		context->managed_code = 0;
@@ -5064,155 +5019,6 @@ ves_exec_method (MonoInvocation *frame)
 		mono_native_tls_set_value (thread_context_id, NULL);
 	else
 		context->current_frame = frame->parent;
-}
-
-static int 
-ves_exec (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[])
-{
-	MonoImage *image = mono_assembly_get_image (assembly);
-	MonoMethod *method;
-	MonoError error;
-	int rval;
-
-	method = mono_get_method_checked (image, mono_image_get_entry_point (image), NULL, NULL, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	if (!method)
-		g_error ("No entry point method found in %s", mono_image_get_filename (image));
-
-	rval = mono_runtime_run_main_checked (method, argc, argv, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	return rval;
-}
-
-static void
-usage (void)
-{
-	fprintf (stderr,
-		 "mint %s, the Mono ECMA CLI interpreter, (C) 2001, 2002 Ximian, Inc.\n\n"
-		 "Usage is: mint [options] executable args...\n\n", VERSION);
-	fprintf (stderr,
-		 "Runtime Debugging:\n"
-#ifdef DEBUG_INTERP
-		 "   --debug\n"
-#endif
-		 "   --dieonex\n"
-		 "   --noptr\t\t\tdon't print pointer addresses in trace output\n"
-		 "   --opcode-count\n"
-		 "   --print-vtable\n"
-		 "   --traceclassinit\n"
-		 "\n"
-		 "Development:\n"
-		 "   --debug method_name\n"
-		 "   --profile\n"
-		 "   --trace\n"
-		 "   --traceops\n"
-		 "   --regression\n"
-		 "\n"
-		 "Runtime:\n"
-		 "   --config filename  load the specified config file instead of the default\n"
-		 "   --workers n        maximum number of worker threads\n"
-		);
-	exit (1);
-}
-
-static MonoBoolean
-interp_ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info, 
-			  MonoReflectionMethod **method, 
-			  gint32 *iloffset, gint32 *native_offset,
-			  MonoString **file, gint32 *line, gint32 *column)
-{
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoInvocation *inv = context->current_frame;
-	MonoError error;
-	int i;
-
-	for (i = 0; inv && i < skip; inv = inv->parent)
-		if (inv->runtime_method != NULL)
-			++i;
-
-	if (iloffset)
-		*iloffset = 0;
-	if (native_offset)
-		*native_offset = 0;
-	if (method) {
-		if (inv == NULL) {
-			*method = NULL;
-		} else {
-			*method = mono_method_get_object_checked (context->domain, inv->runtime_method->method, NULL, &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		}
-	}
-	if (line)
-		*line = 0;
-	if (need_file_info) {
-		if (column)
-			*column = 0;
-		if (file) {
-			*file = mono_string_new_checked (mono_domain_get (), "unknown", &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		}
-	}
-
-	return TRUE;
-}
-
-static MonoArray *
-interp_ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info)
-{
-	MonoDomain *domain = mono_domain_get ();
-	MonoArray *res;
-	MonoArray *ta = exc->trace_ips;
-	MonoError error;
-	int i, len;
-
-	if (ta == NULL) {
-		/* Exception is not thrown yet */
-		MonoArray *array = mono_array_new_checked (domain, mono_defaults.stack_frame_class, 0, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		return array;
-	}
-	
-	len = mono_array_length (ta);
-
-	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	for (i = skip; i < len / 2; i++) {
-		MonoStackFrame *sf = (MonoStackFrame *)mono_object_new_checked (domain, mono_defaults.stack_frame_class, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		gushort *ip = mono_array_get (ta, gpointer, 2 * i + 1);
-		RuntimeMethod *rtm = mono_array_get (ta, gpointer, 2 * i);
-
-		if (rtm != NULL) {
-			sf->method = mono_method_get_object_checked (domain, rtm->method, NULL, &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			sf->native_offset = ip - rtm->code;
-		}
-
-#if 0
-		sf->il_offset = mono_debug_il_offset_from_address (ji->method, sf->native_offset, domain);
-
-		if (need_file_info) {
-			gchar *filename;
-			
-			filename = mono_debug_source_location_from_address (ji->method, sf->native_offset, &sf->line, domain);
-
-			sf->filename = NULL;
-			if (filename) {
-				sf->filename = mono_string_new_checked (domain, filename, &error);
-				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			}
-			sf->column = 0;
-
-			g_free (filename);
-		}
-#endif
-
-		mono_array_set (res, gpointer, i, sf);
-	}
-
-	return res;
 }
 
 void
