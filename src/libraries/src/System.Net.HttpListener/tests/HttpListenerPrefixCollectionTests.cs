@@ -210,10 +210,11 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        public void Add_PrefixAlreadyRegisteredAndNotStarted_ThrowsHttpListenerException()
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [MemberData(nameof(Hosts_TestData))]
+        public void Add_PrefixAlreadyRegisteredAndNotStarted_ThrowsHttpListenerException(string hostname)
         {
-            using (var factory = new HttpListenerFactory())
+            using (var factory = new HttpListenerFactory(hostname))
             {
                 string uriPrefix = Assert.Single(factory.GetListener().Prefixes);
 
@@ -224,16 +225,255 @@ namespace System.Net.Tests
             }
         }
 
-        [Fact]
-        public void Add_PrefixAlreadyRegisteredAndStarted_ThrowsHttpListenerException()
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [MemberData(nameof(Hosts_TestData))]
+        public void Add_PrefixAlreadyRegisteredWithDifferentPathAndNotStarted_Works(string hostname)
         {
-            using (var factory = new HttpListenerFactory())
+            using (var factory = new HttpListenerFactory(hostname))
+            {
+                var listener = factory.GetListener();
+                string uriPrefix = Assert.Single(listener.Prefixes);
+
+                listener.Prefixes.Add(uriPrefix + "sub_path/");
+                Assert.Equal(2, listener.Prefixes.Count);
+
+                listener.Start();
+                Assert.True(listener.IsListening);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [MemberData(nameof(Hosts_TestData))]
+        public void Add_PrefixAlreadyRegisteredAndStarted_ThrowsHttpListenerException(string hostname)
+        {
+            using (var factory = new HttpListenerFactory(hostname))
             {
                 HttpListener listener = factory.GetListener();
                 string uriPrefix = Assert.Single(listener.Prefixes);
 
                 Assert.Throws<HttpListenerException>(() => listener.Prefixes.Add(uriPrefix));
                 Assert.Throws<HttpListenerException>(() => listener.Prefixes.Add(uriPrefix + "/sub_path/"));
+            }
+        }
+
+        public static IEnumerable<object[]> Hosts_TestData()
+        {
+            yield return new object[] { "localhost" };
+            yield return new object[] { "127.0.0.1" };
+
+            if (HttpListenerFactory.SupportsWildcards)
+            {
+                yield return new object[] { "*" };
+                yield return new object[] { "+" };
+            }
+        }
+        
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [MemberData(nameof(Hosts_TestData))]
+        public void Add_SamePortDifferentPathDifferentListenerNotStarted_Works(string host)
+        {
+            var listener1 = new HttpListener();
+            var listener2 = new HttpListener();
+
+            int? freePort = null;
+
+            // Try to find a port that is not being used.
+            for (int port = 1025; port <= IPEndPoint.MaxPort; port++)
+            {
+                string uriPrefix = $"http://{host}:{port}/";
+                try
+                {
+                    listener1.Prefixes.Add(uriPrefix);
+                    Assert.Equal(1, listener1.Prefixes.Count);
+                    listener1.Start();
+
+                    freePort = port;
+                    break;
+                }
+                catch (HttpListenerException)
+                {
+                    // This port is already in use. Skip it and find a port that's not being used.
+                    listener1.Close();
+                    listener1 = new HttpListener();
+                }
+            }
+
+            try
+            {
+                if (!freePort.HasValue)
+                {
+                    throw new InvalidOperationException("Expected to have a port open on the machine.");
+                }
+
+                listener2.Prefixes.Add($"http://{host}:{freePort}/sub_path/");
+                Assert.Equal(1, listener2.Prefixes.Count);
+
+                listener2.Start();
+                Assert.True(listener2.IsListening);
+            }
+            finally
+            {
+                listener1?.Close();
+                listener2?.Close();
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [MemberData(nameof(Hosts_TestData))]
+        public void Add_SamePortDifferentPathDifferentListenerStarted_Works(string host)
+        {
+            var listener1 = new HttpListener();
+            var listener2 = new HttpListener();
+
+            int? freePort1 = null;
+            int? freePort2 = null;
+
+            // Try to find a port that is not being used.
+            for (int port = 1025; port <= IPEndPoint.MaxPort; port++)
+            {
+                string uriPrefix = $"http://127.0.0.1:{port}/";
+                try
+                {
+                    if (!freePort1.HasValue)
+                    {
+                        listener1.Prefixes.Add(uriPrefix);
+                        Assert.Equal(1, listener1.Prefixes.Count);
+
+                        listener1.Start();
+                        freePort1 = port;
+                    }
+                    else if (!freePort2.HasValue)
+                    {
+                        listener2.Prefixes.Add(uriPrefix);
+                        Assert.Equal(1, listener2.Prefixes.Count);
+
+                        listener2.Start();
+                        freePort2 = port;
+
+                        break;
+                    }
+                }
+                catch (HttpListenerException)
+                {
+                    // This port is already in use. Skip it and find a port that's not being used.
+                    if (!freePort1.HasValue)
+                    {
+                        listener1.Close();
+                        listener1 = new HttpListener();
+                    }
+                    else if (!freePort2.HasValue)
+                    {
+                        listener2.Close();
+                        listener2 = new HttpListener();
+                    }
+                }
+            }
+
+            try
+            {
+                if (!freePort1.HasValue || !freePort2.HasValue)
+                {
+                    throw new InvalidOperationException("Expected to have a port open on the machine.");
+                }
+                
+                listener1.Prefixes.Add($"http://127.0.0.1:{freePort2}/hola/");
+                listener2.Prefixes.Add($"http://127.0.0.1:{freePort1}/hola/");
+
+                Assert.Equal(2, listener1.Prefixes.Count);
+                Assert.Equal(2, listener2.Prefixes.Count);
+
+                // Conflicts with existing registration: listener2 has registered to listen to http://127.0.0.1:{freePort1}/...
+                Assert.Throws<HttpListenerException>(() => listener1.Prefixes.Add($"http://127.0.0.1:{freePort1}/"));
+                Assert.Throws<HttpListenerException>(() => listener1.Prefixes.Add($"http://127.0.0.1:{freePort1}/hola/"));
+
+                // Conflicts with existing registration: listener1 has registered to listen to http://127.0.0.1:{freePort2}/...
+                Assert.Throws<HttpListenerException>(() => listener2.Prefixes.Add($"http://127.0.0.1:{freePort2}/"));
+                Assert.Throws<HttpListenerException>(() => listener2.Prefixes.Add($"http://127.0.0.1:{freePort2}/hola/"));
+            }
+            finally
+            {
+                listener1?.Close();
+                listener2?.Close();
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [MemberData(nameof(Hosts_TestData))]
+        public void Add_SamePortDifferentPathMultipleStarted_Success(string host)
+        {
+            var listener1 = new HttpListener();
+            var listener2 = new HttpListener();
+
+            int? freePort1 = null;
+            int? freePort2 = null;
+
+            // Try to find a port that is not being used.
+            for (int port = 1025; port <= IPEndPoint.MaxPort; port++)
+            {
+                string uriPrefix = $"http://{host}:{port}/";
+                try
+                {
+                    if (!freePort1.HasValue)
+                    {
+                        listener1.Prefixes.Add(uriPrefix);
+                        Assert.Equal(1, listener1.Prefixes.Count);
+
+                        listener1.Start();
+                        freePort1 = port;
+                    }
+                    else if (!freePort2.HasValue)
+                    {
+                        listener2.Prefixes.Add(uriPrefix);
+                        Assert.Equal(1, listener2.Prefixes.Count);
+
+                        listener2.Start();
+                        freePort2 = port;
+
+                        break;
+                    }
+                }
+                catch (HttpListenerException)
+                {
+                    // This port is already in use. Skip it and find a port that's not being used.
+                    if (!freePort1.HasValue)
+                    {
+                        listener1.Close();
+                        listener1 = new HttpListener();
+                    }
+                    else if (!freePort2.HasValue)
+                    {
+                        listener2.Close();
+                        listener2 = new HttpListener();
+                    }
+                }
+            }
+
+            try
+            {
+                if (!freePort1.HasValue || !freePort2.HasValue)
+                {
+                    throw new InvalidOperationException("Expected to have a port open on the machine.");
+                }
+
+                listener1.Prefixes.Add($"http://{host}:{freePort1}/hola/");
+                Assert.Equal(2, listener1.Prefixes.Count);
+
+                listener2.Prefixes.Add($"http://{host}:{freePort2}/hola/");
+                Assert.Equal(2, listener2.Prefixes.Count);
+
+                // Conflict: listenerX is already listening to $"http://127.0.0.1:{freePortX}/hola/".
+                Assert.Throws<HttpListenerException>(() => listener1.Prefixes.Add($"http://{host}:{freePort1}/hola/"));
+                Assert.Throws<HttpListenerException>(() => listener2.Prefixes.Add($"http://{host}:{freePort2}/hola/"));
+
+                // Conflict: listenerX is already listening to $"http://127.0.0.1:{freePortY}/hola/".
+                Assert.Throws<HttpListenerException>(() => listener1.Prefixes.Add($"http://{host}:{freePort2}/hola/"));
+                Assert.Throws<HttpListenerException>(() => listener2.Prefixes.Add($"http://{host}:{freePort1}/hola/"));
+
+            }
+            finally
+            {
+                listener1?.Close();
+                listener2?.Close();
             }
         }
 

@@ -343,10 +343,7 @@ namespace System.Net
                 prefs = _prefixes;
                 if (prefs.ContainsKey(prefix))
                 {
-                    HttpListener other = (HttpListener)prefs[prefix];
-                    if (other != listener)
-                        throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.Format(SR.net_listener_already, prefix));
-                    return;
+                    throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.Format(SR.net_listener_already, prefix));
                 }
                 p2 = new Dictionary<ListenerPrefix, HttpListener>(prefs);
                 p2[prefix] = listener;

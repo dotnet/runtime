@@ -15,22 +15,23 @@ namespace System.Net.Tests
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
-        public const string Hostname = "localhost";
+        private readonly string _hostname;
         private readonly string _path;
         private readonly int _port;
 
-        internal HttpListenerFactory()
+        internal HttpListenerFactory(string hostname = "localhost")
         {
             // Find a URL prefix that is not in use on this machine *and* uses a port that's not in use.
             // Once we find this prefix, keep a listener on it for the duration of the process, so other processes
             // can't steal it.
 
             Guid processGuid = Guid.NewGuid();
+            _hostname = hostname;
             _path = processGuid.ToString("N");
 
-            for (int port = 1024; port <= IPEndPoint.MaxPort; port++)
+            for (int port = 1025; port <= IPEndPoint.MaxPort; port++)
             {
-                string prefix = $"http://{Hostname}:{port}/{_path}/";
+                string prefix = $"http://{hostname}:{port}/{_path}/";
 
                 var listener = new HttpListener();
                 try
@@ -55,6 +56,17 @@ namespace System.Net.Tests
                     // in trying again.
                     if (!(e is HttpListenerException) && !(e is SocketException))
                         break;
+
+                    // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
+                    // then throw.
+                    if (e is HttpListenerException listenerException)
+                    {
+                        const int ERROR_ACCESS_DENIED = 5;
+                        if (listenerException.ErrorCode == ERROR_ACCESS_DENIED && (hostname == "*" || hostname == "+"))
+                        {
+                            throw new InvalidOperationException($"Access denied for host {hostname}");
+                        }
+                    }
                 }
             }
 
@@ -89,7 +101,30 @@ namespace System.Net.Tests
             }
         }
 
+        public string Hostname => _hostname;
         public string Path => _path;
+
+        private static bool? s_supportsWildcards;
+        public static bool SupportsWildcards
+        {
+            get
+            {
+                if (!s_supportsWildcards.HasValue)
+                {
+                    try
+                    {
+                        new HttpListenerFactory("*");
+                        s_supportsWildcards = true;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        s_supportsWildcards = false;
+                    }
+                }
+
+                return s_supportsWildcards.Value;
+            }
+        }
 
         public HttpListener GetListener() => _processPrefixListener;
 
