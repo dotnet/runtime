@@ -4,6 +4,7 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Reflection.Internal
 {
@@ -11,6 +12,9 @@ namespace System.Reflection.Internal
     {
         // can't be read-only since GCHandle is a mutable struct
         private GCHandle _handle;
+
+        // non-zero indicates a valid handle
+        private int _isValid; 
 
         public PinnedObject(object obj)
         {
@@ -24,6 +28,7 @@ namespace System.Reflection.Internal
             finally
             {
                 _handle = GCHandle.Alloc(obj, GCHandleType.Pinned);
+                _isValid = 1;
             }
         }
 
@@ -38,7 +43,10 @@ namespace System.Reflection.Internal
             }
             finally
             {
-                _handle.Free();
+                if (Interlocked.Exchange(ref _isValid, 0) != 0)
+                {
+                    _handle.Free();
+                }
             }
         }
 

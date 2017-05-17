@@ -214,6 +214,7 @@ namespace System.Reflection.Internal.Tests
         {
             var nativeBlocks = new NativeHeapMemoryBlock[20];
             var memoryMappedBlocks = new MemoryMappedFileBlock[20];
+            var pinnedObjects = new PinnedObject[20];
 
             for (int i = 0; i < nativeBlocks.Length; i++)
             {
@@ -223,6 +224,11 @@ namespace System.Reflection.Internal.Tests
             for (int i = 0; i < memoryMappedBlocks.Length; i++)
             {
                 memoryMappedBlocks[i] = new MemoryMappedFileBlock(new TestOnceDisposable(), new TestSafeBuffer(), offset: 0, size: 1);
+            }
+
+            for (int i = 0; i < memoryMappedBlocks.Length; i++)
+            {
+                pinnedObjects[i] = new PinnedObject(new byte[4]);
             }
 
             var worker = new ThreadStart(() =>
@@ -238,6 +244,12 @@ namespace System.Reflection.Internal.Tests
                     for (int i = 0; i < memoryMappedBlocks.Length; i++)
                     {
                         memoryMappedBlocks[i].Dispose();
+                        Thread.Yield();
+                    }
+
+                    for (int i = 0; i < pinnedObjects.Length; i++)
+                    {
+                        pinnedObjects[i].Dispose();
                         Thread.Yield();
                     }
                 }
