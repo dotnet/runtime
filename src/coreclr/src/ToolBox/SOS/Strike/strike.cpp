@@ -14370,17 +14370,17 @@ _EFN_GetManagedObjectFieldInfo(
 
 #ifdef FEATURE_PAL
 
-#ifdef __linux__
+#ifdef CREATE_DUMP_SUPPORTED
 #include <dumpcommon.h>
 #include "datatarget.h"
 extern bool CreateDumpForSOS(const char* programPath, const char* dumpPathTemplate, pid_t pid, MINIDUMP_TYPE minidumpType, ICLRDataTarget* dataTarget);
 extern bool g_diagnostics;
-#endif // __linux__
+#endif // CREATE_DUMP_SUPPORTED
 
 DECLARE_API(CreateDump)
 {
     INIT_API();
-#ifdef __linux__
+#ifdef CREATE_DUMP_SUPPORTED
     StringHolder sFileName;
     BOOL normal = FALSE;
     BOOL withHeap = FALSE;
@@ -14440,9 +14440,9 @@ DECLARE_API(CreateDump)
     {
         Status = E_FAIL;
     } 
-#else // __linux__
+#else // CREATE_DUMP_SUPPORTED
     ExtErr("CreateDump not supported on this platform\n");
-#endif // __linux__
+#endif // CREATE_DUMP_SUPPORTED
     return Status;
 }
 
