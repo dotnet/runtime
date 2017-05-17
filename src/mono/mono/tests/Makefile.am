@@ -681,6 +681,12 @@ endif
 
 if ARM
 PLATFORM_DISABLED_TESTS=filter-stack.exe
+INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe \
+	delegate-exit.exe delegate-exit.exe delegate-delegate-exit.exe delegate-async-exit.exe delegate3.exe delegate1.exe
+endif
+
+if ARM64
+INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe
 endif
 
 if MIPS
@@ -1000,6 +1006,7 @@ INTERP_DISABLED_TESTS = \
 	$(CI_PR_DISABLED_TESTS) \
 	$(CI_DISABLED_TESTS) \
 	$(KNOWN_FAILING_TESTS) \
+	$(INTERP_DISABLED_TESTS_PLATFORM) \
 	abort-cctor.exe \
 	appdomain-async-invoke.exe \
 	appdomain-exit.exe \
@@ -1046,6 +1053,7 @@ INTERP_DISABLED_TESTS = \
 	exception18.exe \
 	field-access.exe \
 	finally_block_ending_in_dead_bb.exe \
+	generic-array-exc.2.exe \
 	generic-marshalbyref.2.exe \
 	generic-mkrefany.2.exe \
 	generic-refanyval.2.exe \
