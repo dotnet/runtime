@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="Test6_forwarder.ilproj" />
+    <ProjectReference Include="Test6_supplier.ilproj" />
     <ProjectReference Include="Test6_FriendPriInterface.ilproj" />
   </ItemGroup>
 
