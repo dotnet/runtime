@@ -54,10 +54,15 @@
       which computes the ItemGroup ResolvedFileToPublish. To extend
       this target, we insert a target before
       ComputeFilesToPublish. Our target rewrites the relevant inputs
-      (@(IntermediateAssembly) and
-      @(ResolvedAssembliesToPublish)). This lets ComputeFilesToPublish
-      be ignorant of the linker, but changes the meaning of
-      IntermediateAssembly and ResolvedAssembliesToPublish.
+      (@(IntermediateAssembly), @(ResolvedAssembliesToPublish)). This
+      lets ComputeFilesToPublish be ignorant of the linker, but
+      changes the meaning of IntermediateAssembly and
+      ResolvedAssembliesToPublish.
+
+      To include linked pdbs in the publish output, we also rewrite
+      the ComputeFilesToPublish input
+      @(_DebugSymbolsIntermediatePath). Note that this is a private
+      itemgroup, so relying on this is not ideal.
   -->
   <!-- DependsOnTargets here doesn't include the targets that compute
        ResolvedAssembliesToPublish or IntermediateAssembly, because
@@ -82,6 +87,13 @@
       <IntermediateAssembly Remove="@(IntermediateAssembly)" />
       <IntermediateAssembly Include="@(_LinkedIntermediateAssembly)" />
     </ItemGroup>
+
+    <!-- Rewrite _DebugSymbolsIntermediatePath, which is an input to
+         ComputeFilesToPublish. -->
+    <ItemGroup>
+      <_DebugSymbolsIntermediatePath Remove="@(_DebugSymbolsIntermediatePath)" Condition=" '$(_DebugSymbolsProduced)' == 'true' " />
+      <_DebugSymbolsIntermediatePath Include="@(_LinkedDebugSymbols)" Condition=" '$(_DebugSymbolsProduced)' == 'true' " />
+    </ItemGroup>
   </Target>
   
 
@@ -100,10 +112,11 @@
   </Target>
 
 
-  <!-- Computes _LinkedResolvedAssemblies and
-       _LinkedIntermediateAssembly. _LinkedResolvedAssemblies needs to
-       keep metadata from _ManagedResolvedAssembliesToPublish, since
-       this is used by ComputeFilesToPublish. -->
+  <!-- Computes _LinkedResolvedAssemblies,
+       _LinkedIntermediateAssembly, and
+       _LinkedDebugSymbols. _LinkedResolvedAssemblies needs to keep
+       metadata from _ManagedResolvedAssembliesToPublish, since this
+       is used by ComputeFilesToPublish. -->
   <Target Name="_ComputeLinkedAssemblies"
           DependsOnTargets="_ComputeManagedResolvedAssembliesToPublish;ILLink">
     <ItemGroup>
@@ -114,6 +127,13 @@
     <ItemGroup>
       <__LinkedIntermediateAssembly Include="@(IntermediateAssembly->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
       <_LinkedIntermediateAssembly Include="@(__LinkedIntermediateAssembly)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <__LinkedDebugSymbols Include="@(_DebugSymbolsIntermediatePath->'$(IntermediateLinkDir)/%(Filename)%(Extension)')"
+                            Condition=" '$(_DebugSymbolsProduced)' == 'true' " />
+      <_LinkedDebugSymbols Include="@(__LinkedDebugSymbols)"
+                           Condition="Exists('%(Identity)') And '$(_DebugSymbolsProduced)' == 'true' " />
     </ItemGroup>
   </Target>
   
@@ -132,7 +152,7 @@
          the future we will want to generate these depending on the
          scenario in which the linker is invoked. -->
     <PropertyGroup>
-      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -c link -l none</ExtraLinkerArgs>
+      <ExtraLinkerArgs Condition=" '$(ExtraLinkerArgs)' == '' ">-t -c link -l none -b true</ExtraLinkerArgs>
     </PropertyGroup>
     <ILLink AssemblyPaths="@(_ManagedAssembliesToLink)"
             RootAssemblyNames="@(LinkerRootAssemblies)"
