@@ -3537,6 +3537,7 @@ namespace System.Data.SqlClient
                 return false;
             }
 
+            col.isColumnSet = (TdsEnums.IsColumnSet == (flags & TdsEnums.IsColumnSet));
 
             byte tdsType;
             if (!stateObj.TryReadByte(out tdsType))
