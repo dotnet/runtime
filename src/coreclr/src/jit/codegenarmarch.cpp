@@ -379,6 +379,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genProduceReg(treeNode);
             break;
 
+        case GT_LONG:
+            assert(treeNode->isUsedFromReg());
+            genConsumeRegs(treeNode);
+            break;
+
 #endif // _TARGET_ARM_
 
         case GT_IL_OFFSET:
