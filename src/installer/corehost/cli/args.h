@@ -42,6 +42,14 @@ struct probe_config_t
     {
     }
 
+    bool is_lookup() const
+    {
+        return (probe_deps_json == nullptr) &&
+            !only_runtime_assets &&
+            !only_serviceable_assets &&
+            !probe_publish_dir;
+    }
+
     static probe_config_t svc_ni(const pal::string_t& dir)
     {
         return probe_config_t(dir, nullptr, true, true, false);

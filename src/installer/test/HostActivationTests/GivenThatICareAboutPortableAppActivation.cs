@@ -58,7 +58,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .And
                 .HaveStdOutContaining("Hello World");
         }
-        
+
+        [Fact]
+        public void Muxer_activation_of_Apps_with_AltDirectorySeparatorChar()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll.Replace(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);
+
+            dotnet.Exec(appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
         [Fact]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Without_AdditionalProbingPath_Fails()
         {

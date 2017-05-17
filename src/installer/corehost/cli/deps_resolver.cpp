@@ -126,7 +126,13 @@ void deps_resolver_t::get_dir_assemblies(
             }
 
             // Add entry for this asset
-            pal::string_t file_path = dir + DIR_SEPARATOR + file;
+            pal::string_t file_path = dir;
+            if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
+            {
+                file_path.push_back(DIR_SEPARATOR);
+            }
+            file_path.append(file);
+
             trace::verbose(_X("Adding %s to %s assembly set from %s"), file_name.c_str(), dir_name.c_str(), file_path.c_str());
             dir_assemblies->emplace(file_name, file_path);
         }
@@ -148,7 +154,6 @@ void deps_resolver_t::setup_shared_store_probes(
 
     if (pal::directory_exists(args.local_shared_store))
     {
-        // Shared Store probe: $HOME/.dotnet/store or %USERPROFILE%\.dotnet\store
         m_probes.push_back(probe_config_t::lookup(args.local_shared_store));
     }
 
@@ -159,18 +164,20 @@ void deps_resolver_t::setup_shared_store_probes(
 
     if (args.global_shared_store != args.dotnet_shared_store && pal::directory_exists(args.global_shared_store))
     {
-        // Shared Store probe: /usr/share/dotnet/store or C:\Program Files (x86)\dotnet\store
         m_probes.push_back(probe_config_t::lookup(args.global_shared_store));
     }
 }
 
-pal::string_t deps_resolver_t::get_probe_directories()
+pal::string_t deps_resolver_t::get_lookup_probe_directories()
 {
     pal::string_t directories;
     for (const auto& pc : m_probes)
     {
-        directories.append(pc.probe_dir);
-        directories.push_back(PATH_SEPARATOR);
+        if (pc.is_lookup())
+        {
+            directories.append(pc.probe_dir);
+            directories.push_back(PATH_SEPARATOR);
+        }
     }
 
     return directories;
@@ -590,12 +597,6 @@ bool deps_resolver_t::resolve_probe_dirs(
             }
 
             return report_missing_assembly_in_manifest(entry);
-        }
-
-        if (m_api_set_paths.empty() && pal::need_api_sets() &&
-                ends_with(entry.library_name, _X("Microsoft.NETCore.App"), false))
-        {
-            m_api_set_paths.insert(action(candidate));
         }
 
         return true;

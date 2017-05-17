@@ -16,18 +16,3 @@ diff -u -r a/usr/lib/libpthread.so b/usr/lib/libpthread.so
  OUTPUT_FORMAT(elf32-littlearm)
 -GROUP ( /lib/libpthread.so.0 /usr/lib/libpthread_nonshared.a )
 +GROUP ( libpthread.so.0 libpthread_nonshared.a )
-diff -u -r a/usr/lib/libpthread.so b/usr/lib/libpthread.so
---- a/etc/os-release  2016-10-17 23:39:36.000000000 +0900
-+++ b/etc/os-release  2017-01-05 14:34:39.099867682 +0900
-@@ -1,7 +1,7 @@
- NAME=Tizen
--VERSION="3.0.0 (Tizen3/Mobile)"
-+VERSION="4.0.0 (Tizen4/Mobile)"
- ID=tizen
--VERSION_ID=3.0.0
--PRETTY_NAME="Tizen 3.0.0 (Tizen3/Mobile)"
-+VERSION_ID=4.0.0
-+PRETTY_NAME="Tizen 4.0.0 (Tizen4/Mobile)"
- ANSI_COLOR="0;36"
--CPE_NAME="cpe:/o:tizen:tizen:3.0.0"
-+CPE_NAME="cpe:/o:tizen:tizen:4.0.0"

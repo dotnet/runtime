@@ -25,7 +25,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Build();
 
             var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(Platform.Unknown, environment);
-            result.Should().Contain(PackagesPath);
+            // The host for .NET Core 2.0 always sets the PROBING_DIRECTORIES property on the AppContext. Because of that,
+            // no additional package directories should be returned from this, even if they are set as environment variables.
+            result.Should().NotContain(PackagesPath);
         }
 
 
@@ -37,7 +39,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Build();
 
             var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(Platform.Windows, environment);
-            result.Should().Contain(Path.Combine("User Profile", ".nuget", "packages"));
+            // The host for .NET Core 2.0 always sets the PROBING_DIRECTORIES property on the AppContext. Because of that,
+            // no additional package directories should be returned from this, even if they are set as environment variables.
+            result.Should().NotContain(Path.Combine("User Profile", ".nuget", "packages"));
         }
 
         [Fact]
@@ -48,7 +52,9 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 .Build();
 
             var result = PackageCompilationAssemblyResolver.GetDefaultProbeDirectories(Platform.Linux, environment);
-            result.Should().Contain(Path.Combine("User Home", ".nuget", "packages"));
+            // The host for .NET Core 2.0 always sets the PROBING_DIRECTORIES property on the AppContext. Because of that,
+            // no additional package directories should be returned from this, even if they are set as environment variables.
+            result.Should().NotContain(Path.Combine("User Home", ".nuget", "packages"));
         }
 
         [Fact]

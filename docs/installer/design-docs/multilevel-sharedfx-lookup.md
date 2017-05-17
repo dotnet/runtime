@@ -80,7 +80,7 @@ At last, the coreclr is loaded into memory and called to run the application.
 
 ## Proposed changes
 
-Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well. Suggested folders are the  the user location and the global .NET location. The user and global folders may vary depending on the running operational system. They are defined as follows:
+Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well. Suggested folders are the user location and the global .NET location. The user and global folders may vary depending on the running operational system. They are defined as follows:
 
 User location:
 

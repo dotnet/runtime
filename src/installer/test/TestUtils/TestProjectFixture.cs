@@ -1,4 +1,4 @@
-﻿using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -64,12 +64,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _repoDirectoriesProvider = repoDirectoriesProvider;
 
             _testProjectSourceDirectory = testProjectSourceDirectory
-                ?? Path.Combine(repoDirectoriesProvider.RepoRoot, "TestAssets", "TestProjects");
+                ?? Path.Combine(repoDirectoriesProvider.RepoRoot, "src", "test", "Assets", "TestProjects");
             _testArtifactDirectory = _testArtifactDirectory
                 ?? Environment.GetEnvironmentVariable(s_testArtifactDirectoryEnvironmentVariable)
                 ?? Path.Combine(AppContext.BaseDirectory, s_testArtifactDirectoryEnvironmentVariable);
 
-            _sdkDotnet = new DotNetCli(dotnetInstallPath ?? DotNetCli.GetStage0Path(repoDirectoriesProvider.RepoRoot));
+            _sdkDotnet = new DotNetCli(dotnetInstallPath ?? repoDirectoriesProvider.DotnetSDK);
             _currentRid = currentRid ?? repoDirectoriesProvider.TargetRID;
 
             _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
@@ -277,15 +277,22 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return this;
         }
 
-        public TestProjectFixture RestoreProject(string[] fallbackSources)
+        public TestProjectFixture RestoreProject(string[] fallbackSources, string extraMSBuildProperties = null)
         {
             var restoreArgs = new List<string>();
             foreach (var fallbackSource in fallbackSources)
             {
-                restoreArgs.Add("-f");
+                restoreArgs.Add("--source");
                 restoreArgs.Add(fallbackSource);
             }
             restoreArgs.Add("--disable-parallel");
+
+            restoreArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
+
+            if (extraMSBuildProperties != null)
+            {
+                restoreArgs.Add(extraMSBuildProperties);
+            }
 
             _sdkDotnet.Restore(restoreArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
@@ -310,15 +317,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public TestProjectFixture EnsureRestoredForRid(string rid, params string[] fallbackSources)
         {
-            var sourceProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json.template");
-            var targetProjectJson = Path.Combine(_testProject.ProjectDirectory, "project.json");
-
-            // apply RID to template
-            File.WriteAllText(targetProjectJson, File.ReadAllText(sourceProjectJson).Replace("{RID}", rid));
-
             if ( ! _testProject.IsRestored())
             {
-                RestoreProject(fallbackSources);
+                string extraMSBuildProperties = $"/p:TestTargetRid={rid}";
+                RestoreProject(fallbackSources, extraMSBuildProperties);
             }
 
             return this;

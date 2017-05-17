@@ -14,6 +14,7 @@ if (NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(CMAKE_INSTALL_RPATH "\$ORIGIN/netcoredeps")
 endif()
 
+set(SKIP_VERSIONING 1)
 include(../exe.cmake)
 set(SOURCES)
 add_definitions(-DFEATURE_APPHOST=1)

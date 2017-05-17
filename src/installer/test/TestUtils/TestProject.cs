@@ -15,8 +15,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _sharedLibraryExtension;
         private string _sharedLibraryPrefix;
 
-        private string _projectJson;
-        private string _projectLockJson;
+        private string _projectFile;
+        private string _projectAssetsJson;
         private string _runtimeConfigJson;
         private string _depsJson;
         private string _appDll;
@@ -24,16 +24,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _hostPolicyDll;
         private string _hostFxrDll;
 
-        private IEnumerable<string> _compilationFiles;
-        private IEnumerable<string> _outputFiles;
-
         public string ProjectDirectory => _projectDirectory;
         public string ProjectName => _projectName;
 
         public string OutputDirectory { get { return _outputDirectory; } set { _outputDirectory = value; } }
         public string ExeExtension { get { return _exeExtension; } set { _exeExtension = value; } }
-        public string ProjectJson { get { return _projectJson; } set { _projectJson = value; } }
-        public string ProjectLockJson { get { return _projectLockJson; } set { _projectLockJson = value; } }
+        public string ProjectFile { get { return _projectFile; } set { _projectFile = value; } }
+        public string ProjectAssetsJson { get { return _projectAssetsJson; } set { _projectAssetsJson = value; } }
         public string RuntimeConfigJson { get { return _runtimeConfigJson; } set { _runtimeConfigJson = value; } }
         public string DepsJson { get { return _depsJson; } set { _depsJson = value; } }
         public string AppDll { get { return _appDll; } set { _appDll = value; } }
@@ -53,8 +50,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _sharedLibraryExtension = sharedLibraryExtension;
             _sharedLibraryPrefix = sharedLibraryPrefix;
             _projectName = Path.GetFileName(_projectDirectory);
-            _projectJson = Path.Combine(_projectDirectory, "project.json");
-            _projectLockJson = Path.Combine(_projectDirectory, "project.lock.json");
+            _projectFile = Path.Combine(_projectDirectory, $"{_projectName}.csproj");
+            _projectAssetsJson = Path.Combine(_projectDirectory, "obj", "project.assets.json");
 
             _outputDirectory = outputDirectory ?? Path.Combine(_projectDirectory, "bin");
             if (Directory.Exists(_outputDirectory))
@@ -80,12 +77,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public bool IsRestored()
         {
-            if (string.IsNullOrEmpty(_projectLockJson))
+            if (string.IsNullOrEmpty(_projectAssetsJson))
             {
                 return false;
             }
 
-            return File.Exists(_projectLockJson);
+            return File.Exists(_projectAssetsJson);
         }
 
         private void CopyRecursive(string sourceDirectory, string destinationDirectory, bool overwrite = false)
