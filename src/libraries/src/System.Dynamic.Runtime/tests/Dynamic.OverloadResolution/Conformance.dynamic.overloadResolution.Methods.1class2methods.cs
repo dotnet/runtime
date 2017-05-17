@@ -4170,6 +4170,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Meth
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19895 - Switch over to real HasSameMetadataDefinitionAs() - once CoreRt implements it.", TargetFrameworkMonikers.UapAot)]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
