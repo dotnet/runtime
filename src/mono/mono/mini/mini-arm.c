@@ -4033,6 +4033,12 @@ mono_arm_thumb_supported (void)
 	return thumb_supported;
 }
 
+gboolean
+mono_arm_eabi_supported (void)
+{
+	return eabi_supported;
+}
+
 #ifndef DISABLE_JIT
 
 static guint8*

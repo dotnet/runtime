@@ -390,6 +390,9 @@ mono_arm_resume_unwind (guint32 dummy1, mgreg_t pc, mgreg_t sp, mgreg_t *int_reg
 gboolean
 mono_arm_thumb_supported (void);
 
+gboolean
+mono_arm_eabi_supported (void);
+
 GSList*
 mono_arm_get_exception_trampolines (gboolean aot);
 

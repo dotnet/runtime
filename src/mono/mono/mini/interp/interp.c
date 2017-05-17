@@ -67,6 +67,9 @@
 #include <mono/mini/mini.h>
 #include <mono/mini/jit-icalls.h>
 
+#ifdef TARGET_ARM
+#include <mono/mini/mini-arm.h>
+#endif
 
 /* Mingw 2.1 doesnt need this any more, but leave it in for now for older versions */
 #ifdef _WIN32
@@ -717,6 +720,10 @@ static MonoPIFunc mono_interp_enter_icall_trampoline = NULL;
 static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvocation *frame)
 {
 	InterpMethodArguments *margs = g_malloc0 (sizeof (InterpMethodArguments));
+
+#ifdef TARGET_ARM
+	g_assert (mono_arm_eabi_supported ());
+#endif
 
 	if (sig->hasthis)
 		margs->ilen++;
