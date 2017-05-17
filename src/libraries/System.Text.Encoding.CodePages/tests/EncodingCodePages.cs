@@ -510,6 +510,8 @@ namespace System.Text.Tests
             Assert.NotNull(defaultEncoding);
             mappedEncoding = Map(defaultEncoding.CodePage, defaultEncoding.WebName);
             Assert.Contains(mappedEncoding, CrossplatformDefaultEncodings().Union(CodePageInfo().Select(i => Map((int)i[0], (string)i[1]))));
+
+            TestRegister1252();
         }
 
         private static void ValidateDefaultEncodings()
@@ -594,8 +596,9 @@ namespace System.Text.Tests
             Assert.All(name, c => Assert.True(c >= ' ' && c < '~' + 1, "Name: " + name + " contains character: " + c));
         }
 
-        [Fact]
-        public static void BugTest()
+        // This test is run as part of the default mappings test, since it modifies global state which that test
+        // depends on.
+        public static void TestRegister1252()
         {
             // This test case ensure we can map all 1252 codepage codepoints without any exception.
             string s1252Result = 
