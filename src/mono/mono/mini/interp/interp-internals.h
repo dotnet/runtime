@@ -39,6 +39,10 @@ typedef struct {
 	union {
 		gint32 i;
 		gint64 l;
+		struct {
+			gint32 lo;
+			gint32 hi;
+		} pair;
 		double f;
 		/* native size integer and pointer types */
 		gpointer p;

@@ -750,7 +750,12 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 			break;
 #if SIZEOF_VOID_P == 4
 		case MONO_TYPE_I8:
-			g_assert (0);
+#ifdef TARGET_ARM
+			/* pairs begin at even registers */
+			if (margs->ilen & 1)
+				margs->ilen++;
+#endif
+			margs->ilen += 2;
 			break;
 #endif
 		case MONO_TYPE_R4:
@@ -820,9 +825,22 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Mon
 			int_i++;
 			break;
 #if SIZEOF_VOID_P == 4
-		case MONO_TYPE_I8:
-			g_assert (0);
+		case MONO_TYPE_I8: {
+			stackval *sarg = &frame->stack_args [i];
+#ifdef TARGET_ARM
+			/* pairs begin at even registers */
+			if (int_i & 1)
+				int_i++;
+#endif
+			margs->iargs [int_i] = (gpointer) sarg->data.pair.lo;
+			int_i++;
+			margs->iargs [int_i] = (gpointer) sarg->data.pair.hi;
+#if DEBUG_INTERP
+			g_print ("build_args_from_sig: margs->iargs [%d/%d]: 0x%016llx, hi=0x%08x lo=0x%08x (frame @ %d)\n", int_i - 1, int_i, *((guint64 *) &margs->iargs [int_i - 1]), sarg->data.pair.hi, sarg->data.pair.lo, i);
+#endif
+			int_i++;
 			break;
+		}
 #endif
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
