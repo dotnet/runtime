@@ -93,7 +93,7 @@ Powershell version must be 3.0 or higher. This should be the case for Windows 8 
 ## DotNet Core SDK
 While not strictly needed to build or tests the .NET Core repository, having the .NET Core SDK installed lets 
 you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the 
-[Using Your Build](Documentation/workflow/UsingYourBuild.md) instructions.  Visual Studio 2015 (update 3) should have
+[Using Your Build](../workflow/UsingYourBuild.md) instructions.  Visual Studio 2015 (update 3) should have
 installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .Net Core SDK](https://www.microsoft.com/net/core) page.  
 
 ## Adding to the default PATH variable
