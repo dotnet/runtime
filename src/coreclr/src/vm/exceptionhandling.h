@@ -21,8 +21,6 @@
 
 #include "exstatecommon.h"
 
-LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo);
-
 EXTERN_C EXCEPTION_DISPOSITION
 ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord
           WIN64_ARG(IN     ULONG64               MemoryStackFp)
