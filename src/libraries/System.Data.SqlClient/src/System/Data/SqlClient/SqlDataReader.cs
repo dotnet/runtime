@@ -19,7 +19,7 @@ using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
 {
-    public class SqlDataReader : DbDataReader, IDbColumnSchemaGenerator
+    public class SqlDataReader : DbDataReader, IDataReader, IDbColumnSchemaGenerator
     {
         private enum ALTROWSTATUS
         {
