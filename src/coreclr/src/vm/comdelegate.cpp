@@ -2631,7 +2631,7 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
 }
 FCIMPLEND
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
 FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 {
     FCALL_CONTRACT;
@@ -2754,7 +2754,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 }
 FCIMPLEND
 
-#else // FEATURE_STUBS_AS_IL
+#else // FEATURE_MULTICASTSTUB_AS_IL
 
 FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
 {
@@ -2813,7 +2813,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
     return pStub->GetEntryPoint();
 }
 FCIMPLEND
-#endif // FEATURE_STUBS_AS_IL
+#endif // FEATURE_MULTICASTSTUB_AS_IL
 
 #ifdef FEATURE_STUBS_AS_IL
 PCODE COMDelegate::GetSecureInvoke(MethodDesc* pMD)

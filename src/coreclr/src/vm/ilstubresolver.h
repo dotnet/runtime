@@ -82,9 +82,11 @@ protected:
 #ifdef FEATURE_ARRAYSTUB_AS_IL 
         ArrayOpStub,
 #endif
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+        MulticastDelegateStub,
+#endif
 #ifdef FEATURE_STUBS_AS_IL
         SecureDelegateStub,
-        MulticastDelegateStub,
         UnboxingILStub,
         InstantiatingStub,
 #endif

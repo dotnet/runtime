@@ -66,6 +66,7 @@
     <FeatureXplatEventSource>true</FeatureXplatEventSource>
 
     <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
+    <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
     <FeatureStubsAsIL>true</FeatureStubsAsIL>
 
     <!-- Windows specific features -->
@@ -81,7 +82,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <FeatureArrayStubAsIL Condition="('$(TargetArch)' == 'arm') or ('$(TargetArch)' == 'amd64') or ('$(TargetArch)' == 'arm64')">true</FeatureArrayStubAsIL>
+    <FeatureArrayStubAsIL Condition="'$(TargetArch)' != 'i386'">true</FeatureArrayStubAsIL>
+    <FeatureMulticastStubAsIL Condition="'$(TargetArch)' != 'i386'">true</FeatureMulticastStubAsIL>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeatureStubsAsIL Condition="'$(TargetArch)' == 'arm64'">true</FeatureStubsAsIL>
     <FeatureUseLcid>true</FeatureUseLcid>

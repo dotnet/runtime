@@ -1706,14 +1706,14 @@ BOOL ILStubManager::DoTraceStub(PCODE stubStartAddress,
 
     PCODE traceDestination = NULL;
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
     MethodDesc* pStubMD = ExecutionManager::GetCodeMethodDesc(stubStartAddress);
     if (pStubMD != NULL && pStubMD->AsDynamicMethodDesc()->IsMulticastStub())
     {
         traceDestination = GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper);
     }
     else
-#endif // FEATURE_STUBS_AS_IL
+#endif // FEATURE_MULTICASTSTUB_AS_IL
     {
         // This call is going out to unmanaged code, either through pinvoke or COM interop.
         traceDestination = stubStartAddress;
@@ -1813,7 +1813,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     PCODE stubIP = GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if (stubIP == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper))
     {
         stubIP = (PCODE)*pRetAddr;
@@ -1830,7 +1830,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     // See code:ILStubCache.CreateNewMethodDesc for the code that sets flags on stub MDs
     PCODE target;
 
-#ifdef FEATURE_STUBS_AS_IL
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
     if(pStubMD->IsMulticastStub())
     {
         _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(StubHelpers::MulticastDebuggerTraceHelper));
@@ -1859,7 +1859,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
 
     }
     else 
-#endif // FEATURE_STUBS_AS_IL
+#endif // FEATURE_MULTICASTSTUB_AS_IL
     if (pStubMD->IsReverseStub())
     {
         if (pStubMD->IsStatic())
