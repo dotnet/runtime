@@ -35,7 +35,13 @@ private:
     bool m_needStack;
 
     // True if the event is current enabled.
-    bool m_enabled;
+    Volatile<bool> m_enabled;
+
+    // Metadata
+    BYTE *m_pMetadata;
+
+    // Metadata length;
+    unsigned int m_metadataLength;
 
     // Refreshes the runtime state for this event.
     // Called by EventPipeProvider when the provider configuration changes.
@@ -43,9 +49,10 @@ private:
 
     // Only EventPipeProvider can create events.
     // The provider is responsible for allocating and freeing events.
-    EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack);
+    EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
-public:
+  public:
+    ~EventPipeEvent();
 
     // Get the provider associated with this event.
     EventPipeProvider* GetProvider() const;
@@ -67,6 +74,12 @@ public:
 
     // True if the event is currently enabled.
     bool IsEnabled() const;
+
+    // Get metadata
+    BYTE *GetMetadata() const;
+
+    // Get metadata length
+    unsigned int GetMetadataLength() const;
 };
 
 #endif // FEATURE_PERFTRACING

@@ -149,8 +149,11 @@ publish/
 
 # NuGet Packages
 *.nupkg
+*.nuget.g.props
+*.nuget.g.targets
 **/packages/*
 project.lock.json
+project.assets.json
 
 # Windows Azure Build Output
 csx/

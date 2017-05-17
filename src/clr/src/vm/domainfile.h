@@ -24,9 +24,6 @@ class DomainModule;
 class Assembly;
 class Module;
 class DynamicMethodTable;
-struct AssemblyLoadSecurity;
-
-typedef VPTR(class IAssemblySecurityDescriptor) PTR_IAssemblySecurityDescriptor;
 
 enum FileLoadLevel
 {
@@ -518,15 +515,6 @@ public:
         return PTR_PEAssembly(m_pFile);
     }
 
-
-    // Returns security information for the assembly based on the codebase
-    void GetSecurityIdentity(SString &codebase, SecZone *pdwZone, DWORD dwFlags, BYTE *pbUniqueID, DWORD *pcbUniqueID);
-
-    IAssemblySecurityDescriptor* GetSecurityDescriptor()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return static_cast<IAssemblySecurityDescriptor*>(m_pSecurityDescriptor);
-    }
 #ifdef FEATURE_LOADER_OPTIMIZATION
     
 public:
@@ -740,7 +728,7 @@ public:
 public:
     ~DomainAssembly();
 private:
-    DomainAssembly(AppDomain *pDomain, PEFile *pFile, AssemblyLoadSecurity *pLoadSecurity, LoaderAllocator *pLoaderAllocator);
+    DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *pLoaderAllocator);
 #endif
 
     // ------------------------------------------------------------
@@ -774,7 +762,6 @@ private:
 
     BOOL ShouldLoadDomainNeutral();
     BOOL ShouldLoadDomainNeutralHelper();
-    BOOL ShouldSkipPolicyResolution();
 
     // ------------------------------------------------------------
     // Instance data
@@ -782,12 +769,10 @@ private:
 
   private:
     LOADERHANDLE                            m_hExposedAssemblyObject;
-    PTR_IAssemblySecurityDescriptor         m_pSecurityDescriptor;
     PTR_Assembly                            m_pAssembly;
     DebuggerAssemblyControlFlags            m_debuggerFlags;
     CMD_State                               m_MissingDependenciesCheckStatus;
     ArrayList                               m_Modules;
-    BOOL                                    m_fSkipPolicyResolution;
     BOOL                                    m_fDebuggerUnloadStarted;
     BOOL                                    m_fCollectible;
     Volatile<bool>                          m_fHostAssemblyPublished;

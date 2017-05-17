@@ -6,7 +6,6 @@ namespace System.Runtime.CompilerServices
 {
     /// IMPORTANT: Keep this in sync with corhdr.h
     [Flags]
-    [Serializable]
     public enum CompilationRelaxations : int
     {
         NoStringInterning = 0x0008  // Start in 0x0008, we had other non public flags in this enum before,

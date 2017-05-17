@@ -224,12 +224,10 @@ class AssemblySpec  : public BaseAssemblySpec
         StackCrawlMark *pCallerStackMark  = NULL );
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel, 
-                           AssemblyLoadSecurity *pLoadSecurity = NULL,
                            BOOL fThrowOnFileNotFound = TRUE,
                            BOOL fRaisePrebindEvents = TRUE,
                            StackCrawlMark *pCallerStackMark = NULL);
     DomainAssembly *LoadDomainAssembly(FileLoadLevel targetLevel,
-                                       AssemblyLoadSecurity *pLoadSecurity = NULL,
                                        BOOL fThrowOnFileNotFound = TRUE,
                                        BOOL fRaisePrebindEvents = TRUE,
                                        StackCrawlMark *pCallerStackMark = NULL);

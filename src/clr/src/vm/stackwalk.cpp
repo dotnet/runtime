@@ -1133,7 +1133,7 @@ void StackFrameIterator::CommonCtor(Thread * pThread, PTR_Frame pFrame, ULONG32 
     m_fDidFuncletReportGCReferences = true;
 #endif // WIN64EXCEPTIONS
 
-#if !defined(_TARGET_X86_)
+#if defined(RECORD_RESUMABLE_FRAME_SP)
     m_pvResumableFrameTargetSP = NULL;
 #endif
 } // StackFrameIterator::CommonCtor()
@@ -2640,7 +2640,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
             {
                 m_crawl.pFrame->UpdateRegDisplay(m_crawl.pRD);
 
-#if !defined(_TARGET_X86_)
+#if defined(RECORD_RESUMABLE_FRAME_SP)
                 CONSISTENCY_CHECK(NULL == m_pvResumableFrameTargetSP);
 
                 if (m_crawl.isFirst)
@@ -2668,7 +2668,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
                     EECodeManager::EnsureCallerContextIsValid(m_crawl.pRD, m_crawl.GetStackwalkCacheEntry());
                     m_pvResumableFrameTargetSP = (LPVOID)GetSP(m_crawl.pRD->pCallerContext);
                 }
-#endif // !_TARGET_X86_
+#endif // RECORD_RESUMABLE_FRAME_SP
 
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(WIN64EXCEPTIONS)
@@ -3119,7 +3119,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-#if !defined(_TARGET_X86_)
+#if defined(RECORD_RESUMABLE_FRAME_SP)
     if (m_pvResumableFrameTargetSP)
     {
         // We expect that if we saw a resumable frame, the next managed
@@ -3133,7 +3133,7 @@ void StackFrameIterator::PreProcessingForManagedFrames(void)
         m_pvResumableFrameTargetSP = NULL;
         m_crawl.isFirst = true;
     }
-#endif // !_TARGET_X86_
+#endif // RECORD_RESUMABLE_FRAME_SP
 
 #if !defined(DACCESS_COMPILE)
     m_pCachedGSCookie = (GSCookie*)m_crawl.GetCodeManager()->GetGSCookieAddr(

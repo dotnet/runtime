@@ -9868,7 +9868,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
         GCX_FORBID();
 
         // Some managed methods, believe it or not, can push capital-F Frames on the Frame chain.
-        // The example I've found involves SecurityContextFrame.Push/Pop.
         // If this happens, executing the EX_CATCH below will pop it, which is bad.
         // So detect that case, pop the explicitly-pushed frame, and push it again after the EX_CATCH.
         // (Asserting that there is only 1 such frame!)

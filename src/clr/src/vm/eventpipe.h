@@ -7,15 +7,27 @@
 
 #ifdef FEATURE_PERFTRACING
 
-#include "crst.h"
-#include "stackwalk.h"
-
+class CrstStatic;
 class EventPipeConfiguration;
 class EventPipeEvent;
 class EventPipeFile;
 class EventPipeJsonFile;
+class EventPipeBuffer;
+class EventPipeBufferManager;
+class EventPipeProvider;
 class MethodDesc;
 class SampleProfilerEventInstance;
+struct EventPipeProviderConfiguration;
+
+// Define the event pipe callback to match the ETW callback signature.
+typedef void (*EventPipeCallback)(
+    LPCGUID SourceID,
+    ULONG IsEnabled,
+    UCHAR Level,
+    ULONGLONG MatchAnyKeywords,
+    ULONGLONG MatchAllKeywords,
+    void *FilterData,
+    void *CallbackContext);
 
 class StackContents
 {
@@ -27,9 +39,11 @@ private:
     // Top of stack is at index 0.
     UINT_PTR m_stackFrames[MAX_STACK_DEPTH];
 
+#ifdef _DEBUG
     // Parallel array of MethodDesc pointers.
     // Used for debug-only stack printing.
     MethodDesc* m_methods[MAX_STACK_DEPTH];
+#endif // _DEBUG
 
     // The next available slot in StackFrames.
     unsigned int m_nextAvailableFrame;
@@ -41,6 +55,18 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         Reset();
+    }
+
+    void CopyTo(StackContents *pDest)
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(pDest != NULL);
+
+        memcpy_s(pDest->m_stackFrames, MAX_STACK_DEPTH * sizeof(UINT_PTR), m_stackFrames, sizeof(UINT_PTR) * m_nextAvailableFrame);
+#ifdef _DEBUG
+        memcpy_s(pDest->m_methods, MAX_STACK_DEPTH * sizeof(MethodDesc*), m_methods, sizeof(MethodDesc*) * m_nextAvailableFrame);
+#endif
+        pDest->m_nextAvailableFrame = m_nextAvailableFrame;
     }
 
     void Reset()
@@ -77,6 +103,7 @@ public:
         return m_stackFrames[frameIndex];
     }
 
+#ifdef _DEBUG
     MethodDesc* GetMethod(unsigned int frameIndex)
     {
         LIMITED_METHOD_CONTRACT;
@@ -89,6 +116,7 @@ public:
 
         return m_methods[frameIndex];
     }
+#endif // _DEBUG
 
     void Append(UINT_PTR controlPC, MethodDesc *pMethod)
     {
@@ -97,7 +125,9 @@ public:
         if(m_nextAvailableFrame < MAX_STACK_DEPTH)
         {
             m_stackFrames[m_nextAvailableFrame] = controlPC;
+#ifdef _DEBUG
             m_methods[m_nextAvailableFrame] = pMethod;
+#endif
             m_nextAvailableFrame++;
         }
     }
@@ -123,6 +153,7 @@ class EventPipe
     friend class EventPipeConfiguration;
     friend class EventPipeFile;
     friend class EventPipeProvider;
+    friend class EventPipeBufferManager;
     friend class SampleProfiler;
 
     public:
@@ -137,17 +168,30 @@ class EventPipe
         static void EnableOnStartup();
 
         // Enable tracing via the event pipe.
-        static void Enable();
+        static void Enable(
+            LPCWSTR strOutputPath,
+            uint circularBufferSizeInMB,
+            EventPipeProviderConfiguration *pProviders,
+            int numProviders);
 
         // Disable tracing via the event pipe.
         static void Disable();
+
+        // Specifies whether or not the event pipe is enabled.
+        static bool Enabled();
+
+        // Create a provider.
+        static EventPipeProvider* CreateProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+
+        // Delete a provider.
+        static void DeleteProvider(EventPipeProvider *pProvider);
 
         // Write out an event.
         // Data is written as a serialized blob matching the ETW serialization conventions.
         static void WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length);
 
         // Write out a sample profile event.
-        static void WriteSampleProfileEvent(SampleProfilerEventInstance &instance);
+        static void WriteSampleProfileEvent(Thread *pSamplingThread, Thread *pTargetThread, StackContents &stackContents);
         
         // Get the managed call stack for the current thread.
         static bool WalkManagedStackForCurrentThread(StackContents &stackContents);
@@ -170,8 +214,98 @@ class EventPipe
         static CrstStatic s_configCrst;
         static bool s_tracingInitialized;
         static EventPipeConfiguration *s_pConfig;
+        static EventPipeBufferManager *s_pBufferManager;
         static EventPipeFile *s_pFile;
+#ifdef _DEBUG
+        static EventPipeFile *s_pSyncFile;
         static EventPipeJsonFile *s_pJsonFile;
+#endif // _DEBUG
+};
+
+struct EventPipeProviderConfiguration
+{
+
+private:
+
+    LPCWSTR m_pProviderName;
+    UINT64 m_keywords;
+    unsigned int m_loggingLevel;
+
+public:
+
+    EventPipeProviderConfiguration()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pProviderName = NULL;
+        m_keywords = NULL;
+        m_loggingLevel = 0;
+    }
+
+    EventPipeProviderConfiguration(
+        LPCWSTR pProviderName,
+        UINT64 keywords,
+        unsigned int loggingLevel)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pProviderName = pProviderName;
+        m_keywords = keywords;
+        m_loggingLevel = loggingLevel;
+    }
+
+    LPCWSTR GetProviderName() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pProviderName;
+    }
+
+    UINT64 GetKeywords() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_keywords;
+    }
+
+    unsigned int GetLevel() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_loggingLevel;
+    }
+};
+
+class EventPipeInternal
+{
+
+public:
+
+    static void QCALLTYPE Enable(
+        __in_z LPCWSTR outputFile,
+        unsigned int circularBufferSizeInMB,
+        long profilerSamplingRateInNanoseconds,
+        EventPipeProviderConfiguration *pProviders,
+        int numProviders);
+
+    static void QCALLTYPE Disable();
+
+    static INT_PTR QCALLTYPE CreateProvider(
+        GUID providerID,
+        EventPipeCallback pCallbackFunc);
+
+    static INT_PTR QCALLTYPE DefineEvent(
+        INT_PTR provHandle,
+        unsigned int eventID,
+        __int64 keywords,
+        unsigned int eventVersion,
+        unsigned int level,
+        void *pMetadata,
+        unsigned int metadataLength);
+
+    static void QCALLTYPE DeleteProvider(
+        INT_PTR provHandle);
+
+    static void QCALLTYPE WriteEvent(
+        INT_PTR eventHandle,
+        unsigned int eventID,
+        void *pData,
+        unsigned int length);
 };
 
 #endif // FEATURE_PERFTRACING

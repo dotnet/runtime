@@ -6,6 +6,7 @@
 #ifndef __EVENTPIPE_JSONFILE_H__
 #define __EVENTPIPE_JSONFILE_H__
 
+#ifdef _DEBUG
 #ifdef FEATURE_PERFTRACING
 
 #include "common.h"
@@ -44,5 +45,6 @@ class EventPipeJsonFile
 };
 
 #endif // FEATURE_PERFTRACING
+#endif // _DEBUG
 
 #endif // __EVENTPIPE_JSONFILE_H__

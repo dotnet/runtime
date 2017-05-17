@@ -20,6 +20,7 @@
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <!-- These prevent the default MsBuild targets from referencing System.dll and mscorlib.dll -->
+    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
     <SubsystemVersion>6.00</SubsystemVersion>
@@ -86,11 +87,9 @@
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
     <DebugType>portable</DebugType>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
     <DefineConstants>PLATFORM_OSX;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-
   <!-- Assembly attributes -->
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
@@ -312,11 +311,10 @@
     <Compile Include="$(BclSourcesRoot)\System\AppDomain.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BitConverter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Boolean.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.cs" />
@@ -566,6 +564,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
     <Compile Condition="'$(FeatureXplatEventSource)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
+    <Compile Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipe.cs" />
+    <Compile Condition="'$(FeaturePerfTracing)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventPipeEventProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />
@@ -664,6 +664,7 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -678,6 +679,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
@@ -689,8 +691,6 @@
     <Compile Include="$(CommonPath)\System\SR.cs" />
     <!-- Include Internals visible to file in the compilation -->
     <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
-    <!-- TODO list of types to be cleaned up from CoreLib -->
-    <Compile Include="$(BclSourcesRoot)\CleanupToDoList.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />

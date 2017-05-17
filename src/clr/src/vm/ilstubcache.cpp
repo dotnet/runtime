@@ -216,6 +216,14 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     }
     else
 #endif
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+    if (SF_IsMulticastDelegateStub(dwStubFlags))
+    {
+        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdMulticastStub;
+        pMD->GetILStubResolver()->SetStubType(ILStubResolver::MulticastDelegateStub);
+    }
+    else
+#endif
 #ifdef FEATURE_STUBS_AS_IL
     if (SF_IsSecureDelegateStub(dwStubFlags))
     {
@@ -223,22 +231,16 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::SecureDelegateStub);
     }
     else
-    if (SF_IsMulticastDelegateStub(dwStubFlags))
-    {
-        pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdMulticastStub;
-        pMD->GetILStubResolver()->SetStubType(ILStubResolver::MulticastDelegateStub);
-    }	
-    else
     if (SF_IsUnboxingILStub(dwStubFlags))
     {
         pMD->m_dwExtendedFlags |= DynamicMethodDesc::nomdUnboxingILStub;
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::UnboxingILStub);
-    }	
+    }
     else
     if (SF_IsInstantiatingStub(dwStubFlags))
     {
         pMD->GetILStubResolver()->SetStubType(ILStubResolver::InstantiatingStub);
-    }	
+    }
     else
 #endif
 #ifdef FEATURE_COMINTEROP

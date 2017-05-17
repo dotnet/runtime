@@ -237,7 +237,7 @@ int g_rgCrstLevelMap[] =
     3,			// CrstDynamicMT
     3,			// CrstDynLinkZapItems
     7,			// CrstEtwTypeLogHash
-    11,			// CrstEventPipe
+    17,			// CrstEventPipe
     0,			// CrstEventStore
     0,			// CrstException
     7,			// CrstExecuteManLock
@@ -560,4 +560,3 @@ inline static LPCSTR GetCrstName(CrstType crstType)
 }
 
 #endif // defined(__IN_CRST_CPP) && defined(_DEBUG)
-

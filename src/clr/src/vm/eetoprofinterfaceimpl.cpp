@@ -415,6 +415,7 @@ EEToProfInterfaceImpl::EEToProfInterfaceImpl() :
     m_pCallback6(NULL),
     m_pCallback7(NULL),
     m_pCallback8(NULL),
+    m_pCallback9(NULL),
     m_hmodProfilerDLL(NULL),
     m_fLoadedViaAttach(FALSE),
     m_pProfToEE(NULL),
@@ -665,21 +666,25 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     m_hmodProfilerDLL = hmodProfilerDLL.Extract();
     hmodProfilerDLL = NULL;
 
-    // The profiler may optionally support ICorProfilerCallback3,4,5,6,7,8.  Let's check.
+    // The profiler may optionally support ICorProfilerCallback3,4,5,6,7,8,9.  Let's check.
 
-    ReleaseHolder<ICorProfilerCallback8> pCallback8;
+    ReleaseHolder<ICorProfilerCallback9> pCallback9;
     hr = m_pCallback2->QueryInterface(
-        IID_ICorProfilerCallback8,
-        (LPVOID *)&pCallback8);
-    if (SUCCEEDED(hr) && (pCallback8 != NULL))
+        IID_ICorProfilerCallback9,
+        (LPVOID *)&pCallback9);
+    if (SUCCEEDED(hr) && (pCallback9 != NULL))
     {
         // Nifty.  Transfer ownership to this class
-        _ASSERTE(m_pCallback8 == NULL);
-        m_pCallback8 = pCallback8.Extract();
-        pCallback8 = NULL;
+        _ASSERTE(m_pCallback9 == NULL);
+        m_pCallback9 = pCallback9.Extract();
+        pCallback9 = NULL;
 
-        // And while we're at it, we must now also have an ICorProfilerCallback3,4,5,6,7
+        // And while we're at it, we must now also have an ICorProfilerCallback3,4,5,6,7,8
         // due to inheritance relationship of the interfaces
+        _ASSERTE(m_pCallback8 == NULL);
+        m_pCallback8 = static_cast<ICorProfilerCallback8 *>(m_pCallback9);
+        m_pCallback8->AddRef();
+
         _ASSERTE(m_pCallback7 == NULL);
         m_pCallback7 = static_cast<ICorProfilerCallback7 *>(m_pCallback8);
         m_pCallback7->AddRef();
@@ -699,6 +704,44 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
         _ASSERTE(m_pCallback3 == NULL);
         m_pCallback3 = static_cast<ICorProfilerCallback3 *>(m_pCallback4);
         m_pCallback3->AddRef();
+    }
+
+    if (m_pCallback8 == NULL)
+    {
+        ReleaseHolder<ICorProfilerCallback8> pCallback8;
+        hr = m_pCallback2->QueryInterface(
+            IID_ICorProfilerCallback8,
+            (LPVOID *)&pCallback8);
+        if (SUCCEEDED(hr) && (pCallback8 != NULL))
+        {
+            // Nifty.  Transfer ownership to this class
+            _ASSERTE(m_pCallback8 == NULL);
+            m_pCallback8 = pCallback8.Extract();
+            pCallback8 = NULL;
+
+            // And while we're at it, we must now also have an ICorProfilerCallback3,4,5,6,7
+            // due to inheritance relationship of the interfaces
+
+            _ASSERTE(m_pCallback7 == NULL);
+            m_pCallback7 = static_cast<ICorProfilerCallback7 *>(m_pCallback8);
+            m_pCallback7->AddRef();
+
+            _ASSERTE(m_pCallback6 == NULL);
+            m_pCallback6 = static_cast<ICorProfilerCallback6 *>(m_pCallback7);
+            m_pCallback6->AddRef();
+
+            _ASSERTE(m_pCallback5 == NULL);
+            m_pCallback5 = static_cast<ICorProfilerCallback5 *>(m_pCallback6);
+            m_pCallback5->AddRef();
+
+            _ASSERTE(m_pCallback4 == NULL);
+            m_pCallback4 = static_cast<ICorProfilerCallback4 *>(m_pCallback5);
+            m_pCallback4->AddRef();
+
+            _ASSERTE(m_pCallback3 == NULL);
+            m_pCallback3 = static_cast<ICorProfilerCallback3 *>(m_pCallback4);
+            m_pCallback3->AddRef();
+        }
     }
 
     if (m_pCallback7 == NULL)
@@ -3215,6 +3258,38 @@ HRESULT EEToProfInterfaceImpl::JITCompilationStarted(FunctionID functionId,
         // whose try/catch blocks aren't visible to the contract system        
         PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
         return m_pCallback2->JITCompilationStarted(functionId, fIsSafeToBlock);
+    }
+}
+
+HRESULT EEToProfInterfaceImpl::DynamicMethodUnloaded(FunctionID functionId)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE; // RuntimeMethodHandle::Destroy (the caller) moves from QCALL to GCX_COOP
+        CAN_TAKE_LOCK;
+        SO_TOLERANT;
+    }
+    CONTRACTL_END;
+
+    CLR_TO_PROFILER_ENTRYPOINT((LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: DynamicMethodUnloaded 0x%p.\n",
+        functionId));
+
+    _ASSERTE(functionId);
+
+    if (m_pCallback9 == NULL)
+    {
+        return S_OK;
+    }
+
+    {
+        // All callbacks are really NOTHROW, but that's enforced partially by the profiler,
+        // whose try/catch blocks aren't visible to the contract system        
+        PERMANENT_CONTRACT_VIOLATION(ThrowsViolation, ReasonProfilerCallout);
+        return m_pCallback9->DynamicMethodUnloaded(functionId);
     }
 }
 

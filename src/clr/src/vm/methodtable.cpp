@@ -27,7 +27,6 @@
 #include "ecall.h"
 #include "dllimport.h"
 #include "gcdesc.h"
-#include "verifier.hpp"
 #include "jitinterface.h"
 #include "eeconfig.h"
 #include "log.h"

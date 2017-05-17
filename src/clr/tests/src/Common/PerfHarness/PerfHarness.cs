@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using Microsoft.Xunit.Performance.Api;

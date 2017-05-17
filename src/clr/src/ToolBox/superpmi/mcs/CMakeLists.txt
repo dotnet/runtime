@@ -1,8 +1,5 @@
 project(mcs)
 
-remove_definitions(-DUNICODE)
-remove_definitions(-D_UNICODE)
-
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 

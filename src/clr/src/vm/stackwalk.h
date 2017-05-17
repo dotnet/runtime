@@ -45,6 +45,10 @@ class AppDomain;
  #endif 
 #endif // _TARGET_X86_ && !FEATURE_PAL
 
+#if defined(WIN64EXCEPTIONS)
+#define RECORD_RESUMABLE_FRAME_SP
+#endif
+
 //************************************************************************
 // Enumerate all functions.
 //************************************************************************
@@ -707,9 +711,9 @@ private:
     bool          m_fDidFuncletReportGCReferences;
 #endif // WIN64EXCEPTIONS
 
-#if !defined(_TARGET_X86_)
+#if defined(RECORD_RESUMABLE_FRAME_SP)
     LPVOID m_pvResumableFrameTargetSP;
-#endif // !_TARGET_X86_
+#endif // RECORD_RESUMABLE_FRAME_SP
 };
 
 void SetUpRegdisplayForStackWalk(Thread * pThread, T_CONTEXT * pContext, REGDISPLAY * pRegdisplay);

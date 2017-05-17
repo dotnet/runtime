@@ -28,7 +28,6 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Serializable]
     public enum GCCollectionMode
     {
         Default = 0,
@@ -39,7 +38,6 @@ namespace System
     // !!!!!!!!!!!!!!!!!!!!!!!
     // make sure you change the def in vm\gc.h 
     // if you change this!
-    [Serializable]
     internal enum InternalGCCollectionMode
     {
         NonBlocking = 0x00000001,
@@ -51,7 +49,6 @@ namespace System
     // !!!!!!!!!!!!!!!!!!!!!!!
     // make sure you change the def in vm\gc.h 
     // if you change this!
-    [Serializable]
     public enum GCNotificationStatus
     {
         Succeeded = 0,

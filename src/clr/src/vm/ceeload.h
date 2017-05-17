@@ -52,7 +52,6 @@ class Stub;
 class MethodDesc;
 class FieldDesc;
 class Crst;
-class IAssemblySecurityDescriptor;
 class ClassConverter;
 class RefClassWriter;
 class ReflectionModule;
@@ -73,7 +72,6 @@ class MethodTable;
 class AppDomain;
 class DynamicMethodTable;
 struct CerPrepInfo;
-class ModuleSecurityDescriptor;
 #ifdef FEATURE_PREJIT
 class CerNgenRootTable;
 struct MethodContextElement;
@@ -1884,7 +1882,6 @@ protected:
     ClassLoader *GetClassLoader();
     PTR_BaseDomain GetDomain();
     ReJitManager * GetReJitManager();
-    IAssemblySecurityDescriptor* GetSecurityDescriptor();
 
     mdFile GetModuleRef()
     {
@@ -3420,8 +3417,6 @@ private:
 #endif // defined(FEATURE_PREJIT)
 
 public:
-    ModuleSecurityDescriptor* m_pModuleSecurityDescriptor;
-
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
     PTR_Assembly GetNativeMetadataAssemblyRefFromCache(DWORD rid)
     {

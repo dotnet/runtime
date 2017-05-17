@@ -16,7 +16,6 @@ namespace System
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Security;
-    using System.Security.Policy;
     using Path = System.IO.Path;
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
@@ -25,7 +24,6 @@ namespace System
     [Serializable]
     internal sealed class AppDomainSetup
     {
-        [Serializable]
         internal enum LoaderInformation
         {
             // If you add a new value, add the corresponding property
@@ -59,29 +57,9 @@ namespace System
         // of these fields or add new ones.
 
         private string[] _Entries;
-        private LoaderOptimization _LoaderOptimization;
 #pragma warning disable 169
         private String _AppBase; // for compat with v1.1
 #pragma warning restore 169
-        [OptionalField(VersionAdded = 2)]
-        private AppDomainInitializer _AppDomainInitializer;
-        [OptionalField(VersionAdded = 2)]
-        private string[] _AppDomainInitializerArguments;
-
-        // On the CoreCLR, this contains just the name of the permission set that we install in the new appdomain.
-        // Not the ToXml().ToString() of an ApplicationTrust object.
-        [OptionalField(VersionAdded = 2)]
-        private string _ApplicationTrust;
-        [OptionalField(VersionAdded = 2)]
-        private byte[] _ConfigurationBytes;
-#if FEATURE_COMINTEROP
-        [OptionalField(VersionAdded = 3)]
-        private bool _DisableInterfaceCache = false;
-#endif // FEATURE_COMINTEROP
-        [OptionalField(VersionAdded = 4)]
-        private string _AppDomainManagerAssembly;
-        [OptionalField(VersionAdded = 4)]
-        private string _AppDomainManagerType;
 
         // A collection of strings used to indicate which breaking changes shouldn't be applied
         // to an AppDomain. We only use the keys, the values are ignored.
@@ -120,23 +98,6 @@ namespace System
                         mine[i] = null;
                 }
 
-                _LoaderOptimization = copy._LoaderOptimization;
-
-                _AppDomainInitializerArguments = copy.AppDomainInitializerArguments;
-                _ApplicationTrust = copy._ApplicationTrust;
-
-                if (copyDomainBoundData)
-                    _AppDomainInitializer = copy.AppDomainInitializer;
-                else
-                    _AppDomainInitializer = null;
-
-                _ConfigurationBytes = null; 
-#if FEATURE_COMINTEROP
-                _DisableInterfaceCache = copy._DisableInterfaceCache;
-#endif // FEATURE_COMINTEROP
-                _AppDomainManagerAssembly = copy.AppDomainManagerAssembly;
-                _AppDomainManagerType = copy.AppDomainManagerType;
-
                 if (copy._CompatFlags != null)
                 {
                     SetCompatibilitySwitches(copy._CompatFlags.Keys);
@@ -149,13 +110,10 @@ namespace System
 #endif
 
             }
-            else
-                _LoaderOptimization = LoaderOptimization.NotSpecified;
         }
 
         public AppDomainSetup()
         {
-            _LoaderOptimization = LoaderOptimization.NotSpecified;
         }
 
         internal void SetupDefaults(string imageLocation, bool imageLocationAlreadyNormalized = false)
@@ -187,18 +145,6 @@ namespace System
                     _Entries = new String[(int)LoaderInformation.LoaderMaximum];
                 return _Entries;
             }
-        }
-
-        public string AppDomainManagerAssembly
-        {
-            get { return _AppDomainManagerAssembly; }
-            set { _AppDomainManagerAssembly = value; }
-        }
-
-        public string AppDomainManagerType
-        {
-            get { return _AppDomainManagerType; }
-            set { _AppDomainManagerType = value; }
         }
 
         public String ApplicationBase
@@ -271,97 +217,5 @@ namespace System
                 Value[(int)LoaderInformation.ApplicationNameValue] = value;
             }
         }
-
-        public AppDomainInitializer AppDomainInitializer
-        {
-            get
-            {
-                return _AppDomainInitializer;
-            }
-
-            set
-            {
-                _AppDomainInitializer = value;
-            }
-        }
-        public string[] AppDomainInitializerArguments
-        {
-            get
-            {
-                return _AppDomainInitializerArguments;
-            }
-
-            set
-            {
-                _AppDomainInitializerArguments = value;
-            }
-        }
-
-        internal ApplicationTrust InternalGetApplicationTrust()
-        {
-            if (_ApplicationTrust == null) return null;
-            ApplicationTrust grantSet = new ApplicationTrust();
-            return grantSet;
-        }
-
-        internal void InternalSetApplicationTrust(String permissionSetName)
-        {
-            _ApplicationTrust = permissionSetName;
-        }
-
-        internal ApplicationTrust ApplicationTrust
-        {
-            get
-            {
-                return InternalGetApplicationTrust();
-            }
-        }
-
-        public LoaderOptimization LoaderOptimization
-        {
-            get
-            {
-                return _LoaderOptimization;
-            }
-
-            set
-            {
-                _LoaderOptimization = value;
-            }
-        }
-
-        internal static string LoaderOptimizationKey
-        {
-            get
-            {
-                return LOADER_OPTIMIZATION;
-            }
-        }
-
-        static internal int Locate(String s)
-        {
-            if (String.IsNullOrEmpty(s))
-                return -1;
-
-            Debug.Assert('A' == ACTAG_APP_BASE_URL[0], "Assumption violated");
-            if (s[0] == 'A' && s == ACTAG_APP_BASE_URL)
-                return (int)LoaderInformation.ApplicationBaseValue;
-
-            return -1;
-        }
-
-#if FEATURE_COMINTEROP
-        public bool SandboxInterop
-        {
-            get
-            {
-                return _DisableInterfaceCache;
-            }
-            set
-            {
-                _DisableInterfaceCache = value;
-            }
-        }
-#endif // FEATURE_COMINTEROP
     }
 }

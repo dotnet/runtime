@@ -141,7 +141,6 @@
 #include "context.h"
 #include "regdisp.h"
 #include "mscoree.h"
-#include "appdomainstack.h"
 #include "gcheaputilities.h"
 #include "gchandleutilities.h"
 #include "gcinfotypes.h"
@@ -184,6 +183,10 @@ typedef DPTR(PTR_ThreadLocalBlock) PTR_PTR_ThreadLocalBlock;
 #include "threaddebugblockinginfo.h"
 #include "interoputil.h"
 #include "eventtrace.h"
+
+#ifdef FEATURE_PERFTRACING
+class EventPipeBufferList;
+#endif // FEATURE_PERFTRACING
 
 #ifdef CROSSGEN_COMPILE
 
@@ -624,8 +627,6 @@ Thread* SetupThreadNoThrow(HRESULT *phresult = NULL);
 Thread* SetupUnstartedThread(BOOL bRequiresTSL=TRUE);
 void    DestroyThread(Thread *th);
 
-
-FCDECL0(INT32, GetRuntimeId_Wrapper);
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -4198,11 +4199,6 @@ public:
 private:
 
     //-------------------------------------------------------------------------
-    // AppDomains on the current call stack
-    //-------------------------------------------------------------------------
-    AppDomainStack  m_ADStack;
-
-    //-------------------------------------------------------------------------
     // Support creation of assemblies in DllMain (see ceemain.cpp)
     //-------------------------------------------------------------------------
     DomainFile* m_pLoadingFile;
@@ -4228,55 +4224,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_fInteropDebuggingHijacked;
-    }
-
-    inline DWORD IncrementOverridesCount();
-    inline DWORD DecrementOverridesCount();
-    inline DWORD GetOverridesCount();
-    inline DWORD IncrementAssertCount();
-    inline DWORD DecrementAssertCount();
-    inline DWORD GetAssertCount();
-    inline void PushDomain(ADID pDomain);
-    inline ADID PopDomain();
-    inline DWORD GetNumAppDomainsOnThread();
-    inline BOOL CheckThreadWideSpecialFlag(DWORD flags);
-    inline void InitDomainIteration(DWORD *pIndex);
-    inline ADID GetNextDomainOnStack(DWORD *pIndex, DWORD *pOverrides, DWORD *pAsserts);
-    inline void UpdateDomainOnStack(DWORD pIndex, DWORD asserts, DWORD overrides);
-
-    BOOL IsDefaultSecurityInfo(void)
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_ADStack.IsDefaultSecurityInfo();
-    }
-
-    BOOL AllDomainsHomogeneousWithNoStackModifiers(void)
-    {
-        WRAPPER_NO_CONTRACT;
-        return m_ADStack.AllDomainsHomogeneousWithNoStackModifiers();
-    }
-    
-    const AppDomainStack& GetAppDomainStack(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ADStack;
-    }
-    AppDomainStack* GetAppDomainStackPointer(void)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return &m_ADStack;
-    }
-
-    void SetAppDomainStack(const AppDomainStack& appDomainStack)
-    {
-        WRAPPER_NO_CONTRACT;
-        m_ADStack = appDomainStack; // this is a function call, massive operator=
-    }
-
-    void ResetSecurityInfo( void )
-    {
-        WRAPPER_NO_CONTRACT;
-        m_ADStack.ClearDomainStack();
     }
 
     void SetFilterContext(T_CONTEXT *pContext);
@@ -5333,6 +5280,40 @@ public:
         _ASSERTE(pAllLoggedTypes != NULL ? m_pAllLoggedTypes == NULL : TRUE);
         m_pAllLoggedTypes = pAllLoggedTypes;
     }
+
+#ifdef FEATURE_PERFTRACING
+private:
+    // The object that contains the list write buffers used by this thread.
+    Volatile<EventPipeBufferList*> m_pEventPipeBufferList;
+
+    // Whether or not the thread is currently writing an event.
+    Volatile<bool> m_eventWriteInProgress;
+
+public:
+    EventPipeBufferList* GetEventPipeBufferList()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pEventPipeBufferList;
+    }
+
+    void SetEventPipeBufferList(EventPipeBufferList *pList)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pEventPipeBufferList = pList;
+    }
+
+    bool GetEventWriteInProgress() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_eventWriteInProgress;
+    }
+
+    void SetEventWriteInProgress(bool value)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_eventWriteInProgress = value;
+    }
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_HIJACK
 private:

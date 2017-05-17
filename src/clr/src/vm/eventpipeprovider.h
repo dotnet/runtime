@@ -7,6 +7,8 @@
 
 #ifdef FEATURE_PERFTRACING
 
+#include "eventpipe.h"
+#include "eventpipeconfiguration.h"
 #include "slist.h"
 
 class EventPipeEvent;
@@ -21,20 +23,12 @@ typedef void (*EventPipeCallback)(
     void *FilterData,
     void *CallbackContext);
 
-enum class EventPipeEventLevel
-{
-    LogAlways,
-    Critical,
-    Error,
-    Warning,
-    Informational,
-    Verbose
-};
-
 class EventPipeProvider
 {
     // Declare friends.
+    friend class EventPipe;
     friend class EventPipeConfiguration;
+    friend class SampleProfiler;
 
 private:
     // The GUID of the provider.
@@ -59,9 +53,18 @@ private:
     // The optional provider callback data pointer.
     void *m_pCallbackData;
 
+    // The configuration object.
+    EventPipeConfiguration *m_pConfig;
+
+    // True if the provider has been deleted, but that deletion
+    // has been deferred until tracing is stopped.
+    bool m_deleteDeferred;
+
+    // Private constructor because all providers are created through EventPipe::CreateProvider.
+    EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+
 public:
 
-    EventPipeProvider(const GUID &providerID);
     ~EventPipeProvider();
 
     // Get the provider ID.
@@ -77,15 +80,16 @@ public:
     bool EventEnabled(INT64 keywords, EventPipeEventLevel eventLevel) const;
 
     // Create a new event.
-    EventPipeEvent* AddEvent(INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack);
+    EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
-    // Register a callback with the provider to be called on state change.
-    void RegisterCallback(EventPipeCallback pCallbackFunction, void *pData);
+  private:
 
-    // Unregister a callback.
-    void UnregisterCallback(EventPipeCallback pCallbackFunction);
-
-private:
+    // Create a new event, but allow needStack to be specified.
+    // In general, we want stack walking to be controlled by the consumer and not the producer of events.
+    // However, there are a couple of cases that we know we don't want to do a stackwalk that would affect performance significantly:
+    // 1. Sample profiler events: The sample profiler already does a stack walk of the target thread.  Doing one of the sampler thread is a waste.
+    // 2. Metadata events: These aren't as painful but because we have to keep this functionality around, might as well use it.
+    EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
     // Add an event to the provider.
     void AddEvent(EventPipeEvent &event);
@@ -99,6 +103,13 @@ private:
 
     // Invoke the provider callback.
     void InvokeCallback();
+
+    // Specifies whether or not the provider was deleted, but that deletion
+    // was deferred until after tracing is stopped.
+    bool GetDeleteDeferred() const;
+
+    // Defer deletion of the provider.
+    void SetDeleteDeferred();
 };
 
 #endif // FEATURE_PERFTRACING
