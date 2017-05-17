@@ -1611,6 +1611,9 @@ namespace Microsoft.SqlServer.Server
 
             switch (typeCode)
             {
+                case ExtendedClrTypeCode.DataTable:
+                    SetDataTable_Unchecked(sink, setters, ordinal, metaData, (DataTable)value);
+                    break;
                 case ExtendedClrTypeCode.DbDataReader:
                     SetDbDataReader_Unchecked(sink, setters, ordinal, metaData, (DbDataReader)value);
                     break;
@@ -1627,6 +1630,57 @@ namespace Microsoft.SqlServer.Server
                     SetCompatibleValue(sink, setters, ordinal, metaData, value, typeCode, offset);
                     break;
             }
+        }
+
+        private static void SetDataTable_Unchecked(
+                SmiEventSink_Default sink,
+                SmiTypedGetterSetter setters,
+                int ordinal,
+                SmiMetaData metaData,
+                DataTable value
+            )
+        {
+            // Get the target gettersetter
+            setters = setters.GetTypedGetterSetter(sink, ordinal);
+            sink.ProcessMessagesAndThrow();
+
+            // iterate over all records
+            //  if first record was obtained earlier, use it prior to pulling more
+            ExtendedClrTypeCode[] cellTypes = new ExtendedClrTypeCode[metaData.FieldMetaData.Count];
+            for (int i = 0; i < metaData.FieldMetaData.Count; i++)
+            {
+                cellTypes[i] = ExtendedClrTypeCode.Invalid;
+            }
+            foreach (DataRow row in value.Rows)
+            {
+                setters.NewElement(sink);
+                sink.ProcessMessagesAndThrow();
+
+                // Set all columns in the record
+                for (int i = 0; i < metaData.FieldMetaData.Count; i++)
+                {
+                    SmiMetaData fieldMetaData = metaData.FieldMetaData[i];
+                    if (row.IsNull(i))
+                    {
+                        SetDBNull_Unchecked(sink, setters, i);
+                    }
+                    else
+                    {
+                        object cellValue = row[i];
+
+                        // Only determine cell types for first row, to save expensive 
+                        if (ExtendedClrTypeCode.Invalid == cellTypes[i])
+                        {
+                            cellTypes[i] = MetaDataUtilsSmi.DetermineExtendedTypeCodeForUseWithSqlDbType(
+                                    fieldMetaData.SqlDbType, fieldMetaData.IsMultiValued, cellValue);
+                        }
+                        SetCompatibleValueV200(sink, setters, i, fieldMetaData, cellValue, cellTypes[i], 0, NoLengthLimit, null);
+                    }
+                }
+            }
+
+            setters.EndElements(sink);
+            sink.ProcessMessagesAndThrow();
         }
 
         // Copy multiple fields from reader to ITypedSettersV3
