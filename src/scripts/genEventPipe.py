@@ -122,7 +122,7 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = new EventPipeProvider(" +
+        " = EventPipe::CreateProvider(" +
         providerPrettyName +
         "GUID);\n")
     for eventNode in eventNodes:

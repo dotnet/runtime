@@ -208,6 +208,18 @@ void EventPipeProvider::InvokeCallback()
     }
 }
 
+bool EventPipeProvider::GetDeleteDeferred() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_deleteDeferred;
+}
+
+void EventPipeProvider::SetDeleteDeferred()
+{
+    LIMITED_METHOD_CONTRACT;
+    m_deleteDeferred = true;
+}
+
 void EventPipeProvider::RefreshAllEvents()
 {
     CONTRACTL

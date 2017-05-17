@@ -14,6 +14,7 @@ class EventPipeFile;
 class EventPipeJsonFile;
 class EventPipeBuffer;
 class EventPipeBufferManager;
+class EventPipeProvider;
 class MethodDesc;
 class SampleProfilerEventInstance;
 struct EventPipeProviderConfiguration;
@@ -178,6 +179,12 @@ class EventPipe
 
         // Specifies whether or not the event pipe is enabled.
         static bool Enabled();
+
+        // Create a provider.
+        static EventPipeProvider* CreateProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+
+        // Delete a provider.
+        static void DeleteProvider(EventPipeProvider *pProvider);
 
         // Write out an event.
         // Data is written as a serialized blob matching the ETW serialization conventions.
