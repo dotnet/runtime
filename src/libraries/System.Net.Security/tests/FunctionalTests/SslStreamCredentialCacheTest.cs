@@ -18,12 +18,7 @@ namespace System.Net.Security.Tests
     {
         [ActiveIssue(19699, TestPlatforms.Windows)]
         [Fact]
-        public void SslStream_SameCertUsedForClientAndServer_Ok()
-        {
-            SslSessionsCacheTest().GetAwaiter().GetResult();
-        }   
-
-        private static async Task SslSessionsCacheTest()
+        public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
 
