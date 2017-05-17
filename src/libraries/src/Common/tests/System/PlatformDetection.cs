@@ -388,6 +388,9 @@ namespace System
 
         public static bool IsReflectionEmitSupported = !PlatformDetection.IsNetNative;
 
+        // Tracked in: https://github.com/dotnet/corert/issues/3643 in case we change our mind about this.
+        public static bool IsInvokingStaticConstructorsSupported => !PlatformDetection.IsNetNative;
+
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
         public static bool IsXmlDsigXsltTransformSupported => PlatformDetection.IsReflectionEmitSupported;
