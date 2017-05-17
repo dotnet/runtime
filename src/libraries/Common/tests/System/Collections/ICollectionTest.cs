@@ -254,7 +254,6 @@ namespace Tests.Collections
         [InlineData(16, 20, 0, 0)]
         [InlineData(16, 20, 0, 4)]
         [InlineData(16, 24, 0, 4)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim arrays of rank 1 still WIP on UapAot: https://github.com/dotnet/corert/issues/3331")]
         public void CopyTo(
             int size,
             int arraySize,
