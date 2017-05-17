@@ -6573,6 +6573,13 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
 
             GenTreePtr tlsRef = gtNewIconHandleNode(WIN32_TLS_SLOTS, GTF_ICON_TLS_HDL);
 
+            // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
+            if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
+            {
+                tree->gtFlags &= ~GTF_FLD_INITCLASS;
+                tlsRef->gtFlags |= GTF_ICON_INITCLASS;
+            }
+
             tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
 
             if (dllRef != nullptr)
@@ -6627,6 +6634,12 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
                     FieldSeqNode* fieldSeq =
                         fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
                     addr->gtIntCon.gtFieldSeq = fieldSeq;
+                    // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
+                    if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
+                    {
+                        tree->gtFlags &= ~GTF_FLD_INITCLASS;
+                        addr->gtFlags |= GTF_ICON_INITCLASS;
+                    }
 
                     tree->SetOper(GT_IND);
                     // The GTF_FLD_NULLCHECK is the same bit as GTF_IND_ARR_LEN.
@@ -6657,6 +6670,13 @@ GenTreePtr Compiler::fgMorphField(GenTreePtr tree, MorphAddrContext* mac)
             else
             {
                 GenTreePtr addr = gtNewIconHandleNode((size_t)pFldAddr, GTF_ICON_STATIC_HDL);
+
+                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS
+                if ((tree->gtFlags & GTF_FLD_INITCLASS) != 0)
+                {
+                    tree->gtFlags &= ~GTF_FLD_INITCLASS;
+                    addr->gtFlags |= GTF_ICON_INITCLASS;
+                }
 
                 // There are two cases here, either the static is RVA based,
                 // in which case the type of the FIELD node is not a GC type
