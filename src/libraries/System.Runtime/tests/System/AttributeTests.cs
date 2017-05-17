@@ -157,6 +157,7 @@ namespace System.Tests
 
         [Fact]
         [StringValue("\uDFFF")]
+        [ActiveIssue("TFS 437293 - Invalid Utf8 string in custom attribute argument falls back to wrong value.", TargetFrameworkMonikers.UapAot)]
         public static void StringArgument_InvalidCodeUnits_FallbackUsed()
         {
             MethodInfo thisMethod = typeof(AttributeTests).GetTypeInfo().GetDeclaredMethod("StringArgument_InvalidCodeUnits_FallbackUsed");
