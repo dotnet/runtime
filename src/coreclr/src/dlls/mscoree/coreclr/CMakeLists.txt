@@ -73,6 +73,10 @@ if(FEATURE_MERGE_JIT_AND_ENGINE)
     set(CLRJIT_STATIC clrjit_static)
 endif(FEATURE_MERGE_JIT_AND_ENGINE)
 
+if(FEATURE_STANDALONE_GC_ONLY)
+    set(STANDALONE_GC gc_standalone)
+endif(FEATURE_STANDALONE_GC_ONLY)
+
 # IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
 # order dependent and changing the order can result in undefined symbols in the shared 
 # library.
@@ -83,7 +87,7 @@ set(CORECLR_LIBRARIES
     debug-pal
     ${LIB_UNWINDER}
     cee_wks
-    gc_wks
+    ${STANDALONE_GC}
     ${END_LIBRARY_GROUP} # End group of libraries that have circular references
     mdcompiler_wks
     mdruntime_wks
