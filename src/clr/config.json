@@ -348,12 +348,6 @@
       "values": [ "debian.8-x64", "fedora.24-x64", "fedora.25-x64", "opensuse.42.1-x64", "osx.10.12-x64", "rhel.7-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "ubuntu.16.10-x64" ],
       "defaultValue": "${__RuntimeId}"
     },
-    "UpdateDependencies": {
-      "description": "MsBuild target that updates project.json dependencies.",
-      "valueType": "target",
-      "values": [],
-      "defaultValue": ""
-    },
     "BatchRestorePackages": {
       "description": "MsBuild target that restores the packages.",
       "valueType": "target",

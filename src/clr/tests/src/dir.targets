@@ -50,11 +50,6 @@
     <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'">
-    <ProjectJson>$(SourceDir)Common/empty/project.json</ProjectJson>
-    <ProjectLockJson>$(SourceDir)Common/empty/project.lock.json</ProjectLockJson>
-  </PropertyGroup>
-
   <!--
   If it needs ProjectToRun, turn the project into a ProjectReference so it gets built
   -->
@@ -189,4 +184,13 @@
            DestinationFolder="$(OutputPath)"
        Condition="Exists('$(AssemblyName).reflect.xml')"/>
   </Target>
+
+  <PropertyGroup>
+    <ProjectAssetsFile>$(SourceDir)Common\test_dependencies\obj\project.assets.json</ProjectAssetsFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'">
+    <ProjectAssetsFile></ProjectAssetsFile >
+  </PropertyGroup>
+
 </Project>
