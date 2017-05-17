@@ -32,9 +32,9 @@ static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
 #include "gcenv.base.h"
 #include "gcenv.os.h"
 
-#ifndef FEATURE_STANDALONE_GC
- #error "A GC-private implementation of GCToOSInterface should only be used with FEATURE_STANDALONE_GC"
-#endif // FEATURE_STANDALONE_GC
+#ifndef BUILD_AS_STANDALONE
+ #error "A GC-private implementation of GCToOSInterface should only be used with BUILD_AS_STANDALONE"
+#endif // BUILD_AS_STANDALONE
 
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>

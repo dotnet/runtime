@@ -27,16 +27,17 @@ Module Name:
 
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
-#include "env/gcenv.ee.h"
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"
 
 // GCStress does not currently work with Standalone GC
 #ifdef STRESS_HEAP
  #undef STRESS_HEAP
 #endif // STRESS_HEAP
-#endif // FEATURE_STANDALONE_GC
+#else
+#include "env/gcenv.ee.h"
+#endif // BUILD_AS_STANDALONE
 
 /*
  * Promotion Function Prototypes

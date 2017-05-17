@@ -5,11 +5,16 @@
 #ifndef __GCTOENV_EE_STANDALONE_INL__
 #define __GCTOENV_EE_STANDALONE_INL__
 
-#include "env/gcenv.ee.h"
+#include "gcinterface.h"
 
 // The singular interface instance. All calls in GCToEEInterface
 // will be fowarded to this interface instance.
 extern IGCToCLR* g_theGCToCLR;
+
+namespace
+{
+
+#include "env/gcenv.ee.h"
 
 // A note about this:
 // In general, we don't want to pretend to be smarter than the compiler
@@ -237,5 +242,7 @@ ALWAYS_INLINE MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     return g_theGCToCLR->GetFreeObjectMethodTable();
 }
 #undef ALWAYS_INLINE
+
+} // anonymous namespace
 
 #endif // __GCTOENV_EE_STANDALONE_INL__

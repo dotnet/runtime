@@ -9,9 +9,9 @@
 // of the execution engine. Everything that the GC does that requires the EE
 // to be informed or that requires EE action must go through this interface.
 //
-// When FEATURE_STANDALONE_GC is defined, this class is named IGCToCLR and is
+// When BUILD_AS_STANDALONE is defined, this class is named IGCToCLR and is
 // an abstract class. The EE will provide a class that fulfills this interface,
-// and the GC will dispatch virtually on it to call into the EE. When FEATURE_STANDALONE_GC
+// and the GC will dispatch virtually on it to call into the EE. When BUILD_AS_STANDALONE
 // is not defined, this class is named GCToEEInterface and the GC will dispatch statically on it.
 class IGCToCLR {
 public:
