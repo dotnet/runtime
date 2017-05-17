@@ -533,7 +533,14 @@ namespace System.Data.SqlClient
         {
             return ADP.InvalidOperation(SR.GetString(SR.SQL_BulkLoadPendingOperation));
         }
-
+        internal static Exception InvalidTableDerivedPrecisionForTvp(string columnName, byte precision)
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlParameter_InvalidTableDerivedPrecisionForTvp, precision, columnName, System.Data.SqlTypes.SqlDecimal.MaxPrecision));
+        }
+        internal static Exception InvalidColumnMaxLength(string columnName, long maxLength)
+        {
+            return ADP.Argument(SR.GetString(SR.SqlProvider_InvalidDataColumnMaxLength, columnName, maxLength));
+        }
         //
         // transactions.
         //

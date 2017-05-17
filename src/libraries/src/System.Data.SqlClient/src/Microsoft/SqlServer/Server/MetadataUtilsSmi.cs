@@ -68,6 +68,7 @@ namespace Microsoft.SqlServer.Server
             SqlDbType.NVarChar,             // System.Data.SqlTypes.SqlChars
             SqlDbType.VarBinary,            // System.Data.SqlTypes.SqlBytes
             SqlDbType.Xml,                  // System.Data.SqlTypes.SqlXml
+            SqlDbType.Structured,           // System.Data.DataTable
             SqlDbType.Structured,           // System.Collections.IEnumerable, used for TVPs it must return IDataRecord
             SqlDbType.Structured,           // System.Collections.Generic.IEnumerable<Microsoft.SqlServer.Server.SqlDataRecord>
             SqlDbType.Time,                 // System.TimeSpan
@@ -121,12 +122,12 @@ namespace Microsoft.SqlServer.Server
                 { typeof(SqlChars), ExtendedClrTypeCode.SqlChars },
                 { typeof(SqlBytes), ExtendedClrTypeCode.SqlBytes },
                 { typeof(SqlXml), ExtendedClrTypeCode.SqlXml },
+                { typeof(DataTable), ExtendedClrTypeCode.DataTable },
                 { typeof(DbDataReader), ExtendedClrTypeCode.DbDataReader },
                 { typeof(IEnumerable<SqlDataRecord>), ExtendedClrTypeCode.IEnumerableOfSqlDataRecord },
                 { typeof(TimeSpan), ExtendedClrTypeCode.TimeSpan },
                 { typeof(DateTimeOffset), ExtendedClrTypeCode.DateTimeOffset },
             };
-            Debug.Assert(dictionary.Count == Count);
             return dictionary;
         }
 
@@ -336,7 +337,11 @@ namespace Microsoft.SqlServer.Server
                     case SqlDbType.Structured:
                         if (isMultiValued)
                         {
-                            if (value is IEnumerable<SqlDataRecord>)
+                            if (value is DataTable)
+                            {
+                                extendedCode = ExtendedClrTypeCode.DataTable;
+                            }
+                            else if (value is IEnumerable<SqlDataRecord>)
                             {
                                 extendedCode = ExtendedClrTypeCode.IEnumerableOfSqlDataRecord;
                             }
@@ -603,5 +608,188 @@ namespace Microsoft.SqlServer.Server
                                         null,
                                         null);
         }
+
+        // Extract metadata for a single DataColumn
+        internal static SmiExtendedMetaData SmiMetaDataFromDataColumn(DataColumn column, DataTable parent)
+        {
+            SqlDbType dbType = InferSqlDbTypeFromType_Katmai(column.DataType);
+            if (InvalidSqlDbType == dbType)
+            {
+                throw SQL.UnsupportedColumnTypeForSqlProvider(column.ColumnName, column.DataType.Name);
+            }
+
+            long maxLength = AdjustMaxLength(dbType, column.MaxLength);
+            if (InvalidMaxLength == maxLength)
+            {
+                throw SQL.InvalidColumnMaxLength(column.ColumnName, maxLength);
+            }
+
+            byte precision;
+            byte scale;
+            if (column.DataType == typeof(SqlDecimal))
+            {
+                // Must scan all values in column to determine best-fit precision & scale
+                Debug.Assert(null != parent);
+                scale = 0;
+                byte nonFractionalPrecision = 0; // finds largest non-Fractional portion of precision
+                foreach (DataRow row in parent.Rows)
+                {
+                    object obj = row[column];
+                    if (!(obj is DBNull))
+                    {
+                        SqlDecimal value = (SqlDecimal)obj;
+                        if (!value.IsNull)
+                        {
+                            byte tempNonFractPrec = checked((byte)(value.Precision - value.Scale));
+                            if (tempNonFractPrec > nonFractionalPrecision)
+                            {
+                                nonFractionalPrecision = tempNonFractPrec;
+                            }
+
+                            if (value.Scale > scale)
+                            {
+                                scale = value.Scale;
+                            }
+                        }
+                    }
+                }
+
+                precision = checked((byte)(nonFractionalPrecision + scale));
+
+                if (SqlDecimal.MaxPrecision < precision)
+                {
+                    throw SQL.InvalidTableDerivedPrecisionForTvp(column.ColumnName, precision);
+                }
+                else if (0 == precision)
+                {
+                    precision = 1;
+                }
+            }
+            else if (dbType == SqlDbType.DateTime2 || dbType == SqlDbType.DateTimeOffset || dbType == SqlDbType.Time)
+            {
+                // Time types care about scale, too.  But have to infer maximums for these.
+                precision = 0;
+                scale = SmiMetaData.DefaultTime.Scale;
+            }
+            else if (dbType == SqlDbType.Decimal)
+            {
+                // Must scan all values in column to determine best-fit precision & scale
+                Debug.Assert(null != parent);
+                scale = 0;
+                byte nonFractionalPrecision = 0; // finds largest non-Fractional portion of precision
+                foreach (DataRow row in parent.Rows)
+                {
+                    object obj = row[column];
+                    if (!(obj is DBNull))
+                    {
+                        SqlDecimal value = (SqlDecimal)(Decimal)obj;
+                        byte tempNonFractPrec = checked((byte)(value.Precision - value.Scale));
+                        if (tempNonFractPrec > nonFractionalPrecision)
+                        {
+                            nonFractionalPrecision = tempNonFractPrec;
+                        }
+
+                        if (value.Scale > scale)
+                        {
+                            scale = value.Scale;
+                        }
+                    }
+                }
+
+                precision = checked((byte)(nonFractionalPrecision + scale));
+
+                if (SqlDecimal.MaxPrecision < precision)
+                {
+                    throw SQL.InvalidTableDerivedPrecisionForTvp(column.ColumnName, precision);
+                }
+                else if (0 == precision)
+                {
+                    precision = 1;
+                }
+            }
+            else
+            {
+                precision = 0;
+                scale = 0;
+            }
+
+            // In Net Core, since DataColumn.Locale is not accessible because it is internal and in a separate assembly, 
+            // we try to get the Locale from the parent
+            CultureInfo columnLocale = ((null != parent) ? parent.Locale : CultureInfo.CurrentCulture);
+
+            return new SmiExtendedMetaData(
+                                        dbType,
+                                        maxLength,
+                                        precision,
+                                        scale,
+                                        columnLocale.LCID,
+                                        SmiMetaData.DefaultNVarChar.CompareOptions,
+                                        false,  // no support for multi-valued columns in a TVP yet
+                                        null,   // no support for structured columns yet
+                                        null,   // no support for structured columns yet
+                                        column.ColumnName,
+                                        null,
+                                        null,
+                                        null);
+        }
+
+        internal static long AdjustMaxLength(SqlDbType dbType, long maxLength)
+        {
+            if (SmiMetaData.UnlimitedMaxLengthIndicator != maxLength)
+            {
+                if (maxLength < 0)
+                {
+                    maxLength = InvalidMaxLength;
+                }
+
+                switch (dbType)
+                {
+                    case SqlDbType.Binary:
+                        if (maxLength > SmiMetaData.MaxBinaryLength)
+                        {
+                            maxLength = InvalidMaxLength;
+                        }
+                        break;
+                    case SqlDbType.Char:
+                        if (maxLength > SmiMetaData.MaxANSICharacters)
+                        {
+                            maxLength = InvalidMaxLength;
+                        }
+                        break;
+                    case SqlDbType.NChar:
+                        if (maxLength > SmiMetaData.MaxUnicodeCharacters)
+                        {
+                            maxLength = InvalidMaxLength;
+                        }
+                        break;
+                    case SqlDbType.NVarChar:
+                        // Promote to MAX type if it won't fit in a normal type
+                        if (SmiMetaData.MaxUnicodeCharacters < maxLength)
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+                        break;
+                    case SqlDbType.VarBinary:
+                        // Promote to MAX type if it won't fit in a normal type
+                        if (SmiMetaData.MaxBinaryLength < maxLength)
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+                        break;
+                    case SqlDbType.VarChar:
+                        // Promote to MAX type if it won't fit in a normal type
+                        if (SmiMetaData.MaxANSICharacters < maxLength)
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return maxLength;
+        }
+
     }
 }

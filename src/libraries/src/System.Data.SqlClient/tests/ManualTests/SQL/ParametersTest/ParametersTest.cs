@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Data.Common;
 using System.Data.SqlTypes;
 using Xunit;
 
@@ -154,6 +155,65 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 cmd.Parameters.AddWithValue("@input", expectedGuid);
                 var result = cmd.ExecuteScalar();
                 Assert.Equal(expectedGuid, (Guid)result);
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public static void TestParametersWithDatatablesTVPInsert()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
+            builder.InitialCatalog = "tempdb";
+            int x = 4, y = 5;
+
+            DataTable table = new DataTable { Columns = { { "x", typeof(int) }, { "y", typeof(int) } }, Rows = { { x, y } } };
+
+            using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
+            {
+                connection.Open();
+
+                ExecuteSqlIgnoreExceptions(connection, "drop proc dbo.UpdatePoint");
+                ExecuteSqlIgnoreExceptions(connection, "drop table dbo.PointTable");
+                ExecuteSqlIgnoreExceptions(connection, "drop type dbo.PointTableType");
+                ExecuteSqlIgnoreExceptions(connection, "CREATE TYPE dbo.PointTableType AS TABLE (x INT, y INT)");
+                ExecuteSqlIgnoreExceptions(connection, "CREATE TABLE dbo.PointTable (x INT, y INT)");
+                ExecuteSqlIgnoreExceptions(connection, "CREATE PROCEDURE dbo.UpdatePoint @TVP dbo.PointTableType READONLY AS SET NOCOUNT ON INSERT INTO dbo.PointTable(x, y) SELECT * FROM  @TVP");
+
+                using (SqlCommand cmd = connection.CreateCommand())
+                {
+                    // Update Data Using TVPs
+                    cmd.CommandText = "dbo.UpdatePoint";
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    SqlParameter parameter = cmd.Parameters.AddWithValue("@TVP", table);
+                    parameter.TypeName = "dbo.PointTableType";
+
+                    cmd.ExecuteNonQuery();
+
+                    // Verify if the data was updated 
+                    cmd.CommandText = "select * from dbo.PointTable";
+                    cmd.CommandType = CommandType.Text;
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        DataTable dbData = new DataTable();
+                        dbData.Load(reader);
+                        Assert.Equal(1, dbData.Rows.Count);
+                        Assert.Equal(x, dbData.Rows[0][0]);
+                        Assert.Equal(y, dbData.Rows[0][1]);
+                    }
+                }
+            }
+        }
+
+        private static void ExecuteSqlIgnoreExceptions(DbConnection connection, string query)
+        {
+            using (DbCommand cmd = connection.CreateCommand())
+            {
+                try
+                {
+                    cmd.CommandText = query;
+                    cmd.ExecuteNonQuery();
+                }
+                catch { /* Ignore exception if the command execution fails*/ }
             }
         }
 
