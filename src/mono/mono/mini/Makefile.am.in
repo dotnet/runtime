@@ -366,12 +366,6 @@ s390x_sources = \
 	exceptions-s390x.c	\
 	tramp-s390x.c
 
-ia64_sources = \
-	mini-ia64.c		\
-	mini-ia64.h		\
-	exceptions-ia64.c	\
-	tramp-ia64.c
-
 darwin_sources = \
 	mini-darwin.c
 
@@ -716,9 +710,6 @@ cpu-sparc.h: cpu-sparc.md genmdesc$(EXEEXT)
 cpu-s390x.h: cpu-s390x.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-s390x.h s390x_cpu_desc $(srcdir)/cpu-s390x.md
 
-cpu-ia64.h: cpu-ia64.md genmdesc$(EXEEXT)
-	$(GENMDESC_PRG) cpu-ia64.h ia64_desc $(srcdir)/cpu-ia64.md
-
 cpu-mips.h: cpu-mips.md genmdesc$(EXEEXT)
 	$(GENMDESC_PRG) cpu-mips.h mips_desc $(srcdir)/cpu-mips.md
 
@@ -890,7 +881,6 @@ EXTRA_DIST = TestDriver.cs \
 	$(mips_sources) cpu-mips.md 		\
 	$(sparc_sources) cpu-sparc.md 		\
 	$(s390x_sources) cpu-s390x.md 		\
-	$(ia64_sources) cpu-ia64.md 		\
 	$(windows_sources)			\
 	$(darwin_sources) Info.plist		\
 	$(posix_sources)					\
