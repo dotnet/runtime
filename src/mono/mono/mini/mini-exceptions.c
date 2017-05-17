@@ -81,6 +81,10 @@
 #include "mini-llvm-cpp.h"
 #endif
 
+#ifdef TARGET_ARM
+#include "mini-arm.h"
+#endif
+
 #ifndef MONO_ARCH_CONTEXT_DEF
 #define MONO_ARCH_CONTEXT_DEF
 #endif
@@ -2133,8 +2137,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						ctx->gregs [AMD64_RIP] ++;
 #elif defined(TARGET_ARM)
 						ctx->pc ++;
-						/* set thumb bit */
-						ctx->pc |= 1;
+						if (mono_arm_thumb_supported ())
+							ctx->pc |= 1;
 #elif defined(TARGET_ARM64)
 						ctx->pc ++;
 #else
