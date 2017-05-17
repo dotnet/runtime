@@ -80,14 +80,13 @@ $(_XunitEpilog)
     <OutputType>Library</OutputType>
     <TargetFrameworkIdentifier Condition ="'$(BuildTestsAgainstPackages)' != 'true'">.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion Condition ="'$(BuildTestsAgainstPackages)' != 'true'">v4.5</TargetFrameworkVersion>
+    <NugetTargetMonikerShort Condition ="'$(BuildTestsAgainstPackages)' != 'true'">net45</NugetTargetMonikerShort>
     <IsXunitWrapperProject>true</IsXunitWrapperProject>
     <SkipSigning>true</SkipSigning>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
-    <ProjectJson Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
-    <ProjectLockJson Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)project.lock.json</ProjectLockJson>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '%24(Configuration)|%24(Platform)' == 'Debug|AnyCPU' ">
@@ -118,7 +117,8 @@ $(_XunitEpilog)
   </ItemGroup>
   <Import Project="$(SourceDir)dir.targets" />
   <PropertyGroup>
-     <OutDir>$(XunitTestBinBase)\$(CategoryWithSlash)\</OutDir>
+    <OutDir>$(XunitTestBinBase)\$(CategoryWithSlash)\</OutDir>
+    <ProjectAssetsFile Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)obj/project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 </Project>
         ]]>

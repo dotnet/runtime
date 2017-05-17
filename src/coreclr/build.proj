@@ -40,7 +40,8 @@
   <Target Name="Sync" BeforeTargets="Build" />
 
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
-    <Exec Command="$(DnuRestoreCommand) &quot;$(SourceDir).nuget/init/project.json&quot; --source https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <Exec Command="$(DnuRestoreCommand) $(SourceDir).nuget/init/init.csproj"
+          StandardOutputImportance="Low" />
   </Target>
   
 </Project>
