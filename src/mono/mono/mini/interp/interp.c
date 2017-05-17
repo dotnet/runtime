@@ -3418,7 +3418,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_U4_R8)
-			sp [-1].data.i = (guint32)sp [-1].data.f;
+			/* needed on arm64 */
+			if (isinf (sp [-1].data.f))
+				sp [-1].data.i = 0;
+			else
+				sp [-1].data.i = (guint32)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_I8_I4)
