@@ -71,6 +71,9 @@ public:
     // Get the event used to write metadata to the event stream.
     EventPipeEventInstance* BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance);
 
+    // Delete deferred providers.
+    void DeleteDeferredProviders();
+
 private:
 
     // Get the provider without taking the lock.

@@ -59,7 +59,7 @@ void EventPipeConfiguration::Initialize()
     CONTRACTL_END;
 
     // Create the configuration provider.
-    m_pConfigProvider = new EventPipeProvider(s_configurationProviderID);
+    m_pConfigProvider = EventPipe::CreateProvider(s_configurationProviderID);
 
     // Create the metadata event.
     m_pMetadataEvent = m_pConfigProvider->AddEvent(
@@ -377,6 +377,33 @@ EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPip
     pInstance->SetTimeStamp(sourceInstance.GetTimeStamp());
 
     return pInstance;
+}
+
+void EventPipeConfiguration::DeleteDeferredProviders()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        // Lock must be held by EventPipe::Disable.
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
+
+    }
+    CONTRACTL_END;
+
+    SListElem<EventPipeProvider*> *pElem = m_pProviderList->GetHead();
+    while(pElem != NULL)
+    {
+        EventPipeProvider *pProvider = pElem->GetValue();
+        if(pProvider->GetDeleteDeferred())
+        {
+            // The act of deleting the provider unregisters it and removes it from the list.
+            delete(pProvider);
+        }
+
+        pElem = m_pProviderList->GetNext(pElem);
+    }
 }
 
 EventPipeEnabledProviderList::EventPipeEnabledProviderList(

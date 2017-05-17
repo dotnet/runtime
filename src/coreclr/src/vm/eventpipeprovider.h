@@ -26,6 +26,7 @@ typedef void (*EventPipeCallback)(
 class EventPipeProvider
 {
     // Declare friends.
+    friend class EventPipe;
     friend class EventPipeConfiguration;
     friend class SampleProfiler;
 
@@ -55,9 +56,15 @@ private:
     // The configuration object.
     EventPipeConfiguration *m_pConfig;
 
+    // True if the provider has been deleted, but that deletion
+    // has been deferred until tracing is stopped.
+    bool m_deleteDeferred;
+
+    // Private constructor because all providers are created through EventPipe::CreateProvider.
+    EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+
 public:
 
-    EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
     ~EventPipeProvider();
 
     // Get the provider ID.
@@ -96,6 +103,13 @@ public:
 
     // Invoke the provider callback.
     void InvokeCallback();
+
+    // Specifies whether or not the provider was deleted, but that deletion
+    // was deferred until after tracing is stopped.
+    bool GetDeleteDeferred() const;
+
+    // Defer deletion of the provider.
+    void SetDeleteDeferred();
 };
 
 #endif // FEATURE_PERFTRACING
