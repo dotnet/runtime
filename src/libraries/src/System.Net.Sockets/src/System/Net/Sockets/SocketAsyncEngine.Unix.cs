@@ -102,6 +102,7 @@ namespace System.Net.Sockets
         //
         private static readonly IntPtr MaxHandles = IntPtr.Size == 4 ? (IntPtr)int.MaxValue : (IntPtr)long.MaxValue;
 #endif
+        private static readonly IntPtr MinHandlesAdditionalEngine = EngineCount == 1 ? MaxHandles : (IntPtr)32;
 
         //
         // Sentinel handle value to identify events from the "shutdown pipe," used to signal an event loop to stop
@@ -143,7 +144,22 @@ namespace System.Net.Sockets
                 engine = s_currentEngines[s_allocateFromEngine];
                 if (engine == null)
                 {
-                    s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
+                    // Minimize the number of engines on applications which have a low number of concurrent sockets.
+                    for (int i = 0; i < s_allocateFromEngine; i++)
+                    {
+                        var previousEngine = s_currentEngines[i];
+                        if (previousEngine == null ||
+                            previousEngine._outstandingHandles.ToInt64() < MinHandlesAdditionalEngine.ToInt64())
+                        {
+                            s_allocateFromEngine = i;
+                            engine = previousEngine;
+                            break;
+                        }
+                    }
+                    if (engine == null)
+                    {
+                        s_currentEngines[s_allocateFromEngine] = engine = new SocketAsyncEngine();
+                    }
                 }
 
                 handle = engine.AllocateHandle(context);
@@ -154,8 +170,11 @@ namespace System.Net.Sockets
                     s_currentEngines[s_allocateFromEngine] = null;
                 }
 
-                // Round-robin to the next engine
-                s_allocateFromEngine = (s_allocateFromEngine + 1) % EngineCount;
+                // Round-robin to the next engine.
+                if (engine._outstandingHandles.ToInt64() >= MinHandlesAdditionalEngine.ToInt64())
+                {
+                    s_allocateFromEngine = (s_allocateFromEngine + 1) % EngineCount;
+                }
             }
         }
 
