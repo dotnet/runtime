@@ -4,7 +4,6 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     public enum LoadHint
     {
         Default = 0x0000,           // No preference specified
