@@ -1798,7 +1798,7 @@ namespace System.StubHelpers
         internal static extern void ArrayTypeCheck(object o, Object[] arr);
 #endif
 
-#if FEATURE_STUBS_AS_IL
+#if FEATURE_MULTICASTSTUB_AS_IL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void MulticastDebuggerTraceHelper(object o, Int32 count);
 #endif

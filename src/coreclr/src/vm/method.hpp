@@ -2441,16 +2441,18 @@ public:
     bool IsDelegateCOMStub() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateCOMStub));  }
     bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
     bool IsStubNeedsCOMStarted()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdStubNeedsCOMStarted)); }
+#ifdef FEATURE_MULTICASTSTUB_AS_IL
+    bool IsMulticastStub() {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(IsILStub());
+        return !!(m_dwExtendedFlags & nomdMulticastStub);
+    }
+#endif
 #ifdef FEATURE_STUBS_AS_IL
     bool IsSecureDelegateStub() {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(IsILStub());
         return !!(m_dwExtendedFlags & nomdSecureDelegateStub);
-    }
-    bool IsMulticastStub() { 
-        LIMITED_METHOD_DAC_CONTRACT; 
-        _ASSERTE(IsILStub());
-        return !!(m_dwExtendedFlags & nomdMulticastStub);
     }
     bool IsUnboxingILStub() { 
         LIMITED_METHOD_DAC_CONTRACT; 
