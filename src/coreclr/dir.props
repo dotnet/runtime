@@ -141,7 +141,7 @@
   <!-- Packaging properties -->
   <PropertyGroup>
     <LicenseUrl>https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT</LicenseUrl>
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
     <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
     <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
@@ -157,7 +157,7 @@
     <ProjectUrl>https://dot.net</ProjectUrl>
 
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">2.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">2.1.0</PackageVersion>
     
     <!-- Set the boolean below to true to generate packages with stabilized versions -->
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
