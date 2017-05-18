@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using CultureInfo = System.Globalization.CultureInfo;
 using System.Security;
-using System.Security.Policy;
 using System.IO;
 using StringBuilder = System.Text.StringBuilder;
 using System.Configuration.Assemblies;
@@ -322,22 +321,18 @@ namespace System.Reflection
 
         // Wrapper function to wrap the typical use of InternalLoad.
         internal static RuntimeAssembly InternalLoad(String assemblyString,
-                                                     Evidence assemblySecurity,
-                                                     ref StackCrawlMark stackMark,
-                                                     bool forIntrospection)
+                                                     ref StackCrawlMark stackMark)
         {
-            return InternalLoad(assemblyString, assemblySecurity, ref stackMark, IntPtr.Zero, forIntrospection);
+            return InternalLoad(assemblyString, ref stackMark, IntPtr.Zero);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         internal static RuntimeAssembly InternalLoad(String assemblyString,
-                                                     Evidence assemblySecurity,
                                                      ref StackCrawlMark stackMark,
-                                                     IntPtr pPrivHostBinder,
-                                                     bool forIntrospection)
+                                                     IntPtr pPrivHostBinder)
         {
             RuntimeAssembly assembly;
-            AssemblyName an = CreateAssemblyName(assemblyString, forIntrospection, out assembly);
+            AssemblyName an = CreateAssemblyName(assemblyString, out assembly);
 
             if (assembly != null)
             {
@@ -345,15 +340,14 @@ namespace System.Reflection
                 return assembly;
             }
 
-            return InternalLoadAssemblyName(an, assemblySecurity, null, ref stackMark,
+            return InternalLoadAssemblyName(an, null, ref stackMark,
                                             pPrivHostBinder,
-                                            true  /*thrownOnFileNotFound*/, forIntrospection);
+                                            true  /*thrownOnFileNotFound*/);
         }
 
         // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
         internal static AssemblyName CreateAssemblyName(
             String assemblyString,
-            bool forIntrospection,
             out RuntimeAssembly assemblyFromResolveEvent)
         {
             if (assemblyString == null)
@@ -364,13 +358,10 @@ namespace System.Reflection
                 (assemblyString[0] == '\0'))
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
-            if (forIntrospection)
-                AppDomain.CheckReflectionOnlyLoadSupported();
-
             AssemblyName an = new AssemblyName();
 
             an.Name = assemblyString;
-            an.nInit(out assemblyFromResolveEvent, forIntrospection, true);
+            an.nInit(out assemblyFromResolveEvent, true);
 
             return an;
         }
@@ -378,24 +369,20 @@ namespace System.Reflection
         // Wrapper function to wrap the typical use of InternalLoadAssemblyName.
         internal static RuntimeAssembly InternalLoadAssemblyName(
             AssemblyName assemblyRef,
-            Evidence assemblySecurity,
             RuntimeAssembly reqAssembly,
             ref StackCrawlMark stackMark,
             bool throwOnFileNotFound,
-            bool forIntrospection,
             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
-            return InternalLoadAssemblyName(assemblyRef, assemblySecurity, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, forIntrospection, ptrLoadContextBinder);
+            return InternalLoadAssemblyName(assemblyRef, reqAssembly, ref stackMark, IntPtr.Zero, true /*throwOnError*/, ptrLoadContextBinder);
         }
 
         internal static RuntimeAssembly InternalLoadAssemblyName(
             AssemblyName assemblyRef,
-            Evidence assemblySecurity,
             RuntimeAssembly reqAssembly,
             ref StackCrawlMark stackMark,
             IntPtr pPrivHostBinder,
             bool throwOnFileNotFound,
-            bool forIntrospection,
             IntPtr ptrLoadContextBinder = default(IntPtr))
         {
             if (assemblyRef == null)
@@ -408,8 +395,7 @@ namespace System.Reflection
             }
 
             assemblyRef = (AssemblyName)assemblyRef.Clone();
-            if (!forIntrospection &&
-                (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None))
+            if (assemblyRef.ProcessorArchitecture != ProcessorArchitecture.None)
             {
                 // PA does not have a semantics for by-name binds for execution
                 assemblyRef.ProcessorArchitecture = ProcessorArchitecture.None;
@@ -417,19 +403,10 @@ namespace System.Reflection
 
             String codeBase = VerifyCodeBase(assemblyRef.CodeBase);
 
-            return nLoad(assemblyRef, codeBase, assemblySecurity, reqAssembly, ref stackMark,
+            return nLoad(assemblyRef, codeBase, reqAssembly, ref stackMark,
                 pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, ptrLoadContextBinder);
+                throwOnFileNotFound, ptrLoadContextBinder);
         }
-
-        // These are the framework assemblies that does reflection invocation
-        // on behalf of user code. We allow framework code to invoke non-W8P
-        // framework APIs but don't want user code to gain that privilege 
-        // through these assemblies. So we blaklist them.
-        private static string[] s_unsafeFrameworkAssemblyNames = new string[] {
-            "System.Reflection.Context",
-            "Microsoft.VisualBasic"
-        };
 
 #if FEATURE_APPX
         internal bool IsFrameworkAssembly()
@@ -440,40 +417,19 @@ namespace System.Reflection
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern RuntimeAssembly _nLoad(AssemblyName fileName,
-                                                     String codeBase,
-                                                     Evidence assemblySecurity,
-                                                     RuntimeAssembly locationHint,
-                                                     ref StackCrawlMark stackMark,
-                                                     IntPtr pPrivHostBinder,
-                                                     bool throwOnFileNotFound,
-                                                     bool forIntrospection,
-                                                     bool suppressSecurityChecks,
-                                                     IntPtr ptrLoadContextBinder);
-
-        private static RuntimeAssembly nLoad(AssemblyName fileName,
-                                             String codeBase,
-                                             Evidence assemblySecurity,
-                                             RuntimeAssembly locationHint,
-                                             ref StackCrawlMark stackMark,
-                                             IntPtr pPrivHostBinder,
-                                             bool throwOnFileNotFound,
-                                             bool forIntrospection,
-                                             IntPtr ptrLoadContextBinder = default(IntPtr))
-        {
-            return _nLoad(fileName, codeBase, assemblySecurity, locationHint, ref stackMark,
-                pPrivHostBinder,
-                throwOnFileNotFound, forIntrospection, true /* suppressSecurityChecks */, ptrLoadContextBinder);
-        }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool IsReflectionOnly(RuntimeAssembly assembly);
+        private static extern RuntimeAssembly nLoad(AssemblyName fileName,
+                                                    String codeBase,
+                                                    RuntimeAssembly locationHint,
+                                                    ref StackCrawlMark stackMark,
+                                                    IntPtr pPrivHostBinder,
+                                                    bool throwOnFileNotFound,
+                                                    IntPtr ptrLoadContextBinder = default(IntPtr));
 
         public override bool ReflectionOnly
         {
             get
             {
-                return IsReflectionOnly(GetNativeHandle());
+                return false;
             }
         }
 
@@ -786,17 +742,6 @@ namespace System.Reflection
             return publicKey;
         }
 
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [SuppressUnmanagedCodeSecurity]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private extern static bool IsAllSecurityTransparent(RuntimeAssembly assembly);
-
-        // Is everything introduced by this assembly transparent
-        internal bool IsAllSecurityTransparent()
-        {
-            return IsAllSecurityTransparent(GetNativeHandle());
-        }
-
         // This method is called by the VM.
         private RuntimeModule OnModuleResolveEvent(String moduleName)
         {
@@ -865,9 +810,9 @@ namespace System.Reflection
             an.CultureInfo = culture;
             an.Name = name;
 
-            RuntimeAssembly retAssembly = nLoad(an, null, null, this, ref stackMark,
+            RuntimeAssembly retAssembly = nLoad(an, null, this, ref stackMark,
                                 IntPtr.Zero,
-                                throwOnFileNotFound, false);
+                                throwOnFileNotFound);
 
             if (retAssembly == this || (retAssembly == null && throwOnFileNotFound))
             {

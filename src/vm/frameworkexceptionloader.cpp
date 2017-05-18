@@ -8,6 +8,7 @@
 
 #include "common.h"
 #include "frameworkexceptionloader.h"
+#include "typeparse.h"
 
 
 struct ExceptionLocationData

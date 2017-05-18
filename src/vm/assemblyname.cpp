@@ -146,7 +146,7 @@ FCIMPL1(Object*, AssemblyNameNative::GetPublicKeyToken, Object* refThisUNSAFE)
 FCIMPLEND
 
 
-FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fForIntrospection, CLR_BOOL fRaiseResolveEvent)
+FCIMPL3(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fRaiseResolveEvent)
 {
     FCALL_CONTRACT;
 
@@ -173,7 +173,7 @@ FCIMPL4(void, AssemblyNameNative::Init, Object * refThisUNSAFE, OBJECTREF * pAss
     }
     else if ((hr == FUSION_E_INVALID_NAME) && fRaiseResolveEvent)
     {
-        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, fForIntrospection, FALSE);
+        Assembly * pAssembly = GetAppDomain()->RaiseAssemblyResolveEvent(&spec, FALSE, FALSE);
 
         if (pAssembly == NULL)
         {

@@ -752,9 +752,6 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
     // TODO: fix this another way!
     //        if (IsRequestPending())
             {
-                //This holder resets our thread's security state when exiting this scope
-                ThreadSecurityStateHolder  secState(pThread);
-
                 ManagedThreadBase::ThreadPool(appDomainId, QueueUserWorkItemManagedCallback, wasNotRecalled);
             }
 

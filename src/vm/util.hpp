@@ -356,27 +356,8 @@ HRESULT VMPostError(                    // Returned error.
 //=====================================================================
 // Displays the messaage box or logs the message, corresponding to the last COM+ error occurred
 void VMDumpCOMErrors(HRESULT hrErr);
-HRESULT LoadMscorsn();
 
 #include "nativevaraccessors.h"
-
-#ifndef FEATURE_PAL
-
-HRESULT WszSHGetFolderPath(HWND hwndOwner, int nFolder, HANDLE hToken, DWORD dwFlags, size_t cchPath, __out_ecount(MAX_LONGPATH) LPWSTR pszwPath);
-HRESULT WszShellExecute(HWND hwnd, LPCTSTR lpOperation, LPCTSTR lpFile, LPCTSTR lpParameters, LPCTSTR lpDirectory, INT nShowCmd);
-
-#ifndef DACCESS_COMPILE
-#include "shellapi.h"
-HRESULT WszShellExecuteEx(LPSHELLEXECUTEINFO lpExecInfo);
-#endif // #ifndef DACCESS_COMPILE
-
-#endif // !FEATURE_PAL
-
-BOOL GetUserDir(__out_ecount(bufferCount) WCHAR * buffer, size_t bufferCount, BOOL fRoaming);
-BOOL GetInternetCacheDir(__out_ecount(bufferCount) WCHAR * buffer, size_t bufferCount );
-
-HRESULT GetUserSidString (HANDLE hToken,  __deref_out LPWSTR *wszSid);
-BOOL IsUserProfileLoaded();
 
 //======================================================================
 // Stack friendly registry helpers

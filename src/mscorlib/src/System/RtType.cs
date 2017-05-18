@@ -3507,15 +3507,15 @@ namespace System
 
         public override bool IsSecurityCritical
         {
-            get { return new RuntimeTypeHandle(this).IsSecurityCritical(); }
+            get { return true; }
         }
         public override bool IsSecuritySafeCritical
         {
-            get { return new RuntimeTypeHandle(this).IsSecuritySafeCritical(); }
+            get { return false; }
         }
         public override bool IsSecurityTransparent
         {
-            get { return new RuntimeTypeHandle(this).IsSecurityTransparent(); }
+            get { return false; }
         }
         #endregion
 

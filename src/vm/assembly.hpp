@@ -56,40 +56,17 @@ class FriendAssemblyDescriptor;
 #define ASSEMBLY_ACCESS_REFLECTION_ONLY    0x04
 #define ASSEMBLY_ACCESS_COLLECT 0x8
 
-// This must match System.Reflection.Emit.DynamicAssemblyFlags in AssemblyBuilder.cs
-enum DynamicAssemblyFlags
-{
-    kAllCriticalAssembly        = 0x00000001,
-    kAptcaAssembly              = 0x00000002,
-    kCriticalAssembly           = 0x00000004,
-    kTransparentAssembly        = 0x00000008,
-    kTreatAsSafeAssembly        = 0x00000010
-};
-
 struct CreateDynamicAssemblyArgsGC
 {
     APPDOMAINREF    refThis;
-    OBJECTREF       identity;
     ASSEMBLYNAMEREF assemblyName;
-    U1ARRAYREF      securityRulesBlob;
-    U1ARRAYREF      aptcaBlob;
     LOADERALLOCATORREF loaderAllocator;
 };
-
-// This enumeration must be kept in sync with the managed enum System.Security.SecurityContextSource
-typedef enum
-{
-    kCurrentAppDomain = 0,
-    kCurrentAssembly
-}
-SecurityContextSource;
 
 struct CreateDynamicAssemblyArgs : CreateDynamicAssemblyArgsGC
 {
     INT32           access;
-    DynamicAssemblyFlags  flags;
     StackCrawlMark* stackMark;
-    SecurityContextSource securityContextSource;
 };
 
 // An assembly is the unit of deployment for managed code.  Typically Assemblies are one to one with files
@@ -270,10 +247,6 @@ public:
 
     BOOL GetModuleZapFile(LPCWSTR name, SString &path);
 
-#if defined(FEATURE_CORESYSTEM)
-    BOOL AllowUntrustedCaller();
-#endif // defined(FEATURE_CORESYSTEM)
-    
 #ifdef LOGGING
     LPCWSTR GetDebugName()
     {
@@ -529,16 +502,6 @@ public:
     OBJECTHANDLE GetLoaderAllocatorObjectHandle() { WRAPPER_NO_CONTRACT; return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle(); }
 #endif // FEATURE_COLLECTIBLE_TYPES
 
-    IAssemblySecurityDescriptor *GetSecurityDescriptor(AppDomain *pDomain = NULL);
-    ISharedSecurityDescriptor *GetSharedSecurityDescriptor() { LIMITED_METHOD_CONTRACT; return m_pSharedSecurityDesc; }
-
-#ifndef DACCESS_COMPILE
-    const SecurityTransparencyBehavior *GetSecurityTransparencyBehavior();
-    const SecurityTransparencyBehavior *TryGetSecurityTransparencyBehavior();
-    void SetSecurityTransparencyBehavior(const SecurityTransparencyBehavior *pTransparencyBehavior);
-#endif // !DACCESS_COMPILE
-
-
     BOOL CanBeShared(DomainAssembly *pAsAssembly);
 
 #ifdef FEATURE_LOADER_OPTIMIZATION
@@ -756,9 +719,6 @@ private:
     WinMDStatus            m_winMDStatus;
     IWinMDImport          *m_pManifestWinMDImport;
 #endif // FEATURE_COMINTEROP
-
-    ISharedSecurityDescriptor* m_pSharedSecurityDesc;    // Security descriptor (permission requests, signature etc)
-    const SecurityTransparencyBehavior *m_pTransparencyBehavior; // Transparency implementation the assembly uses
 
     BOOL                   m_fIsDomainNeutral;
 #ifdef FEATURE_LOADER_OPTIMIZATION

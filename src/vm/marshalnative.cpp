@@ -760,21 +760,6 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalAddrOfPinnedObject, OBJECTHANDLE 
 FCIMPLEND
 
 // Make sure the handle is accessible from the current domain.  (Throw if not.)
-FCIMPL1(VOID, MarshalNative::GCHandleInternalCheckDomain, OBJECTHANDLE handle)
-{
-    FCALL_CONTRACT;
-
-    if (handle == NULL)
-        FCThrowArgumentVoid(W("handle"), W("Argument_ArgumentZero"));
-    
-    ADIndex index = HndGetHandleTableADIndex(HndGetHandleTable(handle));
-
-    if (index.m_dwIndex != 1 && index != GetAppDomain()->GetIndex())
-        FCThrowArgumentVoid(W("handle"), W("Argument_HandleLeak"));
-}
-FCIMPLEND
-
-// Make sure the handle is accessible from the current domain.  (Throw if not.)
 FCIMPL1(INT32, MarshalNative::GCHandleInternalGetHandleType, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;

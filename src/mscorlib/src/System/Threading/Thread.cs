@@ -313,9 +313,6 @@ namespace System.Threading
         public static new void Sleep(int millisecondsTimeout)
         {
             SleepInternal(millisecondsTimeout);
-            // Ensure we don't return to app code when the pause is underway
-            if (AppDomainPauseManager.IsPaused)
-                AppDomainPauseManager.ResumeEvent.WaitOneWithoutFAS();
         }
 
         public static void Sleep(TimeSpan timeout)

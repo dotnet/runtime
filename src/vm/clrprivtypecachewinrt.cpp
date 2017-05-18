@@ -36,9 +36,8 @@ CLRPrivTypeCacheWinRT::ContainsType(
         // Find DomainAssembly * (can be cached if this is too slow to call always)
         DomainAssembly * pDomainAssembly = pAppDomain->LoadDomainAssembly(
             nullptr,    // pIdentity
-            pPEAssembly, 
-            FILE_LOAD_DELIVER_EVENTS, 
-            nullptr);   // pLoadSecurity
+            pPEAssembly,
+            FILE_LOAD_DELIVER_EVENTS);
         
         // Convert the type name into namespace and class name in UTF8
         StackSString ssTypeNameWCHAR(wszTypeName);

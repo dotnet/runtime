@@ -3245,10 +3245,6 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
         // take care of that possibility
         pModule->EnsureAllocated();
 
-        // 5. Type is in a fully trusted assembly
-        if (!pModule->GetSecurityDescriptor()->IsFullyTrusted())
-            return FALSE;
-
         // 6. If type is nested, nesting type must be equivalent.
         if (IsTdNested(dwAttrType))
         {

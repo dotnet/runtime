@@ -237,9 +237,6 @@ public:
                                MethodTable*     pInstanceMT,
                                FieldDesc*       pTargetField);
 
-    // If a method has a linktime demand attached, perform it.
-    static void CheckLinktimeDemand(RefSecContext *pCtx, MethodDesc *pMeth);
-
     //
     // Check to see if the target of a reflection operation is on a remote object
     //
@@ -267,10 +264,6 @@ public:
 
         return FALSE;
     }
-
-    static BOOL IsCriticalWithConversionToFullDemand(MethodTable* pMT);
-    static BOOL IsCriticalWithConversionToFullDemand(MethodDesc* pMD, MethodTable* pInstanceMT);
-    static BOOL IsCriticalWithConversionToFullDemand(FieldDesc* pFD, MethodTable* pInstanceMT);
 
     static AccessCheckOptions::AccessCheckType GetInvocationAccessCheckType(BOOL targetRemoted = FALSE);
 

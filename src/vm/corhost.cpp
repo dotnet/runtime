@@ -689,8 +689,6 @@ HRESULT CorHost2::_CreateAppDomain(
     EX_TRY
 #endif    
     {
-        pDomain->SetAppDomainManagerInfo(wszAppDomainManagerAssemblyName,wszAppDomainManagerTypeName,eInitializeNewDomainFlags_None);
-
         GCX_COOP();
     
         struct 
@@ -698,7 +696,6 @@ HRESULT CorHost2::_CreateAppDomain(
             STRINGREF friendlyName;
             PTRARRAYREF propertyNames;
             PTRARRAYREF propertyValues;
-            STRINGREF sandboxName;
             OBJECTREF setupInfo;
             OBJECTREF adSetup;
         } _gc;
@@ -722,27 +719,13 @@ HRESULT CorHost2::_CreateAppDomain(
             }
         }
 
-        if (dwFlags & APPDOMAIN_SECURITY_SANDBOXED)
-        {
-            _gc.sandboxName = StringObject::NewString(W("Internet"));
-        }
-        else
-        {
-            _gc.sandboxName = StringObject::NewString(W("FullTrust"));
-        }
-
         MethodDescCallSite prepareDataForSetup(METHOD__APP_DOMAIN__PREPARE_DATA_FOR_SETUP);
 
-        ARG_SLOT args[8];
+        ARG_SLOT args[4];
         args[0]=ObjToArgSlot(_gc.friendlyName);
         args[1]=ObjToArgSlot(NULL);
-        args[2]=ObjToArgSlot(NULL);
-        args[3]=ObjToArgSlot(NULL);
-        //CoreCLR shouldn't have dependencies on parent app domain.
-        args[4]=ObjToArgSlot(NULL);
-        args[5]=ObjToArgSlot(_gc.sandboxName);
-        args[6]=ObjToArgSlot(_gc.propertyNames);
-        args[7]=ObjToArgSlot(_gc.propertyValues);
+        args[2]=ObjToArgSlot(_gc.propertyNames);
+        args[3]=ObjToArgSlot(_gc.propertyValues);
 
         _gc.setupInfo=prepareDataForSetup.Call_RetOBJECTREF(args);
 
@@ -864,11 +847,6 @@ HRESULT CorHost2::_CreateDelegate(
     AssemblySpec spec;
     spec.Init(szAssemblyName);
     Assembly* pAsm=spec.LoadAssembly(FILE_ACTIVE);
-
-    // we have no signature to check so allowing calling partially trusted code
-    // can result in an exploit
-    if (!pAsm->GetSecurityDescriptor()->IsFullyTrusted())    
-          ThrowHR(COR_E_SECURITY);
 
     TypeHandle th=pAsm->GetLoader()->LoadTypeByNameThrowing(pAsm,NULL,szClassName);
     MethodDesc* pMD=NULL;
@@ -1572,23 +1550,9 @@ LONG CorHost2::m_RefCount = 0;
 
 IHostControl *CorHost2::m_HostControl = NULL;
 
-LPCWSTR CorHost2::s_wszAppDomainManagerAsm = NULL;
-LPCWSTR CorHost2::s_wszAppDomainManagerType = NULL;
-EInitializeNewDomainFlags CorHost2::s_dwDomainManagerInitFlags = eInitializeNewDomainFlags_None;
-
-
 #ifdef _DEBUG
 extern void ValidateHostInterface();
 #endif
-
-// fusion's global copy of host assembly manager stuff
-BOOL g_bFusionHosted = FALSE;
-
-/*static*/ BOOL CorHost2::IsLoadFromBlocked() // LoadFrom, LoadFile and Load(byte[]) are blocked in certain hosting scenarios
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE; // as g_pHostAsmList is not defined for CoreCLR; hence above expression will be FALSE.
-}
 
 static Volatile<BOOL> fOneOnly = 0;
 
@@ -2323,19 +2287,6 @@ HRESULT CorHost2::GetCLRControl(ICLRControl** pCLRControl)
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
-}
-
-
-LPCWSTR CorHost2::GetAppDomainManagerAsm()
-{
-    LIMITED_METHOD_CONTRACT;
-    return NULL;
-}
-
-LPCWSTR CorHost2::GetAppDomainManagerType()
-{
-    LIMITED_METHOD_CONTRACT;
-    return NULL;
 }
 
 // static

@@ -55,91 +55,6 @@ inline AppDomain *AppDomainNative::ValidateArg(APPDOMAINREF pThis)
     return pDomain;
 }
 
-
-
-void QCALLTYPE AppDomainNative::SetupDomainSecurity(QCall::AppDomainHandle pDomain,
-                                                    QCall::ObjectHandleOnStack ohEvidence,
-                                                    IApplicationSecurityDescriptor *pParentSecurityDescriptor,
-                                                    BOOL fPublishAppDomain)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    struct
-    {
-        OBJECTREF orEvidence;
-    }
-    gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCX_COOP();
-    GCPROTECT_BEGIN(gc)
-    if (ohEvidence.m_ppObject != NULL)
-    {
-        gc.orEvidence = ObjectToOBJECTREF(*ohEvidence.m_ppObject);
-    }
-
-
-    // Set up the default AppDomain property.
-    IApplicationSecurityDescriptor *pSecDesc = pDomain->GetSecurityDescriptor();
-
-    if (!pSecDesc->IsHomogeneous() && pDomain->IsDefaultDomain())
-    {
-        Security::SetDefaultAppDomainProperty(pSecDesc);
-    }
-    // Set up the evidence property in the VM side.
-    else
-    {
-        // If there is no provided evidence then this new appdomain gets the same evidence as the creator.
-        //
-        // If there is no provided evidence and this AppDomain is not homogeneous, then it automatically 
-        // is also a default appdomain (for security grant set purposes)
-        //
-        //
-        // If evidence is provided, the new appdomain is not a default appdomain and
-        // we simply use the provided evidence.
-
-        if (gc.orEvidence == NULL)  
-        {
-            _ASSERTE(pParentSecurityDescriptor == NULL ||  pParentSecurityDescriptor->IsDefaultAppDomainEvidence());
-
-            if (pSecDesc->IsHomogeneous())
-            {
-                // New domain gets default AD evidence
-                Security::SetDefaultAppDomainEvidenceProperty(pSecDesc);
-            }
-            else
-            {
-                // New domain gets to be a default AD
-                Security::SetDefaultAppDomainProperty(pSecDesc);
-            }
-        }
-    }
-
-
-    // We need to downgrade sharing level if the AppDomain is homogeneous and not fully trusted, or the
-    // AppDomain is in legacy mode.  Effectively, we need to be sure that all assemblies loaded into the
-    // domain must be fully trusted in order to allow non-GAC sharing.
-
-    // Now finish the initialization.
-    pSecDesc->FinishInitialization();
-
-    // once domain is loaded it is publically available so if you have anything 
-    // that a list interrogator might need access to if it gets a hold of the
-    // appdomain, then do it above the LoadDomain.
-    if (fPublishAppDomain)
-        SystemDomain::LoadDomain(pDomain);
-
-#ifdef _DEBUG
-    LOG((LF_APPDOMAIN, LL_INFO100, "AppDomainNative::CreateDomain domain [%d] %p %S\n", pDomain->GetIndex().m_dwIndex, (AppDomain*)pDomain, pDomain->GetFriendlyName()));
-#endif
-
-    GCPROTECT_END();
-
-    END_QCALL;
-}
-
 FCIMPL2(void, AppDomainNative::SetupFriendlyName, AppDomainBaseObject* refThisUNSAFE, StringObject* strFriendlyNameUNSAFE)
 {
     FCALL_CONTRACT;
@@ -187,74 +102,6 @@ FCIMPL2(void, AppDomainNative::SetupFriendlyName, AppDomainBaseObject* refThisUN
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-#if FEATURE_COMINTEROP
-
-FCIMPL1(void, AppDomainNative::SetDisableInterfaceCache, AppDomainBaseObject* refThisUNSAFE)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-        DISABLED(GC_TRIGGERS);  // can't use this in an FCALL because we're in forbid gc mode until we setup a H_M_F.
-        SO_TOLERANT;
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    struct _gc
-    {
-        APPDOMAINREF    refThis;
-    } gc;
-
-    gc.refThis          = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc)
-
-    AppDomainRefHolder pDomain(ValidateArg(gc.refThis));
-    pDomain->AddRef();
-
-    pDomain->SetDisableInterfaceCache();
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-#endif // FEATURE_COMINTEROP
-
-
-FCIMPL1(void*, AppDomainNative::GetSecurityDescriptor, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    void*        pvRetVal = NULL;    
-    APPDOMAINREF refThis = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    
-    pvRetVal = ValidateArg(refThis)->GetSecurityDescriptor();
-
-    HELPER_METHOD_FRAME_END();
-    return pvRetVal;
-}
-FCIMPLEND
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-FCIMPL2(void, AppDomainNative::UpdateLoaderOptimization, AppDomainBaseObject* refThisUNSAFE, DWORD optimization)
-{
-    FCALL_CONTRACT;
-
-    APPDOMAINREF refThis = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_1(refThis);
-
-    ValidateArg(refThis)->SetSharePolicy((AppDomain::SharePolicy) (optimization & AppDomain::SHARE_POLICY_MASK));
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-#endif // FEATURE_LOADER_OPTIMIZATION
-
 
 FCIMPL1(void,
         AppDomainNative::CreateContext,
@@ -316,7 +163,7 @@ void QCALLTYPE AppDomainNative::SetupBindingPaths(__in_z LPCWSTR wszTrustedPlatf
 }
 
 
-FCIMPL9(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, Object* identityUNSAFE, StackCrawlMark* stackMark, U1Array *securityRulesBlobUNSAFE, U1Array *aptcaBlobUNSAFE, INT32 access, INT32 dwFlags, SecurityContextSource securityContextSource)
+FCIMPL4(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* refThisUNSAFE, AssemblyNameBaseObject* assemblyNameUNSAFE, StackCrawlMark* stackMark, INT32 access)
 {
     FCALL_CONTRACT;
 
@@ -329,15 +176,10 @@ FCIMPL9(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* re
 
     args.refThis                = (APPDOMAINREF)    refThisUNSAFE;
     args.assemblyName           = (ASSEMBLYNAMEREF) assemblyNameUNSAFE;
-    args.identity               = (OBJECTREF)       identityUNSAFE;
-    args.securityRulesBlob      = (U1ARRAYREF)      securityRulesBlobUNSAFE;
-    args.aptcaBlob              = (U1ARRAYREF)      aptcaBlobUNSAFE;
     args.loaderAllocator        = NULL;
 
     args.access                 = access;
-    args.flags                  = static_cast<DynamicAssemblyFlags>(dwFlags);
     args.stackMark              = stackMark;
-    args.securityContextSource  = securityContextSource;
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT((CreateDynamicAssemblyArgsGC&)args);
 
@@ -351,30 +193,6 @@ FCIMPL9(Object*, AppDomainNative::CreateDynamicAssembly, AppDomainBaseObject* re
     return OBJECTREFToObject(refRetVal);
 }
 FCIMPLEND
-
-//---------------------------------------------------------------------------------------
-//
-// Returns true if the DisableFusionUpdatesFromADManager config switch is turned on.
-//
-// Arguments:
-//    adhTarget   - AppDomain to get domain manager information about
-//
-
-// static
-BOOL QCALLTYPE AppDomainNative::DisableFusionUpdatesFromADManager(QCall::AppDomainHandle adhTarget)
-{
-    QCALL_CONTRACT;
-
-    BOOL bUpdatesDisabled = FALSE;
-
-    BEGIN_QCALL;
-
-    bUpdatesDisabled = !!(g_pConfig->DisableFusionUpdatesFromADManager());
-
-    END_QCALL;
-
-    return bUpdatesDisabled;
-}
 
 #ifdef FEATURE_APPX
 
@@ -415,124 +233,6 @@ INT32 QCALLTYPE AppDomainNative::GetAppXFlags()
 
 #endif // FEATURE_APPX
 
-//---------------------------------------------------------------------------------------
-//
-// Get the assembly and type containing the AppDomainManager used for the current domain
-//
-// Arguments:
-//    adhTarget   - AppDomain to get domain manager information about
-//    retAssembly - [out] assembly which contains the AppDomainManager
-//    retType     - [out] AppDomainManger for the domain
-//    
-// Notes:
-//    If the AppDomain does not have an AppDomainManager, retAssembly and retType will be null on return.
-//
-
-// static
-void QCALLTYPE AppDomainNative::GetAppDomainManagerType(QCall::AppDomainHandle adhTarget,
-                                                        QCall::StringHandleOnStack shRetAssembly,
-                                                        QCall::StringHandleOnStack shRetType)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    if (adhTarget->HasAppDomainManagerInfo())
-    {
-        shRetAssembly.Set(adhTarget->GetAppDomainManagerAsm());
-        shRetType.Set(adhTarget->GetAppDomainManagerType());
-    }
-    else
-    {
-        shRetAssembly.Set(static_cast<LPCWSTR>(NULL));
-        shRetType.Set(static_cast<LPCWSTR>(NULL));
-    }
-
-    END_QCALL;
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Set the assembly and type containing the AppDomainManager to be used for the current domain
-//
-// Arguments:
-//    adhTarget   - AppDomain to set domain manager information for
-//    wszAssembly - assembly which contains the AppDomainManager
-//    wszType     - AppDomainManger for the domain
-//
-
-// static
-void QCALLTYPE AppDomainNative::SetAppDomainManagerType(QCall::AppDomainHandle adhTarget,
-                                                        __in_z LPCWSTR wszAssembly,
-                                                        __in_z LPCWSTR wszType)
-{
-    CONTRACTL
-    {
-        QCALL_CHECK;
-        PRECONDITION(CheckPointer(wszAssembly));
-        PRECONDITION(CheckPointer(wszType));
-        PRECONDITION(!GetAppDomain()->HasAppDomainManagerInfo());
-    }
-    CONTRACTL_END;
-
-    BEGIN_QCALL;
-
-    // If the AppDomainManager type is the same as the domain manager setup by the CLR host, then we can
-    // propagate the host's initialization flags to the new domain as well;
-    EInitializeNewDomainFlags initializationFlags = eInitializeNewDomainFlags_None;
-    if (CorHost2::HasAppDomainManagerInfo())
-    {
-        if (wcscmp(CorHost2::GetAppDomainManagerAsm(), wszAssembly) == 0 &&
-            wcscmp(CorHost2::GetAppDomainManagerType(), wszType) == 0)
-        {
-            initializationFlags = CorHost2::GetAppDomainManagerInitializeNewDomainFlags();
-        }
-    }
-
-    adhTarget->SetAppDomainManagerInfo(wszAssembly, wszType, initializationFlags);
-
-    // If the initialization flags promise that the domain manager isn't going to modify security, then do a
-    // pre-resolution of the domain now so that we can do some basic verification of the state later.  We
-    // don't care about the actual result now, just that the resolution took place to compare against later.
-    if (initializationFlags & eInitializeNewDomainFlags_NoSecurityChanges)
-    {
-        BOOL fIsFullyTrusted;
-        BOOL fIsHomogeneous;
-        adhTarget->GetSecurityDescriptor()->PreResolve(&fIsFullyTrusted, &fIsHomogeneous);
-    }
-
-    END_QCALL;
-}
-
-
-FCIMPL1(void, AppDomainNative::SetHostSecurityManagerFlags, DWORD dwFlags);
-{
-    FCALL_CONTRACT;
-
-    HELPER_METHOD_FRAME_BEGIN_0();
-
-    GetThread()->GetDomain()->GetSecurityDescriptor()->SetHostSecurityManagerFlags(dwFlags);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-// static
-void QCALLTYPE AppDomainNative::SetSecurityHomogeneousFlag(QCall::AppDomainHandle adhTarget,
-                                                           BOOL fRuntimeSuppliedHomogenousGrantSet)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pAppSecDesc = adhTarget->GetSecurityDescriptor();
-    pAppSecDesc->SetHomogeneousFlag(fRuntimeSuppliedHomogenousGrantSet);
-
-    END_QCALL;
-}
-
-
-
 FCIMPL1(Object*, AppDomainNative::GetFriendlyName, AppDomainBaseObject* refThisUNSAFE)
 {
     FCALL_CONTRACT;
@@ -550,23 +250,6 @@ FCIMPL1(Object*, AppDomainNative::GetFriendlyName, AppDomainBaseObject* refThisU
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(str);
-}
-FCIMPLEND
-
-FCIMPL1(FC_BOOL_RET, AppDomainNative::IsDefaultAppDomainForEvidence, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL retVal = FALSE;
-    APPDOMAINREF refThis = (APPDOMAINREF) refThisUNSAFE;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refThis);
-
-    AppDomain* pApp = ValidateArg((APPDOMAINREF) refThisUNSAFE);
-    retVal = pApp->GetSecurityDescriptor()->IsDefaultAppDomainEvidence();
-
-    HELPER_METHOD_FRAME_END();
-    FC_RETURN_BOOL(retVal);
 }
 FCIMPLEND
 
@@ -695,21 +378,6 @@ FCIMPL1(INT32, AppDomainNative::GetId, AppDomainBaseObject* refThisUNSAFE)
 }
 FCIMPLEND
 
-FCIMPL1(void, AppDomainNative::ChangeSecurityPolicy, AppDomainBaseObject* refThisUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    APPDOMAINREF refThis = (APPDOMAINREF) refThisUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refThis);
-    AppDomain* pApp = ValidateArg(refThis);
-
-    pApp->GetSecurityDescriptor()->SetPolicyLevelFlag();
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-
 FCIMPL2(Object*, AppDomainNative::IsStringInterned, AppDomainBaseObject* refThisUNSAFE, StringObject* pStringUNSAFE)
 {
     FCALL_CONTRACT;
@@ -771,23 +439,6 @@ FCIMPL1(Object*, AppDomainNative::GetDynamicDir, AppDomainBaseObject* refThisUNS
     return OBJECTREFToObject(str);
 }
 FCIMPLEND
-
-// static
-void QCALLTYPE AppDomainNative::GetGrantSet(QCall::AppDomainHandle adhTarget,
-                                            QCall::ObjectHandleOnStack retGrantSet)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    IApplicationSecurityDescriptor *pSecDesc = adhTarget->GetSecurityDescriptor();
-
-    GCX_COOP();
-    pSecDesc->Resolve();
-    retGrantSet.Set(pSecDesc->GetGrantedPermissionSet());
-
-    END_QCALL;
-}
 
 
 FCIMPL1(FC_BOOL_RET, AppDomainNative::IsUnloadingForcedFinalize, AppDomainBaseObject* refThisUNSAFE)

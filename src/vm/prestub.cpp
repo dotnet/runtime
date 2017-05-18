@@ -1571,9 +1571,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT)
     } // end else if (IsIL() || IsNoMetadata())
     else if (IsNDirect())
     {
-        if (!GetModule()->GetSecurityDescriptor()->CanCallUnmanagedCode())
-            Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSUNMANAGEDCODE);
-
         pCode = GetStubForInteropMethod(this);
         GetOrCreatePrecode();
     }

@@ -29,7 +29,6 @@
 #include "dbginterface.h"
 #include "eeprofinterfaces.h"
 #include "eeconfig.h"
-#include "securitydeclarative.h"
 #ifdef _TARGET_X86_
 #include "asmconstants.h"
 #endif // _TARGET_X86_
