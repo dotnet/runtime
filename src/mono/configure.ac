@@ -3228,6 +3228,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		BTLS_SUPPORTED=yes
 		BTLS_PLATFORM=arm
+		AC_CHECK_HEADER(stdalign.h,[],[BTLS_SUPPORTED=no])
 		case "$target" in
 		arm*-linux*-gnueabi)
 			BTLS_PLATFORM=armsoft
@@ -3255,6 +3256,7 @@ case "$host" in
 		AOT_SUPPORTED="yes"
 		BTLS_SUPPORTED=yes
 		BTLS_PLATFORM=aarch64
+		AC_CHECK_HEADER(stdalign.h,[],[BTLS_SUPPORTED=no])
 		;;
 	s390x-*-linux*)
 		TARGET=S390X;
