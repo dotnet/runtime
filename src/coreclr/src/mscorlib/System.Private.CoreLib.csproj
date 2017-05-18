@@ -311,8 +311,6 @@
     <Compile Include="$(BclSourcesRoot)\System\AppDomain.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Attribute.cs" />
@@ -693,8 +691,6 @@
     <Compile Include="$(CommonPath)\System\SR.cs" />
     <!-- Include Internals visible to file in the compilation -->
     <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
-    <!-- TODO list of types to be cleaned up from CoreLib -->
-    <Compile Include="$(BclSourcesRoot)\CleanupToDoList.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />

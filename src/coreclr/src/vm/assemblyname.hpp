@@ -23,7 +23,7 @@ public:
     static FCDECL1(Object*, ToString, Object* refThisUNSAFE);
     static FCDECL1(Object*, GetPublicKeyToken, Object* refThisUNSAFE);
     static FCDECL1(Object*, EscapeCodeBase, StringObject* filenameUNSAFE);
-    static FCDECL4(void, Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fForIntrospection, CLR_BOOL fRaiseResolveEvent);
+    static FCDECL3(void, Init, Object * refThisUNSAFE, OBJECTREF * pAssemblyRef, CLR_BOOL fRaiseResolveEvent);
 };
 
 #endif  // _AssemblyName_H

@@ -1224,12 +1224,6 @@ public:
     //==================================================================
     // Security...
 
-    DWORD GetSecurityFlagsDuringPreStub();
-    DWORD GetSecurityFlagsDuringClassLoad(IMDInternalImport *pInternalImport,
-                           mdToken tkMethod, mdToken tkClass,
-                           DWORD *dwClassDeclFlags, DWORD *dwClassNullDeclFlags,
-                           DWORD *dwMethDeclFlags, DWORD *dwMethNullDeclFlags);
-
     inline DWORD RequiresLinktimeCheck()
     {
         LIMITED_METHOD_CONTRACT;

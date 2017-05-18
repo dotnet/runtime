@@ -200,7 +200,7 @@ namespace System
             {
                 if (throwOnError)
                 {
-                    assembly = RuntimeAssembly.InternalLoad(asmName, null, ref stackMark, false /*forIntrospection*/);
+                    assembly = RuntimeAssembly.InternalLoad(asmName, ref stackMark);
                 }
                 else
                 {
@@ -208,7 +208,7 @@ namespace System
                     // Other exceptions like BadImangeFormatException should still fly.
                     try
                     {
-                        assembly = RuntimeAssembly.InternalLoad(asmName, null, ref stackMark, false /*forIntrospection*/);
+                        assembly = RuntimeAssembly.InternalLoad(asmName, ref stackMark);
                     }
                     catch (FileNotFoundException)
                     {

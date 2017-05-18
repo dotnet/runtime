@@ -13,6 +13,8 @@
 
 #include "weakreferencenative.h"
 #include "handletablepriv.h"
+#include "typestring.h"
+#include "typeparse.h"
 
 //************************************************************************
 

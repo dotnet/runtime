@@ -398,12 +398,12 @@ namespace System.Reflection
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void nInit(out RuntimeAssembly assembly, bool forIntrospection, bool raiseResolveEvent);
+        internal extern void nInit(out RuntimeAssembly assembly, bool raiseResolveEvent);
 
         internal void nInit()
         {
             RuntimeAssembly dummy = null;
-            nInit(out dummy, false, false);
+            nInit(out dummy, false);
         }
 
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)

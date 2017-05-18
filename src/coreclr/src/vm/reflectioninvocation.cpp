@@ -2081,33 +2081,6 @@ FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObjec
 }
 FCIMPLEND
 
-
-FCIMPL1(void, ReflectionInvocation::PrepareContractedDelegate, Object * delegateUNSAFE)
-{
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(delegateUNSAFE, NULL_OK));
-    }
-    CONTRACTL_END;
-    
-}
-FCIMPLEND
-
-
-FCIMPL0(void, ReflectionInvocation::ProbeForSufficientStack)
-{
-    FCALL_CONTRACT;
-
-#ifdef FEATURE_STACK_PROBE
-    // probe for our entry point amount and throw if not enough stack
-    RetailStackProbe(ADJUST_PROBE(DEFAULT_ENTRY_PROBE_AMOUNT));
-#else
-    FCUnique(0x69);
-#endif
-
-}
-FCIMPLEND
-
 // This method checks to see if there is sufficient stack to execute the average Framework method.
 // If there is not, then it throws System.InsufficientExecutionStackException. The limit for each
 // thread is precomputed when the thread is created.

@@ -2071,8 +2071,7 @@ ClassLoader::LoadTypeHandleThrowing(
             BOOL fTrustTD = TRUE;
 #ifndef DACCESS_COMPILE
             CONTRACT_VIOLATION(ThrowsViolation);
-            BOOL fVerifyTD = (FoundExportedType != mdTokenNil) &&
-                             !pClsLdr->GetAssembly()->GetSecurityDescriptor()->IsFullyTrusted();
+            BOOL fVerifyTD = FALSE;
             
             // If this is an exported type with a mdTokenNil class token, then then
             // exported type did not give a typedefID hint. We won't be able to trust the typedef
@@ -4970,10 +4969,6 @@ BOOL AccessCheckOptions::DemandMemberAccess(AccessCheckContext *pContext, Method
     // classes/members in app code.
     if (m_accessCheckType != kMemberAccess && pTargetMT)
     {
-        // m_accessCheckType must be kRestrictedMemberAccess if we are running in PT.
-        _ASSERTE(GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted() ||
-                 m_accessCheckType == kRestrictedMemberAccess);
-
         if (visibilityCheck && Security::IsTransparencyEnforcementEnabled())
         {
             // In CoreCLR RMA means visibility checks always succeed if the target is user code.
@@ -5486,12 +5481,6 @@ static BOOL CheckTransparentAccessToCriticalCode(
                 pOptionalTargetField, 
                 pOptionalTargetType))
     {
-#ifdef _DEBUG
-        if (g_pConfig->LogTransparencyErrors())
-        {
-            SecurityTransparent::LogTransparencyError(pContext->GetCallerMethod(), "Transparent code accessing a critical type, method, or field", pOptionalTargetMethod);
-        }
-#endif // _DEBUG
         return accessCheckOptions.DemandMemberAccessOrFail(pContext, pTargetMT, FALSE /*visibilityCheck*/);
     }
 

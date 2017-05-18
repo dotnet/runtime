@@ -592,14 +592,6 @@ EXTERN const char g_psBaseLibraryTLB[];
 #endif  // FEATURE_COMINTEROP
 #endif // DACCESS_COMPILE
 
-EXTERN const WCHAR g_pwzClickOnceEnv_FullName[];
-EXTERN const WCHAR g_pwzClickOnceEnv_Manifest[];
-EXTERN const WCHAR g_pwzClickOnceEnv_Parameter[];
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-EXTERN DWORD g_dwGlobalSharePolicy;
-#endif
-
 //
 // Do we own the lifetime of the process, ie. is it an EXE?
 //
@@ -619,17 +611,6 @@ extern const DWORD g_rgPrimes[71];
 //
 extern LPWSTR g_pCachedCommandLine;
 extern LPWSTR g_pCachedModuleFileName;
-
-//
-// Host configuration file. One per process.
-//
-extern LPCWSTR g_pszHostConfigFile;
-extern SIZE_T  g_dwHostConfigFile;
-
-// AppDomainManager type
-extern LPWSTR g_wszAppDomainManagerAsm;
-extern LPWSTR g_wszAppDomainManagerType;
-extern bool g_fDomainManagerInitialized;
 
 //
 // Macros to check debugger and profiler settings.

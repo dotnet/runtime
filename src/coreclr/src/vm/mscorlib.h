@@ -70,25 +70,20 @@ DEFINE_CLASS_U(System,                 AppDomain,      AppDomainBaseObject)
 DEFINE_FIELD_U(_domainManager,             AppDomainBaseObject, m_pDomainManager)
 DEFINE_FIELD_U(_LocalStore,                AppDomainBaseObject, m_LocalStore)
 DEFINE_FIELD_U(_FusionStore,               AppDomainBaseObject, m_FusionTable)
-DEFINE_FIELD_U(_SecurityIdentity,          AppDomainBaseObject, m_pSecurityIdentity)
-DEFINE_FIELD_U(_Policies,                  AppDomainBaseObject, m_pPolicies)
 DEFINE_FIELD_U(AssemblyLoad,               AppDomainBaseObject, m_pAssemblyEventHandler)
 DEFINE_FIELD_U(_TypeResolve,               AppDomainBaseObject, m_pTypeEventHandler)
 DEFINE_FIELD_U(_ResourceResolve,           AppDomainBaseObject, m_pResourceEventHandler)
 DEFINE_FIELD_U(_AssemblyResolve,           AppDomainBaseObject, m_pAsmResolveEventHandler)
-DEFINE_FIELD_U(_applicationTrust,          AppDomainBaseObject, m_pApplicationTrust)
 DEFINE_FIELD_U(_processExit,               AppDomainBaseObject, m_pProcessExitEventHandler)
 DEFINE_FIELD_U(_domainUnload,              AppDomainBaseObject, m_pDomainUnloadEventHandler)
 DEFINE_FIELD_U(_unhandledException,        AppDomainBaseObject, m_pUnhandledExceptionEventHandler)
 DEFINE_FIELD_U(_compatFlags,              AppDomainBaseObject, m_compatFlags)
 DEFINE_FIELD_U(_firstChanceException,      AppDomainBaseObject, m_pFirstChanceExceptionHandler)
 DEFINE_FIELD_U(_pDomain,                   AppDomainBaseObject, m_pDomain)
-DEFINE_FIELD_U(_HasSetPolicy,                     AppDomainBaseObject, m_bHasSetPolicy)
-DEFINE_FIELD_U(_IsFastFullTrustDomain,            AppDomainBaseObject, m_bIsFastFullTrustDomain)
 DEFINE_FIELD_U(_compatFlagsInitialized,           AppDomainBaseObject, m_compatFlagsInitialized)
 
 DEFINE_CLASS(APP_DOMAIN,            System,                 AppDomain)
-DEFINE_METHOD(APP_DOMAIN,           PREPARE_DATA_FOR_SETUP,PrepareDataForSetup,SM_Str_AppDomainSetup_Evidence_Evidence_IntPtr_Str_ArrStr_ArrStr_RetObj)
+DEFINE_METHOD(APP_DOMAIN,           PREPARE_DATA_FOR_SETUP,PrepareDataForSetup,SM_Str_AppDomainSetup_ArrStr_ArrStr_RetObj)
 DEFINE_METHOD(APP_DOMAIN,           SETUP,Setup,SM_Obj_RetObj)
 DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_LOAD,       OnAssemblyLoadEvent,        IM_Assembly_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           ON_RESOURCE_RESOLVE,    OnResourceResolveEvent,     IM_Assembly_Str_RetAssembly)
@@ -98,9 +93,7 @@ DEFINE_METHOD(APP_DOMAIN,           ON_ASSEMBLY_RESOLVE,    OnAssemblyResolveEve
 DEFINE_METHOD(APP_DOMAIN,           ON_DESIGNER_NAMESPACE_RESOLVE, OnDesignerNamespaceResolveEvent, IM_Str_RetArrStr)
 #endif //FEATURE_COMINTEROP
 DEFINE_METHOD(APP_DOMAIN,           SETUP_DOMAIN,           SetupDomain,                IM_Bool_Str_Str_ArrStr_ArrStr_RetVoid)
-DEFINE_METHOD(APP_DOMAIN,           CREATE_APP_DOMAIN_MANAGER, CreateAppDomainManager,  IM_RetVoid)
 DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_COMPATIBILITY_FLAGS, InitializeCompatibilityFlags,  IM_RetVoid)
-DEFINE_METHOD(APP_DOMAIN,           INITIALIZE_DOMAIN_SECURITY, InitializeDomainSecurity, IM_Evidence_Evidence_Bool_IntPtr_Bool_RetVoid)
 
 DEFINE_CLASS(CLEANUP_WORK_LIST,     StubHelpers,            CleanupWorkList)
 
@@ -119,18 +112,8 @@ DEFINE_CLASS(APPDOMAIN_SETUP,       System,                 AppDomainSetup)
 DEFINE_CLASS_U(System,       AppDomainSetup,                 AppDomainSetupObject)
 DEFINE_FIELD_U(_Entries,                           AppDomainSetupObject,   m_Entries)
 DEFINE_FIELD_U(_AppBase,                           AppDomainSetupObject,   m_AppBase)
-DEFINE_FIELD_U(_AppDomainInitializer,              AppDomainSetupObject,   m_AppDomainInitializer)
-DEFINE_FIELD_U(_AppDomainInitializerArguments,     AppDomainSetupObject,   m_AppDomainInitializerArguments)
-DEFINE_FIELD_U(_ApplicationTrust,                  AppDomainSetupObject,   m_ApplicationTrust)
-DEFINE_FIELD_U(_ConfigurationBytes,                AppDomainSetupObject,   m_ConfigurationBytes)
-DEFINE_FIELD_U(_AppDomainManagerAssembly,          AppDomainSetupObject,   m_AppDomainManagerAssembly)
-DEFINE_FIELD_U(_AppDomainManagerType,              AppDomainSetupObject,   m_AppDomainManagerType)
 DEFINE_FIELD_U(_CompatFlags,                       AppDomainSetupObject,   m_CompatFlags)
 DEFINE_FIELD_U(_TargetFrameworkName,               AppDomainSetupObject,   m_TargetFrameworkName)
-DEFINE_FIELD_U(_LoaderOptimization,                AppDomainSetupObject,   m_LoaderOptimization)
-#ifdef FEATURE_COMINTEROP
-DEFINE_FIELD_U(_DisableInterfaceCache,             AppDomainSetupObject,   m_DisableInterfaceCache)
-#endif // FEATURE_COMINTEROP
 DEFINE_FIELD_U(_CheckedForTargetFrameworkName,     AppDomainSetupObject,   m_CheckedForTargetFrameworkName)
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
 DEFINE_FIELD_U(_UseRandomizedStringHashing,        AppDomainSetupObject,   m_UseRandomizedStringHashing)
@@ -382,8 +365,6 @@ DEFINE_CLASS(EVENT_HANDLERGENERIC,  System,                 EventHandler`1)
 
 DEFINE_CLASS(EVENT_INFO,            Reflection,             EventInfo)
 
-DEFINE_CLASS(EVIDENCE,              Policy,                 Evidence)
-
 DEFINE_CLASS_U(System,                 Exception,      ExceptionObject)
 DEFINE_FIELD_U(_className,         ExceptionObject,    _className)
 DEFINE_FIELD_U(_exceptionMethod,   ExceptionObject,    _exceptionMethod)
@@ -540,8 +521,6 @@ DEFINE_METHOD(IREFLECT,             INVOKE_MEMBER,          InvokeMember,       
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttribute)
 #endif // FEATURE_COMINTEROP
-
-DEFINE_CLASS(LOADER_OPTIMIZATION,   System,                 LoaderOptimization)
 
 
 DEFINE_CLASS(MARSHAL,               Interop,                Marshal)

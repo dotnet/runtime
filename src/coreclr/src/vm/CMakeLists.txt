@@ -93,8 +93,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     precode.cpp
     prestub.cpp
     rejit.cpp
-    securitydescriptor.cpp
-    securitydescriptorassembly.cpp
+    security.cpp
     sigformat.cpp
     siginfo.cpp
     spinlock.cpp
@@ -133,7 +132,6 @@ set(VM_SOURCES_DAC
 set(VM_SOURCES_WKS
     ${VM_SOURCES_DAC_AND_WKS_COMMON}
     appdomainnative.cpp
-    appdomainstack.cpp
     assemblyname.cpp
     assemblynative.cpp
     assemblyspec.cpp
@@ -221,14 +219,6 @@ set(VM_SOURCES_WKS
     runtimehandles.cpp
     safehandle.cpp
     sampleprofiler.cpp
-    security.cpp
-    securityattributes.cpp
-    securitydeclarative.cpp
-    securitydeclarativecache.cpp
-    securitydescriptorappdomain.cpp
-    securitymeta.cpp
-    securitypolicy.cpp
-    securitytransparentassembly.cpp
     sha1.cpp
     simplerwlock.cpp
     sourceline.cpp
@@ -245,7 +235,6 @@ set(VM_SOURCES_WKS
     threaddebugblockinginfo.cpp
     threadsuspend.cpp
     typeparse.cpp
-    verifier.cpp
     weakreferencenative.cpp
     ${VM_SOURCES_GDBJIT}
 )

@@ -3918,9 +3918,7 @@ BOOL DacDbiInterfaceImpl::IsAssemblyFullyTrusted(VMPTR_DomainAssembly vmDomainAs
 {
     DD_ENTER_MAY_THROW;
 
-    DomainAssembly * pAssembly = vmDomainAssembly.GetDacPtr();
-    IAssemblySecurityDescriptor * pSecDisc = pAssembly->GetSecurityDescriptor();
-    return pSecDisc->IsFullyTrusted();
+    return TRUE;
 }
 
 // Get the full path and file name to the assembly's manifest module.

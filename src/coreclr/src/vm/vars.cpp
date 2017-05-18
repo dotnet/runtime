@@ -231,14 +231,6 @@ bool g_fShutDownCOM = false;
 
 DWORD g_FinalizerWaiterStatus = 0;
 
-const WCHAR g_pwzClickOnceEnv_FullName[] = W("__COR_COMMAND_LINE_APP_FULL_NAME__");
-const WCHAR g_pwzClickOnceEnv_Manifest[] = W("__COR_COMMAND_LINE_MANIFEST__");
-const WCHAR g_pwzClickOnceEnv_Parameter[] = W("__COR_COMMAND_LINE_PARAMETER__");
-
-#ifdef FEATURE_LOADER_OPTIMIZATION
-DWORD g_dwGlobalSharePolicy = AppDomain::SHARE_POLICY_UNSPECIFIED;
-#endif
-
 //
 // Do we own the lifetime of the process, ie. is it an EXE?
 //
@@ -255,15 +247,6 @@ bool g_fInControlC = false;
 //
 LPWSTR g_pCachedCommandLine = NULL;
 LPWSTR g_pCachedModuleFileName = 0;
-
-// host configuration file. If set, it is added to every AppDomain (fusion context)
-LPCWSTR  g_pszHostConfigFile = NULL;
-SIZE_T  g_dwHostConfigFile = 0;
-
-// AppDomainManager assembly and type names provided as environment variables.
-LPWSTR g_wszAppDomainManagerAsm = NULL;
-LPWSTR g_wszAppDomainManagerType = NULL;
-bool g_fDomainManagerInitialized = false;
 
 //
 // IJW needs the shim HINSTANCE

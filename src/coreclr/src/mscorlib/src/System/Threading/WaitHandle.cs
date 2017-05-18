@@ -199,9 +199,6 @@ namespace System.Threading
             Contract.EndContractBlock();
             int ret = WaitOneNative(waitableSafeHandle, (uint)millisecondsTimeout, hasThreadAffinity, exitContext);
 
-            if (AppDomainPauseManager.IsPaused)
-                AppDomainPauseManager.ResumeEvent.WaitOneWithoutFAS();
-
             if (ret == WAIT_ABANDONED)
             {
                 ThrowAbandonedMutexException();
@@ -287,9 +284,6 @@ namespace System.Threading
 #endif
 
             int ret = WaitMultiple(internalWaitHandles, millisecondsTimeout, exitContext, true /* waitall*/ );
-
-            if (AppDomainPauseManager.IsPaused)
-                AppDomainPauseManager.ResumeEvent.WaitOneWithoutFAS();
 
             if ((WAIT_ABANDONED <= ret) && (WAIT_ABANDONED + internalWaitHandles.Length > ret))
             {
@@ -379,9 +373,6 @@ namespace System.Threading
             waitHandles = null;
 #endif
             int ret = WaitMultiple(internalWaitHandles, millisecondsTimeout, exitContext, false /* waitany*/ );
-
-            if (AppDomainPauseManager.IsPaused)
-                AppDomainPauseManager.ResumeEvent.WaitOneWithoutFAS();
 
             if ((WAIT_ABANDONED <= ret) && (WAIT_ABANDONED + internalWaitHandles.Length > ret))
             {

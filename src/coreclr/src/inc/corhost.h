@@ -391,24 +391,12 @@ public:
 
     static STARTUP_FLAGS GetStartupFlags();
 
-    static LPCWSTR GetAppDomainManagerAsm();
-
-    static LPCWSTR GetAppDomainManagerType();
-
     static EInitializeNewDomainFlags GetAppDomainManagerInitializeNewDomainFlags();
-
-    static BOOL HasAppDomainManagerInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetAppDomainManagerAsm() != NULL && GetAppDomainManagerType() != NULL;
-    }
 
     static BOOL HasStarted()
     {
         return m_RefCount != 0;
     }
-    
-    static BOOL IsLoadFromBlocked(); // LoadFrom, LoadFile and Load(byte[]) are blocked in certain hosting scenarios
 
 private:
     // This flag indicates if this instance was the first to load and start CoreCLR
@@ -442,11 +430,6 @@ private:
     static LONG  m_RefCount;
 
     static IHostControl *m_HostControl;
-
-    static LPCWSTR s_wszAppDomainManagerAsm;
-    static LPCWSTR s_wszAppDomainManagerType;
-    static EInitializeNewDomainFlags s_dwDomainManagerInitFlags;
-
 
     SVAL_DECL(STARTUP_FLAGS, m_dwStartupFlags);
 };

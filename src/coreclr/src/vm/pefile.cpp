@@ -207,23 +207,6 @@ template<class T> void CoTaskFree(T *p)
 
 NEW_WRAPPER_TEMPLATE1(CoTaskNewHolder, CoTaskFree<_TYPE>);
 
-BOOL PEFile::CanLoadLibrary()
-{
-    WRAPPER_NO_CONTRACT;
-
-    // Dynamic and resource modules don't need LoadLibrary.
-    if (IsDynamic() || IsResource()||IsLoaded())
-        return TRUE;
-
-    // If we're been granted skip verification, OK
-    if (HasSkipVerification())
-        return TRUE;
-
-    // Otherwise, we can only load if IL only.
-    return IsILOnly();
-}
-
-
 
 //-----------------------------------------------------------------------------------------------------
 // Catch attempts to load x64 assemblies on x86, etc.
@@ -312,11 +295,6 @@ void PEFile::LoadLibrary(BOOL allowNativeSkip/*=TRUE*/) // if allowNativeSkip==F
     }
 #endif
 
-    // Don't do this if we are unverifiable
-    if (!CanLoadLibrary())
-        ThrowHR(SECURITY_E_UNVERIFIABLE);
-
-
     // We need contents now
     if (!HasNativeImage())
     {
@@ -392,7 +370,6 @@ void PEFile::SetLoadedHMODULE(HMODULE hMod)
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckPointer(hMod));
-        PRECONDITION(CanLoadLibrary());
         POSTCONDITION(CheckLoaded());
         THROWS;
         GC_TRIGGERS;
