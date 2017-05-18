@@ -47,84 +47,83 @@ namespace System.Net.Http
                         CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
                 }
 
-                // Register the callback with libcurl.  We need to register even if there's no user-provided
-                // server callback and even if there are no client certificates, because we support verifying
-                // server certificates against more than those known to OpenSSL.
-                if (CurlSslVersionDescription.IndexOf("openssl/1.0", StringComparison.OrdinalIgnoreCase) != -1)
+                // Configure the options.  Our best support is when targeting OpenSSL/1.0.  For other backends,
+                // we fall back to a minimal amount of support, and may throw a PNSE based on the options requested.
+                if (CurlSslVersionDescription.IndexOf(Interop.Http.OpenSsl10Description, StringComparison.OrdinalIgnoreCase) != -1)
                 {
-                    CURLcode answer = easy.SetSslCtxCallback(s_sslCtxCallback, userPointer);
-                    switch (answer)
-                    {
-                        case CURLcode.CURLE_OK:
-                            // We successfully registered.  If we'll be invoking a user-provided callback to verify the server
-                            // certificate as part of that, disable libcurl's verification of the host name.  The user's callback
-                            // needs to be given the opportunity to examine the cert, and our logic will determine whether
-                            // the host name matches and will inform the callback of that.
-                            if (easy._handler.ServerCertificateValidationCallback != null)
-                            {
-                                easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYHOST, 0); // don't verify the peer cert's hostname
-                                // We don't change the SSL_VERIFYPEER setting, as setting it to 0 will cause
-                                // SSL and libcurl to ignore the result of the server callback.
-                            }
-
-                            // The allowed SSL protocols will be set in the configuration callback.
-                            break;
-
-                        case CURLcode.CURLE_UNKNOWN_OPTION: // Curl 7.38 and prior
-                        case CURLcode.CURLE_NOT_BUILT_IN:   // Curl 7.39 and later
-                            // It's ok if we failed to register the callback if all of the defaults are in play
-                            // with relation to handling of certificates.  But if that's not the case, failing to 
-                            // register the callback will result in those options not being factored in, which is
-                            // a significant enough error that we need to fail.
-                            EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported: {0}", answer, easy: easy);
-                            if (certProvider != null ||
-                                easy._handler.ServerCertificateValidationCallback != null ||
-                                easy._handler.CheckCertificateRevocationList)
-                            {
-                                throw new PlatformNotSupportedException(
-                                    SR.Format(SR.net_http_unix_invalid_certcallback_option, CurlVersionDescription, CurlSslVersionDescription));
-                            }
-
-                            // Since there won't be a callback to configure the allowed SSL protocols, configure them here.
-                            SetSslVersion(easy);
-
-                            break;
-
-                        default:
-                            ThrowIfCURLEError(answer);
-                            break;
-                    }
+                    // Register the callback with libcurl.  We need to register even if there's no user-provided
+                    // server callback and even if there are no client certificates, because we support verifying
+                    // server certificates against more than those known to OpenSSL.
+                    SetSslOptionsForSupportedBackend(easy, certProvider, userPointer);
                 }
                 else
                 {
-                    // For newer versions of openssl throw PNSE, if default not used.
-                    if (certProvider != null)
-                    {
-                        throw new PlatformNotSupportedException(
-                            SR.Format(
-                                SR.net_http_libcurl_clientcerts_notsupported,
-                                CurlVersionDescription, CurlSslVersionDescription));
-                    }
-
-                    if (easy._handler.ServerCertificateValidationCallback != null)
-                    {
-                        throw new PlatformNotSupportedException(
-                            SR.Format(
-                                SR.net_http_libcurl_callback_notsupported,
-                                CurlVersionDescription, CurlSslVersionDescription));
-                    }
-
-                    if (easy._handler.CheckCertificateRevocationList)
-                    {
-                        throw new PlatformNotSupportedException(
-                            SR.Format(
-                                SR.net_http_libcurl_revocation_notsupported,
-                                CurlVersionDescription, CurlSslVersionDescription));
-                    }
-
-                    // In case of defaults configure the allowed SSL protocols.
-                    SetSslVersion(easy);
+                    // Newer versions of OpenSSL, and other non-OpenSSL backends, do not currently support callbacks.
+                    // That means we'll throw a PNSE if a callback is required.
+                    SetSslOptionsForUnsupportedBackend(easy, certProvider);
                 }
+            }
+
+            private static void SetSslOptionsForSupportedBackend(EasyRequest easy, ClientCertificateProvider certProvider, IntPtr userPointer)
+            {
+                CURLcode answer = easy.SetSslCtxCallback(s_sslCtxCallback, userPointer);
+                switch (answer)
+                {
+                    case CURLcode.CURLE_OK:
+                        // We successfully registered.  If we'll be invoking a user-provided callback to verify the server
+                        // certificate as part of that, disable libcurl's verification of the host name; we need to get
+                        // the callback from libcurl even if the host name doesn't match, so we take on the responsibility
+                        // of doing the host name match in the callback prior to invoking the user's delegate.
+                        if (easy._handler.ServerCertificateValidationCallback != null)
+                        {
+                            easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYHOST, 0);
+                            // But don't change the CURLOPT_SSL_VERIFYPEER setting, as setting it to 0 will
+                            // cause SSL and libcurl to ignore the result of the server callback.
+                        }
+
+                        // The allowed SSL protocols will be set in the configuration callback.
+                        break;
+
+                    case CURLcode.CURLE_UNKNOWN_OPTION: // Curl 7.38 and prior
+                    case CURLcode.CURLE_NOT_BUILT_IN:   // Curl 7.39 and later
+                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported: {0}", answer, easy: easy);
+                        SetSslOptionsForUnsupportedBackend(easy, certProvider);
+                        break;
+
+                    default:
+                        ThrowIfCURLEError(answer);
+                        break;
+                }
+            }
+
+            private static void SetSslOptionsForUnsupportedBackend(EasyRequest easy, ClientCertificateProvider certProvider)
+            {
+                if (certProvider != null)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_clientcerts_notsupported, CurlVersionDescription, CurlSslVersionDescription));
+                }
+
+                if (easy._handler.CheckCertificateRevocationList)
+                {
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_revocation_notsupported, CurlVersionDescription, CurlSslVersionDescription));
+                }
+
+                if (easy._handler.ServerCertificateValidationCallback != null)
+                {
+                    if (easy.ServerCertificateValidationCallbackAcceptsAll)
+                    {
+                        EventSourceTrace("Warning: Disabling peer and host verification per {0}", nameof(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator), easy: easy);
+                        easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYPEER, 0);
+                        easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYHOST, 0);
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException(SR.Format(SR.net_http_libcurl_callback_notsupported, CurlVersionDescription, CurlSslVersionDescription));
+                    }
+                }
+
+                // In case of defaults configure the allowed SSL protocols.
+                SetSslVersion(easy);
             }
 
             private static void SetSslVersion(EasyRequest easy, IntPtr sslCtx = default(IntPtr))
