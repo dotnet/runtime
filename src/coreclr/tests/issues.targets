@@ -184,12 +184,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\PrivateInterfaceImpl\Test6_ImplementingClass\*">
-            <Issue></Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\regressions\440935\Test\*">
-            <Issue></Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\CheckProjects\CheckProjects\*">
             <Issue></Issue>
         </ExcludeList>
