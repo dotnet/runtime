@@ -344,7 +344,12 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 	MonoInst *memcpy_ins = NULL;
 
 	g_assert (klass);
-	g_assert (!(native && klass->has_references));
+	/*
+	Fun fact about @native. It's false that @klass will have no ref when @native is true.
+	This happens in pinvoke2. What goes is that marshal.c uses CEE_MONO_LDOBJNATIVE and pass klass.
+	The actual stuff being copied will have no refs, but @klass might.
+	This means we can't assert !(klass->has_references && native).
+	*/
 
 	if (cfg->gshared)
 		klass = mono_class_from_mono_type (mini_get_underlying_type (&klass->byval_arg));
