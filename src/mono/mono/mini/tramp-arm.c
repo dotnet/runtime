@@ -847,26 +847,31 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int buf_len, i, framesize = 0, off_methodargs, off_targetaddr;
+	int buf_len, i, framesize, off_methodargs, off_targetaddr;
 	const int fp_reg = ARMREG_R7;
 
 	buf_len = 512 + 1024;
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
 
-	off_methodargs = framesize;
+	framesize = 5 * sizeof (mgreg_t); /* lr, r4, r8, r6 and plus one */
+
+	off_methodargs = -framesize;
 	framesize += sizeof (mgreg_t);
 
-	off_targetaddr = framesize;
+	off_targetaddr = -framesize;
 	framesize += sizeof (mgreg_t);
 
-	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+	framesize = ALIGN_TO (framesize + 4 * sizeof (mgreg_t), MONO_ARCH_FRAME_ALIGNMENT);
 
 	/* allocate space on stack for argument passing */
 	const int stack_space = ALIGN_TO (((gregs_num - ARMREG_R3) * sizeof (mgreg_t)), MONO_ARCH_FRAME_ALIGNMENT);
 
-	/* use r4, r5 and r6 as scratch registers */
-	ARM_PUSH (code, (1 << fp_reg) | (1 << ARMREG_LR) | (1 << ARMREG_R4) | (1 << ARMREG_R5) | (1 << ARMREG_R6));
+	/* iOS ABI */
+	ARM_PUSH (code, (1 << fp_reg) | (1 << ARMREG_LR));
 	ARM_MOV_REG_REG (code, fp_reg, ARMREG_SP);
+
+	/* use r4, r5 and r6 as scratch registers */
+	ARM_PUSH (code, (1 << ARMREG_R4) | (1 << ARMREG_R5) | (1 << ARMREG_R6));
 	ARM_SUB_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, stack_space + framesize);
 
 	/* save InterpMethodArguments* onto stack */
@@ -967,8 +972,10 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < 3; i++)
 		arm_patch (label_leave_tramp [i], code);
 
+	ARM_ADD_REG_IMM8 (code, ARMREG_SP, ARMREG_SP, stack_space + framesize);
+	ARM_POP (code, (1 << ARMREG_R4) | (1 << ARMREG_R5) | (1 << ARMREG_R6));
 	ARM_MOV_REG_REG (code, ARMREG_SP, fp_reg);
-	ARM_POP (code, (1 << fp_reg) | (1 << ARMREG_PC) | (1 << ARMREG_R4) | (1 << ARMREG_R5) | (1 << ARMREG_R6));
+	ARM_POP (code, (1 << fp_reg) | (1 << ARMREG_PC));
 
 	g_assert (code - start < buf_len);
 
