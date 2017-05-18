@@ -25,7 +25,10 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
+        [SkipOnTargetFramework(
+            TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.Uap, 
+            "NetFramework: NetEventSource is only part of .NET Core;" + 
+            "UapAot: RemoteExecutorConsoleApp.exe crashes trying to load netstandard.dll - StrongName issue")]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>

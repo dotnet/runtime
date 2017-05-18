@@ -658,12 +658,11 @@ namespace System.Net
             set
             {
                 // Only set by HttpListenerRequest::Cookies_get()
-#if !uap
                 if (value != CookieVariant.Rfc2965)
                 {
                     NetEventSource.Fail(this, $"value != Rfc2965:{value}");
                 }
-#endif
+
                 _cookieVariant = value;
             }
         }
@@ -828,7 +827,6 @@ namespace System.Net
 #if DEBUG
         internal void Dump()
         {
-#if !uap
             if (NetEventSource.IsEnabled)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, 
@@ -850,7 +848,6 @@ namespace System.Net
                                 + "\tHttpOnly    = " + HttpOnly + "\n"
                                 );
             }
-#endif
         }
 #endif
     }
