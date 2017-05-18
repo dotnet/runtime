@@ -37,7 +37,7 @@ namespace System.Net.Sockets.Performance.Tests
             SocketImplementationType clientType = SocketImplementationType.Async;
             int iterations = 200 * _iterations;
             int bufferSize = 256;
-            int socket_instances = 200;
+            int socket_instances = 20;
 
             var test = new SocketPerformanceTests(_log);
 
