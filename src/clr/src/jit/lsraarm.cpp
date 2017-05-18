@@ -640,6 +640,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitBlockStore(tree->AsBlk());
             break;
 
+        case GT_INIT_VAL:
+            // Always a passthrough of its child's value.
+            info->srcCount = 0;
+            info->dstCount = 0;
+            break;
+
         case GT_LCLHEAP:
             TreeNodeInfoInitLclHeap(tree);
             break;
