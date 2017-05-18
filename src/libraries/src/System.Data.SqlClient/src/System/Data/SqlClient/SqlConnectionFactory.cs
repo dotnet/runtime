@@ -3,18 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 
-
-//------------------------------------------------------------------------------
-
+using System.Collections.Specialized;
+using System.Configuration;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-
+using System.IO;
 
 namespace System.Data.SqlClient
 {
     sealed internal class SqlConnectionFactory : DbConnectionFactory
     {
+
+        private const string _metaDataXml = "MetaDataXml";
+
         private SqlConnectionFactory() : base() { }
 
         public static readonly SqlConnectionFactory SingletonInstance = new SqlConnectionFactory();
@@ -266,6 +268,20 @@ namespace System.Data.SqlClient
             {
                 c.SetInnerConnectionTo(to);
             }
+        }
+
+        protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
+        {
+            Debug.Assert(internalConnection != null, "internalConnection may not be null.");
+            
+            Stream xmlStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("System.Data.SqlClient.SqlMetaData.xml");
+            cacheMetaDataFactory = true;
+            
+            Debug.Assert(xmlStream != null, nameof(xmlStream) + " may not be null.");
+
+            return new SqlMetaDataFactory(xmlStream,
+                                          internalConnection.ServerVersion,
+                                          internalConnection.ServerVersion);
         }
     }
 }
