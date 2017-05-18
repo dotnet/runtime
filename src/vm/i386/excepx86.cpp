@@ -1953,18 +1953,6 @@ LPVOID STDCALL COMPlusEndCatch(LPVOID ebp, DWORD ebx, DWORD edi, DWORD esi, LPVO
     return esp;
 }
 
-#endif // !DACCESS_COMPILE
-
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    
-    UINT_PTR stackSlot = pContext->Ebp + REDIRECTSTUB_EBP_OFFSET_CONTEXT;
-    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
-    return *ppContext;
-}
-
-#if !defined(DACCESS_COMPILE)
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord()
 {
     WRAPPER_NO_CONTRACT;
@@ -3617,6 +3605,15 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandlerRevCom)
 #endif // FEATURE_COMINTEROP
 #endif // !DACCESS_COMPILE
 #endif // !WIN64EXCEPTIONS
+
+PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(CONTEXT * pContext)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    UINT_PTR stackSlot = pContext->Ebp + REDIRECTSTUB_EBP_OFFSET_CONTEXT;
+    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
+    return *ppContext;
+}
 
 #ifndef DACCESS_COMPILE
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
