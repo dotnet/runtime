@@ -25,7 +25,7 @@ public static partial class XmlSerializerTests
     {
         if (!PlatformDetection.IsFullFramework)
         {
-            MethodInfo method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName, BindingFlags.NonPublic | BindingFlags.Static);
+            MethodInfo method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             Assert.True(method != null, $"No method named {SerializationModeSetterName}");
             method.Invoke(null, new object[] { 1 });
         }
@@ -3285,6 +3285,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.value, ((DerivedClass)actual).value);
     }
 
+#if !uapaot
     [Fact]
     public static void Xml_DefaultValueAttributeSetToNaNTest()
     {
@@ -3300,6 +3301,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(actual);
         Assert.Equal(value, actual);
     }
+#endif
 
     [Fact]
     public static void Xml_NullRefInXmlSerializerCtorTest()

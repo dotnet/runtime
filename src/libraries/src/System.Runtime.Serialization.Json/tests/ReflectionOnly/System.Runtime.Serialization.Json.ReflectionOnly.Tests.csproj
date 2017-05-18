@@ -7,8 +7,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
@@ -17,7 +17,7 @@
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <Compile Include="$(TestSourceFolder)..\DataContractJsonSerializer.CoreCLR.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
   </ItemGroup>
