@@ -184,9 +184,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683\*">
             <Issue>6707</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\CheckProjects\CheckProjects\*">
-            <Issue></Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x86 failures -->
