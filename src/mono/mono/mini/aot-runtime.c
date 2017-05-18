@@ -505,6 +505,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 				return NULL;
 
 			t = mini_get_shared_gparam (&par_klass->byval_arg, gshared_constraint);
+			mono_metadata_free_type (gshared_constraint);
 			klass = mono_class_from_mono_type (t);
 		} else {
 			int type = decode_value (p, &p);

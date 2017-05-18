@@ -3498,6 +3498,7 @@ mini_get_shared_gparam (MonoType *t, MonoType *constraint)
 	copy = (MonoGSharedGenericParam *)mono_image_alloc0 (image, sizeof (MonoGSharedGenericParam));
 	memcpy (&copy->param, par, sizeof (MonoGenericParamFull));
 	copy->param.info.pklass = NULL;
+	constraint = mono_metadata_type_dup (image, constraint);
 	name = get_shared_gparam_name (constraint->type, ((MonoGenericParamFull*)copy)->info.name);
 	copy->param.info.name = mono_image_strdup (image, name);
 	g_free (name);
