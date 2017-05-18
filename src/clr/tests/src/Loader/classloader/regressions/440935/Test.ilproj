@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="Foo.ilproj" />
+    <ProjectReference Include="Bar.ilproj" />
   </ItemGroup>
 
   <ItemGroup>
