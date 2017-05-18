@@ -90,34 +90,6 @@
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
-
-  <!-- Common nuget properties -->
-  <PropertyGroup>
-    <NuGetToolPath Condition="'$(NuGetToolPath)'==''">$(PackagesDir)NuGet.exe</NuGetToolPath>
-    <NuGetConfigFile Condition="'$(NuGetConfigFile)'==''">$(SourceDir)NuGet.Config</NuGetConfigFile>
-    <NuGetConfigCommandLine>-ConfigFile "$(NuGetConfigFile)"</NuGetConfigCommandLine>
-
-    <NugetRestoreCommand>"$(NuGetToolPath)"</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) install</NugetRestoreCommand>
-    <!-- Trim off the last slash so that nuget doesn't get confused and say there are illegal characters on
-         the path. -->
-    <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Windows_NT'">$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\\'))"</NugetRestoreCommand>
-    <NugetRestoreCommand Condition="'$(OsEnvironment)'!='Windows_NT'">$(NugetRestoreCommand) -OutputDirectory "$(PackagesDir.TrimEnd('\'))"</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) $(NuGetConfigCommandLine)</NugetRestoreCommand>
-    <NugetRestoreCommand>$(NugetRestoreCommand) -Verbosity detailed</NugetRestoreCommand>
-    <NugetRestoreCommand Condition="'$(OsEnvironment)'=='Unix'">mono $(NuGetRestoreCommand)</NugetRestoreCommand>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
-
-    <DnuRestoreCommand>"$(DotnetToolCommand)"</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(OsEnvironment)'=='Windows_NT'">$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\\'))"</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(OsEnvironment)'!='Windows_NT'">$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('\'))"</DnuRestoreCommand>
-  </PropertyGroup>
-
   <!-- Setup common target properties that we use to conditionally include sources -->
   <PropertyGroup>
     <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
