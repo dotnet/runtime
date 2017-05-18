@@ -692,7 +692,6 @@ WinMDAdapter::RedirectedTypeIndex WinRTTypeNameConverter::GetRedirectedTypeIndex
         dwFlags));
     Assembly* pRedirectedAssembly = spec.LoadAssembly(
         FILE_LOADED,
-        NULL, // pLoadSecurity
         FALSE); // fThrowOnFileNotFound
 
     if (pRedirectedAssembly == NULL)

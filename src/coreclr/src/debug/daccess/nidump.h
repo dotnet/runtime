@@ -16,7 +16,6 @@ typedef DPTR(IMAGE_SECTION_HEADER) PTR_IMAGE_SECTION_HEADER;
 typedef DPTR(CerNgenRootTable) PTR_CerNgenRootTable;
 typedef DPTR(struct CerRoot) PTR_CerRoot;
 typedef DPTR(MethodContextElement) PTR_MethodContextElement;
-typedef DPTR(ModuleSecurityDescriptor) PTR_ModuleSecurityDescriptor;
 typedef DPTR(DictionaryEntry) PTR_DictionaryEntry;
 typedef DPTR(GuidInfo) PTR_GuidInfo;
 #if defined(FEATURE_COMINTEROP)

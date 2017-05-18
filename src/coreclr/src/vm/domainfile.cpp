@@ -17,7 +17,6 @@
 #include <shlwapi.h>
 
 #include "security.h"
-#include "securitymeta.h"
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "dynamicmethod.h"
@@ -973,73 +972,6 @@ void DomainFile::PreLoadLibrary()
     }
     CONTRACTL_END;
 
-    // Check skip verification for loading if required
-    if (!GetFile()->CanLoadLibrary())
-    {
-        DomainAssembly* pDomainAssembly = GetDomainAssembly();
-        if (pDomainAssembly->GetSecurityDescriptor()->IsResolved())
-        {
-            if (Security::CanSkipVerification(pDomainAssembly))
-                GetFile()->SetSkipVerification();
-        }
-        else
-        {
-            AppDomain *pAppDomain = this->GetAppDomain();
-            PEFile *pFile = GetFile();
-            _ASSERTE(pFile != NULL);
-            PEImage *pImage = pFile->GetILimage();
-            _ASSERTE(pImage != NULL);
-            _ASSERTE(!pImage->IsFile());
-            if (pImage->HasV1Metadata())
-            {
-                // In V1 case, try to derive SkipVerification status from parents
-                do
-                {
-                    PEAssembly * pAssembly = pFile->GetAssembly();
-                    if (pAssembly == NULL)
-                        break;
-                    pFile = pAssembly->GetCreator();
-                    if (pFile != NULL)
-                    {
-                        pAssembly = pFile->GetAssembly();
-                        // Find matching DomainAssembly for the given PEAsssembly
-                        // Perf: This does not scale
-                        AssemblyIterationFlags flags =
-                            (AssemblyIterationFlags) (kIncludeLoaded | kIncludeLoading | kIncludeExecution);
-                        AppDomain::AssemblyIterator i = pAppDomain->IterateAssembliesEx(flags);
-                        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
-
-                        while (i.Next(pDomainAssembly.This()))
-                        {
-                            if ((pDomainAssembly != NULL) && (pDomainAssembly->GetFile() == pAssembly))
-                            {
-                                break;
-                            }
-                        }
-                        if (pDomainAssembly != NULL)
-                        {
-                            if (pDomainAssembly->GetSecurityDescriptor()->IsResolved())
-                            {
-                                if (Security::CanSkipVerification(pDomainAssembly))
-                                {
-                                    GetFile()->SetSkipVerification();
-                                    break;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Potential Bug: Unable to find DomainAssembly for given PEAssembly
-                            // In retail build gracefully exit loop
-                            _ASSERTE(pDomainAssembly != NULL);
-                            break;
-                        }
-                    }
-                }
-                while (pFile != NULL);
-            }
-        }
-    }
 } // DomainFile::PreLoadLibrary
 
 // Note that this is the sole loading function which must be called OUTSIDE THE LOCK, since
@@ -1264,12 +1196,6 @@ void DomainFile::VerifyExecution()
     {
         // Throw an exception
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_IN_INTROSPECTIVE_ASSEMBLY);
-    }
-
-    if (GetModule()->GetAssembly()->IsSIMDVectorAssembly() && 
-        !GetModule()->GetAssembly()->GetSecurityDescriptor()->IsFullyTrusted())
-    {
-        COMPlusThrow(kFileLoadException, IDS_EE_SIMD_PARTIAL_TRUST_DISALLOWED);
     }
 
     if(GetFile()->PassiveDomainOnly())
@@ -1559,12 +1485,11 @@ void DomainFile::InsertIntoDomainFileWithNativeImageList()
 // DomainAssembly
 //--------------------------------------------------------------------------------
 
-DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, AssemblyLoadSecurity *pLoadSecurity, LoaderAllocator *pLoaderAllocator)
+DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *pLoaderAllocator)
   : DomainFile(pDomain, pFile),
     m_pAssembly(NULL),
     m_debuggerFlags(DACF_NONE),
     m_MissingDependenciesCheckStatus(CMD_Unknown),
-    m_fSkipPolicyResolution(pLoadSecurity != NULL && !pLoadSecurity->ShouldResolvePolicy()),
     m_fDebuggerUnloadStarted(FALSE),
     m_fCollectible(pLoaderAllocator->IsCollectible()),
     m_fHostAssemblyPublished(false),
@@ -1592,47 +1517,10 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, AssemblyLoadSe
 
     m_hExposedAssemblyObject = NULL;
 
-    NewHolder<IAssemblySecurityDescriptor> pSecurityDescriptorHolder(Security::CreateAssemblySecurityDescriptor(pDomain, this, pLoaderAllocator));
-
-    if (pLoadSecurity != NULL)
-    {
-
-        if (GetFile()->IsSourceGAC())
-        {
-            // Assemblies in the GAC are not allowed to
-            // specify additional evidence.  They must always follow default machine policy rules.
-
-            // So, we just ignore the evidence. (Ideally we would throw an error, but it would introduce app
-            // compat issues.)
-        }
-        else
-        {
-            {
-                GCX_COOP();
-
-
-                // If the assembly being loaded already knows its grant set (for instnace, it's being pushed
-                // from the loading assembly), then we can set that up now as well
-                if (!pLoadSecurity->ShouldResolvePolicy())
-                {
-                    _ASSERTE(pLoadSecurity->m_pGrantSet != NULL);
-
-
-                    pSecurityDescriptorHolder->PropagatePermissionSet(
-                                                      *pLoadSecurity->m_pGrantSet,
-                                                      pLoadSecurity->m_pRefusedSet == NULL ? NULL : *pLoadSecurity->m_pRefusedSet,
-                                                      pLoadSecurity->m_dwSpecialFlags);
-                }
-            }
-        }
-    }
-
     SetupDebuggingConfig();
 
     // Add a Module iterator entry for this assembly.
     IfFailThrow(m_Modules.Append(this));
-
-    m_pSecurityDescriptor = pSecurityDescriptorHolder.Extract();
 }
 
 DomainAssembly::~DomainAssembly()
@@ -1664,8 +1552,6 @@ DomainAssembly::~DomainAssembly()
     {
         delete m_pAssembly;
     }
-
-    delete m_pSecurityDescriptor;
 }
 
 void DomainAssembly::ReleaseFiles()
@@ -2083,14 +1969,6 @@ BOOL DomainAssembly::ShouldLoadDomainNeutralHelper()
 #endif // FEATURE_LOADER_OPTIMIZATION
 }
 
-BOOL DomainAssembly::ShouldSkipPolicyResolution()
-{
-    LIMITED_METHOD_CONTRACT;
-    return m_fSkipPolicyResolution;
-}
-
-
-
 // This is where the decision whether an assembly is DomainNeutral (shared) nor not is made.
 void DomainAssembly::Allocate()
 {
@@ -2101,9 +1979,6 @@ void DomainAssembly::Allocate()
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-
-    // Make sure the security system is happy with this assembly being loaded into the domain
-    GetSecurityDescriptor()->CheckAllowAssemblyLoad();
 
     AllocMemTracker   amTracker;
     AllocMemTracker * pamTracker = &amTracker;

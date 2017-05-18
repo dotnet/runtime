@@ -18,7 +18,6 @@ namespace System
     using System.Reflection;
     using System.Security;
     using CultureInfo = System.Globalization.CultureInfo;
-    using Evidence = System.Security.Policy.Evidence;
     using StackCrawlMark = System.Threading.StackCrawlMark;
     using System.Runtime.InteropServices;
     using System.Runtime.CompilerServices;

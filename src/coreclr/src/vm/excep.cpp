@@ -11451,38 +11451,24 @@ BOOL CEHelper::CanMethodHandleCE(PTR_MethodDesc pMethodDesc, CorruptionSeverity 
         return TRUE;
     }
 
-    // Only SecurityCritical code can handle CE since only they can generate it.
-    // Even in full trusted assembly, transparent code cannot generate CE and thus,
-    // will not know how to handle it properly.
-    //
-    // Check if the method in question is SecurityCritical or not.
-    MethodSecurityDescriptor mdSec(pMethodDesc);
-    fCanMethodHandleSeverity = mdSec.IsCritical();
-
-    if (fCanMethodHandleSeverity)
+    // Since the method is Security Critical, now check if it is
+    // attributed to handle the CE or not.
+    IMDInternalImport *pImport = pMethodDesc->GetMDImport();
+    if (pImport != NULL)
     {
-        // Reset the flag to FALSE
-        fCanMethodHandleSeverity = FALSE;
-
-        // Since the method is Security Critical, now check if it is
-        // attributed to handle the CE or not.
-        IMDInternalImport *pImport = pMethodDesc->GetMDImport();
-        if (pImport != NULL)
+        mdMethodDef methodDef = pMethodDesc->GetMemberDef();
+        switch(severity)
         {
-            mdMethodDef methodDef = pMethodDesc->GetMemberDef();
-            switch(severity)
-            {
-                case ProcessCorrupting:
-                     fCanMethodHandleSeverity = (S_OK == pImport->GetCustomAttributeByName(
-                                                    methodDef,
-                                                    HANDLE_PROCESS_CORRUPTED_STATE_EXCEPTION_ATTRIBUTE,
-                                                    NULL,
-                                                    NULL));
-                    break;
-                default:
-                    _ASSERTE(!"Unknown Exception Corruption Severity!");
-                    break;
-            }
+            case ProcessCorrupting:
+                    fCanMethodHandleSeverity = (S_OK == pImport->GetCustomAttributeByName(
+                                                methodDef,
+                                                HANDLE_PROCESS_CORRUPTED_STATE_EXCEPTION_ATTRIBUTE,
+                                                NULL,
+                                                NULL));
+                break;
+            default:
+                _ASSERTE(!"Unknown Exception Corruption Severity!");
+                break;
         }
     }
 #endif // !DACCESS_COMPILE

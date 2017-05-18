@@ -936,32 +936,10 @@ DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
         spec.SetBindingContext(m_pBinderContext);
     }
 
-    DomainAssembly *pDomainAssembly = NULL;
-
-    // Setup the AssemblyLoadSecurity to perform the assembly load
-    GCX_COOP();
-
-    PTR_AppDomain pCurDomain = GetAppDomain();
-    IApplicationSecurityDescriptor *pDomainSecDesc = pCurDomain->GetSecurityDescriptor();
-
-    OBJECTREF refGrantedPermissionSet = NULL;
-    AssemblyLoadSecurity loadSecurity;
-
-    GCPROTECT_BEGIN(refGrantedPermissionSet);
-
-    loadSecurity.m_dwSpecialFlags = pDomainSecDesc->GetSpecialFlags();
-    refGrantedPermissionSet = pDomainSecDesc->GetGrantedPermissionSet();
-    loadSecurity.m_pGrantSet = &refGrantedPermissionSet;
-
     // Bind and load the assembly.
-    pDomainAssembly = spec.LoadDomainAssembly(
+    return spec.LoadDomainAssembly(
         FILE_LOADED,
-        &loadSecurity,
         FALSE); // Don't throw on FileNotFound.
-
-    GCPROTECT_END();
-
-    return pDomainAssembly;
 }
 
 

@@ -764,14 +764,8 @@ namespace Microsoft.Win32
         [DllImport(KERNEL32)]
         internal static extern bool FindClose(IntPtr handle);
 
-        [DllImport(KERNEL32, SetLastError = true, ExactSpelling = true)]
-        internal static extern uint GetCurrentDirectoryW(uint nBufferLength, char[] lpBuffer);
-
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
         internal static extern bool GetFileAttributesEx(String name, int fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation);
-
-        [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern bool SetCurrentDirectory(String path);
 
         internal const int LCID_SUPPORTED = 0x00000002;  // supported locale ids
 

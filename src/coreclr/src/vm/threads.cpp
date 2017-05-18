@@ -28,7 +28,6 @@
 #include "corhost.h"
 #include "win32threadpool.h"
 #include "jitinterface.h"
-#include "appdomainstack.inl"
 #include "eventtrace.h"
 #include "comutilnative.h"
 #include "finalizerthread.h"
@@ -928,14 +927,6 @@ Thread* SetupUnstartedThread(BOOL bRequiresTSL)
 
     return pThread;
 }
-
-FCIMPL0(INT32, GetRuntimeId_Wrapper)
-{
-    FCALL_CONTRACT;
-
-    return GetRuntimeId();
-}
-FCIMPLEND
 
 //-------------------------------------------------------------------------
 // Public function: DestroyThread()
@@ -8103,9 +8094,6 @@ void Thread::InitContext()
     m_pDomain = m_Context->GetDomain();
     _ASSERTE(m_pDomain);
     m_pDomain->ThreadEnter(this, NULL);
-
-    // Every thread starts in the default domain, so push it here.
-    PushDomain((ADID)DefaultADID);
 }
 
 void Thread::ClearContext()
@@ -8131,7 +8119,6 @@ void Thread::ClearContext()
     m_fDisableComObjectEagerCleanup = false;
 #endif //FEATURE_COMINTEROP
     m_Context = NULL;
-    m_ADStack.ClearDomainStack();
 }
 
 
@@ -8394,7 +8381,6 @@ void Thread::EnterContextRestricted(Context *pContext, ContextTransitionFrame *p
 
         _ASSERTE(pFrame);
 
-        PushDomain(pDomain->GetId());
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100000, "Entering into ADID=%d\n", pDomain->GetId().m_dwId);
 
 
@@ -8551,7 +8537,6 @@ void Thread::ReturnToContext(ContextTransitionFrame *pFrame)
 
     if (fChangedDomains)
     {
-        pADOnStack = m_ADStack.PopDomain();
         STRESS_LOG2(LF_APPDOMAIN, LL_INFO100000, "Returning from %d to %d\n", pADOnStack.m_dwId, pReturnContext->GetDomain()->GetId().m_dwId);
 
         _ASSERTE(pADOnStack == m_pDomain->GetId());
@@ -10674,7 +10659,6 @@ void Thread::FullResetThread()
 
     GCX_FORBID();
     DeleteThreadStaticData();
-    ResetSecurityInfo();
 
     m_alloc_context.alloc_bytes = 0;
     m_fPromoted = FALSE;

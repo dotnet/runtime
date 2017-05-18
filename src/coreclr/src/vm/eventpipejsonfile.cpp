@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "eventpipejsonfile.h"
+#include "typestring.h"
 
 #ifdef _DEBUG
 #ifdef FEATURE_PERFTRACING

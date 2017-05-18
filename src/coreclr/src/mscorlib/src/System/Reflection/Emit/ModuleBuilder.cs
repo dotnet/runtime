@@ -716,16 +716,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                String fullyQualifiedName = m_moduleData.m_strFileName;
-                if (fullyQualifiedName == null)
-                    return null;
-                if (ContainingAssemblyBuilder.m_assemblyData.m_strDir != null)
-                {
-                    fullyQualifiedName = Path.Combine(ContainingAssemblyBuilder.m_assemblyData.m_strDir, fullyQualifiedName);
-                    fullyQualifiedName = Path.GetFullPath(fullyQualifiedName);
-                }
-
-                return fullyQualifiedName;
+                return m_moduleData.m_strFileName;
             }
         }
 

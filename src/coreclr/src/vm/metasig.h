@@ -343,9 +343,6 @@ DEFINE_METASIG(SM(ArrByte_RetObj, a(b), j))
 DEFINE_METASIG(SM(ArrByte_Bool_RetObj, a(b) F, j))
 DEFINE_METASIG(SM(ArrByte_ArrByte_RefObj_RetObj, a(b) a(b) r(j), j))
 DEFINE_METASIG_T(SM(PtrSByt_Int_Int_Encoding_RetStr, P(B) i i C(ENCODING), s))
-DEFINE_METASIG_T(SM(Evidence_RetEvidence, C(EVIDENCE), C(EVIDENCE)))
-DEFINE_METASIG_T(SM(Evidence_Asm_RetEvidence, C(EVIDENCE) C(ASSEMBLY), C(EVIDENCE)))
-DEFINE_METASIG_T(IM(Evidence_RetVoid, C(EVIDENCE), v))
 
 DEFINE_METASIG_T(SM(Void_RetRuntimeTypeHandle, _, g(RT_TYPE_HANDLE)))
 DEFINE_METASIG(SM(Void_RetIntPtr, _, I))
@@ -516,12 +513,8 @@ DEFINE_METASIG_T(IM(LicenseInteropHelper_GetLicInfo, g(RT_TYPE_HANDLE) r(i) r(i)
 
 // App Domain related defines
 DEFINE_METASIG(IM(Bool_Str_Str_ArrStr_ArrStr_RetVoid, F s s a(s) a(s), v))
-DEFINE_METASIG_T(IM(LoaderOptimization_RetVoid, g(LOADER_OPTIMIZATION), v))
-DEFINE_METASIG_T(IM(Evidence_Evidence_Bool_IntPtr_Bool_RetVoid, C(EVIDENCE) C(EVIDENCE) F I F, v))
-DEFINE_METASIG_T(SM(Str_Evidence_AppDomainSetup_RetAppDomain, s C(EVIDENCE) C(APPDOMAIN_SETUP), C(APP_DOMAIN)))
-DEFINE_METASIG_T(SM(Str_Evidence_Str_Str_Bool_RetAppDomain, s C(EVIDENCE) s s F, C(APP_DOMAIN)))
 DEFINE_METASIG_T(SM(Str_RetAppDomain, s, C(APP_DOMAIN)))
-DEFINE_METASIG_T(SM(Str_AppDomainSetup_Evidence_Evidence_IntPtr_Str_ArrStr_ArrStr_RetObj, s C(APPDOMAIN_SETUP) C(EVIDENCE) C(EVIDENCE) I s a(s) a(s), j))
+DEFINE_METASIG_T(SM(Str_AppDomainSetup_ArrStr_ArrStr_RetObj, s C(APPDOMAIN_SETUP) a(s) a(s), j))
 #ifdef FEATURE_COMINTEROP
 // System.AppDomain.OnReflectionOnlyNamespaceResolveEvent
 DEFINE_METASIG_T(IM(Assembly_Str_RetArrAssembly, C(ASSEMBLY) s, a(C(ASSEMBLY))))

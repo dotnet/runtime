@@ -1489,30 +1489,7 @@ typedef SafeHandle * SAFEHANDLE;
 typedef SafeHandle * SAFEHANDLEREF;
 #endif // USE_CHECKED_OBJECTREFS
 
-class PermissionListSetObject: public Object
-{
-    friend class MscorlibBinder;
 
-private:
-    OBJECTREF _firstPermSetTriple;
-    OBJECTREF _permSetTriples;
-
-public:
-    BOOL IsEmpty() 
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (_firstPermSetTriple == NULL &&
-                _permSetTriples == NULL
-                );
-    }
-};
-
-#ifdef USE_CHECKED_OBJECTREFS
-typedef REF<PermissionListSetObject> PERMISSIONLISTSETREF;
-#else
-typedef PermissionListSetObject*     PERMISSIONLISTSETREF;
-#endif
-    
 
 #define SYNCCTXPROPS_REQUIRESWAITNOTIFICATION 0x1 // Keep in sync with SynchronizationContext.cs SynchronizationContextFlags
 class ThreadBaseObject;
@@ -1828,13 +1805,10 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pDomainManager;     // AppDomainManager for host settings.
     OBJECTREF    m_LocalStore;
     OBJECTREF    m_FusionTable;
-    OBJECTREF    m_pSecurityIdentity;  // Evidence associated with this domain
-    OBJECTREF    m_pPolicies;          // Array of context policies associated with this domain
     OBJECTREF    m_pAssemblyEventHandler; // Delegate for 'loading assembly' event
     OBJECTREF    m_pTypeEventHandler;     // Delegate for 'resolve type' event
     OBJECTREF    m_pResourceEventHandler; // Delegate for 'resolve resource' event
     OBJECTREF    m_pAsmResolveEventHandler; // Delegate for 'resolve assembly' event
-    OBJECTREF    m_pApplicationTrust;    // App ApplicationTrust.
     OBJECTREF    m_pProcessExitEventHandler; // Delegate for 'process exit' event.  Only used in Default appdomain.
     OBJECTREF    m_pDomainUnloadEventHandler; // Delegate for 'about to unload domain' event
     OBJECTREF    m_pUnhandledExceptionEventHandler; // Delegate for 'unhandled exception' event
@@ -1844,8 +1818,6 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
     OBJECTREF    m_pFirstChanceExceptionHandler; // Delegate for 'FirstChance Exception' event
 
     AppDomain*   m_pDomain;            // Pointer to the BaseDomain Structure
-    CLR_BOOL     m_bHasSetPolicy;               // SetDomainPolicy has been called for this domain
-    CLR_BOOL     m_bIsFastFullTrustDomain;      // We know for sure that this is a homogeneous full trust domain.  
     CLR_BOOL     m_compatFlagsInitialized;
 
   protected:
@@ -1865,43 +1837,11 @@ class AppDomainBaseObject : public MarshalByRefObjectBaseObject
         return m_pDomain;
     }
 
-    OBJECTREF GetSecurityIdentity()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pSecurityIdentity;
-    }
-
     OBJECTREF GetAppDomainManager()
     {
         LIMITED_METHOD_CONTRACT;
         return m_pDomainManager;
     }
-
-    OBJECTREF GetApplicationTrust()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pApplicationTrust;
-    }
-
-    BOOL GetIsFastFullTrustDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return !!m_bIsFastFullTrustDomain;
-    }
-
-
-    // Ref needs to be a PTRARRAYREF
-    void SetPolicies(OBJECTREF ref)
-    {
-        WRAPPER_NO_CONTRACT;
-        SetObjectReference(&m_pPolicies, ref, m_pDomain );
-    }
-    BOOL HasSetPolicy()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_bHasSetPolicy;
-    }
-
 
     // Returns the reference to the delegate of the first chance exception notification handler
     OBJECTREF GetFirstChanceExceptionNotificationHandler()
@@ -1921,18 +1861,8 @@ class AppDomainSetupObject : public Object
   protected:
     PTRARRAYREF m_Entries;
     STRINGREF m_AppBase;
-    OBJECTREF m_AppDomainInitializer;
-    PTRARRAYREF m_AppDomainInitializerArguments;
-    STRINGREF m_ApplicationTrust;
-    I1ARRAYREF m_ConfigurationBytes;
-    STRINGREF m_AppDomainManagerAssembly;
-    STRINGREF m_AppDomainManagerType;
     OBJECTREF m_CompatFlags;
     STRINGREF m_TargetFrameworkName;
-    INT32 m_LoaderOptimization;
-#ifdef FEATURE_COMINTEROP
-    CLR_BOOL m_DisableInterfaceCache;
-#endif // FEATURE_COMINTEROP
     CLR_BOOL m_CheckedForTargetFrameworkName;
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
     CLR_BOOL m_UseRandomizedStringHashing;
@@ -1942,11 +1872,6 @@ class AppDomainSetupObject : public Object
   protected:
     AppDomainSetupObject() { LIMITED_METHOD_CONTRACT; }
    ~AppDomainSetupObject() { LIMITED_METHOD_CONTRACT; }
-
-  public:
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-    BOOL UseRandomizedStringHashing() { LIMITED_METHOD_CONTRACT; return (BOOL) m_UseRandomizedStringHashing; }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
 };
 typedef DPTR(AppDomainSetupObject) PTR_AppDomainSetupObject;
 #ifdef USE_CHECKED_OBJECTREFS
