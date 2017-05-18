@@ -49,16 +49,15 @@ namespace System.Diagnostics.Tests
                     client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                 }
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
-                Assert.True(eventRecords.Records.Count == 2,
-                    "Didn't get two or more events from Http Diagnostic Listener. Something is wrong.");
+                // Just make sure some events are written, to confirm we successfully subscribed to it. 
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
             }
         }
 
         /// <summary>
         /// A simple test to make sure the Http Diagnostic Source is initialized properly after we subscribed to it, using
-        /// the subscribe overload with just the observer argument and the more compolicating enable filter function.
+        /// the subscribe overload with just the observer argument and the more complicating enable filter function.
         /// </summary>
         [Fact]
         public void TestReflectInitializationViaSubscription2()
@@ -71,10 +70,9 @@ namespace System.Diagnostics.Tests
                     client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                 }
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
-                Assert.True(eventRecords.Records.Count == 2,
-                    "Didn't get two or more events from Http Diagnostic Listener. Something is wrong.");
+                // Just make sure some events are written, to confirm we successfully subscribed to it. 
+                // We should have exactly one Start and one Stop event
+                Assert.Equal(2, eventRecords.Records.Count);
             }
         }
 
@@ -93,8 +91,8 @@ namespace System.Diagnostics.Tests
                     client.GetAsync(Configuration.Http.RemoteEchoServer).Result.Dispose();
                 }
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
+                // Just make sure some events are written, to confirm we successfully subscribed to it. 
+                // We should have exactly one Start and one Stop event
                 Assert.Equal(2, eventRecords.Records.Count);
             }
         }
@@ -110,35 +108,34 @@ namespace System.Diagnostics.Tests
                 // Send a random Http request to generate some events
                 using (var client = new HttpClient())
                 {
-                    using (await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                    }
+                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
+                // We should have exactly one Start and one Stop event
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+                Assert.Equal(2, eventRecords.Records.Count);
 
                 // Check to make sure: The first record must be a request, the next record must be a response. 
-                // The rest is unknown number of responses (it depends on # of redirections)
-
                 KeyValuePair<string, object> startEvent;
                 Assert.True(eventRecords.Records.TryDequeue(out startEvent));
                 Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Start", startEvent.Key);
-                WebRequest startRequest = ReadPublicProperty<WebRequest>(startEvent.Value, "Request");
+                HttpWebRequest startRequest = ReadPublicProperty<HttpWebRequest>(startEvent.Value, "Request");
+                Assert.NotNull(startRequest);
                 Assert.NotNull(startRequest.Headers["Request-Id"]);
 
                 KeyValuePair<string, object> stopEvent;
                 Assert.True(eventRecords.Records.TryDequeue(out stopEvent));
                 Assert.Equal("System.Net.Http.Desktop.HttpRequestOut.Stop", stopEvent.Key);
-                WebRequest stopRequest = ReadPublicProperty<WebRequest>(stopEvent.Value, "Request");
+                HttpWebRequest stopRequest = ReadPublicProperty<HttpWebRequest>(stopEvent.Value, "Request");
                 Assert.Equal(startRequest, stopRequest);
+                HttpWebResponse response = ReadPublicProperty<HttpWebResponse>(stopEvent.Value, "Response");
+                Assert.NotNull(response);
             }
         }
 
         /// <summary>
-        /// Test that if request is redirected, it  gets only one Start and one Stop event
+        /// Test that if request is redirected, it gets only one Start and one Stop event
         /// </summary>
         [Fact]
         public async Task TestRedirectedRequest()
@@ -147,15 +144,12 @@ namespace System.Diagnostics.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    var uriWithRedirect =
+                    Uri uriWithRedirect =
                         Configuration.Http.RedirectUriForDestinationUri(true, 302, Configuration.Http.RemoteEchoServer, 10);
-                    using (await client.GetAsync(uriWithRedirect))
-                    {
-                    }
+                    (await client.GetAsync(uriWithRedirect)).Dispose();
                 }
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
+                // We should have exactly one Start and one Stop event
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
             }
@@ -178,8 +172,7 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(webException);
                 Assert.True(webException.Status == WebExceptionStatus.NameResolutionFailure);
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
+                // We should have one Start event and no stop event
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(0, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
             }
@@ -200,8 +193,7 @@ namespace System.Diagnostics.Tests
                     Assert.True(ex is TaskCanceledException || ex is WebException);
                 }
 
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // 1 start event and no stop events
+                // We should have one Start event and no stop event
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
                 Assert.Equal(0, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
             }
@@ -218,9 +210,7 @@ namespace System.Diagnostics.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    using (await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                    }
+                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
 
                 Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
@@ -267,9 +257,7 @@ namespace System.Diagnostics.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    using (await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                    }
+                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
                 Assert.Equal(2, eventNumber);
             }
@@ -285,9 +273,7 @@ namespace System.Diagnostics.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    using (await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                    }
+                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
                 }
 
                 Assert.Equal(0, eventRecords.Records.Count);
@@ -313,60 +299,11 @@ namespace System.Diagnostics.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    using (await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                        Assert.Equal(0, eventRecords.Records.Count);
-                    }
+                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                    Assert.Equal(0, eventRecords.Records.Count);
 
-                    using (await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
-                    {
-                        Assert.True(eventRecords.Records.Count > 0);
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Test to make sure every event record has the right dynamic properties.
-        /// </summary>
-        [Fact]
-        public async Task TestDynamicPropertiesOnReceiveAndResponseEvents()
-        {
-            using (var eventRecords = new EventObserverAndRecorder())
-            {
-                // Send a random Http request to generate some events
-                using (var client = new HttpClient())
-                {
-                    using (await client.GetAsync(Configuration.Http.RemoteEchoServer))
-                    {
-                    }
-                }
-
-                // Just make sure some events are written, to confirm we successfully subscribed to it. We should have 
-                // at least two events, one for request send, and one for response receive
-                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
-                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
-
-
-                // Check to make sure: The first record must be a request, the last record must be a response. Records in
-                // the middle can be anything since it depends on # of redirections
-                foreach (var pair in eventRecords.Records)
-                {
-                    object eventFields = pair.Value;
-
-                    Assert.True(
-                        pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Start" ||
-                        pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Stop",
-                        "An unexpected event of name " + pair.Key + "was received");
-
-                    WebRequest request = ReadPublicProperty<WebRequest>(eventFields, "Request");
-                    Assert.Equal(request.GetType().Name, "HttpWebRequest");
-
-                    if (pair.Key == "System.Net.Http.Desktop.HttpRequestOut.Stop")
-                    {
-                        object response = ReadPublicProperty<WebResponse>(eventFields, "Response");
-                        Assert.Equal(response.GetType().Name, "HttpWebResponse");
-                    }
+                    (await client.GetAsync(Configuration.Http.SecureRemoteEchoServer)).Dispose();
+                    Assert.Equal(2, eventRecords.Records.Count);
                 }
             }
         }
@@ -381,22 +318,22 @@ namespace System.Diagnostics.Tests
             var parentActivity = new Activity("parent").Start();
             using (var eventRecords = new EventObserverAndRecorder())
             {
-                Dictionary<string, Tuple<WebRequest, WebResponse>> requestData =
-                    new Dictionary<string, Tuple<WebRequest, WebResponse>>();
+                Dictionary<Uri, Tuple<WebRequest, WebResponse>> requestData =
+                    new Dictionary<Uri, Tuple<WebRequest, WebResponse>>();
                 for (int i = 0; i < 10; i++)
                 {
-                    var uriWithRedirect =
+                    Uri uriWithRedirect =
                         Configuration.Http.RedirectUriForDestinationUri(true, 302, new Uri($"{Configuration.Http.RemoteEchoServer}?q={i}"), 3);
 
-                    requestData[uriWithRedirect.ToString()] = null;
+                    requestData[uriWithRedirect] = null;
                 }
 
                 // Issue all requests simultaneously
                 HttpClient httpClient = new HttpClient();
-                Dictionary<string, Task<HttpResponseMessage>> tasks = new Dictionary<string, Task<HttpResponseMessage>>();
+                Dictionary<Uri, Task<HttpResponseMessage>> tasks = new Dictionary<Uri, Task<HttpResponseMessage>>();
 
                 CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                foreach (string url in requestData.Keys)
+                foreach (var url in requestData.Keys)
                 {
                     tasks.Add(url, httpClient.GetAsync(url, cts.Token));
                 }
@@ -436,7 +373,7 @@ namespace System.Diagnostics.Tests
                     {
                         // Make sure this is an URL that we recognize. If not, just skip
                         Tuple<WebRequest, WebResponse> tuple = null;
-                        if (!requestData.TryGetValue(request.RequestUri.OriginalString, out tuple))
+                        if (!requestData.TryGetValue(request.RequestUri, out tuple))
                         {
                             continue;
                         }
@@ -448,8 +385,8 @@ namespace System.Diagnostics.Tests
                         var childSuffix = requestId.Substring(0, parentActivity.Id.Length);
                         Assert.True(childSuffix.IndexOf('.') == childSuffix.Length - 1);
 
-                        Assert.Null(requestData[request.RequestUri.OriginalString]);
-                        requestData[request.RequestUri.OriginalString] =
+                        Assert.Null(requestData[request.RequestUri]);
+                        requestData[request.RequestUri] =
                             new Tuple<WebRequest, WebResponse>(request, null);
                     }
                     else
@@ -474,13 +411,13 @@ namespace System.Diagnostics.Tests
 
                         // Update the tuple with the response object
                         Assert.NotNull(tuple);
-                        requestData[request.RequestUri.OriginalString] =
+                        requestData[request.RequestUri] =
                             new Tuple<WebRequest, WebResponse>(request, response);
                     }
                 }
 
                 // Finally, make sure we have request and response objects for every successful request
-                foreach (KeyValuePair<string, Tuple<WebRequest, WebResponse>> pair in requestData)
+                foreach (KeyValuePair<Uri, Tuple<WebRequest, WebResponse>> pair in requestData)
                 {
                     if (successfulTasks.Any(t => t.Key == pair.Key))
                     {
