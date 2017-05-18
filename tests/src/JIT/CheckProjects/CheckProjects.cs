@@ -86,7 +86,11 @@ internal class ScanProjectFiles
 
         foreach (FileInfo f in projectRootDir.GetFiles("*.*proj", SearchOption.AllDirectories))
         {
-            ParseAndUpdateProj(f.FullName, s_tryAndFix);
+            if (!f.FullName.Contains("JIT\\config") && !f.FullName.Contains("JIT/config"))
+            {
+                ParseAndUpdateProj(f.FullName, s_tryAndFix);
+            }
+
         }
 
         Console.WriteLine("{0} projects, {1} needed fixes, {2} fixes deferred, {3} were fixed",
