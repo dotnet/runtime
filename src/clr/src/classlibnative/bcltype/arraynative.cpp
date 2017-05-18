@@ -1121,22 +1121,6 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
     {
         MethodTable *pMT = elementType.AsMethodTable();
 
-        // TODO: We also should check for type/member visibility here. To do that we can replace
-        // the following chunk of code with a simple InvokeUtil::CanAccessClass call.
-        // But it's too late to make this change in Dev10 and we want SL4 to be compatible with Dev10.
-        if (Security::TypeRequiresTransparencyCheck(pMT))
-        {
-            // The AccessCheckOptions flag doesn't matter because we just need to get the caller.
-            RefSecContext sCtx(AccessCheckOptions::kMemberAccess);
-
-            AccessCheckOptions accessCheckOptions(InvokeUtil::GetInvocationAccessCheckType(),
-                                                  NULL /*pAccessContext*/,
-                                                  TRUE /*throwIfTargetIsInaccessible*/,
-                                                  pMT  /*pTargetMT*/);
-            
-            accessCheckOptions.DemandMemberAccessOrFail(&sCtx, pMT, FALSE /*visibilityCheck*/);
-        }        
-
         // Check for byref-like types.
         if (pMT->IsByRefLike())
             COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLikeArray"));

@@ -192,8 +192,6 @@ public:
     static FCDECL5(LPVOID, CreateCaObject, ReflectModuleBaseObject* pAttributedModuleUNSAFE, ReflectMethodObject *pMethodUNSAFE, BYTE** ppBlob, BYTE* pEndBlob, INT32* pcNamedArgs);
     static FCDECL7(void, GetPropertyOrFieldData, ReflectModuleBaseObject *pModuleUNSAFE, BYTE** ppBlobStart, BYTE* pBlobEnd, STRINGREF* pName, CLR_BOOL* pbIsProperty, OBJECTREF* pType, OBJECTREF* value);
     static FCDECL4(VOID, GetSecurityAttributes, ReflectModuleBaseObject *pModuleUNSAFE, DWORD tkToken, CLR_BOOL fAssembly, PTRARRAYREF* ppArray);
-    static FCDECL2(VOID, PushSecurityContextFrame, SecurityContextFrame *pFrame, AssemblyBaseObject *pAssemblyObjectUNSAFE);
-    static FCDECL1(VOID, PopSecurityContextFrame, SecurityContextFrame *pFrame);
 
 private:
 

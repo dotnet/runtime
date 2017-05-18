@@ -64,16 +64,6 @@ set(VM_CROSSGEN_SOURCES
     ../pendingload.cpp
     ../precode.cpp
     ../olevariant.cpp
-    ../security.cpp
-    ../securitypolicy.cpp
-    ../securityattributes.cpp
-    ../securitydeclarative.cpp
-    ../securitydeclarativecache.cpp
-    ../securitydescriptor.cpp
-    ../securitydescriptorappdomain.cpp
-    ../securitydescriptorassembly.cpp
-    ../securitymeta.cpp
-    ../securitytransparentassembly.cpp
     ../siginfo.cpp
     ../sigformat.cpp
     ../simplerwlock.cpp

@@ -137,8 +137,6 @@
 //    |
 //    |
 //    +-ExceptionFilterFrame - this frame wraps call to exception filter
-//    |
-//    +-SecurityContextFrame - place the security context of an assembly on the stack to ensure it will be included in security demands
 //
 //------------------------------------------------------------------------
 #if 0
@@ -260,7 +258,6 @@ FRAME_TYPE_NAME(ExceptionFilterFrame)
 #if defined(_DEBUG)
 FRAME_TYPE_NAME(AssumeByrefFromJITStack)
 #endif // _DEBUG
-FRAME_TYPE_NAME(SecurityContextFrame)
 
 #undef FRAME_ABSTRACT_TYPE_NAME
 #undef FRAME_TYPE_NAME
@@ -3493,29 +3490,6 @@ public:
     // Since the "&" operator is overloaded, use this function to get to the
     // address of FrameWithCookie, rather than that of FrameWithCookie::m_frame.
     GSCookie * GetGSCookiePtr() { LIMITED_METHOD_CONTRACT; return &m_gsCookie; }
-};
-
-
-// The frame doesn't represent a transition of any sort, it's simply placed on the stack to represent an assembly that will be found
-// and checked by stackwalking security demands. This can be used in scenarios where an assembly is implicitly controlling a
-// security sensitive operation without being explicitly represented on the stack. For example, an assembly decorating one of its
-// classes or methods with a custom attribute can implicitly cause the ctor or property setters for that attribute to be executed by
-// a third party if they happen to browse the attributes on the assembly.
-// Note: This frame is pushed from managed code, so be sure to keep the layout synchronized with that in
-// bcl\system\reflection\customattribute.cs.
-class SecurityContextFrame : public Frame
-{
-    VPTR_VTABLE_CLASS(SecurityContextFrame, Frame)
-
-    Assembly *m_pAssembly;
-
-public:
-    virtual Assembly *GetAssembly() { LIMITED_METHOD_CONTRACT; return m_pAssembly; }
-
-    void SetAssembly(Assembly *pAssembly) { LIMITED_METHOD_CONTRACT; m_pAssembly = pAssembly; }
-
-    // Keep as last entry in class
-    DEFINE_VTABLE_GETTER_AND_CTOR_AND_DTOR(SecurityContextFrame)
 };
 
 //------------------------------------------------------------------------

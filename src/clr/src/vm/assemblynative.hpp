@@ -24,20 +24,6 @@ class AssemblyNative
     friend class BaseDomain;
     friend class DomainAssembly;
 
-private:
-    static Assembly* GetPostPolicyAssembly(PEAssembly *pFile,
-                                           BOOL fForIntrospection,
-                                           AssemblyLoadSecurity *pLoadSecurity,
-                                           BOOL fIsLoadByteArray = FALSE);
-
-    static Assembly* LoadFromBuffer(BOOL fForIntrospection, 
-                                    const BYTE* pAssemblyData,  
-                                    UINT64 uAssemblyLength, 
-                                    const BYTE* pPDBData,  
-                                    UINT64 uPDBLength, 
-                                    StackCrawlMark* stackMark,
-                                    Object * securityUNSAFE,
-                                    SecurityContextSource securityContextSource);
 public:
     // static FCALLs
     static
@@ -46,15 +32,12 @@ public:
     static
     void QCALLTYPE GetExecutingAssembly(QCall::StackCrawlMarkHandle stackMark, QCall::ObjectHandleOnStack retAssembly);
 
-    static FCDECL10(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
+    static FCDECL7(Object*,         Load,                       AssemblyNameBaseObject* assemblyNameUNSAFE, 
                                                                 StringObject* codeBaseUNSAFE, 
-                                                                Object* securityUNSAFE, 
                                                                 AssemblyBaseObject* requestingAssemblyUNSAFE,
                                                                 StackCrawlMark* stackMark,
                                                                 ICLRPrivBinder * pPrivHostBinder,
                                                                 CLR_BOOL fThrowOnFileNotFound,
-                                                                CLR_BOOL fForIntrospection,
-                                                                CLR_BOOL fSuppressSecurityChecks,
                                                                 INT_PTR ptrLoadContextBinder);
 
     //
@@ -82,9 +65,6 @@ public:
 
     static 
     void QCALLTYPE GetLocation(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
-
-    static
-    FCDECL1(FC_BOOL_RET, IsReflectionOnly, AssemblyBaseObject * pAssemblyUNSAFE);
 
     static
     void QCALLTYPE GetCodeBase(QCall::AssemblyHandle pAssembly, BOOL fCopiedName, QCall::StringHandleOnStack retString);
@@ -138,27 +118,8 @@ public:
     static FCDECL1(ReflectModuleBaseObject *, GetOnDiskAssemblyModule, AssemblyBaseObject * pAssemblyUNSAFE);
     static FCDECL1(ReflectModuleBaseObject *, GetInMemoryAssemblyModule, AssemblyBaseObject * pAssemblyUNSAFE);
 
-
-    static
-    void QCALLTYPE GetGrantSet(QCall::AssemblyHandle pAssembly, QCall::ObjectHandleOnStack retGranted, QCall::ObjectHandleOnStack retDenied);
-
-    static
-    BOOL QCALLTYPE IsAllSecurityCritical(QCall::AssemblyHandle pAssembly);
-
-    static
-    BOOL QCALLTYPE IsAllSecuritySafeCritical(QCall::AssemblyHandle pAssembly);
-    
-    static
-    BOOL QCALLTYPE IsAllPublicAreaSecuritySafeCritical(QCall::AssemblyHandle pAssembly);
-
-    static
-    BOOL QCALLTYPE IsAllSecurityTransparent(QCall::AssemblyHandle pAssembly);
-
     static 
     void QCALLTYPE GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString);
-    
-    static
-    INT64 QCALLTYPE GetHostContext(QCall::AssemblyHandle pAssembly);
 
 
     //

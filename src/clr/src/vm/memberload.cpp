@@ -24,7 +24,6 @@
 #include "stublink.h"
 #include "ecall.h"
 #include "dllimport.h"
-#include "verifier.hpp"
 #include "jitinterface.h"
 #include "eeconfig.h"
 #include "log.h"

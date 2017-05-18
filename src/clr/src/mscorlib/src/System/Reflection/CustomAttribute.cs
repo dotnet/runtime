@@ -1291,7 +1291,7 @@ namespace System.Reflection
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
             {
-                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, pcaCount, caType, !AllowCriticalCustomAttributes(type));
+                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, pcaCount, caType);
                 if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
                 return attributes;
             }
@@ -1306,7 +1306,7 @@ namespace System.Reflection
 
             while (type != (RuntimeType)typeof(object) && type != null)
             {
-                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, 0, caType, mustBeInheritable, result, !AllowCriticalCustomAttributes(type));
+                object[] attributes = GetCustomAttributes(type.GetRuntimeModule(), type.MetadataToken, 0, caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 for (int i = 0; i < attributes.Length; i++)
                     result.Add(attributes[i]);
@@ -1317,53 +1317,6 @@ namespace System.Reflection
             object[] typedResult = CreateAttributeArrayHelper(arrayType, result.Count);
             Array.Copy(result.ToArray(), 0, typedResult, 0, result.Count);
             return typedResult;
-        }
-
-        private static bool AllowCriticalCustomAttributes(RuntimeType type)
-        {
-            if (type.IsGenericParameter)
-            {
-                // Generic parameters don't have transparency state, so look at the 
-                // declaring method/type. One of declaringMethod or declaringType
-                // must be set.
-                MethodBase declaringMethod = type.DeclaringMethod;
-                if (declaringMethod != null)
-                {
-                    return AllowCriticalCustomAttributes(declaringMethod);
-                }
-                else
-                {
-                    type = type.DeclaringType as RuntimeType;
-                    Debug.Assert(type != null);
-                }
-            }
-
-            return !type.IsSecurityTransparent || SpecialAllowCriticalAttributes(type);
-        }
-
-        private static bool SpecialAllowCriticalAttributes(RuntimeType type)
-        {
-            return false;
-        }
-
-        private static bool AllowCriticalCustomAttributes(MethodBase method)
-        {
-            Contract.Requires(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-
-            return !method.IsSecurityTransparent ||
-                SpecialAllowCriticalAttributes((RuntimeType)method.DeclaringType);
-        }
-
-        private static bool AllowCriticalCustomAttributes(RuntimeFieldInfo field)
-        {
-            return !field.IsSecurityTransparent ||
-                SpecialAllowCriticalAttributes((RuntimeType)field.DeclaringType);
-        }
-
-        private static bool AllowCriticalCustomAttributes(RuntimeParameterInfo parameter)
-        {
-            // Since parameters have no transparency state, we look at the defining method instead.
-            return AllowCriticalCustomAttributes(parameter.DefiningMethod);
         }
 
         internal static Object[] GetCustomAttributes(RuntimeMethodInfo method, RuntimeType caType, bool inherit)
@@ -1382,7 +1335,7 @@ namespace System.Reflection
             // ... however if the attribute is sealed we can rely on the attribute usage
             if (!inherit || (caType.IsSealed && !CustomAttribute.GetAttributeUsage(caType).Inherited))
             {
-                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, pcaCount, caType, !AllowCriticalCustomAttributes(method));
+                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, pcaCount, caType);
                 if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
                 return attributes;
             }
@@ -1397,7 +1350,7 @@ namespace System.Reflection
 
             while (method != null)
             {
-                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, 0, caType, mustBeInheritable, result, !AllowCriticalCustomAttributes(method));
+                object[] attributes = GetCustomAttributes(method.GetRuntimeModule(), method.MetadataToken, 0, caType, mustBeInheritable, result);
                 mustBeInheritable = true;
                 for (int i = 0; i < attributes.Length; i++)
                     result.Add(attributes[i]);
@@ -1417,7 +1370,7 @@ namespace System.Reflection
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(ctor, caType, true, out pcaCount);
-            object[] attributes = GetCustomAttributes(ctor.GetRuntimeModule(), ctor.MetadataToken, pcaCount, caType, !AllowCriticalCustomAttributes(ctor));
+            object[] attributes = GetCustomAttributes(ctor.GetRuntimeModule(), ctor.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1429,13 +1382,8 @@ namespace System.Reflection
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(property, caType, out pcaCount);
-            // Since properties and events have no transparency state, logically we should check the declaring types.
-            // But then if someone wanted to apply critical attributes on a property/event he would need to make the type critical,
-            // which would also implicitly made all the members critical.
-            // So we check the containing assembly instead. If the assembly can contain critical code we allow critical attributes on properties/events.
-            bool disallowCriticalCustomAttributes = property.GetRuntimeModule().GetRuntimeAssembly().IsAllSecurityTransparent();
 
-            object[] attributes = GetCustomAttributes(property.GetRuntimeModule(), property.MetadataToken, pcaCount, caType, disallowCriticalCustomAttributes);
+            object[] attributes = GetCustomAttributes(property.GetRuntimeModule(), property.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1447,12 +1395,7 @@ namespace System.Reflection
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(e, caType, out pcaCount);
-            // Since properties and events have no transparency state, logically we should check the declaring types.
-            // But then if someone wanted to apply critical attributes on a property/event he would need to make the type critical,
-            // which would also implicitly made all the members critical.
-            // So we check the containing assembly instead. If the assembly can contain critical code we allow critical attributes on properties/events.
-            bool disallowCriticalCustomAttributes = e.GetRuntimeModule().GetRuntimeAssembly().IsAllSecurityTransparent();
-            object[] attributes = GetCustomAttributes(e.GetRuntimeModule(), e.MetadataToken, pcaCount, caType, disallowCriticalCustomAttributes);
+            object[] attributes = GetCustomAttributes(e.GetRuntimeModule(), e.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1464,7 +1407,7 @@ namespace System.Reflection
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(field, caType, out pcaCount);
-            object[] attributes = GetCustomAttributes(field.GetRuntimeModule(), field.MetadataToken, pcaCount, caType, !AllowCriticalCustomAttributes(field));
+            object[] attributes = GetCustomAttributes(field.GetRuntimeModule(), field.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1476,7 +1419,7 @@ namespace System.Reflection
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(parameter, caType, out pcaCount);
-            object[] attributes = GetCustomAttributes(parameter.GetRuntimeModule(), parameter.MetadataToken, pcaCount, caType, !AllowCriticalCustomAttributes(parameter));
+            object[] attributes = GetCustomAttributes(parameter.GetRuntimeModule(), parameter.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1489,8 +1432,7 @@ namespace System.Reflection
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(assembly, caType, true, out pcaCount);
             int assemblyToken = RuntimeAssembly.GetToken(assembly.GetNativeHandle());
-            bool isAssemblySecurityTransparent = assembly.IsAllSecurityTransparent();
-            object[] attributes = GetCustomAttributes(assembly.ManifestModule as RuntimeModule, assemblyToken, pcaCount, caType, isAssemblySecurityTransparent);
+            object[] attributes = GetCustomAttributes(assembly.ManifestModule as RuntimeModule, assemblyToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1502,8 +1444,7 @@ namespace System.Reflection
 
             int pcaCount = 0;
             Attribute[] pca = PseudoCustomAttribute.GetCustomAttributes(module, caType, out pcaCount);
-            bool isModuleSecurityTransparent = module.GetRuntimeAssembly().IsAllSecurityTransparent();
-            object[] attributes = GetCustomAttributes(module, module.MetadataToken, pcaCount, caType, isModuleSecurityTransparent);
+            object[] attributes = GetCustomAttributes(module, module.MetadataToken, pcaCount, caType);
             if (pcaCount > 0) Array.Copy(pca, 0, attributes, attributes.Length - pcaCount, pcaCount);
             return attributes;
         }
@@ -1569,14 +1510,14 @@ namespace System.Reflection
         }
 
         private unsafe static object[] GetCustomAttributes(
-            RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType, bool isDecoratedTargetSecurityTransparent)
+            RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount, RuntimeType attributeFilterType)
         {
-            return GetCustomAttributes(decoratedModule, decoratedMetadataToken, pcaCount, attributeFilterType, false, null, isDecoratedTargetSecurityTransparent);
+            return GetCustomAttributes(decoratedModule, decoratedMetadataToken, pcaCount, attributeFilterType, false, null);
         }
 
         private unsafe static object[] GetCustomAttributes(
             RuntimeModule decoratedModule, int decoratedMetadataToken, int pcaCount,
-            RuntimeType attributeFilterType, bool mustBeInheritable, IList derivedAttributes, bool isDecoratedTargetSecurityTransparent)
+            RuntimeType attributeFilterType, bool mustBeInheritable, IList derivedAttributes)
         {
             if (decoratedModule.Assembly.ReflectionOnly)
                 throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
@@ -1617,16 +1558,6 @@ namespace System.Reflection
                                                  attributes, derivedAttributes,
                                                  out attributeType, out ctor, out ctorHasParameters, out isVarArg))
                     continue;
-
-                if (ctor != null)
-                {
-                    // Linktime demand checks 
-                    // decoratedMetadataToken needed as it may be "transparent" in which case we do a full stack walk
-                    RuntimeMethodHandle.CheckLinktimeDemands(ctor, decoratedModule, isDecoratedTargetSecurityTransparent);
-                }
-                else
-                {
-                }
 
                 // Leverage RuntimeConstructorInfo standard .ctor verfication
                 RuntimeConstructorInfo.CheckCanCreateInstance(attributeType, isVarArg);
@@ -1709,19 +1640,12 @@ namespace System.Reflection
                             if (!setMethod.IsPublic)
                                 continue;
 
-                            RuntimeMethodHandle.CheckLinktimeDemands(setMethod, decoratedModule, isDecoratedTargetSecurityTransparent);
-
                             setMethod.UnsafeInvoke(attribute, BindingFlags.Default, null, new object[] { value }, null);
                             #endregion
                         }
                         else
                         {
                             RtFieldInfo field = attributeType.GetField(name) as RtFieldInfo;
-
-                            if (isDecoratedTargetSecurityTransparent)
-                            {
-                                RuntimeFieldHandle.CheckAttributeAccess(field.FieldHandle, decoratedModule.GetNativeHandle());
-                            }
 
                             field.CheckConsistency(attribute);
                             field.UnsafeSetValue(attribute, value, BindingFlags.Default, Type.DefaultBinder, null);

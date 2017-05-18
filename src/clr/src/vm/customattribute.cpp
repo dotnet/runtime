@@ -15,9 +15,9 @@
 #include "fcall.h"
 #include "assemblynative.hpp"
 #include "typeparse.h"
-#include "securityattributes.h"
 #include "reflectioninvocation.h"
 #include "runtimehandles.h"
+#include "typestring.h"
 
 typedef InlineFactory<InlineSString<64>, 16> SStringFactory;
 
@@ -1567,40 +1567,3 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
 
     return retValue;
 }
-
-FCIMPL2(VOID, COMCustomAttribute::PushSecurityContextFrame, SecurityContextFrame *pFrame, AssemblyBaseObject *pAssemblyObjectUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), FCThrowVoid(kStackOverflowException));
-
-    // Adjust frame pointer for the presence of the GSCookie at a negative
-    // offset (it's hard for us to express neginfo in the managed definition of
-    // the frame).
-    pFrame = (SecurityContextFrame*)((BYTE*)pFrame + sizeof(GSCookie));
-
-    *((TADDR*)pFrame) = SecurityContextFrame::GetMethodFrameVPtr();
-    pFrame->SetAssembly(pAssemblyObjectUNSAFE->GetAssembly());
-    *pFrame->GetGSCookiePtr() = GetProcessGSCookie();
-    pFrame->Push();
-
-    END_SO_INTOLERANT_CODE;
-}
-FCIMPLEND
-
-FCIMPL1(VOID, COMCustomAttribute::PopSecurityContextFrame, SecurityContextFrame *pFrame)
-{
-    FCALL_CONTRACT;
-
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), FCThrowVoid(kStackOverflowException));
-
-    // Adjust frame pointer for the presence of the GSCookie at a negative
-    // offset (it's hard for us to express neginfo in the managed definition of
-    // the frame).
-    pFrame = (SecurityContextFrame*)((BYTE*)pFrame + sizeof(GSCookie));
-
-    pFrame->Pop();
-
-    END_SO_INTOLERANT_CODE;
-}
-FCIMPLEND

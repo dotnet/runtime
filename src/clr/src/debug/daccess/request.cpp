@@ -2240,23 +2240,6 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                     appdomainData->FailedAssemblyCount++;
                 }
             }
-#ifndef FEATURE_PAL
-            // MiniDumpNormal doesn't guarantee to dump the SecurityDescriptor, let it fail.
-            EX_TRY
-            {
-                appdomainData->AppSecDesc = HOST_CDADDR(pAppDomain->GetSecurityDescriptor());
-            }
-            EX_CATCH
-            {
-                HRESULT hrExc = GET_EXCEPTION()->GetHR();
-                if (hrExc != HRESULT_FROM_WIN32(ERROR_READ_FAULT)
-                    && hrExc != CORDBG_E_READVIRTUAL_FAILURE)
-                {
-                    EX_RETHROW;
-                }
-            }
-            EX_END_CATCH(SwallowAllExceptions)
-#endif // FEATURE_PAL
         }
     }
 
@@ -2653,8 +2636,6 @@ ClrDataAccess::GetAssemblyData(CLRDATA_ADDRESS cdBaseDomainPtr, CLRDATA_ADDRESS 
     assemblyData->AssemblyPtr = HOST_CDADDR(pAssembly);
     assemblyData->ClassLoader = HOST_CDADDR(pAssembly->GetLoader());
     assemblyData->ParentDomain = HOST_CDADDR(pAssembly->GetDomain());
-    if (pDomain != NULL)
-        assemblyData->AssemblySecDesc = HOST_CDADDR(pAssembly->GetSecurityDescriptor(pDomain));
     assemblyData->isDynamic = pAssembly->IsDynamic();
     assemblyData->ModuleCount = 0;
     assemblyData->isDomainNeutral = pAssembly->IsDomainNeutral();

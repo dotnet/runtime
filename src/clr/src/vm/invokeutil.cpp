@@ -1430,64 +1430,6 @@ bool RefSecContext::IsCalledFromInterop()
     return (pCaller == NULL);
 }
 
-BOOL InvokeUtil::IsCriticalWithConversionToFullDemand(MethodTable* pMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return Security::TypeRequiresTransparencyCheck(pMT, true);
-}
-
-BOOL InvokeUtil::IsCriticalWithConversionToFullDemand(MethodDesc* pMD, MethodTable* pInstanceMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (Security::IsMethodCritical(pMD) && !Security::IsMethodSafeCritical(pMD)
-        && pMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanCriticalMembersBeConvertedToLinkDemand())
-        return TRUE;
-
-    if (pMD->HasMethodInstantiation())
-    {
-        Instantiation inst = pMD->GetMethodInstantiation();
-        for (DWORD i = 0; i < inst.GetNumArgs(); i++)
-        {   
-            TypeHandle th = inst[i];
-            if (InvokeUtil::IsCriticalWithConversionToFullDemand(th.GetMethodTableOfElementType()))
-                return TRUE;
-        }
-    }
-
-    if (pInstanceMT && InvokeUtil::IsCriticalWithConversionToFullDemand(pInstanceMT))
-        return TRUE;
-
-    return FALSE;
-}
-
-BOOL InvokeUtil::IsCriticalWithConversionToFullDemand(FieldDesc* pFD, MethodTable* pInstanceMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-    
-    if (Security::IsFieldCritical(pFD) && !Security::IsFieldSafeCritical(pFD)
-        && pFD->GetModule()->GetAssembly()->GetSecurityTransparencyBehavior()->CanCriticalMembersBeConvertedToLinkDemand())
-        return TRUE;
-
-    if (pInstanceMT && InvokeUtil::IsCriticalWithConversionToFullDemand(pInstanceMT))
-        return TRUE;
-
-    return FALSE;
-}
-
 void InvokeUtil::CanAccessClass(RefSecContext*  pCtx,
                                 MethodTable*    pClass,
                                 BOOL            checkAccessForImplicitValueTypeCtor /*= FALSE*/)
@@ -1522,100 +1464,10 @@ void InvokeUtil::CanAccessMethod(MethodDesc*    pMeth,
     }
     CONTRACTL_END;
 
-
     InvokeUtil::CheckAccessMethod(pSCtx,
                                   pParentMT,
                                   pInstanceMT,
                                   pMeth);
-
-
-    if (pMeth->RequiresLinktimeCheck())
-    {
-        // The following logic turns link demands on the target method into full
-        // stack walks in order to close security holes in poorly written
-        // reflection users.
-
-
-        struct _gc
-        {
-            OBJECTREF refClassNonCasDemands;
-            OBJECTREF refClassCasDemands;
-            OBJECTREF refMethodNonCasDemands;
-            OBJECTREF refMethodCasDemands;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        // Fetch link demand sets from all the places in metadata where we might
-        // find them (class and method). These might be split into CAS and non-CAS
-        // sets as well.
-        Security::RetrieveLinktimeDemands(pMeth,
-                                          &gc.refClassCasDemands,
-                                          &gc.refClassNonCasDemands,
-                                          &gc.refMethodCasDemands,
-                                          &gc.refMethodNonCasDemands);
-
-        // CAS Link Demands
-        if (gc.refClassCasDemands != NULL)
-            Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, gc.refClassCasDemands);
-
-        if (gc.refMethodCasDemands != NULL)
-            Security::DemandSet(SSWT_LATEBOUND_LINKDEMAND, gc.refMethodCasDemands);
-
-        // Non-CAS demands are not applied against a grant
-        // set, they're standalone.
-        if (gc.refClassNonCasDemands != NULL)
-            Security::CheckNonCasDemand(&gc.refClassNonCasDemands);
-
-        if (gc.refMethodNonCasDemands != NULL)
-            Security::CheckNonCasDemand(&gc.refMethodNonCasDemands);
-
-        GCPROTECT_END();
-
-        if (pMeth->IsNDirect() ||
-            (pMeth->IsComPlusCall() && !pMeth->IsInterface()))
-        {
-            if (Security::IsTransparencyEnforcementEnabled())
-            {
-                MethodDesc* pmdCaller = pSCtx->GetCallerMethod();
-
-                if (pmdCaller != NULL &&
-                    Security::IsMethodTransparent(pmdCaller))
-                {
-                    ThrowMethodAccessException(pSCtx, pMeth, IDS_E_TRANSPARENT_CALL_NATIVE);
-                }
-            }
-        }
-
-    }
-
-    // @todo: 
-    //if (checkSkipVer && !Security::CanSkipVerification(pSCtx->GetCallerMethod()->GetModule()))
-    //Security::ThrowSecurityException(g_SecurityPermissionClassName, SPFLAGSSKIPVERIFICATION);
-    //checkSkipVer is set only when the user tries to invoke a constructor on a existing object.
-    if (checkSkipVer)
-    {
-        if (Security::IsTransparencyEnforcementEnabled())
-        {
-            MethodDesc *pCallerMD = pSCtx->GetCallerMethod();
-
-            // Interop (NULL) caller should be able to skip verification
-            if (pCallerMD != NULL &&
-                Security::IsMethodTransparent(pCallerMD) &&
-                !pCallerMD->GetAssembly()->GetSecurityTransparencyBehavior()->CanTransparentCodeSkipVerification())
-            {
-#ifdef _DEBUG
-                if (g_pConfig->LogTransparencyErrors())
-                {
-                    SecurityTransparent::LogTransparencyError(pMeth, "Attempt by a transparent method to use unverifiable code");
-                }
-#endif // _DEBUG
-                ThrowMethodAccessException(pCallerMD, pMeth, FALSE, IDS_E_TRANSPARENT_REFLECTION);
-            }
-        }
-
-    }
 }
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1842,36 +1694,6 @@ void InvokeUtil::CheckAccess(RefSecContext               *pCtx,
     _ASSERTE(canAccess);
 }
 
-// If a method has a linktime demand attached, perform it.
-
-// static
-void InvokeUtil::CheckLinktimeDemand(RefSecContext *pCtx, MethodDesc *pCalleeMD) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END
-        
-    if (pCalleeMD->RequiresLinktimeCheck())
-    {
-        MethodDesc* pCallerMD = pCtx->GetCallerMethod();
-
-        if (pCallerMD)
-        {
-            Security::LinktimeCheckMethod(pCallerMD->GetAssembly(), pCalleeMD);
-
-            // perform transparency checks as well
-            if (Security::RequiresTransparentAssemblyChecks(pCallerMD, pCalleeMD, NULL))
-            {
-                Security::EnforceTransparentAssemblyChecks(pCallerMD, pCalleeMD);
-            }
-        }
-    }
-}
-
 /*static*/
 AccessCheckOptions::AccessCheckType InvokeUtil::GetInvocationAccessCheckType(BOOL targetRemoted /*= FALSE*/)
 {
@@ -1880,16 +1702,9 @@ AccessCheckOptions::AccessCheckType InvokeUtil::GetInvocationAccessCheckType(BOO
     if (targetRemoted)
         return AccessCheckOptions::kMemberAccess;
 
-    AppDomain * pAppDomain = GetAppDomain();
-
-
-    if (pAppDomain->GetSecurityDescriptor()->IsFullyTrusted())
-        // Ignore transparency so that reflection invocation is consistenct with LCG.
-        // There is no security concern because we are in Full Trust.
-        return AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
-
-    return AccessCheckOptions::kMemberAccess;
-
+    // Ignore transparency so that reflection invocation is consistenct with LCG.
+    // There is no security concern because we are in Full Trust.
+    return AccessCheckOptions::kRestrictedMemberAccessNoTransparency;
 }
 
 #endif // CROSSGEN_COMPILE

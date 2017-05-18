@@ -26,6 +26,7 @@
 #include "virtualcallstub.h"
 #include "callingconvention.h"
 #include "customattribute.h"
+#include "typestring.h"
 #include "../md/compiler/custattr.h"
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
@@ -774,12 +775,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
                     continue;
                 }
 
-                if (!COMDelegate::ValidateSecurityTransparency(pCurMethod, gc.refThis->GetTypeHandle().AsMethodTable()))
-                {
-                    // violates security transparency rules, skip.
-                    continue;
-                }
-
                 // Found the target that matches the signature and satisfies security transparency rules
                 // Initialize the delegate to point to the target method.
                 BindToMethod(&gc.refThis,
@@ -862,8 +857,7 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             gc.refThis->GetTypeHandle(), 
                                             pInvokeMeth,
                                             flags,
-                                            &fIsOpenDelegate) &&
-        COMDelegate::ValidateSecurityTransparency(method, gc.refThis->GetTypeHandle().AsMethodTable()) )
+                                            &fIsOpenDelegate))
     {
         // Initialize the delegate to point to the target method.
         BindToMethod(&gc.refThis,
@@ -939,10 +933,6 @@ void COMDelegate::BindToMethod(DELEGATEREF   *pRefThis,
                                       pExactMethodType,
                                       pTargetMethod->IsStatic() ? NULL : pInstanceMT,
                                       pTargetMethod);
-
-        // Trip any link demands the target method requires.
-        InvokeUtil::CheckLinktimeDemand(&sCtx,
-                                        pTargetMethod);
 
         // Ask for skip verification if a delegate over a .ctor or .cctor is requested.
         if (pTargetMethod->IsClassConstructorOrCtor())
@@ -1181,7 +1171,7 @@ BOOL COMDelegate::IsFullTrustDelegate(DELEGATEREF pDelegate)
             // The target must be decorated with AllowReversePInvokeCallsAttribute
             if (!IsMethodAllowedToSinkReversePInvoke(pMD)) return FALSE;
 
-            return pMD->GetModule()->GetSecurityDescriptor()->IsFullyTrusted();
+            return TRUE;
         }
     }
     // Default: 
@@ -3672,40 +3662,6 @@ BOOL COMDelegate::ValidateCtor(TypeHandle instHnd,
         return FALSE;
     return IsMethodDescCompatible(instHnd, ftnParentHnd, pFtn, dlgtHnd, pDlgtInvoke, DBF_RelaxedSignature, pfIsOpenDelegate);
 }
-
-
-// This method checks the delegate type transparency rules.
-// It returns TRUE if the transparency rules are obeyed and FALSE otherwise
-//
-// The Partial Trust Silverlight (SL2, SL4, and PT SL5) rule is:
-// 1. Critical delegates can only be bound to critical target methods
-// 2. Transparent/SafeCritical delegates can only be bound to Transparent/SafeCritical target methods
-//
-// The Full Trust Silverlight rule FOR NOW is: anything is allowed
-// The Desktop rule FOR NOW is: anything is allowed
-//
-// This is called by JIT in early bound delegate creation to determine whether the delegate transparency 
-// check is POSSIBLY needed. If the code is shared between appdomains of different trust levels, it is 
-// possible that the check is needed in some domains but not the others. So we need to made that distinction 
-// at run time in JIT_DelegateSecurityCheck.
-
-/* static */
-BOOL COMDelegate::ValidateSecurityTransparency(MethodDesc *pFtn, MethodTable *pdlgMT)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (GetAppDomain()->GetSecurityDescriptor()->IsFullyTrusted())
-        return TRUE;
-
-    BOOL fCriticalDelegate = Security::IsTypeCritical(pdlgMT) && !Security::IsTypeSafeCritical(pdlgMT);
-    BOOL fCriticalTarget   = Security::IsMethodCritical(pFtn) && !Security::IsMethodSafeCritical(pFtn);
-
-    // returns true if:
-    //     1. the delegate is critical and the target method is critical, or
-    //     2. the delegate is transparent/safecritical and the target method is transparent/safecritical
-    return (fCriticalDelegate == fCriticalTarget);
-}
-
 
 BOOL COMDelegate::ValidateBeginInvoke(DelegateEEClass* pClass)
 {
