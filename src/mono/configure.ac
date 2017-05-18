@@ -4089,8 +4089,6 @@ dnl **************
 AC_ARG_ENABLE(btls, [  --disable-btls             Disable the BoringTls provider], enable_btls=$enableval, enable_btls=$BTLS_SUPPORTED)
 AC_ARG_WITH(btls_android_ndk, [  --with-btls-android-ndk        Android NDK for BoringTls])
 
-AC_ARG_ENABLE(dynamic-btls, [ --enable-dynamic-btls Place the BTLS provider into a separate shared library/archive.], enable_dynamic_btls=$enableval, enable_dynamic_btls=no)
-
 AM_CONDITIONAL(BTLS, test x$enable_btls = xyes)
 
 btls_android=no
@@ -4611,9 +4609,6 @@ fi
 
     if test "x$enable_btls" = "xyes"; then
       echo "HAVE_BTLS=1" >> $srcdir/$mcsdir/build/config.make
-      if test "x$enable_dynamic_btls" = "xyes"; then
-        echo "HAVE_DYNAMIC_BTLS=1" >> $srcdir/$mcsdir/build/config.make
-      fi
     fi
 
   fi
