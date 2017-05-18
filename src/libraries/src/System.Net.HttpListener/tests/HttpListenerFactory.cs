@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using Xunit;
 
 namespace System.Net.Tests
 {
@@ -19,19 +20,18 @@ namespace System.Net.Tests
         private readonly string _path;
         private readonly int _port;
 
-        internal HttpListenerFactory(string hostname = "localhost")
+        internal HttpListenerFactory(string hostname = "localhost", string path = null)
         {
             // Find a URL prefix that is not in use on this machine *and* uses a port that's not in use.
             // Once we find this prefix, keep a listener on it for the duration of the process, so other processes
             // can't steal it.
-
-            Guid processGuid = Guid.NewGuid();
             _hostname = hostname;
-            _path = processGuid.ToString("N");
+            _path = path ?? Guid.NewGuid().ToString("N");
+            string pathComponent = string.IsNullOrEmpty(_path) ? _path : $"{_path}/";
 
             for (int port = 1025; port <= IPEndPoint.MaxPort; port++)
             {
-                string prefix = $"http://{hostname}:{port}/{_path}/";
+                string prefix = $"http://{hostname}:{port}/{pathComponent}";
 
                 var listener = new HttpListener();
                 try
@@ -113,8 +113,10 @@ namespace System.Net.Tests
                 {
                     try
                     {
-                        new HttpListenerFactory("*");
-                        s_supportsWildcards = true;
+                        using (new HttpListenerFactory("*"))
+                        {
+                            s_supportsWildcards = true;
+                        }
                     }
                     catch (InvalidOperationException)
                     {
