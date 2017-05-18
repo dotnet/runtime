@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -11,6 +12,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public class CertTests
     {
+        private const string PrivateKeySectionHeader = "[Private Key]";
+        private const string PublicKeySectionHeader = "[Public Key]";
+
         private readonly ITestOutputHelper _log;
 
         public CertTests(ITestOutputHelper output)
@@ -187,6 +191,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(StorageFlags))]
+        public static void X509Certificate2ToStringVerbose_WithPrivateKey(X509KeyStorageFlags keyStorageFlags)
+        {
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, keyStorageFlags))
+            {
+                string certToString = cert.ToString(true);
+                Assert.Contains(PrivateKeySectionHeader, certToString);
+                Assert.Contains(PublicKeySectionHeader, certToString);
+            }
+        }
+
+        [Fact]
+        public static void X509Certificate2ToStringVerbose_NoPrivateKey()
+        {
+            using (var cert = new X509Certificate2(TestData.MsCertificatePemBytes))
+            {
+                string certToString = cert.ToString(true);
+                Assert.DoesNotContain(PrivateKeySectionHeader, certToString);
+                Assert.Contains(PublicKeySectionHeader, certToString);
+            }
+        }
+
         [Fact]
         public static void X509Cert2CreateFromEmptyPfx()
         {
@@ -315,5 +342,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+        public static IEnumerable<object> StorageFlags => CollectionImportTests.StorageFlags;
     }
 }

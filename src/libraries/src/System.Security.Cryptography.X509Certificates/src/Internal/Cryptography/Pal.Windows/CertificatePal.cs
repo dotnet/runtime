@@ -405,13 +405,17 @@ namespace Internal.Cryptography.Pal
 
         public void AppendPrivateKeyInfo(StringBuilder sb)
         {
-            if (HasPrivateKey)
+            if (!HasPrivateKey)
             {
-                // Similar to the Unix implementation, in UWP merely acknowledge that there -is- a private key.
-                sb.AppendLine();
-                sb.AppendLine();
-                sb.AppendLine("[Private Key]");
+                return;
             }
+
+            // UWP, Windows CNG persisted, and Windows Ephemeral keys will all acknowledge that
+            // a private key exists, but detailed printing is limited to Windows CAPI persisted.
+            // (This is the same thing we do in Unix)
+            sb.AppendLine();
+            sb.AppendLine();
+            sb.AppendLine("[Private Key]");
 
 #if uap
             // Similar to the Unix implementation, in UWP merely acknowledge that there -is- a private key.
@@ -419,9 +423,10 @@ namespace Internal.Cryptography.Pal
             CspKeyContainerInfo cspKeyContainerInfo = null;
             try
             {
-                if (HasPrivateKey)
+                CspParameters parameters = GetPrivateKeyCsp();
+
+                if (parameters != null)
                 {
-                    CspParameters parameters = GetPrivateKeyCsp();
                     cspKeyContainerInfo = new CspKeyContainerInfo(parameters);
                 }
             }
