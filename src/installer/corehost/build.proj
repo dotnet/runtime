@@ -14,10 +14,14 @@
           Condition="'$(OSGroup)' != 'Windows_NT'"
           DependsOnTargets="GetLatestCommitHash">
     <PropertyGroup>
+      <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
+      <DotNetHostFxrPath>$(CMakeBuildDir)cli\fxr\$(DotnetHostFxrBaseName)</DotNetHostFxrPath>
+      <HostPolicyPath>$(CMakeBuildDir)cli\dll\$(HostPolicyBaseName)</HostPolicyPath>
+    
       <BuildArgs>--arch $(TargetArchitecture) --apphostver $(AppHostVersion) --hostver $(HostVersion) --fxrver $(HostResolverVersion) --policyver $(HostPolicyVersion) --commithash $(LatestCommit)</BuildArgs>
       <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) -portable</BuildArgs>     
-      <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
-      <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) --cross</BuildArgs>     
+      <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) --cross</BuildArgs>  
+      <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) --stripsymbols</BuildArgs>   
     </PropertyGroup>
 
     <RemoveDir Directories="$(CMakeBuildDir)" Condition="Exists('$(CMakeBuildDir)')" />
@@ -30,8 +34,11 @@
     <ItemGroup>
       <CMakeOutput Include="$(CMakeBuildDir)cli\exe\dotnet\dotnet" />
       <CMakeOutput Include="$(CMakeBuildDir)cli\exe\apphost\apphost" />
-      <CMakeOutput Include="$(CMakeBuildDir)cli\dll\$(HostPolicyBaseName)" />
-      <CMakeOutput Include="$(CMakeBuildDir)cli\fxr\$(DotnetHostFxrBaseName)" />
+      <CMakeOutput Include="$(HostPolicyPath)" />
+      <CMakeOutput Include="$(DotnetHostFxrPath)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(StripSymbols)' == 'true'">
+      <CMakeOutput Include="@(CmakeOutput -> '%(Identity)$(SymbolFileExtension)')" />
     </ItemGroup>
 
     <Copy SourceFiles="@(CMakeOutput)"
