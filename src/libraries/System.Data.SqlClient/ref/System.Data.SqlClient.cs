@@ -276,6 +276,22 @@ namespace System.Data.SqlClient
         public override System.Data.Common.DbDataAdapter CreateDataAdapter() { throw null; }
         public override System.Data.Common.DbParameter CreateParameter() { throw null; }
     }
+    public static partial class SqlClientMetaDataCollectionNames
+    {
+        public static readonly string Columns;
+        public static readonly string Databases;
+        public static readonly string ForeignKeys;
+        public static readonly string IndexColumns;
+        public static readonly string Indexes;
+        public static readonly string Parameters;
+        public static readonly string ProcedureColumns;
+        public static readonly string Procedures;
+        public static readonly string Tables;
+        public static readonly string UserDefinedTypes;
+        public static readonly string Users;
+        public static readonly string ViewColumns;
+        public static readonly string Views;
+    }
     public sealed partial class SqlCommand : System.Data.Common.DbCommand, System.ICloneable
     {
         public SqlCommand() { }

@@ -82,6 +82,7 @@
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolOptions.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolProviderInfo.cs" />
+    <Compile Include="System\Data\ProviderBase\DbMetaDataFactory.cs" />
     <Compile Include="System\Data\ProviderBase\DbReferenceCollection.cs" />
     <Compile Include="System\Data\ProviderBase\TimeoutTimer.cs" />
     <Compile Include="System\Data\Sql\SqlMetaData.cs" />
@@ -99,6 +100,7 @@
     <Compile Include="System\Data\SqlClient\SqlCachedBuffer.cs" />
     <Compile Include="System\Data\SqlClient\SqlClientDiagnosticListenerExtensions.cs" />
     <Compile Include="System\Data\SqlClient\SqlClientFactory.cs" />
+    <Compile Include="System\Data\SqlClient\SqlClientMetaDataCollectionNames.cs" />
     <Compile Include="System\Data\SqlClient\SqlCommand.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnection.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionFactory.cs" />
@@ -120,6 +122,7 @@
     <Compile Include="System\Data\SqlClient\SqlInternalConnection.cs" />
     <Compile Include="System\Data\SqlClient\SqlInternalConnectionTds.cs" />
     <Compile Include="System\Data\SqlClient\sqlinternaltransaction.cs" />
+    <Compile Include="System\Data\SqlClient\SqlMetadataFactory.cs" />
     <Compile Include="System\Data\SqlClient\SqlParameter.cs" />
     <Compile Include="System\Data\SqlClient\SqlParameterCollection.cs" />
     <Compile Include="System\Data\SqlClient\SqlParameterCollectionHelper.cs" />
@@ -405,6 +408,11 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
     <Reference Include="System.Data" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\System.Data.SqlClient.SqlMetaData.xml">
+      <LogicalName>System.Data.SqlClient.SqlMetaData.xml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Import Project=".\GenerateThisAssemblyCs.targets" Condition="'$(IsPartialFacadeAssembly)' != 'true'" />

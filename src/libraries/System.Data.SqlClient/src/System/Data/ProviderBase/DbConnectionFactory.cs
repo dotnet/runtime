@@ -541,6 +541,36 @@ namespace System.Data.ProviderBase
             return CreateConnection(options, poolKey, poolGroupProviderInfo, pool, owningConnection);
         }
 
+        internal DbMetaDataFactory GetMetaDataFactory(DbConnectionPoolGroup connectionPoolGroup, DbConnectionInternal internalConnection)
+        {
+            Debug.Assert(connectionPoolGroup != null, "connectionPoolGroup may not be null.");
+
+            // get the matadatafactory from the pool entry. If it does not already have one
+            // create one and save it on the pool entry
+            DbMetaDataFactory metaDataFactory = connectionPoolGroup.MetaDataFactory;
+
+            // consider serializing this so we don't construct multiple metadata factories
+            // if two threads happen to hit this at the same time.  One will be GC'd
+            if (metaDataFactory == null)
+            {
+                bool allowCache = false;
+                metaDataFactory = CreateMetaDataFactory(internalConnection, out allowCache);
+                if (allowCache)
+                {
+                    connectionPoolGroup.MetaDataFactory = metaDataFactory;
+                }
+            }
+            return metaDataFactory;
+        }
+
+        protected virtual DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
+        {
+            // providers that support GetSchema must override this with a method that creates a meta data
+            // factory appropriate for them.
+            cacheMetaDataFactory = false;
+            throw ADP.NotSupported();
+        }
+
         abstract protected DbConnectionInternal CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection);
 
         abstract protected DbConnectionOptions CreateConnectionOptions(string connectionString, DbConnectionOptions previous);

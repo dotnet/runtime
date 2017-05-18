@@ -38,6 +38,7 @@ namespace System.Data.ProviderBase
         private int _state;          // see PoolGroupState* below
 
         private DbConnectionPoolGroupProviderInfo _providerInfo;
+        private DbMetaDataFactory _metaDataFactory;
 
         // always lock this before changing _state, we don't want to move out of the 'Disabled' state
         // PoolGroupStateUninitialized = 0;
@@ -110,6 +111,18 @@ namespace System.Data.ProviderBase
             }
         }
 
+        internal DbMetaDataFactory MetaDataFactory
+        {
+            get
+            {
+                return _metaDataFactory;
+            }
+
+            set
+            {
+                _metaDataFactory = value;
+            }
+        }
 
         internal int Clear()
         {
