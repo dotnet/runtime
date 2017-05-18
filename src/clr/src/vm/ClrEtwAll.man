@@ -3555,7 +3555,7 @@
                                 <AppDomainFlags> %2 </AppDomainFlags>
                                 <AppDomainName> %3 </AppDomainName>
                                 <AppDomainIndex> %4 </AppDomainIndex>
-                                <ClrInstanceID> %4 </ClrInstanceID>
+                                <ClrInstanceID> %5 </ClrInstanceID>
                             </AppDomainLoadUnloadRundown_V1>
                         </UserData>
                     </template>
@@ -3759,7 +3759,7 @@
                                 <Flags> %3 </Flags>
                                 <ManagedThreadIndex> %4 </ManagedThreadIndex>
                                 <OSThreadID> %5 </OSThreadID>
-                                <ClrInstanceID> %5 </ClrInstanceID>
+                                <ClrInstanceID> %6 </ClrInstanceID>
                             </ThreadCreatedRundown>
                         </UserData>
                     </template>
