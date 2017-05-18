@@ -41,6 +41,8 @@ namespace System.Net.Http
 
         public X509CertificateCollection ClientCertificates => _curlHandler.ClientCertificates;
 
+        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
+
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
             get { return _curlHandler.ServerCertificateValidationCallback; }

@@ -36,6 +36,19 @@ namespace System.Net.Http
                             CurlSslVersionDescription));
                 }
 
+                // Revocation checking is always on for darwinssl (SecureTransport).
+                // If any other backend is used and revocation is requested, we can't guarantee
+                // that assertion.
+                if (easy._handler.CheckCertificateRevocationList &&
+                    !CurlSslVersionDescription.Equals(Interop.Http.SecureTransportDescription))
+                {
+                    throw new PlatformNotSupportedException(
+                        SR.Format(
+                            SR.net_http_libcurl_revocation_notsupported,
+                            CurlVersionDescription,
+                            CurlSslVersionDescription));
+                }
+
                 if (easy._handler.ServerCertificateValidationCallback != null)
                 {
                     // libcurl (as of 7.49.1) does not have any callback which can be registered which fires
@@ -58,24 +71,23 @@ namespace System.Net.Http
                     // user's keychain and setting the SSL policy trust for it to "Always Trust".
                     // Similarly, the "block this" could be attained by setting the SSL policy for a cert in the
                     // keychain to "Never Trust".
-                    throw new PlatformNotSupportedException(
-                        SR.Format(
-                            SR.net_http_libcurl_callback_notsupported,
-                            CurlVersionDescription,
-                            CurlSslVersionDescription));
-                }
-
-                // Revocation checking is always on for darwinssl (SecureTransport).
-                // If any other backend is used and revocation is requested, we can't guarantee
-                // that assertion.
-                if (easy._handler.CheckCertificateRevocationList &&
-                    !CurlSslVersionDescription.Equals("SecureTransport"))
-                {
-                    throw new PlatformNotSupportedException(
-                    SR.Format(
-                        SR.net_http_libcurl_revocation_notsupported,
-                        CurlVersionDescription,
-                        CurlSslVersionDescription));
+                    //
+                    // However, one case we can support is when we know all certificates will pass validation.
+                    // We can detect a key case of that: whether DangerousAcceptAnyServerCertificateValidator was used.
+                    if (easy.ServerCertificateValidationCallbackAcceptsAll)
+                    {
+                        EventSourceTrace("Warning: Disabling peer verification per {0}", nameof(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator), easy: easy);
+                        easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYPEER, 0); // don't verify the peer
+                        // Don't set CURLOPT_SSL_VERIFHOST to 0; doing so disables SNI.
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException(
+                            SR.Format(
+                                SR.net_http_libcurl_callback_notsupported,
+                                CurlVersionDescription,
+                                CurlSslVersionDescription));
+                    }
                 }
 
                 SetSslVersion(easy);

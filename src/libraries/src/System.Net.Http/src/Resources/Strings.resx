@@ -217,9 +217,6 @@
   <data name="net_cookie_attribute" xml:space="preserve">
     <value>The '{0}'='{1}' part of the cookie is invalid.</value>
   </data>
-  <data name="net_http_unix_invalid_certcallback_option" xml:space="preserve">
-    <value>The libcurl library in use ({0}) and its SSL backend ("{1}") do not support custom handling of certificates. A libcurl built with OpenSSL is required.</value>
-  </data>
   <data name="net_http_unix_invalid_credential" xml:space="preserve">
     <value>The libcurl library in use ({0}) does not support different credentials for different authentication schemes.</value>
   </data>

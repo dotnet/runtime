@@ -742,6 +742,10 @@ namespace System.Net.Http
                 SslProvider.SetSslOptions(this, _handler.ClientCertificateOptions);
             }
 
+            internal bool ServerCertificateValidationCallbackAcceptsAll => ReferenceEquals(
+                _handler.ServerCertificateValidationCallback,
+                HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
+
             internal void SetCurlCallbacks(
                 IntPtr easyGCHandle,
                 ReadWriteCallback receiveHeadersCallback,
