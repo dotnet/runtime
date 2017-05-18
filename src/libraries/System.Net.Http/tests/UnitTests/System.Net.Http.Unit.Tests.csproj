@@ -5,8 +5,9 @@
     <ProjectGuid>{5F9C3C9F-652E-461E-B2D6-85D264F5A733}</ProjectGuid>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn Condition="'$(TargetGroup)' == 'netfx'">$(NoWarn);0436</NoWarn>
+    <NoWarn Condition="'$(TargetGroup)' == 'netfx' Or '$(TargetGroup)' == 'uap'">$(NoWarn);0436</NoWarn>
     <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);NET46</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -342,9 +343,6 @@
     <Compile Include="StreamToStreamCopyTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard' And '$(TargetGroup)' != 'netcoreapp'">
-    <Compile Include="..\..\src\Internal\ICloneable.cs">
-      <Link>ProductionCode\Internal\ICloneable.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
       <Link>Common\System\SerializableAttribute.cs</Link>
     </Compile>
