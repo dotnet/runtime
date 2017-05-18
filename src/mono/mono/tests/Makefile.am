@@ -1207,27 +1207,29 @@ test-platform:	test-iomap-regression
 endif
 endif
 
-if X86
-if HOST_WIN32
-else
-test-platform: test-eglib-remap
-endif
-endif
-
 # Target to precompile the test executables
 tests: compile-tests
 
 #
 # Test that no symbols are missed in eglib-remap.h
 #
-OK_G_SYMBOLS='g_list\|g_slist\|g_concat_dir_and_file\|g_Ctoc'
 if NACL_CODEGEN
-test-eglib-remap:
 else
+if PLATFORM_LINUX
+test-platform: test-eglib-remap
+else
+if PLATFORM_DARWIN
+test-platform: test-eglib-remap
+endif
+endif
+endif
+# The following regexp describes all symbols that start with "g_" but are not part of eglibc.
+# The optional underscore prepending symbol names may or may not appear depending on the
+# system and the state of the leading-underscore compiler flag.
+OK_G_SYMBOLS='\<_?g_(s?list_(pre|ap)pend_(image|mempool)|concat_dir_and_file|Ctoc)\>'
 test-eglib-remap:
 	@echo "Testing eglib remap..."
-	@if which nm > /dev/null; then if nm $(top_builddir)/mono/mini/mono | grep -v $(OK_G_SYMBOLS) | grep 't g_'; then exit 1; else exit 0; fi; fi
-endif
+	@if which nm > /dev/null; then if nm $(top_builddir)/mono/mini/mono | grep -Ev $(OK_G_SYMBOLS) | grep -E 't _?g_'; then exit 1; else exit 0; fi; fi
 
 test-env-options:
 	MONO_ENV_OPTIONS="--version" $(RUNTIME) array-init.exe | grep -q Architecture:
@@ -2026,7 +2028,7 @@ test-console-output: console-output.exe
 test-pedump: test-runner.exe
 	$(with_mono_path) $(mono_build_root)/tools/pedump/pedump --verify error test-runner.exe
 
-.PHONY: test-gac-loading
+.PHONY: test-gac-loading test-eglib-remap
 
 runtest-gac-loading: test-runner.exe
 	$(MAKE) -C testing_gac runtest

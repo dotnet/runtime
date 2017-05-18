@@ -15,6 +15,8 @@
 #define g_byte_array_append monoeg_g_byte_array_append
 #define g_byte_array_free monoeg_g_byte_array_free
 #define g_byte_array_new monoeg_g_byte_array_new
+#define g_byte_array_set_size monoeg_g_byte_array_set_size
+#define g_calloc monoeg_g_calloc
 #define g_clear_error monoeg_g_clear_error
 #define g_convert monoeg_g_convert
 #define g_convert_error_quark monoeg_g_convert_error_quark
@@ -25,6 +27,7 @@
 #define g_mkdir_with_parents monoeg_g_mkdir_with_parents
 #define g_direct_equal monoeg_g_direct_equal
 #define g_direct_hash monoeg_g_direct_hash
+#define g_ensure_directory_exists monoeg_g_ensure_directory_exists
 #define g_error_free monoeg_g_error_free
 #define g_error_new monoeg_g_error_new
 #define g_error_vnew monoeg_g_error_vnew
@@ -48,6 +51,7 @@
 #define g_get_tmp_dir monoeg_g_get_tmp_dir
 #define g_get_user_name monoeg_g_get_user_name
 #define g_getenv monoeg_g_getenv
+#define g_hasenv monoeg_g_hasenv
 #define g_hash_table_destroy monoeg_g_hash_table_destroy
 #define g_hash_table_find monoeg_g_hash_table_find
 #define g_hash_table_foreach monoeg_g_hash_table_foreach
@@ -107,6 +111,8 @@
 #define g_markup_parse_context_new monoeg_g_markup_parse_context_new
 #define g_markup_parse_context_parse monoeg_g_markup_parse_context_parse
 #define g_memdup monoeg_g_memdup
+#define g_mem_set_vtable monoeg_g_mem_set_vtable
+#define g_mkdtemp monoeg_g_mkdtemp
 #define g_module_build_path monoeg_g_module_build_path
 #define g_module_close monoeg_g_module_close
 #define g_module_error monoeg_g_module_error
@@ -251,6 +257,7 @@
 #define g_utf8_offset_to_pointer monoeg_g_utf8_offset_to_pointer
 #define g_utf8_pointer_to_offset monoeg_g_utf8_pointer_to_offset
 #define g_utf8_to_ucs4_fast monoeg_g_utf8_to_ucs4_fast
+#define g_vasprintf monoeg_g_vasprintf
 #define g_win32_getlocale monoeg_g_win32_getlocale
 #define g_assertion_message monoeg_assertion_message
 #define g_malloc monoeg_malloc
