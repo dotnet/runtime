@@ -268,6 +268,19 @@ namespace System.Tests
             public ClassWithPrivateCtor3(int i) { Flag.Increase(300); }
         }
 
+        class HasPublicCtor
+        {
+            public int Value = 0;
+
+            public HasPublicCtor(int value) => Value = value;
+        }
+
+        class HasPrivateCtor
+        {
+            public int Value = 0;
+
+            private HasPrivateCtor(int value) => Value = value;
+        }
 
         public class IsTestedAttribute : Attribute
         {
@@ -292,7 +305,7 @@ namespace System.Tests
             public static bool Equal(int i) { return cnt == i; }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
         static void TestingBindingFlags()
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture));
@@ -321,6 +334,28 @@ namespace System.Tests
 
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Static, null, null, CultureInfo.CurrentCulture));
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Static, null, new object[] { 122 }, CultureInfo.CurrentCulture));
+        }
+
+        [Fact]
+        static void TestingBindingFlagsInstanceOnly()
+        {
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPublicCtor), default(BindingFlags), null, null, null));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPublicCtor), BindingFlags.NonPublic | BindingFlags.Instance, null, null, null));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPublicCtor), BindingFlags.Public | BindingFlags.Static, null, null, null));
+
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPrivateCtor), default(BindingFlags), null, null, null));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, null, null));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPrivateCtor), BindingFlags.NonPublic | BindingFlags.Static, null, null, null));
+
+            {
+                HasPublicCtor a = (HasPublicCtor)Activator.CreateInstance(typeof(HasPublicCtor), BindingFlags.Public | BindingFlags.Instance, null, new object[] { 100 }, null);
+                Assert.Equal(100, a.Value);
+            }
+
+            {
+                HasPrivateCtor a = (HasPrivateCtor)Activator.CreateInstance(typeof(HasPrivateCtor), BindingFlags.NonPublic | BindingFlags.Instance, null, new object[] { 100 }, null);
+                Assert.Equal(100, a.Value);
+            }
         }
 
         [Fact]

@@ -2619,6 +2619,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, ".NetNative limits interning of literals to the empty string.")]
         public static unsafe void InternTest()
         {
             String s1 = "MyTest";
@@ -2631,6 +2632,24 @@ namespace System.Tests
 
             Assert.True(String.IsInterned(s1).Equals(s1), "Expected to the literal string interned");
             Assert.True(String.IsInterned(s2).Equals(s1), "Expected to the interned string to be in the string pool now");
+        }
+
+        [Fact]
+        public static void InternalTestAotSubset()
+        {
+            string emptyFromField = string.Empty;
+            string emptyFromLiteral = "";
+            string emptyFromInternTable = string.IsInterned(emptyFromField);
+            Assert.Same(emptyFromInternTable, emptyFromField);
+            Assert.Same(emptyFromInternTable, emptyFromLiteral);
+
+            string sTemplate = new string('A', 5);
+            string sInterned1 = string.Intern(sTemplate);
+            string sInterned2 = string.IsInterned(sInterned1);
+            Assert.Equal(sTemplate, sInterned1);
+            Assert.Same(sInterned1, sInterned2);
+            string sNew = string.Copy(sInterned1);
+            Assert.NotSame(sInterned1, sNew);
         }
 
         [Fact]
