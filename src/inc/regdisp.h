@@ -323,6 +323,35 @@ inline void SyncRegDisplayToCurrentContext(REGDISPLAY* pRD)
 
 typedef REGDISPLAY *PREGDISPLAY;
 
+#ifdef WIN64EXCEPTIONS
+inline void FillContextPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pCtxPtrs, PT_CONTEXT pCtx)
+{
+#ifdef _TARGET_AMD64_
+    for (int i = 0; i < 16; i++)
+    {
+        *(&pCtxPtrs->Rax + i) = (&pCtx->Rax + i);
+    }
+#elif defined(_TARGET_ARM64_) // _TARGET_AMD64_
+    for (int i = 0; i < 12; i++)
+    {
+        *(&pCtxPtrs->X19 + i) = (&pCtx->X19 + i);
+    }
+#elif defined(_TARGET_ARM_) // _TARGET_ARM64_
+    // Copy over the nonvolatile integer registers (R4-R11)
+    for (int i = 0; i < 8; i++)
+    {
+        *(&pCtxPtrs->R4 + i) = (&pCtx->R4 + i);
+    }
+#elif defined(_TARGET_X86_) // _TARGET_ARM_
+    for (int i = 0; i < 7; i++)
+    {
+        *(&pCtxPtrs->Edi + i) = (&pCtx->Edi + i);
+    }
+#else // _TARGET_X86_
+    PORTABILITY_ASSERT("FillContextPointers");
+#endif // _TARGET_???_ (ELSE)
+}
+#endif // WIN64EXCEPTIONS
 
 inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pCallerCtx = NULL)
 {
@@ -374,33 +403,12 @@ inline void FillRegDisplay(const PREGDISPLAY pRD, PT_CONTEXT pctx, PT_CONTEXT pC
         pRD->IsCallerSPValid      = TRUE;        // Don't add usage of this field.  This is only temporary.
     }
 
-#ifdef _TARGET_AMD64_
-    for (int i = 0; i < 16; i++)
-    {
-        *(&pRD->ctxPtrsOne.Rax + i) = (&pctx->Rax + i);
-    }
-#elif defined(_TARGET_ARM64_) // _TARGET_AMD64_
-    for (int i = 0; i < 12; i++)
-    {
-        *(&pRD->ctxPtrsOne.X19 + i) = (&pctx->X19 + i);
-    }
-#elif defined(_TARGET_ARM_) // _TARGET_ARM64_
-    // Copy over the nonvolatile integer registers (R4-R11)
-    for (int i = 0; i < 8; i++)
-    {
-        *(&pRD->ctxPtrsOne.R4 + i) = (&pctx->R4 + i);
-    }
+    FillContextPointers(&pRD->ctxPtrsOne, pctx);
 
+#if defined(_TARGET_ARM_)
     pRD->ctxPtrsOne.Lr = &pctx->Lr;
     pRD->pPC = &pRD->pCurrentContext->Pc;
-#elif defined(_TARGET_X86_) // _TARGET_ARM_
-    for (int i = 0; i < 7; i++)
-    {
-        *(&pRD->ctxPtrsOne.Edi + i) = (&pctx->Edi + i);
-    }
-#else // _TARGET_X86_
-    PORTABILITY_ASSERT("FillRegDisplay");
-#endif // _TARGET_???_ (ELSE)
+#endif // _TARGET_ARM_
 
 #ifdef DEBUG_REGDISPLAY
     pRD->_pThread = NULL;
