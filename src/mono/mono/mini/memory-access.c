@@ -336,7 +336,7 @@ mini_emit_wb_aware_memcpy (MonoCompile *cfg, MonoClass *klass, MonoInst *iargs[4
 }
 
 static void
-mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native)
+mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, int explicit_align, gboolean native)
 {
 	MonoInst *iargs [4];
 	int size;
@@ -373,8 +373,10 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 
 	if (!align)
 		align = SIZEOF_VOID_P;
+	if (explicit_align)
+		align = explicit_align;
 
-	if (mini_type_is_reference (&klass->byval_arg)) {
+	if (mini_type_is_reference (&klass->byval_arg)) { // Refs *MUST* be naturally aligned
 		MonoInst *store, *load;
 		int dreg = alloc_ireg_ref (cfg);
 
@@ -438,7 +440,17 @@ mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offs
 {
 	MonoInst *ins;
 
-	EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, type, src->dreg, offset);
+	if (ins_flag & MONO_INST_UNALIGNED) {
+		MonoInst *addr;
+		int align;
+		int size = mono_type_size (type, &align);
+
+		ins = mono_compile_create_var (cfg, type, OP_LOCAL);
+		EMIT_NEW_VARLOADA (cfg, addr, ins, ins->inst_vtype);
+		mini_emit_memcpy_const_size (cfg, addr, src, size, 1);
+	} else {
+		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, type, src->dreg, offset);
+	}
 	ins->flags |= ins_flag;
 
 	if (ins_flag & MONO_INST_VOLATILE) {
@@ -459,6 +471,16 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 	}
+
+	if (ins_flag & MONO_INST_UNALIGNED) {
+		MonoInst *addr, *mov, *tmp_var;
+
+		tmp_var = mono_compile_create_var (cfg, type, OP_LOCAL);
+		EMIT_NEW_TEMPSTORE (cfg, mov, tmp_var->inst_c0, value);
+		EMIT_NEW_VARLOADA (cfg, addr, tmp_var, tmp_var->inst_vtype);
+		mini_emit_memory_copy_internal (cfg, dest, addr, mono_class_from_mono_type (type), 1, FALSE);
+	}
+
 	/* FIXME: should check item at sp [1] is compatible with the type of the store. */
 
 	EMIT_NEW_STORE_MEMBASE_TYPE (cfg, ins, type, dest->dreg, 0, value->dreg);
@@ -473,7 +495,7 @@ mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoIn
 void
 mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoInst *size, int ins_flag)
 {
-	int align = SIZEOF_VOID_P;
+	int align = (ins_flag & MONO_INST_UNALIGNED) ? 1 : SIZEOF_VOID_P;
 
 	/*
 	 * FIXME: It's unclear whether we should be emitting both the acquire
@@ -503,7 +525,7 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 void
 mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, MonoInst *size, int ins_flag)
 {
-	int align = SIZEOF_VOID_P;
+	int align = (ins_flag & MONO_INST_UNALIGNED) ? 1 : SIZEOF_VOID_P;
 
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
@@ -527,6 +549,10 @@ mini_emit_memory_init_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *value, 
 void
 mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native, int ins_flag)
 {
+	int explicit_align = 0;
+	if (ins_flag & MONO_INST_UNALIGNED)
+		explicit_align = 1;
+
 	/*
 	 * FIXME: It's unclear whether we should be emitting both the acquire
 	 * and release barriers for cpblk. It is technically both a load and
@@ -540,7 +566,7 @@ mini_emit_memory_copy (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClas
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 	}
 
-	mini_emit_memory_copy_internal (cfg, dest, src, klass, native);
+	mini_emit_memory_copy_internal (cfg, dest, src, klass, explicit_align, native);
 
 	if (ins_flag & MONO_INST_VOLATILE) {
 		/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
