@@ -10,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 
 namespace Internal.Cryptography.Pal
 {
@@ -140,7 +141,7 @@ namespace Internal.Cryptography.Pal
             {
                 if (X509Store.DisallowedStoreName.Equals(storeName, StringComparison.OrdinalIgnoreCase))
                 {
-                    throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_NoDisallowedStore);
+                    return new DirectoryBasedStoreProvider.UnsupportedDisallowedStore(openFlags);
                 }
 
                 return new DirectoryBasedStoreProvider(storeName, openFlags);
@@ -150,7 +151,9 @@ namespace Internal.Cryptography.Pal
             
             if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
             {
-                throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly);
+                throw new CryptographicException(
+                    SR.Cryptography_Unix_X509_MachineStoresReadOnly,
+                    new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly));
             }
 
             // The static store approach here is making an optimization based on not
@@ -177,7 +180,9 @@ namespace Internal.Cryptography.Pal
                 return s_machineIntermediateStore;
             }
 
-            throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresRootOnly);
+            throw new CryptographicException(
+                SR.Cryptography_Unix_X509_MachineStoresRootOnly,
+                new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresRootOnly));
         }
 
         private static ILoaderPal SingleCertToLoaderPal(ICertificatePal singleCert)

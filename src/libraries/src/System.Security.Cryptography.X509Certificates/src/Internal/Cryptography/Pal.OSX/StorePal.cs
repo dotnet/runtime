@@ -123,11 +123,12 @@ namespace Internal.Cryptography.Pal
             if ((openFlags & OpenFlags.OpenExistingOnly) == OpenFlags.OpenExistingOnly)
                 throw new CryptographicException(SR.Cryptography_X509_StoreNotFound);
 
-            throw new PlatformNotSupportedException(
-                SR.Format(
-                    SR.Cryptography_X509_StoreCannotCreate,
-                    storeName,
-                    storeLocation));
+            string message = SR.Format(
+                SR.Cryptography_X509_StoreCannotCreate,
+                storeName,
+                storeLocation);
+
+            throw new CryptographicException(message, new PlatformNotSupportedException(message));
         }
 
         private static void ReadCollection(SafeCFArrayHandle matches, HashSet<X509Certificate2> collection)

@@ -213,26 +213,27 @@ On macOS the X509Store class is a projection of system trust decisions (read-onl
 | Open CurrentUser\My (ReadOnly) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | Open CurrentUser\My (ReadWrite) | :white_check_mark: | :white_check_mark:  | :white_check_mark: |
 | Open CurrentUser\My (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: |
-| Open LocalMachine\My | :white_check_mark: | `PlatformNotSupportedException` | :white_check_mark: |
+| Open LocalMachine\My | :white_check_mark: | `CryptographicException` | :white_check_mark: |
 | Open CurrentUser\Root (ReadOnly) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| Open CurrentUser\Root (ReadWrite) | :white_check_mark: | :white_check_mark: | `PlatformNotSupportedException` |
+| Open CurrentUser\Root (ReadWrite) | :white_check_mark: | :white_check_mark: | `CryptographicException` |
 | Open CurrentUser\Root (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: (if ReadOnly) |
 | Open LocalMachine\Root (ReadOnly) | :white_check_mark:  | :white_check_mark:  | :white_check_mark: |
-| Open LocalMachine\Root (ReadWrite) | :white_check_mark: | `PlatformNotSupportedException` | `PlatformNotSupportedException` |
+| Open LocalMachine\Root (ReadWrite) | :white_check_mark: | `CryptographicException` | `CryptographicException` |
 | Open LocalMachine\Root (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark:  (if ReadOnly) |
-| Open CurrentUser\Disallowed (ReadOnly) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
-| Open CurrentUser\Disallowed (ReadWrite) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
-| Open CurrentUser\Disallowed (ExistingOnly) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
-| Open LocalMachine\Disallowed (ReadOnly) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
-| Open LocalMachine\Disallowed (ReadWrite) | :white_check_mark: | :question: | `PlatformNotSupportedException` |
-| Open LocalMachine\Disallowed (ExistingOnly) | :white_check_mark: | :question: | `PlatformNotSupportedException`) |
+| Open CurrentUser\Disallowed (ReadOnly) | :white_check_mark: | :question: | :white_check_mark: |
+| Open CurrentUser\Disallowed (ReadWrite) | :white_check_mark: | :question: | `CryptographicException` |
+| Open CurrentUser\Disallowed (ExistingOnly) | :white_check_mark: | :question: | :white_check_mark: (if ReadOnly) |
+| Open LocalMachine\Disallowed (ReadOnly) | :white_check_mark: | `CryptographicException` | :white_check_mark: |
+| Open LocalMachine\Disallowed (ReadWrite) | :white_check_mark: | `CryptographicException` | `CryptographicException` |
+| Open LocalMachine\Disallowed (ExistingOnly) | :white_check_mark: | `CryptographicException` | :white_check_mark: (if ReadOnly) |
 | Open non-existant store (ExistingOnly) | `CryptographicException` | `CryptographicException` | `CryptographicException` |
-| Open CurrentUser non-existant store (ReadWrite)  | :white_check_mark: | :white_check_mark: | `PlatformNotSupportedException` |
-| Open LocalMachine non-existant store (ReadWrite)  | :white_check_mark: | `PlatformNotSupportedException` | `PlatformNotSupportedException` |
+| Open CurrentUser non-existant store (ReadWrite)  | :white_check_mark: | :white_check_mark: | `CryptographicException` |
+| Open LocalMachine non-existant store (ReadWrite)  | :white_check_mark: | `CryptographicException` | `CryptographicException` |
 
 On Linux stores are created on first-write, and no user stores exist by default, so opening CurrentUser\My with ExistingOnly may fail.
 
-On Linux the Disallowed store is not used in chain building, and attempting to open it will result in a `PlatformNotSupportedException` being thrown.
+On Linux the Disallowed store is not used in chain building, and attempting to add contents to it will result in a `CryptographicException` being thrown.
+A `CryptographicException` will be thrown when opening the Disallowed store on Linux if it has already acquired contents.
 
 The LocalMachnie\Root store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.
 The LocalMachine\Intermediate store on Linux is an interpretation of the CA bundle in the default path for OpenSSL.

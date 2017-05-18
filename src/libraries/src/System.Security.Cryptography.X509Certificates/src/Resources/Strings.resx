@@ -187,6 +187,9 @@
   <data name="Cryptography_PrivateKey_WrongAlgorithm" xml:space="preserve">
     <value>The provided key does not match the public key algorithm for this certificate.</value>
   </data>
+  <data name="Cryptography_Unix_X509_DisallowedStoreNotEmpty" xml:space="preserve">
+   <value>The Disallowed store is not supported on this platform, but already has data. All files under '{0}' must be removed.</value>
+  </data>
   <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
     <value>Unix LocalMachine X509Stores are read-only for all users.</value>
   </data>
