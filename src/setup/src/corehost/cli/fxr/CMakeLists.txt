@@ -64,4 +64,4 @@ if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
     target_link_libraries(hostfxr shell32.lib)
 endif()
 
-
+install_library_and_symbols (hostfxr)

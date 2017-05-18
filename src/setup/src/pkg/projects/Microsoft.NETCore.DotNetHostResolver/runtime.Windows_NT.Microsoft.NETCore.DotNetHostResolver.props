@@ -2,9 +2,6 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.dll"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/hostfxr.pdb">
-      <IsSymbolFile>true</IsSymbolFile>
-    </ArchitectureSpecificNativeFile>
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>

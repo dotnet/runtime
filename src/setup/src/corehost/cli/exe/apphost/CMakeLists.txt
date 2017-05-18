@@ -2,6 +2,7 @@
 # Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 cmake_minimum_required (VERSION 2.6)
+project(apphost)
 set(DOTNET_HOST_EXE_NAME "apphost")
 
 # Add RPATH to the apphost binary that allows using local copies of shared libraries
@@ -19,3 +20,4 @@ include(../exe.cmake)
 set(SOURCES)
 add_definitions(-DFEATURE_APPHOST=1)
 
+install_library_and_symbols (apphost)
