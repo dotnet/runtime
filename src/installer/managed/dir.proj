@@ -3,19 +3,21 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <Target Name="Build">
-    <MakeDir  Condition="!Exists('$(pOutDir)')" Directories="$(pOutDir)" />
-
-    <PropertyGroup>
-      <Args>/p:Configuration=$(ConfigurationGroup)</Args>
-    </PropertyGroup>
+  <Target Name="Build"
+          DependsOnTargets="GetLatestCommitHash">
+    <MakeDir Condition="!Exists('$(pOutDir)')" Directories="$(pOutDir)" />
 
     <ItemGroup>
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.PlatformAbstractions/Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel/Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
-    <Exec Command="$(DotnetToolCommand) build $(Args) %(PackageProjects.Identity)"
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+    <PropertyGroup>
+      <BuildArgs>/p:Configuration=$(ConfigurationGroup)</BuildArgs>
+      <BuildArgs Condition="'$(LatestCommit)' != ''">$(BuildArgs) /p:LatestCommit=$(LatestCommit)</BuildArgs>
+      <BuildArgs Condition="'$(BuiltByString)' != ''">$(BuildArgs) /p:BuiltByString="$(BuiltByString)"</BuildArgs>
+    </PropertyGroup>
+
+    <Exec Command="$(DotnetToolCommand) build $(BuildArgs) %(PackageProjects.Identity)" />
   </Target>
 </Project>
