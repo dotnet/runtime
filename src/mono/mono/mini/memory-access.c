@@ -16,6 +16,7 @@
 #include "jit-icalls.h"
 
 #define MAX_INLINE_COPIES 10
+#define MAX_INLINE_COPY_SIZE 10000
 
 void 
 mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, int align)
@@ -23,7 +24,7 @@ mini_emit_memset (MonoCompile *cfg, int destreg, int offset, int size, int val, 
 	int val_reg;
 
 	/*FIXME arbitrary hack to avoid unbound code expansion.*/
-	g_assert (size < 10000);
+	g_assert (size < MAX_INLINE_COPY_SIZE);
 	g_assert (val == 0);
 	g_assert (align > 0);
 
@@ -111,7 +112,7 @@ mini_emit_memcpy (MonoCompile *cfg, int destreg, int doffset, int srcreg, int so
 	int cur_reg;
 
 	/*FIXME arbitrary hack to avoid unbound code expansion.*/
-	g_assert (size < 10000);
+	g_assert (size < MAX_INLINE_COPY_SIZE);
 	g_assert (align > 0);
 
 	if (align < SIZEOF_VOID_P) {
@@ -487,11 +488,9 @@ mini_emit_memory_copy_bytes (MonoCompile *cfg, MonoInst *dest, MonoInst *src, Mo
 		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_SEQ);
 	}
 
-	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST) && size->inst_c0 < 10000) {
+	if ((cfg->opt & MONO_OPT_INTRINS) && (size->opcode == OP_ICONST)) {
 		mini_emit_memcpy_const_size (cfg, dest, src, size->inst_c0, align);
 	} else {
-		if (cfg->verbose_level > 3)
-			printf ("EMITING REGULAR COPY\n");
 		mini_emit_memcpy_internal (cfg, dest, src, size, 0, align);
 	}
 
