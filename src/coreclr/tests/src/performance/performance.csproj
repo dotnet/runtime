@@ -4,6 +4,7 @@
   <PropertyGroup>
     <NugetTargetMoniker>.NETStandard,Version=v1.5</NugetTargetMoniker>
     <NugetTargetMonikerShort>netstandard1.5</NugetTargetMonikerShort>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.performance.api">
