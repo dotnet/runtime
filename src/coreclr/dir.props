@@ -87,8 +87,6 @@
     <OutputPath Condition="'$(OutputPath)' == ''">$(BinDir)</OutputPath>
   </PropertyGroup>
 
-  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
