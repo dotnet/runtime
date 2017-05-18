@@ -568,6 +568,13 @@
             "#import": [ "opensuse.42.1", "opensuse-x64" ]
         },
 
+        "gentoo": {
+            "#import": [ "linux" ]
+        },
+        "gentoo-x64": {
+            "#import": [ "gentoo", "linux-x64" ]
+        },
+
         "corert": {
             "#import": [ "any" ]
         },
