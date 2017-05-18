@@ -1640,6 +1640,13 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     END_ENTRYPOINT_VOIDRET;
 }
 
+#if defined(_TARGET_X86_) && defined(FEATURE_PAL)
+void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect)
+{
+    VirtualCallStubManager::BackPatchWorkerStatic(returnAddr, siteAddrForRegisterIndirect);
+}
+#endif
+
 PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                             OBJECTREF *protectedObj,
                                             DispatchToken token,
@@ -4047,10 +4054,3 @@ BOOL VirtualCallStubManagerManager::TraceManager(
     // Forward the call to the appropriate manager.
     return pMgr->TraceManager(thread, trace, pContext, pRetAddr);
 }
-
-#if defined(_TARGET_X86_) && defined(FEATURE_PAL)
-void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect)
-{
-    VirtualCallStubManager::BackPatchWorkerStatic(returnAddr, siteAddrForRegisterIndirect);
-}
-#endif
