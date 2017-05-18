@@ -16,7 +16,6 @@ namespace System.Net.Security.Tests
 
     public class SslStreamCredentialCacheTest
     {
-        [ActiveIssue(19699, TestPlatforms.Windows)]
         [Fact]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
@@ -42,8 +41,20 @@ namespace System.Net.Security.Tests
 
                 await Task.WhenAll(tasks).TimeoutAfter(15 * 1000);
 
-                Assert.True(client.IsMutuallyAuthenticated);
-                Assert.True(server.IsMutuallyAuthenticated);
+                if (!PlatformDetection.IsWindows7 ||
+                    Capability.IsTrustedRootCertificateInstalled())
+                {
+                    // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
+                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
+                    // The behavior to send the Trusted Issuers List by default is off.
+                    //
+                    // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
+                    // by the server using certificates from the Trusted Root Authorities certificate store.
+                    // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
+
+                    Assert.True(client.IsMutuallyAuthenticated);
+                    Assert.True(server.IsMutuallyAuthenticated);
+                }
             }
         }
 
