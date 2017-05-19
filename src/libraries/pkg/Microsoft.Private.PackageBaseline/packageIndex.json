@@ -969,7 +969,9 @@
     },
     "System.Configuration": {
       "InboxOn": {
-        "net45": "4.0.0.0"
+        "netcoreapp2.0": "4.0.0.0",
+        "net45": "4.0.0.0",
+        "uap10.1": "4.0.0.0"
       }
     },
     "System.Configuration.ConfigurationManager": {
@@ -3782,7 +3784,9 @@
     },
     "System.Security": {
       "InboxOn": {
-        "net45": "4.0.0.0"
+        "netcoreapp2.0": "4.0.0.0",
+        "net45": "4.0.0.0",
+        "uap10.1": "4.0.0.0"
       }
     },
     "System.Security.AccessControl": {
@@ -4263,7 +4267,9 @@
     },
     "System.ServiceProcess": {
       "InboxOn": {
-        "net45": "4.0.0.0"
+        "netcoreapp2.0": "4.0.0.0",
+        "net45": "4.0.0.0",
+        "uap10.1": "4.0.0.0"
       }
     },
     "System.ServiceProcess.ServiceController": {
@@ -5262,7 +5268,9 @@
     },
     "WindowsBase": {
       "InboxOn": {
-        "net45": "4.0.0.0"
+        "netcoreapp2.0": "4.0.0.0",
+        "net45": "4.0.0.0",
+        "uap10.1": "4.0.0.0"
       }
     },
     "WindowsFormsIntegration": {

@@ -22,11 +22,15 @@
     <!-- Exclude shims from the closure verification -->
     <ExcludeFromClosure Include="mscorlib" />
     <ExcludeFromClosure Include="System" />
+    <ExcludeFromClosure Include="System.Configuration" />
     <ExcludeFromClosure Include="System.Core" />
     <ExcludeFromClosure Include="System.Data" />
     <ExcludeFromClosure Include="System.Drawing" />
     <ExcludeFromClosure Include="System.Net" />
+    <ExcludeFromClosure Include="System.Security" />
+    <ExcludeFromClosure Include="System.ServiceProcess" />
     <ExcludeFromClosure Include="System.Transactions" />
+    <ExcludeFromClosure Include="WindowsBase" />
 
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
@@ -45,6 +49,6 @@
       </Value>
     </ValidatePackageSuppression>
   </ItemGroup>
-  
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
