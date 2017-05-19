@@ -14,11 +14,17 @@ namespace Internal.Cryptography.Pal
 {
     internal sealed class SecTrustChainPal : IChainPal
     {
+        private const X509ChainStatusFlags RevocationRelevantFlags =
+            X509ChainStatusFlags.RevocationStatusUnknown |
+            X509ChainStatusFlags.Revoked |
+            X509ChainStatusFlags.OfflineRevocation;
+
         private Stack<SafeHandle> _extraHandles;
         private SafeX509ChainHandle _chainHandle;
         public X509ChainElement[] ChainElements { get; private set; }
         public X509ChainStatus[] ChainStatus { get; private set; }
         private DateTime _verificationTime;
+        private X509RevocationMode _revocationMode;
 
         internal SecTrustChainPal()
         {
@@ -30,9 +36,10 @@ namespace Internal.Cryptography.Pal
         internal void OpenTrustHandle(
             ICertificatePal leafCert,
             X509Certificate2Collection extraStore,
-            bool checkRevocation)
+            X509RevocationMode revocationMode)
         {
-            SafeCreateHandle policiesArray = PreparePoliciesArray(checkRevocation);
+            _revocationMode = revocationMode;
+            SafeCreateHandle policiesArray = PreparePoliciesArray(revocationMode != X509RevocationMode.NoCheck);
             SafeCreateHandle certsArray = PrepareCertsArray(leafCert, extraStore);
 
             int osStatus;
@@ -173,7 +180,8 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime,
             bool allowNetwork,
             OidCollection applicationPolicy,
-            OidCollection certificatePolicy)
+            OidCollection certificatePolicy,
+            X509RevocationFlag revocationFlag)
         {
             int osStatus;
 
@@ -199,7 +207,8 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException();
             }
 
-            Tuple<X509Certificate2, int>[] elements = ParseResults(_chainHandle);
+            Tuple<X509Certificate2, int>[] elements = ParseResults(_chainHandle, _revocationMode);
+            Debug.Assert(elements.Length > 0);
 
             if (!IsPolicyMatch(elements, applicationPolicy, certificatePolicy))
             {
@@ -210,10 +219,13 @@ namespace Internal.Cryptography.Pal
                     currentValue.Item2 | (int)X509ChainStatusFlags.NotValidForUsage);
             }
 
+            FixupRevocationStatus(elements, revocationFlag);
             BuildAndSetProperties(elements);
         }
 
-        private static Tuple<X509Certificate2,int>[] ParseResults(SafeX509ChainHandle chainHandle)
+        private static Tuple<X509Certificate2, int>[] ParseResults(
+            SafeX509ChainHandle chainHandle,
+            X509RevocationMode revocationMode)
         {
             long elementCount = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
             var elements = new Tuple<X509Certificate2, int>[elementCount];
@@ -238,7 +250,7 @@ namespace Internal.Cryptography.Pal
 
                     X509Certificate2 cert = new X509Certificate2(certHandle);
 
-                    FixupStatus(cert, ref dwStatus);
+                    FixupStatus(cert, revocationMode, ref dwStatus);
 
                     elements[elementIdx] = Tuple.Create(cert, dwStatus);
                 }
@@ -302,7 +314,47 @@ namespace Internal.Cryptography.Pal
             ChainStatus = rollupElement.ChainElementStatus;
         }
 
-        private static void FixupStatus(X509Certificate2 cert, ref int dwStatus)
+        private static void FixupRevocationStatus(
+            Tuple<X509Certificate2, int>[] elements,
+            X509RevocationFlag revocationFlag)
+        {
+            if (revocationFlag == X509RevocationFlag.ExcludeRoot)
+            {
+                // When requested
+                int idx = elements.Length - 1;
+                Tuple<X509Certificate2, int> element = elements[idx];
+                X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)element.Item2;
+
+                // Apple will terminate the chain at the first "root" or "trustAsRoot" certificate
+                // it finds, which it refers to as "anchors". We'll consider a "trustAsRoot" cert
+                // as a root for the purposes of ExcludeRoot. So as long as the last element doesn't
+                // have PartialChain consider it the root.
+                if ((statusFlags & X509ChainStatusFlags.PartialChain) == 0)
+                {
+                    statusFlags &= ~RevocationRelevantFlags;
+                    elements[idx] = Tuple.Create(element.Item1, (int)statusFlags);
+                }
+            }
+            else if (revocationFlag == X509RevocationFlag.EndCertificateOnly)
+            {
+                // In Windows the EndCertificateOnly flag (CERT_CHAIN_REVOCATION_CHECK_END_CERT) will apply
+                // to a root if that's the only element, so we'll do the same.
+                // Start at element 1, and move to the end.
+                for (int i = 1; i < elements.Length; i++)
+                {
+                    Tuple<X509Certificate2, int> element = elements[i];
+                    X509ChainStatusFlags statusFlags = (X509ChainStatusFlags)element.Item2;
+
+                    statusFlags &= ~RevocationRelevantFlags;
+                    elements[i] = Tuple.Create(element.Item1, (int)statusFlags);
+                }
+            }
+        }
+
+        private static void FixupStatus(
+            X509Certificate2 cert,
+            X509RevocationMode revocationMode,
+            ref int dwStatus)
         {
             X509ChainStatusFlags flags = (X509ChainStatusFlags)dwStatus;
 
@@ -317,6 +369,15 @@ namespace Internal.Cryptography.Pal
 
                     dwStatus = (int)flags;
                 }
+            }
+
+            if (revocationMode == X509RevocationMode.NoCheck)
+            {
+                // Clear any revocation-related flags if NoCheck was requested, since
+                // the OS may use cached results opportunistically.
+                flags &= ~RevocationRelevantFlags;
+
+                dwStatus = (int)flags;
             }
         }
 
@@ -501,14 +562,18 @@ namespace Internal.Cryptography.Pal
             // or off (and AIA fetching doesn't work).  And once an SSL policy is used, or revocation is
             // being checked, the value is on anyways.
             const bool allowNetwork = true;
-            bool checkRevocation = revocationMode != X509RevocationMode.NoCheck;
-
             SecTrustChainPal chainPal = new SecTrustChainPal();
 
             try
             {
-                chainPal.OpenTrustHandle(cert, extraStore, checkRevocation);
-                chainPal.Execute(verificationTime, allowNetwork, applicationPolicy, certificatePolicy);
+                chainPal.OpenTrustHandle(cert, extraStore, revocationMode);
+
+                chainPal.Execute(
+                    verificationTime,
+                    allowNetwork,
+                    applicationPolicy,
+                    certificatePolicy,
+                    revocationFlag);
             }
             catch
             {
