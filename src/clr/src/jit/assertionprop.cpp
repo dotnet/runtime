@@ -169,7 +169,7 @@ void Compiler::optAddCopies()
         bool isDominatedByFirstBB = false;
 
         BLOCKSET_ITER_INIT(this, iter, varDsc->lvRefBlks, blkNum);
-        while (iter.NextElem(this, &blkNum))
+        while (iter.NextElem(&blkNum))
         {
             /* Find the block 'blkNum' */
             BasicBlock* block = fgFirstBB;
@@ -322,7 +322,7 @@ void Compiler::optAddCopies()
             /* We have already calculated paramImportantUseDom above. */
 
             BLOCKSET_ITER_INIT(this, iter, paramImportantUseDom, blkNum);
-            while (iter.NextElem(this, &blkNum))
+            while (iter.NextElem(&blkNum))
             {
                 /* Advance block to point to 'blkNum' */
                 /* This assumes that the iterator returns block number is increasing lexical order. */
@@ -2853,7 +2853,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(apTraits, &index))
+    while (iter.NextElem(&index))
     {
         index++;
         if (index > optAssertionCount)
@@ -2973,7 +2973,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
     }
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(apTraits, &index))
+    while (iter.NextElem(&index))
     {
         index++;
         if (index > optAssertionCount)
@@ -3534,7 +3534,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, ASSERT_VAL
         // Check each assertion to find if we have a vn == or != null assertion.
         BitVecOps::Iter iter(apTraits, assertions);
         unsigned        index = 0;
-        while (iter.NextElem(apTraits, &index))
+        while (iter.NextElem(&index))
         {
             index++;
             if (index > optAssertionCount)
@@ -3708,7 +3708,7 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
 
     BitVecOps::Iter iter(apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(apTraits, &index))
+    while (iter.NextElem(&index))
     {
         index++;
         if (index > optAssertionCount)
@@ -3961,7 +3961,7 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
         // Check each assertion in chkAssertions to see if it can be applied to curAssertion
         BitVecOps::Iter chkIter(apTraits, chkAssertions);
         unsigned        chkIndex = 0;
-        while (chkIter.NextElem(apTraits, &chkIndex))
+        while (chkIter.NextElem(&chkIndex))
         {
             chkIndex++;
             if (chkIndex > optAssertionCount)
@@ -4010,7 +4010,7 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
     // Check each assertion in activeAssertions to see if it can be applied to constAssertion
     BitVecOps::Iter chkIter(apTraits, activeAssertions);
     unsigned        chkIndex = 0;
-    while (chkIter.NextElem(apTraits, &chkIndex))
+    while (chkIter.NextElem(&chkIndex))
     {
         chkIndex++;
         if (chkIndex > optAssertionCount)
@@ -4107,7 +4107,7 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
     // Check each assertion in chkAssertions to see if it can be applied to constAssertion
     BitVecOps::Iter chkIter(apTraits, chkAssertions);
     unsigned        chkIndex = 0;
-    while (chkIter.NextElem(apTraits, &chkIndex))
+    while (chkIter.NextElem(&chkIndex))
     {
         chkIndex++;
         if (chkIndex > optAssertionCount)

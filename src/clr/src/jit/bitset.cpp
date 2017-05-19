@@ -39,7 +39,7 @@ void BitSetSupport::RunTests(Env env)
     typename LclBitSetOps::Iter bsi(env, bs1);
     unsigned                    bitNum = 0;
     unsigned                    k      = 0;
-    while (bsi.NextElem(env, &bitNum))
+    while (bsi.NextElem(&bitNum))
     {
         assert(bitNum == bs1bits[k]);
         k++;
@@ -64,7 +64,7 @@ void BitSetSupport::RunTests(Env env)
     k      = 0;
     bsi    = typename LclBitSetOps::Iter(env, bsU12);
     bitNum = 0;
-    while (bsi.NextElem(env, &bitNum))
+    while (bsi.NextElem(&bitNum))
     {
         assert(bitNum == unionBits[k]);
         k++;
@@ -74,7 +74,7 @@ void BitSetSupport::RunTests(Env env)
     k                                = 0;
     typename LclBitSetOps::Iter bsiL = typename LclBitSetOps::Iter(env, bsU12);
     bitNum                           = 0;
-    while (bsiL.NextElem(env, &bitNum))
+    while (bsiL.NextElem(&bitNum))
     {
         assert(bitNum == unionBits[k]);
         k++;
@@ -87,7 +87,7 @@ void BitSetSupport::RunTests(Env env)
     k      = 0;
     bsi    = typename LclBitSetOps::Iter(env, bsI12);
     bitNum = 0;
-    while (bsi.NextElem(env, &bitNum))
+    while (bsi.NextElem(&bitNum))
     {
         assert(bitNum == intersectionBits[k]);
         k++;

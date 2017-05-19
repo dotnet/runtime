@@ -8287,7 +8287,7 @@ void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     memset(pVarNumSet, 0, varNumSetBytes); // empty the set
 
     VARSET_ITER_INIT(comp, iter, vars, varIndex);
-    while (iter.NextElem(comp, &varIndex))
+    while (iter.NextElem(&varIndex))
     {
         unsigned varNum = comp->lvaTrackedToVarNum[varIndex];
         assert(varNum < comp->lvaCount);

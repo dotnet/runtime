@@ -1936,7 +1936,7 @@ void Compiler::fgComputeEnterBlocksSet()
     {
         printf("Enter blocks: ");
         BLOCKSET_ITER_INIT(this, iter, fgEnterBlks, bbNum);
-        while (iter.NextElem(this, &bbNum))
+        while (iter.NextElem(&bbNum))
         {
             printf("BB%02u ", bbNum);
         }
@@ -2286,7 +2286,7 @@ BlockSet_ValRet_T Compiler::fgDomFindStartNodes()
     {
         printf("\nDominator computation start blocks (those blocks with no incoming edges):\n");
         BLOCKSET_ITER_INIT(this, iter, startNodes, bbNum);
-        while (iter.NextElem(this, &bbNum))
+        while (iter.NextElem(&bbNum))
         {
             printf("BB%02u ", bbNum);
         }
@@ -19597,7 +19597,7 @@ void Compiler::fgDispReach()
     {
         printf("BB%02u : ", block->bbNum);
         BLOCKSET_ITER_INIT(this, iter, block->bbReach, bbNum);
-        while (iter.NextElem(this, &bbNum))
+        while (iter.NextElem(&bbNum))
         {
             printf("BB%02u ", bbNum);
         }
