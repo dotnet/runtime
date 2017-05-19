@@ -12,8 +12,11 @@ namespace System.Tests
         [Fact]
         public static void CreateInstance_Invalid()
         {
-            // Type is not a valid RuntimeType
-            AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(Helpers.NonRuntimeType()));
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                // Type is not a valid RuntimeType
+                AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(nonRuntimeType));
+            }
         }
     }
 }

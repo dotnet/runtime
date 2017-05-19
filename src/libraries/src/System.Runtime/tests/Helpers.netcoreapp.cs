@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -10,11 +11,22 @@ namespace System.Tests
 {
     public static partial class Helpers
     {
-        private static Type s_nonRuntimeType;
+        private static Type s_refEmitType;
 
-        public static Type NonRuntimeType()
+        public static IEnumerable<Type> NonRuntimeTypes
         {
-            if (s_nonRuntimeType == null)
+            get
+            {
+                if (PlatformDetection.IsReflectionEmitSupported)
+                    yield return RefEmitType();
+
+                yield return new NonRuntimeType();
+            }
+        }
+
+        private static Type RefEmitType()
+        {
+            if (s_refEmitType == null)
             {
                 AssemblyName assemblyName = new AssemblyName("AssemblyName");
                 AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, AssemblyBuilderAccess.Run);
@@ -23,10 +35,15 @@ namespace System.Tests
                 TypeBuilder typeBuilder = mboduleBuilder.DefineType("TestType", TypeAttributes.Public);
 
                 GenericTypeParameterBuilder[] typeParams = typeBuilder.DefineGenericParameters("T");
-                s_nonRuntimeType = typeParams[0].UnderlyingSystemType;
+                s_refEmitType = typeParams[0].UnderlyingSystemType;
             }
 
-            return s_nonRuntimeType;
+            return s_refEmitType;
+        }
+
+        private sealed class NonRuntimeType : MockType
+        {
+            public sealed override Type UnderlyingSystemType => this;
         }
     }
 }

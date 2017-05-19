@@ -194,14 +194,14 @@ namespace System.Tests
             // ArraySegment.CopyTo calls Array.Copy internally, so the exception parameter names come from there.
 
             // Destination is null
-            Assert.Throws<ArgumentNullException>("destinationArray", () => arraySegment.CopyTo(null));
-            Assert.Throws<ArgumentNullException>("destinationArray", () => arraySegment.CopyTo(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => arraySegment.CopyTo(null));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => arraySegment.CopyTo(null, 0));
 
             // Destination index not within range
-            Assert.Throws<ArgumentOutOfRangeException>("destinationIndex", () => arraySegment.CopyTo(new int[0], -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", () => arraySegment.CopyTo(new int[0], -1));
 
             // Destination array too small arraySegment.Count + destinationIndex > destinationArray.Length
-            Assert.Throws<ArgumentException>("destinationArray", () => arraySegment.CopyTo(new int[arraySegment.Count * 2], arraySegment.Count + 1));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => arraySegment.CopyTo(new int[arraySegment.Count * 2], arraySegment.Count + 1));
 
             if (arraySegment.Any())
             {
@@ -408,10 +408,10 @@ namespace System.Tests
         {
             if (index + count == arraySegment.Count)
             {
-                Assert.Throws<ArgumentOutOfRangeException>("index", () => arraySegment.Slice(index));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arraySegment.Slice(index));
             }
 
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => arraySegment.Slice(index, count));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arraySegment.Slice(index, count));
         }
 
         public static IEnumerable<object[]> Slice_Invalid_TestData()
