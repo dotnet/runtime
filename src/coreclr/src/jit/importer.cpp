@@ -14711,6 +14711,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 assertImp(varTypeIsStruct(op2));
 
                 op1 = impAssignStructPtr(op1, op2, resolvedToken.hClass, (unsigned)CHECK_SPILL_ALL);
+
+                if (op1->OperIsBlkOp() && (prefixFlags & PREFIX_UNALIGNED))
+                {
+                    op1->gtFlags |= GTF_BLK_UNALIGNED;
+                }
                 goto SPILL_APPEND;
             }
 
@@ -14823,11 +14828,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // Could point anywhere, example a boxed class static int
                     op1->gtFlags |= GTF_IND_TGTANYWHERE | GTF_GLOB_REF;
                     assertImp(varTypeIsArithmetic(op1->gtType));
-
-                    if (prefixFlags & PREFIX_UNALIGNED)
-                    {
-                        op1->gtFlags |= GTF_IND_UNALIGNED;
-                    }
                 }
                 else
                 {
@@ -14836,6 +14836,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewObjNode(resolvedToken.hClass, op1);
                 }
                 op1->gtFlags |= GTF_EXCEPT;
+
+                if (prefixFlags & PREFIX_UNALIGNED)
+                {
+                    op1->gtFlags |= GTF_IND_UNALIGNED;
+                }
 
                 impPushOnStack(op1, tiRetVal);
                 break;
