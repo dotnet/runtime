@@ -9907,6 +9907,20 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
             requiresCopyBlock = true;
         }
 
+#if defined(_TARGET_ARM_)
+        if ((rhs->OperIsIndir()) && (rhs->gtFlags & GTF_IND_UNALIGNED))
+        {
+            JITDUMP(" rhs is unaligned");
+            requiresCopyBlock = true;
+        }
+
+        if (asg->gtFlags & GTF_BLK_UNALIGNED)
+        {
+            JITDUMP(" asg is unaligned");
+            requiresCopyBlock = true;
+        }
+#endif // _TARGET_ARM_
+
         if (dest->OperGet() == GT_OBJ && dest->AsBlk()->gtBlkOpGcUnsafe)
         {
             requiresCopyBlock = true;
