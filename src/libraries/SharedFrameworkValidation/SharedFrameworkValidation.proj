@@ -5,25 +5,31 @@
   <PropertyGroup>
     <SharedFrameworkValidationRefPath>$(RefRootPath)SharedFrameworkValidation</SharedFrameworkValidationRefPath>
     <SharedFrameworkValidationRuntimePath>$(BinDir)runtime/SharedFrameworkValidation</SharedFrameworkValidationRuntimePath>
+    <_RunTestsScriptName Condition="'$(RunningOnUnix)' != 'true'">CloneAndRunTests.cmd</_RunTestsScriptName>
+    <_RunTestsScriptName Condition="'$(RunningOnUnix)' == 'true'">CloneAndRunTests.sh</_RunTestsScriptName>
+    <_PublishRID Condition="'$(OSGroup)'=='Windows_NT'">win-$(ArchGroup)</_PublishRID>
+    <_PublishRID Condition="'$(OSGroup)'=='OSX'">osx-$(ArchGroup)</_PublishRID>
+    <_PublishRID Condition="'$(OSGroup)'=='Linux'">linux-$(ArchGroup)</_PublishRID>
+    <_PublishRID Condition="'$(_PublishRID)'==''">unix-$(ArchGroup)</_PublishRID>
   </PropertyGroup>
 
   <Target Name="RestorePackagesProject">
     <PropertyGroup>
-      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
+      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
     </PropertyGroup>
     <Exec Command="$(_RestorePackagesCommand)" />
   </Target>
 
   <Target Name="BuildPackagesProject">
     <PropertyGroup>
-      <_BuildPackagesProjectCommand>"$(DotnetToolCommand)" build $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath)</_BuildPackagesProjectCommand>
+      <_BuildPackagesProjectCommand>"$(DotnetToolCommand)" build $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath)</_BuildPackagesProjectCommand>
     </PropertyGroup>
     <Exec Command="$(_BuildPackagesProjectCommand)" />
   </Target>
 
   <Target Name="PublishPackagesProject">
     <PropertyGroup>
-      <_PublishPackagesProjectCommand>"$(DotnetToolCommand)" publish $(MSBuildThisFileDirectory)\RestoreSDKProject\RestoreSDKProject.csproj /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath) -f netcoreapp2.0 -r win-x64 -o $(SharedFrameworkValidationRuntimePath)</_PublishPackagesProjectCommand>
+      <_PublishPackagesProjectCommand>"$(DotnetToolCommand)" publish $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath) -f netcoreapp2.0 -r $(_PublishRID) -o $(SharedFrameworkValidationRuntimePath)</_PublishPackagesProjectCommand>
     </PropertyGroup>
     <Exec Command="$(_PublishPackagesProjectCommand)" />
   </Target>
@@ -31,6 +37,8 @@
   <Target Name="CopyXunitAssemblies">
     <ItemGroup>
       <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/xunit*.dll" />
+      <!--In Unix some xunit assemblies have a capital 'X'-->
+      <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/Xunit*.dll" />
       <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/xunit.console.netcore.exe" />
       <XunitAssemblies Include="$(BinDir)runtime/$(BuildConfiguration)/Newtonsoft.Json.dll" />
     </ItemGroup>
@@ -60,7 +68,7 @@
 
   <Target Name="GetRepoVersionHashes">
     <GetNetCoreAppVersionsFromFile 
-              PathToVersionsFile="$(PackagesDir)Microsoft.NETCore.App/$(MicrosoftNETCoreAppPackageVersion)/Microsoft.NETCore.App.versions.txt">
+              PathToVersionsFile="$(PackagesDir)microsoft.netcore.app/$(MicrosoftNETCoreAppPackageVersion)/Microsoft.NETCore.App.versions.txt">
       <Output TaskParameter="VersionHashes" ItemName="VersionHashes" /> 
     </GetNetCoreAppVersionsFromFile>
 
@@ -71,7 +79,7 @@
     </PropertyGroup>
 
     <!-- Windows script -->
-    <ItemGroup>
+    <ItemGroup Condition="'$(RunningOnUnix)'!='true'">
       <_CloneRepoLines Include="@echo off" />
       <_CloneRepoLines Include="pushd $(CoreFxCopyLocation.Replace('/', '\'))" />
       <_CloneRepoLines Include="git clone $(_RepoURL)" />
@@ -82,10 +90,23 @@
       <_CloneRepoLines Include="popd" />
     </ItemGroup>
 
+    <!-- Unix script -->
+    <ItemGroup Condition="'$(RunningOnUnix)'=='true'">
+      <_CloneRepoLines Include="#!/usr/bin/env bash" />
+      <_CloneRepoLines Include="__scriptpath=%24(cd %22%24(dirname %22%240%22)%22%3B pwd -P)" />
+      <_CloneRepoLines Include="cd $(CorefxCopyLocation.Replace('\', '/'))" />
+      <_CloneRepoLines Include="git clone $(_RepoURL)" />
+      <_CloneRepoLines Include="cd corefx" />
+      <_CloneRepoLines Include="git reset --hard $(CoreFxHash)" />
+      <_CloneRepoLines Include="./sync.sh" />
+      <_CloneRepoLines Include="./build-tests.sh -- /p:RefPath=$(BinDir)ref/SharedFrameworkValidation /p:RunningSharedFrameworkValidation=true /p:RuntimePath=$(BinDir)runtime/SharedFrameworkValidation/ /p:TestHostRootPath=$(TestHostRootPath)" />
+      <_CloneRepoLines Include="cd %24__scriptpath" />
+    </ItemGroup>
+
     <MakeDir Directories="$(BinDir);$(CoreFxCopyLocation)" />
 
     <WriteLinesToFile
-      File="$(BinDir)CloneAndRunTests.cmd"
+      File="$(BinDir)$(_RunTestsScriptName)"
       Lines="@(_CloneRepoLines)"
       Overwrite="true"
       Encoding="Ascii" />
