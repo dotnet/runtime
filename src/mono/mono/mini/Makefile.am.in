@@ -502,6 +502,8 @@ test_sources = 			\
 	aot-tests.cs \
 	gc-test.cs \
 	gshared.cs \
+	unaligned.cs	\
+	MemoryIntrinsics.il	\
 	mixed.cs
 
 if NACL_CODEGEN
@@ -521,6 +523,7 @@ regtests_UNIVERSAL = \
 	devirtualization.exe \
 	generics.exe \
 	basic-simd.exe \
+	unaligned.exe	\
 	basic-vectors.exe
 
 if NACL_CODEGEN
@@ -654,6 +657,9 @@ nacl.exe: nacl.cs TestDriver.dll
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:generics-variant-types.dll -r:$(CLASS)/System.Core.dll
 
+unaligned.exe: unaligned.cs TestDriver.dll MemoryIntrinsics.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:MemoryIntrinsics.dll
+
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll
 
@@ -664,6 +670,9 @@ TestDriver.dll: $(srcdir)/TestDriver.cs $(srcdir)/TestHelpers.cs
 	$(MCS) -out:$@ -target:library $^
 
 generics-variant-types.dll: generics-variant-types.il
+	$(ILASM) -dll -output=$@ $<
+
+MemoryIntrinsics.dll: MemoryIntrinsics.il
 	$(ILASM) -dll -output=$@ $<
 
 if NACL_CODEGEN
