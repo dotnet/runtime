@@ -4,14 +4,14 @@
     <PackageConfigurations>
       netstandard1.1;
       netstandard1.3;
-      net45-Windows_NT;
-      net46-Windows_NT;
+      net45;
+      net46;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp;
       netstandard;
-      netfx-Windows_NT;
+      netfx;
       uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
