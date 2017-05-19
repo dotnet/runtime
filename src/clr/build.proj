@@ -40,7 +40,7 @@
   <Target Name="Sync" BeforeTargets="Build" />
 
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
-    <Exec Command="$(DnuRestoreCommand) $(SourceDir).nuget/init/init.csproj"
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/init/init.csproj"
           StandardOutputImportance="Low" />
   </Target>
   
