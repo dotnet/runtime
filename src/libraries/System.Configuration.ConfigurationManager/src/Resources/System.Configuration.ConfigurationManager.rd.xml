@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="*System.Configuration.ConfigurationManager*">
+    <Assembly Name="System.Configuration.ConfigurationManager">
+       <Type Name="System.Configuration.ClientConfigurationHost" Dynamic="Required All" Activate="Required All" />
+    </Assembly>
+  </Library>
+</Directives>
