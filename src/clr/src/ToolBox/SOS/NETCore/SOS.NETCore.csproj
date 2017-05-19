@@ -12,7 +12,7 @@
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <AssemblyKey>Open</AssemblyKey>
     <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
     <ContainsPackageReferences>true</ContainsPackageReferences>
 
@@ -71,7 +71,7 @@
       UseHardlinksIfPossible="false">
     </Copy>
 
-    <Copy 
+    <Copy
       SourceFiles="$(OutputPath)$(AssemblyName).pdb"
       DestinationFolder="$(BinDir)\PDB"
       SkipUnchangedFiles="false"
