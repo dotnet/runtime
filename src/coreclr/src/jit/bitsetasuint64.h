@@ -208,23 +208,28 @@ public:
     {
         UINT64 m_bits;
 
+        // The number of bits that have already been iterated over (set or clear).
+        unsigned m_bitNum;
+
     public:
-        Iter(Env env, const UINT64& bits) : m_bits(bits)
+        Iter(Env env, const UINT64& bits) : m_bits(bits), m_bitNum(0)
         {
         }
 
-        bool NextElem(Env env, unsigned* pElem)
+        bool NextElem(unsigned* pElem)
         {
+            // TODO-Throughtput: use BitScanForward64() intrinsic (see short/long implementation).
             if (m_bits)
             {
-                unsigned bitNum = *pElem;
+                unsigned bitNum = m_bitNum;
                 while ((m_bits & 0x1) == 0)
                 {
                     bitNum++;
                     m_bits >>= 1;
                 }
-                *pElem = bitNum;
-                m_bits &= ~0x1;
+                *pElem   = bitNum;
+                m_bitNum = bitNum + 1;
+                m_bits >>= 1;
                 return true;
             }
             else

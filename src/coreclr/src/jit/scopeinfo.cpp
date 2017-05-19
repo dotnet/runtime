@@ -459,7 +459,7 @@ void CodeGen::siBeginBlock(BasicBlock* block)
         // Check that vars which are live on entry have an open scope
 
         VARSET_ITER_INIT(compiler, iter, block->bbLiveIn, i);
-        while (iter.NextElem(compiler, &i))
+        while (iter.NextElem(&i))
         {
             unsigned varNum = compiler->lvaTrackedToVarNum[i];
             // lvRefCnt may go down to 0 after liveness-analysis.
@@ -660,7 +660,7 @@ void CodeGen::siUpdate()
     assert(VarSetOps::IsSubset(compiler, killed, compiler->lvaTrackedVars));
 
     VARSET_ITER_INIT(compiler, iter, killed, i);
-    while (iter.NextElem(compiler, &i))
+    while (iter.NextElem(&i))
     {
 #ifdef DEBUG
         unsigned   lclNum = compiler->lvaTrackedToVarNum[i];

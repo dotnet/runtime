@@ -271,7 +271,7 @@ class BitSetOps
     class Iter {
       public:
         Iter(Env env, BitSetValueArgType bs) {}
-        bool NextElem(Env env, unsigned* pElem) { return false; }
+        bool NextElem(unsigned* pElem) { return false; }
     };
 
     typename ValArgType;
@@ -436,16 +436,17 @@ public:
     class Iter
     {
         BaseIter m_iter;
+        Env      m_env;
 
     public:
-        Iter(Env env, BitSetValueArgType bs) : m_iter(env, bs)
+        Iter(Env env, BitSetValueArgType bs) : m_iter(env, bs), m_env(env)
         {
         }
 
-        bool NextElem(Env env, unsigned* pElem)
+        bool NextElem(unsigned* pElem)
         {
-            BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_NextBit);
-            return m_iter.NextElem(env, pElem);
+            BitSetTraits::GetOpCounter(m_env)->RecordOp(BitSetSupport::BSOP_NextBit);
+            return m_iter.NextElem(pElem);
         }
     };
 };

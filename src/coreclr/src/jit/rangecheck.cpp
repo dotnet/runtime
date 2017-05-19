@@ -502,7 +502,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, const ASSERT_VALARG_TP ass
     // Walk through the "assertions" to check if the apply.
     BitVecOps::Iter iter(m_pCompiler->apTraits, assertions);
     unsigned        index = 0;
-    while (iter.NextElem(m_pCompiler->apTraits, &index))
+    while (iter.NextElem(&index))
     {
         index++;
 
