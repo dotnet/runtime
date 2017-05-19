@@ -178,15 +178,17 @@ private:
     {
         assert(GenTree::OperIsBinary(tree->OperGet()));
 
-        GenTree* op1 = tree->gtGetOp1();
-        GenTree* op2 = tree->gtGetOp2();
+        GenTree* const op1 = tree->gtGetOp1();
+        GenTree* const op2 = tree->gtGetOp2();
 
-        if (tree->OperIsCommutative() && tree->TypeGet() == op1->TypeGet())
+        const bool op1Legal = tree->OperIsCommutative() && (tree->TypeGet() == op1->TypeGet());
+        const bool op2Legal = tree->TypeGet() == op2->TypeGet();
+
+        if (op1Legal)
         {
-            GenTree* preferredOp = PreferredRegOptionalOperand(tree);
-            SetRegOptional(preferredOp);
+            SetRegOptional(op2Legal ? PreferredRegOptionalOperand(tree) : op1);
         }
-        else if (tree->TypeGet() == op2->TypeGet())
+        else if (op2Legal)
         {
             SetRegOptional(op2);
         }
