@@ -563,7 +563,7 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     return retval;
 }
 
-pal::string_t resolve_sdk_version(pal::string_t sdk_path)
+pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_production)
 {
     trace::verbose(_X("--- Resolving SDK version from SDK dir [%s]"), sdk_path.c_str());
 
@@ -577,7 +577,7 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
         trace::verbose(_X("Considering version... [%s]"), version.c_str());
 
         fx_ver_t ver(-1, -1, -1);
-        if (fx_ver_t::parse(version, &ver, false))  // false -- implies both production and prerelease.
+        if (fx_ver_t::parse(version, &ver, parse_only_production))
         {
             max_ver = std::max(ver, max_ver);
         }
@@ -589,10 +589,10 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
     trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
     if (pal::directory_exists(sdk_path))
     {
-        retval = sdk_path;
+        trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
+        retval = max_ver_str;
     }
 
-    trace::verbose(_X("Resolved SDK dir is [%s]"), retval.c_str());
     return retval;
 }
 
@@ -607,6 +607,24 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
     }
 
     return resolve_sdk_dotnet_path(own_dir, cwd, cli_sdk);
+}
+
+bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version, bool parse_only_production)
+{
+    bool retval = false;
+    fx_ver_t ver(-1, -1, -1);
+    fx_ver_t new_ver(-1, -1, -1);
+
+    if (fx_ver_t::parse(new_version, &new_ver, parse_only_production))
+    {
+       if (!fx_ver_t::parse(*version, &ver, parse_only_production) || (new_ver > ver))
+       {
+           version->assign(new_version);
+           retval = true;
+       }
+    }
+
+    return retval;
 }
 
 bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk)
@@ -659,45 +677,66 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         hive_dir.push_back(global_dir);
     }
 
-    pal::string_t retval;
+    pal::string_t cli_version;
+    pal::string_t sdk_path;
+    pal::string_t global_cli_version;
+
+    if (!global.empty())
+    {
+        global_cli_version = resolve_cli_version(global);
+    }
+
     for (pal::string_t dir : hive_dir)
     {
         trace::verbose(_X("Searching SDK directory in [%s]"), dir.c_str());
-        if (!global.empty())
-        {
-            pal::string_t cli_version = resolve_cli_version(global);
-            if (!cli_version.empty())
-            {
-                pal::string_t sdk_path = dir;
-                append_path(&sdk_path, _X("sdk"));
-                append_path(&sdk_path, cli_version.c_str());
+        pal::string_t current_sdk_path = dir;
+        append_path(&current_sdk_path, _X("sdk"));
 
-                if (pal::directory_exists(sdk_path))
-                {
-                    trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
-                    retval = sdk_path;
-                }
-                else
-                {
-                    trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), sdk_path.c_str());
-                }
+        if (global_cli_version.empty())
+        {
+            bool parse_only_production = false;  // false -- implies both production and prerelease.
+            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production);
+            if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
+            {
+                sdk_path = current_sdk_path;
             }
         }
-        if (retval.empty())
+        else
         {
-            pal::string_t sdk_path = dir;
-            append_path(&sdk_path, _X("sdk"));
-            retval = resolve_sdk_version(sdk_path);
-        }
-        if (!retval.empty())
-        {
-            cli_sdk->assign(retval);
-            trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
-            return true;
+            pal::string_t probing_sdk_path = current_sdk_path;
+            append_path(&probing_sdk_path, global_cli_version.c_str());
+
+            if (pal::directory_exists(probing_sdk_path))
+            {
+                trace::verbose(_X("CLI directory [%s] from global.json exists"), probing_sdk_path.c_str());
+                cli_version = global_cli_version;
+                sdk_path = current_sdk_path;
+                //  Use the first matching version
+                break;
+            }
+            else
+            {
+                trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), probing_sdk_path.c_str());
+            }
         }
     }
-    
-    trace::verbose(_X("It was not possible to find any SDK version"));
+
+    if (!cli_version.empty())
+    {
+        append_path(&sdk_path, cli_version.c_str());
+        cli_sdk->assign(sdk_path);
+        trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
+        return true;
+    }
+
+    if (global_cli_version.empty())
+    {
+        trace::verbose(_X("It was not possible to find any SDK version"));
+    }
+    else
+    {
+        trace::error(_X("The specified SDK version [%s] from global.json [%s] not found; install specified SDK version"), cli_version.c_str(), global.c_str());
+    }
     return false;
 }
 
