@@ -14,14 +14,17 @@ namespace Functions
         private const float sqrtSingleDelta = 0.000628318531f;
         private const float sqrtSingleExpectedResult = 5909.03027f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = SqrtSingleIterations)]
         public static void SqrtSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    SqrtSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        SqrtSingleTest();
+                    }
                 }
             }
         }
