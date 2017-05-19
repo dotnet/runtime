@@ -18592,7 +18592,20 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
 #if defined(DEBUG)
         // Validate that callInfo has up to date method flags
         const DWORD freshBaseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
-        assert(freshBaseMethodAttribs == baseMethodAttribs);
+
+        // All the base method attributes should agree, save that
+        // CORINFO_FLG_DONT_INLINE may have changed from 0 to 1
+        // because of concurrent jitting activity.
+        //
+        // Note we don't look at this particular flag bit below, and
+        // later on (if we do try and inline) we will rediscover why
+        // the method can't be inlined, so there's no danger here in
+        // seeing this particular flag bit in different states between
+        // the cached and fresh values.
+        if ((freshBaseMethodAttribs & ~CORINFO_FLG_DONT_INLINE) != (baseMethodAttribs & ~CORINFO_FLG_DONT_INLINE))
+        {
+            assert(!"mismatched method attributes");
+        }
 #endif // DEBUG
     }
 
