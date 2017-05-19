@@ -4829,7 +4829,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_mov_membase_reg (code, spvar->inst_basereg, spvar->inst_offset, AMD64_RSP, sizeof(gpointer));
 
 			if ((MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FINALLY) ||
-				 MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FINALLY)) &&
+				 MONO_BBLOCK_IS_IN_REGION (bb, MONO_REGION_FILTER)) &&
 				cfg->param_area) {
 				amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, ALIGN_TO (cfg->param_area, MONO_ARCH_FRAME_ALIGNMENT));
 			}

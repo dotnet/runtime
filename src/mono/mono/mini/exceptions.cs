@@ -2912,6 +2912,26 @@ class Tests
 		// Console.WriteLine ("res2: " + res);
 		return "outerFinally_fwos_fromFilter_2ndcatch_innerFinally_init" == res ? 1234 : 0;
 	}
+
+    public struct FooStruct
+    {
+        public long Part1 { get; }
+        public long Part2 { get; }
+
+        public byte Part3 { get; }
+    }
+
+    [MethodImpl( MethodImplOptions.NoInlining )]
+    private static bool ExceptionFilter( byte x, FooStruct item ) => true;
+
+	public static int test_0_filter_caller_area () {
+        try {
+            throw new Exception();
+        }
+        catch (Exception) when (ExceptionFilter (default(byte), default (FooStruct))) {
+        }
+		return 0;
+	}
 }
 
 #if !__MOBILE__
