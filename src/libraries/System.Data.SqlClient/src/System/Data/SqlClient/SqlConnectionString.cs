@@ -29,6 +29,7 @@ namespace System.Data.SqlClient
             internal const string Current_Language = "";
             internal const string Data_Source = "";
             internal const bool Encrypt = false;
+            internal const bool Enlist = true;
             internal const string FailoverPartner = "";
             internal const string Initial_Catalog = "";
             internal const bool Integrated_Security = false;
@@ -159,6 +160,7 @@ namespace System.Data.SqlClient
 
         private readonly bool _encrypt;
         private readonly bool _trustServerCertificate;
+        private readonly bool _enlist;
         private readonly bool _mars;
         private readonly bool _persistSecurityInfo;
         private readonly bool _pooling;
@@ -193,7 +195,6 @@ namespace System.Data.SqlClient
             ThrowUnsupportedIfKeywordSet(KEY.AsynchronousProcessing);
             ThrowUnsupportedIfKeywordSet(KEY.Connection_Reset);
             ThrowUnsupportedIfKeywordSet(KEY.Context_Connection);
-            ThrowUnsupportedIfKeywordSet(KEY.Enlist);
             ThrowUnsupportedIfKeywordSet(KEY.TransactionBinding);
 
             // Network Library has its own special error message
@@ -204,6 +205,7 @@ namespace System.Data.SqlClient
 
             _integratedSecurity = ConvertValueToIntegratedSecurity();
             _encrypt = ConvertValueToBoolean(KEY.Encrypt, DEFAULT.Encrypt);
+            _enlist = ConvertValueToBoolean(KEY.Enlist, DEFAULT.Enlist);
             _mars = ConvertValueToBoolean(KEY.MARS, DEFAULT.MARS);
             _persistSecurityInfo = ConvertValueToBoolean(KEY.Persist_Security_Info, DEFAULT.Persist_Security_Info);
             _pooling = ConvertValueToBoolean(KEY.Pooling, DEFAULT.Pooling);
@@ -357,10 +359,19 @@ namespace System.Data.SqlClient
 
         // This c-tor is used to create SSE and user instance connection strings when user instance is set to true
         // BUG (VSTFDevDiv) 479687: Using TransactionScope with Linq2SQL against user instances fails with "connection has been broken" message
-        internal SqlConnectionString(SqlConnectionString connectionOptions, string dataSource, bool userInstance) : base(connectionOptions)
+        internal SqlConnectionString(SqlConnectionString connectionOptions, string dataSource, bool userInstance, bool? setEnlistValue) : base(connectionOptions)
         {
             _integratedSecurity = connectionOptions._integratedSecurity;
             _encrypt = connectionOptions._encrypt;
+
+            if (setEnlistValue.HasValue)
+            {
+                _enlist = setEnlistValue.Value;
+            }
+            else
+            {
+                _enlist = connectionOptions._enlist;
+            }
 
             _mars = connectionOptions._mars;
             _persistSecurityInfo = connectionOptions._persistSecurityInfo;
@@ -402,6 +413,7 @@ namespace System.Data.SqlClient
         //        internal bool EnableUdtDownload { get { return _enableUdtDownload;} }
         internal bool Encrypt { get { return _encrypt; } }
         internal bool TrustServerCertificate { get { return _trustServerCertificate; } }
+        internal bool Enlist { get { return _enlist; } }
         internal bool MARS { get { return _mars; } }
         internal bool MultiSubnetFailover { get { return _multiSubnetFailover; } }
 

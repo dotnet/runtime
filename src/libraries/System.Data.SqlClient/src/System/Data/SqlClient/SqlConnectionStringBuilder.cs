@@ -31,6 +31,7 @@ namespace System.Data.SqlClient
             UserID,
             Password,
 
+            Enlist,
             Pooling,
             MinPoolSize,
             MaxPoolSize,
@@ -65,7 +66,7 @@ namespace System.Data.SqlClient
         }
 
         internal const int KeywordsCount = (int)Keywords.KeywordsCount;
-        internal const int DeprecatedKeywordsCount = 6;
+        internal const int DeprecatedKeywordsCount = 5;
 
         private static readonly string[] s_validKeywords = CreateValidKeywords();
         private static readonly Dictionary<string, Keywords> s_keywords = CreateKeywordsDictionary();
@@ -93,6 +94,7 @@ namespace System.Data.SqlClient
 
         private bool _encrypt = DbConnectionStringDefaults.Encrypt;
         private bool _trustServerCertificate = DbConnectionStringDefaults.TrustServerCertificate;
+        private bool _enlist = DbConnectionStringDefaults.Enlist;
         private bool _integratedSecurity = DbConnectionStringDefaults.IntegratedSecurity;
         private bool _multipleActiveResultSets = DbConnectionStringDefaults.MultipleActiveResultSets;
         private bool _multiSubnetFailover = DbConnectionStringDefaults.MultiSubnetFailover;
@@ -111,6 +113,7 @@ namespace System.Data.SqlClient
             validKeywords[(int)Keywords.CurrentLanguage] = DbConnectionStringKeywords.CurrentLanguage;
             validKeywords[(int)Keywords.DataSource] = DbConnectionStringKeywords.DataSource;
             validKeywords[(int)Keywords.Encrypt] = DbConnectionStringKeywords.Encrypt;
+            validKeywords[(int)Keywords.Enlist] = DbConnectionStringKeywords.Enlist;
             validKeywords[(int)Keywords.FailoverPartner] = DbConnectionStringKeywords.FailoverPartner;
             validKeywords[(int)Keywords.InitialCatalog] = DbConnectionStringKeywords.InitialCatalog;
             validKeywords[(int)Keywords.IntegratedSecurity] = DbConnectionStringKeywords.IntegratedSecurity;
@@ -145,6 +148,7 @@ namespace System.Data.SqlClient
             hash.Add(DbConnectionStringKeywords.CurrentLanguage, Keywords.CurrentLanguage);
             hash.Add(DbConnectionStringKeywords.DataSource, Keywords.DataSource);
             hash.Add(DbConnectionStringKeywords.Encrypt, Keywords.Encrypt);
+            hash.Add(DbConnectionStringKeywords.Enlist, Keywords.Enlist);
             hash.Add(DbConnectionStringKeywords.FailoverPartner, Keywords.FailoverPartner);
             hash.Add(DbConnectionStringKeywords.InitialCatalog, Keywords.InitialCatalog);
             hash.Add(DbConnectionStringKeywords.IntegratedSecurity, Keywords.IntegratedSecurity);
@@ -238,6 +242,7 @@ namespace System.Data.SqlClient
 
                         case Keywords.Encrypt: Encrypt = ConvertToBoolean(value); break;
                         case Keywords.TrustServerCertificate: TrustServerCertificate = ConvertToBoolean(value); break;
+                        case Keywords.Enlist: Enlist = ConvertToBoolean(value); break;
                         case Keywords.MultipleActiveResultSets: MultipleActiveResultSets = ConvertToBoolean(value); break;
                         case Keywords.MultiSubnetFailover: MultiSubnetFailover = ConvertToBoolean(value); break;
                         case Keywords.PersistSecurityInfo: PersistSecurityInfo = ConvertToBoolean(value); break;
@@ -345,6 +350,16 @@ namespace System.Data.SqlClient
             {
                 SetValue(DbConnectionStringKeywords.TrustServerCertificate, value);
                 _trustServerCertificate = value;
+            }
+        }
+
+        public bool Enlist
+        {
+            get { return _enlist; }
+            set
+            {
+                SetValue(DbConnectionStringKeywords.Enlist, value);
+                _enlist = value;
             }
         }
 
@@ -649,6 +664,7 @@ namespace System.Data.SqlClient
                 case Keywords.CurrentLanguage: return CurrentLanguage;
                 case Keywords.DataSource: return DataSource;
                 case Keywords.Encrypt: return Encrypt;
+                case Keywords.Enlist: return Enlist;
                 case Keywords.FailoverPartner: return FailoverPartner;
                 case Keywords.InitialCatalog: return InitialCatalog;
                 case Keywords.IntegratedSecurity: return IntegratedSecurity;
@@ -728,6 +744,9 @@ namespace System.Data.SqlClient
                     break;
                 case Keywords.Encrypt:
                     _encrypt = DbConnectionStringDefaults.Encrypt;
+                    break;
+                case Keywords.Enlist:
+                    _enlist = DbConnectionStringDefaults.Enlist;
                     break;
                 case Keywords.FailoverPartner:
                     _failoverPartner = DbConnectionStringDefaults.FailoverPartner;
@@ -840,7 +859,6 @@ namespace System.Data.SqlClient
             DbConnectionStringKeywords.AsynchronousProcessing,
             DbConnectionStringKeywords.ConnectionReset,
             DbConnectionStringKeywords.ContextConnection,
-            DbConnectionStringKeywords.Enlist,
             DbConnectionStringKeywords.TransactionBinding,
 
             DbConnectionStringSynonyms.Async

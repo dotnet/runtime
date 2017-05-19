@@ -94,7 +94,7 @@ namespace System.Data.SqlClient
                         // NOTE: Cloning connection option opt to set 'UserInstance=True' and 'Enlist=False'
                         //       This first connection is established to SqlExpress to get the instance name 
                         //       of the UserInstance.
-                        SqlConnectionString sseopt = new SqlConnectionString(opt, opt.DataSource, true /* user instance=true */);
+                        SqlConnectionString sseopt = new SqlConnectionString(opt, opt.DataSource, userInstance: true, setEnlistValue: false);
                         sseConnection = new SqlInternalConnectionTds(identity, sseopt, null, false, applyTransientFaultHandling: applyTransientFaultHandling);
                         // NOTE: Retrieve <UserInstanceName> here. This user instance name will be used below to connect to the Sql Express User Instance.
                         instanceName = sseConnection.InstanceName;
@@ -129,7 +129,7 @@ namespace System.Data.SqlClient
                 // NOTE: Here connection option opt is cloned to set 'instanceName=<UserInstanceName>' that was
                 //       retrieved from the previous SSE connection. For this UserInstance connection 'Enlist=True'.
                 // options immutable - stored in global hash - don't modify
-                opt = new SqlConnectionString(opt, instanceName, false /* user instance=false */);
+                opt = new SqlConnectionString(opt, instanceName, userInstance: false, setEnlistValue: null);
                 poolGroupProviderInfo = null; // null so we do not pass to constructor below...
             }
             result = new SqlInternalConnectionTds(identity, opt, poolGroupProviderInfo, redirectedUserInstance, userOpt, recoverySessionData, applyTransientFaultHandling: applyTransientFaultHandling);
