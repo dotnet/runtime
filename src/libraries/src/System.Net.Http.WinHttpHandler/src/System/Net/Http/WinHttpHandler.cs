@@ -1343,10 +1343,12 @@ namespace System.Net.Http
                     state.Dispose();
                     WinHttpException.ThrowExceptionUsingLastError();
                 }
+#if DEBUG
                 int lastError = Marshal.GetLastWin32Error();
                 Debug.Assert(!(unchecked((int)lastError) == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER ||
                     unchecked((int)lastError) == unchecked((int)0x80090321)), // SEC_E_BUFFER_TOO_SMALL
                     $"Unexpected error: {unchecked((int)lastError)}");
+#endif
             }
 
             return state.LifecycleAwaitable;
