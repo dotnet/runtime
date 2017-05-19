@@ -6,7 +6,10 @@
 
   <PropertyGroup>
     <Version>$(SharedFrameworkNugetVersion)</Version>
-    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(ProductionVersion)').ToString(2))</NETCoreAppFramework>
+
+    <!-- This corresponds to TFM we want the SharedFX to target and should be updated when needed. -->
+
+    <NETCoreAppFramework>netcoreapp2.0</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
