@@ -1241,10 +1241,12 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     // TODO-ARM-CQ: Check for the case where we can simply transfer the carry bit to a register
     //         (signed < or >= where targetReg != REG_NA)
 
-    GenTreePtr op1 = tree->gtOp1->gtEffectiveVal();
-    GenTreePtr op2 = tree->gtOp2->gtEffectiveVal();
+    GenTreePtr op1     = tree->gtOp1->gtEffectiveVal();
+    GenTreePtr op2     = tree->gtOp2->gtEffectiveVal();
+    var_types  op1Type = op1->TypeGet();
+    var_types  op2Type = op2->TypeGet();
 
-    if (varTypeIsLong(op1))
+    if (varTypeIsLong(op1Type))
     {
 #ifdef DEBUG
         // The result of an unlowered long compare on a 32-bit target must either be
@@ -1261,43 +1263,26 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     }
     else
     {
+        assert(!varTypeIsLong(op2Type));
+
         regNumber targetReg = tree->gtRegNum;
         emitter*  emit      = getEmitter();
-        emitAttr  cmpAttr;
 
         genConsumeIfReg(op1);
         genConsumeIfReg(op2);
 
-        if (varTypeIsFloating(op1))
+        if (varTypeIsFloating(op1Type))
         {
-            assert(op1->TypeGet() == op2->TypeGet());
-            instruction ins = INS_vcmp;
-            cmpAttr         = emitTypeSize(op1->TypeGet());
-            emit->emitInsBinary(ins, cmpAttr, op1, op2);
+            assert(op1Type == op2Type);
+            emit->emitInsBinary(INS_vcmp, emitTypeSize(op1Type), op1, op2);
             // vmrs with register 0xf has special meaning of transferring flags
             emit->emitIns_R(INS_vmrs, EA_4BYTE, REG_R15);
         }
         else
         {
-            var_types op1Type = op1->TypeGet();
-            var_types op2Type = op2->TypeGet();
             assert(!varTypeIsFloating(op2Type));
-            instruction ins = INS_cmp;
-            if (op1Type == op2Type)
-            {
-                cmpAttr = emitTypeSize(op1Type);
-            }
-            else
-            {
-                var_types cmpType    = TYP_INT;
-                bool      op1Is64Bit = (varTypeIsLong(op1Type) || op1Type == TYP_REF);
-                bool      op2Is64Bit = (varTypeIsLong(op2Type) || op2Type == TYP_REF);
-                NYI_IF(op1Is64Bit || op2Is64Bit, "Long compare");
-                assert(!op1->isUsedFromMemory() || op1Type == op2Type);
-                assert(!op2->isUsedFromMemory() || op1Type == op2Type);
-                cmpAttr = emitTypeSize(cmpType);
-            }
-            emit->emitInsBinary(ins, cmpAttr, op1, op2);
+            var_types cmpType = (op1Type == op2Type) ? op1Type : TYP_INT;
+            emit->emitInsBinary(INS_cmp, emitTypeSize(cmpType), op1, op2);
         }
 
         // Are we evaluating this into a register?
