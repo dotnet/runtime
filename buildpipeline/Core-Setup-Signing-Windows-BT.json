@@ -136,24 +136,15 @@
       "displayName": "Build binaries",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(PB_SourcesDirectory)/src/src.builds",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "$(PB_CommonMSBuildArgs)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
+        "filename": "$(PB_SourcesDirectory)\\build.cmd",
+        "arguments": "-src-builds -- $(PB_CommonMSBuildArgs)",
+        "workingFolder": "$(PB_SourcesDirectory)",
+        "failOnStandardError": "false"
       }
     },
     {
