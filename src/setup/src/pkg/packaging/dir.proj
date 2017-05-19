@@ -119,12 +119,6 @@
 
   <Target Name="GenerateTarBall"
           Condition="'$(OSGroup)'!='Windows_NT'">
-    <ItemGroup>
-      <CombinedCompressedFileSet Include="$(CombinedPublishRoot)/**" />
-      <HostFxrCompressedFileSet Include="$(HostFxrPublishRoot)/**" />
-      <SharedFrameworkCompressedFileSet Include="$(SharedFrameworkPublishRoot)/**" />
-      <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsDir)/**" />
-    </ItemGroup>
 
     <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
          we use -C so that we get a relative folder structure which is compressed rather than the full path -->

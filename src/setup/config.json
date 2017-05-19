@@ -189,11 +189,17 @@
       }
     },
     "build":{
-      "alias":{
-        "binaries":{
+      "alias": {
+        "binaries": {
           "description": "Only builds binaries. It doesn't restore packages.",
-          "settings":{
+          "settings": {
             "RestoreDuringBuild": false
+          }
+        },
+        "src-builds": {
+          "description": "Only build src\\src.builds project",
+          "settings": {
+            "Project": "src\\src.builds"
           }
         },
         "GenerateVersion": {
@@ -203,51 +209,51 @@
             "GenerateVersionHeader": "default"
           }
         },
-        "debug":{
+        "debug": {
           "description": "Sets ConfigurationGroup=Debug or the value passed by the user.",
-          "settings":{
+          "settings": {
             "ConfigurationGroup": "Debug"
           }
         },
-        "release":{
+        "release": {
           "description": "Sets ConfigurationGroup=Release or the value passed by the user.",
-          "settings":{
+          "settings": {
             "ConfigurationGroup": "Release"
           }
         },
-        "verbose":{
+        "verbose": {
           "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
-          "settings":{
+          "settings": {
             "MsBuildLogging": "/flp:v=diag"
           }
         },
-        "cmakelog":{
+        "cmakelog": {
           "description": "Writes msbuild log to cmake.log",
-          "settings":{
+          "settings": {
             "MsBuildLogging": "/flp:v=diag;LogFile=msbuild-cmake.log"
           }
         },
-        "os":{
+        "os": {
           "description": "Sets OSGroup=AnyOS or the value passed by the user.",
-          "settings":{
+          "settings": {
             "OSGroup": "default"
           }
         },
-        "portable":{
+        "portable": {
           "description": "Make the build-native script generate binaries that are portable for the platform.",
           "settings": {
-            "PortableBuild":"true"
+            "PortableBuild": "true"
           }
-        },        
-        "skipTests":{
+        },
+        "skipTests": {
           "description": "Skips running tests",
-          "settings":{
+          "settings": {
             "SkipTests": "true"
           }
         },
-        "disableCrossgen":{
+        "disableCrossgen": {
           "description": "Disable crossgen during the build",
-          "settings":{
+          "settings": {
             "DisableCrossgen": "true"
           }
         },
