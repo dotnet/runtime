@@ -98,6 +98,8 @@ include_directories(inc)
 include_directories("${LLDB_H}")
 include_directories(${CLR_DIR}/src/debug/inc)
 include_directories(${CLR_DIR}/src/inc)
+include_directories(${CLR_DIR}/src/pal/inc)
+include_directories(${CLR_DIR}/src/pal/inc/rt)
 include_directories(${CLR_DIR}/src/coreclr/hosts/inc)
 include_directories(${CLR_DIR}/src/coreclr/hosts/unixcoreruncommon)
 
