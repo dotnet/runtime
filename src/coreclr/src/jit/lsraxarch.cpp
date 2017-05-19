@@ -2676,6 +2676,90 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
             info->srcCount = 1;
             break;
 
+        case SIMDIntrinsicConvertToSingle:
+            info->srcCount = 1;
+            if (simdTree->gtSIMDBaseType == TYP_UINT)
+            {
+                // We need an internal register different from targetReg.
+                info->isInternalRegDelayFree = true;
+                info->internalIntCount       = 1;
+                info->internalFloatCount     = 2;
+                info->setInternalCandidates(lsra, lsra->allSIMDRegs() | lsra->allRegs(TYP_INT));
+            }
+            break;
+
+        case SIMDIntrinsicConvertToUInt32:
+        case SIMDIntrinsicConvertToInt32:
+            info->srcCount = 1;
+            break;
+
+        case SIMDIntrinsicWidenLo:
+        case SIMDIntrinsicWidenHi:
+            info->srcCount = 1;
+            if (varTypeIsIntegral(simdTree->gtSIMDBaseType))
+            {
+                // We need an internal register different from targetReg.
+                info->isInternalRegDelayFree = true;
+                info->internalFloatCount     = 1;
+                info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+            }
+            break;
+
+        case SIMDIntrinsicConvertToInt64:
+        case SIMDIntrinsicConvertToUInt64:
+            // We need an internal register different from targetReg.
+            info->isInternalRegDelayFree = true;
+            info->srcCount               = 1;
+            info->internalIntCount       = 1;
+            if (comp->getSIMDInstructionSet() == InstructionSet_AVX)
+            {
+                info->internalFloatCount = 2;
+            }
+            else
+            {
+                info->internalFloatCount = 1;
+            }
+            info->setInternalCandidates(lsra, lsra->allSIMDRegs() | lsra->allRegs(TYP_INT));
+            break;
+
+        case SIMDIntrinsicConvertToDouble:
+            // We need an internal register different from targetReg.
+            info->isInternalRegDelayFree = true;
+            info->srcCount               = 1;
+            info->internalIntCount       = 1;
+#ifdef _TARGET_X86_
+            if (simdTree->gtSIMDBaseType == TYP_LONG)
+            {
+                info->internalFloatCount = 3;
+            }
+            else
+#endif
+                if ((comp->getSIMDInstructionSet() == InstructionSet_AVX) || (simdTree->gtSIMDBaseType == TYP_ULONG))
+            {
+                info->internalFloatCount = 2;
+            }
+            else
+            {
+                info->internalFloatCount = 1;
+            }
+            info->setInternalCandidates(lsra, lsra->allSIMDRegs() | lsra->allRegs(TYP_INT));
+            break;
+
+        case SIMDIntrinsicNarrow:
+            // We need an internal register different from targetReg.
+            info->isInternalRegDelayFree = true;
+            info->srcCount               = 2;
+            if ((comp->getSIMDInstructionSet() == InstructionSet_AVX) && (simdTree->gtSIMDBaseType != TYP_DOUBLE))
+            {
+                info->internalFloatCount = 2;
+            }
+            else
+            {
+                info->internalFloatCount = 1;
+            }
+            info->setInternalCandidates(lsra, lsra->allSIMDRegs());
+            break;
+
         case SIMDIntrinsicShuffleSSE2:
             info->srcCount = 2;
             // Second operand is an integer constant and marked as contained.
