@@ -1130,11 +1130,7 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
     }
     else
     {
-        // Neither of the operands is a local, prefer marking
-        // operand that is evaluated first as reg optional
-        // since its use position is less likely to get a register.
-        bool reverseOps = ((tree->gtFlags & GTF_REVERSE_OPS) != 0);
-        preferredOp     = reverseOps ? op2 : op1;
+        preferredOp = op1;
     }
 
     return preferredOp;

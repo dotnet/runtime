@@ -3762,28 +3762,6 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
     DISPNODE(addrMode);
     JITDUMP("\n");
 
-    // Required to prevent assert failure:
-    //    Assertion failed 'op1 && op2' in flowgraph.cpp, Line: 34431
-    // when iterating the operands of a GT_LEA
-    // Test Case: self_host_tests_amd64\jit\jit64\opt\cse\VolatileTest_op_mul.exe
-    //    Method: TestCSE:.cctor
-    // The method genCreateAddrMode() above probably should be fixed
-    //    to not return rev=true, when index is returned as NULL
-    //
-    if (rev && index == nullptr)
-    {
-        rev = false;
-    }
-
-    if (rev)
-    {
-        addrMode->gtFlags |= GTF_REVERSE_OPS;
-    }
-    else
-    {
-        addrMode->gtFlags &= ~(GTF_REVERSE_OPS);
-    }
-
     BlockRange().InsertAfter(addr, addrMode);
 
     // Now we need to remove all the nodes subsumed by the addrMode
@@ -4380,7 +4358,6 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     BlockRange().InsertBefore(insertionPoint, leaBase);
 
     GenTreePtr leaNode = new (comp, GT_LEA) GenTreeAddrMode(arrElem->TypeGet(), leaBase, leaIndexNode, scale, offset);
-    leaNode->gtFlags |= GTF_REVERSE_OPS;
 
     BlockRange().InsertBefore(insertionPoint, leaNode);
 

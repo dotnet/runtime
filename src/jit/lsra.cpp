@@ -10673,20 +10673,11 @@ void LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasD
     else if (tree->OperIsAssignment())
     {
         assert(!tree->gtHasReg());
-        const char* isRev = "";
-        if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
-        {
-            isRev = "(Rev)";
-        }
-        printf("  asg%s%s  ", GenTree::NodeName(tree->OperGet()), isRev);
+        printf("  asg%s  ", GenTree::NodeName(tree->OperGet()));
     }
     else
     {
         compiler->gtDispNodeName(tree);
-        if ((tree->gtFlags & GTF_REVERSE_OPS) != 0)
-        {
-            printf("(Rev)");
-        }
         if (tree->OperKind() & GTK_LEAF)
         {
             compiler->gtDispLeaf(tree, nullptr);
