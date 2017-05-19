@@ -309,6 +309,7 @@ namespace System.Net.Http
                 unchecked((int)asyncResult.dwError) == unchecked((int)0x80090321)), // SEC_E_BUFFER_TOO_SMALL
                 $"Unexpected async error in WinHttpRequestCallback: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
 
+#if DEBUG
             // Add instrumentation to catch unexpected errors and fail fast to produce a crash dump. Issue #7812.
             // If the failure is not caused by the above error codes, need to get more information from asyncResult.dwResult.
             // There are only two cases in the below switch statement which explicitly set WinHttpException.
@@ -320,6 +321,7 @@ namespace System.Net.Http
             {
                 Debug.Fail($"Unexpected error: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
             }
+#endif
 
             Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
 
