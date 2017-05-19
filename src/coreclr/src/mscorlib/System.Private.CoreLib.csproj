@@ -726,7 +726,8 @@
   <PropertyGroup>
     <!-- Overwrite the key that we are going to use for signing -->
     <AssemblyOriginatorKeyFile>$(ToolsDir)SilverlightPlatformPublicKey.snk</AssemblyOriginatorKeyFile>
-    <StrongNameSig>Silverlight</StrongNameSig>
+    <!-- Don't need a strong name signature because we only ship the native image -->
+    <StrongNameSig>None</StrongNameSig>
     <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
     <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
   </PropertyGroup>
