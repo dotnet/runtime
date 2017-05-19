@@ -30,10 +30,15 @@ platformList.each { platform ->
     def dockerWorkingDirectory = "/src/core-setup"
     def dockerCommand = ''
     def crossbuildargs = ''
+    def buildArgs = "-ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
+
+    if (os != 'Windows_NT' && configuration == 'Release') {
+        buildArgs += " -strip-symbols"
+    }
 
     // Calculate build command
     if (os == 'Windows_NT') {
-        buildCommand = ".\\build.cmd -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
+        buildCommand = ".\\build.cmd ${buildArgs}"
         if ((architecture == 'arm' || architecture == 'arm64')) {
             buildCommand += " -PortableBuild=true -SkipTests=true"
         }
@@ -43,7 +48,8 @@ platformList.each { platform ->
         dockerContainer = "ubuntu1404_cross_prereqs_v4-tizen_rootfs"
 
         dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture}.tizen.build --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -DistroRid=tizen.4.0.0-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true -- /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json"
+        buildArgs += " -DistroRid=tizen.4.0.0-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true -- /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json"
+        buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
     }
     else if ((os.startsWith("Ubuntu")) && 
              (architecture == 'arm' || architecture == 'armel')) {
@@ -56,16 +62,18 @@ platformList.each { platform ->
             dockerContainer = "ubuntu-16.04-cross-ef0ac75-20175511035548"
         }
         dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture} --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true${crossbuildargs}"
+        buildArgs += " -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true${crossbuildargs}"
+        buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
     }
     else if (os == "Ubuntu") {
         dockerContainer = "ubuntu-14.04-debpkg-e5cf912-20175003025046"
         dockerCommand = "docker run --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
+        buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
     }
     else if (os == "PortableLinux") {
         // Jenkins non-Ubuntu CI machines don't have docker
-        buildCommand = "./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture} -PortableBuild=true"
+        buildArgs += " -PortableBuild=true"
+        buildCommand = "./build.sh ${buildArgs}"
         
         // Trigger a portable Linux build that runs on RHEL7.2
         osForGHTrigger = "PortableLinux"
@@ -73,7 +81,7 @@ platformList.each { platform ->
     }
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
-        buildCommand = "./build.sh -ConfigurationGroup=${configuration} -TargetArchitecture=${architecture}"
+        buildCommand = "./build.sh ${buildArgs}"
     }
 
     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
