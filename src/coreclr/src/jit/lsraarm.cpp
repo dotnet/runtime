@@ -629,6 +629,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitCmp(tree);
             break;
 
+        case GT_CKFINITE:
+            info->srcCount         = 1;
+            info->dstCount         = 1;
+            info->internalIntCount = 1;
+            break;
+
         case GT_CALL:
             TreeNodeInfoInitCall(tree->AsCall());
             break;
