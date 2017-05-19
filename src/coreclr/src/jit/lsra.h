@@ -849,10 +849,19 @@ public:
 private:
     Interval* newInterval(RegisterType regType);
 
-    Interval* getIntervalForLocalVar(unsigned varNum)
+    Interval* getIntervalForLocalVar(unsigned varIndex)
     {
-        return localVarIntervals[varNum];
+        assert(varIndex < compiler->lvaTrackedCount);
+        return localVarIntervals[varIndex];
     }
+
+    Interval* getIntervalForLocalVarNode(GenTreeLclVarCommon* tree)
+    {
+        LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclNum];
+        assert(varDsc->lvTracked);
+        return getIntervalForLocalVar(varDsc->lvVarIndex);
+    }
+
     RegRecord* getRegisterRecord(regNumber regNum);
 
     RefPosition* newRefPositionRaw(LsraLocation nodeLocation, GenTree* treeNode, RefType refType);
@@ -947,7 +956,7 @@ private:
     void setOutVarRegForBB(unsigned int bbNum, unsigned int varNum, regNumber reg);
     VarToRegMap getInVarToRegMap(unsigned int bbNum);
     VarToRegMap getOutVarToRegMap(unsigned int bbNum);
-    regNumber getVarReg(VarToRegMap map, unsigned int varNum);
+    regNumber getVarReg(VarToRegMap map, unsigned int trackedVarIndex);
     // Initialize the incoming VarToRegMap to the given map values (generally a predecessor of
     // the block)
     VarToRegMap setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarToRegMap);
@@ -1100,6 +1109,7 @@ private:
 
     RegRecord physRegs[REG_COUNT];
 
+    // Map from tracked variable index to Interval*.
     Interval** localVarIntervals;
 
     // Set of blocks that have been visited.
@@ -1242,7 +1252,7 @@ public:
     void microDump();
 #endif // DEBUG
 
-    void setLocalNumber(unsigned localNum, LinearScan* l);
+    void setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l);
 
     // Fixed registers for which this Interval has a preference
     regMaskTP registerPreferences;
