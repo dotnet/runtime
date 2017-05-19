@@ -15,6 +15,8 @@
 #define __GDBJIT_H__
 
 #include <stdint.h>
+#include "typekey.h"
+#include "typestring.h"
 #include "method.hpp"
 #include "dbginterface.h"
 #include "../inc/llvm/ELF.h"
