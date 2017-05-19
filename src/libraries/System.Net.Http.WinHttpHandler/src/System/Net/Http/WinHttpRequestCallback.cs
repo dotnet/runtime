@@ -305,7 +305,7 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            // Add instrumentation for now to catch unexpected errors and fail fast and produce a crash dump.
+            // Add instrumentation to catch unexpected errors and fail fast to produce a crash dump.
             // Issue #7812
 #if DEBUG
             if (unchecked((int)asyncResult.dwError) == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER ||
