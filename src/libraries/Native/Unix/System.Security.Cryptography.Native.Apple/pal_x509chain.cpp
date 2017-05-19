@@ -19,7 +19,7 @@ extern "C" SecPolicyRef AppleCryptoNative_X509ChainCreateDefaultPolicy()
 
 extern "C" SecPolicyRef AppleCryptoNative_X509ChainCreateRevocationPolicy()
 {
-    return SecPolicyCreateRevocation(kSecRevocationUseAnyAvailableMethod);
+    return SecPolicyCreateRevocation(kSecRevocationUseAnyAvailableMethod | kSecRevocationRequirePositiveResponse);
 }
 
 extern "C" int32_t
@@ -163,6 +163,8 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         *pStatus |= PAL_X509ChainInvalidBasicConstraints;
     else if (CFEqual(keyString, CFSTR("UsageConstraints")))
         *pStatus |= PAL_X509ChainExplicitDistrust;
+    else if (CFEqual(keyString, CFSTR("RevocationResponseRequired")))
+        *pStatus |= PAL_X509ChainRevocationStatusUnknown;
     else if (CFEqual(keyString, CFSTR("WeakLeaf")) || CFEqual(keyString, CFSTR("WeakIntermediates")) ||
              CFEqual(keyString, CFSTR("WeakRoot")))
     {
@@ -175,6 +177,9 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
 
     else
     {
+#ifdef DEBUGGING_UNKNOWN_VALUE
+        printf("%s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
+#endif
         *pStatus |= PAL_X509ChainErrorUnknownValue;
     }
 }
@@ -233,6 +238,8 @@ extern "C" int32_t AppleCryptoNative_GetOSStatusForChainStatus(PAL_X509ChainStat
             return errSecCreateChainFailed;
         case PAL_X509ChainExplicitDistrust:
             return errSecTrustSettingDeny;
+        case PAL_X509ChainRevocationStatusUnknown:
+            return errSecIncompleteCertRevocationCheck;
         default:
             return errSecCoreFoundationUnknown;
     }
