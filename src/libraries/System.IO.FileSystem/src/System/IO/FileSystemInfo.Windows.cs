@@ -106,7 +106,7 @@ namespace System.IO
             get
             {
                 EnsureDataInitialized();
-                return ((long)_data.fileSizeHigh) << 32 | ((long)_data.fileSizeLow & 0xFFFFFFFFL);
+                return ((long)_data.fileSizeHigh) << 32 | _data.fileSizeLow & 0xFFFFFFFFL;
             }
         }
 
@@ -126,7 +126,7 @@ namespace System.IO
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property
-            _dataInitialized = Win32FileSystem.FillAttributeInfo(FullPath, ref _data, false, false);
+            _dataInitialized = Win32FileSystem.FillAttributeInfo(FullPath, ref _data, tryagain: false, returnErrorOnNotFound: false);
         }
     }
 }

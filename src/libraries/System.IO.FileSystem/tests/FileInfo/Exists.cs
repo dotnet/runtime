@@ -43,6 +43,14 @@ namespace System.IO.Tests
             Assert.False(new FileInfo("Da drar vi til fjells").Exists);
         }
 
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void MissingDirectory(char trailingChar)
+        {
+            string path = GetTestFilePath();
+            FileInfo info = new FileInfo(Path.Combine(path, "file" + trailingChar));
+            Assert.False(info.Exists);
+        }
+
         [Fact]
         [PlatformSpecific(CaseInsensitivePlatforms)]
         public void CaseInsensitivity()

@@ -234,10 +234,13 @@ namespace System.IO
                 // Remove trailing slash since this can cause grief to FindFirstFile. You will get an invalid argument error
                 String tempPath = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
 
-                // For floppy drives, normally the OS will pop up a dialog saying
-                // there is no disk in drive A:, please insert one.  We don't want that.
-                // SetErrorMode will let us disable this, but we should set the error
-                // mode back, since this may have wide-ranging effects.
+                // For removable media drives, normally the OS will pop up a dialog requesting insertion
+                // of the relevant media (CD, floppy, memory card, etc.). We don't want this prompt so we
+                // set SEM_FAILCRITICALERRORS to suppress it.
+                //
+                // Note that said dialog only shows once the relevant filesystem has been loaded, which
+                // does not happen until actual media is accessed at least once since booting.
+
                 uint oldMode;
                 bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
@@ -253,7 +256,7 @@ namespace System.IO
 
                             if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
                                 errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND ||
-                                errorCode == Interop.Errors.ERROR_NOT_READY)  // floppy device not ready
+                                errorCode == Interop.Errors.ERROR_NOT_READY)  // Removable media not inserted
                             {
                                 if (!returnErrorOnNotFound)
                                 {
