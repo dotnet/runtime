@@ -503,7 +503,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 {
                     storeBlk = new (comp, GT_STORE_BLK) GenTreeBlk(GT_STORE_BLK, TYP_STRUCT, location, value, size);
                 }
-                storeBlk->gtFlags |= (GTF_REVERSE_OPS | GTF_ASG);
+                storeBlk->gtFlags |= GTF_ASG;
                 storeBlk->gtFlags |= ((location->gtFlags | value->gtFlags) & GTF_ALL_EFFECT);
 
                 GenTree* insertionPoint = location->gtNext;
@@ -539,11 +539,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
             copyFlags(store, assignment, GTF_ALL_EFFECT);
             copyFlags(store, location, GTF_IND_FLAGS);
-
-            if (assignment->IsReverseOp())
-            {
-                store->gtFlags |= GTF_REVERSE_OPS;
-            }
 
             // TODO: JIT dump
 
@@ -582,7 +577,8 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     storeOper = GT_STORE_OBJ;
                     break;
                 case GT_DYN_BLK:
-                    storeOper = GT_STORE_DYN_BLK;
+                    storeOper                             = GT_STORE_DYN_BLK;
+                    storeBlk->AsDynBlk()->gtEvalSizeFirst = false;
                     break;
                 default:
                     unreached();
@@ -591,8 +587,8 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                     GenTree::NodeName(storeOper));
             storeBlk->SetOperRaw(storeOper);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
-            storeBlk->gtFlags |= (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_REVERSE_OPS | GTF_BLK_VOLATILE |
-                                                         GTF_BLK_UNALIGNED | GTF_DONT_CSE));
+            storeBlk->gtFlags |=
+                (assignment->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED | GTF_DONT_CSE));
             storeBlk->gtBlk.Data() = value;
 
             // Replace the assignment node with the store
@@ -683,8 +679,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
     for (GenTree* prev = node->gtPrev; prev != nullptr && prev->OperIsAnyList() && !(prev->OperIsFieldListHead());
          prev          = node->gtPrev)
     {
+        prev->gtFlags &= ~GTF_REVERSE_OPS;
         BlockRange().Remove(prev);
     }
+
+    // Now clear the REVERSE_OPS flag on the current node.
+    node->gtFlags &= ~GTF_REVERSE_OPS;
 
     // In addition, remove the current node if it is a GT_LIST node that is not an aggregate.
     if (node->OperIsAnyList())

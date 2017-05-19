@@ -2707,6 +2707,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     emitter* emit = getEmitter();
 
+    if (dstAddr->isUsedFromReg())
+    {
+        genConsumeReg(dstAddr);
+    }
+
     if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
         // issue a full memory barrier before & after a volatile CpBlkUnroll operation
@@ -2736,11 +2741,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
             source->SetOper(GT_LCL_FLD_ADDR);
         }
         srcAddr = source;
-    }
-
-    if (dstAddr->isUsedFromReg())
-    {
-        genConsumeReg(dstAddr);
     }
 
     unsigned offset = 0;
@@ -3599,24 +3599,15 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        bool     reverseOps  = ((tree->gtFlags & GTF_REVERSE_OPS) != 0);
         bool     dataIsUnary = false;
         GenTree* nonRMWsrc   = nullptr;
         // We must consume the operands in the proper execution order,
         // so that liveness is updated appropriately.
-        if (!reverseOps)
-        {
-            genConsumeAddress(addr);
-        }
+        genConsumeAddress(addr);
 
         if (!data->isContained())
         {
             genConsumeRegs(data);
-        }
-
-        if (reverseOps)
-        {
-            genConsumeAddress(addr);
         }
 
         regNumber dataReg = REG_NA;

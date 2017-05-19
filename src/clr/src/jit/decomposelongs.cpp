@@ -800,7 +800,6 @@ GenTree* DecomposeLongs::DecomposeStoreInd(LIR::Use& use)
         new (m_compiler, GT_LEA) GenTreeAddrMode(TYP_REF, addrBaseHigh, nullptr, 0, genTypeSize(TYP_INT));
     GenTree* storeIndHigh = new (m_compiler, GT_STOREIND) GenTreeStoreInd(TYP_INT, addrHigh, dataHigh);
     storeIndHigh->gtFlags = (storeIndLow->gtFlags & (GTF_ALL_EFFECT | GTF_LIVENESS_MASK));
-    storeIndHigh->gtFlags |= GTF_REVERSE_OPS;
 
     m_compiler->lvaIncRefCnts(addrBaseHigh);
 
