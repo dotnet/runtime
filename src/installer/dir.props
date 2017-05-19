@@ -31,5 +31,11 @@
     <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
     <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>    
   </PropertyGroup>
-    
+
+  <PropertyGroup>
+    <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
+    <!-- OSX doesn't have crossgen symbols, yet -->
+    <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'OSX'"></CrossGenSymbolExtension>
+  </PropertyGroup>
 </Project>
