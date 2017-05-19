@@ -1230,6 +1230,53 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 }
 
 //------------------------------------------------------------------------
+// genCkfinite: Generate code for ckfinite opcode.
+//
+// Arguments:
+//    treeNode - The GT_CKFINITE node
+//
+// Return Value:
+//    None.
+//
+// Assumptions:
+//    GT_CKFINITE node has reserved an internal register.
+//
+void CodeGen::genCkfinite(GenTreePtr treeNode)
+{
+    assert(treeNode->OperGet() == GT_CKFINITE);
+
+    emitter*  emit       = getEmitter();
+    var_types targetType = treeNode->TypeGet();
+    regNumber intReg     = treeNode->GetSingleTempReg();
+    regNumber fpReg      = genConsumeReg(treeNode->gtOp.gtOp1);
+    regNumber targetReg  = treeNode->gtRegNum;
+
+    // Extract and sign-extend the exponent into an integer register
+    if (targetType == TYP_FLOAT)
+    {
+        emit->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, intReg, fpReg);
+        emit->emitIns_R_R_I_I(INS_sbfx, EA_4BYTE, intReg, intReg, 23, 8);
+    }
+    else
+    {
+        assert(targetType == TYP_DOUBLE);
+        emit->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, intReg, REG_NEXT(fpReg));
+        emit->emitIns_R_R_I_I(INS_sbfx, EA_4BYTE, intReg, intReg, 20, 11);
+    }
+
+    // If exponent is all 1's, throw ArithmeticException
+    emit->emitIns_R_I(INS_add, EA_4BYTE, intReg, 1, INS_FLAGS_SET);
+    genJumpToThrowHlpBlk(EJ_eq, SCK_ARITH_EXCPN);
+
+    // If it's a finite value, copy it to targetReg
+    if (targetReg != fpReg)
+    {
+        emit->emitIns_R_R(ins_Copy(targetType), emitTypeSize(treeNode), targetReg, fpReg);
+    }
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genCodeForCompare: Produce code for a GT_EQ/GT_NE/GT_LT/GT_LE/GT_GE/GT_GT node.
 //
 // Arguments:
