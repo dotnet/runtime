@@ -52,20 +52,21 @@ namespace System.Net.Tests
                     // Remember the exception for later
                     _processPrefixException = e;
 
-                    // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
-                    // in trying again.
-                    if (!(e is HttpListenerException) && !(e is SocketException))
-                        break;
-
-                    // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
-                    // then throw.
                     if (e is HttpListenerException listenerException)
                     {
+                        // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
+                        // then throw.
                         const int ERROR_ACCESS_DENIED = 5;
                         if (listenerException.ErrorCode == ERROR_ACCESS_DENIED && (hostname == "*" || hostname == "+"))
                         {
                             throw new InvalidOperationException($"Access denied for host {hostname}");
                         }
+                    }
+                    else if (!(e is SocketException))
+                    {
+                        // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
+                        // in trying again.
+                        break;
                     }
                 }
             }
