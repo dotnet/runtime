@@ -14,14 +14,17 @@ namespace Functions
         private const float absSingleDelta = 0.0004f;
         private const float absSingleExpectedResult = 2500.03125f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = AbsSingleIterations)]
         public static void AbsSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    AbsSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        AbsSingleTest();
+                    }
                 }
             }
         }

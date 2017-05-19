@@ -19,7 +19,7 @@ public static class NoThrowInline
 #if DEBUG
     public const int Iterations = 1;
 #else
-    public const int Iterations = 100000000;
+    public const int Iterations = 275000000;
 #endif
 
     static void ThrowIfNull(string s)
@@ -57,14 +57,17 @@ public static class NoThrowInline
         return a.Length + b.Length + c.Length + d.Length;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount = Iterations)]
     public static void Test()
     {
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
-                Bench("a", "bc", "def", "ghij");
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                {
+                    Bench("a", "bc", "def", "ghij");
+                }
             }
         }
     }
