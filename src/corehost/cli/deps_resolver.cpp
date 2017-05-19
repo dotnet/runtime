@@ -162,9 +162,14 @@ void deps_resolver_t::setup_shared_store_probes(
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
     }
 
-    if (args.global_shared_store != args.dotnet_shared_store && pal::directory_exists(args.global_shared_store))
+    
+    for (const auto& global_shared : args.global_shared_stores)
     {
-        m_probes.push_back(probe_config_t::lookup(args.global_shared_store));
+        if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
+        {
+            // Shared Store probe: DOTNET_SHARED_STORE
+            m_probes.push_back(probe_config_t::lookup(global_shared));
+        }
     }
 }
 
