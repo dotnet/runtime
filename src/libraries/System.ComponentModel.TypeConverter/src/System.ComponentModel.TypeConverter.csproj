@@ -5,7 +5,10 @@
     <ProjectGuid>{AF3EBF3B-526A-4B51-9F3D-62B0113CD01F}</ProjectGuid>
     <RootNamespace>System.ComponentModel.TypeConverter</RootNamespace>
     <AssemblyName>System.ComponentModel.TypeConverter</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <!-- TODO: RE-ENABLE THIS -->
+    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
@@ -45,7 +48,9 @@
     <Compile Include="System\ComponentModel\UriTypeConverter.cs" />
     <Compile Include="System\Timers\ElapsedEventArgs.cs" />
     <Compile Include="System\Timers\ElapsedEventHandler.cs" />
-    <Compile Include="System\Timers\Timer.cs" />
+    <Compile Include="System\Timers\Timer.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Timers\TimersDescriptionAttribute.cs" />
     <Compile Include="System\ComponentModel\AttributeCollection.cs" />
     <Compile Include="System\ComponentModel\AttributeProviderAttribute.cs" />
@@ -86,6 +91,9 @@
     <Compile Include="System\ComponentModel\Design\IDictionaryService.cs" />
     <Compile Include="System\ComponentModel\Design\IExtenderListService.cs" />
     <Compile Include="System\ComponentModel\Design\ITypeDescriptorFilterService.cs" />
+    <Compile Include="$(CommonPath)/System/Drawing/ColorConverterCommon.cs">
+      <Link>System\Drawing\ColorConverterCommon.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)/System/Drawing/ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
@@ -161,7 +169,9 @@
     <Compile Include="System\ComponentModel\Design\ITypeResolutionService.cs" />
     <Compile Include="System\ComponentModel\ListBindableAttribute.cs" />
     <Compile Include="System\ComponentModel\LookupBindingPropertiesAttribute.cs" />
-    <Compile Include="System\ComponentModel\MarshalByValueComponent.cs" />
+    <Compile Include="System\ComponentModel\MarshalByValueComponent.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\ComponentModel\MaskedTextProvider.cs" />
     <Compile Include="System\ComponentModel\MaskedTextResultHint.cs" />
     <Compile Include="System\ComponentModel\NestedContainer.cs" />
@@ -269,6 +279,7 @@
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
