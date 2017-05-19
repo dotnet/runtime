@@ -169,7 +169,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         }
 
         [Fact]
-        public void SdkLookup_Must_Look_For_Available_Versions_Before_Looking_Into_Another_Folder()
+        public void SdkLookup_Global_Json_Versioned_Behaviors()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -187,7 +187,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // CWD: empty
             // User: 9999.0.0, 9999.0.0-dummy
             // Exe: 9999.0.0-dummy
-            // Expected: 9999.0.0 from user dir
+            // Expected: no compatible version and specific error message
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
@@ -196,19 +196,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .CaptureStdErr()
                 .Execute()
                 .Should()
-                .Pass()
+                .Fail()
                 .And
-                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining("global.json] not found; install specified SDK version");
 
-            // Add some dummy versions
-            AddAvailableSdkVersions(_cwdSdkBaseDir, "9999.0.0");
+            // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-global-dummy");
 
             // Specified CLI version: 9999.0.0-global-dummy
-            // CWD: 9999.0.0                          --> should not be picked
+            // CWD: empty
             // User: 9999.0.0, 9999.0.0-dummy
             // Exe: 9999.0.0-dummy, 9999.0.0-global-dummy
-            // Expected: 9999.0.0 from user dir
+            // Expected: 9999.0.0-global-dummy from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
@@ -219,10 +218,31 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0-global-dummy", _dotnetSdkDllMessageTerminator));
+
+            // Add more specified CLI versions
+            AddAvailableSdkVersions(_cwdSdkBaseDir, "9999.0.0-global-dummy");
+            AddAvailableSdkVersions(_userSdkBaseDir, "9999.0.0-global-dummy");
+
+            // Specified CLI version: 9999.0.0-global-dummy
+            // CWD: 9999.0.0-global-dummy                 --> should not be picked
+            // User: 9999.0.0, 9999.0.0-dummy; 9999.0.0-global-dummy
+            // Exe: 9999.0.0-dummy, 9999.0.0-global-dummy
+            // Expected: 9999.0.0-global-dummy from user dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.0-global-dummy", _dotnetSdkDllMessageTerminator));
 
             // Remove dummy folders from user dir
-            DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.0", "9999.0.0-dummy");
+            DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.0", "9999.0.0-dummy", "9999.0.0-global-dummy");
         }
 
         [Fact]
@@ -233,14 +253,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
 
             var dotnet = fixture.BuiltDotnet;
 
-            // Add a dummy version in the exe dir
+            // Add dummy versions in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0");
+            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.1-dummy");
 
             // Specified CLI version: none
             // CWD: empty
             // User: empty
-            // Exe: 9999.0.0
-            // Expected: 9999.0.0 from exe dir
+            // Exe: 9999.0.0, 9999.0.1-dummy
+            // Expected: 9999.0.1-dummy from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
@@ -251,7 +272,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.0", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1-dummy", _dotnetSdkDllMessageTerminator));
 
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.1");
@@ -259,7 +280,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Specified CLI version: none
             // CWD: empty
             // User: empty
-            // Exe: 9999.0.0, 9999.0.1
+            // Exe: 9999.0.0, 9999.0.1-dummy, 9999.0.1
             // Expected: 9999.0.1 from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
@@ -273,14 +294,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
 
-            // Add a dummy version in the exe dir
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0-dummy");
+            // Add dummy versions
+            AddAvailableSdkVersions(_userSdkBaseDir, "9999.0.1");
+            AddAvailableSdkVersions(_cwdSdkBaseDir, "10000.0.0");
 
             // Specified CLI version: none
-            // CWD: empty
-            // User: empty
-            // Exe: 9999.0.0, 9999.0.1, 9999.0.0-dummy
-            // Expected: 9999.0.1 from exe dir
+            // CWD: 10000.0.0                 --> should not be picked
+            // User: 9999.0.1
+            // Exe: 9999.0.0, 9999.0.1-dummy, 9999.0.1
+            // Expected: 9999.0.1 from user dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
@@ -291,15 +313,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
 
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0-dummy");
 
             // Specified CLI version: none
-            // CWD: empty
-            // User: empty
-            // Exe: 9999.0.0, 9999.0.1, 9999.0.0-dummy, 10000.0.0-dummy
+            // CWD: 10000.0.0                 --> should not be picked
+            // User: 9999.0.1
+            // Exe: 9999.0.0, 9999.0.1-dummy, 9999.0.1, 10000.0.0-dummy
             // Expected: 10000.0.0-dummy from exe dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
@@ -313,14 +335,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0-dummy", _dotnetSdkDllMessageTerminator));
 
-            // Add a dummy version in the exe dir
-            AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0");
+            // Add a dummy version in the user dir
+            AddAvailableSdkVersions(_userSdkBaseDir, "10000.0.0");
 
             // Specified CLI version: none
-            // CWD: empty
-            // User: empty
-            // Exe: 9999.0.0, 9999.0.1, 9999.0.0-dummy, 10000.0.0-dummy, 10000.0.0
-            // Expected: 10000.0.0 from exe dir
+            // CWD: 10000.0.0                 --> should not be picked
+            // User: 9999.0.1, 10000.0.0
+            // Exe: 9999.0.0, 9999.0.1-dummy, 9999.0.1, 10000.0.0-dummy
+            // Expected: 10000.0.0 from user dir
             dotnet.Exec("help")
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
@@ -331,8 +353,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Should()
                 .Pass()
                 .And
-                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
+                .HaveStdErrContaining(Path.Combine(_userSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
 
+            // Remove dummy folders from user dir
+            DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.1", "10000.0.0");
         }
 
         // This method adds a list of new sdk version folders in the specified
