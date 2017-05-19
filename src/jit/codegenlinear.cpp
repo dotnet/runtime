@@ -168,7 +168,7 @@ void CodeGen::genCodeForBBlist()
         VARSET_TP VARSET_INIT_NOCOPY(addedGCVars, VarSetOps::MakeEmpty(compiler));
 #endif
         VARSET_ITER_INIT(compiler, iter, block->bbLiveIn, varIndex);
-        while (iter.NextElem(compiler, &varIndex))
+        while (iter.NextElem(&varIndex))
         {
             unsigned   varNum = compiler->lvaTrackedToVarNum[varIndex];
             LclVarDsc* varDsc = &(compiler->lvaTable[varNum]);
@@ -500,7 +500,7 @@ void CodeGen::genCodeForBBlist()
         VARSET_TP VARSET_INIT_NOCOPY(extraLiveVars, VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
         VarSetOps::UnionD(compiler, extraLiveVars, VarSetOps::Diff(compiler, compiler->compCurLife, block->bbLiveOut));
         VARSET_ITER_INIT(compiler, extraLiveVarIter, extraLiveVars, extraLiveVarIndex);
-        while (extraLiveVarIter.NextElem(compiler, &extraLiveVarIndex))
+        while (extraLiveVarIter.NextElem(&extraLiveVarIndex))
         {
             unsigned   varNum = compiler->lvaTrackedToVarNum[extraLiveVarIndex];
             LclVarDsc* varDsc = compiler->lvaTable + varNum;

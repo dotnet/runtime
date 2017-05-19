@@ -1100,7 +1100,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTreePtr tree)
     // This is because, in the RyuJIT backend case, they may occupy registers that
     // will be occupied by another var that is newly live.
     VARSET_ITER_INIT(this, deadIter, deadSet, deadVarIndex);
-    while (deadIter.NextElem(this, &deadVarIndex))
+    while (deadIter.NextElem(&deadVarIndex))
     {
         unsigned varNum = lvaTrackedToVarNum[deadVarIndex];
         varDsc          = lvaTable + varNum;
@@ -1135,7 +1135,7 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife DEBUGARG(GenTreePtr tree)
     }
 
     VARSET_ITER_INIT(this, bornIter, bornSet, bornVarIndex);
-    while (bornIter.NextElem(this, &bornVarIndex))
+    while (bornIter.NextElem(&bornVarIndex))
     {
         unsigned varNum = lvaTrackedToVarNum[bornVarIndex];
         varDsc          = lvaTable + varNum;
@@ -1305,7 +1305,7 @@ regMaskTP CodeGenInterface::genLiveMask(VARSET_VALARG_TP liveSet)
     regMaskTP liveMask = 0;
 
     VARSET_ITER_INIT(compiler, iter, liveSet, varIndex);
-    while (iter.NextElem(compiler, &varIndex))
+    while (iter.NextElem(&varIndex))
     {
 
         // If the variable is not enregistered, then it can't contribute to the liveMask
