@@ -5054,27 +5054,7 @@ void CodeGen::genCodeForTreeLeaf(GenTreePtr tree, regMaskTP destReg, regMaskTP b
             break;
 
         case GT_NO_OP:
-            // The VM does certain things with actual NOP instructions
-            // so generate something small that has no effect, but isn't
-            // a typical NOP
-            if (tree->gtFlags & GTF_NO_OP_NO)
-            {
-#ifdef _TARGET_XARCH_
-                // The VM expects 0x66 0x90 for a 2-byte NOP, not 0x90 0x90
-                instGen(INS_nop);
-                instGen(INS_nop);
-#elif defined(_TARGET_ARM_)
-                // The VM isn't checking yet, when it does, hopefully it will
-                // get fooled by the wider variant.
-                instGen(INS_nopw);
-#else
-                NYI("Non-nop NO_OP");
-#endif
-            }
-            else
-            {
-                instGen(INS_nop);
-            }
+            instGen(INS_nop);
             reg = REG_STK;
             break;
 
