@@ -266,7 +266,7 @@ namespace System.Tests
         }
 
         // The commented out folders aren't set on all systems.
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19110
         [InlineData(Environment.SpecialFolder.ApplicationData)]
         [InlineData(Environment.SpecialFolder.CommonApplicationData)]
         [InlineData(Environment.SpecialFolder.LocalApplicationData)]
@@ -318,31 +318,12 @@ namespace System.Tests
         {
             string knownFolder = Environment.GetFolderPath(folder);
 
-            if (!PlatformDetection.IsWindowsNanoServer)
-            {
-                // See Nano comment below
-                Assert.NotEmpty(knownFolder);
-            }
+            Assert.NotEmpty(knownFolder);
 
             // Call the older folder API to compare our results.
             char* buffer = stackalloc char[260];
             SHGetFolderPathW(IntPtr.Zero, (int)folder, IntPtr.Zero, 0, buffer);
             string folderPath = new string(buffer);
-
-            if (PlatformDetection.IsWindowsNanoServer)
-            {
-                // https://github.com/dotnet/corefx/issues/19110
-                // On Windows Nano, ShGetKnownFolderPath currently isn't supported.
-                // It currently gives bogus results for everything except
-                // UserProfile. Assert that continues to be true, so if and when the fix the API,
-                // we will know to remove this Nano-specific path and protect their fix.
-                if (folder != Environment.SpecialFolder.UserProfile)
-                {
-                    Assert.NotEqual(folderPath, knownFolder);
-                }
-
-                return; // Even for UserProfile -- since the API is not supported the result may change
-            }
 
             Assert.Equal(folderPath, knownFolder);
         }
