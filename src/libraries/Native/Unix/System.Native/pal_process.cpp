@@ -4,6 +4,7 @@
 
 #include "pal_config.h"
 #include "pal_process.h"
+#include "pal_io.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
@@ -136,9 +137,11 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
         goto done;
     }
 
-    // Open pipes for any requests to redirect stdin/stdout/stderr
-    if ((redirectStdin && pipe(stdinFds) != 0) || (redirectStdout && pipe(stdoutFds) != 0) ||
-        (redirectStderr && pipe(stderrFds) != 0))
+    // Open pipes for any requests to redirect stdin/stdout/stderr and set the
+    // close-on-exec flag to the pipe file descriptors.
+    if ((redirectStdin  && SystemNative_Pipe(stdinFds,  PAL_O_CLOEXEC) != 0) ||
+        (redirectStdout && SystemNative_Pipe(stdoutFds, PAL_O_CLOEXEC) != 0) ||
+        (redirectStderr && SystemNative_Pipe(stderrFds, PAL_O_CLOEXEC) != 0))
     {
         success = false;
         goto done;
@@ -163,22 +166,14 @@ extern "C" int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     if (processId == 0) // processId == 0 if this is child process
     {
-        // Close the child's copy of the parent end of any open pipes
-        CloseIfOpen(stdinFds[WRITE_END_OF_PIPE]);
-        CloseIfOpen(stdoutFds[READ_END_OF_PIPE]);
-        CloseIfOpen(stderrFds[READ_END_OF_PIPE]);
-
         // For any redirections that should happen, dup the pipe descriptors onto stdin/out/err.
-        // Then close out the old pipe descriptrs, which we no longer need.
+        // We don't need to explicitly close out the old pipe descriptors as they will be closed on the 'execve' call.
         if ((redirectStdin && Dup2WithInterruptedRetry(stdinFds[READ_END_OF_PIPE], STDIN_FILENO) == -1) ||
             (redirectStdout && Dup2WithInterruptedRetry(stdoutFds[WRITE_END_OF_PIPE], STDOUT_FILENO) == -1) ||
             (redirectStderr && Dup2WithInterruptedRetry(stderrFds[WRITE_END_OF_PIPE], STDERR_FILENO) == -1))
         {
             _exit(errno != 0 ? errno : EXIT_FAILURE);
         }
-        CloseIfOpen(stdinFds[READ_END_OF_PIPE]);
-        CloseIfOpen(stdoutFds[WRITE_END_OF_PIPE]);
-        CloseIfOpen(stderrFds[WRITE_END_OF_PIPE]);
 
         // Change to the designated working directory, if one was specified
         if (nullptr != cwd)

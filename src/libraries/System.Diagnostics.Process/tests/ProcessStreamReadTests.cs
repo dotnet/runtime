@@ -124,6 +124,68 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        public void TestEOFReceivedWhenStdInClosed()
+        {
+            // This is the test for the fix of dotnet/corefx issue #13447.
+            //
+            // Summary of the issue:
+            // When an application starts more than one child processes with their standard inputs redirected on Unix,
+            // closing the standard input stream of the first child process won't unblock the 'Console.ReadLine()' call
+            // in the first child process (it's expected to receive EOF).
+            //
+            // Root cause of the issue:
+            // The file descriptor for the write end of the first child process standard input redirection pipe gets
+            // inherited by the second child process, which makes the reference count of the pipe write end become 2.
+            // When closing the standard input stream of the first child process, the file descriptor held by the parent
+            // process is released, but the one inherited by the second child process is still referencing the pipe
+            // write end, which cause the 'Console.ReadLine()' continue to be blocked in the first child process.
+            //
+            // Fix:
+            // Set the O_CLOEXEC flag when creating the redirection pipes. So that no child process would inherit the
+            // file descriptors referencing those pipes.
+            const string ExpectedLine = "NULL";
+            Process p1 = CreateProcess(() =>
+            {
+                string line = Console.ReadLine();
+                Console.WriteLine(line == null ? ExpectedLine : "NOT_" + ExpectedLine);
+                return SuccessExitCode;
+            });
+            Process p2 = CreateProcess(() =>
+            {
+                Console.ReadLine();
+                return SuccessExitCode;
+            });
+
+            // Start the first child process
+            p1.StartInfo.RedirectStandardInput = true;
+            p1.StartInfo.RedirectStandardOutput = true;
+            p1.OutputDataReceived += (s, e) => Assert.Equal(ExpectedLine, e.Data);
+            p1.Start();
+
+            // Start the second child process
+            p2.StartInfo.RedirectStandardInput = true;
+            p2.Start();
+
+            try
+            {
+                // Close the standard input stream of the first child process.
+                // The first child process should be unblocked and write out 'NULL', and then exit.
+                p1.StandardInput.Close();
+                Assert.True(p1.WaitForExit(WaitInMS));
+            }
+            finally
+            {
+                // Cleanup: kill the second child process
+                p2.Kill();
+            }
+
+            // Cleanup
+            Assert.True(p2.WaitForExit(WaitInMS));
+            p2.Dispose();
+            p1.Dispose();
+        }
+
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "There is 2 bugs in Desktop in this codepath, see: dotnet/corefx #18437 and #18436")]
         public void TestAsyncHalfCharacterAtATime()
         {
