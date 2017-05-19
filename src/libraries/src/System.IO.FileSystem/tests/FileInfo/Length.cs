@@ -42,6 +42,29 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => info.Length);
         }
 
+        // Windows returns FILE_NOT_FOUND if the path exists up to the last directory separator,
+        // or PATH_NOT_FOUND otherwise. Normally we convert those to FileNotFound and
+        // DirectoryNotFound exceptions, but in this particular case we ignored the actual
+        // result and always gave FileNotFound.
+        //
+        // https://github.com/dotnet/corefx/issues/19850
+
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void Length_MissingFile_ThrowsFileNotFound(char trailingChar)
+        {
+            string path = GetTestFilePath();
+            FileInfo info = new FileInfo(path + trailingChar);
+            Assert.Throws<FileNotFoundException>(() => info.Length);
+        }
+
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void Length_MissingDirectory_ThrowsFileNotFound(char trailingChar)
+        {
+            string path = GetTestFilePath();
+            FileInfo info = new FileInfo(Path.Combine(path, "file" + trailingChar));
+            Assert.Throws<FileNotFoundException>(() => info.Length);
+        }
+
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void SymLinkLength()
         {

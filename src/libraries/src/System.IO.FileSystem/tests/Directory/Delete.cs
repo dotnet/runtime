@@ -75,10 +75,18 @@ namespace System.IO.Tests
             Assert.False(testDir.Exists);
         }
 
-        [Fact]
-        public void ShouldThrowDirectoryNotFoundExceptionForNonexistentDirectory()
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void MissingFile_ThrowsDirectoryNotFound(char trailingChar)
         {
-            Assert.Throws<DirectoryNotFoundException>(() => Delete(GetTestFilePath()));
+            string path = GetTestFilePath() + trailingChar;
+            Assert.Throws<DirectoryNotFoundException>(() => Delete(path));
+        }
+
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void MissingDirectory_ThrowsDirectoryNotFound(char trailingChar)
+        {
+            string path = Path.Combine(GetTestFilePath(), "file" + trailingChar);
+            Assert.Throws<DirectoryNotFoundException>(() => Delete(path));
         }
 
         [Fact]

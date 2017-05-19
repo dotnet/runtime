@@ -672,7 +672,12 @@ namespace System.IO
 
         public override FileAttributes GetAttributes(string fullPath)
         {
-            return new FileInfo(fullPath, null).Attributes;
+            FileAttributes attributes = new FileInfo(fullPath, null).Attributes;
+
+            if (attributes == (FileAttributes)(-1))
+                FileSystemInfo.ThrowNotFound(fullPath);
+
+            return attributes;
         }
 
         public override void SetAttributes(string fullPath, FileAttributes attributes)

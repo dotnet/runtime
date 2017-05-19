@@ -12,6 +12,11 @@ namespace System.IO
         private bool _targetOfSymlinkIsDirectory;
 
         /// <summary>
+        /// Exists as a path as of last refresh.
+        /// </summary>
+        private bool _exists;
+
+        /// <summary>
         /// Whether we've successfully cached a stat structure.
         /// -1 if we need to refresh _fileStatus, 0 if we've successfully cached one,
         /// or any other value that serves as an errno error code from the
@@ -34,6 +39,9 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
+
+                if (!_exists)
+                    return (FileAttributes)(-1);
 
                 FileAttributes attrs = default(FileAttributes);
 
@@ -85,9 +93,29 @@ namespace System.IO
                 // The only thing we can reasonably change is whether the file object is readonly,
                 // just changing its permissions accordingly.
                 EnsureStatInitialized();
+
+                if (!_exists)
+                {
+                    ThrowNotFound(FullPath);
+                }
+
                 IsReadOnlyAssumesInitialized = (value & FileAttributes.ReadOnly) != 0;
                 _fileStatusInitialized = -1;
             }
+        }
+
+        internal static void ThrowNotFound(string path)
+        {
+            // Windows distinguishes between whether the directory or the file isn't found,
+            // and throws a different exception in these cases.  We attempt to approximate that
+            // here; there is a race condition here, where something could change between
+            // when the error occurs and our checks, but it's the best we can do, and the
+            // worst case in such a race condition (which could occur if the file system is
+            // being manipulated concurrently with these checks) is that we throw a
+            // FileNotFoundException instead of DirectoryNotFoundException.
+
+            bool directoryError = !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(path)));
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), path, directoryError);                
         }
 
         /// <summary>Gets whether stat reported this system object as a directory.</summary>
@@ -161,7 +189,7 @@ namespace System.IO
                 }
 
                 return
-                    _fileStatusInitialized == 0 && // avoid throwing if Refresh failed; instead just return false
+                    _exists &&
                     (this is DirectoryInfo) == IsDirectoryAssumesInitialized;
             }
         }
@@ -171,6 +199,9 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
+                if (!_exists)
+                    return DateTimeOffset.FromFileTime(0);
+
                 long rawTime = (_fileStatus.Flags & Interop.Sys.FileStatusFlags.HasBirthTime) != 0 ?
                     _fileStatus.BirthTime :
                     Math.Min(_fileStatus.CTime, _fileStatus.MTime); // fall back to the oldest time we have in between change and modify time
@@ -190,6 +221,8 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
+                if (!_exists)
+                    return DateTimeOffset.FromFileTime(0);
                 return DateTimeOffset.FromUnixTimeSeconds(_fileStatus.ATime).ToLocalTime();
             }
             set { SetAccessWriteTimes(value.ToUnixTimeSeconds(), null); }
@@ -200,6 +233,8 @@ namespace System.IO
             get
             {
                 EnsureStatInitialized();
+                if (!_exists)
+                    return DateTimeOffset.FromFileTime(0);
                 return DateTimeOffset.FromUnixTimeSeconds(_fileStatus.MTime).ToLocalTime();
             }
             set { SetAccessWriteTimes(null, value.ToUnixTimeSeconds()); }
@@ -236,17 +271,32 @@ namespace System.IO
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _targetOfSymlinkIsDirectory = false;
-            int result = Interop.Sys.LStat(FullPath, out _fileStatus);
+            string path = PathHelpers.TrimEndingDirectorySeparator(FullPath);
+            int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                _fileStatusInitialized = errorInfo.RawErrno;
+
+                // This should never set the error if the file can't be found.
+                // (see the Windows refresh passing returnErrorOnNotFound: false).
+                if (errorInfo.Error == Interop.Error.ENOENT
+                    || errorInfo.Error == Interop.Error.ENOTDIR)
+                {
+                    _fileStatusInitialized = 0;
+                    _exists = false;
+                }
+                else
+                {
+                    _fileStatusInitialized = errorInfo.RawErrno;
+                }
                 return;
             }
 
+            _exists = true;
+
             Interop.Sys.FileStatus targetStatus;
             if ((_fileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFLNK &&
-                Interop.Sys.Stat(FullPath, out targetStatus) >= 0)
+                Interop.Sys.Stat(path, out targetStatus) >= 0)
             {
                 _targetOfSymlinkIsDirectory = (targetStatus.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
             }
@@ -265,20 +315,7 @@ namespace System.IO
             {
                 int errno = _fileStatusInitialized;
                 _fileStatusInitialized = -1;
-                var errorInfo =  new Interop.ErrorInfo(errno);
-
-                // Windows distinguishes between whether the directory or the file isn't found,
-                // and throws a different exception in these cases.  We attempt to approximate that
-                // here; there is a race condition here, where something could change between
-                // when the error occurs and our checks, but it's the best we can do, and the
-                // worst case in such a race condition (which could occur if the file system is
-                // being manipulated concurrently with these checks) is that we throw a
-                // FileNotFoundException instead of DirectoryNotFoundexception.
-
-                // directoryError is true only if a FileNotExists error was provided and the parent
-                // directory of the file represented by _fullPath is nonexistent
-                bool directoryError = (errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(PathHelpers.TrimEndingDirectorySeparator(FullPath)))); // The destFile's path is invalid
-                throw Interop.GetExceptionForIoErrno(errorInfo, FullPath, directoryError);
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(errno), FullPath);
             }
         }
     }

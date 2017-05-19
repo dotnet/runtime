@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -80,6 +81,27 @@ internal static class TestData
             {
                 data.Add(c.ToString());
             }
+
+            return data;
+        }
+    }
+
+    /// <summary>
+    /// Normal path char and any valid directory separators
+    /// </summary>
+    public static TheoryData<char> TrailingCharacters
+    {
+        get
+        {
+            TheoryData<char> data = new TheoryData<char>
+            {
+                // A valid, non separator
+                'a',
+                Path.DirectorySeparatorChar
+            };
+
+            if (Path.DirectorySeparatorChar != Path.AltDirectorySeparatorChar)
+                data.Add(Path.AltDirectorySeparatorChar);
 
             return data;
         }

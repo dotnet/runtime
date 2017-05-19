@@ -137,10 +137,18 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        public void NonexistentPath()
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void MissingFile_ThrowsDirectoryNotFound(char trailingChar)
         {
-            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(GetTestFilePath()));
+            string path = GetTestFilePath() + trailingChar;
+            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(path));
+        }
+
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void MissingDirectory_ThrowsDirectoryNotFound(char trailingChar)
+        {
+            string path = Path.Combine(GetTestFilePath(), "file" + trailingChar);
+            Assert.Throws<DirectoryNotFoundException>(() => GetEntries(path));
         }
 
         [Fact]
