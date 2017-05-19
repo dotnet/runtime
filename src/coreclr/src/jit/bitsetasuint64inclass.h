@@ -295,7 +295,7 @@ public:
     {
     }
 
-    bool NextElem(Env env, unsigned* pElem)
+    bool NextElem(unsigned* pElem)
     {
         static const unsigned UINT64_SIZE = 64;
 
