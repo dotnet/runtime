@@ -21651,9 +21651,14 @@ void Compiler::fgAttachStructInlineeToAsg(GenTreePtr tree, GenTreePtr child, COR
     assert(tree->gtOper == GT_ASG);
 
     // We have an assignment, we codegen only V05 = call().
-    // However, if it is a multireg return on x64/ux we want to assign it to a temp.
-    if (child->gtOper == GT_CALL && tree->gtOp.gtOp1->gtOper == GT_LCL_VAR && !child->AsCall()->HasMultiRegRetVal())
+    if (child->gtOper == GT_CALL && tree->gtOp.gtOp1->gtOper == GT_LCL_VAR)
     {
+        // If it is a multireg return on x64/ux, the local variable should be marked as lvIsMultiRegRet
+        if (child->AsCall()->HasMultiRegRetVal())
+        {
+            unsigned lclNum                  = tree->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
+            lvaTable[lclNum].lvIsMultiRegRet = true;
+        }
         return;
     }
 
