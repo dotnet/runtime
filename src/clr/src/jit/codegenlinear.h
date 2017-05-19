@@ -80,6 +80,17 @@ void genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode);
 void genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode);
+void genSIMDLo64BitConvert(SIMDIntrinsicID intrinsicID,
+                           var_types       simdType,
+                           var_types       baseType,
+                           regNumber       tmpReg,
+                           regNumber       tmpIntReg,
+                           regNumber       targetReg);
+void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
+void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
+void genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode);
+void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
+void genSIMDIntrinsicWiden(GenTreeSIMD* simdNode);
 void genSIMDIntrinsic(GenTreeSIMD* simdNode);
 void genSIMDCheck(GenTree* treeNode);
 
