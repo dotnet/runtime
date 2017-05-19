@@ -278,13 +278,21 @@ bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::stri
     return true;
 }
 
-bool get_global_shared_store_dir(pal::string_t* dir)
+bool get_global_shared_store_dirs(std::vector<pal::string_t>*  dirs, const pal::string_t& arch, const pal::string_t& tfm)
 {
-    if (!pal::get_global_dotnet_dir(dir))
+    std::vector<pal::string_t> global_dirs;
+    if (!pal::get_global_dotnet_dirs(&global_dirs))
     {
         return false;
     }
-    append_path(dir, RUNTIME_STORE_DIRECTORY_NAME);
+
+    for (pal::string_t dir : global_dirs)
+    {
+        append_path(&dir, RUNTIME_STORE_DIRECTORY_NAME);
+        append_path(&dir, arch.c_str());
+        append_path(&dir, tfm.c_str());
+        dirs->push_back(dir);
+    }
     return true;
 }
 
