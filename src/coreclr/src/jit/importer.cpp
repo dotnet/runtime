@@ -2009,26 +2009,29 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
 
         impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("bubbling QMark0"));
 
-        GenTreePtr op1 = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                      nullptr DEBUGARG("impRuntimeLookup test"));
-        op1 = impImplicitIorI4Cast(op1, TYP_INT); // downcast the pointer to a TYP_INT on 64-bit targets
+        unsigned slotLclNum = lvaGrabTemp(true DEBUGARG("impRuntimeLookup test"));
+        impAssignTempGen(slotLclNum, slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr, impCurStmtOffs);
 
+        GenTree* slot = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+        // downcast the pointer to a TYP_INT on 64-bit targets
+        slot = impImplicitIorI4Cast(slot, TYP_INT);
         // Use a GT_AND to check for the lowest bit and indirect if it is set
-        GenTreePtr testTree = gtNewOperNode(GT_AND, TYP_INT, op1, gtNewIconNode(1));
-        GenTreePtr relop    = gtNewOperNode(GT_EQ, TYP_INT, testTree, gtNewIconNode(0));
+        GenTree* test  = gtNewOperNode(GT_AND, TYP_INT, slot, gtNewIconNode(1));
+        GenTree* relop = gtNewOperNode(GT_EQ, TYP_INT, test, gtNewIconNode(0));
         relop->gtFlags |= GTF_RELOP_QMARK;
 
-        op1 = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                           nullptr DEBUGARG("impRuntimeLookup indir"));
-        op1 = gtNewOperNode(GT_ADD, TYP_I_IMPL, op1, gtNewIconNode(-1, TYP_I_IMPL)); // subtract 1 from the pointer
-        GenTreePtr indirTree = gtNewOperNode(GT_IND, TYP_I_IMPL, op1);
-        GenTreePtr colon     = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, slotPtrTree, indirTree);
+        // slot = GT_IND(slot - 1)
+        slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+        GenTree* add   = gtNewOperNode(GT_ADD, TYP_I_IMPL, slot, gtNewIconNode(-1, TYP_I_IMPL));
+        GenTree* indir = gtNewOperNode(GT_IND, TYP_I_IMPL, add);
+        slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+        GenTree* asg   = gtNewAssignNode(slot, indir);
 
-        GenTreePtr qmark = gtNewQmarkNode(TYP_I_IMPL, relop, colon);
+        GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
+        GenTree* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
+        impAppendTree(qmark, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 
-        unsigned tmp = lvaGrabTemp(true DEBUGARG("spilling QMark0"));
-        impAssignTempGen(tmp, qmark, (unsigned)CHECK_SPILL_NONE);
-        return gtNewLclvNode(tmp, TYP_I_IMPL);
+        return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
     }
 
     assert(pRuntimeLookup->indirections != 0);
