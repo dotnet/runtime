@@ -1,0 +1,45 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26228.10
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Common", "src\System.Drawing.Common.csproj", "{191B3618-FECD-4ABD-9D6B-5AC90DC33621}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{A6F820B0-2679-4543-AE8B-CB9BB71FF175}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Drawing.Common.Tests", "tests\System.Drawing.Common.Tests.csproj", "{4B93E684-0630-45F4-8F63-6C7788C9892F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		netcoreapp-Windows_NT-Debug|Any CPU = netcoreapp-Windows_NT-Debug|Any CPU
+		netcoreapp-Windows_NT-Release|Any CPU = netcoreapp-Windows_NT-Release|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.netcoreapp-Windows_NT-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.netcoreapp-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.netcoreapp-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.netcoreapp-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.netcoreapp-Windows_NT-Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.netcoreapp-Windows_NT-Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.netcoreapp-Windows_NT-Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.netcoreapp-Windows_NT-Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{4B93E684-0630-45F4-8F63-6C7788C9892F}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{191B3618-FECD-4ABD-9D6B-5AC90DC33621} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{4B93E684-0630-45F4-8F63-6C7788C9892F} = {A6F820B0-2679-4543-AE8B-CB9BB71FF175}
+	EndGlobalSection
+EndGlobal

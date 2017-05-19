@@ -43,8 +43,8 @@ namespace System.Drawing
 
         internal static bool IsKnownNamedColor(string name)
         {
-           Color result;
-           return Colors.TryGetValue(name, out result);
+            Color result;
+            return Colors.TryGetValue(name, out result);
         }
     }
 }
