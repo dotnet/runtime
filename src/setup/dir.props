@@ -13,8 +13,8 @@
     <PreReleaseLabel>preview2</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
     <ReleaseBrandSuffix>Preview 2</ReleaseBrandSuffix>
-    <Channel>master</Channel>
-    <BranchName>master</BranchName>
+    <Channel>release/2.0.0</Channel>
+    <BranchName>release/2.0.0</BranchName>
   </PropertyGroup>
   
   <PropertyGroup>
