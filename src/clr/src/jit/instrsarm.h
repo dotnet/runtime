@@ -450,7 +450,7 @@ INST1(tbb,     "tbb",    0, 0, IF_T2_C9,  0xE8D0F000)
                                            //  Rn,Rm             T2_C9     111010001101nnnn 111100000000mmmm   E8D0 F000                
 INST1(tbh,     "tbh",    0, 0, IF_T2_C9,  0xE8D0F010)
                                            //  Rn,Rm,LSL #1      T2_C9     111010001101nnnn 111100000001mmmm   E8D0 F010                       
-INST1(ubfx,    "ubfx",   0, 0, IF_T2_D0,  0xF2C00000)
+INST1(ubfx,    "ubfx",   0, 0, IF_T2_D0,  0xF3C00000)
                                            //  Rd,Rn,#b,#w       T2_D0     111100111100nnnn 0iiiddddii0wwwww   F3C0 0000           imm(0-31),imm(0-31)                          
 INST1(udiv,    "udiv",   0, 0, IF_T2_C5,  0xFBB0F0F0) 
                                            //  Rd,Rn,Rm          T2_C5     111110111011nnnn 1111dddd1111mmmm   FBB0 F0F0                   
