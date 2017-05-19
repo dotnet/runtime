@@ -305,6 +305,16 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
+            // Add instrumentation for now to catch unexpected errors and fail fast and produce a crash dump.
+            // Issue #7812
+#if DEBUG
+            if (unchecked((int)asyncResult.dwError) == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER ||
+                unchecked((int)asyncResult.dwError) == unchecked((int)0x80090321)) // SEC_E_BUFFER_TOO_SMALL
+            {
+                Debug.Assert(false, $"Unexpected error: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
+            }
+#endif
+
             Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
 
             switch (unchecked((uint)asyncResult.dwResult.ToInt32()))
