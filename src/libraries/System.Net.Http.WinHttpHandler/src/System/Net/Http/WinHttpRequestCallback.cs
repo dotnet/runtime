@@ -319,7 +319,7 @@ namespace System.Net.Http
                 (asyncResult.dwError != Interop.WinHttp.ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED) &&
                 (asyncResult.dwError != Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)))
             {
-                Debug.Fail($"Unexpected error: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
+                Debug.Fail($"Unexpected async error in WinHttpRequestCallback: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
             }
 #endif
 
