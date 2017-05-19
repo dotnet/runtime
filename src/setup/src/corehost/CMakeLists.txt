@@ -45,7 +45,7 @@ if (NOT WIN32)
         endif()
     else (CMAKE_SYSTEM_NAME STREQUAL Darwin)
         # Ensure that objcopy is present
-        if(DEFINED ENV{CROSSCOMPILE})
+        if(DEFINED ENV{ROOTFS_DIR})
             if(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL i686)
                 find_program(OBJCOPY ${TOOLCHAIN}-objcopy)
             else()
