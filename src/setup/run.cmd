@@ -7,7 +7,7 @@ if not defined VisualStudioVersion (
     goto :Run
   )
   echo Error: Visual Studio 2015 required.
-  echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md for build instructions.
+  echo        Please see https://github.com/dotnet/core-setup/blob/master/Documentation/building/windows-instructions.md for build instructions.
   exit /b 1
 )
 
