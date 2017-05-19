@@ -67,6 +67,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        [ActiveIssue(15065, TestPlatforms.AnyUnix)]
         public void OpenExeConfiguration1_UserLevel_PerUserRoamingAndLocal()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
@@ -157,6 +158,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        [ActiveIssue(15066, TestPlatforms.AnyUnix)]
         public void exePath_UserLevelPerRoamingAndLocal()
         {
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoamingAndLocal);
