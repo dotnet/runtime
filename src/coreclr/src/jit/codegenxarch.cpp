@@ -3082,6 +3082,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
 
     emitter* emit = getEmitter();
 
+    if (dstAddr->isUsedFromReg())
+    {
+        genConsumeReg(dstAddr);
+    }
+
     if (source->gtOper == GT_IND)
     {
         srcAddr = source->gtGetOp1();
@@ -3105,11 +3110,6 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
             source->SetOper(GT_LCL_FLD_ADDR);
         }
         srcAddr = source;
-    }
-
-    if (dstAddr->isUsedFromReg())
-    {
-        genConsumeReg(dstAddr);
     }
 
     unsigned offset = 0;
@@ -4545,17 +4545,13 @@ void CodeGen::genStoreInd(GenTreePtr node)
     }
     else
     {
-        bool     reverseOps    = ((storeInd->gtFlags & GTF_REVERSE_OPS) != 0);
         bool     dataIsUnary   = false;
         bool     isRMWMemoryOp = storeInd->IsRMWMemoryOp();
         GenTree* rmwSrc        = nullptr;
 
         // We must consume the operands in the proper execution order, so that liveness is
         // updated appropriately.
-        if (!reverseOps)
-        {
-            genConsumeAddress(addr);
-        }
+        genConsumeAddress(addr);
 
         // If storeInd represents a RMW memory op then its data is a non-leaf node marked as contained
         // and non-indir operand of data is the source of RMW memory op.
@@ -4601,11 +4597,6 @@ void CodeGen::genStoreInd(GenTreePtr node)
         else
         {
             genConsumeRegs(data);
-        }
-
-        if (reverseOps)
-        {
-            genConsumeAddress(addr);
         }
 
         if (isRMWMemoryOp)

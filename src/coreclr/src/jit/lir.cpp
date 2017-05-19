@@ -1468,6 +1468,11 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         // Verify that the node is allowed in LIR.
         assert(node->IsLIR());
 
+        // Verify that the REVERSE_OPS flag is not set. NOTE: if we ever decide to reuse the bit assigned to
+        // GTF_REVERSE_OPS for an LIR-only flag we will need to move this check to the points at which we
+        // insert nodes into an LIR range.
+        assert((node->gtFlags & GTF_REVERSE_OPS) == 0);
+
         // TODO: validate catch arg stores
 
         // Check that all phi nodes (if any) occur at the start of the range.

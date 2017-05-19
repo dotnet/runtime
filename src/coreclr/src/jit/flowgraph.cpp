@@ -18340,10 +18340,13 @@ void Compiler::fgSetTreeSeqHelper(GenTreePtr tree, bool isLIR)
 
 void Compiler::fgSetTreeSeqFinish(GenTreePtr tree, bool isLIR)
 {
-    // If we are sequencing a node that does not appear in LIR,
-    // do not add it to the list.
+    // If we are sequencing for LIR:
+    // - Clear the reverse ops flag
+    // - If we are processing a node that does not appear in LIR, do not add it to the list.
     if (isLIR)
     {
+        tree->gtFlags &= ~GTF_REVERSE_OPS;
+
         if ((tree->OperGet() == GT_LIST) || (tree->OperGet() == GT_ARGPLACE) ||
             (tree->OperGet() == GT_FIELD_LIST && !tree->AsFieldList()->IsFieldListHead()))
         {

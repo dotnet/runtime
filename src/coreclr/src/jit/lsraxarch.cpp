@@ -171,44 +171,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
             break;
 
-        case GT_BOX:
-            noway_assert(!"box should not exist here");
-            // The result of 'op1' is also the final result
-            info->srcCount = 0;
-            info->dstCount = 0;
-            break;
-
         case GT_PHYSREGDST:
             info->srcCount = 1;
-            info->dstCount = 0;
-            break;
-
-        case GT_COMMA:
-        {
-            GenTreePtr firstOperand;
-            GenTreePtr secondOperand;
-            if (tree->gtFlags & GTF_REVERSE_OPS)
-            {
-                firstOperand  = tree->gtOp.gtOp2;
-                secondOperand = tree->gtOp.gtOp1;
-            }
-            else
-            {
-                firstOperand  = tree->gtOp.gtOp1;
-                secondOperand = tree->gtOp.gtOp2;
-            }
-            if (firstOperand->TypeGet() != TYP_VOID)
-            {
-                firstOperand->gtLsraInfo.isLocalDefUse = true;
-                firstOperand->gtLsraInfo.dstCount      = 0;
-            }
-            if (tree->TypeGet() == TYP_VOID && secondOperand->TypeGet() != TYP_VOID)
-            {
-                secondOperand->gtLsraInfo.isLocalDefUse = true;
-                secondOperand->gtLsraInfo.dstCount      = 0;
-            }
-        }
-            info->srcCount = 0;
             info->dstCount = 0;
             break;
 
@@ -246,6 +210,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
 #endif // !defined(_TARGET_64BIT_)
 
+        case GT_BOX:
+        case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
             info->srcCount = 0;
