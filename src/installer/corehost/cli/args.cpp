@@ -58,11 +58,7 @@ void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t
     }
 
     // Global shared store dir
-    if (get_global_shared_store_dir(&args->global_shared_store))
-    {
-        append_path(&args->global_shared_store, get_arch());
-        append_path(&args->global_shared_store, init.tfm.c_str());
-    }
+    get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), init.tfm);
 }
 
 bool parse_arguments(

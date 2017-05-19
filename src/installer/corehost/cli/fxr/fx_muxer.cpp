@@ -333,7 +333,7 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     return false;
 }
 
-void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
+fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& version_list,
     const pal::string_t& fx_ver,
     const fx_ver_t& specified,
     const bool& patch_roll_fwd,
@@ -341,8 +341,7 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
 {
     trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
 
-    std::vector<pal::string_t> list;
-    pal::readdir(fx_dir, &list);
+
     fx_ver_t most_compatible = specified;
     if (!specified.is_prerelease())
     {
@@ -350,10 +349,10 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
         {
             trace::verbose(_X("'Roll forward on no candidate fx' enabled. Looking for the least production greater than or equal to [%s]"), fx_ver.c_str());
             fx_ver_t next_lowest(-1, -1, -1);
-            for (const auto& version : list)
+            for (const auto& ver : version_list)
             {
-                fx_ver_t ver(-1, -1, -1);
-                if (fx_ver_t::parse(version, &ver, true) && (ver >= specified))
+                
+                if (!ver.is_prerelease() && ver >= specified)
                 {
                     next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
                 }
@@ -371,12 +370,11 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
         if (patch_roll_fwd)
         {
             trace::verbose(_X("Applying patch roll forward from [%s]"), most_compatible.as_str().c_str());
-            for (const auto& version : list)
+            for (const auto& ver : version_list)
             {
-                trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-                fx_ver_t ver(-1, -1, -1);
+                trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-                if (fx_ver_t::parse(version, &ver, true) && // true -- only prod. prevents roll forward to prerelease.
+                if (!ver.is_prerelease() && //  only prod. prevents roll forward to prerelease.
                     ver.get_major() == most_compatible.get_major() &&
                     ver.get_minor() == most_compatible.get_minor())
                 {
@@ -388,13 +386,12 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
     }
     else
     {
-        for (const auto& version : list)
+        for (const auto& ver : version_list)
         {
-            trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-            fx_ver_t ver(-1, -1, -1);
+            trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-            if (fx_ver_t::parse(version, &ver, false) && // false -- implies both production and prerelease.
-                ver.is_prerelease() && // prevent roll forward to production.
+            //both production and prerelease.
+            if (ver.is_prerelease() && // prevent roll forward to production.
                 ver.get_major() == specified.get_major() &&
                 ver.get_minor() == specified.get_minor() &&
                 ver.get_patch() == specified.get_patch() &&
@@ -405,8 +402,8 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
             }
         }
     }
-    pal::string_t most_compatible_str = most_compatible.as_str();
-    append_path(&fx_dir, most_compatible_str.c_str());
+
+    return most_compatible;
 }
 
 pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
@@ -438,30 +435,27 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
 
     // Multi-level SharedFX lookup will look for the most appropriate version in several locations
     // by following the priority rank below:
-    //  User directory
     // .exe directory
     //  Global .NET directory
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
-    pal::string_t global_dir;
+    std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
-    if (multilevel_lookup)
-    {
-        if (pal::get_local_dotnet_dir(&local_dir))
-        {
-            hive_dir.push_back(local_dir);
-        }
-    }
     hive_dir.push_back(own_dir);
-    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
     {
-        hive_dir.push_back(global_dir);
+        for (pal::string_t dir : global_dirs)
+        {
+            hive_dir.push_back(dir);
+        }
     }
 
     bool patch_roll_fwd_enabled = config.get_patch_roll_fwd();
+    pal::string_t selected_fx_dir;
+    fx_ver_t selected_ver(-1, -1, -1);
 
     for (pal::string_t dir : hive_dir)
     {
@@ -492,22 +486,60 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
         {
             trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, roll_fwd_on_no_candidate_fx=%d, chose [%s]"),
                 specified_fx_version.c_str(), patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val, fx_ver.c_str());
+            
             append_path(&fx_dir, fx_ver.c_str());
+            if (pal::directory_exists(fx_dir))
+            {
+                trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
+                return fx_dir;
+            }
         }
         else
         {
-            resolve_roll_forward(fx_dir, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
-        }
+            std::vector<pal::string_t> list;
+            std::vector<fx_ver_t> version_list;
+            pal::readdir(fx_dir, &list);
 
-        if (pal::directory_exists(fx_dir))
-        {
-            trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
-            return fx_dir;
+            for (const auto& version : list)
+            {
+                fx_ver_t ver(-1, -1, -1);
+                if (fx_ver_t::parse(version, &ver, false))
+                {
+                    version_list.push_back(ver);
+                }
+            }
+
+            fx_ver_t resolved_ver = resolve_framework_version(version_list, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
+
+            pal::string_t resolved_ver_str = resolved_ver.as_str();
+            append_path(&fx_dir, resolved_ver_str.c_str());
+
+            if (pal::directory_exists(fx_dir))
+            {
+                //Continue to search for a better match if available
+                std::vector<fx_ver_t> version_list;
+                version_list.push_back(resolved_ver);
+                version_list.push_back(selected_ver);
+                resolved_ver = resolve_framework_version(version_list, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
+
+                if (resolved_ver != selected_ver)
+                {
+                    trace::verbose(_X("Changing Selected FX version from [%s] to [%s]"), selected_fx_dir.c_str(), fx_dir.c_str());
+                    selected_ver = resolved_ver;
+                    selected_fx_dir = fx_dir;
+                }
+            }
         }
     }
 
-    trace::error(_X("It was not possible to find any compatible framework version"));
-    return pal::string_t();
+    if (selected_fx_dir.empty())
+    {
+        trace::error(_X("It was not possible to find any compatible framework version"));
+        return pal::string_t();
+    }
+
+    trace::verbose(_X("Chose FX version [%s]"), selected_fx_dir.c_str());
+    return selected_fx_dir;
 }
 
 pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
@@ -656,7 +688,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
-    pal::string_t global_dir;
+    std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
     if (multilevel_lookup)
@@ -672,9 +704,12 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         hive_dir.push_back(own_dir);
     }
 
-    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
     {
-        hive_dir.push_back(global_dir);
+        for (pal::string_t dir : global_dirs)
+        {
+            hive_dir.push_back(dir);
+        }
     }
 
     pal::string_t cli_version;
