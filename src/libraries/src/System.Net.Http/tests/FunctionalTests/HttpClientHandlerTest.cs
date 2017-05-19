@@ -25,6 +25,7 @@ namespace System.Net.Http.Functional.Tests
 
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "dotnet/corefx #20010")]
     public class HttpClientHandlerTest
     {
         readonly ITestOutputHelper _output;
@@ -98,6 +99,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "dotnet/corefx #20010")]
         [Fact]
         public void Ctor_ExpectedDefaultPropertyValues()
         {
@@ -130,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
         [Fact]
         public void MaxRequestContentBufferSize_Get_ReturnsZero()
         {
@@ -140,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
         [Fact]
         public void MaxRequestContentBufferSize_Set_ThrowsPlatformNotSupportedException()
         {
@@ -469,7 +471,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework allows HTTPS to HTTP redirection")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: .NET Framework allows HTTPS to HTTP redirection")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
@@ -515,6 +517,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "uap: dotnet/corefx #20010")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(3, 2)]
@@ -744,6 +747,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "uap: dotnet/corefx #20010")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData("cookieName1", "cookieValue1")]
@@ -1079,6 +1083,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "uap: dotnet/corefx #20010")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(99)]
@@ -1583,6 +1588,7 @@ namespace System.Net.Http.Functional.Tests
         #endregion
 
         #region Version tests
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "uap: dotnet/corefx #20010")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SendAsync_RequestVersion10_ServerReceivesVersion10Request()
