@@ -24,6 +24,9 @@
     <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
       <Link>Common\System\EnumTypes.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\MockType.cs">
+      <Link>Common\System\MockType.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>
@@ -125,8 +128,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\TypeTests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="ArrayTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
     <Compile Include="System\ActivatorTests.netcoreapp.cs" />

@@ -92,10 +92,13 @@ namespace System.Tests
             Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(AbstractTypeWithDefaultCtor))); // Type is abstract
             Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(IInterfaceType))); // Type is an interface
 
-#if netcoreapp
-            // Type is not a valid RuntimeType
-            AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(Helpers.NonRuntimeType()));
-#endif // netcoreapp
+#if netcoreapp || uapaot
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                // Type is not a valid RuntimeType
+                AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(nonRuntimeType));
+            }
+#endif // netcoreapp || uapaot
         }
 
         [Fact]

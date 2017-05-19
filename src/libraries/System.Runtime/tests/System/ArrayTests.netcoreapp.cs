@@ -53,6 +53,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Fill_Generic_TestData))]
+        [ActiveIssue("TFS 437849 - Universal Shared Generics issue", TargetFrameworkMonikers.UapAot)]
         public static void Fill_Generic<T>(IEnumerable<T> source, T value, int startIndex, int count)
         {
             if (startIndex == 0 && count == source.Count())
@@ -141,11 +142,15 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corert/issues/3650 - Wrong exception thrown", TargetFrameworkMonikers.UapAot)]
         public static void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0));
-            AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[1]));
-            AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[1], new int[1]));
+            foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
+            {
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(nonRuntimeType, 0));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(nonRuntimeType, new int[1]));
+                AssertExtensions.Throws<ArgumentException>("elementType", () => Array.CreateInstance(nonRuntimeType, new int[1], new int[1]));
+            }
         }
     }
 }

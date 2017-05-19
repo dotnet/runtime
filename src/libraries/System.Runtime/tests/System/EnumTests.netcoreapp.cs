@@ -32,6 +32,7 @@ namespace System.Tests
         
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
+        [ActiveIssue("https://github.com/dotnet/corert/issues/3651 Enum.Parse<T>() validation.", TargetFrameworkMonikers.UapAot)]
         public static void Parse_Invalid_NetCoreApp11(Type enumType, string value, bool ignoreCase, Type exceptionType)
         {
             Type typeArgument = enumType == null || !enumType.GetTypeInfo().IsEnum ? typeof(SimpleEnum) : enumType;
@@ -74,10 +75,14 @@ namespace System.Tests
 
         public static IEnumerable<object[]> UnsupportedEnumType_TestData()
         {
+#if netcoreapp
             yield return new object[] { s_floatEnumType, 1.0f };
             yield return new object[] { s_doubleEnumType, 1.0 };
             yield return new object[] { s_intPtrEnumType, (IntPtr)1 };
             yield return new object[] { s_uintPtrEnumType, (UIntPtr)1 };
+#else
+            return Array.Empty<object[]>();
+#endif //netcoreapp
         }
 
         [Theory]
@@ -97,6 +102,7 @@ namespace System.Tests
             Assert.True(exName == nameof(InvalidOperationException) || exName == "ContractException");
         }
 
+#if netcoreapp
         [Fact]
         public static void ToString_InvalidUnicodeChars()
         {
@@ -106,13 +112,18 @@ namespace System.Tests
             ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "F", char.MaxValue.ToString());
             ToString_Format((Enum)Enum.ToObject(s_charEnumType, char.MaxValue), "G", char.MaxValue.ToString());
         }
+#endif //netcoreapp
 
         public static IEnumerable<object[]> UnsupportedEnum_TestData()
         {
+#if netcoreapp
             yield return new object[] { Enum.ToObject(s_floatEnumType, 1) };
             yield return new object[] { Enum.ToObject(s_doubleEnumType, 2) };
             yield return new object[] { Enum.ToObject(s_intPtrEnumType, 1) };
             yield return new object[] { Enum.ToObject(s_uintPtrEnumType, 2) };
+#else
+            return Array.Empty<object[]>();
+#endif //netcoreapp
         }
 
         [Theory]
@@ -142,6 +153,8 @@ namespace System.Tests
             string formatFExceptionName = formatFException.GetType().Name;
             Assert.True(formatFExceptionName == nameof(InvalidOperationException) || formatFExceptionName == "ContractException");
         }
+
+#if netcoreapp // .NetNative does not support RefEmit nor any other way to create Enum types with unusual backing types.
         private static EnumBuilder GetNonRuntimeEnumTypeBuilder(Type underlyingType)
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
@@ -229,6 +242,6 @@ namespace System.Tests
 
             return enumBuilder.CreateTypeInfo().AsType();
         }
-        
+#endif //netcoreapp        
     }
 }

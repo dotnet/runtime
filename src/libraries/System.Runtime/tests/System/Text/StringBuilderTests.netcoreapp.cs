@@ -13,12 +13,12 @@ namespace System.Text.Tests
         [Fact]
         public static void AppendJoin_NullValues_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin('|', (object[])null));
-            Assert.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin('|', (IEnumerable<object>)null));
-            Assert.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin('|', (string[])null));
-            Assert.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin("|", (object[])null));
-            Assert.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin("|", (IEnumerable<object>)null));
-            Assert.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin("|", (string[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin('|', (object[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin('|', (IEnumerable<object>)null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin('|', (string[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin("|", (object[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin("|", (IEnumerable<object>)null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new StringBuilder().AppendJoin("|", (string[])null));
         }
 
         [Theory]
@@ -118,13 +118,13 @@ namespace System.Text.Tests
 
             if (separator?.Length == 1)
             {
-                Assert.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], values));
-                Assert.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], enumerable));
-                Assert.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], stringValues));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], values));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], enumerable));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator[0], stringValues));
             }
-            Assert.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, values));
-            Assert.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, enumerable));
-            Assert.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, stringValues));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, values));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, enumerable));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(s_noCapacityParamName, () => CreateBuilderWithNoSpareCapacity().AppendJoin(separator, stringValues));
         }
     }
 }
