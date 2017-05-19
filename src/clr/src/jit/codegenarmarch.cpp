@@ -195,10 +195,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForMulHi(treeNode->AsOp());
             break;
 
-        case GT_CKFINITE:
-            genCkfinite(treeNode);
-            break;
-
         case GT_SWAP:
             genCodeForSwap(treeNode->AsOp());
             break;
@@ -208,6 +204,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
 #endif // _TARGET_ARM64_
+
+        case GT_CKFINITE:
+            genCkfinite(treeNode);
+            break;
 
         case GT_INTRINSIC:
             genIntrinsic(treeNode);
