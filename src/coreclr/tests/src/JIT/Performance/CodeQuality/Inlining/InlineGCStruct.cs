@@ -28,7 +28,7 @@ public class InlineGCStruct
 #if DEBUG
     public const int Iterations = 1;
 #else
-    public const int Iterations = 2500000;
+    public const int Iterations = 350000000;
 #endif
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -73,7 +73,7 @@ public class InlineGCStruct
         return param * 2;
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount = Iterations)]
     public static bool WithFormat()
     {
         int result = 0;
@@ -82,7 +82,7 @@ public class InlineGCStruct
         {
             using (iteration.StartMeasurement())
             {
-                for (int i = 0; i < Iterations; i++)
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                 {
                     result |= FastFunctionNotCallingStringFormat(11);
                 }
@@ -92,7 +92,7 @@ public class InlineGCStruct
         return (result == 22);
     }
 
-    [Benchmark]
+    [Benchmark(InnerIterationCount = Iterations)]
     public static bool WithoutFormat()
     {
         int result = 0;
@@ -101,7 +101,7 @@ public class InlineGCStruct
         {
             using (iteration.StartMeasurement())
             {
-                for (int i = 0; i < Iterations; i++)
+                for (int i = 0; i < Benchmark.InnerIterationCount; i++)
                 {
                     result |= FastFunctionNotHavingStringFormat(11);
                 }
