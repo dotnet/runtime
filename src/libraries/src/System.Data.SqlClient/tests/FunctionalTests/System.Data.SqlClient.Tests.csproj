@@ -15,6 +15,7 @@
     <Compile Include="BaseProviderAsyncTest\MockConnection.cs" />
     <Compile Include="BaseProviderAsyncTest\MockDataReader.cs" />
     <Compile Include="DiagnosticTest.cs" />
+    <Compile Include="AmbientTransactionFailureTest.cs" />
     <Compile Include="ExceptionTest.cs" />
     <Compile Include="FakeDiagnosticListenerObserver.cs" />
     <Compile Include="SqlBulkCopyColumnMappingCollectionTest.cs" />

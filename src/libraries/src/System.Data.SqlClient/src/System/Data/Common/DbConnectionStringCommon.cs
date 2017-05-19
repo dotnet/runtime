@@ -238,6 +238,7 @@ namespace System.Data.Common
         internal const string CurrentLanguage = "";
         internal const string DataSource = "";
         internal const bool Encrypt = false;
+        internal const bool Enlist = true;
         internal const string FailoverPartner = "";
         internal const string InitialCatalog = "";
         internal const bool IntegratedSecurity = false;

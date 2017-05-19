@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Transactions;
 
 namespace System
 {
@@ -671,6 +672,11 @@ namespace System.Data.Common
             return Environment.MachineName;
         }
 
+        internal static Transaction GetCurrentTransaction()
+        {
+            return Transaction.Current;
+        }
+
         internal static bool IsDirection(DbParameter value, ParameterDirection condition)
         {
 #if DEBUG
@@ -733,6 +739,10 @@ namespace System.Data.Common
             }
         }
 
+        internal static Exception AmbientTransactionIsNotSupported()
+        {
+            return new NotSupportedException(SR.AmbientTransactionsNotSupported);
+        }
 
         private static Version s_systemDataVersion;
 
