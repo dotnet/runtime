@@ -175,9 +175,6 @@ struct sigcontext {
  * reproduceable results for benchmarks */
 #define MONO_ARCH_CODE_ALIGNMENT 32
 
-/*This is the max size of the locals area of a given frame. I think 1MB is a safe default for now*/
-#define MONO_ARCH_MAX_FRAME_SIZE 0x100000
-
 struct MonoLMF {
 	/* 
 	 * If the lowest bit is set, then this LMF has the rip field set. Otherwise,
