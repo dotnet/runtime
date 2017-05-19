@@ -645,6 +645,8 @@ OPTIMIZECAST:
                 }
                 break;
 
+#ifdef LEGACY_BACKEND
+
             /* If op1 is a mod node, mark it with the GTF_MOD_INT_RESULT flag
                so that the code generator will know not to convert the result
                of the idiv to a regpair */
@@ -661,6 +663,8 @@ OPTIMIZECAST:
                     tree->gtOp.gtOp1->gtFlags |= GTF_MOD_INT_RESULT;
                 }
                 break;
+
+#endif // LEGACY_BACKEND
 
             case GT_COMMA:
                 // Check for cast of a GT_COMMA with a throw overflow

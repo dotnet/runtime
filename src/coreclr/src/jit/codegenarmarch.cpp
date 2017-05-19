@@ -294,14 +294,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_NO_OP:
-            if (treeNode->gtFlags & GTF_NO_OP_NO)
-            {
-                noway_assert(!"GTF_NO_OP_NO should not be set");
-            }
-            else
-            {
-                instGen(INS_nop);
-            }
+            instGen(INS_nop);
             break;
 
         case GT_ARR_BOUNDS_CHECK:

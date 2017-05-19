@@ -786,26 +786,34 @@ public:
         gtVNPair = ValueNumPair(); // Initializes both elements to "NoVN".
     }
 
+// clang-format off
+
+//---------------------------------------------------------------------
+//
+// GenTree flags stored in gtFlags.
+//
+//---------------------------------------------------------------------
+
 //---------------------------------------------------------------------
 //  The first set of flags can be used with a large set of nodes, and
 //  thus they must all have distinct values. That is, one can test any
 //  expression node for one of these flags.
 //---------------------------------------------------------------------
 
-#define GTF_ASG 0x00000001           // sub-expression contains an assignment
-#define GTF_CALL 0x00000002          // sub-expression contains a  func. call
-#define GTF_EXCEPT 0x00000004        // sub-expression might throw an exception
-#define GTF_GLOB_REF 0x00000008      // sub-expression uses global variable(s)
+#define GTF_ASG           0x00000001 // sub-expression contains an assignment
+#define GTF_CALL          0x00000002 // sub-expression contains a  func. call
+#define GTF_EXCEPT        0x00000004 // sub-expression might throw an exception
+#define GTF_GLOB_REF      0x00000008 // sub-expression uses global variable(s)
 #define GTF_ORDER_SIDEEFF 0x00000010 // sub-expression has a re-ordering side effect
 
 // If you set these flags, make sure that code:gtExtractSideEffList knows how to find the tree,
-// otherwise the C# (run csc /o-)
-// var v = side_eff_operation
+// otherwise the C# (run csc /o-) code:
+//     var v = side_eff_operation
 // with no use of v will drop your tree on the floor.
 #define GTF_PERSISTENT_SIDE_EFFECTS (GTF_ASG | GTF_CALL)
-#define GTF_SIDE_EFFECT (GTF_PERSISTENT_SIDE_EFFECTS | GTF_EXCEPT)
-#define GTF_GLOB_EFFECT (GTF_SIDE_EFFECT | GTF_GLOB_REF)
-#define GTF_ALL_EFFECT (GTF_GLOB_EFFECT | GTF_ORDER_SIDEEFF)
+#define GTF_SIDE_EFFECT             (GTF_PERSISTENT_SIDE_EFFECTS | GTF_EXCEPT)
+#define GTF_GLOB_EFFECT             (GTF_SIDE_EFFECT | GTF_GLOB_REF)
+#define GTF_ALL_EFFECT              (GTF_GLOB_EFFECT | GTF_ORDER_SIDEEFF)
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of these flags
 // that we are calling in the context of performing a CSE, thus we
@@ -828,55 +836,43 @@ public:
 #define GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags)                                                                       \
     (((flags) & (GTF_CALL | GTF_EXCEPT)) || (((flags) & (GTF_ASG | GTF_GLOB_REF)) == (GTF_ASG | GTF_GLOB_REF)))
 
-#define GTF_REVERSE_OPS                                                                                                \
-    0x00000020 // operand op2 should be evaluated before op1 (normally, op1 is evaluated first and op2 is evaluated
-               // second)
-#define GTF_REG_VAL                                                                                                    \
-    0x00000040 // operand is sitting in a register (or part of a TYP_LONG operand is sitting in a register)
-
-#define GTF_SPILLED 0x00000080 // the value has been spilled
+#define GTF_REVERSE_OPS 0x00000020 // operand op2 should be evaluated before op1 (normally, op1 is evaluated first and op2 is evaluated second)
+#define GTF_REG_VAL     0x00000040 // operand is sitting in a register (or part of a TYP_LONG operand is sitting in a register)
+#define GTF_SPILLED     0x00000080 // the value has been spilled
 
 #ifdef LEGACY_BACKEND
 #define GTF_SPILLED_OPER 0x00000100 // op1 has been spilled
-#define GTF_SPILLED_OP2 0x00000200  // op2 has been spilled
-#else                               // !LEGACY_BACKEND
+#define GTF_SPILLED_OP2  0x00000200 // op2 has been spilled
+#else  // !LEGACY_BACKEND
 #define GTF_NOREG_AT_USE 0x00000100 // tree node is in memory at the point of use
-#endif                              // !LEGACY_BACKEND
+#endif // !LEGACY_BACKEND
 
-#define GTF_ZSF_SET 0x00000400 // the zero(ZF) and sign(SF) flags set to the operand
+#define GTF_ZSF_SET     0x00000400 // the zero(ZF) and sign(SF) flags set to the operand
+#define GTF_SET_FLAGS   0x00000800 // Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.
 
-#define GTF_SET_FLAGS 0x00000800 // Requires that codegen for this node set the flags
-                                 // Use gtSetFlags() to check this flags
-
-#define GTF_IND_NONFAULTING 0x00000800 // An indir that cannot fault.  GTF_SET_FLAGS is not used on indirs
-
-#define GTF_MAKE_CSE 0x00002000   // Hoisted Expression: try hard to make this into CSE  (see optPerformHoistExpr)
-#define GTF_DONT_CSE 0x00004000   // don't bother CSE'ing this expr
-#define GTF_COLON_COND 0x00008000 // this node is conditionally executed (part of ? :)
+#define GTF_MAKE_CSE    0x00002000 // Hoisted expression: try hard to make this into CSE (see optPerformHoistExpr)
+#define GTF_DONT_CSE    0x00004000 // Don't bother CSE'ing this expr
+#define GTF_COLON_COND  0x00008000 // This node is conditionally executed (part of ? :)
 
 #define GTF_NODE_MASK (GTF_COLON_COND)
 
-#define GTF_BOOLEAN 0x00040000 // value is known to be 0/1
+#define GTF_BOOLEAN     0x00040000 // value is known to be 0/1
+#if CPU_HAS_BYTE_REGS && defined(LEGACY_BACKEND)
+#define GTF_SMALL_OK    0x00080000 // actual small int sufficient
+#endif
 
-#define GTF_SMALL_OK 0x00080000 // actual small int sufficient
-
-#define GTF_UNSIGNED 0x00100000 // with GT_CAST:   the source operand is an unsigned type
-                                // with operators: the specified node is an unsigned operator
-
-#define GTF_LATE_ARG                                                                                                   \
-    0x00200000 // the specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
-
-#define GTF_SPILL 0x00400000      // needs to be spilled here
-#define GTF_SPILL_HIGH 0x00040000 // shared with GTF_BOOLEAN
+#define GTF_UNSIGNED    0x00100000 // With GT_CAST:   the source operand is an unsigned type
+                                   // With operators: the specified node is an unsigned operator
+#define GTF_LATE_ARG    0x00200000 // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
+#define GTF_SPILL       0x00400000 // Needs to be spilled here
 
 #define GTF_COMMON_MASK 0x007FFFFF // mask of all the flags above
 
 #define GTF_REUSE_REG_VAL 0x00800000 // This is set by the register allocator on nodes whose value already exists in the
                                      // register assigned to this node, so the code generator does not have to generate
-                                     // code to produce the value.
-                                     // It is currently used only on constant nodes.
-// It CANNOT be set on var (GT_LCL*) nodes, or on indir (GT_IND or GT_STOREIND) nodes, since
-// it is not needed for lclVars and is highly unlikely to be useful for indir nodes
+                                     // code to produce the value. It is currently used only on constant nodes.
+                                     // It CANNOT be set on var (GT_LCL*) nodes, or on indir (GT_IND or GT_STOREIND) nodes, since
+                                     // it is not needed for lclVars and is highly unlikely to be useful for indir nodes.
 
 //---------------------------------------------------------------------
 //  The following flags can be used only with a small set of nodes, and
@@ -889,166 +885,171 @@ public:
 // NB: GTF_VAR_* and GTF_REG_* share the same namespace of flags, because
 // GT_LCL_VAR nodes may be changed to GT_REG_VAR nodes without resetting
 // the flags. These are also used by GT_LCL_FLD.
-#define GTF_VAR_DEF 0x80000000      // GT_LCL_VAR -- this is a definition
-#define GTF_VAR_USEASG 0x40000000   // GT_LCL_VAR -- this is a use/def for a x<op>=y
-#define GTF_VAR_USEDEF 0x20000000   // GT_LCL_VAR -- this is a use/def as in x=x+y (only the lhs x is tagged)
-#define GTF_VAR_CAST 0x10000000     // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
-#define GTF_VAR_ITERATOR 0x08000000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
-#define GTF_VAR_CLONED 0x01000000   // GT_LCL_VAR -- this node has been cloned or is a clone
-                                    // Relevant for inlining optimizations (see fgInlinePrependStatements)
+#define GTF_VAR_DEF         0x80000000 // GT_LCL_VAR -- this is a definition
+#define GTF_VAR_USEASG      0x40000000 // GT_LCL_VAR -- this is a use/def for a x<op>=y
+#define GTF_VAR_USEDEF      0x20000000 // GT_LCL_VAR -- this is a use/def as in x=x+y (only the lhs x is tagged)
+#define GTF_VAR_CAST        0x10000000 // GT_LCL_VAR -- has been explictly cast (variable node may not be type of local)
+#define GTF_VAR_ITERATOR    0x08000000 // GT_LCL_VAR -- this is a iterator reference in the loop condition
+#define GTF_VAR_CLONED      0x01000000 // GT_LCL_VAR -- this node has been cloned or is a clone
+                                       // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
 // TODO-Cleanup: Currently, GTF_REG_BIRTH is used only by stackfp
 //         We should consider using it more generally for VAR_BIRTH, instead of
 //         GTF_VAR_DEF && !GTF_VAR_USEASG
-#define GTF_REG_BIRTH 0x04000000 // GT_REG_VAR -- enregistered variable born here
-#define GTF_VAR_DEATH 0x02000000 // GT_LCL_VAR, GT_REG_VAR -- variable dies here (last use)
+#define GTF_REG_BIRTH       0x04000000 // GT_REG_VAR -- enregistered variable born here
+#define GTF_VAR_DEATH       0x02000000 // GT_LCL_VAR, GT_REG_VAR -- variable dies here (last use)
 
-#define GTF_VAR_ARR_INDEX 0x00000020 // The variable is part of (the index portion of) an array index expression.
-                                     // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
+#define GTF_VAR_ARR_INDEX   0x00000020 // The variable is part of (the index portion of) an array index expression.
+                                       // Shares a value with GTF_REVERSE_OPS, which is meaningless for local var.
 
 #define GTF_LIVENESS_MASK (GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_USEDEF | GTF_REG_BIRTH | GTF_VAR_DEATH)
 
-#define GTF_CALL_UNMANAGED 0x80000000        // GT_CALL    -- direct call to unmanaged code
-#define GTF_CALL_INLINE_CANDIDATE 0x40000000 // GT_CALL -- this call has been marked as an inline candidate
+#define GTF_CALL_UNMANAGED          0x80000000 // GT_CALL -- direct call to unmanaged code
+#define GTF_CALL_INLINE_CANDIDATE   0x40000000 // GT_CALL -- this call has been marked as an inline candidate
 
-#define GTF_CALL_VIRT_KIND_MASK 0x30000000
-#define GTF_CALL_NONVIRT 0x00000000     // GT_CALL    -- a non virtual call
-#define GTF_CALL_VIRT_STUB 0x10000000   // GT_CALL    -- a stub-dispatch virtual call
-#define GTF_CALL_VIRT_VTABLE 0x20000000 // GT_CALL    -- a  vtable-based virtual call
+#define GTF_CALL_VIRT_KIND_MASK     0x30000000 // GT_CALL -- mask of the below call kinds
+#define GTF_CALL_NONVIRT            0x00000000 // GT_CALL -- a non virtual call
+#define GTF_CALL_VIRT_STUB          0x10000000 // GT_CALL -- a stub-dispatch virtual call
+#define GTF_CALL_VIRT_VTABLE        0x20000000 // GT_CALL -- a  vtable-based virtual call
 
-#define GTF_CALL_NULLCHECK 0x08000000 // GT_CALL    -- must check instance pointer for null
-#define GTF_CALL_POP_ARGS 0x04000000  // GT_CALL    -- caller pop arguments?
-#define GTF_CALL_HOISTABLE 0x02000000 // GT_CALL    -- call is hoistable
-#define GTF_CALL_REG_SAVE 0x01000000  // GT_CALL    -- This call preserves all integer regs
-                                      // For additional flags for GT_CALL node see GTF_CALL_M_
+#define GTF_CALL_NULLCHECK          0x08000000 // GT_CALL -- must check instance pointer for null
+#define GTF_CALL_POP_ARGS           0x04000000 // GT_CALL -- caller pop arguments?
+#define GTF_CALL_HOISTABLE          0x02000000 // GT_CALL -- call is hoistable
+#ifdef LEGACY_BACKEND
+#define GTF_CALL_REG_SAVE           0x01000000 // GT_CALL -- This call preserves all integer regs
+#endif // LEGACY_BACKEND
+                                               // For additional flags for GT_CALL node see GTF_CALL_M_*
 
-#define GTF_NOP_DEATH 0x40000000 // GT_NOP     -- operand dies here
+#define GTF_NOP_DEATH               0x40000000 // GT_NOP -- operand dies here
 
-#define GTF_FLD_NULLCHECK 0x80000000 // GT_FIELD -- need to nullcheck the "this" pointer
-#define GTF_FLD_VOLATILE 0x40000000  // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
-#define GTF_FLD_INITCLASS 0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
+#define GTF_FLD_NULLCHECK           0x80000000 // GT_FIELD -- need to nullcheck the "this" pointer
+#define GTF_FLD_VOLATILE            0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
+#define GTF_FLD_INITCLASS           0x20000000 // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
-#define GTF_INX_RNGCHK 0x80000000        // GT_INDEX -- the array reference should be range-checked.
-#define GTF_INX_REFARR_LAYOUT 0x20000000 // GT_INDEX -- same as GTF_IND_REFARR_LAYOUT
-#define GTF_INX_STRING_LAYOUT 0x40000000 // GT_INDEX -- this uses the special string array layout
+#define GTF_INX_RNGCHK              0x80000000 // GT_INDEX -- the array reference should be range-checked.
+#define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX -- same as GTF_IND_REFARR_LAYOUT
+#define GTF_INX_STRING_LAYOUT       0x40000000 // GT_INDEX -- this uses the special string array layout
 
-#define GTF_IND_VOLATILE 0x40000000      // GT_IND   -- the load or store must use volatile sematics (this is a nop
-                                         //             on X86)
-#define GTF_IND_REFARR_LAYOUT 0x20000000 // GT_IND   -- the array holds object refs (only effects layout of Arrays)
-#define GTF_IND_TGTANYWHERE 0x10000000   // GT_IND   -- the target could be anywhere
-#define GTF_IND_TLS_REF 0x08000000       // GT_IND   -- the target is accessed via TLS
-#define GTF_IND_ASG_LHS 0x04000000       // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
-                                         //             assignment; don't evaluate it independently.
+#define GTF_IND_NONFAULTING      GTF_SET_FLAGS // GT_IND   -- An indir that cannot fault. GTF_SET_FLAGS is not used on indirs.
+#define GTF_IND_VOLATILE            0x40000000 // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
+#define GTF_IND_REFARR_LAYOUT       0x20000000 // GT_IND   -- the array holds object refs (only affects layout of Arrays)
+#define GTF_IND_TGTANYWHERE         0x10000000 // GT_IND   -- the target could be anywhere
+#define GTF_IND_TLS_REF             0x08000000 // GT_IND   -- the target is accessed via TLS
+#define GTF_IND_ASG_LHS             0x04000000 // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
+                                               //             assignment; don't evaluate it independently.
 #define GTF_IND_REQ_ADDR_IN_REG GTF_IND_ASG_LHS // GT_IND  -- requires its addr operand to be evaluated
-                                                // into a register. This flag is useful in cases where it
-                                                // is required to generate register indirect addressing mode.
-                                                // One such case is virtual stub calls on xarch.  This is only
-                                                // valid in the backend, where GTF_IND_ASG_LHS is not necessary
-                                                // (all such indirections will be lowered to GT_STOREIND).
-#define GTF_IND_UNALIGNED 0x02000000            // GT_IND   -- the load or store is unaligned (we assume worst case
-                                                //             alignment of 1 byte)
-#define GTF_IND_INVARIANT 0x01000000            // GT_IND   -- the target is invariant (a prejit indirection)
-#define GTF_IND_ARR_LEN 0x80000000              // GT_IND   -- the indirection represents an array length (of the REF
-                                                //             contribution to its argument).
-#define GTF_IND_ARR_INDEX 0x00800000            // GT_IND   -- the indirection represents an (SZ) array index
+                                               // into a register. This flag is useful in cases where it
+                                               // is required to generate register indirect addressing mode.
+                                               // One such case is virtual stub calls on xarch.  This is only
+                                               // valid in the backend, where GTF_IND_ASG_LHS is not necessary
+                                               // (all such indirections will be lowered to GT_STOREIND).
+#define GTF_IND_UNALIGNED           0x02000000 // GT_IND   -- the load or store is unaligned (we assume worst case
+                                               //             alignment of 1 byte)
+#define GTF_IND_INVARIANT           0x01000000 // GT_IND   -- the target is invariant (a prejit indirection)
+#define GTF_IND_ARR_LEN             0x80000000 // GT_IND   -- the indirection represents an array length (of the REF
+                                               //             contribution to its argument).
+#define GTF_IND_ARR_INDEX           0x00800000 // GT_IND   -- the indirection represents an (SZ) array index
 
-#define GTF_IND_FLAGS                                                                                                  \
+#define GTF_IND_FLAGS \
     (GTF_IND_VOLATILE | GTF_IND_REFARR_LAYOUT | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
      GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_ARR_INDEX)
 
-#define GTF_CLS_VAR_ASG_LHS 0x04000000   // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
-                                         //                 of an assignment; don't evaluate it independently.
-#define GTF_CLS_VAR_VOLATILE 0x40000000  // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
-#define GTF_CLS_VAR_INITCLASS 0x20000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
+#define GTF_CLS_VAR_VOLATILE        0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
+#define GTF_CLS_VAR_INITCLASS       0x20000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
+#define GTF_CLS_VAR_ASG_LHS         0x04000000 // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
+                                               //                 of an assignment; don't evaluate it independently.
 
-#define GTF_ADDR_ONSTACK 0x80000000 // GT_ADDR    -- this expression is guaranteed to be on the stack
+#define GTF_ADDR_ONSTACK            0x80000000 // GT_ADDR    -- this expression is guaranteed to be on the stack
 
-#define GTF_ADDRMODE_NO_CSE 0x80000000 // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
-                                       //                         addressing mode
+#define GTF_ADDRMODE_NO_CSE         0x80000000 // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
+                                               //                         addressing mode
 
-#define GTF_MUL_64RSLT 0x40000000 // GT_MUL     -- produce 64-bit result
+#define GTF_MUL_64RSLT              0x40000000 // GT_MUL     -- produce 64-bit result
 
-#define GTF_MOD_INT_RESULT 0x80000000 // GT_MOD,    -- the real tree represented by this
-                                      // GT_UMOD       node evaluates to an int even though
-                                      //               its type is long.  The result is
-                                      //               placed in the low member of the
-                                      //               reg pair
+#ifdef LEGACY_BACKEND
+#define GTF_MOD_INT_RESULT          0x80000000 // GT_MOD,    -- the real tree represented by this
+                                               // GT_UMOD       node evaluates to an int even though its type is long.
+                                               //               The result is placed in the low member of the reg pair.
+#endif // LEGACY_BACKEND
 
-#define GTF_RELOP_NAN_UN 0x80000000   // GT_<relop> -- Is branch taken if ops are NaN?
-#define GTF_RELOP_JMP_USED 0x40000000 // GT_<relop> -- result of compare used for jump or ?:
-#define GTF_RELOP_QMARK 0x20000000    // GT_<relop> -- the node is the condition for ?:
-#define GTF_RELOP_ZTT 0x08000000      // GT_<relop> -- Loop test cloned for converting while-loops into do-while
-                                      //               with explicit "loop test" in the header block.
+#define GTF_RELOP_NAN_UN            0x80000000 // GT_<relop> -- Is branch taken if ops are NaN?
+#define GTF_RELOP_JMP_USED          0x40000000 // GT_<relop> -- result of compare used for jump or ?:
+#define GTF_RELOP_QMARK             0x20000000 // GT_<relop> -- the node is the condition for ?:
+#define GTF_RELOP_ZTT               0x08000000 // GT_<relop> -- Loop test cloned for converting while-loops into do-while
+                                               //               with explicit "loop test" in the header block.
 
-#define GTF_QMARK_CAST_INSTOF 0x80000000 // GT_QMARK -- Is this a top (not nested) level qmark created for
-                                         //             castclass or instanceof?
+#define GTF_QMARK_CAST_INSTOF       0x80000000 // GT_QMARK -- Is this a top (not nested) level qmark created for
+                                               //             castclass or instanceof?
 
-#define GTF_BOX_VALUE 0x80000000 // GT_BOX -- "box" is on a value type
+#define GTF_BOX_VALUE               0x80000000 // GT_BOX -- "box" is on a value type
 
-#define GTF_ICON_HDL_MASK 0xF0000000 // Bits used by handle types below
+#define GTF_ICON_HDL_MASK           0xF0000000 // Bits used by handle types below
+#define GTF_ICON_SCOPE_HDL          0x10000000 // GT_CNS_INT -- constant is a scope handle
+#define GTF_ICON_CLASS_HDL          0x20000000 // GT_CNS_INT -- constant is a class handle
+#define GTF_ICON_METHOD_HDL         0x30000000 // GT_CNS_INT -- constant is a method handle
+#define GTF_ICON_FIELD_HDL          0x40000000 // GT_CNS_INT -- constant is a field handle
+#define GTF_ICON_STATIC_HDL         0x50000000 // GT_CNS_INT -- constant is a handle to static data
+#define GTF_ICON_STR_HDL            0x60000000 // GT_CNS_INT -- constant is a string handle
+#define GTF_ICON_PSTR_HDL           0x70000000 // GT_CNS_INT -- constant is a ptr to a string handle
+#define GTF_ICON_PTR_HDL            0x80000000 // GT_CNS_INT -- constant is a ldptr handle
+#define GTF_ICON_VARG_HDL           0x90000000 // GT_CNS_INT -- constant is a var arg cookie handle
+#define GTF_ICON_PINVKI_HDL         0xA0000000 // GT_CNS_INT -- constant is a pinvoke calli handle
+#define GTF_ICON_TOKEN_HDL          0xB0000000 // GT_CNS_INT -- constant is a token handle
+#define GTF_ICON_TLS_HDL            0xC0000000 // GT_CNS_INT -- constant is a TLS ref with offset
+#define GTF_ICON_FTN_ADDR           0xD0000000 // GT_CNS_INT -- constant is a function address
+#define GTF_ICON_CIDMID_HDL         0xE0000000 // GT_CNS_INT -- constant is a class or module ID handle
+#define GTF_ICON_BBC_PTR            0xF0000000 // GT_CNS_INT -- constant is a basic block count pointer
 
-#define GTF_ICON_SCOPE_HDL 0x10000000  // GT_CNS_INT -- constant is a scope handle
-#define GTF_ICON_CLASS_HDL 0x20000000  // GT_CNS_INT -- constant is a class handle
-#define GTF_ICON_METHOD_HDL 0x30000000 // GT_CNS_INT -- constant is a method handle
-#define GTF_ICON_FIELD_HDL 0x40000000  // GT_CNS_INT -- constant is a field handle
-#define GTF_ICON_STATIC_HDL 0x50000000 // GT_CNS_INT -- constant is a handle to static data
-#define GTF_ICON_STR_HDL 0x60000000    // GT_CNS_INT -- constant is a string handle
-#define GTF_ICON_PSTR_HDL 0x70000000   // GT_CNS_INT -- constant is a ptr to a string handle
-#define GTF_ICON_PTR_HDL 0x80000000    // GT_CNS_INT -- constant is a ldptr handle
-#define GTF_ICON_VARG_HDL 0x90000000   // GT_CNS_INT -- constant is a var arg cookie handle
-#define GTF_ICON_PINVKI_HDL 0xA0000000 // GT_CNS_INT -- constant is a pinvoke calli handle
-#define GTF_ICON_TOKEN_HDL 0xB0000000  // GT_CNS_INT -- constant is a token handle
-#define GTF_ICON_TLS_HDL 0xC0000000    // GT_CNS_INT -- constant is a TLS ref with offset
-#define GTF_ICON_FTN_ADDR 0xD0000000   // GT_CNS_INT -- constant is a function address
-#define GTF_ICON_CIDMID_HDL 0xE0000000 // GT_CNS_INT -- constant is a class or module ID handle
-#define GTF_ICON_BBC_PTR 0xF0000000    // GT_CNS_INT -- constant is a basic block count pointer
+#define GTF_ICON_FIELD_OFF          0x08000000 // GT_CNS_INT -- constant is a field offset
+#define GTF_ICON_SIMD_COUNT         0x04000000 // GT_CNS_INT -- constant is Vector<T>.Count
 
-#define GTF_ICON_FIELD_OFF 0x08000000 // GT_CNS_INT -- constant is a field offset
+#define GTF_BLK_VOLATILE            GTF_IND_VOLATILE  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is a volatile block operation
+#define GTF_BLK_UNALIGNED           GTF_IND_UNALIGNED // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK -- is an unaligned block operation
 
-#define GTF_ICON_SIMD_COUNT 0x04000000 // GT_CNS_INT -- constant is Vector<T>.Count
+#define GTF_OVERFLOW                0x10000000 // GT_ADD, GT_SUB, GT_MUL, -- Need overflow check. Use gtOverflow(Ex)() to check this flag.
+                                               // GT_ASG_ADD, GT_ASG_SUB,
+                                               // GT_CAST
 
-#define GTF_BLK_VOLATILE 0x40000000  // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
-                                     // -- is a volatile block operation
-#define GTF_BLK_UNALIGNED 0x02000000 // GT_ASG, GT_STORE_BLK, GT_STORE_OBJ, GT_STORE_DYNBLK
-                                     // -- is an unaligned block operation
+#define GTF_ARR_BOUND_INBND         0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 
-#define GTF_OVERFLOW 0x10000000 // GT_ADD, GT_SUB, GT_MUL, - Need overflow check
-                                // GT_ASG_ADD, GT_ASG_SUB,
-                                // GT_CAST
-                                // Use gtOverflow(Ex)() to check this flag
+#define GTF_ARRLEN_ARR_IDX          0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
 
-#define GTF_NO_OP_NO 0x80000000 // GT_NO_OP   --Have the codegenerator generate a special nop
+#define GTF_FIELD_LIST_HEAD         0x80000000 // GT_FIELD_LIST -- Indicates that this is the first field in a list of
+                                               //                  struct fields constituting a single call argument.
 
-#define GTF_ARR_BOUND_INBND 0x80000000 // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
+#define GTF_SIMD12_OP               0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
+                                               //            even if they have been retyped as SIMD16.
 
-#define GTF_ARRLEN_ARR_IDX 0x80000000 // GT_ARR_LENGTH -- Length which feeds into an array index expression
+#define GTF_STMT_CMPADD             0x80000000 // GT_STMT -- added by compiler
+#define GTF_STMT_HAS_CSE            0x40000000 // GT_STMT -- CSE def or use was subsituted
 
-#define GTF_FIELD_LIST_HEAD 0x80000000 // GT_FIELD_LIST -- Indicates that this is the first field in a list of
-                                       //                  struct fields constituting a single call argument.
-
-//----------------------------------------------------------------
-#define GTF_SIMD12_OP 0x80000000 // GT_SIMD -- Indicates that the operands need to be handled as SIMD12
-                                 //            even if they have been retyped as SIMD16.
-//----------------------------------------------------------------
-
-#define GTF_STMT_CMPADD 0x80000000  // GT_STMT    -- added by compiler
-#define GTF_STMT_HAS_CSE 0x40000000 // GT_STMT    -- CSE def or use was subsituted
-
-//----------------------------------------------------------------
+//---------------------------------------------------------------------
+//
+// GenTree flags stored in gtDebugFlags.
+//
+//---------------------------------------------------------------------
 
 #if defined(DEBUG)
-#define GTF_DEBUG_NONE 0x00000000 // No debug flags.
+#define GTF_DEBUG_NONE              0x00000000 // No debug flags.
 
-#define GTF_DEBUG_NODE_MORPHED 0x00000001 // the node has been morphed (in the global morphing phase)
-#define GTF_DEBUG_NODE_SMALL 0x00000002
-#define GTF_DEBUG_NODE_LARGE 0x00000004
-#define GTF_DEBUG_NODE_CG_PRODUCED 0x00000008 // genProduceReg has been called on this node
-#define GTF_DEBUG_NODE_CG_CONSUMED 0x00000010 // genConsumeReg has been called on this node
+#define GTF_DEBUG_NODE_MORPHED      0x00000001 // the node has been morphed (in the global morphing phase)
+#define GTF_DEBUG_NODE_SMALL        0x00000002
+#define GTF_DEBUG_NODE_LARGE        0x00000004
+#define GTF_DEBUG_NODE_CG_PRODUCED  0x00000008 // genProduceReg has been called on this node
+#define GTF_DEBUG_NODE_CG_CONSUMED  0x00000010 // genConsumeReg has been called on this node
 
-#define GTF_DEBUG_NODE_MASK 0x0000001F // These flags are all node (rather than operation) properties.
+#define GTF_DEBUG_NODE_MASK         0x0000001F // These flags are all node (rather than operation) properties.
 
-#define GTF_DEBUG_VAR_CSE_REF 0x00800000 // GT_LCL_VAR -- This is a CSE LCL_VAR node
-#endif                                   // defined(DEBUG)
+#define GTF_DEBUG_VAR_CSE_REF       0x00800000 // GT_LCL_VAR -- This is a CSE LCL_VAR node
+#endif // defined(DEBUG)
+
+//---------------------------------------------------------------------
+//
+// end of GenTree flags definitions
+//
+//---------------------------------------------------------------------
+
+    // clang-format on
 
     GenTreePtr gtNext;
     GenTreePtr gtPrev;
@@ -3376,7 +3377,7 @@ struct GenTreeCall final : public GenTree
 
 // clang-format off
 
-#define GTF_CALL_M_EXPLICIT_TAILCALL     0x00000001 // GT_CALL -- the call is "tail" prefixed and 
+#define GTF_CALL_M_EXPLICIT_TAILCALL     0x00000001 // GT_CALL -- the call is "tail" prefixed and
                                                     // importer has performed tail call checks
 #define GTF_CALL_M_TAILCALL              0x00000002 // GT_CALL -- the call is a tailcall
 #define GTF_CALL_M_VARARGS               0x00000004 // GT_CALL -- the call uses varargs ABI
@@ -3385,11 +3386,11 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_NOGCCHECK             0x00000020 // GT_CALL -- not a call for computing full interruptability
 #define GTF_CALL_M_SPECIAL_INTRINSIC     0x00000040 // GT_CALL -- function that could be optimized as an intrinsic
                                                     // in special cases. Used to optimize fast way out in morphing
-#define GTF_CALL_M_UNMGD_THISCALL        0x00000080 // GT_CALL -- "this" pointer (first argument) 
+#define GTF_CALL_M_UNMGD_THISCALL        0x00000080 // GT_CALL -- "this" pointer (first argument)
                                                     // should be enregistered (only for GTF_CALL_UNMANAGED)
-#define GTF_CALL_M_VIRTSTUB_REL_INDIRECT 0x00000080 // the virtstub is indirected through 
+#define GTF_CALL_M_VIRTSTUB_REL_INDIRECT 0x00000080 // the virtstub is indirected through
                                                     // a relative address (only for GTF_CALL_VIRT_STUB)
-#define GTF_CALL_M_NONVIRT_SAME_THIS     0x00000080 // GT_CALL -- callee "this" pointer is 
+#define GTF_CALL_M_NONVIRT_SAME_THIS     0x00000080 // GT_CALL -- callee "this" pointer is
                                                     // equal to caller this pointer (only for GTF_CALL_NONVIRT)
 #define GTF_CALL_M_FRAME_VAR_DEATH       0x00000100 // GT_CALL -- the compLvFrameListRoot variable dies here (last use)
 
@@ -3398,7 +3399,7 @@ struct GenTreeCall final : public GenTree
 #endif
 
 #if FEATURE_TAILCALL_OPT
-#define GTF_CALL_M_IMPLICIT_TAILCALL     0x00000400 // GT_CALL -- call is an opportunistic 
+#define GTF_CALL_M_IMPLICIT_TAILCALL     0x00000400 // GT_CALL -- call is an opportunistic
                                                     // tail call and importer has performed tail call checks
 #define GTF_CALL_M_TAILCALL_TO_LOOP      0x00000800 // GT_CALL -- call is a fast recursive tail call
                                                     // that can be converted into a loop
@@ -3414,9 +3415,9 @@ struct GenTreeCall final : public GenTree
 #define GTF_CALL_M_DOES_NOT_RETURN       0x00004000 // GT_CALL -- call does not return
 #define GTF_CALL_M_SECURE_DELEGATE_INV   0x00008000 // GT_CALL -- call is in secure delegate
 #define GTF_CALL_M_FAT_POINTER_CHECK     0x00010000 // GT_CALL -- CoreRT managed calli needs transformation, that checks
-                                                    // special bit in calli address. If it is set, then it is necessary 
-                                                    // to restore real function address and load hidden argument 
-                                                    // as the first argument for calli. It is CoreRT replacement for instantiating 
+                                                    // special bit in calli address. If it is set, then it is necessary
+                                                    // to restore real function address and load hidden argument
+                                                    // as the first argument for calli. It is CoreRT replacement for instantiating
                                                     // stubs, because executable code cannot be generated at runtime.
 
     // clang-format on
@@ -4259,7 +4260,7 @@ public:
         return (gtFlags & GTF_BLK_VOLATILE) != 0;
     }
 
-    // True if this BlkOpNode is a volatile memory operation.
+    // True if this BlkOpNode is an unaligned memory operation.
     bool IsUnaligned() const
     {
         return (gtFlags & GTF_BLK_UNALIGNED) != 0;
