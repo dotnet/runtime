@@ -32,13 +32,13 @@ public:
     // IUnknown
     //----------------------------------------------------------------------------
 
-    HRESULT QueryInterface(
+    HRESULT STDMETHODCALLTYPE QueryInterface(
         REFIID InterfaceId,
         PVOID* Interface);
 
-    ULONG AddRef();
+    ULONG STDMETHODCALLTYPE AddRef();
 
-    ULONG Release();
+    ULONG STDMETHODCALLTYPE Release();
 
     //----------------------------------------------------------------------------
     // ILLDBServices
