@@ -622,6 +622,7 @@
       "defaultValues": {
         "toolName": "msbuild",
         "settings": {
+          "__BuildOS": "default",
           "Project": "./src/publish.proj",
           "MsBuildFileLogging": "/flp:v=detailed;LogFile=publish-packages.log"
         }
