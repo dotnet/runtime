@@ -386,10 +386,10 @@ public:
 #endif
     }
 
-    void lvSetIsHfaRegArg()
+    void lvSetIsHfaRegArg(bool value = true)
     {
 #ifdef FEATURE_HFA
-        _lvIsHfaRegArg = true;
+        _lvIsHfaRegArg = value;
 #endif
     }
 
@@ -713,6 +713,8 @@ public:
     typeInfo lvVerTypeInfo; // type info needed for verification
 
     CORINFO_CLASS_HANDLE lvClassHnd; // class handle for the local, or null if not known
+
+    CORINFO_FIELD_HANDLE lvFieldHnd; // field handle for promoted struct fields
 
     BYTE* lvGcLayout; // GC layout info for structs
 
@@ -2668,7 +2670,7 @@ public:
         LclVarDsc* varDsc = &(lvaTable[varNum]);
         if (varDsc->lvIsParam && varDsc->lvIsTemp)
         {
-            assert((varDsc->lvType == TYP_STRUCT) || (varDsc->lvType == TYP_BYREF));
+            assert(varTypeIsStruct(varDsc) || (varDsc->lvType == TYP_BYREF));
             return true;
         }
 #endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
@@ -4865,8 +4867,22 @@ private:
     void         fgPromoteStructs();
     fgWalkResult fgMorphStructField(GenTreePtr tree, fgWalkData* fgWalkPre);
     fgWalkResult fgMorphLocalField(GenTreePtr tree, fgWalkData* fgWalkPre);
+
+    // Identify which parameters are implicit byrefs, and flag their LclVarDscs.
     void fgMarkImplicitByRefArgs();
-    bool fgMorphImplicitByRefArgs(GenTree** pTree, fgWalkData* fgWalkPre);
+
+    // Change implicit byrefs' types from struct to pointer, and for any that were
+    // promoted, create new promoted struct temps.
+    void fgRetypeImplicitByRefArgs();
+
+    // Rewrite appearances of implicit byrefs (manifest the implied additional level of indirection).
+    bool fgMorphImplicitByRefArgs(GenTreePtr tree);
+    GenTreePtr fgMorphImplicitByRefArgs(GenTreePtr tree, bool isAddr);
+
+    // Clear up annotations for any struct promotion temps created for implicit byrefs that
+    // wound up unused (due e.g. to being address-exposed and not worth promoting).
+    void fgMarkDemotedImplicitByRefArgs();
+
     static fgWalkPreFn  fgMarkAddrTakenLocalsPreCB;
     static fgWalkPostFn fgMarkAddrTakenLocalsPostCB;
     void                fgMarkAddressExposedLocals();
