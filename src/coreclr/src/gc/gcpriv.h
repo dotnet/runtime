@@ -121,8 +121,6 @@ inline void FATAL_GC_ERROR()
 #define FFIND_OBJECT        //faster find_object, slower allocation
 #define FFIND_DECAY  7      //Number of GC for which fast find will be active
 
-//#define NO_WRITE_BARRIER  //no write barrier, use Write Watch feature
-
 //#define DEBUG_WRITE_WATCH //Additional debug for write watch
 
 //#define STRESS_PINNING    //Stress pinning by pinning randomly
@@ -2055,8 +2053,6 @@ protected:
 
     PER_HEAP
     uint8_t* next_end (heap_segment* seg, uint8_t* f);
-    PER_HEAP
-    void fix_card_table ();
     PER_HEAP
     void mark_through_object (uint8_t* oo, BOOL mark_class_object_p THREAD_NUMBER_DCL);
     PER_HEAP
