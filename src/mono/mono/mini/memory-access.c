@@ -441,13 +441,22 @@ mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offs
 	MonoInst *ins;
 
 	if (ins_flag & MONO_INST_UNALIGNED) {
-		MonoInst *addr;
+		MonoInst *addr, *tmp_var;
 		int align;
 		int size = mono_type_size (type, &align);
 
-		ins = mono_compile_create_var (cfg, type, OP_LOCAL);
-		EMIT_NEW_VARLOADA (cfg, addr, ins, ins->inst_vtype);
+		if (offset) {
+			MonoInst *add_offset;
+			NEW_BIALU_IMM (cfg, add_offset, OP_PADD_IMM, alloc_preg (cfg), src->dreg, offset);
+			MONO_ADD_INS (cfg->cbb, add_offset);
+			src = add_offset;
+		}
+
+		tmp_var = mono_compile_create_var (cfg, type, OP_LOCAL);
+		EMIT_NEW_VARLOADA (cfg, addr, tmp_var, tmp_var->inst_vtype);
+
 		mini_emit_memcpy_const_size (cfg, addr, src, size, 1);
+		EMIT_NEW_TEMPLOAD (cfg, ins, tmp_var->inst_c0);
 	} else {
 		EMIT_NEW_LOAD_MEMBASE_TYPE (cfg, ins, type, src->dreg, offset);
 	}
