@@ -5493,11 +5493,11 @@ protected:
 
     typedef SimplerHashTable<GenTreePtr, PtrKeyFuncs<GenTree>, GenTreePtr, JitSimplerHashBehavior> NodeToNodeMap;
 
-    NodeToNodeMap* optCseArrLenMap; // Maps array length nodes to ancestor compares that should be
-                                    // re-numbered with the array length to improve range check elimination
+    NodeToNodeMap* optCseCheckedBoundMap; // Maps bound nodes to ancestor compares that should be
+                                          // re-numbered with the bound to improve range check elimination
 
-    // Given a compare, look for a cse candidate arrlen feeding it and add a map entry if found.
-    void optCseUpdateArrLenMap(GenTreePtr compare);
+    // Given a compare, look for a cse candidate checked bound feeding it and add a map entry if found.
+    void optCseUpdateCheckedBoundMap(GenTreePtr compare);
 
     void optCSEstop();
 
@@ -5726,8 +5726,8 @@ public:
         O1K_INVALID,
         O1K_LCLVAR,
         O1K_ARR_BND,
-        O1K_ARRLEN_OPER_BND,
-        O1K_ARRLEN_LOOP_BND,
+        O1K_BOUND_OPER_BND,
+        O1K_BOUND_LOOP_BND,
         O1K_CONSTANT_LOOP_BND,
         O1K_EXACT_TYPE,
         O1K_SUBTYPE,
@@ -5792,13 +5792,13 @@ public:
             };
         } op2;
 
-        bool IsArrLenArithBound()
+        bool IsCheckedBoundArithBound()
         {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_ARRLEN_OPER_BND);
+            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_OPER_BND);
         }
-        bool IsArrLenBound()
+        bool IsCheckedBoundBound()
         {
-            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_ARRLEN_LOOP_BND);
+            return ((assertionKind == OAK_EQUAL || assertionKind == OAK_NOT_EQUAL) && op1.kind == O1K_BOUND_LOOP_BND);
         }
         bool IsConstantBound()
         {
