@@ -143,7 +143,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), sqlsvrBadConn, VerifyException);
 
             // tests incorrect password - thrown from the adapter
-            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { Password = string.Empty };
+            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { Password = string.Empty, IntegratedSecurity = false };
             string errorMessage = string.Format(CultureInfo.InvariantCulture, logonFailedErrorMessage, badBuilder.UserID);
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), errorMessage, (ex) => VerifyException(ex, 1, 18456, 1, 14));
 
@@ -156,7 +156,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), errorMessage, (ex) => CheckThatExceptionsAreDistinctButHaveSameData(firstAttemptException, ex));
 
             // tests incorrect user name - exception thrown from adapter
-            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { UserID = "NotAUser" };
+            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { UserID = "NotAUser", IntegratedSecurity = false };
             errorMessage = string.Format(CultureInfo.InvariantCulture, logonFailedErrorMessage, badBuilder.UserID);
             VerifyConnectionFailure<SqlException>(() => GenerateConnectionException(badBuilder.ConnectionString), errorMessage, (ex) => VerifyException(ex, 1, 18456, 1, 14));
         }
@@ -179,7 +179,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
 
             // Test 1 - B
-            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { Password = string.Empty };
+            badBuilder = new SqlConnectionStringBuilder(builder.ConnectionString) { Password = string.Empty, IntegratedSecurity = false };
             using (var sqlConnection = new SqlConnection(badBuilder.ConnectionString))
             {
                 string errorMessage = string.Format(CultureInfo.InvariantCulture, logonFailedErrorMessage, badBuilder.UserID);
