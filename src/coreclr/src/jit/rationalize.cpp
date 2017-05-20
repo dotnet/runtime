@@ -776,18 +776,17 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
         case GT_COMMA:
         {
-            GenTree* op1 = node->gtGetOp1();
-            if ((op1->gtFlags & GTF_ALL_EFFECT) == 0)
+            GenTree*           op1         = node->gtGetOp1();
+            bool               isClosed    = false;
+            unsigned           sideEffects = 0;
+            LIR::ReadOnlyRange lhsRange    = BlockRange().GetTreeRange(op1, &isClosed, &sideEffects);
+
+            if ((sideEffects & GTF_ALL_EFFECT) == 0)
             {
                 // The LHS has no side effects. Remove it.
-                bool               isClosed    = false;
-                unsigned           sideEffects = 0;
-                LIR::ReadOnlyRange lhsRange    = BlockRange().GetTreeRange(op1, &isClosed, &sideEffects);
-
-                // None of the transforms performed herein violate tree order, so these
+                // None of the transforms performed herein violate tree order, so isClosed
                 // should always be true.
                 assert(isClosed);
-                assert((sideEffects & GTF_ALL_EFFECT) == 0);
 
                 BlockRange().Delete(comp, m_block, std::move(lhsRange));
             }
@@ -801,16 +800,15 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             {
                 // This is a top-level comma. If the RHS has no side effects we can remove
                 // it as well.
-                if ((replacement->gtFlags & GTF_ALL_EFFECT) == 0)
-                {
-                    bool               isClosed    = false;
-                    unsigned           sideEffects = 0;
-                    LIR::ReadOnlyRange rhsRange    = BlockRange().GetTreeRange(replacement, &isClosed, &sideEffects);
+                bool               isClosed    = false;
+                unsigned           sideEffects = 0;
+                LIR::ReadOnlyRange rhsRange    = BlockRange().GetTreeRange(replacement, &isClosed, &sideEffects);
 
-                    // None of the transforms performed herein violate tree order, so these
+                if ((sideEffects & GTF_ALL_EFFECT) == 0)
+                {
+                    // None of the transforms performed herein violate tree order, so isClosed
                     // should always be true.
                     assert(isClosed);
-                    assert((sideEffects & GTF_ALL_EFFECT) == 0);
 
                     BlockRange().Delete(comp, m_block, std::move(rhsRange));
                 }
@@ -971,6 +969,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             // Local reads are side-effect-free; clear any flags leftover from frontend transformations.
             node->gtFlags &= ~GTF_ALL_EFFECT;
         }
+    }
+    else if (!node->OperIsStore())
+    {
+        // Clear the GTF_ASG flag for all nodes but stores
+        node->gtFlags &= ~GTF_ASG;
     }
 
     assert(isLateArg == ((use.Def()->gtFlags & GTF_LATE_ARG) != 0));
