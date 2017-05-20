@@ -1879,9 +1879,11 @@ void CodeGen::genFloatToIntCast(GenTreePtr treeNode)
 
     genConsumeOperands(treeNode->AsOp());
 
+    regNumber tmpReg = treeNode->GetSingleTempReg();
+
     assert(insVcvt != INS_invalid);
-    getEmitter()->emitIns_R_R(insVcvt, dstSize, op1->gtRegNum, op1->gtRegNum);
-    getEmitter()->emitIns_R_R(INS_vmov_f2i, dstSize, treeNode->gtRegNum, op1->gtRegNum);
+    getEmitter()->emitIns_R_R(insVcvt, dstSize, tmpReg, op1->gtRegNum);
+    getEmitter()->emitIns_R_R(INS_vmov_f2i, dstSize, treeNode->gtRegNum, tmpReg);
 
     genProduceReg(treeNode);
 }
