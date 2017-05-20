@@ -4104,6 +4104,13 @@ inline void* Compiler::compGetMem(size_t sz, CompMemKind cmk)
 
 #endif
 
+// Wrapper for Compiler::compGetMem that can be forward-declared for use in template
+// types which Compiler depends on but which need to allocate heap memory.
+inline void* compGetMem(Compiler* comp, size_t sz)
+{
+    return comp->compGetMem(sz);
+}
+
 /*****************************************************************************
  *
  * A common memory allocation for arrays of structures involves the

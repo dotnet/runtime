@@ -64,6 +64,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, IAllocator* alloc)
 #endif
     m_nextChunkBase(0)
     , m_fixedPointMapSels(alloc, 8)
+    , m_checkedBoundVNs(comp)
     , m_chunks(alloc, 8)
     , m_intCnsMap(nullptr)
     , m_longCnsMap(nullptr)
@@ -3211,18 +3212,18 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 
 //------------------------------------------------------------------------
 // IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
-//    such as "(uint)i < (uint)a.len" that implies that the array index is valid
+//    such as "(uint)i < (uint)len" that implies that the index is valid
 //    (0 <= i && i < a.len).
 //
 // Arguments:
 //    vn - Value number to query
-//    info - Pointer to an ArrLenUnsignedBoundInfo object to return information about
-//           the expression. Not populated if the vn expression isn't suitable (e.g. i <= a.len).
+//    info - Pointer to an UnsignedCompareCheckedBoundInfo object to return information about
+//           the expression. Not populated if the vn expression isn't suitable (e.g. i <= len).
 //           This enables optCreateJTrueBoundAssertion to immediatly create an OAK_NO_THROW
 //           assertion instead of the OAK_EQUAL/NOT_EQUAL assertions created by signed compares
-//           (IsVNArrLenBound, IsVNArrLenArithBound) that require further processing.
+//           (IsVNCompareCheckedBound, IsVNCompareCheckedBoundArith) that require further processing.
 
-bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo* info)
+bool ValueNumStore::IsVNUnsignedCompareCheckedBound(ValueNum vn, UnsignedCompareCheckedBoundInfo* info)
 {
     VNFuncApp funcApp;
 
@@ -3230,24 +3231,24 @@ bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo
     {
         if ((funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN))
         {
-            // We only care about "(uint)i < (uint)a.len" and its negation "(uint)i >= (uint)a.len"
-            if (IsVNArrLen(funcApp.m_args[1]))
+            // We only care about "(uint)i < (uint)len" and its negation "(uint)i >= (uint)len"
+            if (IsVNCheckedBound(funcApp.m_args[1]))
             {
                 info->vnIdx   = funcApp.m_args[0];
                 info->cmpOper = funcApp.m_func;
-                info->vnLen   = funcApp.m_args[1];
+                info->vnBound = funcApp.m_args[1];
                 return true;
             }
         }
         else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
             // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
-            if (IsVNArrLen(funcApp.m_args[0]))
+            if (IsVNCheckedBound(funcApp.m_args[0]))
             {
                 info->vnIdx = funcApp.m_args[1];
-                // Let's keep a consistent operand order - it's always i < a.len, never a.len > i
+                // Let's keep a consistent operand order - it's always i < len, never len > i
                 info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
-                info->vnLen   = funcApp.m_args[0];
+                info->vnBound = funcApp.m_args[0];
                 return true;
             }
         }
@@ -3256,9 +3257,9 @@ bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo
     return false;
 }
 
-bool ValueNumStore::IsVNArrLenBound(ValueNum vn)
+bool ValueNumStore::IsVNCompareCheckedBound(ValueNum vn)
 {
-    // Do we have "var < a.len"?
+    // Do we have "var < len"?
     if (vn == NoVN)
     {
         return false;
@@ -3274,7 +3275,7 @@ bool ValueNumStore::IsVNArrLenBound(ValueNum vn)
     {
         return false;
     }
-    if (!IsVNArrLen(funcAttr.m_args[0]) && !IsVNArrLen(funcAttr.m_args[1]))
+    if (!IsVNCheckedBound(funcAttr.m_args[0]) && !IsVNCheckedBound(funcAttr.m_args[1]))
     {
         return false;
     }
@@ -3282,30 +3283,30 @@ bool ValueNumStore::IsVNArrLenBound(ValueNum vn)
     return true;
 }
 
-void ValueNumStore::GetArrLenBoundInfo(ValueNum vn, ArrLenArithBoundInfo* info)
+void ValueNumStore::GetCompareCheckedBound(ValueNum vn, CompareCheckedBoundArithInfo* info)
 {
-    assert(IsVNArrLenBound(vn));
+    assert(IsVNCompareCheckedBound(vn));
 
     // Do we have var < a.len?
     VNFuncApp funcAttr;
     GetVNFunc(vn, &funcAttr);
 
-    bool isOp1ArrLen = IsVNArrLen(funcAttr.m_args[1]);
-    if (isOp1ArrLen)
+    bool isOp1CheckedBound = IsVNCheckedBound(funcAttr.m_args[1]);
+    if (isOp1CheckedBound)
     {
         info->cmpOper = funcAttr.m_func;
         info->cmpOp   = funcAttr.m_args[0];
-        info->vnArray = GetArrForLenVn(funcAttr.m_args[1]);
+        info->vnBound = funcAttr.m_args[1];
     }
     else
     {
         info->cmpOper = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
         info->cmpOp   = funcAttr.m_args[1];
-        info->vnArray = GetArrForLenVn(funcAttr.m_args[0]);
+        info->vnBound = funcAttr.m_args[0];
     }
 }
 
-bool ValueNumStore::IsVNArrLenArith(ValueNum vn)
+bool ValueNumStore::IsVNCheckedBoundArith(ValueNum vn)
 {
     // Do we have "a.len +or- var"
     if (vn == NoVN)
@@ -3315,34 +3316,34 @@ bool ValueNumStore::IsVNArrLenArith(ValueNum vn)
 
     VNFuncApp funcAttr;
 
-    return GetVNFunc(vn, &funcAttr) &&                                                 // vn is a func.
-           (funcAttr.m_func == (VNFunc)GT_ADD || funcAttr.m_func == (VNFunc)GT_SUB) && // the func is +/-
-           (IsVNArrLen(funcAttr.m_args[0]) || IsVNArrLen(funcAttr.m_args[1]));         // either op1 or op2 is a.len
+    return GetVNFunc(vn, &funcAttr) &&                                                     // vn is a func.
+           (funcAttr.m_func == (VNFunc)GT_ADD || funcAttr.m_func == (VNFunc)GT_SUB) &&     // the func is +/-
+           (IsVNCheckedBound(funcAttr.m_args[0]) || IsVNCheckedBound(funcAttr.m_args[1])); // either op1 or op2 is a.len
 }
 
-void ValueNumStore::GetArrLenArithInfo(ValueNum vn, ArrLenArithBoundInfo* info)
+void ValueNumStore::GetCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
 {
     // Do we have a.len +/- var?
-    assert(IsVNArrLenArith(vn));
+    assert(IsVNCheckedBoundArith(vn));
     VNFuncApp funcArith;
     GetVNFunc(vn, &funcArith);
 
-    bool isOp1ArrLen = IsVNArrLen(funcArith.m_args[1]);
-    if (isOp1ArrLen)
+    bool isOp1CheckedBound = IsVNCheckedBound(funcArith.m_args[1]);
+    if (isOp1CheckedBound)
     {
         info->arrOper = funcArith.m_func;
         info->arrOp   = funcArith.m_args[0];
-        info->vnArray = GetArrForLenVn(funcArith.m_args[1]);
+        info->vnBound = funcArith.m_args[1];
     }
     else
     {
         info->arrOper = funcArith.m_func;
         info->arrOp   = funcArith.m_args[1];
-        info->vnArray = GetArrForLenVn(funcArith.m_args[0]);
+        info->vnBound = funcArith.m_args[0];
     }
 }
 
-bool ValueNumStore::IsVNArrLenArithBound(ValueNum vn)
+bool ValueNumStore::IsVNCompareCheckedBoundArith(ValueNum vn)
 {
     // Do we have: "var < a.len - var"
     if (vn == NoVN)
@@ -3364,7 +3365,7 @@ bool ValueNumStore::IsVNArrLenArithBound(ValueNum vn)
     }
 
     // Either the op0 or op1 is arr len arithmetic.
-    if (!IsVNArrLenArith(funcAttr.m_args[0]) && !IsVNArrLenArith(funcAttr.m_args[1]))
+    if (!IsVNCheckedBoundArith(funcAttr.m_args[0]) && !IsVNCheckedBoundArith(funcAttr.m_args[1]))
     {
         return false;
     }
@@ -3372,26 +3373,26 @@ bool ValueNumStore::IsVNArrLenArithBound(ValueNum vn)
     return true;
 }
 
-void ValueNumStore::GetArrLenArithBoundInfo(ValueNum vn, ArrLenArithBoundInfo* info)
+void ValueNumStore::GetCompareCheckedBoundArithInfo(ValueNum vn, CompareCheckedBoundArithInfo* info)
 {
-    assert(IsVNArrLenArithBound(vn));
+    assert(IsVNCompareCheckedBoundArith(vn));
 
     VNFuncApp funcAttr;
     GetVNFunc(vn, &funcAttr);
 
-    // Check whether op0 or op1 ia arr len arithmetic.
-    bool isOp1ArrLenArith = IsVNArrLenArith(funcAttr.m_args[1]);
-    if (isOp1ArrLenArith)
+    // Check whether op0 or op1 is checked bound arithmetic.
+    bool isOp1CheckedBoundArith = IsVNCheckedBoundArith(funcAttr.m_args[1]);
+    if (isOp1CheckedBoundArith)
     {
         info->cmpOper = funcAttr.m_func;
         info->cmpOp   = funcAttr.m_args[0];
-        GetArrLenArithInfo(funcAttr.m_args[1], info);
+        GetCheckedBoundArithInfo(funcAttr.m_args[1], info);
     }
     else
     {
         info->cmpOper = GenTree::SwapRelop((genTreeOps)funcAttr.m_func);
         info->cmpOp   = funcAttr.m_args[1];
-        GetArrLenArithInfo(funcAttr.m_args[0], info);
+        GetCheckedBoundArithInfo(funcAttr.m_args[0], info);
     }
 }
 
@@ -3446,6 +3447,39 @@ bool ValueNumStore::IsVNArrLen(ValueNum vn)
     }
     VNFuncApp funcAttr;
     return (GetVNFunc(vn, &funcAttr) && funcAttr.m_func == (VNFunc)GT_ARR_LENGTH);
+}
+
+bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
+{
+    bool dummy;
+    if (m_checkedBoundVNs.TryGetValue(vn, &dummy))
+    {
+        // This VN appeared as the conservative VN of the length argument of some
+        // GT_ARR_BOUND node.
+        return true;
+    }
+    if (IsVNArrLen(vn))
+    {
+        // Even if we haven't seen this VN in a bounds check, if it is an array length
+        // VN then consider it a checked bound VN.  This facilitates better bounds check
+        // removal by ensuring that compares against array lengths get put in the
+        // optCseCheckedBoundMap; such an array length might get CSEd with one that was
+        // directly used in a bounds check, and having the map entry will let us update
+        // the compare's VN so that OptimizeRangeChecks can recognize such compares.
+        return true;
+    }
+
+    return false;
+}
+
+void ValueNumStore::SetVNIsCheckedBound(ValueNum vn)
+{
+    // This is meant to flag VNs for lengths that aren't known at compile time, so we can
+    // form and propagate assertions about them.  Ensure that callers filter out constant
+    // VNs since they're not what we're looking to flag, and assertion prop can reason
+    // directly about constants.
+    assert(!IsVNConstant(vn));
+    m_checkedBoundVNs.AddOrUpdate(vn, true);
 }
 
 ValueNum ValueNumStore::EvalMathFuncUnary(var_types typ, CorInfoIntrinsics gtMathFN, ValueNum arg0VN)
@@ -3902,16 +3936,16 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 unreached();
         }
     }
-    else if (IsVNArrLenBound(vn))
+    else if (IsVNCompareCheckedBound(vn))
     {
-        ArrLenArithBoundInfo info;
-        GetArrLenBoundInfo(vn, &info);
+        CompareCheckedBoundArithInfo info;
+        GetCompareCheckedBound(vn, &info);
         info.dump(this);
     }
-    else if (IsVNArrLenArithBound(vn))
+    else if (IsVNCompareCheckedBoundArith(vn))
     {
-        ArrLenArithBoundInfo info;
-        GetArrLenArithBoundInfo(vn, &info);
+        CompareCheckedBoundArithInfo info;
+        GetCompareCheckedBoundArithInfo(vn, &info);
         info.dump(this);
     }
     else if (IsVNFunc(vn))
@@ -7028,6 +7062,14 @@ void Compiler::fgValueNumberTree(GenTreePtr tree, bool evalAsgLhsInd)
                 excSet = vnStore->VNPExcSetUnion(excSet, vnStore->VNPExcVal(tree->AsBoundsChk()->gtArrLen->gtVNPair));
 
                 tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), excSet);
+
+                // Record non-constant value numbers that are used as the length argument to bounds checks, so that
+                // assertion prop will know that comparisons against them are worth analyzing.
+                ValueNum lengthVN = tree->AsBoundsChk()->gtArrLen->gtVNPair.GetConservative();
+                if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
+                {
+                    vnStore->SetVNIsCheckedBound(lengthVN);
+                }
             }
             break;
 
