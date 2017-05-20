@@ -320,6 +320,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 info->srcCount = 2;
             }
 
+            // FloatToIntCast needs a temporary register
+            if (varTypeIsFloating(castOpType) && varTypeIsIntOrI(tree))
+            {
+                info->setInternalCandidates(m_lsra, RBM_ALLFLOAT);
+                info->internalFloatCount     = 1;
+                info->isInternalRegDelayFree = true;
+            }
+
             CastInfo castInfo;
 
             // Get information about the cast.
