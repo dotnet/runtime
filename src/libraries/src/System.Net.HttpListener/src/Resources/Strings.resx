@@ -85,6 +85,9 @@
   <data name="net_listener_host" xml:space="preserve">
     <value>Only Uri prefixes with a valid hostname are supported.</value>
   </data>
+  <data name="net_listener_not_supported" xml:space="preserve">
+    <value>The request is not supported.</value>
+  </data>
   <data name="net_listener_mustcall" xml:space="preserve">
     <value>Please call the {0} method before calling this method.</value>
   </data>
