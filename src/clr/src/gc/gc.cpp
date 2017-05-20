@@ -65,10 +65,6 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 int compact_ratio = 0;
 #endif //GC_CONFIG_DRIVEN
 
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && defined(NO_WRITE_BARRIER)
-#error Software write watch requires write barriers.
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && NO_WRITE_BARRIER
-
 // See comments in reset_memory.
 BOOL reset_mm_p = TRUE;
 
@@ -15546,9 +15542,6 @@ void gc_heap::gc1()
             dprintf (3, ("New allocation quantum: %d(0x%Ix)", allocation_quantum, allocation_quantum));
         }
     }
-#ifdef NO_WRITE_BARRIER
-    reset_write_watch(FALSE);
-#endif //NO_WRITE_BARRIER
 
     descr_generations (FALSE);
     descr_card_table();
@@ -16755,10 +16748,6 @@ int gc_heap::garbage_collect (int n)
     }
     descr_generations (TRUE);
 //    descr_card_table();
-
-#ifdef NO_WRITE_BARRIER
-    fix_card_table();
-#endif //NO_WRITE_BARRIER
 
 #ifdef VERIFY_HEAP
     if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_GC) &&
@@ -18715,116 +18704,6 @@ gc_heap::scan_background_roots (promote_func* fn, int hn, ScanContext *pSC)
     }
 }
 
-#endif //BACKGROUND_GC
-
-void gc_heap::fix_card_table ()
-{
-#ifdef NO_WRITE_BARRIER
-#ifdef WRITE_WATCH
-    heap_segment* seg = heap_segment_rw (generation_start_segment (generation_of (max_generation)));
-
-    PREFIX_ASSUME(seg != NULL);
-
-#ifdef BACKGROUND_GC
-    bool reset_watch_state = !!settings.concurrent;
-#else //BACKGROUND_GC
-    bool reset_watch_state = false;
-#endif //BACKGROUND_GC
-    BOOL small_object_segments = TRUE;
-    while (1)
-    {
-        if (seg == 0)
-        {
-            if (small_object_segments)
-            {
-                small_object_segments = FALSE;
-                seg = heap_segment_rw (generation_start_segment (large_object_generation));
-
-                PREFIX_ASSUME(seg != NULL);
-
-                continue;
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        uint8_t* base_address = align_lower_page (heap_segment_mem (seg));
-        uint8_t* high_address =  align_on_page (
-            (seg != ephemeral_heap_segment) ?
-            heap_segment_allocated (seg) :
-            generation_allocation_start (generation_of (0))
-            );
-        uintptr_t bcount = array_size;
-        do
-        {
-            if(high_address <= base_address)
-                break;
-
-            size_t region_size = high_address - base_address;
-            assert (region_size > 0);
-            dprintf (3,("Probing pages [%Ix, %Ix[", (size_t)base_address, (size_t)high_address));
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_start = GetCycleCount32();
-#endif //TIME_WRITE_WATCH
-            get_write_watch_for_gc_heap(reset_watch_state, base_address, region_size,
-                                        (void**)g_addresses,
-                                        &bcount, true);
-
-#ifdef TIME_WRITE_WATCH
-            unsigned int time_stop = GetCycleCount32();
-            tot_cycles += time_stop - time_start;
-            printf ("get_write_watch_for_gc_heap Duration: %d, total: %d\n",
-                    time_stop - time_start, tot_cycles);
-#endif //TIME_WRITE_WATCH
-
-            assert( ((card_size * card_word_width)&(OS_PAGE_SIZE-1))==0 );
-            //printf ("%Ix written into\n", bcount);
-            dprintf (3,("Found %Id pages written", bcount));
-            for (unsigned  i = 0; i < bcount; i++)
-            {
-                // Set the card words corresponding to the entire page.
-                for (unsigned j = 0; j < (card_size*card_word_width)/OS_PAGE_SIZE; j++)
-                {
-                    card_table [card_word (card_of (g_addresses [i]))+j] = ~0u;
-                }
-                dprintf (2,("Set Cards [%Ix:%Ix, %Ix:%Ix[",
-                      card_of (g_addresses [i]), (size_t)g_addresses [i],
-                      card_of (g_addresses [i]+OS_PAGE_SIZE), (size_t)g_addresses [i]+OS_PAGE_SIZE));
-
-#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-    // We don't need to update card bundles here because this function is only used when
-    // we don't have write barriers.
-    #error Cannot have manually managed card bundles without write barriers.
-#endif
-            }
-
-            if (bcount >= array_size){
-                base_address = g_addresses [array_size-1] + OS_PAGE_SIZE;
-                bcount = array_size;
-            }
-        } while (bcount >= array_size);
-        seg = heap_segment_next_rw (seg);
-    }
-
-#ifdef BACKGROUND_GC
-    if (settings.concurrent)
-    {
-        //reset the ephemeral page allocated by generation_of (0)
-        uint8_t* base_address =
-            align_on_page (generation_allocation_start (generation_of (0)));
-        size_t region_size =
-            heap_segment_allocated (ephemeral_heap_segment) - base_address;
-        reset_write_watch_for_gc_heap(base_address, region_size);
-    }
-#endif //BACKGROUND_GC
-#endif //WRITE_WATCH
-#endif //NO_WRITE_BARRIER
-}
-
-#ifdef BACKGROUND_GC
 inline
 void gc_heap::background_mark_through_object (uint8_t* oo THREAD_NUMBER_DCL)
 {
@@ -26600,12 +26479,6 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
                     {
                         for (unsigned i = 0; i < bcount; i++)
                         {
-    #ifdef NO_WRITE_BARRIER
-                            card_table [card_word (card_of (background_written_addresses [i]))] = ~0u;
-                            dprintf (3,("Set Cards [%p:%p, %p:%p[",
-                                        card_of (background_written_addresses [i]), g_addresses [i],
-                                        card_of (background_written_addresses [i]+OS_PAGE_SIZE), background_written_addresses [i]+OS_PAGE_SIZE));
-    #endif //NO_WRITE_BARRIER
                             uint8_t* page = (uint8_t*)background_written_addresses[i];
                             dprintf (3, ("looking at page %d at %Ix(h: %Ix)", i, 
                                 (size_t)page, (size_t)high_address));
