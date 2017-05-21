@@ -434,18 +434,27 @@ CrashInfo::GetDSOInfo()
     }
 
     // Add the DSO link_map entries
+    ArrayHolder<char> moduleName = new char[PATH_MAX];
     for (struct link_map* linkMapAddr = debugEntry.r_map; linkMapAddr != nullptr;) {
         struct link_map map;
         if (!ReadMemory(linkMapAddr, &map, sizeof(map))) {
             return false;
         }
-        char moduleName[257] = { 0 };
+        int i = 0;
         if (map.l_name != nullptr) {
-            if (!ReadMemory(map.l_name, &moduleName, sizeof(moduleName) - 1)) {
-                return false;
+            for (; i < PATH_MAX; i++)
+            {
+                if (!ReadMemory(map.l_name + i, &moduleName[i], 1)) {
+                    TRACE("DSO: ReadMemory link_map name %p + %d FAILED\n", map.l_name, i);
+                    break;
+                }
+                if (moduleName[i] == '\0') {
+                    break;
+                }
             }
         }
-        TRACE("DSO: link_map entry %p l_ld %p l_addr %lx %s\n", linkMapAddr, map.l_ld, map.l_addr, moduleName);
+        moduleName[i] = '\0';
+        TRACE("DSO: link_map entry %p l_ld %p l_addr %lx %s\n", linkMapAddr, map.l_ld, map.l_addr, (char*)moduleName);
         linkMapAddr = map.l_next;
     }
 
@@ -515,6 +524,7 @@ CrashInfo::ReadMemory(void* address, void* buffer, size_t size)
     uint32_t read = 0;
     if (FAILED(m_dataTarget->ReadVirtual(reinterpret_cast<CLRDATA_ADDRESS>(address), reinterpret_cast<PBYTE>(buffer), size, &read)))
     {
+        fprintf(stderr, "ReadMemory(%p, %lx) FAILED\n", address, size);
         return false;
     }
     InsertMemoryRegion(reinterpret_cast<uint64_t>(address), size);
