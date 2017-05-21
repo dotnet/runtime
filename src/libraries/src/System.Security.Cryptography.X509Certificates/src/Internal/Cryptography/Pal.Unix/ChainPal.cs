@@ -58,6 +58,8 @@ namespace Internal.Cryptography.Pal
 
             using (var leaf = new X509Certificate2(cert.Handle))
             {
+                GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use
+
                 var downloaded = new HashSet<X509Certificate2>();
                 var systemTrusted = new HashSet<X509Certificate2>();
 

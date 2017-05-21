@@ -92,6 +92,8 @@ namespace Internal.Cryptography.Pal
                     {
                         PushHandle(certPal.Handle, publicCerts);
                     }
+
+                    GC.KeepAlive(certPal); // ensure reader's safe handle isn't finalized while raw handle is in use
                 }
                 else
                 {
@@ -120,6 +122,8 @@ namespace Internal.Cryptography.Pal
                         {
                             PushHandle(cert.Handle, publicCerts);
                         }
+
+                        GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use
                     }
                 }
 
@@ -175,6 +179,8 @@ namespace Internal.Cryptography.Pal
                     {
                         throw Interop.Crypto.CreateOpenSslCryptographicException();
                     }
+
+                    GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use
                 }
 
                 return Interop.Crypto.OpenSslEncode(
