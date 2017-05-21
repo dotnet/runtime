@@ -30,6 +30,7 @@
 
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -112,7 +113,7 @@ namespace System.Net
         {
             if (size == 0 || _closed)
             {
-                HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                HttpStreamAsyncResult ares = new HttpStreamAsyncResult(this);
                 ares._callback = cback;
                 ares._state = state;
                 ares.Complete();
@@ -122,7 +123,7 @@ namespace System.Net
             int nread = FillFromBuffer(buffer, offset, size);
             if (nread > 0 || nread == -1)
             {
-                HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                HttpStreamAsyncResult ares = new HttpStreamAsyncResult(this);
                 ares._buffer = buffer;
                 ares._offset = offset;
                 ares._count = size;
@@ -148,18 +149,39 @@ namespace System.Net
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
-            if (asyncResult is HttpStreamAsyncResult)
+            if (asyncResult is HttpStreamAsyncResult r)
             {
-                HttpStreamAsyncResult r = (HttpStreamAsyncResult)asyncResult;
+                if (!ReferenceEquals(this, r._parent))
+                {
+                    throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
+                }
+                if (r._endCalled)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndRead)));
+                }
+                r._endCalled = true;
+
                 if (!asyncResult.IsCompleted)
+                {
                     asyncResult.AsyncWaitHandle.WaitOne();
+                }
+
                 return r._synchRead;
             }
 
             if (_closed)
                 return 0;
 
-            int nread = _stream.EndRead(asyncResult);
+            int nread = 0;
+            try
+            {
+                nread = _stream.EndRead(asyncResult);
+            }
+            catch (IOException e) when (e.InnerException is ArgumentException || e.InnerException is InvalidOperationException)
+            {
+                ExceptionDispatchInfo.Throw(e.InnerException);
+            }
+
             if (_remainingBody > 0 && nread > 0)
             {
                 _remainingBody -= nread;
