@@ -118,5 +118,10 @@ namespace System.IO
 
             return tempStr;
         }
+
+        internal static string TrimEndingDirectorySeparator(string path) =>
+            EndsInDirectorySeparator(path) ?
+                path.Substring(0, path.Length - 1) :
+                path;
     }
 }
