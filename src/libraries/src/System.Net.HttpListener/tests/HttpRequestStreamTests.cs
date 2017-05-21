@@ -406,7 +406,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
         public async Task EndRead_InvalidAsyncResult_ThrowsArgumentException(bool chunked)
         {
             HttpListenerRequest request1 = await _helper.GetRequest(chunked);
@@ -425,7 +424,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed
         public async Task EndRead_CalledTwice_ThrowsInvalidOperationException(bool chunked)
         {
             HttpListenerRequest request = await _helper.GetRequest(chunked);

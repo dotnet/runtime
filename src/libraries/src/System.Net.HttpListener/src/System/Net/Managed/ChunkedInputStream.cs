@@ -77,7 +77,7 @@ namespace System.Net
 
         protected override IAsyncResult BeginReadCore(byte[] buffer, int offset, int size, AsyncCallback cback, object state)
         {
-            HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+            HttpStreamAsyncResult ares = new HttpStreamAsyncResult(this);
             ares._callback = cback;
             ares._state = state;
             if (_no_more_data || size == 0 || _closed)
@@ -146,8 +146,15 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(asyncResult));
 
             HttpStreamAsyncResult ares = asyncResult as HttpStreamAsyncResult;
-            if (asyncResult == null)
+            if (ares == null || !ReferenceEquals(this, ares._parent))
+            {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
+            }
+            if (ares._endCalled)
+            {
+                throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndRead)));
+            }
+            ares._endCalled = true;
 
             if (!asyncResult.IsCompleted)
                 asyncResult.AsyncWaitHandle.WaitOne();
