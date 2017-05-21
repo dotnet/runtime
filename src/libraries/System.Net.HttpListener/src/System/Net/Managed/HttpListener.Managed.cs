@@ -287,7 +287,7 @@ namespace System.Net
                 throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "Start()"));
             }
 
-            ListenerAsyncResult ares = new ListenerAsyncResult(callback, state);
+            ListenerAsyncResult ares = new ListenerAsyncResult(this, callback, state);
 
             // lock wait_queue early to avoid race conditions
             lock ((_asyncWaitQueue as ICollection).SyncRoot)
@@ -317,7 +317,7 @@ namespace System.Net
             }
 
             ListenerAsyncResult ares = asyncResult as ListenerAsyncResult;
-            if (ares == null)
+            if (ares == null || !ReferenceEquals(this, ares._parent))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
