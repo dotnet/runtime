@@ -225,14 +225,6 @@ namespace System.Linq.Expressions.Compiler
             _freeLocals.Push(local.LocalType, local);
         }
 
-        internal LocalBuilder GetNamedLocal(Type type, ParameterExpression variable)
-        {
-            Debug.Assert(type != null && variable != null);
-
-            LocalBuilder lb = _ilg.DeclareLocal(type);
-            return lb;
-        }
-
         /// <summary>
         /// Gets the argument slot corresponding to the parameter at the given
         /// index. Assumes that the method takes a certain number of prefix
