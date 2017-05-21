@@ -53,9 +53,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
-        // Both the managed and Windows implementations send headers to the socket during connection.
-        // The Windows implementation fails with error code 1229: An operation was attempted on a nonexistent network connection.
-        [ActiveIssue(18128, TestPlatforms.AnyUnix)]
         public async Task AcceptWebSocketAsync_SocketSpoofingAsWebSocket_ThrowsWebSocketException()
         {
             await GetSocketContext(new string[] { "Connection: Upgrade", "Upgrade: websocket", "Sec-WebSocket-Version: 13", "Sec-WebSocket-Key: Key" }, async context =>
