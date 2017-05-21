@@ -90,7 +90,9 @@ namespace Internal.Cryptography.Pal
                     }
                 }
 
-                return Interop.AppleCrypto.X509ExportPfx(certHandles, password);
+                byte[] exported = Interop.AppleCrypto.X509ExportPfx(certHandles, password);
+                GC.KeepAlive(_certs); // ensure certs' safe handles aren't finalized while raw handles are in use
+                return exported;
             }
 
             private byte[] ExportPkcs7()
