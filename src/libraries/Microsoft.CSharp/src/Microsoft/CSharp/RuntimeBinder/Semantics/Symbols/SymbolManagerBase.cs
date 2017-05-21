@@ -46,8 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // The hash table for type arrays.
         private Dictionary<TypeArrayKey, TypeArray> tableTypeArrays;
 
-        private const int LOG2_SYMTBL_INITIAL_BUCKET_CNT = 13;    // Initial local size: 8192 buckets.
-
         private static readonly TypeArray s_taEmpty = new TypeArray(Array.Empty<CType>());
 
         public BSYMMGR(NameManager nameMgr, TypeManager typeManager)
@@ -59,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             this.ssetAssembly = new List<AidContainer>();
 
-            InputFile infileUnres = new InputFile {isSource = false};
+            InputFile infileUnres = new InputFile();
             infileUnres.SetAssemblyID(KAID.kaidUnresolved);
 
             ssetAssembly.Add(new AidContainer(infileUnres));

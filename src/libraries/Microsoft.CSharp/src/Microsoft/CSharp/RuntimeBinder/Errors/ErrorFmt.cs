@@ -64,7 +64,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         internal MessageID ids;
         internal int n;
         internal SYMKIND sk;
-        internal PredefinedName pdn;
         internal Name name;
         internal Symbol sym;
         internal string psz;
@@ -83,25 +82,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             this.n = n;
         }
 
-        private ErrArg(SYMKIND sk)
-        {
-            Debug.Assert(sk != SYMKIND.SK_AssemblyQualifiedNamespaceSymbol);
-            this.eaf = ErrArgFlags.None;
-            this.eak = ErrArgKind.SymKind;
-            this.sk = sk;
-        } // NSAIDSYMs are treated differently based on the Symbol not the SK
-
         public ErrArg(Name name)
         {
             this.eak = ErrArgKind.Name;
             this.eaf = ErrArgFlags.None;
             this.name = name;
-        }
-        private ErrArg(PredefinedName pdn)
-        {
-            this.eak = ErrArgKind.PredefName;
-            this.eaf = ErrArgFlags.None;
-            this.pdn = pdn;
         }
 
         public ErrArg(string psz)
@@ -155,10 +140,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             return new ErrArg(n);
         }
-        public static implicit operator ErrArg(SYMKIND sk)
-        {
-            return new ErrArg(sk);
-        }
         public static implicit operator ErrArg(CType type)
         {
             return new ErrArg(type);
@@ -166,10 +147,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         public static implicit operator ErrArg(string psz)
         {
             return new ErrArg(psz);
-        }
-        public static implicit operator ErrArg(PredefinedName pdn)
-        {
-            return new ErrArg(pdn);
         }
         public static implicit operator ErrArg(Name name)
         {
@@ -206,11 +183,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             this.eaf = ErrArgFlags.Ref;
         }
 
-        private ErrArgRef(string psz)
-            : base(psz)
-        {
-            this.eaf = ErrArgFlags.Ref;
-        }
         public ErrArgRef(Symbol sym)
             : base(sym)
         {
@@ -237,10 +209,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             : base(pType)
         {
             this.eaf = eaf | ErrArgFlags.Ref;
-        }
-        public static implicit operator ErrArgRef(string s)
-        {
-            return new ErrArgRef(s);
         }
         public static implicit operator ErrArgRef(Name name)
         {

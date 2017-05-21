@@ -40,7 +40,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // PERFORMANCE: Is this cache still necessary?
         public SymbolLoader SymbolLoader { get; }
 
-        public Declaration ContextForMemberLookup { get; set; }
+        public AggregateDeclaration ContextForMemberLookup { get; set; }
 
         public bool ReportUnsafeErrors { get; set; } = true;
 

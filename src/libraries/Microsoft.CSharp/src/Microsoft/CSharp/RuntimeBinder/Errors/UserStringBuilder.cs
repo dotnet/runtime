@@ -427,15 +427,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         {
             switch (sym.getKind())
             {
-                case SYMKIND.SK_NamespaceDeclaration:
-                    // for namespace declarations just convert the namespace
-                    ErrAppendSym(sym.AsNamespaceDeclaration().NameSpace(), null);
-                    break;
-
-                case SYMKIND.SK_GlobalAttributeDeclaration:
-                    ErrAppendName(sym.name);
-                    break;
-
                 case SYMKIND.SK_AggregateDeclaration:
                     ErrAppendSym(sym.AsAggregateDeclaration().Agg(), pctx);
                     break;
@@ -508,8 +499,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
 
                 case SYMKIND.SK_LocalVariableSymbol:
-                case SYMKIND.SK_LabelSymbol:
-                case SYMKIND.SK_TransparentIdentifierMemberSymbol:
                     // Generate symbol name.
                     ErrAppendName(sym.name);
                     break;
@@ -518,7 +507,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case SYMKIND.SK_LambdaScope:
                 default:
                     // Shouldn't happen.
-                    Debug.Assert(false, "Bad symbol kind");
+                    Debug.Assert(false, $"Bad symbol kind: {sym.getKind()}");
                     break;
             }
         }
@@ -751,11 +740,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
                 case ErrArgKind.Str:
                     psz = parg.psz;
-                    break;
-                case ErrArgKind.PredefName:
-                    BeginString();
-                    ErrAppendName(NameManager.GetPredefinedName(parg.pdn));
-                    EndString(out psz);
                     break;
                 case ErrArgKind.SymWithType:
                     {

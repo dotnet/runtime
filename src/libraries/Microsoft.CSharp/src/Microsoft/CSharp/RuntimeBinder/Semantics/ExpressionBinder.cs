@@ -1393,19 +1393,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     break;
 
-                case ExpressionKind.ArrayLength:
-                    if (kind == CheckLvalueKind.OutParameter)
-                    {
-                        // passing a property as ref or out
-                        ErrorContext.Error(ErrorCode.ERR_RefProperty);
-                    }
-                    else
-                    {
-                        // Special case, the length property of an array
-                        ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, GetSymbolLoader().getPredefinedMembers().GetProperty(PREDEFPROP.PP_ARRAY_LENGTH));
-                    }
-                    return true;
-
                 case ExpressionKind.BoundLambda:
                 case ExpressionKind.UnboundLambda:
                 case ExpressionKind.Constant:
@@ -2349,7 +2336,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         ////////////////////////////////////////////////////////////////////////////////
-        private Declaration ContextForMemberLookup()
+        private AggregateDeclaration ContextForMemberLookup()
         {
             return Context.ContextForMemberLookup;
         }

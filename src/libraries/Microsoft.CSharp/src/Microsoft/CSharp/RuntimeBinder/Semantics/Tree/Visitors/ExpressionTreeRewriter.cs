@@ -266,19 +266,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ARRAYINDEX, arr, args);
         }
-        protected override Expr VisitARRAYLENGTH(ExprArrayLength pExpr)
-        {
-            return GenerateBuiltInUnaryOperator(PREDEFMETH.PM_EXPRESSION_ARRAYLENGTH, pExpr.Array, pExpr);
-        }
-        protected override Expr VisitQUESTIONMARK(ExprQuestionMark pExpr)
-        {
-            Debug.Assert(pExpr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            Expr p1 = Visit(pExpr.TestExpression);
-            Expr p2 = GenerateQuestionMarkOperand(pExpr.Consequence.OptionalLeftChild);
-            Expr p3 = GenerateQuestionMarkOperand(pExpr.Consequence.OptionalRightChild);
-            return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONDITION, p1, p2, p3);
-        }
+
         protected override Expr VisitCALL(ExprCall expr)
         {
             Debug.Assert(expr != null);
@@ -396,18 +384,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateConstant(expr);
-        }
-
-        private Expr GenerateQuestionMarkOperand(Expr pExpr)
-        {
-            Debug.Assert(pExpr != null);
-            // We must not optimize away compiler-generated reference casts because
-            // the expression tree API insists that the CType of both sides be identical.
-            if (pExpr is ExprCast cast)
-            {
-                return GenerateConversion(cast.Argument, pExpr.Type, pExpr.isChecked());
-            }
-            return Visit(pExpr);
         }
 
         private Expr GenerateDelegateInvoke(ExprCall expr)

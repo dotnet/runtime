@@ -1115,10 +1115,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                     PredefinedTypes.InitializePredefinedType(agg, PredefinedTypeFacts.GetPredefTypeIndex(typeName));
                 }
             }
-            agg.SetLayoutError(false);
+
             agg.SetSealed(type.IsSealed);
-            agg.SetUnmanagedStruct(false);
-            agg.SetManagedStruct(false);
             agg.SetHasExternReference(false);
 
             AggregateType baseAggType = agg.getThisType();
@@ -1184,7 +1182,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return field;
             }
 
-            field = _symFactory.CreateMemberVar(GetName(fieldInfo.Name), aggregate, null, 0);
+            field = _symFactory.CreateMemberVar(GetName(fieldInfo.Name), aggregate);
             field.AssociatedFieldInfo = fieldInfo;
 
             field.isStatic = fieldInfo.IsStatic;
@@ -1275,7 +1273,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return ev;
             }
 
-            ev = _symFactory.CreateEvent(GetName(eventInfo.Name), aggregate, null);
+            ev = _symFactory.CreateEvent(GetName(eventInfo.Name), aggregate);
             ev.AssociatedEventInfo = eventInfo;
 
             // EventSymbol
@@ -1420,12 +1418,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 if (isIndexer)
                 {
-                    prop = _semanticChecker.GetSymbolLoader().GetGlobalMiscSymFactory().CreateIndexer(name, aggregate, GetName(property.Name), null);
+                    prop = _semanticChecker.GetSymbolLoader().GetGlobalMiscSymFactory().CreateIndexer(name, aggregate, GetName(property.Name));
                     prop.Params = CreateParameterArray(null, property.GetIndexParameters());
                 }
                 else
                 {
-                    prop = _symFactory.CreateProperty(GetName(property.Name), aggregate, null);
+                    prop = _symFactory.CreateProperty(GetName(property.Name), aggregate);
                     prop.Params = BSYMMGR.EmptyTypeArray();
                 }
             }
@@ -1573,7 +1571,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             ParameterInfo[] parameters = method != null ? method.GetParameters() : ctor.GetParameters();
             // First create the method.
-            methodSymbol = _symFactory.CreateMethod(GetName(member.Name), callingAggregate, null);
+            methodSymbol = _symFactory.CreateMethod(GetName(member.Name), callingAggregate);
             methodSymbol.AssociatedMemberInfo = member;
             methodSymbol.SetMethKind(kind);
             if (kind == MethodKindEnum.ExplicitConv || kind == MethodKindEnum.ImplicitConv)
@@ -1669,7 +1667,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             methodSymbol.errExpImpl = null;
             methodSymbol.Params = CreateParameterArray(methodSymbol.AssociatedMemberInfo, parameters);
-            methodSymbol.declaration = null;
 
             SetParameterDataForMethProp(methodSymbol, parameters);
 
