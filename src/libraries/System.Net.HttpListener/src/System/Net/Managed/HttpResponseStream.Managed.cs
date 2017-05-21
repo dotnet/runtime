@@ -31,6 +31,7 @@
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -207,7 +208,7 @@ namespace System.Net
         {
             if (_closed)
             {
-                HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                HttpStreamAsyncResult ares = new HttpStreamAsyncResult(this);
                 ares._callback = cback;
                 ares._state = state;
                 ares.Complete();
@@ -245,7 +246,7 @@ namespace System.Net
             {
                 if (_ignore_errors)
                 {
-                    HttpStreamAsyncResult ares = new HttpStreamAsyncResult();
+                    HttpStreamAsyncResult ares = new HttpStreamAsyncResult(this);
                     ares._callback = cback;
                     ares._state = state;
                     ares.Complete();
@@ -283,10 +284,17 @@ namespace System.Net
                 }
                 catch (IOException ex)
                 {
+                    // NetworkStream wraps exceptions in IOExceptions; if the underlying socket operation
+                    // failed because of invalid arguments or usage, propagate that error.  Otherwise
+                    // wrap the whole thing in an HttpListenerException.  This is all to match Windows behavior.
+                    if (ex.InnerException is ArgumentException || ex.InnerException is InvalidOperationException)
+                    {
+                        ExceptionDispatchInfo.Throw(ex.InnerException);
+                    }
+
                     throw new HttpListenerException(ex.HResult, ex.Message);
                 }
             }
         }
     }
 }
-
