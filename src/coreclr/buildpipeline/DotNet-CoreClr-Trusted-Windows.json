@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages toolset_dir C:\\tools\\clr -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -disableoss $(portableBuild) -- /p:\"ConfigurationGroup=Release\" /flp:\"v=diag\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages toolset_dir C:\\tools\\clr -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -disableoss $(portableBuild) -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
