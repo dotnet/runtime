@@ -123,7 +123,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(18128, platforms: TestPlatforms.AnyUnix)] // No validation performed - hangs forever.
         public void EndGetContext_InvalidAsyncResult_ThrowsArgumentException()
         {
             using (var listener1 = new HttpListener())

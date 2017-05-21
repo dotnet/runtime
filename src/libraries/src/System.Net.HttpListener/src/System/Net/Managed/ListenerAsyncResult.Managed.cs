@@ -46,11 +46,13 @@ namespace System.Net
         private HttpListenerContext _context;
         private object _locker = new object();
         private ListenerAsyncResult _forward;
+        internal readonly HttpListener _parent;
         internal bool _endCalled;
         internal bool _inGet;
 
-        public ListenerAsyncResult(AsyncCallback cb, object state)
+        public ListenerAsyncResult(HttpListener parent, AsyncCallback cb, object state)
         {
+            _parent = parent;
             _cb = cb;
             _state = state;
         }
