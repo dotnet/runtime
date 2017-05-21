@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
@@ -57,7 +58,9 @@ namespace Internal.Cryptography.Pal
 
             protected override X509Certificate2 CloneCertificate(X509Certificate2 cert)
             {
-                return new X509Certificate2(cert.Handle);
+                var clone = new X509Certificate2(cert.Handle);
+                GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use
+                return clone;
             }
         }
     }

@@ -59,7 +59,9 @@ namespace Internal.Cryptography.Pal
         {
             Debug.Assert(cert.Pal != null);
 
-            return FromHandle(cert.Handle);
+            ICertificatePal pal = FromHandle(cert.Handle);
+            GC.KeepAlive(cert); // ensure cert's safe handle isn't finalized while raw handle is in use
+            return pal;
         }
 
         public static ICertificatePal FromBlob(
