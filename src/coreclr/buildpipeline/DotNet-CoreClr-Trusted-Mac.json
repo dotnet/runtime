@@ -49,7 +49,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build.sh",
-        "arguments": "$(PB_BuildType) $(Architecture) $(portableBuild) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /p:\"ConfigurationGroup=Release\"",
+        "arguments": "$(PB_BuildType) $(Architecture) $(portableBuild) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
