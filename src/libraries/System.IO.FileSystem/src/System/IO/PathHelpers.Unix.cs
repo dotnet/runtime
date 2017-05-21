@@ -27,5 +27,10 @@ namespace System.IO
                 }
             }
         }
+
+        internal static string TrimEndingDirectorySeparator(string path) =>
+            path.Length > 1 && PathInternal.IsDirectorySeparator(path[path.Length - 1]) ? // exclude root "/"
+                path.Substring(0, path.Length - 1) :
+                path;
     }
 }

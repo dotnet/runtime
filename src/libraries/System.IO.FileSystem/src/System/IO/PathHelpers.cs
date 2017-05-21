@@ -38,12 +38,5 @@ namespace System.IO
         {
             return path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
         }
-
-        internal static string TrimEndingDirectorySeparator(string path)
-        {
-            return EndsInDirectorySeparator(path) ?
-                path.Substring(0, path.Length - 1) :
-                path;
-        }
     }
 }
