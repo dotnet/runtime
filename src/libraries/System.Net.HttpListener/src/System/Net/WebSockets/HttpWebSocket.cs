@@ -167,7 +167,21 @@ namespace System.Net.WebSockets
                     SupportedVersion));
             }
 
-            if (string.IsNullOrWhiteSpace(context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey]))
+            string secWebSocketKey = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey];
+            bool isSecWebSocketKeyInvalid = string.IsNullOrWhiteSpace(secWebSocketKey);
+            if (!isSecWebSocketKeyInvalid)
+            {
+                try
+                {
+                    // key must be 16 bytes then base64-encoded
+                    isSecWebSocketKeyInvalid = Convert.FromBase64String(secWebSocketKey).Length != 16;
+                }
+                catch
+                {
+                    isSecWebSocketKeyInvalid = true;
+                }
+            }
+            if (isSecWebSocketKeyInvalid)
             {
                 throw new WebSocketException(WebSocketError.HeaderError,
                     SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
@@ -177,4 +191,3 @@ namespace System.Net.WebSockets
         }
     }
 }
-
