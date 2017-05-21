@@ -109,23 +109,27 @@ namespace System.Net
         private static HttpEndPointListener GetEPListener(string host, int port, HttpListener listener, bool secure)
         {
             IPAddress addr;
-            if (host == "*")
+            if (host == "*" || host == "+")
+            {
                 addr = IPAddress.Any;
+            }
             else
             {
+                const int NotSupportedErrorCode = 50;
                 try
                 {
                     addr = Dns.GetHostAddresses(host)[0];
-                    if (IPAddress.Any.Equals(addr))
-                    {
-                        // Don't support listening to 0.0.0.0, match windows behavior.
-                        throw new HttpListenerException(50, SR.net_listener_not_supported);
-                    }
                 }
                 catch
                 {
                     // Throw same error code as windows, request is not supported.
-                    throw new HttpListenerException(50, SR.net_listener_not_supported);
+                    throw new HttpListenerException(NotSupportedErrorCode, SR.net_listener_not_supported);
+                }
+
+                if (IPAddress.Any.Equals(addr))
+                {
+                    // Don't support listening to 0.0.0.0, match windows behavior.
+                    throw new HttpListenerException(NotSupportedErrorCode, SR.net_listener_not_supported);
                 }
             }
 

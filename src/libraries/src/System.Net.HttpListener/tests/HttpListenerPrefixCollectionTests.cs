@@ -264,7 +264,7 @@ namespace System.Net.Tests
             if (HttpListenerFactory.SupportsWildcards)
             {
                 yield return new object[] { "*" };
-                // yield return new object[] { "+" }; // [ActiveIssue(20050, TestPlatforms.AnyUnix)]
+                yield return new object[] { "+" };
             }
         }
         
