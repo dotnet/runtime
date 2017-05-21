@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) $(portableBuild) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /p:\"ConfigurationGroup=\"Release\" /flp:\"v=diag\"",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) $(portableBuild) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
