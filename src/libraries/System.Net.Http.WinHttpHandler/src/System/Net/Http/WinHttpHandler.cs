@@ -1337,18 +1337,18 @@ namespace System.Net.Http
                     0,
                     state.ToIntPtr()))
                 {
+#if DEBUG
+                    int lastError = Marshal.GetLastWin32Error();
+                    Debug.Assert((unchecked((int)lastError) != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER &&
+                        unchecked((int)lastError) != unchecked((int)0x80090321)), // SEC_E_BUFFER_TOO_SMALL
+                        $"Unexpected async error in WinHttpRequestCallback: {unchecked((int)lastError)}");
+#endif
                     // Dispose (which will unpin) the state object. Since this failed, WinHTTP won't associate
                     // our context value (state object) to the request handle. And thus we won't get HANDLE_CLOSING
                     // notifications which would normally cause the state object to be unpinned and disposed.
                     state.Dispose();
                     WinHttpException.ThrowExceptionUsingLastError();
                 }
-#if DEBUG
-                int lastError = Marshal.GetLastWin32Error();
-                Debug.Assert(!(unchecked((int)lastError) == Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER ||
-                    unchecked((int)lastError) == unchecked((int)0x80090321)), // SEC_E_BUFFER_TOO_SMALL
-                    $"Unexpected async error in WinHttpRequestCallback: {unchecked((int)lastError)}");
-#endif
             }
 
             return state.LifecycleAwaitable;
