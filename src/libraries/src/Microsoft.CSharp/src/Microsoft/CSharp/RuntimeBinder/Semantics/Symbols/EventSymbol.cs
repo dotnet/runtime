@@ -31,17 +31,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public MethodSymbol methAdd;            // Adder method (always has same parent)
         public MethodSymbol methRemove;         // Remover method (always has same parent)
 
-        public AggregateDeclaration declaration;       // containing declaration
-
         public bool IsWindowsRuntimeEvent { get; set; }
-
-        // ----------------------------------------------------------------------------
-        // EventSymbol
-        // ----------------------------------------------------------------------------
-
-        public AggregateDeclaration containingDeclaration()
-        {
-            return declaration;
-        }
     }
 }

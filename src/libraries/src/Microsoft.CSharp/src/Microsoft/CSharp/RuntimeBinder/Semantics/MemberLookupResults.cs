@@ -18,12 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private readonly Name _pName; // The name that we're looking for.
 
-        public CMemberLookupResults()
-        {
-            _pName = null;
-            ContainingTypes = null;
-        }
-
         public CMemberLookupResults(
                 TypeArray containingTypes,
                 Name name)
@@ -37,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public CMethodIterator GetMethodIterator(
-            CSemanticChecker pChecker, SymbolLoader pSymLoader, CType pObject, CType pQualifyingType, Declaration pContext, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
+            CSemanticChecker pChecker, SymbolLoader pSymLoader, CType pObject, CType pQualifyingType, AggregateDeclaration pContext, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
         {
             Debug.Assert(pSymLoader != null);
             CMethodIterator iterator = new CMethodIterator(pChecker, pSymLoader, _pName, ContainingTypes, pObject, pQualifyingType, pContext, allowBogusAndInaccessible, allowExtensionMethods, arity, flags, mask);

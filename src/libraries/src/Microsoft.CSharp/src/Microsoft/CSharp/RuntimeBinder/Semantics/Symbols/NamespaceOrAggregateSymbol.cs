@@ -16,25 +16,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal abstract class NamespaceOrAggregateSymbol : ParentSymbol
     {
-        private Declaration _declFirst;
-        private Declaration _declLast;
+        private AggregateDeclaration _declFirst;
+        private AggregateDeclaration _declLast;
 
         // ----------------------------------------------------------------------------
         // NamespaceOrAggregateSymbol
         // ----------------------------------------------------------------------------
 
-        public Declaration DeclFirst()
-        {
-            return _declFirst;
-        }
-
         // Compare to ParentSymbol::AddToChildList
-        public void AddDecl(Declaration decl)
+        public void AddDecl(AggregateDeclaration decl)
         {
             Debug.Assert(decl != null);
             Debug.Assert(IsNamespaceSymbol() || IsAggregateSymbol());
-            Debug.Assert(decl.IsNamespaceDeclaration() || decl.IsAggregateDeclaration());
-            Debug.Assert(!IsNamespaceSymbol() == !decl.IsNamespaceDeclaration());
+            Debug.Assert(decl.IsAggregateDeclaration());
+            Debug.Assert(!IsNamespaceSymbol());
 
             // If parent is set it should be set to us!
             Debug.Assert(decl.bag == null || decl.bag == this);
@@ -53,7 +48,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 #if DEBUG
                 // Validate our chain.
-                Declaration pdecl;
+                AggregateDeclaration pdecl;
                 for (pdecl = _declFirst; pdecl?.declNext != null; pdecl = pdecl.declNext)
                 { }
                 Debug.Assert(pdecl == null || (pdecl == _declLast && pdecl.declNext == null));
@@ -62,9 +57,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             decl.declNext = null;
             decl.bag = this;
-
-            if (decl.IsNamespaceDeclaration())
-                decl.AsNamespaceDeclaration().Bag().DeclAdded(decl.AsNamespaceDeclaration());
         }
     }
 }

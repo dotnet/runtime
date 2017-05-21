@@ -71,7 +71,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _marshalAsBuffer = new UnmanagedType[_Params.Count];
             }
         }             // array of cParams parameter types.
-        public AggregateDeclaration declaration;       // containing declaration
 
         public MethodOrPropertySymbol()
         {
@@ -178,11 +177,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public bool IsExpImpl()
         {
             return name == null;
-        }
-
-        public AggregateDeclaration containingDeclaration()
-        {
-            return declaration;
         }
     }
 }

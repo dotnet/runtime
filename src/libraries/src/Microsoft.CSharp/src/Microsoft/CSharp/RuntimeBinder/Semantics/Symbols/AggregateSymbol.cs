@@ -50,15 +50,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private AggKindEnum _aggKind;
 
-        private bool _isLayoutError; // Whether there is a cycle in the layout for the struct
-
         // Where this came from - fabricated, source, import
         // Fabricated AGGs have isSource == true but hasParseTree == false.
         // N.B.: in incremental builds, it is quite possible for
         // isSource==TRUE and hasParseTree==FALSE. Be
         // sure you use the correct variable for what you are trying to do!
-        private bool _isSource;    // This class is defined in source, although the 
-        // source might not be being read during this compile.
 
         // Predefined
         private bool _isPredefined;    // A special predefined type.
@@ -67,11 +63,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Flags
         private bool _isAbstract;      // Can it be instantiated?
         private bool _isSealed;        // Can it be derived from?
-
-        // Attribute
-
-        private bool _isUnmanagedStruct; // Set if the struct is known to be un-managed (for unsafe code). Set in FUNCBREC.
-        private bool _isManagedStruct; // Set if the struct is known to be managed (for unsafe code). Set during import.
 
         // Constructors
         private bool _hasPubNoArgCtor; // Whether it has a public instance constructor taking no args
@@ -116,7 +107,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void InitFromInfile(InputFile infile)
         {
             _infile = infile;
-            _isSource = infile.isSource;
         }
 
         public bool FindBaseAgg(AggregateSymbol agg)
@@ -132,17 +122,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public NamespaceOrAggregateSymbol Parent
         {
             get { return parent.AsNamespaceOrAggregateSymbol(); }
-        }
-
-        private new AggregateDeclaration DeclFirst()
-        {
-            return (AggregateDeclaration)base.DeclFirst();
-        }
-
-        public AggregateDeclaration DeclOnly()
-        {
-            //Debug.Assert(DeclFirst() != null && DeclFirst().DeclNext() == null);
-            return DeclFirst();
         }
 
         public bool InAlias(KAID aid)
@@ -293,16 +272,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _iPredef = predef;
         }
 
-        public bool IsLayoutError()
-        {
-            return _isLayoutError == true;
-        }
-
-        public void SetLayoutError(bool layoutError)
-        {
-            _isLayoutError = layoutError;
-        }
-
         public bool IsSealed()
         {
             return _isSealed == true;
@@ -339,33 +308,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool IsUnmanagedStruct()
-        {
-            return _isUnmanagedStruct;
-        }
-
-        public void SetUnmanagedStruct(bool unmanagedStruct)
-        {
-            _isUnmanagedStruct = unmanagedStruct;
-        }
-
-        public bool IsManagedStruct()
-        {
-            return _isManagedStruct == true;
-        }
-
-        public void SetManagedStruct(bool managedStruct)
-        {
-            _isManagedStruct = managedStruct;
-        }
-
-        public bool IsKnownManagedStructStatus()
-        {
-            Debug.Assert(IsStruct());
-            Debug.Assert(!IsManagedStruct() || !IsUnmanagedStruct());
-            return IsManagedStruct() || IsUnmanagedStruct();
-        }
-
         public bool HasPubNoArgCtor()
         {
             return _hasPubNoArgCtor == true;
@@ -395,11 +337,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetSkipUDOps(bool skipUDOps)
         {
             _isSkipUDOps = skipUDOps;
-        }
-
-        public bool IsSource()
-        {
-            return _isSource == true;
         }
 
         public TypeArray GetTypeVars()

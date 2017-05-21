@@ -18,16 +18,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // ----------------------------------------------------------------------------
 
     // Either a ClassNode or a DelegateNode
-    internal sealed class AggregateDeclaration : Declaration
+    internal sealed class AggregateDeclaration : ParentSymbol
     {
+        public NamespaceOrAggregateSymbol bag;
+
+        public AggregateDeclaration declNext;
+
         public AggregateSymbol Agg()
         {
             return bag.AsAggregateSymbol();
-        }
-
-        public new InputFile getInputFile()
-        {
-            return null;
         }
 
         public Assembly GetAssembly()

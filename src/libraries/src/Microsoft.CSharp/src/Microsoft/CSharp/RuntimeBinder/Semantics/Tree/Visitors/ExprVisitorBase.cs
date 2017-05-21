@@ -110,12 +110,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitASSIGNMENT(pExpr as ExprAssignment);
                 case ExpressionKind.List:
                     return VisitLIST(pExpr as ExprList);
-                case ExpressionKind.QuestionMark:
-                    return VisitQUESTIONMARK(pExpr as ExprQuestionMark);
                 case ExpressionKind.ArrayIndex:
                     return VisitARRAYINDEX(pExpr as ExprArrayIndex);
-                case ExpressionKind.ArrayLength:
-                    return VisitARRAYLENGTH(pExpr as ExprArrayLength);
                 case ExpressionKind.Call:
                     return VisitCALL(pExpr as ExprCall);
                 case ExpressionKind.Event:
@@ -301,15 +297,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     (pExpr as ExprAssignment).RHS = exprRet;
                     break;
 
-                case ExpressionKind.QuestionMark:
-                    exprRet = Visit((pExpr as ExprQuestionMark).TestExpression);
-                    Debug.Assert(exprRet != null);
-                    (pExpr as ExprQuestionMark).TestExpression = exprRet;
-                    exprRet = Visit((pExpr as ExprQuestionMark).Consequence);
-                    Debug.Assert(exprRet != null);
-                    (pExpr as ExprQuestionMark).Consequence = exprRet as ExprBinOp;
-                    break;
-
                 case ExpressionKind.ArrayIndex:
                     exprRet = Visit((pExpr as ExprArrayIndex).Array);
                     Debug.Assert(exprRet != null);
@@ -317,12 +304,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     exprRet = Visit((pExpr as ExprArrayIndex).Index);
                     Debug.Assert(exprRet != null);
                     (pExpr as ExprArrayIndex).Index = exprRet;
-                    break;
-
-                case ExpressionKind.ArrayLength:
-                    exprRet = Visit((pExpr as ExprArrayLength).Array);
-                    Debug.Assert(exprRet != null);
-                    (pExpr as ExprArrayLength).Array = exprRet;
                     break;
 
                 case ExpressionKind.UnaryOp:
@@ -551,18 +532,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitQUESTIONMARK(ExprQuestionMark pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
+
         protected virtual Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitARRAYLENGTH(ExprArrayLength pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
+
         protected virtual Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             return VisitEXPR(pExpr);
@@ -739,10 +714,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitBINOP(pExpr);
         }
-        protected virtual Expr VisitRANGE(ExprBinOp pExpr)
-        {
-            return VisitBINOP(pExpr);
-        }
+
         protected virtual Expr VisitLT(ExprBinOp pExpr)
         {
             return VisitBINOP(pExpr);

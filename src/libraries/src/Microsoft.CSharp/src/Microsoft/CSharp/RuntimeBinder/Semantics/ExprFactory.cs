@@ -460,17 +460,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return rval;
         }
 
-        public ExprQuestionMark CreateQuestionMark(Expr pTestExpression, ExprBinOp pConsequence)
-        {
-            Debug.Assert(pTestExpression != null);
-            Debug.Assert(pConsequence != null);
-
-            ExprQuestionMark pResult = new ExprQuestionMark();
-            pResult.TestExpression = pTestExpression;
-            pResult.Consequence = pConsequence;
-            return pResult;
-        }
-
         public ExprArrayIndex CreateArrayIndex(Expr pArray, Expr pIndex)
         {
             CType pType = pArray.Type;
@@ -486,13 +475,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprArrayIndex pResult = new ExprArrayIndex(pType);
             pResult.Array = pArray;
             pResult.Index = pIndex;
-            return pResult;
-        }
-
-        public ExprArrayLength CreateArrayLength(Expr pArray)
-        {
-            ExprArrayLength pResult = new ExprArrayLength(GetTypes().GetReqPredefAgg(PredefinedType.PT_INT).getThisType());
-            pResult.Array = pArray;
             return pResult;
         }
 

@@ -606,73 +606,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return true;
         }
-        public bool computeManagedType(SymbolLoader symbolLoader)
-        {
-            if (IsVoidType())
-                return false;
 
-            switch (fundType())
-            {
-                case FUNDTYPE.FT_NONE:
-                case FUNDTYPE.FT_REF:
-                case FUNDTYPE.FT_VAR:
-                    return true;
-
-                case FUNDTYPE.FT_STRUCT:
-                    if (IsNullableType())
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        AggregateSymbol aggT = getAggregate();
-
-                        // See if we already know.
-                        if (aggT.IsKnownManagedStructStatus())
-                        {
-                            return aggT.IsManagedStruct();
-                        }
-
-                        // Generics are always managed.
-                        if (aggT.GetTypeVarsAll().Count > 0)
-                        {
-                            aggT.SetManagedStruct(true);
-                            return true;
-                        }
-
-                        // If the struct layout has an error, don't recurse its children.
-                        if (aggT.IsLayoutError())
-                        {
-                            aggT.SetUnmanagedStruct(true);
-                            return false;
-                        }
-
-                        // at this point we can only determine the managed status
-                        // if we have members defined, otherwise we don't know the result
-                        if (symbolLoader != null)
-                        {
-                            for (Symbol ps = aggT.firstChild; ps != null; ps = ps.nextChild)
-                            {
-                                if (ps.IsFieldSymbol() && !ps.AsFieldSymbol().isStatic)
-                                {
-                                    CType type = ps.AsFieldSymbol().GetType();
-                                    if (type.computeManagedType(symbolLoader))
-                                    {
-                                        aggT.SetManagedStruct(true);
-                                        return true;
-                                    }
-                                }
-                            }
-
-                            aggT.SetUnmanagedStruct(true);
-                        }
-
-                        return false;
-                    }
-                default:
-                    return false;
-            }
-        }
         public CType GetDelegateTypeOfPossibleExpression()
         {
             if (isPredefType(PredefinedType.PT_G_EXPRESSION))

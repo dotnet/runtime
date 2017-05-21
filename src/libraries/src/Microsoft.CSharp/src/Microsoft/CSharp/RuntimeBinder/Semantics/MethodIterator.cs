@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Inputs.
             private AggregateType _pCurrentType;
             private MethodOrPropertySymbol _pCurrentSym;
-            private Declaration _pContext;
+            private AggregateDeclaration _pContext;
             private TypeArray _pContainingTypes;
             private CType _pQualifyingType;
             private Name _pName;
@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Namespace's extension methodlist
             private bool _bEndIterationAtCurrentExtensionList;
 
-            public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType @object, CType qualifyingType, Declaration context, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
+            public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType @object, CType qualifyingType, AggregateDeclaration context, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
             {
                 Debug.Assert(name != null);
                 Debug.Assert(symLoader != null);
