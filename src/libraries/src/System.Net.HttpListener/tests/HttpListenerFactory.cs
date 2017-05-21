@@ -131,7 +131,7 @@ namespace System.Net.Tests
 
         public HttpListener GetListener() => _processPrefixListener;
 
-        public void Dispose() => _processPrefixListener.Close();
+        public void Dispose() => _processPrefixListener?.Close();
 
         public Socket GetConnectedSocket()
         {
