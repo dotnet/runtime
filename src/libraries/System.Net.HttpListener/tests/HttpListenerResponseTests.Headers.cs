@@ -333,8 +333,7 @@ namespace System.Net.Tests
         [InlineData("A !#\t1\u1234", "A !#\t14", 125)] // 
         [InlineData("StatusDescription", "StatusDescription", 135)]
         [InlineData("  StatusDescription  ", "  StatusDescription  ", 139)]
-        // The managed implementation should use WebHeaderEncoding to encode unicode headers.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19976, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusDescription_SetCustom_Success(string statusDescription, string expectedStatusDescription, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
