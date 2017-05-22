@@ -40,14 +40,14 @@ public:
     virtual ~ProfilerFunctionControl();
 
     // IUnknown functions
-    virtual HRESULT __stdcall QueryInterface(REFIID id, void** pInterface);
-    virtual ULONG __stdcall AddRef();
-    virtual ULONG __stdcall Release();
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID id, void** pInterface);
+    virtual ULONG STDMETHODCALLTYPE AddRef();
+    virtual ULONG STDMETHODCALLTYPE Release();
 
     // ICorProfilerFunctionControl functions
-    virtual HRESULT __stdcall SetCodegenFlags(DWORD flags);
-    virtual HRESULT __stdcall SetILFunctionBody(ULONG cbNewILMethodHeader, LPCBYTE pbNewILMethodHeader);
-    virtual HRESULT __stdcall SetILInstrumentedCodeMap(ULONG cILMapEntries, COR_IL_MAP * rgILMapEntries);
+    virtual HRESULT STDMETHODCALLTYPE SetCodegenFlags(DWORD flags);
+    virtual HRESULT STDMETHODCALLTYPE SetILFunctionBody(ULONG cbNewILMethodHeader, LPCBYTE pbNewILMethodHeader);
+    virtual HRESULT STDMETHODCALLTYPE SetILInstrumentedCodeMap(ULONG cILMapEntries, COR_IL_MAP * rgILMapEntries);
 
     // Accessors
     DWORD GetCodegenFlags();
