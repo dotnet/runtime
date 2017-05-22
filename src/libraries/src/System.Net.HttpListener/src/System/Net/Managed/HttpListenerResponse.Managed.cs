@@ -39,7 +39,6 @@ namespace System.Net
     {
         private long _contentLength;
         private bool _clSet;
-        private HttpResponseStream _outputStream;
         private Version _version = HttpVersion.Version11;
         private int _statusCode = 200;
         private bool _chunked;
@@ -70,13 +69,11 @@ namespace System.Net
             }
         }
 
-        public Stream OutputStream
+        private void EnsureResponseStream()
         {
-            get
+            if (_responseStream == null)
             {
-                if (_outputStream == null)
-                    _outputStream = _context.Connection.GetResponseStream();
-                return _outputStream;
+                _responseStream = _context.Connection.GetResponseStream();
             }
         }
 
@@ -275,8 +272,7 @@ namespace System.Net
             writer.Write(headers_str);
             writer.Flush();
             int preamble = encoding.GetPreamble().Length;
-            if (_outputStream == null)
-                _outputStream = _context.Connection.GetResponseStream();
+            EnsureResponseStream();
 
             /* Assumes that the ms was at position 0 */
             ms.Position = preamble;

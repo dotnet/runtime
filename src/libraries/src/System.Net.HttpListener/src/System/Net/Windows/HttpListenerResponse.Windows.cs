@@ -25,7 +25,6 @@ namespace System.Net
 
         private ResponseState _responseState;
 
-        private HttpResponseStream _responseStream;
         private long _contentLength;
         private BoundaryType _boundaryType;
         private Interop.HttpApi.HTTP_RESPONSE _nativeResponse;
@@ -52,16 +51,6 @@ namespace System.Net
         private HttpListenerContext HttpListenerContext => _httpContext;
 
         private HttpListenerRequest HttpListenerRequest => HttpListenerContext.Request;
-
-        public Stream OutputStream
-        {
-            get
-            {
-                CheckDisposed();
-                EnsureResponseStream();
-                return _responseStream;
-            }
-        }
 
         public int StatusCode
         {

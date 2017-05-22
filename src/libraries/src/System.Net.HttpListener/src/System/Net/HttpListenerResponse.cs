@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace System.Net
@@ -11,6 +12,7 @@ namespace System.Net
     {
         private CookieCollection _cookies;
         private bool _keepAlive = true;
+        private HttpResponseStream _responseStream;
         private string _statusDescription;
         private WebHeaderCollection _webHeaders = new WebHeaderCollection();
 
@@ -59,6 +61,16 @@ namespace System.Net
             {
                 CheckDisposed();
                 _keepAlive = value;
+            }
+        }
+
+        public Stream OutputStream
+        {
+            get
+            {
+                CheckDisposed();
+                EnsureResponseStream();
+                return _responseStream;
             }
         }
 

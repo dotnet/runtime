@@ -126,8 +126,7 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Content-Type", clientResponse);
         }
 
-        // The managed implementation should throw an ObjectDisposedException getting OutputStream when disposed.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task OutputStream_GetDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
