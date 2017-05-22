@@ -181,8 +181,10 @@ private:
         GenTree* const op1 = tree->gtGetOp1();
         GenTree* const op2 = tree->gtGetOp2();
 
-        const bool op1Legal = tree->OperIsCommutative() && (tree->TypeGet() == op1->TypeGet());
-        const bool op2Legal = tree->TypeGet() == op2->TypeGet();
+        const unsigned operatorSize = genTypeSize(tree->TypeGet());
+
+        const bool op1Legal = tree->OperIsCommutative() && (operatorSize == genTypeSize(op1->TypeGet()));
+        const bool op2Legal = operatorSize == genTypeSize(op2->TypeGet());
 
         if (op1Legal)
         {
