@@ -475,6 +475,13 @@ public:
     // Call this during the ngen Fixup phase to adjust the relative pointer to account for ngen image layout.
     void Fixup(DataImage *pImage, NgenHashTable<NGEN_HASH_ARGS> *pTable);
 #endif // FEATURE_PREJIT
+
+    NgenHashEntryRef<NGEN_HASH_ARGS>& operator = (const NgenHashEntryRef<NGEN_HASH_ARGS> &src)
+    {
+        src.m_rpEntryRef.BitwiseCopyTo(m_rpEntryRef);
+
+        return *this;
+    }
 #endif // !DACCESS_COMPILE
 
 private:

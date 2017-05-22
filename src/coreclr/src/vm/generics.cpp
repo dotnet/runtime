@@ -597,8 +597,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
             for (DWORD i = 0; i < pOldMT->GetNumStaticFields(); i++)
             {
-                pStaticFieldDescs[i] = pOldFD[i];
-                pStaticFieldDescs[i].SetMethodTable(pMT);
+                pStaticFieldDescs[i].InitializeFrom(pOldFD[i], pMT);
             }
         }
         pMT->SetupGenericsStaticsInfo(pStaticFieldDescs);
