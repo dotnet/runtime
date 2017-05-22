@@ -453,5 +453,17 @@ namespace System.Data.Tests.Common
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("MissingMappingAction", () => DataColumnMappingCollection.GetDataColumn((DataColumnMappingCollection)null, "not null", typeof(string), new DataTable(), new MissingMappingAction(), new MissingSchemaAction()));
         }
+
+        [Fact]
+        public void GetColumnMappingBySchemaAction_DataColumnMappingCollection_String_MissingMappingAction_InvalidArguments()
+        {
+            AssertExtensions.Throws<ArgumentException>("sourceColumn", () => DataColumnMappingCollection.GetColumnMappingBySchemaAction((DataColumnMappingCollection)null, null, new MissingMappingAction()));
+        }
+
+        [Fact]
+        public void GetColumnMappingBySchemaAction_DataColumnMappingCollection_String_MissingMappingAction_MissingMappingActionNotFoundThrowsException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("MissingMappingAction", () => DataColumnMappingCollection.GetColumnMappingBySchemaAction((DataColumnMappingCollection)null, "not null", new MissingMappingAction()));
+        }
     }
 }
