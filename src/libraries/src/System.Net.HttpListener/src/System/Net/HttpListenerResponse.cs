@@ -10,6 +10,7 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerResponse : IDisposable
     {
         private CookieCollection _cookies;
+        private bool _keepAlive = true;
         private WebHeaderCollection _webHeaders = new WebHeaderCollection();
 
         public WebHeaderCollection Headers
@@ -48,6 +49,16 @@ namespace System.Net
         {
             get => _cookies ?? (_cookies = new CookieCollection());
             set => _cookies = value;
+        }
+
+        public bool KeepAlive
+        {
+            get => _keepAlive;
+            set
+            {
+                CheckDisposed();
+                _keepAlive = value;
+            }
         }
 
         public void AddHeader(string name, string value)

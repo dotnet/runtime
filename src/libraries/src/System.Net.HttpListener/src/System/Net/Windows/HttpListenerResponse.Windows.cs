@@ -24,7 +24,6 @@ namespace System.Net
         }
 
         private string _statusDescription;
-        private bool _keepAlive;
         private ResponseState _responseState;
 
         private HttpResponseStream _responseStream;
@@ -42,7 +41,6 @@ namespace System.Net
             _nativeResponse.StatusCode = (ushort)HttpStatusCode.OK;
             _nativeResponse.Version.MajorVersion = 1;
             _nativeResponse.Version.MinorVersion = 1;
-            _keepAlive = true;
             _responseState = ResponseState.Created;
         }
 
@@ -192,16 +190,6 @@ namespace System.Net
                 {
                     _contentLength = -1;
                 }
-            }
-        }
-
-        public bool KeepAlive
-        {
-            get => _keepAlive;
-            set
-            {
-                CheckDisposed();
-                _keepAlive = value;
             }
         }
 
