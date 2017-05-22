@@ -78,12 +78,12 @@ $(_XunitEpilog)
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{95DFC527-4DC1-495E-97D7-E94EE1F7140D}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <TargetFrameworkIdentifier Condition ="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion Condition ="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">v4.5</TargetFrameworkVersion>
+    <TargetFrameworkIdentifier Condition ="'$(BuildTestsAgainstPackages)' != 'true'">.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion Condition ="'$(BuildTestsAgainstPackages)' != 'true'">v4.5</TargetFrameworkVersion>
     <NugetTargetMonikerShort Condition ="'$(BuildTestsAgainstPackages)' != 'true'">net45</NugetTargetMonikerShort>
     <IsXunitWrapperProject>true</IsXunitWrapperProject>
     <SkipSigning>true</SkipSigning>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB}%3B{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
@@ -100,11 +100,11 @@ $(_XunitEpilog)
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
    <ItemGroup>
-    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' != 'true') And ('$(BuildOS)' == 'Windows_NT')">
+    <ProjectReference Include="$(SourceDir)Common\Desktop.Coreclr.TestWrapper\Desktop.Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' != 'true'">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>coreclr</Name>
     </ProjectReference>
-    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="('$(BuildTestsAgainstPackages)' == 'true') Or ('$(BuildOS)' != 'Windows_NT')">
+    <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" Condition="'$(BuildTestsAgainstPackages)' == 'true'">
       <Project>{8ffe99c0-22f8-4462-b839-970eac1b3472}</Project>
       <Name>coreclr</Name>
     </ProjectReference>
@@ -152,10 +152,8 @@ $(_XunitEpilog)
     <PropertyGroup>
       <_CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR_Parent>
       <_CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR_Parent)))</_CMDDIR_Grandparent>
-      <CategoryWithSlash Condition="'$(BuildOS)' == 'Windows_NT'" >$([System.String]::Copy('$(_CMDDIR)').Replace("$(_CMDDIR_Grandparent)\",""))</CategoryWithSlash>
-      <CategoryWithSlash Condition="'$(BuildOS)' != 'Windows_NT'" >$([System.String]::Copy('$(_CMDDIR)').Replace("$(_CMDDIR_Grandparent)/",""))</CategoryWithSlash>
-      <Category Condition="'$(BuildOS)' == 'Windows_NT'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
-      <Category Condition="'$(BuildOS)' != 'Windows_NT'" >$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','.'))</Category>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace($(_CMDDIR_Grandparent)\,''))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
       <XunitWrapperOutputDir>$(XunitWrapperOutputIntermediatedDirBase)$(Category)</XunitWrapperOutputDir>
@@ -222,16 +220,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(BuildOS)' == 'Windows_NT'" />
-      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(BuildOS)' != 'Windows_NT'" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" />
       <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="$(HaveExcludes)"/>
       <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
 
       <AllCommands Include="@(AllCMDs)" >
-        <_FactName Condition="'$(BuildOS)' == 'Windows_NT'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))</_FactName>
-        <_ClassName Condition="'$(BuildOS)' == 'Windows_NT'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</_ClassName>
-        <_FactName Condition="'$(BuildOS)' != 'Windows_NT'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("/","_").Replace("-","_"))</_FactName>
-        <_ClassName Condition="'$(BuildOS)' != 'Windows_NT'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("sh","").Replace(".","_").Replace("/","_").Replace("-","_"))</_ClassName>
+        <_FactName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))</_FactName>
+        <_ClassName>$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</_ClassName>
+
         <_XunitFact >
           <![CDATA[
 
@@ -320,8 +316,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(BuildOS)' == 'Windows_NT'" />
-      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.sh" Condition="'$(BuildOS)' != 'Windows_NT'" />
+      <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" />
     </ItemGroup>
   </Target> 
 
