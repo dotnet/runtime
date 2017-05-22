@@ -740,6 +740,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_PINVOKE_PROLOG:
         case GT_JCC:
         case GT_MEMORYBARRIER:
+        case GT_OBJ:
             info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {
