@@ -2439,9 +2439,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(dog1.Breed, dog2.Breed);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(14259)]
-#endif
     [Fact]
     public static void XmlUnknownElementAndEventHandlerTest()
     {
@@ -2472,9 +2469,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(b);
     }
 
-#if ReflectionOnly
-    [ActiveIssue(14259)]
-#endif
     [Fact]
     public static void XmlUnknownNodeAndEventHandlerTest()
     {
