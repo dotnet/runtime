@@ -6,8 +6,15 @@
   <PropertyGroup>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))/</RepoRoot>
     <VersionPrefix>2.0.0</VersionPrefix>
+    <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <IncludeSymbols>true</IncludeSymbols>
+    <Serviceable>true</Serviceable>
+    <PackageLicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</PackageLicenseUrl>
+    <PackageProjectUrl>https://dot.net</PackageProjectUrl>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -26,4 +33,17 @@
     <Reference Include="System.Core" />
   </ItemGroup>
 
+  <!-- Add required legal files to packages -->
+  <ItemGroup>
+    <Content Condition="Exists('$(PackageLicenseFile)')"
+             Include="$(PackageLicenseFile)">
+      <PackagePath />
+    </Content>
+    <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+             Include="$(PackageThirdPartyNoticesFile)">
+      <PackagePath />
+    </Content>
+  </ItemGroup>
+
+  <Import Condition="Exists('$(RepoRoot)Tools/versioning.props')" Project="$(RepoRoot)Tools/versioning.props" /> 
 </Project>
