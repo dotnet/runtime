@@ -58,7 +58,7 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void ValidCreation_ExtendedSyntax()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
@@ -74,7 +74,7 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void ValidCreation_LongPathExtendedSyntax()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500).FullPath);

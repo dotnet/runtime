@@ -129,7 +129,7 @@ namespace System.Net.Mail.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void ServicePoint_NetFramework_AddressIsInaccessible()
         {

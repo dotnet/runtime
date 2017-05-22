@@ -77,7 +77,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "AssemblyName.GetAssemblyName() not supported on UapAot")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "AssemblyName.GetAssemblyName() not supported on UapAot")]
         public static void GetAssemblyName()
         {
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AssemblyName.GetAssemblyName(null));

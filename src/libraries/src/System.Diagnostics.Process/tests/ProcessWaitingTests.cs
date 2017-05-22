@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/18210")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18210", TargetFrameworkMonikers.UapAot)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(127)]
