@@ -63,9 +63,7 @@ namespace System.Net.Tests
         [InlineData("application/json", 152)]
         [InlineData("  applICATion/jSOn   ", 152)]
         [InlineData("garbage", 143)]
-        // The managed implementation should set ContentType directly in the headers instead of tracking it with its own field.
-        // The managed implementation should trim the value.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentType_SetAndSend_Success(string contentType, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -82,8 +80,7 @@ namespace System.Net.Tests
         [InlineData(null, null)]
         [InlineData("", null)]
         [InlineData("\r \t \n", "")]
-        // The managed implementation should store ContentType in Headers, not as a separate variable.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentType_SetNullEmptyOrWhitespace_ResetsContentType(string contentType, string expectedContentType)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -139,9 +136,7 @@ namespace System.Net.Tests
         [InlineData("  http://MICROSOFT.com   ", 152)]
         [InlineData("garbage", 139)]
         [InlineData("http://domain:-1", 148)]
-        // The managed implementation should set Location directly in Headers rather than track it with its own variable.
-        // The managed implementation should trim the value.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task RedirectLocation_SetAndSend_Success(string redirectLocation, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
