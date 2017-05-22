@@ -26,7 +26,6 @@
 
     <!-- We're currently not building a "live" baseline, instead we're using .NETCore 1.0 RTM stable versions as the baseline -->
     <SkipBaseLineCheck>true</SkipBaseLineCheck>
-    <PlatformPackageVersion Condition="'$(PlatformPackageVersion)' == ''">2.1.0</PlatformPackageVersion>
 
     <!-- by default all packages will use the same version which revs with respect to product version -->
     <PackageVersion Condition="'$(PackageVersion)' == ''">4.5.0</PackageVersion>
