@@ -438,5 +438,10 @@ namespace System.IO
         {
             return IsDirectorySeparator(ch) || VolumeSeparatorChar == ch;
         }
+
+        internal static string TrimEndingDirectorySeparator(string path) =>
+            EndsInDirectorySeparator(path) ?
+            path.Substring(0, path.Length - 1) :
+            path;
     }
 }
