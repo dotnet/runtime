@@ -41,7 +41,6 @@ namespace System.Net
         private bool _clSet;
         private HttpResponseStream _outputStream;
         private Version _version = HttpVersion.Version11;
-        private string _location;
         private int _statusCode = 200;
         private bool _chunked;
         private HttpListenerContext _context;
@@ -96,18 +95,6 @@ namespace System.Net
                     throw new ArgumentException(SR.net_wrongversion, nameof(value));
 
                 _version = value;
-            }
-        }
-
-        public string RedirectLocation
-        {
-            get => _location;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _location = value;
             }
         }
 
@@ -183,12 +170,6 @@ namespace System.Net
             _statusDescription = templateResponse._statusDescription;
             _keepAlive = templateResponse._keepAlive;
             _version = templateResponse._version;
-        }
-
-        public void Redirect(string url)
-        {
-            StatusCode = 302; // Found
-            _location = url;
         }
 
         private bool FindCookie(Cookie cookie)
@@ -279,9 +260,6 @@ namespace System.Net
                     if (_context.Request.ProtocolVersion <= HttpVersion.Version10)
                         _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
                 }
-
-                if (_location != null)
-                    _webHeaders.Set(HttpKnownHeaderNames.Location, _location);
 
                 if (_cookies != null)
                 {

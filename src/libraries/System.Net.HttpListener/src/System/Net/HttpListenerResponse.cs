@@ -62,6 +62,24 @@ namespace System.Net
             }
         }
 
+        public string RedirectLocation
+        {
+            get => Headers[HttpResponseHeader.Location];
+            set
+            {
+                // note that this doesn't set the status code to a redirect one
+                CheckDisposed();
+                if (string.IsNullOrEmpty(value))
+                {
+                    Headers.Remove(HttpKnownHeaderNames.Location);
+                }
+                else
+                {
+                    Headers.Set(HttpKnownHeaderNames.Location, value);
+                }
+            }
+        }
+
         public string StatusDescription
         {
             get
@@ -121,6 +139,14 @@ namespace System.Net
             }
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
+        }
+
+        public void Redirect(string url)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
+            Headers[HttpResponseHeader.Location] = url;
+            StatusCode = (int)HttpStatusCode.Redirect;
+            StatusDescription = HttpStatusDescription.Get(StatusCode);
         }
 
         public void SetCookie(Cookie cookie)

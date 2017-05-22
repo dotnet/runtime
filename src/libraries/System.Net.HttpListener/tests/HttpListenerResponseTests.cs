@@ -137,8 +137,7 @@ namespace System.Net.Tests
             }
         }
 
-        // The managed implementation should set Location directly in the Headers rather than tracking it with its own field.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task Redirect_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
