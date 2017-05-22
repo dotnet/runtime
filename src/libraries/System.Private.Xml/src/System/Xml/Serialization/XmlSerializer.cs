@@ -160,6 +160,7 @@ namespace System.Xml.Serialization
         internal string DefaultNamespace = null;
 #endif
         private Type _rootType;
+        private Type[] _extraTypes;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -216,6 +217,7 @@ namespace System.Xml.Serialization
         public XmlSerializer(Type type, Type[] extraTypes) : this(type)
 #endif
         {
+            _extraTypes = extraTypes;
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer4"]/*' />
@@ -309,16 +311,6 @@ namespace System.Xml.Serialization
             {
                 this.innerSerializer = contract.GetSerializer(type);
             }
-            else if (ReflectionMethodEnabled)
-            {
-                var importer = new XmlReflectionImporter(defaultNamespace);
-                _mapping = importer.ImportTypeMapping(type, null, defaultNamespace);
-
-                if (_mapping == null)
-                {
-                    _mapping = XmlReflectionImporter.GetTopLevelMapping(type, defaultNamespace);
-                }
-            }
 #endif
         }
 
@@ -333,17 +325,22 @@ namespace System.Xml.Serialization
 
             DefaultNamespace = defaultNamespace;
             _rootType = type;
+            _mapping = GenerateXmlTypeMapping(type, overrides, extraTypes, root, defaultNamespace);
+#if !uapaot
+            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
+#endif
+        }
+
+        private XmlTypeMapping GenerateXmlTypeMapping(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace)
+        {
             XmlReflectionImporter importer = new XmlReflectionImporter(overrides, defaultNamespace);
             if (extraTypes != null)
             {
                 for (int i = 0; i < extraTypes.Length; i++)
                     importer.IncludeType(extraTypes[i]);
             }
-            _mapping = importer.ImportTypeMapping(type, root, defaultNamespace);
 
-#if !uapaot
-            _tempAssembly = GenerateTempAssembly(_mapping, type, defaultNamespace, location);
-#endif
+            return importer.ImportTypeMapping(type, root, defaultNamespace);
         }
 
         internal static TempAssembly GenerateTempAssembly(XmlMapping xmlMapping)
@@ -515,19 +512,19 @@ namespace System.Xml.Serialization
 
         private void SerializeUsingReflection(XmlWriter xmlWriter, object o, XmlSerializerNamespaces namespaces, string encodingStyle, string id)
         {
-            XmlMapping mapping;
-            if (_mapping != null && _mapping.GenerateSerializer)
-            {
-                mapping = _mapping;
-            }
-            else
-            {
-                XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
-                mapping = importer.ImportTypeMapping(_rootType, null, DefaultNamespace);
-            }
-
+            XmlMapping mapping = GetMapping();
             var writer = new ReflectionXmlSerializationWriter(mapping, xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
             writer.WriteObject(o);
+        }
+
+        private XmlMapping GetMapping()
+        {
+            if (_mapping == null || !_mapping.GenerateSerializer)
+            {
+                _mapping = GenerateXmlTypeMapping(_rootType, null, _extraTypes, null, DefaultNamespace);
+            }
+
+            return _mapping;
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize"]/*' />
@@ -665,17 +662,7 @@ namespace System.Xml.Serialization
 
         private object DeserializeUsingReflection(XmlReader xmlReader, string encodingStyle, XmlDeserializationEvents events)
         {
-            XmlMapping mapping;
-            if (_mapping != null && _mapping.GenerateSerializer)
-            {
-                mapping = _mapping;
-            }
-            else
-            {
-                XmlReflectionImporter importer = new XmlReflectionImporter(DefaultNamespace);
-                mapping = importer.ImportTypeMapping(_rootType, null, DefaultNamespace);
-            }
-
+            XmlMapping mapping = GetMapping();
             var reader = new ReflectionXmlSerializationReader(mapping, xmlReader, events, encodingStyle);
             return reader.ReadObject();
         }
