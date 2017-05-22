@@ -87,6 +87,8 @@ namespace System.Net.Http
                 }
                 _easyHandle = easyHandle;
 
+                EventSourceTrace("Configuring request.");
+
                 // Before setting any other options, turn on curl's debug tracing
                 // if desired.  CURLOPT_VERBOSE may also be set subsequently if
                 // EventSource tracing is enabled.
@@ -109,6 +111,8 @@ namespace System.Net.Http
                 SetCookieOption(_requestMessage.RequestUri);
                 SetRequestHeaders();
                 SetSslOptions();
+
+                EventSourceTrace("Done configuring request.");
             }
 
             public void EnsureResponseMessagePublished()
