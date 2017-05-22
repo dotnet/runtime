@@ -2053,7 +2053,7 @@ void LinearScan::identifyCandidates()
 
     for (lclNum = 0, varDsc = compiler->lvaTable; lclNum < compiler->lvaCount; lclNum++, varDsc++)
     {
-        Interval* newInt;
+        Interval* newInt = nullptr; // Initialize to prevent VC++ "C4701: potentially uninitialized" warning.
 
         if (varDsc->lvTracked)
         {
