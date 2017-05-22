@@ -581,16 +581,28 @@ static void
 clock_init (void)
 {
 	switch (mono_profiler_get_sampling_mode ()) {
-	case MONO_PROFILER_STAT_MODE_PROCESS:
+	case MONO_PROFILER_STAT_MODE_PROCESS: {
+	/*
+	 * If we don't have clock_nanosleep (), measuring the process time
+	 * makes very little sense as we can only use nanosleep () to sleep on
+	 * real time.
+	 */
 #ifdef HAVE_CLOCK_NANOSLEEP
+		struct timespec ts = { 0 };
+
 		/*
-		 * If we don't have clock_nanosleep (), measuring the process time
-		 * makes very little sense as we can only use nanosleep () to sleep on
-		 * real time.
+		 * Some systems (e.g. Windows Subsystem for Linux) declare the
+		 * CLOCK_PROCESS_CPUTIME_ID clock but don't actually support it. For
+		 * those systems, we fall back to CLOCK_MONOTONIC if we get EINVAL.
 		 */
-		sampling_posix_clock = CLOCK_PROCESS_CPUTIME_ID;
-		break;
+		if (clock_nanosleep (CLOCK_PROCESS_CPUTIME_ID, TIMER_ABSTIME, &ts, NULL) != EINVAL) {
+			sampling_posix_clock = CLOCK_PROCESS_CPUTIME_ID;
+			break;
+		}
 #endif
+
+		// fallthrough
+	}
 	case MONO_PROFILER_STAT_MODE_REAL: sampling_posix_clock = CLOCK_MONOTONIC; break;
 	default: g_assert_not_reached (); break;
 	}
