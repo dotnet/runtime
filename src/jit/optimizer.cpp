@@ -6178,9 +6178,9 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
                         // with the static field reference.
                         treeIsCctorDependent = false;
                         // Hoisting the static field without hoisting the initialization would be
-                        // incorrect; unset childrenHoistable for the field to ensure this doesn't
-                        // happen.
-                        childrenHoistable[0] = false;
+                        // incorrect, make sure we consider the field (which we flagged as
+                        // cctor-dependent) non-hoistable.
+                        noway_assert(!childrenHoistable[childNum]);
                     }
                 }
             }
