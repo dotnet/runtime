@@ -432,29 +432,36 @@ exit /b 0
 :Usage
 echo.
 echo Usage:
-echo   %0 BuildArch BuildType [TestEnv TEST_ENV_SCRIPT] [VSVersion] CORE_ROOT
+echo   %0 [options] [CORE_ROOT]
 echo where:
 echo.
-echo./? -? /h -h /help -help: view this message.
-echo BuildArch- Optional parameter - x64 or x86 ^(default: x64^).
-echo BuildType- Optional parameter - Debug, Release, or Checked ^(default: Debug^).
-echo TestEnv- Optional parameter - this will run a custom script to set custom test environment settings.
-echo VSVersion- Optional parameter - VS2015 or VS2017 ^(default: VS2017^)
-echo AgainstPackages - Optional parameter - this indicates that we are running tests that were built against packages
-echo GenerateLayoutOnly - If specified will not run the tests and will only create the Runtime Dependency Layout
-echo link "ILlink"      - Runs the tests after linking via ILlink
-echo RunCrossgenTests   - Runs ReadytoRun tests
-echo jitstress n        - Runs the tests with COMPlus_JitStress=n
-echo jitstressregs n    - Runs the tests with COMPlus_JitStressRegs=n
-echo jitminopts         - Runs the tests with COMPlus_JITMinOpts=1
-echo jitforcerelocs     - Runs the tests with COMPlus_ForceRelocs=1
-echo jitdisasm          - Runs jit-dasm on the tests
-echo ilasmroundtrip     - Runs ilasm round trip on the tests
-echo gcstresslevel n    - Runs the tests with COMPlus_GCStress=n
-echo     0: None                                1: GC on all allocs and 'easy' places
-echo     2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr
-echo     8: GC on every allowable NGEN instr   16: GC only on a unique stack trace
-echo CORE_ROOT The path to the runtime  
+echo./? -? /h -h /help -help   - View this message.
+echo BuildArch ^<build_arch^>    - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
+echo BuildType ^<build_type^>    - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
+echo VSVersion ^<vs_version^>    - VS2015 or VS2017 ^(default: VS2017^).
+echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
+echo AgainstPackages           - This indicates that we are running tests that were built against packages.
+echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
+echo sequential                - Run tests sequentially (no parallelism).
+echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
+echo link ^<ILlink^>             - Runs the tests after linking via ILlink
+echo RunCrossgenTests          - Runs ReadytoRun tests
+echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
+echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n
+echo jitminopts                - Runs the tests with COMPlus_JITMinOpts=1
+echo jitforcerelocs            - Runs the tests with COMPlus_ForceRelocs=1
+echo jitdisasm                 - Runs jit-dasm on the tests
+echo ilasmroundtrip            - Runs ilasm round trip on the tests
+echo longgc                    - Run the long-running GC tests
+echo gcsimulator               - Run the GC Simulator tests
+echo gcstresslevel ^<n^>         - Runs the tests with COMPlus_GCStress=n. n=0 means no GC Stress. Otherwise, n is a bitmask of the following:
+echo                               1: GC on all allocs and 'easy' places
+echo                               2: GC on transitions to preemptive GC
+echo                               4: GC on every allowable JITed instruction
+echo                               8: GC on every allowable NGEN instruction
+echo                              16: GC only on a unique stack trace
+echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
+echo ^<CORE_ROOT^>               - If specified, last, this is the path to the runtime to test.
 exit /b 1
 
 :NoVS
