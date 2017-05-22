@@ -85,29 +85,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact] 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior varies on Windows and Unix
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
-        public void TestBasePriorityOnUnix()
-        {
-            CreateDefaultProcess();
-            
-            ProcessPriorityClass originalPriority = _process.PriorityClass;
-            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
-
-            try
-            {
-                SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
-                SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
-                SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
-            }
-            finally
-            {
-                _process.PriorityClass = originalPriority;
-            }
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -154,17 +131,6 @@ namespace System.Diagnostics.Tests
                 Process p = CreateProcessLong();
                 StartSleepKillWait(p);
                 Assert.NotEqual(0, p.ExitCode);
-            }
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests UseShellExecute with ProcessStartInfo
-        [Fact]
-        public void TestUseShellExecute_Unix_Succeeds()
-        {
-            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = "exit", Arguments = "42" }))
-            {
-                Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(42, p.ExitCode);
             }
         }
 
@@ -659,29 +625,6 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => process.PriorityBoostEnabled = true);
         }
 
-        [Fact] 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior varies on Windows and Unix
-        [OuterLoop]
-        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
-        public void TestPriorityClassUnix()
-        {
-            CreateDefaultProcess();
-
-            ProcessPriorityClass priorityClass = _process.PriorityClass;
-            try
-            {
-                _process.PriorityClass = ProcessPriorityClass.High;
-                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.High);
-
-                _process.PriorityClass = ProcessPriorityClass.Normal;
-                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Normal);
-            }
-            finally
-            {
-                _process.PriorityClass = priorityClass;
-            }
-        }
-
         [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestPriorityClassWindows()
         {
@@ -799,14 +742,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get process Id
-        public void TestRootGetProcessById()
-        {
-            Process p = Process.GetProcessById(1);
-            Assert.Equal(1, p.Id);
-        }
-
-        [Fact]
         public void TestGetProcesses()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -888,15 +823,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(MachineName_Remote_TestData))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Accessing processes on remote machines is not supported on Unix.
-        public void GetProcessesByName_RemoteMachineNameUnix_ThrowsPlatformNotSupportedException(string machineName)
-        {
-            Process currentProcess = Process.GetCurrentProcess();
-            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessesByName(currentProcess.ProcessName, machineName));
-        }
-
         [Fact]
         public void GetProcessesByName_NoSuchProcess_ReturnsEmpty()
         {
@@ -944,15 +870,6 @@ namespace System.Diagnostics.Tests
                 // As we can't detect reliably if performance counters are enabled 
                 // we let possible InvalidOperationExceptions pass silently.
             }
-        }
-
-        [Fact, PlatformSpecific(TestPlatforms.AnyUnix)]  // Behavior differs on Windows and Unix
-        public void TestProcessOnRemoteMachineUnix()
-        {
-            Process currentProcess = Process.GetCurrentProcess();
-
-            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1"));
-            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessById(currentProcess.Id, "127.0.0.1"));
         }
 
         [Fact]
@@ -1230,15 +1147,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // MainWindowHandle is not supported on Unix.
-        public void MainWindowHandle_GetUnix_ThrowsPlatformNotSupportedException()
-        {
-            CreateDefaultProcess();
-
-            Assert.Throws<PlatformNotSupportedException>(() => _process.MainWindowHandle);
-        }
-
-        [Fact]
         public void MainWindowHandle_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -1294,20 +1202,6 @@ namespace System.Diagnostics.Tests
         {
             var process = new Process();
             Assert.Throws<InvalidOperationException>(() => process.Responding);
-        }
-
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Needs to get the process Id from OS
-        [Fact]
-        private void TestWindowApisUnix()
-        {
-            // This tests the hardcoded implementations of these APIs on Unix.
-            using (Process p = Process.GetCurrentProcess())
-            {
-                Assert.True(p.Responding);
-                Assert.Equal(string.Empty, p.MainWindowTitle);
-                Assert.False(p.CloseMainWindow());
-                Assert.Throws<InvalidOperationException>(()=>p.WaitForInputIdle());
-            }
         }
 
         [Fact]
