@@ -57,6 +57,8 @@ most systems when you install the development packages).
 
 ### macOS
 
+OSX 10.12 or higer is needed to build corefx 2.0.
+
 On macOS a few components are needed which are not provided by a default developer setup:
 * CMake
 * pkgconfig

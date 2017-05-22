@@ -25,6 +25,12 @@ OSName=$(uname -s)
             OS=OSX
             __DOTNET_PKG=dotnet-dev-osx-x64
             ulimit -n 2048
+	    # Format x.y.z as single integer with three digits for each part
+	    VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
+	    if [ "$VERSION" -lt 010012000 ]; then
+	        echo error: OSX version `sw_vers -productVersion` is too old!
+	        exit 1
+            fi
             ;;
 
         Linux)
