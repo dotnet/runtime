@@ -93,12 +93,30 @@
                    Channel="$(Channel)"
                    Version="$(SharedFrameworkNugetVersion)"
                    SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
+                   UWPCoreRuntimeSdkFullVersion="$(UWPCoreRuntimeSdkFullVersion)"
                    SharedHostNuGetVersion="$(HostVersion)"
                    ProductVersion="$(ProductVersion)"
                    CommitHash="$(LatestCommit)"
                    FinalizeContainer="Runtime/$(SharedFrameworkNugetVersion)"
                    ForcePublish="true"                  
                    Condition="'@(_MissingBlobNames)' == ''" />
+    <Error Condition="'$(ChecksumAzureAccessToken)' == ''" Text="Missing required property 'ChecksumAzureAccessToken'" />
+    <Error Condition="'$(ChecksumAzureAccountName)' == ''" Text="Missing required property 'ChecksumAzureAccountName'" />
+    <Error Condition="'$(ChecksumContainerName)' == ''" Text="Missing required property 'ChecksumContainerName'" />
+    <Message Importance="High" Text="Finalizing Checksums" />
+    <FinalizeBuild AccountName="$(ChecksumAzureAccountName)"
+                   AccountKey="$(ChecksumAzureAccessToken)"
+                   ContainerName="$(ChecksumContainerName)"
+                   SemaphoreBlob="Runtime/$(Channel)/checksumPublishSemaphore"
+                   Channel="$(Channel)"
+                   Version="$(SharedFrameworkNugetVersion)"
+                   SharedFrameworkNugetVersion="$(SharedFrameworkNugetVersion)"
+                   UWPCoreRuntimeSdkFullVersion="$(UWPCoreRuntimeSdkFullVersion)"
+                   SharedHostNuGetVersion="$(HostVersion)"
+                   ProductVersion="$(ProductVersion)"
+                   CommitHash="$(LatestCommit)"
+                   FinalizeContainer="Runtime/$(SharedFrameworkNugetVersion)"
+                   ForcePublish="true" />
   </Target>
 
   <Target Name="PublishCoreHostPackagesToFeed"
