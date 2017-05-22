@@ -20,7 +20,7 @@
           "Parameters": {
             "PB_DistroRid": "rhel.7.2-x64",
             "PB_DockerTag": "rhel7_prereqs_2",
-            "PB_AdditionalBuildArguments":"-PortableBuild=true",
+            "PB_AdditionalBuildArguments":"-PortableBuild=true -strip-symbols",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
@@ -36,7 +36,7 @@
             "PB_DistroRid": "ubuntu.14.04-arm", 
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239", 
             "PB_TargetArchitecture": "arm", 
-            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
             "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
             "PB_PortableBuild": "true" 
           }, 
@@ -50,7 +50,7 @@
         {
           "Name": "Core-Setup-OSX-BT",
           "Parameters": {
-            "PB_PortableBuildArg": "-PortableBuild=true",
+            "PB_PortableBuildArg": "-PortableBuild=true -strip-symbols",
             "PB_PortableBuild": "true"
           },
           "ReportingParameters": {

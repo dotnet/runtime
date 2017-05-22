@@ -6,6 +6,43 @@
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
+  <!--
+    Finds symbol files and injects them into the package build.
+  -->
+  <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
+    <ItemGroup Condition="'$(SymbolFileExtension)' != ''">
+      <AdditionalLibPackageExcludes Include="%2A%2A\%2a$(SymbolFileExtension)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <WindowsNativeFile Include="@(File)"
+                         Condition="'%(File.Extension)' == '.dll' OR '%(File.Extension)' == '.exe'" />
+      <WindowsSymbolFile Include="@(File -> '%(RootDir)%(Directory)%(Filename).pdb')" />
+      <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+
+      <NonWindowsNativeFile Include="@(File)"
+                            Exclude="@(WindowsNativeFile)" />
+      <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolFileExtension)')" />
+      <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)')" />
+
+      <File Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)">
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+
+    <PropertyGroup>
+      <NeedsPlaceholderPdb Condition="'@(ExistingNonWindowsSymbolFile)' != '' and '@(ExistingWindowsSymbolFile)' == ''">true</NeedsPlaceholderPdb>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <File Include="$(ToolsDir)\_.pdb"
+            Condition="'$(NeedsPlaceholderPdb)' == 'true' AND '$(PackageTargetRuntime)' != ''">
+        <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+        <IsSymbolFile>true</IsSymbolFile>
+      </File>
+    </ItemGroup>
+  </Target>
+
   <Target Name="PreserveSymbols"
           AfterTargets="CreatePackage">
     <PropertyGroup>

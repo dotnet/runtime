@@ -72,6 +72,12 @@
       "values": [],
       "defaultValue": "/flp:v=normal"
     },
+    "StripSymbols": {
+      "description": "Pass additional argument to native build to configure symbol stripping.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": false
+    },    
     "Project": {
       "description": "Project where the commands are going to be applied.",
       "valueType": "passThrough",
@@ -249,6 +255,12 @@
           "description": "Disable crossgen during the build",
           "settings": {
             "DisableCrossgen": "true"
+          }
+        },
+        "strip-symbols": {
+          "description": "Strip native symbols.",
+          "settings": {
+            "StripSymbols": true
           }
         }
       },
