@@ -59,15 +59,15 @@ namespace System.Tests
 
             const string AppName = "VoidMainWithExitCodeApp.exe";
             var psi = new ProcessStartInfo();
-            if (File.Exists(HostRunner))
-            {
-                psi.FileName = HostRunner;
-                psi.Arguments = $"{AppName} {expectedExitCode} {mode}";
-            }
-            else
+            if (IsFullFramework || IsNetNative)
             {
                 psi.FileName = AppName;
                 psi.Arguments = $"{expectedExitCode} {mode}";
+            }
+            else
+            {
+                psi.FileName = HostRunner;
+                psi.Arguments = $"{AppName} {expectedExitCode} {mode}";
             }
 
             using (Process p = Process.Start(psi))
