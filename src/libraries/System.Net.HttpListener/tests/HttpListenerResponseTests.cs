@@ -380,8 +380,7 @@ namespace System.Net.Tests
             }
         }
 
-        // The managed implementation should throw an ObjectDisposedException calling CloseResponseEntity when already disposed.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task CloseResponseEntity_AlreadyDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();

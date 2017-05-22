@@ -147,8 +147,7 @@ namespace System.Net
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            if (Disposed)
-                return;
+            CheckDisposed();
 
             if (responseEntity == null)
                 throw new ArgumentNullException(nameof(responseEntity));
