@@ -16,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "netfx: dotnet/corefx #16805, uap: dotnet/corefx #20010")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.NetFramework, "netfx: dotnet/corefx #16805, uap: dotnet/corefx #20010")]
     public partial class HttpClientHandler_SslProtocols_Test
     {
         [Fact]

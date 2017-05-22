@@ -241,7 +241,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
         
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)] // Cookie.Value returns null on full framework, empty string on .NETCore
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // Cookie.Value returns null on full framework, empty string on .NETCore
         public static void Value_PassNullToCtor_GetReturnsEmptyString_net46()
         {
             var cookie = new Cookie("SomeName", null);

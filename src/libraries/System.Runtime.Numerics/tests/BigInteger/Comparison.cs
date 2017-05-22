@@ -367,7 +367,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)] // Missing Exception.ParamName fixed in .NETCore
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // Desktop misses Exception.ParamName fixed in .NETCore
         public static void IComparable_Invalid_net46()
         {
             IComparable_Invalid(null);

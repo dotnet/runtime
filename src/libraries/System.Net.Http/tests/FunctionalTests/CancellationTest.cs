@@ -28,7 +28,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: dotnet/corefx #19038")]
+        [ActiveIssue("dotnet/corefx #20010", TargetFrameworkMonikers.Uap)]
+        [ActiveIssue("dotnet/corefx #19038", TargetFrameworkMonikers.NetFramework)]
         public async Task GetAsync_ResponseContentRead_CancelUsingTimeoutOrToken_TaskCanceledQuickly(
             bool useTimeout, bool startResponseBody)
         {

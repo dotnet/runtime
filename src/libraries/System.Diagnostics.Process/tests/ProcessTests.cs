@@ -844,8 +844,9 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(null, () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
         }
 
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/18212")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18212", TargetFrameworkMonikers.UapAot)]
         public void TestProcessOnRemoteMachineWindows()
         {
             Process currentProccess = Process.GetCurrentProcess();

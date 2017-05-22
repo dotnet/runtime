@@ -19,7 +19,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: .NET Core specific diagnostic test")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: .NET Core specific diagnostic test")]
     public class DiagnosticsTest : RemoteExecutorTestBase
     {
         [Fact]

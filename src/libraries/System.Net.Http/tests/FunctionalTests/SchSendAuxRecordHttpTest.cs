@@ -13,7 +13,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot, "dotnet/corefx #20010")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
     public class SchSendAuxRecordHttpTest
     {
         readonly ITestOutputHelper _output;
