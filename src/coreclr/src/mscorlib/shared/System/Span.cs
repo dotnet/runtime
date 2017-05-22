@@ -189,6 +189,9 @@ namespace System
                 return ref Unsafe.Add(ref _pointer.Value, index);
             }
 #else
+#if CORERT
+            [Intrinsic]
+#endif
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
