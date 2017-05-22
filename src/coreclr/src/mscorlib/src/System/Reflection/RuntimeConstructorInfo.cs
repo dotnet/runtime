@@ -218,6 +218,8 @@ namespace System.Reflection
             }
         }
 
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeConstructorInfo>(other);
+
         public override Type ReflectedType
         {
             get
