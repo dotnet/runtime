@@ -3789,6 +3789,8 @@ namespace System
         #endregion
 
         #region Misc
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeType>(other);
+
         public override bool IsTypeDefinition
         {
             get { return RuntimeTypeHandle.IsTypeDefinition(this); }

@@ -135,6 +135,7 @@ namespace System.Reflection
             }
         }
         public override Type DeclaringType { get { return m_declaringType; } }
+        public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeEventInfo>(other);
         public override Type ReflectedType
         {
             get
