@@ -39,7 +39,6 @@ namespace System.Net
     {
         private long _contentLength;
         private bool _clSet;
-        private string _contentType;
         private bool _keepAlive = true;
         private HttpResponseStream _outputStream;
         private Version _version = HttpVersion.Version11;
@@ -71,18 +70,6 @@ namespace System.Net
 
                 _clSet = true;
                 _contentLength = value;
-            }
-        }
-
-        public string ContentType
-        {
-            get => _contentType;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _contentType = value;
             }
         }
 
@@ -247,11 +234,6 @@ namespace System.Net
         {
             if (!isWebSocketHandshake)
             {
-                if (_contentType != null)
-                {
-                    _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType);
-                }
-
                 if (_webHeaders[HttpKnownHeaderNames.Server] == null)
                     _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
                 CultureInfo inv = CultureInfo.InvariantCulture;

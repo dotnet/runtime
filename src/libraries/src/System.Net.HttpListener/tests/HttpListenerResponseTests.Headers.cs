@@ -110,8 +110,7 @@ namespace System.Net.Tests
             Assert.Null(response.ContentType);
         }
 
-        // The managed implementation should not throw setting ContentType after the headers are sent.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentType_SetAfterHeadersSent_DoesNothing()
         {
             using (HttpListenerResponse response = await GetResponse())
