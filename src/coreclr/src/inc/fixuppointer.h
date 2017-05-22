@@ -30,6 +30,24 @@ template<typename PTR_TYPE>
 class RelativePointer
 {
 public:
+#ifndef DACCESS_COMPILE
+    RelativePointer()
+    {
+        m_delta = (TADDR)NULL;
+
+        _ASSERTE (IsNull());
+    }
+#else // DACCESS_COMPILE
+    RelativePointer() =delete;
+#endif // DACCESS_COMPILE
+
+    // Implicit copy/move is not allowed
+    // Bitwise copy is implemented by BitwiseCopyTo method
+    RelativePointer<PTR_TYPE>(const RelativePointer<PTR_TYPE> &) =delete;
+    RelativePointer<PTR_TYPE>(RelativePointer<PTR_TYPE> &&) =delete;
+    RelativePointer<PTR_TYPE>& operator = (const RelativePointer<PTR_TYPE> &) =delete;
+    RelativePointer<PTR_TYPE>& operator = (RelativePointer<PTR_TYPE> &&) =delete;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -143,6 +161,13 @@ public:
         dac_cast<DPTR(RelativePointer<PTR_TYPE>)>(base)->SetValueMaybeNull(base, addr);
     }
 
+#ifndef DACCESS_COMPILE
+    void BitwiseCopyTo(RelativePointer<PTR_TYPE> &dest) const
+    {
+        dest.m_delta = m_delta;
+    }
+#endif // DACCESS_COMPILE
+
 private:
 #ifndef DACCESS_COMPILE
     Volatile<TADDR> m_delta;
@@ -234,6 +259,12 @@ template<typename PTR_TYPE>
 class RelativeFixupPointer
 {
 public:
+    // Implicit copy/move is not allowed
+    RelativeFixupPointer<PTR_TYPE>(const RelativeFixupPointer<PTR_TYPE> &) =delete;
+    RelativeFixupPointer<PTR_TYPE>(RelativeFixupPointer<PTR_TYPE> &&) =delete;
+    RelativeFixupPointer<PTR_TYPE>& operator = (const RelativeFixupPointer<PTR_TYPE> &) =delete;
+    RelativeFixupPointer<PTR_TYPE>& operator = (RelativeFixupPointer<PTR_TYPE> &&) =delete;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
