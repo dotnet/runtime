@@ -67,17 +67,17 @@ Daily Builds
 [win-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-x64_Release_version_badge.svg
 [win-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.x64.version
 [win-x64-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x64.latest.exe
-[win-x64-installer-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.exe
+[win-x64-installer-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x64.latest.exe.sha512
 [win-x64-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x64.latest.zip
-[win-x64-zip-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x64.latest.zip.sha512
+[win-x64-zip-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x64.latest.zip.sha512
 [win-x64-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-win-x64.latest.zip
 
 [win-x64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-x64_Release_version_badge.svg
 [win-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.x64.version
 [win-x64-installer-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.exe
-[win-x64-installer-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.exe.sha512
+[win-x64-installer-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.exe.sha512
 [win-x64-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.zip
-[win-x64-zip-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.zip.sha512
+[win-x64-zip-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x64.latest.zip.sha512
 [win-x64-symbols-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-win-x64.latest.zip
 
 [win-x64-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Windows_x64_Release_version_badge.svg
@@ -93,17 +93,17 @@ Daily Builds
 [win-x86-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-x86_Release_version_badge.svg
 [win-x86-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.x86.version
 [win-x86-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x86.latest.exe
-[win-x86-installer-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x86.latest.exe.sha512
+[win-x86-installer-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x86.latest.exe.sha512
 [win-x86-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x86.latest.zip
-[win-x86-zip-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x86.latest.zip.sha512
+[win-x86-zip-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-x86.latest.zip.sha512
 [win-x86-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-win-x86.latest.zip
 
 [win-x86-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-x86_Release_version_badge.svg
 [win-x86-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.x86.version
 [win-x86-installer-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x86.latest.exe
-[win-x86-installer-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x86.latest.exe.sha512
+[win-x86-installer-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x86.latest.exe.sha512
 [win-x86-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x86.latest.zip
-[win-x86-zip-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x86.latest.zip.sha512
+[win-x86-zip-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-x86.latest.zip.sha512
 [win-x86-symbols-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-win-x86.latest.zip
 
 [win-x86-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Windows_x86_Release_version_badge.svg
@@ -119,41 +119,41 @@ Daily Builds
 [win-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-arm_Release_version_badge.svg
 [win-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.arm.version
 [win-arm-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-arm.latest.zip
-[win-arm-zip-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-arm.latest.zip.sha512
+[win-arm-zip-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-arm.latest.zip.sha512
 [win-arm-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-win-arm.latest.zip
 
 [win-arm-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-arm_Release_version_badge.svg
 [win-arm-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.arm.version
 [win-arm-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-arm.latest.zip
-[win-arm-zip-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-arm.latest.zip.sha512
+[win-arm-zip-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-arm.latest.zip.sha512
 [win-arm-symbols-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-win-arm.latest.zip
 
 [win-arm64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_win-arm64_Release_version_badge.svg
 [win-arm64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.win.arm64.version
 [win-arm64-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-arm64.latest.zip
-[win-arm64-zip-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-arm64.latest.zip.sha512
+[win-arm64-zip-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-win-arm64.latest.zip.sha512
 [win-arm64-symbols-zip-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-win-arm64.latest.zip
 
 [win-arm64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_win-arm64_Release_version_badge.svg
 [win-arm64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.win.arm64.version
 [win-arm64-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-arm64.latest.zip
-[win-arm64-zip-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-arm64.latest.zip.sha512
+[win-arm64-zip-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-win-arm64.latest.zip.sha512
 [win-arm64-symbols-zip-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-win-arm64.latest.zip
 
 [osx-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_osx-x64_Release_version_badge.svg
 [osx-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.osx.x64.version
 [osx-installer-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-osx-x64.latest.pkg
-[osx-installer-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-osx-x64.latest.pkg.sha512
+[osx-installer-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-osx-x64.latest.pkg.sha512
 [osx-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-osx-x64.latest.tar.gz
-[osx-targz-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-osx-x64.latest.tar.gz.sha512
+[osx-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-osx-x64.latest.tar.gz.sha512
 [osx-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-osx-x64.latest.tar.gz
 
 [osx-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_osx-x64_Release_version_badge.svg
 [osx-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.osx.x64.version
 [osx-installer-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-osx-x64.latest.pkg
-[osx-installer-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-osx-x64.latest.pkg.sha512
+[osx-installer-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-osx-x64.latest.pkg.sha512
 [osx-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-osx-x64.latest.tar.gz
-[osx-targz-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-osx-x64.latest.tar.gz.sha512
+[osx-targz-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-osx-x64.latest.tar.gz.sha512
 [osx-symbols-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-osx-x64.latest.tar.gz
 
 [osx-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_OSX_x64_Release_version_badge.svg
@@ -170,44 +170,44 @@ Daily Builds
 [linux-x64-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_linux-x64_Release_version_badge.svg
 [linux-x64-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.linux.x64.version
 [linux-x64-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-linux-x64.latest.tar.gz
-[linux-x64-targz-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-linux-x64.latest.tar.gz.sha512
+[linux-x64-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-linux-x64.latest.tar.gz.sha512
 [linux-x64-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-linux-x64.latest.tar.gz
 
 [linux-x64-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_linux-x64_Release_version_badge.svg
 [linux-x64-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.linux.x64.version
 [linux-x64-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-linux-x64.latest.tar.gz
-[linux-x64-targz-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-linux-x64.latest.tar.gz.sha512
+[linux-x64-targz-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-linux-x64.latest.tar.gz.sha512
 [linux-x64-symbols-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-linux-x64.latest.tar.gz
 
 [linux-arm-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_linux-arm_Release_version_badge.svg
 [linux-arm-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.linux.arm.version
 [linux-arm-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-linux-arm.latest.tar.gz
-[linux-arm-targz-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-linux-arm.latest.tar.gz
+[linux-arm-targz-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-linux-arm.latest.tar.gz
 [linux-arm-symbols-targz-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-symbols-linux-arm.latest.tar.gz
 
 [linux-arm-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_linux-arm_Release_version_badge.svg
 [linux-arm-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.linux.arm.version
 [linux-arm-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-linux-arm.latest.tar.gz
-[linux-arm-targz-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-linux-arm.latest.tar.gz
+[linux-arm-targz-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-linux-arm.latest.tar.gz
 [linux-arm-symbols-targz-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-symbols-linux-arm.latest.tar.gz
 
 [ubuntu-14.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg
 [ubuntu-14.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.x64.version
 [ubuntu-14.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.14.04-x64.latest.deb
-[ubuntu-14.04-host-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.14.04-x64.latest.deb.sha512
+[ubuntu-14.04-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.14.04-x64.latest.deb.sha512
 [ubuntu-14.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.14.04-x64.latest.deb
-[ubuntu-14.04-hostfxr-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.14.04-x64.latest.deb.sha512
+[ubuntu-14.04-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.14.04-x64.latest.deb.sha512
 [ubuntu-14.04-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.14.04-x64.latest.deb
-[ubuntu-14.04-sharedfx-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.14.04-x64.latest.deb.sha512
+[ubuntu-14.04-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.14.04-x64.latest.deb.sha512
 
 [ubuntu-14.04-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg
 [ubuntu-14.04-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.ubuntu.x64.version
 [ubuntu-14.04-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.14.04-x64.latest.deb
-[ubuntu-14.04-host-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.14.04-x64.latest.deb.sha512
+[ubuntu-14.04-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.14.04-x64.latest.deb.sha512
 [ubuntu-14.04-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.14.04-x64.latest.deb
-[ubuntu-14.04-hostfxr-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.14.04-x64.latest.deb.sha512
+[ubuntu-14.04-hostfxr-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.14.04-x64.latest.deb.sha512
 [ubuntu-14.04-sharedfx-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.14.04-x64.latest.deb
-[ubuntu-14.04-sharedfx-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.14.04-x64.latest.deb.sha512
+[ubuntu-14.04-sharedfx-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.14.04-x64.latest.deb.sha512
 
 [ubuntu-14.04-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Ubuntu_x64_Release_version_badge.svg
 [ubuntu-14.04-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.ubuntu.x64.version
@@ -227,20 +227,20 @@ Daily Builds
 [ubuntu-16.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.16.04-x64_Release_version_badge.svg
 [ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.16.04.x64.version
 [ubuntu-16.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.04-x64.latest.deb
-[ubuntu-16.04-host-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.04-x64.latest.deb.sha512
+[ubuntu-16.04-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.04-x64.latest.deb.sha512
 [ubuntu-16.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb
-[ubuntu-16.04-hostfxr-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb.sha512
+[ubuntu-16.04-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb.sha512
 [ubuntu-16.04-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb
-[ubuntu-16.04-sharedfx-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb.sha512
+[ubuntu-16.04-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb.sha512
 
 [ubuntu-16.04-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_ubuntu.16.04-x64_Release_version_badge.svg
 [ubuntu-16.04-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.ubuntu.16.04.x64.version
 [ubuntu-16.04-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.16.04-x64.latest.deb
-[ubuntu-16.04-host-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.16.04-x64.latest.deb.sha512
+[ubuntu-16.04-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.16.04-x64.latest.deb.sha512
 [ubuntu-16.04-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb
-[ubuntu-16.04-hostfxr-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb.sha512
+[ubuntu-16.04-hostfxr-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.16.04-x64.latest.deb.sha512
 [ubuntu-16.04-sharedfx-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb
-[ubuntu-16.04-sharedfx-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb.sha512
+[ubuntu-16.04-sharedfx-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb.sha512
 
 [ubuntu-16.04-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Ubuntu_16_04_x64_Release_version_badge.svg
 [ubuntu-16.04-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.ubuntu.16.04.x64.version
@@ -260,20 +260,20 @@ Daily Builds
 [ubuntu-16.10-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.16.10-x64_Release_version_badge.svg
 [ubuntu-16.10-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.16.10.x64.version
 [ubuntu-16.10-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.10-x64.latest.deb
-[ubuntu-16.10-host-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.10-x64.latest.deb.sha512
+[ubuntu-16.10-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.10-x64.latest.deb.sha512
 [ubuntu-16.10-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.16.10-x64.latest.deb
-[ubuntu-16.10-hostfxr-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.16.10-x64.latest.deb.sha512
+[ubuntu-16.10-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-ubuntu.16.10-x64.latest.deb.sha512
 [ubuntu-16.10-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.16.10-x64.latest.deb
-[ubuntu-16.10-sharedfx-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.16.10-x64.latest.deb.sha512
+[ubuntu-16.10-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-ubuntu.16.10-x64.latest.deb.sha512
 
 [ubuntu-16.10-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_ubuntu.16.10-x64_Release_version_badge.svg
 [ubuntu-16.10-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.ubuntu.16.10.x64.version
 [ubuntu-16.10-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.16.10-x64.latest.deb
-[ubuntu-16.10-host-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.16.10-x64.latest.deb.sha512
+[ubuntu-16.10-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-ubuntu.16.10-x64.latest.deb.sha512
 [ubuntu-16.10-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.16.10-x64.latest.deb
-[ubuntu-16.10-hostfxr-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.16.10-x64.latest.deb.sha512
+[ubuntu-16.10-hostfxr-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-ubuntu.16.10-x64.latest.deb.sha512
 [ubuntu-16.10-sharedfx-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.16.10-x64.latest.deb
-[ubuntu-16.10-sharedfx-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.16.10-x64.latest.deb.sha512
+[ubuntu-16.10-sharedfx-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-ubuntu.16.10-x64.latest.deb.sha512
 
 [ubuntu-16.10-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Ubuntu_16_10_x64_Release_version_badge.svg
 [ubuntu-16.10-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.ubuntu.16.10.x64.version
@@ -286,20 +286,20 @@ Daily Builds
 [debian-8.2-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_debian.8-x64_Release_version_badge.svg
 [debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.debian.8.x64.version
 [debian-8.2-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-debian.8-x64.latest.deb
-[debian-8.2-host-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-debian.8-x64.latest.deb.sha512
+[debian-8.2-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-debian.8-x64.latest.deb.sha512
 [debian-8.2-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-debian.8-x64.latest.deb
-[debian-8.2-hostfxr-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-debian.8-x64.latest.deb.sha512
+[debian-8.2-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-debian.8-x64.latest.deb.sha512
 [debian-8.2-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-debian.8-x64.latest.deb
-[debian-8.2-sharedfx-checksum-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-debian.8-x64.latest.deb.sha512
+[debian-8.2-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-debian.8-x64.latest.deb.sha512
 
 [debian-8.2-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_debian.8-x64_Release_version_badge.svg
 [debian-8.2-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.debian.8.x64.version
 [debian-8.2-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-debian.8-x64.latest.deb
-[debian-8.2-host-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-debian.8-x64.latest.deb.sha512
+[debian-8.2-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-debian.8-x64.latest.deb.sha512
 [debian-8.2-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-debian.8-x64.latest.deb
-[debian-8.2-hostfxr-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-debian.8-x64.latest.deb.sha512
+[debian-8.2-hostfxr-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-debian.8-x64.latest.deb.sha512
 [debian-8.2-sharedfx-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-debian.8-x64.latest.deb
-[debian-8.2-sharedfx-checksum-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-debian.8-x64.latest.deb.sha512
+[debian-8.2-sharedfx-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-debian.8-x64.latest.deb.sha512
 
 [debian-8.2-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_Debian_x64_Release_version_badge.svg
 [debian-8.2-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.debian.x64.version
