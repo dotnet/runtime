@@ -26,6 +26,16 @@
     <Compile Include="DataCommon\DataTestUtility.cs" />
     <Compile Include="DataCommon\ProxyServer.cs" />
     <Compile Include="DataCommon\SystemDataResourceManager.cs" />
+    <Compile Include="SQL\ParameterTest\DateTimeVariantTest.cs" />
+    <Compile Include="SQL\ParameterTest\OutputParameter.cs" />
+    <Compile Include="SQL\ParameterTest\ParametersTest.cs" />
+    <Compile Include="SQL\ParameterTest\SqlVariantParam.cs" />
+    <Compile Include="SQL\ParameterTest\SteAttribute.cs" />
+    <Compile Include="SQL\ParameterTest\SteParam.cs" />
+    <Compile Include="SQL\ParameterTest\StePermutationSet.cs" />
+    <Compile Include="SQL\ParameterTest\SteTypeBoundaries.cs" />
+    <Compile Include="SQL\ParameterTest\StreamInputParam.cs" />
+    <Compile Include="SQL\ParameterTest\TvpTest.cs" />
     <Compile Include="DDBasics\DDAsyncTest\DDAsyncTest.cs" />
     <Compile Include="DDBasics\DDDataTypesTest\DDDataTypesTest.cs" />
     <Compile Include="DDBasics\DDMARSTest\DDMARSTest.cs" />
@@ -46,7 +56,6 @@
     <Compile Include="SQL\MARSSessionPoolingTest\MARSSessionPoolingTest.cs" />
     <Compile Include="SQL\MARSTest\MARSTest.cs" />
     <Compile Include="SQL\ParallelTransactionsTest\ParallelTransactionsTest.cs" />
-    <Compile Include="SQL\ParametersTest\ParametersTest.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\ErrorOnRowsMarkedAsDeleted.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\Bug84548.cs" />
     <Compile Include="SQL\SqlBulkCopyTest\Bug85007.cs" />
@@ -107,6 +116,21 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>MultipleResultsTest.bsl</Link>
     </Content>
+    <Content Include="SQL\ParameterTest\SqlParameterTest_DebugMode.bsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>SqlParameterTest_DebugMode.bsl</Link>
+    </Content>
+    <Content Include="SQL\ParameterTest\SqlParameterTest_ReleaseMode.bsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>SqlParameterTest_ReleaseMode.bsl</Link>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ProviderAgnostic\MultipleResultsTest\MultipleResultsTest.bsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SQL\ParameterTest\SqlParameterTest_DebugMode.bsl" />
+    <None Include="SQL\ParameterTest\SqlParameterTest_ReleaseMode.bsl" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

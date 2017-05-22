@@ -169,8 +169,6 @@ namespace Microsoft.SqlServer.Server
                     metaData.SqlDbType == SqlDbType.Udt;
         }
 
-
-
         // If we know we're only going to use this object to assign to a specific SqlDbType back end object,
         //  we can save some processing time by only checking for the few valid types that can be assigned to the dbType.
         //  This assumes a switch statement over SqlDbType is faster than getting the ClrTypeCode and iterating over a
@@ -418,7 +416,6 @@ namespace Microsoft.SqlServer.Server
             return returnType;
         }
 
-
         internal static SqlMetaData SmiExtendedMetaDataToSqlMetaData(SmiExtendedMetaData source)
         {
             if (SqlDbType.Xml == source.SqlDbType)
@@ -448,7 +445,6 @@ namespace Microsoft.SqlServer.Server
         }
 
         // Convert SqlMetaData instance to an SmiExtendedMetaData instance.
-
         internal static SmiExtendedMetaData SqlMetaDataToSmiExtendedMetaData(SqlMetaData source)
         {
             // now map everything across to the extended metadata object
@@ -479,7 +475,6 @@ namespace Microsoft.SqlServer.Server
                                             typeSpecificNamePart3);
         }
 
-
         // compare SmiMetaData to SqlMetaData and determine if they are compatible.
         internal static bool IsCompatible(SmiMetaData firstMd, SqlMetaData secondMd)
         {
@@ -491,122 +486,6 @@ namespace Microsoft.SqlServer.Server
                     firstMd.LocaleId == secondMd.LocaleId &&
                     firstMd.SqlDbType != SqlDbType.Structured &&  // SqlMetaData doesn't support Structured types
                     !firstMd.IsMultiValued;  // SqlMetaData doesn't have a "multivalued" option
-        }
-
-        // This is a modified version of SmiMetaDataFromSchemaTableRow above
-        // Since CoreCLR doesn't have GetSchema, we need to infer the MetaData from the CLR Type alone
-        internal static SmiExtendedMetaData SmiMetaDataFromType(string colName, Type colType)
-        {
-            // Determine correct SqlDbType.
-            SqlDbType colDbType = InferSqlDbTypeFromType_Katmai(colType);
-            if (InvalidSqlDbType == colDbType)
-            {
-                // Unknown through standard mapping, use VarBinary for columns that are Object typed, otherwise we error out.
-                if (typeof(object) == colType)
-                {
-                    colDbType = SqlDbType.VarBinary;
-                }
-                else
-                {
-                    throw SQL.UnsupportedColumnTypeForSqlProvider(colName, colType.ToString());
-                }
-            }
-
-            // Determine metadata modifier values per type (maxlength, precision, scale, etc)
-            long maxLength = 0;
-            byte precision = 0;
-            byte scale = 0;
-            switch (colDbType)
-            {
-                case SqlDbType.BigInt:
-                case SqlDbType.Bit:
-                case SqlDbType.DateTime:
-                case SqlDbType.Float:
-                case SqlDbType.Image:
-                case SqlDbType.Int:
-                case SqlDbType.Money:
-                case SqlDbType.NText:
-                case SqlDbType.Real:
-                case SqlDbType.UniqueIdentifier:
-                case SqlDbType.SmallDateTime:
-                case SqlDbType.SmallInt:
-                case SqlDbType.SmallMoney:
-                case SqlDbType.Text:
-                case SqlDbType.Timestamp:
-                case SqlDbType.TinyInt:
-                case SqlDbType.Variant:
-                case SqlDbType.Xml:
-                case SqlDbType.Date:
-                    // These types require no  metadata modifiers
-                    break;
-                case SqlDbType.Binary:
-                case SqlDbType.VarBinary:
-                    // source isn't specifying a size, so assume the Maximum
-                    if (SqlDbType.Binary == colDbType)
-                    {
-                        maxLength = SmiMetaData.MaxBinaryLength;
-                    }
-                    else
-                    {
-                        maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
-                    }
-                    break;
-                case SqlDbType.Char:
-                case SqlDbType.VarChar:
-                    // source isn't specifying a size, so assume the Maximum
-                    if (SqlDbType.Char == colDbType)
-                    {
-                        maxLength = SmiMetaData.MaxANSICharacters;
-                    }
-                    else
-                    {
-                        maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
-                    }
-                    break;
-                case SqlDbType.NChar:
-                case SqlDbType.NVarChar:
-                    // source isn't specifying a size, so assume the Maximum
-                    if (SqlDbType.NChar == colDbType)
-                    {
-                        maxLength = SmiMetaData.MaxUnicodeCharacters;
-                    }
-                    else
-                    {
-                        maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
-                    }
-                    break;
-                case SqlDbType.Decimal:
-                    // Decimal requires precision and scale
-                    precision = SmiMetaData.DefaultDecimal.Precision;
-                    scale = SmiMetaData.DefaultDecimal.Scale;
-                    break;
-                case SqlDbType.Time:
-                case SqlDbType.DateTime2:
-                case SqlDbType.DateTimeOffset:
-                    // requires scale
-                    scale = SmiMetaData.DefaultTime.Scale;
-                    break;
-                case SqlDbType.Udt:
-                case SqlDbType.Structured:
-                default:
-                    // These types are not supported from SchemaTable
-                    throw SQL.UnsupportedColumnTypeForSqlProvider(colName, colType.ToString());
-            }
-
-            return new SmiExtendedMetaData(
-                                        colDbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        CultureInfo.CurrentCulture.LCID,
-                                        SmiMetaData.GetDefaultForType(colDbType).CompareOptions,
-                                        false,  // no support for multi-valued columns in a TVP yet
-                                        null,   // no support for structured columns yet
-                                        null,
-                                        colName,
-                                        null,
-                                        null,
-                                        null);
         }
 
         // Extract metadata for a single DataColumn
@@ -791,5 +670,251 @@ namespace Microsoft.SqlServer.Server
             return maxLength;
         }
 
+        // Map SmiMetaData from a schema table.
+        // DEVNOTE: Since we're using SchemaTable, we can assume that we aren't directly using a SqlDataReader
+        // so we don't support the Sql-specific stuff, like collation.
+        internal static SmiExtendedMetaData SmiMetaDataFromSchemaTableRow(DataRow schemaRow)
+        {
+            string colName = "";
+            object temp = schemaRow[SchemaTableColumn.ColumnName];
+            if (DBNull.Value != temp)
+            {
+                colName = (string)temp;
+            }
+
+            // Determine correct SqlDbType.
+            temp = schemaRow[SchemaTableColumn.DataType];
+            if (DBNull.Value == temp)
+            {
+                throw SQL.NullSchemaTableDataTypeNotSupported(colName);
+            }
+
+            Type colType = (Type)temp;
+            SqlDbType colDbType = InferSqlDbTypeFromType_Katmai(colType);
+            if (InvalidSqlDbType == colDbType)
+            {
+                // Unknown through standard mapping, use VarBinary for columns that are Object typed, otherwise error
+                if (typeof(object) == colType)
+                {
+                    colDbType = SqlDbType.VarBinary;
+                }
+                else
+                {
+                    throw SQL.UnsupportedColumnTypeForSqlProvider(colName, colType.ToString());
+                }
+            }
+
+            // Determine metadata modifier values per type (maxlength, precision, scale, etc)
+            long maxLength = 0;
+            byte precision = 0;
+            byte scale = 0;
+            switch (colDbType)
+            {
+                case SqlDbType.BigInt:
+                case SqlDbType.Bit:
+                case SqlDbType.DateTime:
+                case SqlDbType.Float:
+                case SqlDbType.Image:
+                case SqlDbType.Int:
+                case SqlDbType.Money:
+                case SqlDbType.NText:
+                case SqlDbType.Real:
+                case SqlDbType.UniqueIdentifier:
+                case SqlDbType.SmallDateTime:
+                case SqlDbType.SmallInt:
+                case SqlDbType.SmallMoney:
+                case SqlDbType.Text:
+                case SqlDbType.Timestamp:
+                case SqlDbType.TinyInt:
+                case SqlDbType.Variant:
+                case SqlDbType.Xml:
+                case SqlDbType.Date:
+                    // These types require no  metadata modifies
+                    break;
+                case SqlDbType.Binary:
+                case SqlDbType.VarBinary:
+                    // These types need a binary max length
+                    temp = schemaRow[SchemaTableColumn.ColumnSize];
+                    if (DBNull.Value == temp)
+                    {
+                        // source isn't specifying a size, so assume the worst
+                        if (SqlDbType.Binary == colDbType)
+                        {
+                            maxLength = SmiMetaData.MaxBinaryLength;
+                        }
+                        else
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+                    }
+                    else
+                    {
+                        // We (should) have a valid maxlength, so use it.
+                        maxLength = Convert.ToInt64(temp, null);
+
+                        // Max length must be 0 to MaxBinaryLength or it can be UnlimitedMAX if type is varbinary.
+                        // If it's greater than MaxBinaryLength, just promote it to UnlimitedMAX, if possible.
+                        if (maxLength > SmiMetaData.MaxBinaryLength)
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+
+                        if ((maxLength < 0 &&
+                                (maxLength != SmiMetaData.UnlimitedMaxLengthIndicator ||
+                                 SqlDbType.Binary == colDbType)))
+                        {
+                            throw SQL.InvalidColumnMaxLength(colName, maxLength);
+                        }
+                    }
+                    break;
+                case SqlDbType.Char:
+                case SqlDbType.VarChar:
+                    // These types need an ANSI max length
+                    temp = schemaRow[SchemaTableColumn.ColumnSize];
+                    if (DBNull.Value == temp)
+                    {
+                        // source isn't specifying a size, so assume the worst
+                        if (SqlDbType.Char == colDbType)
+                        {
+                            maxLength = SmiMetaData.MaxANSICharacters;
+                        }
+                        else
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+                    }
+                    else
+                    {
+                        // We (should) have a valid maxlength, so use it.
+                        maxLength = Convert.ToInt64(temp, null);
+
+                        // Max length must be 0 to MaxANSICharacters or it can be UnlimitedMAX if type is varbinary.
+                        // If it's greater than MaxANSICharacters, just promote it to UnlimitedMAX, if possible.
+                        if (maxLength > SmiMetaData.MaxANSICharacters)
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+
+                        if ((maxLength < 0 &&
+                                (maxLength != SmiMetaData.UnlimitedMaxLengthIndicator ||
+                                 SqlDbType.Char == colDbType)))
+                        {
+                            throw SQL.InvalidColumnMaxLength(colName, maxLength);
+                        }
+                    }
+                    break;
+                case SqlDbType.NChar:
+                case SqlDbType.NVarChar:
+                    // These types need a unicode max length
+                    temp = schemaRow[SchemaTableColumn.ColumnSize];
+                    if (DBNull.Value == temp)
+                    {
+                        // source isn't specifying a size, so assume the worst
+                        if (SqlDbType.NChar == colDbType)
+                        {
+                            maxLength = SmiMetaData.MaxUnicodeCharacters;
+                        }
+                        else
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+                    }
+                    else
+                    {
+                        // We (should) have a valid maxlength, so use it.
+                        maxLength = Convert.ToInt64(temp, null);
+
+                        // Max length must be 0 to MaxUnicodeCharacters or it can be UnlimitedMAX if type is varbinary.
+                        // If it's greater than MaxUnicodeCharacters, just promote it to UnlimitedMAX, if possible.
+                        if (maxLength > SmiMetaData.MaxUnicodeCharacters)
+                        {
+                            maxLength = SmiMetaData.UnlimitedMaxLengthIndicator;
+                        }
+
+                        if ((maxLength < 0 &&
+                                (maxLength != SmiMetaData.UnlimitedMaxLengthIndicator ||
+                                 SqlDbType.NChar == colDbType)))
+                        {
+                            throw SQL.InvalidColumnMaxLength(colName, maxLength);
+                        }
+                    }
+                    break;
+                case SqlDbType.Decimal:
+                    // Decimal requires precision and scale
+                    temp = schemaRow[SchemaTableColumn.NumericPrecision];
+                    if (DBNull.Value == temp)
+                    {
+                        precision = SmiMetaData.DefaultDecimal.Precision;
+                    }
+                    else
+                    {
+                        precision = Convert.ToByte(temp, null);
+                    }
+
+                    temp = schemaRow[SchemaTableColumn.NumericScale];
+                    if (DBNull.Value == temp)
+                    {
+                        scale = SmiMetaData.DefaultDecimal.Scale;
+                    }
+                    else
+                    {
+                        scale = Convert.ToByte(temp, null);
+                    }
+
+                    if (precision < SmiMetaData.MinPrecision ||
+                            precision > SqlDecimal.MaxPrecision ||
+                            scale < SmiMetaData.MinScale ||
+                            scale > SqlDecimal.MaxScale ||
+                            scale > precision)
+                    {
+                        throw SQL.InvalidColumnPrecScale();
+                    }
+                    break;
+                case SqlDbType.Time:
+                case SqlDbType.DateTime2:
+                case SqlDbType.DateTimeOffset:
+                    // requires scale
+                    temp = schemaRow[SchemaTableColumn.NumericScale];
+                    if (DBNull.Value == temp)
+                    {
+                        scale = SmiMetaData.DefaultTime.Scale;
+                    }
+                    else
+                    {
+                        scale = Convert.ToByte(temp, null);
+                    }
+
+                    if (scale > SmiMetaData.MaxTimeScale)
+                    {
+                        throw SQL.InvalidColumnPrecScale();
+                    }
+                    else if (scale < 0)
+                    {
+                        scale = SmiMetaData.DefaultTime.Scale;
+                    }
+                    break;
+                case SqlDbType.Udt:
+                case SqlDbType.Structured:
+                default:
+                    // These types are not supported from SchemaTable
+                    throw SQL.UnsupportedColumnTypeForSqlProvider(colName, colType.ToString());
+            }
+
+            return new SmiExtendedMetaData(
+                                        colDbType,
+                                        maxLength,
+                                        precision,
+                                        scale,
+                                        System.Globalization.CultureInfo.CurrentCulture.LCID,
+                                        SmiMetaData.GetDefaultForType(colDbType).CompareOptions,
+                                        null,   // no support for UDTs from SchemaTable
+                                        false,  // no support for multi-valued columns in a TVP yet
+                                        null,   // no support for structured columns yet
+                                        null,   // no support for structured columns yet
+                                        colName,
+                                        null,
+                                        null,
+                                        null);
+        }
     }
 }
