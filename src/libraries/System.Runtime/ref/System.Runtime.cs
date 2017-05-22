@@ -5724,6 +5724,7 @@ namespace System.Reflection
         public bool IsFinal { get { throw null; } }
         public virtual bool IsGenericMethod { get { throw null; } }
         public virtual bool IsGenericMethodDefinition { get { throw null; } }
+        public virtual bool IsConstructedGenericMethod { get { throw null; } }
         public bool IsHideBySig { get { throw null; } }
         public bool IsPrivate { get { throw null; } }
         public bool IsPublic { get { throw null; } }
