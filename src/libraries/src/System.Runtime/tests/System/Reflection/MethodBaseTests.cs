@@ -23,7 +23,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void Test_GetCurrentMethod_GenericMethod()
+        public static void Test_GetCurrentMethod_GenericMethodDefinition()
         {
             MethodBase m = MyFakeGenericMethod<Byte>();
             

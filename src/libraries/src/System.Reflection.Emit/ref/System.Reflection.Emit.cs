@@ -235,6 +235,7 @@ namespace System.Reflection.Emit
         public bool InitLocals { get { throw null; } set { } }
         public override bool IsGenericMethod { get { throw null; } }
         public override bool IsGenericMethodDefinition { get { throw null; } }
+        public override bool IsConstructedGenericMethod { get { throw null; } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
         public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }

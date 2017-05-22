@@ -128,6 +128,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\TypeTests.netcoreapp.cs" />
+    <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="ArrayTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
     <Compile Include="System\ActivatorTests.netcoreapp.cs" />
@@ -145,7 +146,7 @@
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.netcoreapp.cs" />
-    <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />    
+    <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\TypedReferenceTests.cs" />
