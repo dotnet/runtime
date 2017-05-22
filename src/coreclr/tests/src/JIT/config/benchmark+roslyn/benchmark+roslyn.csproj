@@ -11,16 +11,16 @@
       <Version>1.1.1</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.api">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>1.0.0-beta-build0004</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.core">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>1.0.0-beta-build0004</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.execution">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>1.0.0-beta-build0004</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.metrics">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>1.0.0-beta-build0004</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
       <Version>1.0.3-alpha-experimental</Version>
@@ -95,5 +95,5 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="Build"
-     DependsOnTargets="ResolveReferences" /> 
+     DependsOnTargets="ResolveReferences" />
 </Project>
