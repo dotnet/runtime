@@ -6,12 +6,20 @@ using Xunit;
 using System.IO;
 using System.Xml.Schema;
 using System.Xml.XPath;
+using Xunit.Abstractions;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "TC_SchemaSet_Add_URL", Desc = "")]
     public class TC_SchemaSet_Add_URL : TC_SchemaSetBase
     {
+        private ITestOutputHelper _output;
+
+        public TC_SchemaSet_Add_URL(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         //-----------------------------------------------------------------------------------
         [Fact]
         //[Variation(Desc = "v1 - ns = null, URL = null", Priority = 0)]

@@ -13,6 +13,7 @@ namespace System.Xml.Tests
     public class TC_SchemaSet_Add_Schema : TC_SchemaSetBase
     {
         private ITestOutputHelper _output;
+
         public TC_SchemaSet_Add_Schema(ITestOutputHelper output)
         {
             _output = output;
