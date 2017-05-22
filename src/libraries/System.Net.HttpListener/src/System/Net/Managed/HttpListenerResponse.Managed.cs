@@ -39,7 +39,6 @@ namespace System.Net
     {
         private long _contentLength;
         private bool _clSet;
-        private bool _keepAlive = true;
         private HttpResponseStream _outputStream;
         private Version _version = HttpVersion.Version11;
         private string _location;
@@ -70,18 +69,6 @@ namespace System.Net
 
                 _clSet = true;
                 _contentLength = value;
-            }
-        }
-
-        public bool KeepAlive
-        {
-            get => _keepAlive;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _keepAlive = value;
             }
         }
 
