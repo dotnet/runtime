@@ -5,11 +5,19 @@
 using System.IO;
 using System.Xml.Schema;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Xml.Tests
 {
     public class TC_SchemaSet_Add_Reader : TC_SchemaSetBase
     {
+        private ITestOutputHelper _output;
+
+        public TC_SchemaSet_Add_Reader(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public void NullNamespaceAndNullReader()
         {
