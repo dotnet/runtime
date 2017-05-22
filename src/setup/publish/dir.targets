@@ -89,7 +89,7 @@
                                    UploadJsonFilename="%(DebInstallerFile.UploadJsonFilename)"
                                    PackageName="%(DebInstallerFile.PackageName)"
                                    PackageVersion="$(SharedFrameworkNugetVersion)"
-                                   UploadUrl="$(BaseUrl)$(ContainerName)/$(Channel)/Installers/$(SharedFrameworkNugetVersion)/%(DebInstallerFile.Filename)%(DebInstallerFile.Extension)" />
+                                   UploadUrl="$(BaseUrl)$(ContainerName)/Runtime/$(SharedFrameworkNugetVersion)/%(DebInstallerFile.Filename)%(DebInstallerFile.Extension)" />
   </Target>
 
   <Target Name="CheckIfAllBuildsHavePublished">
