@@ -33,22 +33,20 @@ namespace System.Net.Tests
 
         protected string GetClientResponse(int expectedLength)
         {
-            string response = string.Empty;
+            byte[] buffer = new byte[expectedLength];
 
-            while (true)
+            int totalReceived = 0;
+            while (totalReceived < expectedLength)
             {
-                byte[] buffer = new byte[expectedLength + 1];
-                int bytesReceived = Client.Receive(buffer);
-
-                response += Encoding.UTF8.GetString(buffer, 0, bytesReceived);
-
-                if (bytesReceived == expectedLength)
+                int bytesReceived = Client.Receive(buffer, totalReceived, buffer.Length - totalReceived, SocketFlags.None);
+                if (bytesReceived == 0)
                 {
-                    break;
+                    throw new Exception($"Unexpected early end of response: received {totalReceived} bytes, expected {expectedLength}");
                 }
+                totalReceived += bytesReceived;
             }
 
-            return response;
+            return Encoding.UTF8.GetString(buffer, 0, totalReceived);
         }
 
         protected async Task<HttpListenerResponse> GetResponse(string httpVersion = "1.1")
