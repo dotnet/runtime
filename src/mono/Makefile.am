@@ -50,14 +50,9 @@ noinst_DATA = mono-uninstalled.pc
 DISTCLEANFILES= mono-uninstalled.pc
 
 # building with monolite
-mcslib = $(mcs_topdir)/class/lib
-monolite_url = https://download.mono-project.com/monolite/monolite-$(MONO_CORLIB_VERSION)-latest.tar.gz
 .PHONY: get-monolite-latest 
 get-monolite-latest:
-	-rm -fr $(mcslib)/monolite/$(MONO_CORLIB_VERSION)
-	-mkdir -p $(mcslib)/monolite
-	cd $(mcslib) && { (wget -O- $(monolite_url) || curl -L $(monolite_url)) | gzip -d | tar xf - ; }
-	cd $(mcslib) && mv -f monolite-* monolite/$(MONO_CORLIB_VERSION)
+	$(MAKE) -C $(mcs_topdir)/class get-monolite-latest
 
 if BITCODE
 BITCODE_CHECK=yes
