@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="xunit.performance.api">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>1.0.0-beta-build0004</Version>
     </PackageReference>
   </ItemGroup>
+
 </Project>
