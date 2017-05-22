@@ -16,8 +16,7 @@ __INIT_TOOLS_DONE_MARKER=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/done
 
 if [ -z "$__DOTNET_PKG" ]; then
     if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
-        echo "Error: build not supported on 32 bit Unix"
-        exit 1
+        echo "Warning: build not supported on 32 bit Unix"
     fi
 OSName=$(uname -s)
     case $OSName in
