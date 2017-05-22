@@ -720,6 +720,7 @@ namespace System.Net.Http
             }
 
             NetEventSource.Log.HandlerMessage(
+                agent?.GetHashCode() ?? 0,
                 (agent?.RunningWorkerId).GetValueOrDefault(),
                 easy?.Task.Id ?? 0,
                 memberName,
