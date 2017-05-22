@@ -259,7 +259,7 @@ namespace System.Xml.Serialization
             return sb.ToString();
         }
 
-        internal static bool GenerateSerializerFile(XmlMapping[] xmlMappings, Type[] types, string defaultNamespace, Assembly assembly, Hashtable assemblies, string codePath)
+        internal static bool GenerateSerializerToStream(XmlMapping[] xmlMappings, Type[] types, string defaultNamespace, Assembly assembly, Hashtable assemblies, Stream stream)
         {
             var compiler = new Compiler();
             try
@@ -393,27 +393,12 @@ namespace System.Xml.Serialization
                 readerCodeGen.GenerateSerializerContract("XmlSerializerContract", xmlMappings, types, readerClass, readMethodNames, writerClass, writeMethodNames, serializers);
                 writer.Indent--;
                 writer.WriteLine("}");
-                string serializerName = XmlSerializer.GetXmlSerializerAssemblyName(types[0], null);
-                string location = Path.Combine(codePath, serializerName + ".cs");
-                try
-                {
-                    if (File.Exists(location))
-                    {
-                        File.Delete(location);
-                    }
 
-                    using (FileStream fs = File.Create(location))
-                    {
-                        string codecontent = compiler.Source.ToString();
-                        Byte[] info = new UTF8Encoding(true).GetBytes(codecontent);
-                        fs.Write(info, 0, info.Length);
-                        return true;
-                    }
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    throw new UnauthorizedAccessException(SR.Format(SR.DirectoryAccessDenied, location));
-                }
+                string codecontent = compiler.Source.ToString();
+                Byte[] info = new UTF8Encoding(true).GetBytes(codecontent);
+                stream.Write(info, 0, info.Length);
+                stream.Flush();
+                return true;
             }
             finally
             {

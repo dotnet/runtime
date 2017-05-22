@@ -112,7 +112,7 @@ namespace Microsoft.XmlSerializer.Generator
                     return 0;
                 }
 
-                GenerateAssembly(types, assembly, proxyOnly, force, codePath);
+                GenerateFile(types, assembly, proxyOnly, force, codePath);
             }
             catch (Exception e)
             {
@@ -127,7 +127,7 @@ namespace Microsoft.XmlSerializer.Generator
             return 0;
         }
 
-        private void GenerateAssembly(List<string> typeNames, string assemblyName, bool proxyOnly, bool force, string codePath)
+        private void GenerateFile(List<string> typeNames, string assemblyName, bool proxyOnly, bool force, string outputDirectory)
         {
             Assembly assembly = LoadAssembly(assemblyName, true);
             Type[] types;
@@ -207,27 +207,49 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = (XmlMapping[])mappings.ToArray(typeof(XmlMapping));
 
                 bool gac = assembly.GlobalAssemblyCache;
-                codePath = codePath == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : codePath;
+                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
                 string serializerName = XmlSerializer.GetXmlSerializerAssemblyName(serializableTypes[0], null);
-                string location = Path.Combine(codePath, serializerName + ".cs");
+                string codePath = Path.Combine(outputDirectory, serializerName + ".cs");
 
                 if (!force)
                 {
-                    if (File.Exists(location))
-                        throw new InvalidOperationException(SR.Format(SR.ErrSerializerExists, location, "force"));
+                    if (File.Exists(codePath))
+                        throw new InvalidOperationException(SR.Format(SR.ErrSerializerExists, codePath, "force"));
                 }
 
-                if (Directory.Exists(location))
+                if (Directory.Exists(codePath))
                 {
-                    throw new InvalidOperationException(SR.Format(SR.ErrDirectoryExists, location));
+                    throw new InvalidOperationException(SR.Format(SR.ErrDirectoryExists, codePath));
                 }
 
-                bool success = XmlSerializer.GenerateSerializer(serializableTypes, allMappings, codePath);
+                if (!Directory.Exists(outputDirectory))
+                {
+                    throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, codePath, outputDirectory));
+                }
+
+                bool success;
+
+                try
+                {
+                    if (File.Exists(codePath))
+                    {
+                        File.Delete(codePath);
+                    }
+
+                    using (FileStream fs = File.Create(codePath))
+                    {
+                        success = XmlSerializer.GenerateSerializer(serializableTypes, allMappings, fs);
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    throw new UnauthorizedAccessException(SR.Format(SR.DirectoryAccessDenied, outputDirectory));
+                }
 
                 if (success)
                 {
-                    Console.Out.WriteLine(SR.Format(SR.InfoAssemblyName, location));
-                    Console.Out.WriteLine(SR.Format(SR.InfoGeneratedAssembly, assembly.Location, location));
+                    Console.Out.WriteLine(SR.Format(SR.InfoAssemblyName, codePath));
+                    Console.Out.WriteLine(SR.Format(SR.InfoGeneratedAssembly, assembly.Location, codePath));
                 }
                 else
                 {
