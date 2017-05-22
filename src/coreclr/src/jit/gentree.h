@@ -1701,6 +1701,9 @@ public:
     // Returns true if it is a call node returning its value in more than one register
     inline bool IsMultiRegCall() const;
 
+    // Returns true if it is a node returning its value in more than one register
+    inline bool IsMultiRegNode() const;
+
     // Returns true if it is a GT_COPY or GT_RELOAD node
     inline bool IsCopyOrReload() const;
 
@@ -3721,6 +3724,23 @@ struct GenTreeCmpXchg : public GenTree
 #endif
 };
 
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+struct GenTreeMulLong : public GenTreeOp
+{
+    regNumber gtOtherReg;
+
+    GenTreeMulLong(var_types type, GenTreePtr op1, GenTreePtr op2) : GenTreeOp(GT_MUL_LONG, type, op1, op2)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMulLong() : GenTreeOp()
+    {
+    }
+#endif
+};
+#endif
+
 struct GenTreeFptrVal : public GenTree
 {
     CORINFO_METHOD_HANDLE gtFptrMethod;
@@ -5349,6 +5369,31 @@ inline bool GenTree::IsMultiRegCall() const
         const GenTreeCall* call = reinterpret_cast<const GenTreeCall*>(this);
         return call->HasMultiRegRetVal();
     }
+
+    return false;
+}
+
+//-----------------------------------------------------------------------------------
+// IsMultiRegNode: whether a node returning its value in more than one register
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a multi-reg node.
+inline bool GenTree::IsMultiRegNode() const
+{
+    if (IsMultiRegCall())
+    {
+        return true;
+    }
+
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    if (gtOper == GT_MUL_LONG)
+    {
+        return true;
+    }
+#endif
 
     return false;
 }

@@ -133,6 +133,14 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
     {
         tree->gtRegNum = reg;
     }
+#if defined(_TARGET_ARM_)
+    else if (tree->OperGet() == GT_MUL_LONG)
+    {
+        assert(regIdx == 1);
+        GenTreeMulLong* mul = tree->AsMulLong();
+        mul->gtOtherReg     = reg;
+    }
+#endif // _TARGET_ARM_
     else
     {
         assert(tree->IsMultiRegCall());
