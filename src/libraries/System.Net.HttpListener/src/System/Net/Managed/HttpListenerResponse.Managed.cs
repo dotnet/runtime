@@ -43,7 +43,6 @@ namespace System.Net
         private Version _version = HttpVersion.Version11;
         private string _location;
         private int _statusCode = 200;
-        private string _statusDescription = "OK";
         private bool _chunked;
         private HttpListenerContext _context;
         internal object _headersLock = new object();
@@ -130,19 +129,12 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                CheckSentHeaders();
 
                 if (value < 100 || value > 999)
                     throw new ProtocolViolationException(SR.net_invalidstatus);
 
                 _statusCode = value;
             }
-        }
-
-        public string StatusDescription
-        {
-            get => _statusDescription;
-            set => _statusDescription = value;
         }
 
         private void Dispose() => Close(true);
@@ -300,7 +292,7 @@ namespace System.Net
 
             Encoding encoding = Encoding.Default;
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
-            writer.Write("HTTP/{0} {1} {2}\r\n", _version, _statusCode, _statusDescription);
+            writer.Write("HTTP/{0} {1} {2}\r\n", _version, _statusCode, StatusDescription);
             string headers_str = FormatHeaders(_webHeaders);
             writer.Write(headers_str);
             writer.Flush();
