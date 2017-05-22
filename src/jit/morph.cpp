@@ -18062,7 +18062,7 @@ GenTreePtr Compiler::fgMorphImplicitByRefArgs(GenTreePtr tree, bool isAddr)
     LclVarDsc* lclVarDsc  = &lvaTable[lclNum];
 
     CORINFO_FIELD_HANDLE fieldHnd;
-    unsigned             fieldOffset;
+    unsigned             fieldOffset  = 0;
     var_types            fieldRefType = TYP_UNKNOWN;
 
     if (lvaIsImplicitByRefLocal(lclNum))
