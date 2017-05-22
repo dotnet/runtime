@@ -278,7 +278,7 @@ build_native()
         pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $__IncludeTests $generator $extraCmakeArguments $__cmakeargs"
-        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage "$__IncludeTests" $generator "$extraCmakeArguments" "$__cmakeargs"
+        "$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh" "$__ProjectRoot" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $__IncludeTests $generator "$extraCmakeArguments" "$__cmakeargs"
         popd
     fi
 
@@ -338,6 +338,7 @@ build_cross_arch_component()
     
     export __CMakeBinDir="$__CrossComponentBinDir"
     export CROSSCOMPONENT=1
+    __IncludeTests=
 
     if [ $CROSSCOMPILE == 1 ]; then
         TARGET_ROOTFS="$ROOTFS_DIR"
@@ -586,7 +587,7 @@ esac
 
 __BuildType=Debug
 __CodeCoverage=
-__IncludeTests=INCLUDE_TESTS
+__IncludeTests=Include_Tests
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
