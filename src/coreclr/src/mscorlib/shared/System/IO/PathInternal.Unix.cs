@@ -100,5 +100,10 @@ namespace System.IO
             // As long as the path is rooted in Unix it doesn't use the current directory and therefore is fully qualified.
             return !Path.IsPathRooted(path);
         }
+
+        internal static string TrimEndingDirectorySeparator(string path) =>
+            path.Length > 1 && IsDirectorySeparator(path[path.Length - 1]) ? // exclude root "/"
+            path.Substring(0, path.Length - 1) :
+            path;
     }
 }
