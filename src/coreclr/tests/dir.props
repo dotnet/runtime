@@ -1,11 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
   <PropertyGroup>
-    <OsEnvironment Condition="'$(OsEnvironment)'=='' and '$(OS)'=='OSX'">Unix</OsEnvironment>
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
   
@@ -18,15 +16,10 @@
   <!--   
     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer   
     as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.6 version of the tasks.   
-     -->
-  <PropertyGroup>
-    <RunningOnCore>false</RunningOnCore>
-    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'Core'">true</RunningOnCore>
-    <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
-    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
-    <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
-    <RunningOnUnix Condition="('$(RunningOnUnix)' == '') And ('$(MSBuildRuntimeType)' == 'Core')">true</RunningOnUnix>
-  </PropertyGroup>
+   -->   
+  <PropertyGroup>  
+    <BuildToolsTargets45>true</BuildToolsTargets45>   
+  </PropertyGroup>  
 
   <!-- Common repo directories -->
   <PropertyGroup>
@@ -35,15 +28,8 @@
     <SourceDir>$(ProjectDir)src\</SourceDir>
     <PackagesDir>$(ProjectDir)..\packages\</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)..\Tools\</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli\</DotnetCliPath>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46\</BuildToolsTaskDir>
-    <OverrideToolHost Condition="'$(OS)' != 'Windows_NT'">$(DotnetCliPath)dotnet</OverrideToolHost>
-    <CSharpCoreTargetsPath Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(ToolsDir)\Microsoft.CSharp.Core.targets</CSharpCoreTargetsPath>
-    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
-         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
-    <_TargetFrameworkDirectories Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths Condition="'$(BuildToolsTargetsDesktop)' != 'true'">$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
-    <ExcludeSigningImport>true</ExcludeSigningImport>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
 
@@ -51,10 +37,6 @@
   <PropertyGroup>
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)..\bin\</RootBinDir>
-
-    <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
-
   </PropertyGroup>
 
 <!-- Default Test platform to deploy the netstandard compiled tests to -->

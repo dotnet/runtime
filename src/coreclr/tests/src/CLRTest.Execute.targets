@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 ***********************************************************************************************
 CLRTest.Execute.targets
@@ -97,7 +96,7 @@ This file contains the logic for providing Execution Script generation.
   -->
   
   <ItemGroup>
-    <ExecutionScriptKind Include="Batch" Condition="'$(BuildOS)' == 'Windows_NT'"/>
+    <ExecutionScriptKind Include="Batch" />
     <ExecutionScriptKind Include="Bash" />
   </ItemGroup>
 

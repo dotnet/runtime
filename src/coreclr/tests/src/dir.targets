@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Default priority building values. -->
   <PropertyGroup>
@@ -104,7 +103,9 @@
     <ProjectLanguage Condition="'$(MSBuildProjectExtension)' == '.csproj' OR '$(Language)' == 'C#' OR '$(ProjectLanguage)'==''">CSharp</ProjectLanguage>
   </PropertyGroup>
   
+  <!-- TODO (#1122): import this from the ToolsDir once it becomes available --> 
   <Import Project="$(ProjectDir)src\IL.targets" Condition="'$(ProjectLanguage)' == 'IL' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'" />
+
 
   <Import Project="CLRTest.Execute.targets" />
   <Target Name="CreateExecuteScript" 
@@ -146,13 +147,12 @@
           Condition="'@(NativeProjectReferenceNormalized)' != ''"
           BeforeTargets="Build" >
      <ItemGroup>
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))" Condition="'$(BuildOS)' != 'Windows_NT'" />
-        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\" Condition="'$(BuildOS)' == 'Windows_NT'" />
+        <NativeProjectOutputFoldersToCopy Include="$([System.String]::Copy('%(NativeProjectReferenceNormalized.RelativeDir)').Replace($(SourceDir),$(__NativeTestIntermediatesDir)\src\))$(Configuration)\"/>
      </ItemGroup>
 
     <Message Text= "Full native project references are :%(NativeProjectReferenceNormalized.Identity)" />
     <Message Text= "Native binaries will be copied from :%(NativeProjectOutputFoldersToCopy.Identity)" />
-   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != '' And '$(BuildOS)' == 'Windows_NT'" />
+   <MSBuild Projects="$(MSBuildProjectFile)" Targets="CopyNativeProjectBinaries" Properties="NativeProjectOutputFolder=%(NativeProjectOutputFoldersToCopy.Identity)" Condition="'@(NativeProjectReference)' != ''" />
 
   </Target>
 

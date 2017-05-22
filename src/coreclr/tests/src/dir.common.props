@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
 
@@ -6,7 +5,7 @@
   <PropertyGroup>
     <__BuildArch Condition="'$(__BuildArch)' == ''">x64</__BuildArch>
     <__BuildType Condition="'$(__BuildType)' == ''">Debug</__BuildType>
-    <__BuildOS Condition="'$(__BuildOS)' == ''">AnyOS</__BuildOS>
+    <__BuildOS Condition="'$(__BuildOS)' == ''">Windows_NT</__BuildOS>
     <BuildArch>$(__BuildArch)</BuildArch>
     <BuildType>$(__BuildType)</BuildType>
     <BuildOS>$(__BuildOS)</BuildOS>
@@ -38,7 +37,7 @@
   <PropertyGroup>
     <OSPlatformConfig>$(BuildOS).$(Platform).$(Configuration)</OSPlatformConfig>
     <BaseOutputPath>$(ProjectDir)\..\bin\tests</BaseOutputPath>
-    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)</BaseOutputPath>
+    <BaseOutputPath Condition="'$(__TestRootDir)' != ''">$(__TestRootDir)\</BaseOutputPath>
     <BaseOutputPathWithConfig>$(BaseOutputPath)\$(OSPlatformConfig)\</BaseOutputPathWithConfig>
     <BinDir>$(BaseOutputPathWithConfig)</BinDir>
     <BaseIntermediateOutputPath>$(ProjectDir)\..\bin\tests\obj\$(OSPlatformConfig)\Managed\</BaseIntermediateOutputPath>
