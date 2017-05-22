@@ -3485,10 +3485,13 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CPOBJ) {
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
-			g_assert (c->byval_arg.type == MONO_TYPE_VALUETYPE);
+			g_assert (c->valuetype);
 			/* if this assertion fails, we need to add a write barrier */
 			g_assert (!MONO_TYPE_IS_REFERENCE (&c->byval_arg));
-			stackval_from_data (&c->byval_arg, &sp [-2], sp [-1].data.p, FALSE);
+			if (c->byval_arg.type == MONO_TYPE_VALUETYPE)
+				stackval_from_data (&c->byval_arg, &sp [-2], sp [-1].data.p, FALSE);
+			else
+				stackval_from_data (&c->byval_arg, sp [-2].data.p, sp [-1].data.p, FALSE);
 			ip += 2;
 			sp -= 2;
 			MINT_IN_BREAK;
