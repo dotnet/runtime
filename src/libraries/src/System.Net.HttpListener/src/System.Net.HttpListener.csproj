@@ -94,6 +94,9 @@
     <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
       <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\WebHeaderEncoding.cs">
+      <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
       <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
@@ -124,9 +127,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\WebHeaderEncoding.cs">
-      <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
     </Compile>
     <Compile Include="System\Net\Windows\HttpResponseStream.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpResponseStreamAsyncResult.cs" />

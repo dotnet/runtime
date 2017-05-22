@@ -266,9 +266,13 @@ namespace System.Net
 
             Encoding encoding = Encoding.Default;
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
-            writer.Write("HTTP/{0} {1} {2}\r\n", _version, _statusCode, StatusDescription);
-            string headers_str = FormatHeaders(_webHeaders);
-            writer.Write(headers_str);
+            writer.Write("HTTP/{0} {1} ", _version, _statusCode);
+            writer.Flush();
+            byte[] statusDescriptionBytes = WebHeaderEncoding.GetBytes(StatusDescription);
+            ms.Write(statusDescriptionBytes, 0, statusDescriptionBytes.Length);
+            writer.Write("\r\n");
+
+            writer.Write(FormatHeaders(_webHeaders));
             writer.Flush();
             int preamble = encoding.GetPreamble().Length;
             EnsureResponseStream();
