@@ -61,6 +61,7 @@ usage()
     echo "  -portable                         Optional argument to build portable platform packages."
     echo "  --cross                           Optional argument to signify cross compilation,"
     echo "                                    and use ROOTFS_DIR environment variable to find rootfs."
+    echo "  --stripsymbols                    Optional argument to strip native symbols during the build"
 
     exit 1
 }
@@ -86,6 +87,7 @@ __commit_hash=
 __portableBuildArgs=
 __configuration=Debug
 __linkPortable=0
+__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -129,13 +131,14 @@ while [ "$1" != "" ]; do
         --cross)
             __CrossBuild=1
             ;;
+        --stripsymbols)
+            __cmake_defines="${__cmake_defines} -DSTRIP_SYMBOLS=true"
+            ;;
         *)
         echo "Unknown argument to build.sh $1"; usage; exit 1
     esac
     shift
 done
-
-__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 case $__build_arch in
     amd64|x64)
