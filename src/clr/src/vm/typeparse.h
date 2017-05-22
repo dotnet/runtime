@@ -59,13 +59,13 @@ public:
     static HRESULT CreateObject(REFIID riid, void **ppUnk);
     
 public:
-    virtual HRESULT __stdcall QueryInterface(REFIID riid, void **ppUnk);
-    virtual ULONG __stdcall AddRef() { LIMITED_METHOD_CONTRACT; m_count++; return m_count; }
-    virtual ULONG __stdcall Release() { LIMITED_METHOD_CONTRACT; SUPPORTS_DAC_HOST_ONLY; m_count--; ULONG count = m_count; if (count == 0) delete this; return count; }
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppUnk);
+    virtual ULONG STDMETHODCALLTYPE AddRef() { LIMITED_METHOD_CONTRACT; m_count++; return m_count; }
+    virtual ULONG STDMETHODCALLTYPE Release() { LIMITED_METHOD_CONTRACT; SUPPORTS_DAC_HOST_ONLY; m_count--; ULONG count = m_count; if (count == 0) delete this; return count; }
 
 public:
-    virtual HRESULT __stdcall ParseTypeName(LPCWSTR szName, DWORD* pError, ITypeName** ppTypeName);
-    virtual HRESULT __stdcall GetTypeNameBuilder(ITypeNameBuilder** ppTypeBuilder);
+    virtual HRESULT STDMETHODCALLTYPE ParseTypeName(LPCWSTR szName, DWORD* pError, ITypeName** ppTypeName);
+    virtual HRESULT STDMETHODCALLTYPE GetTypeNameBuilder(ITypeNameBuilder** ppTypeBuilder);
 
 public:
     TypeNameFactory() : m_count(0)
@@ -278,18 +278,18 @@ private:
     friend class TypeName::TypeNameParser;
     
 public:
-    virtual HRESULT __stdcall QueryInterface(REFIID riid, void **ppUnk);
-    virtual ULONG __stdcall AddRef();
-    virtual ULONG __stdcall Release();
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppUnk);
+    virtual ULONG STDMETHODCALLTYPE AddRef();
+    virtual ULONG STDMETHODCALLTYPE Release();
 
 public:
-    virtual HRESULT __stdcall GetNameCount(DWORD* pCount);
-    virtual HRESULT __stdcall GetNames(DWORD count, BSTR* rgbszNames, DWORD* pFetched);
-    virtual HRESULT __stdcall GetTypeArgumentCount(DWORD* pCount);
-    virtual HRESULT __stdcall GetTypeArguments(DWORD count, ITypeName** rgpArguments, DWORD* pFetched);
-    virtual HRESULT __stdcall GetModifierLength(DWORD* pCount);
-    virtual HRESULT __stdcall GetModifiers(DWORD count, DWORD* rgModifiers, DWORD* pFetched);
-    virtual HRESULT __stdcall GetAssemblyName(BSTR* rgbszAssemblyNames);
+    virtual HRESULT STDMETHODCALLTYPE GetNameCount(DWORD* pCount);
+    virtual HRESULT STDMETHODCALLTYPE GetNames(DWORD count, BSTR* rgbszNames, DWORD* pFetched);
+    virtual HRESULT STDMETHODCALLTYPE GetTypeArgumentCount(DWORD* pCount);
+    virtual HRESULT STDMETHODCALLTYPE GetTypeArguments(DWORD count, ITypeName** rgpArguments, DWORD* pFetched);
+    virtual HRESULT STDMETHODCALLTYPE GetModifierLength(DWORD* pCount);
+    virtual HRESULT STDMETHODCALLTYPE GetModifiers(DWORD count, DWORD* rgModifiers, DWORD* pFetched);
+    virtual HRESULT STDMETHODCALLTYPE GetAssemblyName(BSTR* rgbszAssemblyNames);
     
 public:
     TypeName(LPCWSTR szTypeName, DWORD* pError) : m_bIsGenericArgument(FALSE), m_count(0) 
