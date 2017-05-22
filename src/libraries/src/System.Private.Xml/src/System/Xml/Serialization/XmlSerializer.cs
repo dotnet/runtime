@@ -813,7 +813,7 @@ namespace System.Xml.Serialization
 #if XMLSERIALIZERGENERATOR
         [ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)]
         [ResourceExposure(ResourceScope.None)]
-        public static bool GenerateSerializer(Type[] types, XmlMapping[] mappings, string codePath)
+        public static bool GenerateSerializer(Type[] types, XmlMapping[] mappings, Stream stream)
         {
             if (types == null || types.Length == 0)
                 return false;
@@ -821,10 +821,8 @@ namespace System.Xml.Serialization
             if (mappings == null)
                 throw new ArgumentNullException(nameof(mappings));
 
-            if(!Directory.Exists(codePath))
-            {
-                throw new ArgumentException(SR.Format(SR.XmlMelformMapping));
-            }
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
 
             if (XmlMapping.IsShallow(mappings))
             {
@@ -850,7 +848,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            return TempAssembly.GenerateSerializerFile(mappings, types, null, assembly, new Hashtable(), codePath);
+            return TempAssembly.GenerateSerializerToStream(mappings, types, null, assembly, new Hashtable(), stream);
         }
 #endif
 

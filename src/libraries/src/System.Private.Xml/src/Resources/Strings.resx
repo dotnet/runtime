@@ -3298,6 +3298,9 @@
   <data name="ErrDirectoryExists" xml:space="preserve">
     <value>Cannot generate serialization assembly '{0}' because a directory with the same name already exists.</value>
   </data>
+    <data name="ErrDirectoryNotExists" xml:space="preserve">
+    <value>Cannot generate serialization assembly '{0}' because directory {1} doesn't exist.</value>
+  </data>
   <data name="ErrInvalidArgument" xml:space="preserve">
     <value>Ignoring invalid command line argument: '{0}'.</value>
   </data>
