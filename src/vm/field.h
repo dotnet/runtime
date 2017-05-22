@@ -43,6 +43,8 @@ class FieldDesc
   protected:
     RelativePointer<PTR_MethodTable> m_pMTOfEnclosingClass;  // This is used to hold the log2 of the field size temporarily during class loading.  Yuck.
 
+    // See also: FieldDesc::InitializeFrom method
+
 #if defined(DACCESS_COMPILE)
     union { //create a union so I can get the correct offset for ClrDump.
         unsigned m_dword1;
@@ -85,10 +87,33 @@ class FieldDesc
     LPUTF8 m_debugName;
 #endif
 
-    // Allocated by special heap means, don't construct me
-    FieldDesc() {};
-
 public:
+    // Allocated by special heap means, don't construct me
+    FieldDesc() =delete;
+
+#ifndef DACCESS_COMPILE
+    void InitializeFrom(const FieldDesc& sourceField, MethodTable *pMT)
+    {
+        m_pMTOfEnclosingClass.SetValue(pMT);
+
+        m_mb = sourceField.m_mb;
+        m_isStatic = sourceField.m_isStatic;
+        m_isThreadLocal = sourceField.m_isThreadLocal;
+        m_isRVA = sourceField.m_isRVA;
+        m_prot = sourceField.m_prot;
+        m_requiresFullMbValue = sourceField.m_requiresFullMbValue;
+
+        m_dwOffset = sourceField.m_dwOffset;
+        m_type = sourceField.m_type;
+
+#ifdef _DEBUG
+        m_isDangerousAppDomainAgileField = sourceField.m_isDangerousAppDomainAgileField;
+
+        m_debugName = sourceField.m_debugName;
+#endif // _DEBUG
+    }
+#endif // !DACCESS_COMPILE
+
 #ifdef _DEBUG
     inline LPUTF8 GetDebugName()
     {
