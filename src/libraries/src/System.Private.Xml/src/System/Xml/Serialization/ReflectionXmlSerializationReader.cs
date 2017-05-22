@@ -1379,7 +1379,7 @@ namespace System.Xml.Serialization
                 }
 
                 Fixup fixup = WriteMemberFixupBegin(members, o);
-                Action<object> unknownNodeAction = (n) => UnknownNode(n);
+                UnknownNodeAction unknownNodeAction = (_) => UnknownNode(o);
                 WriteAttributes(members, null, unknownNodeAction, ref o);
                 Reader.MoveToElement();
                 if (Reader.IsEmptyElement)
@@ -1749,7 +1749,7 @@ namespace System.Xml.Serialization
                 Member[] allMembers = allMembersList.ToArray();
                 MemberMapping[] allMemberMappings = allMemberMappingList.ToArray();
 
-                Action<object> unknownNodeAction = (n) => UnknownNode(n);
+                UnknownNodeAction unknownNodeAction = (_) => UnknownNode(o);
                 WriteAttributes(allMembers, anyAttribute, unknownNodeAction, ref o);
 
                 Reader.MoveToElement();
@@ -1767,7 +1767,7 @@ namespace System.Xml.Serialization
                     // But potentially we can do some optimization for types that have ordered properties.
                 }
 
-                WriteMembers(ref o, allMembers, UnknownNode, UnknownNode, anyElementMember, anyTextMember);
+                WriteMembers(ref o, allMembers, unknownNodeAction, unknownNodeAction, anyElementMember, anyTextMember);
 
                 foreach (Member member in allMembers)
                 {
@@ -1839,7 +1839,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private void WriteAttributes(Member[] members, Member anyAttribute, Action<object> elseCall, ref object o)
+        private void WriteAttributes(Member[] members, Member anyAttribute, UnknownNodeAction elseCall, ref object o)
         {
             Member xmlnsMember = null;
             var attributes = new List<AttributeAccessor>();
