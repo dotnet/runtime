@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
@@ -1289,18 +1285,91 @@ namespace System.Data.SqlClient
             }
             else if (value is DbDataReader)
             {
-                // For ProjectK\CoreCLR, DbDataReader no longer supports GetSchema
-                // So instead we will attempt to generate the metadata from the Field Type alone
-                var reader = (DbDataReader)value;
-                if (reader.FieldCount <= 0)
+                DataTable schema = ((DbDataReader)value).GetSchemaTable();
+                if (schema.Rows.Count <= 0)
                 {
                     throw SQL.NotEnoughColumnsInStructuredType();
                 }
 
-                fields = new List<MSS.SmiExtendedMetaData>(reader.FieldCount);
-                for (int i = 0; i < reader.FieldCount; i++)
+                int fieldCount = schema.Rows.Count;
+                fields = new List<MSS.SmiExtendedMetaData>(fieldCount);
+
+                bool[] keyCols = new bool[fieldCount];
+                bool hasKey = false;
+                int ordinalForIsKey = schema.Columns[SchemaTableColumn.IsKey].Ordinal;
+                int ordinalForColumnOrdinal = schema.Columns[SchemaTableColumn.ColumnOrdinal].Ordinal;
+
+                // Extract column metadata
+                for (int rowOrdinal = 0; rowOrdinal < fieldCount; rowOrdinal++)
                 {
-                    fields.Add(MSS.MetaDataUtilsSmi.SmiMetaDataFromType(reader.GetName(i), reader.GetFieldType(i)));
+                    DataRow row = schema.Rows[rowOrdinal];
+                    MSS.SmiExtendedMetaData candidateMd = MSS.MetaDataUtilsSmi.SmiMetaDataFromSchemaTableRow(row);
+
+                    // Determine destination ordinal.  Allow for ordinal not specified by assuming rowOrdinal *is* columnOrdinal
+                    // in that case, but don't worry about mix-and-match of the two techniques
+                    int columnOrdinal = rowOrdinal;
+                    if (!row.IsNull(ordinalForColumnOrdinal))
+                    {
+                        columnOrdinal = (int)row[ordinalForColumnOrdinal];
+                    }
+
+                    // After this point, things we are creating (keyCols, fields) should be accessed by columnOrdinal
+                    // while the source should just be accessed via "row".
+
+                    // Watch for out-of-range ordinals
+                    if (columnOrdinal >= fieldCount || columnOrdinal < 0)
+                    {
+                        throw SQL.InvalidSchemaTableOrdinals();
+                    }
+
+                    // extend empty space if out-of-order ordinal
+                    while (columnOrdinal > fields.Count)
+                    {
+                        fields.Add(null);
+                    }
+
+                    // Now add the candidate to the list
+                    if (fields.Count == columnOrdinal)
+                    {
+                        fields.Add(candidateMd);
+                    }
+                    else
+                    {
+                        // Disallow two columns using the same ordinal (even if due to mixing null and non-null columnOrdinals)
+                        if (fields[columnOrdinal] != null)
+                        {
+                            throw SQL.InvalidSchemaTableOrdinals();
+                        }
+
+                        // Don't use insert, since it shifts all later columns down a notch
+                        fields[columnOrdinal] = candidateMd;
+                    }
+
+                    // Propagate key information
+                    if (!row.IsNull(ordinalForIsKey) && (bool)row[ordinalForIsKey])
+                    {
+                        keyCols[columnOrdinal] = true;
+                        hasKey = true;
+                    }
+                }
+
+#if DEBUG
+                // Check for holes
+                //  Above loop logic prevents holes since:
+                //      1) loop processes fieldcount # of columns
+                //      2) no ordinals outside continuous range from 0 to fieldcount - 1 are allowed
+                //      3) no duplicate ordinals are allowed
+                // But assert no holes to be sure.
+                foreach (MSS.SmiExtendedMetaData md in fields) {
+                    Debug.Assert(null != md, "Shouldn't be able to have holes, since original loop algorithm prevents such.");
+                }
+#endif
+
+                // Add unique key property, if any defined.
+                if (hasKey)
+                {
+                    props = new MSS.SmiMetaDataPropertyCollection();
+                    props[MSS.SmiPropertySelector.UniqueKey] = new SmiUniqueKeyProperty(new List<bool>(keyCols));
                 }
             }
         }

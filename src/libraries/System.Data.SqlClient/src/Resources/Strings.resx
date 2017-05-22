@@ -655,6 +655,12 @@
   <data name="SqlParameter_UnexpectedTypeNameForNonStruct" xml:space="preserve">
     <value>TypeName specified for parameter '{0}'.  TypeName must only be set for Structured parameters.</value>
   </data>
+  <data name="NullSchemaTableDataTypeNotSupported" xml:space="preserve">
+    <value>DateType column for field '{0}' in schema table is null.  DataType must be non-null.</value>
+  </data>
+  <data name="InvalidSchemaTableOrdinals" xml:space="preserve">
+    <value>Invalid column ordinals in schema table.  ColumnOrdinals, if present, must not have duplicates or gaps.</value>
+  </data>
   <data name="SQL_EnumeratedRecordMetaDataChanged" xml:space="preserve">
     <value>Metadata for field '{0}' of record '{1}' did not match the original record's metadata.</value>
   </data>

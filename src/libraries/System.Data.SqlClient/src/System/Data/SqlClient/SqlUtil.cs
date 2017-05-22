@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Data.Common;
 using System.Diagnostics;
 using System.Globalization;
@@ -335,6 +331,14 @@ namespace System.Data.SqlClient
         {
             return ADP.Argument(SR.GetString(SR.SQL_ParameterTypeNameRequired, paramType, paramName));
         }
+        internal static Exception NullSchemaTableDataTypeNotSupported(string columnName)
+        {
+            return ADP.Argument(SR.GetString(SR.NullSchemaTableDataTypeNotSupported, columnName));
+        }
+        internal static Exception InvalidSchemaTableOrdinals()
+        {
+            return ADP.Argument(SR.GetString(SR.InvalidSchemaTableOrdinals));
+        }
         internal static Exception EnumeratedRecordMetaDataChanged(string fieldName, int recordNumber)
         {
             return ADP.Argument(SR.GetString(SR.SQL_EnumeratedRecordMetaDataChanged, fieldName, recordNumber));
@@ -409,7 +413,9 @@ namespace System.Data.SqlClient
             return ADP.InvalidCast(SR.GetString(SR.SQL_XmlReaderNotSupportOnColumnType, columnName));
         }
 
-
+        //
+        // SQL.SqlMetaData
+        //
         internal static Exception InvalidSqlDbTypeForConstructor(SqlDbType type)
         {
             return ADP.Argument(SR.GetString(SR.SqlMetaData_InvalidSqlDbTypeForConstructorFormat, type.ToString()));
@@ -433,6 +439,14 @@ namespace System.Data.SqlClient
         internal static Exception UnsupportedColumnTypeForSqlProvider(string columnName, string typeName)
         {
             return ADP.Argument(SR.GetString(SR.SqlProvider_InvalidDataColumnType, columnName, typeName));
+        }
+        internal static Exception InvalidColumnMaxLength(string columnName, long maxLength)
+        {
+            return ADP.Argument(SR.GetString(SR.SqlProvider_InvalidDataColumnMaxLength, columnName, maxLength));
+        }
+        internal static Exception InvalidColumnPrecScale()
+        {
+            return ADP.Argument(SR.GetString(SR.SqlMisc_InvalidPrecScaleMessage));
         }
         internal static Exception NotEnoughColumnsInStructuredType()
         {
@@ -537,10 +551,7 @@ namespace System.Data.SqlClient
         {
             return ADP.InvalidOperation(SR.GetString(SR.SqlParameter_InvalidTableDerivedPrecisionForTvp, precision, columnName, System.Data.SqlTypes.SqlDecimal.MaxPrecision));
         }
-        internal static Exception InvalidColumnMaxLength(string columnName, long maxLength)
-        {
-            return ADP.Argument(SR.GetString(SR.SqlProvider_InvalidDataColumnMaxLength, columnName, maxLength));
-        }
+
         //
         // transactions.
         //
