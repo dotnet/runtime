@@ -30,5 +30,10 @@ namespace System
 
         [DllImport("libc", SetLastError = true)]
         private static extern int sysctlbyname(string ctlName, byte[] oldp, ref IntPtr oldpLen, byte[] newp, IntPtr newpLen);
+
+        [DllImport("libc", SetLastError = true)]
+        internal static extern unsafe uint geteuid();
+
+        public static bool IsSuperUser => geteuid() == 0;
     }
 }

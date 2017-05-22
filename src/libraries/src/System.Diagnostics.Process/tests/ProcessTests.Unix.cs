@@ -17,7 +17,111 @@ namespace System.Diagnostics.Tests
     public partial class ProcessTests : ProcessTestBase
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to set permissions
+        private void TestWindowApisUnix()
+        {
+            // This tests the hardcoded implementations of these APIs on Unix.
+            using (Process p = Process.GetCurrentProcess())
+            {
+                Assert.True(p.Responding);
+                Assert.Equal(string.Empty, p.MainWindowTitle);
+                Assert.False(p.CloseMainWindow());
+                Assert.Throws<InvalidOperationException>(()=>p.WaitForInputIdle());
+            }
+        }
+
+        [Fact]
+        public void MainWindowHandle_GetUnix_ThrowsPlatformNotSupportedException()
+        {
+            CreateDefaultProcess();
+
+            Assert.Throws<PlatformNotSupportedException>(() => _process.MainWindowHandle);
+        }
+
+        [Fact]
+        public void TestProcessOnRemoteMachineUnix()
+        {
+            Process currentProcess = Process.GetCurrentProcess();
+
+            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessesByName(currentProcess.ProcessName, "127.0.0.1"));
+            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessById(currentProcess.Id, "127.0.0.1"));
+        }
+
+        [Theory]
+        [MemberData(nameof(MachineName_Remote_TestData))]
+        public void GetProcessesByName_RemoteMachineNameUnix_ThrowsPlatformNotSupportedException(string machineName)
+        {
+            Process currentProcess = Process.GetCurrentProcess();
+            Assert.Throws<PlatformNotSupportedException>(() => Process.GetProcessesByName(currentProcess.ProcessName, machineName));
+        }
+
+        [Fact]
+        public void TestRootGetProcessById()
+        {
+            Process p = Process.GetProcessById(1);
+            Assert.Equal(1, p.Id);
+        }
+
+        [Fact]
+        public void TestUseShellExecute_Unix_Succeeds()
+        {
+            using (var p = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = "exit", Arguments = "42" }))
+            {
+                Assert.True(p.WaitForExit(WaitInMS));
+                Assert.Equal(42, p.ExitCode);
+            }
+        }
+
+        [Fact]
+        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
+        public void TestPriorityClassUnix()
+        {
+            CreateDefaultProcess();
+
+            ProcessPriorityClass priorityClass = _process.PriorityClass;
+
+            _process.PriorityClass = ProcessPriorityClass.Idle;
+            Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Idle);
+
+            try
+            {
+                _process.PriorityClass = ProcessPriorityClass.High;
+                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.High);
+
+                _process.PriorityClass = ProcessPriorityClass.Normal;
+                Assert.Equal(_process.PriorityClass, ProcessPriorityClass.Normal);
+
+                _process.PriorityClass = priorityClass;
+            }
+            catch (Win32Exception ex)
+            {
+                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+            }
+        }
+
+        [Fact]
+        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
+        public void TestBasePriorityOnUnix()
+        {
+            CreateDefaultProcess();
+
+            ProcessPriorityClass originalPriority = _process.PriorityClass;
+            Assert.Equal(ProcessPriorityClass.Normal, originalPriority);
+
+            SetAndCheckBasePriority(ProcessPriorityClass.Idle, 19);
+
+            try
+            {
+                SetAndCheckBasePriority(ProcessPriorityClass.Normal, 0);
+                SetAndCheckBasePriority(ProcessPriorityClass.High, -11);
+                _process.PriorityClass = originalPriority;
+            }
+            catch (Win32Exception ex)
+            {
+                Assert.True(!PlatformDetection.IsSuperUser, $"Failed even though superuser {ex.ToString()}");
+            }
+        }
+
+        [Fact]
         public void TestStartOnUnixWithBadPermissions()
         {
             string path = GetTestFilePath();
@@ -29,7 +133,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to set permissions
         public void TestStartOnUnixWithBadFormat()
         {
             string path = GetTestFilePath();
