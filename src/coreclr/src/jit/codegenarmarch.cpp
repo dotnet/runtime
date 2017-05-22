@@ -119,12 +119,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
             __fallthrough;
 
-#ifdef _TARGET_ARM_
+#if !defined(_TARGET_64BIT_)
         case GT_ADD_LO:
         case GT_ADD_HI:
         case GT_SUB_LO:
         case GT_SUB_HI:
-#endif // _TARGET_ARM_
+#endif // !defined(_TARGET_64BIT_)
 
         case GT_ADD:
         case GT_SUB:
@@ -136,18 +136,19 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LSH:
         case GT_RSH:
         case GT_RSZ:
+        // case GT_ROL: // No ROL instruction on ARM; it has been lowered to ROR.
         case GT_ROR:
             genCodeForShift(treeNode);
             break;
 
-#ifdef _TARGET_ARM_
+#if !defined(_TARGET_64BIT_)
 
         case GT_LSH_HI:
         case GT_RSH_LO:
             genCodeForShiftLong(treeNode);
             break;
 
-#endif // _TARGET_ARM_
+#endif // !defined(_TARGET_64BIT_)
 
         case GT_CAST:
             genCodeForCast(treeNode->AsOp());
@@ -180,8 +181,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             break;
 
         case GT_LEA:
-            // if we are here, it is the case where there is an LEA that cannot
-            // be folded into a parent instruction
+            // If we are here, it is the case where there is an LEA that cannot be folded into a parent instruction.
             genLeaInstruction(treeNode->AsAddrMode());
             break;
 
@@ -867,13 +867,11 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 void CodeGen::genPutArgReg(GenTreeOp* tree)
 {
     assert(tree->OperIs(GT_PUTARG_REG));
+
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
-    // Any TYP_STRUCT register args should have been removed by fgMorphMultiregStructArg
     assert(targetType != TYP_STRUCT);
-
-    // We have a normal non-Struct targetType
 
     GenTree* op1 = tree->gtOp1;
     genConsumeReg(op1);
@@ -1019,6 +1017,7 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
 void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 {
     assert(tree->OperIs(GT_PHYSREG));
+
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
@@ -1260,45 +1259,6 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     }
 
     genProduceReg(tree);
-}
-
-//------------------------------------------------------------------------
-// genCodeForCast: Generates the code for GT_CAST.
-//
-// Arguments:
-//    tree - the GT_CAST node.
-//
-void CodeGen::genCodeForCast(GenTreeOp* tree)
-{
-    assert(tree->OperIs(GT_CAST));
-
-    var_types targetType = tree->TypeGet();
-    regNumber targetReg  = tree->gtRegNum;
-
-    // Cast is never contained (?)
-    noway_assert(targetReg != REG_NA);
-
-    if (varTypeIsFloating(targetType) && varTypeIsFloating(tree->gtOp1))
-    {
-        // Casts float/double <--> double/float
-        genFloatToFloatCast(tree);
-    }
-    else if (varTypeIsFloating(tree->gtOp1))
-    {
-        // Casts float/double --> int32/int64
-        genFloatToIntCast(tree);
-    }
-    else if (varTypeIsFloating(targetType))
-    {
-        // Casts int32/uint32/int64/uint64 --> float/double
-        genIntToFloatCast(tree);
-    }
-    else
-    {
-        // Casts int <--> int
-        genIntToIntCast(tree);
-    }
-    // The per-case functions call genProduceReg()
 }
 
 //------------------------------------------------------------------------
@@ -2603,6 +2563,26 @@ void CodeGen::genCodeForJumpTrue(GenTreePtr tree)
         inst_JMP(jumpKind[1], compiler->compCurBB->bbJumpDest);
     }
 }
+
+#if defined(_TARGET_ARM_)
+
+//------------------------------------------------------------------------
+// genCodeForJcc: Produce code for a GT_JCC node.
+//
+// Arguments:
+//    tree - the node
+//
+void CodeGen::genCodeForJcc(GenTreeJumpCC* tree)
+{
+    assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
+
+    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
+    emitJumpKind jumpKind    = genJumpKindForOper(tree->gtCondition, compareKind);
+
+    inst_JMP(jumpKind, compiler->compCurBB->bbJumpDest);
+}
+
+#endif // defined(_TARGET_ARM_)
 
 //------------------------------------------------------------------------
 // genCodeForStoreBlk: Produce code for a GT_STORE_OBJ/GT_STORE_DYN_BLK/GT_STORE_BLK node.
