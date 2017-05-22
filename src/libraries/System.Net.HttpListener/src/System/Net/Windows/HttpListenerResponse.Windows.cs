@@ -56,23 +56,6 @@ namespace System.Net
 
         private HttpListenerRequest HttpListenerRequest => HttpListenerContext.Request;
 
-        public string ContentType
-        {
-            get => Headers[HttpKnownHeaderNames.ContentType];
-            set
-            {
-                CheckDisposed();
-                if (string.IsNullOrEmpty(value))
-                {
-                    Headers.Remove(HttpKnownHeaderNames.ContentType);
-                }
-                else
-                {
-                    Headers.Set(HttpKnownHeaderNames.ContentType, value);
-                }
-            }
-        }
-
         public Stream OutputStream
         {
             get

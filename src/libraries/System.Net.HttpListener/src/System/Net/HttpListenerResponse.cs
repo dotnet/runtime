@@ -27,6 +27,23 @@ namespace System.Net
 
         public Encoding ContentEncoding { get; set; }
 
+        public string ContentType
+        {
+            get => Headers[HttpKnownHeaderNames.ContentType];
+            set
+            {
+                CheckDisposed();
+                if (string.IsNullOrEmpty(value))
+                {
+                    Headers.Remove(HttpKnownHeaderNames.ContentType);
+                }
+                else
+                {
+                    Headers.Set(HttpKnownHeaderNames.ContentType, value);
+                }
+            }
+        }
+
         public CookieCollection Cookies
         {
             get => _cookies ?? (_cookies = new CookieCollection());
