@@ -23,7 +23,7 @@ namespace System.ServiceProcess.Tests
         public ServiceProvider()
         {
             TestMachineName = ".";
-            ControlTimeout = TimeSpan.FromSeconds(30);
+            ControlTimeout = TimeSpan.FromSeconds(120);
             TestServiceName = Guid.NewGuid().ToString();
             TestServiceDisplayName = "Test Service " + TestServiceName;
             DependentTestServiceNamePrefix = TestServiceName + ".Dependent";
