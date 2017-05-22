@@ -6,7 +6,7 @@
 #
 #   . ParallelTestExecution.ps1
 #   cd <testFolder> (e.g. testFolder = src\System.Net.Security\tests\FunctionalTests)
-#   RunMultiple <n> <delayVarianceMilliseconds> [-UntilFailed]
+#   RunMultiple <n> <delayVarianceMilliseconds> [-UntilFailed] [-Tile:$false]
 #
 #   The above sequence will open up <n> windows running the test project present in the current folder.
 #   If -UntilFailed is used, the tests will continuously loop until a failure is detected. 
@@ -14,7 +14,7 @@
 
 function BuildAndTestBinary
 {
-    $output = (msbuild /t:rebuild,test)
+    $output = (msbuild /t:rebuild,test /p:Outerloop=true)
     if ($lastexitcode -ne 0)
     {
         throw "Build/test failed."
@@ -31,56 +31,44 @@ function TileWindows
 
 function ParseTestExecutionCommand($msBuildOutput)
 {
-    $testSectionDelimiter = "*RunTestsForProject:*"
-    $foundTestSectionDelimiter = $false
-    
-    $pathDelimiter = "*Executing in*"
-    $foundPath = $false
-
-    $commandDelimiter = "*Command(s):*"
-    $foundCommandDelimiter = $false
-
+    $pathPattern = "*Executing in*"
+    $commandPattern = "*call *"
+    $runtimeFolderPattern = "*Using * as the test runtime folder.*"
+        
     $cmdLine = ""
     $pathLine = ""
+    $runtimeLine = ""
 
     foreach ($line in $msBuildOutput)
     {
-        if (-not $foundTestSectionDelimiter)
+        if ($line -like $pathPattern)
         {
-            if ($line -like $testSectionDelimiter)
-            {
-                $foundTestSectionDelimiter = $true
-            }
+            $pathLine = $line.Split()[4]
+            $foundPath = $true
         }
-        elseif (-not $foundPath)
+        elseif ($line -like $commandPattern)
         {
-            if ($line -like $pathDelimiter)
-            {
-                $pathLine = $line.Split()[4]
-                $foundPath = $true
-            }
-        }
-        elseif (-not $foundCommandDelimiter)
-        {
-            if ($line -like $commandDelimiter)
-            {
-                $foundCommandDelimiter = $true
-            }
-        }
-        else
-        {
+            $foundcommandPattern = $true
             $cmdLine = $line
-            break;
+        }
+        elseif ($line -like $runtimeFolderPattern)
+        {
+            $runtimeLine = $line
         }
     }
 
-    if (-not $foundCommandDelimiter)
+    if (-not $foundcommandPattern)
     {
         throw "Cannot parse MSBuild output: please ensure that the current folder contains a test."
     }
 
     $Global:TestPath = $pathLine.Trim()
-    $Global:TestCommand = $cmdLine.Trim() -replace ("call ", ".\")
+    $Global:TestCommand = $cmdLine.Trim() -replace ("call ", "")
+    
+    $runtimePath = $runtimeLine.Split()[3]
+
+    $Global:TestCommand = $Global:TestCommand -replace ("%RUNTIME_PATH%", $runtimePath);
+    $Global:TestCommand = [System.Environment]::ExpandEnvironmentVariables($Global:TestCommand)
 }
 
 function Initialize
@@ -103,12 +91,12 @@ function Initialize
 
 function RunOne($testPath, $testCommand)
 {
-    if ($testPath -ne "")
+    if (-not [string]::IsNullOrWhiteSpace($testPath))
     {
         $Global:TestPath = $testPath
     }
 
-    if ($testCommand -ne "")
+    if (-not [string]::IsNullOrWhiteSpace($testCommand))
     {
         $Global:TestCommand = $testCommand
     }
@@ -157,7 +145,8 @@ function RunUntilFailed($testPath, $testCommand, $delayVarianceMilliseconds = 0)
 function RunMultiple(
     [int]$n = 2, 
     [int]$RandomDelayVarianceMilliseconds = 0,
-    [switch]$UntilFailed = $false)
+    [switch]$UntilFailed = $false,
+    [switch]$Tile = $true)
 {  
     if ($Global:TestCommand -eq $null)
     {
@@ -166,7 +155,7 @@ function RunMultiple(
 
     $script = $PSCommandPath
         
-    if ($untilFailed)
+    if ($UntilFailed)
     {
         $executionMethod = "RunUntilFailed"
     }
@@ -207,7 +196,10 @@ function RunMultiple(
         }
 
         Start-Sleep -Milliseconds 1000
-        TileWindows
+        if ($Tile)
+        {
+            TileWindows
+        }
     }
 
     if (-not $processesExited)
