@@ -11,7 +11,7 @@ using Xunit;
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
-    internal class HttpListenerFactory : IDisposable
+    public class HttpListenerFactory : IDisposable
     {
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
