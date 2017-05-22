@@ -114,6 +114,7 @@ namespace System.Net.Tests
 
         public void Dispose() => _listener.Close();
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void TimeoutManager_AccessNoStart_Success()
         {
@@ -125,6 +126,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, timeoutManager.MinSendBytesPerSecond);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void TimeoutManager_AccessAfterStart_Success()
         {
@@ -157,6 +159,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => timeoutManager.MinSendBytesPerSecond = 10);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void TimeoutManager_AccessAfterStop_Success()
         {
@@ -171,6 +174,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, timeoutManager.MinSendBytesPerSecond);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void DrainEntityBody_SetTimeoutNoStart_GetReturnsNewValue()
         {
@@ -181,6 +185,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.DrainEntityBody.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void DrainEntityBody_SetTimeoutAfterStart_GetReturnsNewValue()
         {
@@ -192,6 +197,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.DrainEntityBody.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void EntityBody_SetTimeoutNoStart_GetReturnsNewValue()
         {
@@ -202,6 +208,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.EntityBody.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void EntityBody_SetTimeoutAfterStart_GetReturnsNewValue()
         {
@@ -213,6 +220,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.EntityBody.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void HeaderWait_SetTimeoutNoStart_GetReturnsNewValue()
         {
@@ -223,6 +231,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.HeaderWait.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void HeaderWait_SetTimeoutAfterStart_GetReturnsNewValue()
         {
@@ -234,6 +243,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.HeaderWait.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void RequestQueue_SetTimeoutNoStart_GetReturnsNewValue()
         {
@@ -244,6 +254,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.RequestQueue.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void RequestQueue_SetTimeoutAfterStart_GetReturnsNewValue()
         {
@@ -255,6 +266,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.RequestQueue.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void IdleConnection_SetTimeoutNoStart_GetReturnsNewValue()
         {
@@ -265,6 +277,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.IdleConnection.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void IdleConnection_SetTimeoutAfterStart_GetReturnsNewValue()
         {
@@ -276,6 +289,7 @@ namespace System.Net.Tests
             Assert.Equal(seconds, _listener.TimeoutManager.IdleConnection.TotalSeconds);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void MinSendBytesPerSecond_SetNoStart_GetReturnsNewValue()
         {
@@ -287,6 +301,7 @@ namespace System.Net.Tests
             Assert.Equal(rate, _listener.TimeoutManager.MinSendBytesPerSecond);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void MinSendBytesPerSecond_SetAfterStart_GetReturnsNewValue()
         {
@@ -308,6 +323,7 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => _listener.TimeoutManager.MinSendBytesPerSecond = 10 * 1024 * 1024);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void MinSendBytesPerSecond_SetAfterStop_GetReturnsNewValue()
         {
