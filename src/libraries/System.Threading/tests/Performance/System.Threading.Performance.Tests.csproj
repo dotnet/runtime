@@ -10,10 +10,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.EventWaitHandle.cs" />
+    <Compile Include="Perf.Interlocked.cs" />
     <Compile Include="Perf.Lock.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
+    <Compile Include="Perf.Monitor.cs" />
+    <Compile Include="Perf.SpinLock.cs" />
+    <Compile Include="Perf.Volatile.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
