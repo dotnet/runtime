@@ -335,6 +335,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             info->dstCount = 0;
             break;
 
+        case GT_SETCC:
+            info->srcCount = 0;
+            info->dstCount = 1;
+#ifdef _TARGET_X86_
+            info->setDstCandidates(m_lsra, RBM_BYTE_REGS);
+#endif // _TARGET_X86_
+            break;
+
         case GT_JMP:
             info->srcCount = 0;
             info->dstCount = 0;
@@ -523,6 +531,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_GT:
         case GT_TEST_EQ:
         case GT_TEST_NE:
+        case GT_CMP:
             TreeNodeInfoInitCmp(tree);
             break;
 
@@ -3026,12 +3035,12 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
 //
 void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
 {
-    assert(tree->OperIsCompare());
+    assert(tree->OperIsCompare() || tree->OperIs(GT_CMP));
 
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     info->srcCount = 2;
-    info->dstCount = 1;
+    info->dstCount = tree->OperIs(GT_CMP) ? 0 : 1;
 
 #ifdef _TARGET_X86_
     // If the compare is used by a jump, we just need to set the condition codes. If not, then we need
@@ -3046,20 +3055,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     GenTreePtr op2     = tree->gtOp.gtOp2;
     var_types  op1Type = op1->TypeGet();
     var_types  op2Type = op2->TypeGet();
-
-#if !defined(_TARGET_64BIT_)
-    // Long compares will consume GT_LONG nodes, each of which produces two results.
-    // Thus for each long operand there will be an additional source.
-    // TODO-X86-CQ: Mark hiOp2 and loOp2 as contained if it is a constant or a memory op.
-    if (varTypeIsLong(op1Type))
-    {
-        info->srcCount++;
-    }
-    if (varTypeIsLong(op2Type))
-    {
-        info->srcCount++;
-    }
-#endif // !defined(_TARGET_64BIT_)
 
     // If either of op1 or op2 is floating point values, then we need to use
     // ucomiss or ucomisd to compare, both of which support the following form:
@@ -3561,7 +3556,7 @@ bool Lowering::ExcludeNonByteableRegisters(GenTree* tree)
     {
         return true;
     }
-    else if (tree->OperIsCompare())
+    else if (tree->OperIsCompare() || tree->OperIs(GT_CMP))
     {
         GenTree* op1 = tree->gtGetOp1();
         GenTree* op2 = tree->gtGetOp2();
