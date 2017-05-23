@@ -56,7 +56,7 @@
 		{
 			ldarg.0
 			ldarg.1
-			ldarg.3
+			ldarg.2
 			cpblk
 			ret
 		}
@@ -65,7 +65,7 @@
 		{
 			ldarg.0
 			ldarg.1
-			ldarg.3
+			ldarg.2
 			initblk
 			ret
 		}
