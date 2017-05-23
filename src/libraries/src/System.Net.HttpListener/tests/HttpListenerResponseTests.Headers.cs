@@ -14,6 +14,67 @@ namespace System.Net.Tests
     public class HttpListenerResponseHeadersTests : HttpListenerResponseTestBase
     {
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public async Task AddHeader_ValidValue_ReplacesHeaderInCollection()
+        {
+            HttpListenerResponse response = await GetResponse();
+
+            response.AddHeader("name", "value1");
+            Assert.Equal("value1", response.Headers["name"]);
+
+            response.AddHeader("name", "value2");
+            Assert.Equal("value2", response.Headers["name"]);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public async Task AddHeader_NullOrEmptyName_ThrowsArgumentNullException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            Assert.Throws<ArgumentNullException>("name", () => response.AddHeader(null, ""));
+            Assert.Throws<ArgumentNullException>("name", () => response.AddHeader("", ""));
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public async Task AddHeader_InvalidNameOrValue_ThrowsArgumentException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            Assert.Throws<ArgumentException>("name", () => response.AddHeader("\r \t \n", ""));
+            Assert.Throws<ArgumentException>("name", () => response.AddHeader("(", ""));
+            Assert.Throws<ArgumentException>("value", () => response.AddHeader("name", "value1\rvalue2\r"));
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(20161)]
+        public async Task AppendHeader_ValidValue_AddsHeaderToCollection()
+        {
+            HttpListenerResponse response = await GetResponse();
+
+            response.AppendHeader("name", "value1");
+            Assert.Equal("value1", response.Headers["name"]);
+
+            response.AppendHeader("name", "value2");
+            Assert.Equal("value1,value2", response.Headers["name"]);
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(20161)]
+        public async Task AppendHeader_NullOrWhitespaceName_ThrowsArgumentNullException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            Assert.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(20161)]
+        public async Task AppendHeader_InvalidNameOrValue_ThrowsArgumentException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            Assert.Throws<ArgumentException>("name", () => response.AppendHeader("", ""));
+            Assert.Throws<ArgumentException>("name", () => response.AppendHeader("\r \t \n", ""));
+            Assert.Throws<ArgumentException>("name", () => response.AppendHeader("(", ""));
+            Assert.Throws<ArgumentException>("value", () => response.AppendHeader("name", "value1\rvalue2\r"));
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentEncoding_SetCustom_DoesNothing()
         {
             // Setting HttpListenerResponse.ContentEncoding does nothing - it is never used.
