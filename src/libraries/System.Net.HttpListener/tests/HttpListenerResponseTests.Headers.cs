@@ -514,9 +514,7 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
         
-        // The managed implementation should throw a ProtocolViolationException setting SendChunked to
-        // true when the request is version 1.0
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19977, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task SendChunked_SetTrueAndRequestHttpVersionMinorIsZero_ThrowsInvalidOperationException()
         {
             using (HttpListenerResponse response = await GetResponse("1.0"))
@@ -748,9 +746,7 @@ namespace System.Net.Tests
         }
 
         [MemberData(nameof(ProtocolVersion_Set_TestData))]
-        // The managed implementation should turn ProtocolVersion into a nop to match Windows.
-        // The managed implementation should only set the major and minor components of ProtocolVersion.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19977, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ProtocolVersion_SetValid_ReturnsExpected(Version version)
         {
             Version expectedVersion = new Version(version.Major, version.Minor);
@@ -761,7 +757,6 @@ namespace System.Net.Tests
                 Assert.Equal(expectedVersion, response.ProtocolVersion);
             }
 
-            // It looks like HttpListenerResponse actually ignores the ProtocolVersion when sending to the client.
             string clientResponse = GetClientResponse(120);
             Assert.StartsWith("HTTP/1.1 200 OK\r\n", clientResponse);
         }
