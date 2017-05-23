@@ -47,6 +47,8 @@
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\Net\BoundaryType.cs" />
+    <Compile Include="System\Net\EntitySendFormat.cs" />
     <Compile Include="System\Net\HttpListenerPrefixCollection.cs" />
     <Compile Include="System\Net\HttpRequestStream.cs" />
     <Compile Include="System\Net\AuthenticationTypes.cs" />
@@ -108,14 +110,12 @@
     <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerResponse.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerTimeoutManager.Windows.cs" />
-    <Compile Include="System\Net\Windows\BoundaryType.cs" />
     <Compile Include="System\Net\Windows\ContextFlags.cs" />
     <Compile Include="System\Net\Windows\HttpRequestQueueV2Handle.cs" />
     <Compile Include="System\Net\Windows\HttpServerSessionHandle.cs" />
     <Compile Include="System\Net\Windows\HttpListenerRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerClientCertAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Windows\AsyncRequestContext.cs" />
-    <Compile Include="System\Net\Windows\EntitySendFormat.cs" />
     <Compile Include="System\Net\Windows\RequestContextBase.cs" />
     <Compile Include="System\Net\Windows\SyncRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerAsyncResult.Windows.cs" />
