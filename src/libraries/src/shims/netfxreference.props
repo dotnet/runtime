@@ -25,6 +25,8 @@
     <NetFxReference Include="System.Xml" />
     <NetFxReference Include="System.Xml.Serialization" />
     <NetFxReference Include="System.Xml.Linq" />
-    <NetFxReference Include="WindowsBase" />
+    <NetFxReference Include="WindowsBase">
+      <StrongNameSig>MSSharedLib</StrongNameSig>
+    </NetFxReference>
   </ItemGroup>
 </Project>
