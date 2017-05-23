@@ -21,6 +21,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20014", TargetFrameworkMonikers.Uap)]
         public void IPInfoTest_AccessAllProperties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -111,6 +112,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20014", TargetFrameworkMonikers.Uap)]
         public void IPInfoTest_AccessAllIPv4Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -141,6 +143,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20014", TargetFrameworkMonikers.Uap)]
         public void IPInfoTest_AccessAllIPv6Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -174,6 +177,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20014", TargetFrameworkMonikers.Uap)]
         public void IPv6ScopeId_GetLinkLevel_MatchesIndex()
         {
             Assert.True(Capability.IPv6Support());
@@ -195,6 +199,7 @@ namespace System.Net.NetworkInformation.Tests
 
         [Fact]
         [Trait("IPv6", "true")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20014", TargetFrameworkMonikers.Uap)]
         public void IPv6ScopeId_AccessAllValues_Success()
         {
             Assert.True(Capability.IPv6Support());
