@@ -182,6 +182,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
     unsigned   mul;
     bool       rev;
     bool       modifiedSources = false;
+    bool       makeContained   = true;
 
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirTree, addr))
     {
@@ -190,10 +191,36 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
         index                = lea->Index();
         cns                  = lea->gtOffset;
 
-        m_lsra->clearOperandCounts(addr);
-        // The srcCount is decremented because addr is now "contained",
-        // then we account for the base and index below, if they are non-null.
-        info->srcCount--;
+#ifdef _TARGET_ARM_
+        // ARM floating-point load/store doesn't support a form similar to integer
+        // ldr Rdst, [Rbase + Roffset] with offset in a register. The only supported
+        // form is vldr Rdst, [Rbase + imm] with a more limited constraint on the imm.
+        if (lea->HasIndex() || !emitter::emitIns_valid_imm_for_vldst_offset(cns))
+        {
+            if (indirTree->OperGet() == GT_STOREIND)
+            {
+                if (varTypeIsFloating(indirTree->AsStoreInd()->Data()))
+                {
+                    makeContained = false;
+                }
+            }
+            else if (indirTree->OperGet() == GT_IND)
+            {
+                if (varTypeIsFloating(indirTree))
+                {
+                    makeContained = false;
+                }
+            }
+        }
+#endif
+
+        if (makeContained)
+        {
+            m_lsra->clearOperandCounts(addr);
+            // The srcCount is decremented because addr is now "contained",
+            // then we account for the base and index below, if they are non-null.
+            info->srcCount--;
+        }
     }
     else if (comp->codeGen->genCreateAddrMode(addr, -1, true, 0, &rev, &base, &index, &mul, &cns, true /*nogen*/) &&
              !(modifiedSources = AreSourcesPossiblyModifiedLocals(indirTree, base, index)))
@@ -204,8 +231,6 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
 
         assert(base != addr);
         m_lsra->clearOperandCounts(addr);
-
-        GenTreePtr arrLength = nullptr;
 
         // Traverse the computation below GT_IND to find the operands
         // for the addressing mode, marking the various constants and
@@ -283,11 +308,15 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
         base = addr;
     }
 
+    if (!makeContained)
+    {
+        return;
+    }
+
     if (base != nullptr)
     {
         info->srcCount++;
     }
-
     if (index != nullptr && !modifiedSources)
     {
         info->srcCount++;
