@@ -80,6 +80,12 @@ public:
         JIT_FLAG_DESKTOP_QUIRKS          = 38, // The JIT should generate desktop-quirk-compatible code
         JIT_FLAG_TIER0                   = 39, // This is the initial tier for tiered compilation which should generate code as quickly as possible
         JIT_FLAG_TIER1                   = 40, // This is the final tier (for now) for tiered compilation which should generate high quality code
+
+#if defined(_TARGET_ARM_)
+        JIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
+#else // !defined(_TARGET_ARM_)
+        JIT_FLAG_UNUSED11                = 41
+#endif // !defined(_TARGET_ARM_)
     };
     // clang-format on
 
@@ -191,6 +197,12 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_DESKTOP_QUIRKS, JIT_FLAG_DESKTOP_QUIRKS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER0, JIT_FLAG_TIER0);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_TIER1, JIT_FLAG_TIER1);
+
+#if defined(_TARGET_ARM_)
+
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
+
+#endif // _TARGET_ARM_
 
 #undef FLAGS_EQUAL
     }

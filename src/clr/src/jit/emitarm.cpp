@@ -5392,7 +5392,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             {
                 assert(ins == INS_movt || ins == INS_movw);
                 if ((ins == INS_movt) && emitComp->info.compMatchedVM)
-                    emitRecordRelocation((void*)(dst - 8), (void*)distVal, IMAGE_REL_BASED_THUMB_MOV32);
+                    emitHandlePCRelativeMov32((void*)(dst - 8), (void*)distVal);
             }
         }
         else
@@ -6016,7 +6016,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 assert((ins == INS_movt) || (ins == INS_movw));
                 dst += emitOutput_Thumb2Instr(dst, code);
                 if ((ins == INS_movt) && emitComp->info.compMatchedVM)
-                    emitRecordRelocation((void*)(dst - 8), (void*)imm, IMAGE_REL_BASED_THUMB_MOV32);
+                    emitHandlePCRelativeMov32((void*)(dst - 8), (void*)imm);
             }
             else
             {

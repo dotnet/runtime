@@ -13066,8 +13066,7 @@ void CodeGen::genCodeForBBlist()
                 // Load the address where the finally funclet should return into LR.
                 // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do
                 // the return.
-                getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
-                getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
+                genMov32RelocatableDisplacement(bbFinallyRet, REG_LR);
                 regTracker.rsTrackRegTrash(REG_LR);
 
                 // Jump to the finally BB
@@ -13093,8 +13092,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_EHCATCHRET:
                 // set r0 to the address the VM should return to after the catch
-                getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_R0);
-                getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_R0);
+                genMov32RelocatableDisplacement(block->bbJumpDest, REG_R0);
                 regTracker.rsTrackRegTrash(REG_R0);
 
                 __fallthrough;
@@ -15479,8 +15477,7 @@ void CodeGen::genTableSwitch(regNumber reg, unsigned jumpCnt, BasicBlock** jumpT
     // Pick any register except the index register.
     //
     regNumber regTabBase = regSet.rsGrabReg(RBM_ALLINT & ~genRegMask(reg));
-    getEmitter()->emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, jmpTabBase, regTabBase);
-    getEmitter()->emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, jmpTabBase, regTabBase);
+    genMov32RelocatableDataLabel(jmpTabBase, regTabBase);
     regTracker.rsTrackRegTrash(regTabBase);
 
     // LDR PC, [regTableBase + reg * 4] (encoded as LDR PC, [regTableBase, reg, LSL 2]
