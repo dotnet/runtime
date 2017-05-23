@@ -341,11 +341,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LABEL:
             genPendingCallLabel       = genCreateTempLabel();
             treeNode->gtLabel.gtLabBB = genPendingCallLabel;
-#if defined(_TARGET_ARM_)
-            emit->emitIns_J_R(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#elif defined(_TARGET_ARM64_)
             emit->emitIns_R_L(INS_adr, EA_PTRSIZE, genPendingCallLabel, targetReg);
-#endif
             break;
 
         case GT_STORE_OBJ:
