@@ -263,9 +263,9 @@ namespace LinkBench
             new Benchmark("Corefx",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\pretrimmed",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed"),
-            new Benchmark("Roslyn",
+            /*new Benchmark("Roslyn",
                 "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\publish",
-                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked")
+                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked") */
         };
 
         static int UsageError()
