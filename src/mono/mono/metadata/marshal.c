@@ -276,6 +276,21 @@ mono_marshal_init_tls (void)
 static MonoObject*
 mono_object_isinst_icall (MonoObject *obj, MonoClass *klass)
 {
+	if (!klass)
+		return NULL;
+
+	/* This is called from stelemref so it is expected to succeed */
+	/* Fastpath */
+	if (mono_class_is_interface (klass)) {
+		MonoVTable *vt = obj->vtable;
+
+		if (!klass->inited)
+			mono_class_init (klass);
+
+		if (MONO_VTABLE_IMPLEMENTS_INTERFACE (vt, klass->interface_id))
+			return obj;
+	}
+
 	MonoError error;
 	MonoObject *result = mono_object_isinst_checked (obj, klass, &error);
 	mono_error_set_pending_exception (&error);
@@ -8014,8 +8029,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		gboolean uses_handles = FALSE;
 		gboolean save_handles_to_locals = FALSE;
 		IcallHandlesLocal *handles_locals = NULL;
-		(void) mono_lookup_internal_call_full (method, &uses_handles);
 
+		(void) mono_lookup_internal_call_full (method, &uses_handles);
 
 		/* If it uses handles and MonoError, it had better check exceptions */
 		g_assert (!uses_handles || check_exceptions);
