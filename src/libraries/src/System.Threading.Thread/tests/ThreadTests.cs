@@ -767,9 +767,9 @@ namespace System.Threading.Threads.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Thread.Sleep(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
 
             Thread.Sleep(0);
-            var startTime = DateTime.Now;
+            var startTime = DateTime.UtcNow;
             Thread.Sleep(500);
-            Assert.True((DateTime.Now - startTime).TotalMilliseconds >= 100);
+            Assert.InRange((DateTime.UtcNow - startTime).TotalMilliseconds, 100, int.MaxValue);
         }
 
         [Fact]
