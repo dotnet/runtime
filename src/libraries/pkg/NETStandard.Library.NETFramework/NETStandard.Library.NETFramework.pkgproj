@@ -26,6 +26,9 @@
     <File Include="targets\**\*.*" Exclude="@(StampFile)">
       <TargetPath>build/%(RecursiveDir)</TargetPath>
     </File>
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>build/net471</TargetPath>
+    </File>
   </ItemGroup>
 
   <ItemGroup>
