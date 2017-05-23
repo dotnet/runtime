@@ -654,11 +654,7 @@ inline MethodDesc* MethodTable::GetMethodDescForSlot(DWORD slot)
     // for an interface virtual, since their slots usually point to stub.
     if (IsInterface() && slot < GetNumVirtuals())
     {
-        // @DIM_TODO - This is not a reliable approach. Need to change MakeJitWorker to not stomp 
-        // over slot and instead set the target of precode to the address. We may need the precode 
-        // there anyway to handle other cases too (such as interop). 
-        MethodDesc *pMD = MethodDesc::GetMethodDescFromStubAddr(pCode, /* fSpeculative = */ TRUE);
-        if (pMD != NULL) return pMD;
+        return MethodDesc::GetMethodDescFromStubAddr(pCode);
     }
 
     return MethodTable::GetMethodDescForSlotAddress(pCode);
