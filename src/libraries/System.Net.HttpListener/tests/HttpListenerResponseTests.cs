@@ -202,8 +202,7 @@ namespace System.Net.Tests
                 ouputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
 
                 // The connection should not be forcibly terminated.
-                // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19976, TestPlatforms.AnyUnix)]
-                string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 120 : 125);
+                string clientResponse = GetClientResponse(120);
                 Assert.NotEmpty(clientResponse);
 
                 // Extra calls to Abort, Close or Dispose are nops.
@@ -228,8 +227,7 @@ namespace System.Net.Tests
                 ouputStream.Write(SimpleMessage, 0, SimpleMessage.Length);
 
                 // The connection should not be forcibly terminated.
-                // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19976, TestPlatforms.AnyUnix)]
-                string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 120 : 125);
+                string clientResponse = GetClientResponse(120);
                 Assert.NotEmpty(clientResponse);
 
                 // Extra calls to Abort, Close or Dispose are nops.
@@ -260,8 +258,7 @@ namespace System.Net.Tests
                 }
                 catch (ObjectDisposedException) { }
 
-                // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19976, TestPlatforms.AnyUnix)]
-                string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 106 : 125);
+                string clientResponse = GetClientResponse(106);
                 Assert.Contains("\r\nContent-Length: 0\r\n", clientResponse);
             }
         }
@@ -320,8 +317,7 @@ namespace System.Net.Tests
 
         [InlineData(true)]
         [InlineData(false)]
-        // The managed implementation should set ContentLength to -1 after sending headers.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19973, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task CloseResponseEntity_ChunkedNotSentHeaders_ModifiesContentLength(bool willBlock)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -421,8 +417,7 @@ namespace System.Net.Tests
                     Assert.ThrowsAny<InvalidOperationException>(() => response.Close(new byte[] { (byte)'a', (byte)'b' }, willBlock));
                 }
 
-                // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19976, TestPlatforms.AnyUnix)]
-                string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 110 : 129);
+                string clientResponse = GetClientResponse(110);
                 Assert.EndsWith("Hell", clientResponse);
             }
             finally

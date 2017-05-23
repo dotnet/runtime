@@ -26,16 +26,13 @@ namespace System.Net
         private ResponseState _responseState;
 
         private long _contentLength;
-        private BoundaryType _boundaryType;
         private Interop.HttpApi.HTTP_RESPONSE _nativeResponse;
 
-        private HttpListenerContext _httpContext;
 
         internal HttpListenerResponse()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             _nativeResponse = new Interop.HttpApi.HTTP_RESPONSE();
-            _boundaryType = BoundaryType.None;
             _nativeResponse.StatusCode = (ushort)HttpStatusCode.OK;
             _nativeResponse.Version.MajorVersion = 1;
             _nativeResponse.Version.MinorVersion = 1;
@@ -48,9 +45,7 @@ namespace System.Net
             _httpContext = httpContext;
         }
 
-        private HttpListenerContext HttpListenerContext => _httpContext;
 
-        private HttpListenerRequest HttpListenerRequest => HttpListenerContext.Request;
 
         public int StatusCode
         {
@@ -81,67 +76,6 @@ namespace System.Net
             _keepAlive = templateResponse._keepAlive;
         }
 
-        public bool SendChunked
-        {
-            get => EntitySendFormat == EntitySendFormat.Chunked;
-            set
-            {
-                EntitySendFormat = value ? EntitySendFormat.Chunked : EntitySendFormat.ContentLength;
-            }
-        }
-
-        // We MUST NOT send message-body when we send responses with these Status codes
-        private static readonly int[] s_noResponseBody = { 100, 101, 204, 205, 304 };
-
-        private bool CanSendResponseBody(int responseCode)
-        {
-            for (int i = 0; i < s_noResponseBody.Length; i++)
-            {
-                if (responseCode == s_noResponseBody[i])
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        internal EntitySendFormat EntitySendFormat
-        {
-            get => (EntitySendFormat)_boundaryType;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-                if (value == EntitySendFormat.Chunked && HttpListenerRequest.ProtocolVersion.Minor == 0)
-                {
-                    throw new ProtocolViolationException(SR.net_nochunkuploadonhttp10);
-                }
-                _boundaryType = (BoundaryType)value;
-                if (value != EntitySendFormat.ContentLength)
-                {
-                    _contentLength = -1;
-                }
-            }
-        }
-
-        public long ContentLength64
-        {
-            get => _contentLength;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-                if (value >= 0)
-                {
-                    _contentLength = value;
-                    _boundaryType = BoundaryType.ContentLength;
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-                }
-            }
-        }
 
         public Version ProtocolVersion
         {
