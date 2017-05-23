@@ -464,7 +464,7 @@ static bool emitIns_valid_imm_for_movi(INT64 imm, emitAttr size);
 static bool emitIns_valid_imm_for_fmov(double immDbl);
 
 // true if this 'imm' can be encoded as a input operand to an add instruction
-static bool emitIns_valid_imm_for_add(INT64 imm, emitAttr size);
+static bool emitIns_valid_imm_for_add(INT64 imm, emitAttr size = EA_8BYTE);
 
 // true if this 'imm' can be encoded as a input operand to a cmp instruction
 static bool emitIns_valid_imm_for_cmp(INT64 imm, emitAttr size);
