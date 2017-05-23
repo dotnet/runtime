@@ -305,14 +305,6 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
         // This offset can't be contained in the ldr/str instruction, so we need an internal register
         info->internalIntCount = 1;
     }
-    else if (varTypeIsFloating(indirTree))
-    {
-        // TODO-ARM: We can narrow the condition where an internal register is really required.
-        //           For example, we don't need an internal regsiter where offset can be contained.
-
-        // For float ldr/str(vldr/vstr), we need an internal register to compute address.
-        info->internalIntCount = 1;
-    }
 }
 
 //------------------------------------------------------------------------
