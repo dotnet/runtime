@@ -430,21 +430,25 @@ exit /b 0
 
 
 :Usage
+@REM NOTE: The caret character is used to escape meta-characters known to the CMD shell. This character does
+@REM NOTE: not appear in output. Thus, while it might look like in lines below that the "-" are not aligned,
+@REM NOTE: they are in the output (and please keep them aligned).
 echo.
 echo Usage:
-echo   %0 [options] [CORE_ROOT]
+echo   %0 [options] [^<CORE_ROOT^>]
+echo.
 echo where:
 echo.
 echo./? -? /h -h /help -help   - View this message.
-echo BuildArch ^<build_arch^>    - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
-echo BuildType ^<build_type^>    - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
+echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
+echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo VSVersion ^<vs_version^>    - VS2015 or VS2017 ^(default: VS2017^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo AgainstPackages           - This indicates that we are running tests that were built against packages.
 echo GenerateLayoutOnly        - If specified will not run the tests and will only create the Runtime Dependency Layout
 echo sequential                - Run tests sequentially (no parallelism).
 echo crossgen                  - Precompile ^(crossgen^) the managed assemblies in CORE_ROOT before running the tests.
-echo link ^<ILlink^>             - Runs the tests after linking via ILlink
+echo link ^<ILlink^>             - Runs the tests after linking via the IL linker ^<ILlink^>.
 echo RunCrossgenTests          - Runs ReadytoRun tests
 echo jitstress ^<n^>             - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs ^<n^>         - Runs the tests with COMPlus_JitStressRegs=n
@@ -455,13 +459,19 @@ echo ilasmroundtrip            - Runs ilasm round trip on the tests
 echo longgc                    - Run the long-running GC tests
 echo gcsimulator               - Run the GC Simulator tests
 echo gcstresslevel ^<n^>         - Runs the tests with COMPlus_GCStress=n. n=0 means no GC Stress. Otherwise, n is a bitmask of the following:
-echo                               1: GC on all allocs and 'easy' places
+echo                               1: GC on all allocations and 'easy' places
 echo                               2: GC on transitions to preemptive GC
 echo                               4: GC on every allowable JITed instruction
 echo                               8: GC on every allowable NGEN instruction
 echo                              16: GC only on a unique stack trace
 echo msbuildargs ^<args...^>     - Pass all subsequent args directly to msbuild invocations.
-echo ^<CORE_ROOT^>               - If specified, last, this is the path to the runtime to test.
+echo ^<CORE_ROOT^>               - Path to the runtime to test (if specified).
+echo.
+echo Note that arguments are not case-sensitive.
+echo.
+echo Examples:
+echo   %0 x86 checked
+echo   %0 x64 release GenerateLayoutOnly
 exit /b 1
 
 :NoVS
