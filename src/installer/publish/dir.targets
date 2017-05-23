@@ -74,10 +74,10 @@
         <PackageName>dotnet-host</PackageName>
       </DebInstallerFile>
       <DebInstallerFile Include="$(HostFxrInstallerStart)$(HostResolverVersionMoniker).deb" >
-        <PackageName>dotnet-hostfxr-$(HostResolverVersion)</PackageName>
+        <PackageName>dotnet-hostfxr-$(HostResolverVersion.ToLower())</PackageName>
       </DebInstallerFile>
       <DebInstallerFile Include="$(SharedFrameworkInstallerStart)$(ProductMoniker).deb">
-        <PackageName>dotnet-sharedframework-$(SharedFrameworkName)-$(SharedFrameworkNugetVersion)</PackageName>
+        <PackageName>dotnet-sharedframework-$(SharedFrameworkName.ToLower())-$(SharedFrameworkNugetVersion.ToLower())</PackageName>
       </DebInstallerFile>
 
       <DebInstallerFile>
