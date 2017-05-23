@@ -13,7 +13,7 @@
         "package_version":"1.0.0.0",
         "package_revision":"1",
         "urgency" : "low",
-        "changelog_message" : "Inital shared host."
+        "changelog_message" : "Initial shared host."
     },
 
     "control": {

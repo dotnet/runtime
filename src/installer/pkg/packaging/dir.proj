@@ -143,6 +143,7 @@
   <Import Project="windows\package.targets" />
   <Import Project="osx\package.targets" />
   <Import Project="deb\package.targets" />
+  <Import Project="rpm\package.targets" />
 
   <PropertyGroup>
    <InstallerDependsOn>
@@ -150,6 +151,7 @@
      GenerateBundles;
      GeneratePkgs;
      GenerateDebs;
+     GenerateRpms;
    </InstallerDependsOn>
   </PropertyGroup>
   <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
