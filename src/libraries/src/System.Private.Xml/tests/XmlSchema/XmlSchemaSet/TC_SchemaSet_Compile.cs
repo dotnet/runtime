@@ -86,6 +86,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue(20148, ~TestPlatforms.Windows)]
         //[Variation(Desc = "TFS_470021 Unexpected local particle qualified name when chameleon schema is added to set")]
         public void TFS_470021()
         {
@@ -118,33 +119,43 @@ namespace System.Xml.Tests
     </xs:complexType>
   </xs:element>
 </xs:schema>";
-            using (XmlWriter w = XmlWriter.Create("cham.xsd"))
-            {
-                using (XmlReader r = XmlReader.Create(new StringReader(cham)))
-                    w.WriteNode(r, true);
-            }
-            XmlSchemaSet ss = new XmlSchemaSet();
-            ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
 
-            ss.Add(null, XmlReader.Create(new StringReader(cham)));
-            ss.Add(null, XmlReader.Create(new StringReader(main)));
-            ss.Compile();
-
-            Assert.Equal(ss.Count, 2);
-            foreach (XmlSchemaElement e in ss.GlobalElements.Values)
+            using (var tempDirectory = new TempDirectory())
             {
-                _output.WriteLine(e.QualifiedName.ToString());
-                XmlSchemaComplexType type = e.ElementSchemaType as XmlSchemaComplexType;
-                XmlSchemaSequence seq = type.ContentTypeParticle as XmlSchemaSequence;
-                foreach (XmlSchemaObject child in seq.Items)
+                string chamPath = Path.Combine(tempDirectory.Path, "cham.xsd");
+                string tempDirectoryPath = tempDirectory.Path[tempDirectory.Path.Length - 1] == Path.DirectorySeparatorChar ?
+                    tempDirectory.Path :
+                    tempDirectory.Path + Path.DirectorySeparatorChar;
+
+                using (XmlWriter w = XmlWriter.Create(chamPath))
                 {
-                    if (child is XmlSchemaElement)
-                        _output.WriteLine("\t" + (child as XmlSchemaElement).QualifiedName);
+                    using (XmlReader r = XmlReader.Create(new StringReader(cham)))
+                        w.WriteNode(r, true);
                 }
+                XmlSchemaSet ss = new XmlSchemaSet();
+                ss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
+
+                ss.Add(null, XmlReader.Create(new StringReader(cham)));
+                // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
+                var settings = new XmlReaderSettings() { XmlResolver = new XmlUrlResolver() };
+                ss.Add(null, XmlReader.Create(new StringReader(main), settings, tempDirectoryPath));
+                ss.Compile();
+
+                Assert.Equal(2, ss.Count);
+                foreach (XmlSchemaElement e in ss.GlobalElements.Values)
+                {
+                    _output.WriteLine(e.QualifiedName.ToString());
+                    XmlSchemaComplexType type = e.ElementSchemaType as XmlSchemaComplexType;
+                    XmlSchemaSequence seq = type.ContentTypeParticle as XmlSchemaSequence;
+                    foreach (XmlSchemaObject child in seq.Items)
+                    {
+                        if (child is XmlSchemaElement)
+                            _output.WriteLine("\t" + (child as XmlSchemaElement).QualifiedName);
+                    }
+                }
+                Assert.Equal(0, warningCount);
+                Assert.Equal(0, errorCount);
             }
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
-            return;
         }
     }
 }
