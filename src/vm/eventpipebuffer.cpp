@@ -154,6 +154,10 @@ EventPipeEventInstance* EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent,
         {
             pNextInstance = (EventPipeEventInstance*)m_pBuffer;
         }
+        else
+        {
+            return NULL;
+        }
     }
     else
     {
