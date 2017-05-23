@@ -13,7 +13,7 @@
     <HostFxrDebPkgName>dotnet-hostfxr-$(HostResolverVersion)</HostFxrDebPkgName>
     <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
     
-    <SharedFxDebPkgName>dotnet-sharedframework-$(SharedFrameworkName)-$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
+    <SharedFxDebPkgName>dotnet-runtime-$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
     <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
   </PropertyGroup>
 </Project>
