@@ -30,7 +30,21 @@
              BuildInParallel="true" />
   </Target>
 
+  <Target Name="EnsureUniqueItemsToUpload">
+    <ItemGroup>
+      <DedupItems Include="@(ItemsToPublish->Distinct())" />
+    </ItemGroup>
+    <PropertyGroup>
+      <CountOld>@(ItemsToPublish->Count())</CountOld>
+      <CountNew>@(DedupItems->Count())</CountNew>
+      <_HasDups Condition="'$(CountOld)' != '$(CountNew)'">true</_HasDups>
+    </PropertyGroup>
+    <Message Importance="High" Condition="'$(_HasDups)' != ''" Text="ItemsToPublish: '@(ItemsToPublish)'"/>
+    <Error Condition="'$(_HasDups)' != ''" Text="Duplicate Items Present in ItemsToPublish" />
+  </Target>
+
   <Target Name="UploadToAzure"
+          DependsOnTargets="EnsureUniqueItemsToUpload"
           Condition="'$(ItemsToPublish)' != ''">
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
