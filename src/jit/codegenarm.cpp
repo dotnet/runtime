@@ -1147,33 +1147,6 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 }
 
 //------------------------------------------------------------------------
-// genLeaInstruction: Produce code for a GT_LEA subnode.
-//
-void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
-{
-    emitAttr size = emitTypeSize(lea);
-    genConsumeOperands(lea);
-
-    if (lea->Base() && lea->Index())
-    {
-        regNumber baseReg  = lea->Base()->gtRegNum;
-        regNumber indexReg = lea->Index()->gtRegNum;
-        getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->gtOffset);
-    }
-    else if (lea->Base())
-    {
-        regNumber baseReg = lea->Base()->gtRegNum;
-        getEmitter()->emitIns_R_AR(INS_lea, size, lea->gtRegNum, baseReg, lea->gtOffset);
-    }
-    else if (lea->Index())
-    {
-        assert(!"Should we see a baseless address computation during CodeGen for ARM32?");
-    }
-
-    genProduceReg(lea);
-}
-
-//------------------------------------------------------------------------
 // genCodeForDivMod: Produce code for a GT_DIV/GT_UDIV/GT_MOD/GT_UMOD node.
 //
 // Arguments:
