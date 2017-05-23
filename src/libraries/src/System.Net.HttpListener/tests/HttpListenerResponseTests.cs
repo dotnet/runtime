@@ -283,7 +283,6 @@ namespace System.Net.Tests
             }
         }
 
-        // The managed implementation should not register as disposed before setting ContentLength - this causes an ObjectDisposedException.
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
         [InlineData(false)]

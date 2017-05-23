@@ -63,15 +63,16 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                CheckSentHeaders();
-
                 if (value == null)
+                {
                     throw new ArgumentNullException(nameof(value));
-
+                }
                 if (value.Major != 1 || (value.Minor != 0 && value.Minor != 1))
+                {
                     throw new ArgumentException(SR.net_wrongversion, nameof(value));
+                }
 
-                _version = value;
+                _version = new Version(value.Major, value.Minor); // match Windows behavior, trimming to just Major.Minor
             }
         }
 
@@ -275,9 +276,17 @@ namespace System.Net
                     }
                 }
 
-                if (!conn_close && _httpContext.Request.ProtocolVersion <= HttpVersion.Version10)
+                if (HttpListenerRequest.ProtocolVersion <= HttpVersion.Version10)
                 {
-                    _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
+                    if (_keepAlive)
+                    {
+                        Headers[HttpResponseHeader.KeepAlive] = "true";
+                    }
+
+                    if (!conn_close)
+                    {
+                        _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
+                    }
                 }
 
                 if (_cookies != null)
@@ -291,7 +300,7 @@ namespace System.Net
 
             Encoding encoding = Encoding.Default;
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
-            writer.Write("HTTP/{0} {1} ", _version, _statusCode);
+            writer.Write("HTTP/1.1 {0} ", _statusCode); // "1.1" matches Windows implementation, which ignores the response version
             writer.Flush();
             byte[] statusDescriptionBytes = WebHeaderEncoding.GetBytes(StatusDescription);
             ms.Write(statusDescriptionBytes, 0, statusDescriptionBytes.Length);
