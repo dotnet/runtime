@@ -299,12 +299,6 @@ public:
                       : dwOffset;
     }
 
-    BOOL IsILOnlyRVAField()
-    {
-        WRAPPER_NO_CONTRACT;
-        return (IsRVA() && GetModule()->GetFile()->IsILOnly());
-    }
-
     DWORD   IsStatic() const
     {
         LIMITED_METHOD_DAC_CONTRACT;

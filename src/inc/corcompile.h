@@ -468,15 +468,6 @@ struct CORCOMPILE_EE_INFO_TABLE
     DWORD                      threadTlsIndex;
 
     DWORD                      rvaStaticTlsIndex;
-
-// These are used by the 64-bit JITs to detect calls to thunks in the .nep section
-// and conditionally eliminate double-thunking (managed-to-native-to-managed).
-// During prejit these are set to the RVAs of the .nep section. When the prejitted
-// image is actually loaded, these are fixed up to point to the actual .nep section
-// of the ijw image (not the native image).
-
-    BYTE *                     nativeEntryPointStart;
-    BYTE *                     nativeEntryPointEnd;
 };
 
 /*********************************************************************************/
