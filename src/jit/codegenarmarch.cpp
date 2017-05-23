@@ -2656,7 +2656,25 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
 }
 
-// produce code for a GT_LEA subnode
+//------------------------------------------------------------------------
+// genScaledAdd: A helper for genLeaInstruction.
+//
+void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
+{
+    emitter* emit = getEmitter();
+#if defined(_TARGET_ARM_)
+    emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
+#elif defined(_TARGET_ARM64_)
+    emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_OPTS_LSL);
+#endif
+}
+
+//------------------------------------------------------------------------
+// genLeaInstruction: Produce code for a GT_LEA node.
+//
+// Arguments:
+//    lea - the node
+//
 void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
 {
     genConsumeOperands(lea);
@@ -2664,7 +2682,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     emitAttr size   = emitTypeSize(lea);
     unsigned offset = lea->gtOffset;
 
-    // In ARM64 we can only load addresses of the form:
+    // In ARM we can only load addresses of the form:
     //
     // [Base + index*scale]
     // [Base + Offset]
@@ -2695,12 +2713,12 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
         {
             regNumber tmpReg = lea->GetSingleTempReg();
 
-            if (emitter::emitIns_valid_imm_for_add(offset, EA_8BYTE))
+            if (emitter::emitIns_valid_imm_for_add(offset))
             {
                 if (lsl > 0)
                 {
                     // Generate code to set tmpReg = base + index*scale
-                    emit->emitIns_R_R_R_I(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl, INS_OPTS_LSL);
+                    genScaledAdd(size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl);
                 }
                 else // no scale
                 {
@@ -2722,7 +2740,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
                 noway_assert(tmpReg != index->gtRegNum);
 
                 // Then compute target reg from [tmpReg + index*scale]
-                emit->emitIns_R_R_R_I(INS_add, size, lea->gtRegNum, tmpReg, index->gtRegNum, lsl, INS_OPTS_LSL);
+                genScaledAdd(size, lea->gtRegNum, tmpReg, index->gtRegNum, lsl);
             }
         }
         else
@@ -2730,8 +2748,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             if (lsl > 0)
             {
                 // Then compute target reg from [base + index*scale]
-                emit->emitIns_R_R_R_I(INS_add, size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum, lsl,
-                                      INS_OPTS_LSL);
+                genScaledAdd(size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum, lsl);
             }
             else
             {
@@ -2744,7 +2761,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     {
         GenTree* memBase = lea->Base();
 
-        if (emitter::emitIns_valid_imm_for_add(offset, EA_8BYTE))
+        if (emitter::emitIns_valid_imm_for_add(offset))
         {
             if (offset != 0)
             {
