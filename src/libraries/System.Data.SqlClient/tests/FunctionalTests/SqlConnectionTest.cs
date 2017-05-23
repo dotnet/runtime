@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Data.Common;
+using System.Reflection;
 using Xunit;
 
 namespace System.Data.SqlClient.Tests
@@ -22,6 +24,7 @@ namespace System.Data.SqlClient.Tests
             }
         }
 
+
         [PlatformSpecific(TestPlatforms.Windows)]  // Integ auth on Test server is supported on Windows right now
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19218
         public void IntegratedAuthConnectionTest()
@@ -36,6 +39,17 @@ namespace System.Data.SqlClient.Tests
                 }
             }
         }
-    }
 
+        [Fact]
+        public void SqlConnectionDbProviderFactoryTest()
+        {
+            SqlConnection con = new SqlConnection();
+            PropertyInfo dbProviderFactoryProperty = con.GetType().GetProperty("DbProviderFactory", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(dbProviderFactoryProperty);
+            DbProviderFactory factory = dbProviderFactoryProperty.GetValue(con) as DbProviderFactory;
+            Assert.NotNull(factory);
+            Assert.Same(typeof(SqlClientFactory), factory.GetType());
+            Assert.Same(SqlClientFactory.Instance, factory);
+        }
+    }
 }

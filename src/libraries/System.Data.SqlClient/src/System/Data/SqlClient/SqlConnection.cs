@@ -316,6 +316,11 @@ namespace System.Data.SqlClient
             }
         }
 
+        protected override DbProviderFactory DbProviderFactory
+        {
+            get { return SqlClientFactory.Instance; }
+        }
+
         // SqlCredential: Pair User Id and password in SecureString which are to be used for SQL authentication
 
         //
