@@ -11,8 +11,12 @@
           Returns=""
           DependsOnTargets="$(CoreCompileDependsOn)">
     <PropertyGroup>
-      <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">/DLL</_OutputTypeArgument>
-      <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">/EXE</_OutputTypeArgument>
+      <_ShellKeyMarker Condition="'$(RunningOnUnix)' == 'true'">-</_ShellKeyMarker>  <!-- Work around ilasm comandline parser bugs... -->
+      <_ShellKeyMarker Condition="'$(RunningOnUnix)' != 'true'">/</_ShellKeyMarker>
+      <_ilasm>ilasm</_ilasm>
+      <_ilasm Condition="'$(RunningOnUnix)' == 'true'">$(CoreCLRBinDir)ilasm</_ilasm>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">$(_ShellKeyMarker)DLL</_OutputTypeArgument>
+      <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">$(_ShellKeyMarker)EXE</_OutputTypeArgument>
       <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(FoldIdenticalMethods)' == 'True'">$(_IlasmSwitches) -FOLD</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(SizeOfStackReserve)' != ''">$(_IlasmSwitches) -STACK=$(SizeOfStackReserve)</_IlasmSwitches>
@@ -22,7 +26,7 @@
       <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
     </PropertyGroup>
 
-    <Exec Command="ilasm $(_OutputTypeArgument) /OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
+    <Exec Command="$(_ilasm) $(_OutputTypeArgument) $(_ShellKeyMarker)OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
     <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />

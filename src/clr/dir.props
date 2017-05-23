@@ -26,7 +26,11 @@
      as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
      -->
   <PropertyGroup>
-    <BuildToolsTargets45>true</BuildToolsTargets45>
+    <RunningOnCore>false</RunningOnCore>
+    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'Core'">true</RunningOnCore>
+    <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
+    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
+    <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
   </PropertyGroup>
 
   <!-- Common properties -->
@@ -68,8 +72,8 @@
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
     <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
 
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools\</ToolsDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli\</DotnetCliPath>
     <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
     <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
 
