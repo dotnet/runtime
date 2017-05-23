@@ -28,7 +28,7 @@ OSName=$(uname -s)
             # Format x.y.z as single integer with three digits for each part
             VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
             if [ "$VERSION" -lt 010012000 ]; then
-                echo error: OSX version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
+                echo error: macOS version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
                 exit 1
             fi
             ;;
