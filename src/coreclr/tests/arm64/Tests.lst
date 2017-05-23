@@ -89401,7 +89401,7 @@ RelativePath=JIT\Performance\CodeQuality\Span\SpanBench\SpanBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Span\SpanBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;10544;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated1202.cmd_11489]
