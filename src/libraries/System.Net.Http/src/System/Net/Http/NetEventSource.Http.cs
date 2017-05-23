@@ -61,19 +61,19 @@ namespace System.Net
             WriteEvent(HeadersInvalidValueId, name, rawValue);
 
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
-        public void HandlerMessage(int workerId, int requestId, string memberName, string message) =>
-            WriteEvent(HandlerMessageId, workerId, requestId, memberName, message);
+        public void HandlerMessage(int handlerId, int workerId, int requestId, string memberName, string message) =>
+            WriteEvent(HandlerMessageId, handlerId, workerId, requestId, memberName, message);
 
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, int arg1, int arg2, string arg3, string arg4)
+        private unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3, string arg4, string arg5)
         {
             if (IsEnabled())
             {
-                if (arg3 == null) arg3 = "";
                 if (arg4 == null) arg4 = "";
+                if (arg5 == null) arg5 = "";
 
-                fixed (char* string3Bytes = arg3)
                 fixed (char* string4Bytes = arg4)
+                fixed (char* string5Bytes = arg5)
                 {
                     const int NumEventDatas = 4;
                     var descrs = stackalloc EventData[NumEventDatas];
@@ -84,11 +84,14 @@ namespace System.Net
                     descrs[1].DataPointer = (IntPtr)(&arg2);
                     descrs[1].Size = sizeof(int);
 
-                    descrs[2].DataPointer = (IntPtr)string3Bytes;
-                    descrs[2].Size = ((arg3.Length + 1) * 2);
+                    descrs[2].DataPointer = (IntPtr)(&arg3);
+                    descrs[2].Size = sizeof(int);
 
                     descrs[3].DataPointer = (IntPtr)string4Bytes;
                     descrs[3].Size = ((arg4.Length + 1) * 2);
+
+                    descrs[4].DataPointer = (IntPtr)string5Bytes;
+                    descrs[4].Size = ((arg5.Length + 1) * 2);
 
                     WriteEventCore(eventId, NumEventDatas, descrs);
                 }

@@ -431,6 +431,7 @@ namespace System.Net.Http
             private void HandleIncomingRequests()
             {
                 Debug.Assert(!Monitor.IsEntered(_incomingRequests), "Incoming requests lock should only be held while accessing the queue");
+                EventSourceTrace(null);
 
                 while (true)
                 {
@@ -499,7 +500,9 @@ namespace System.Net.Http
             private void PerformCurlWork()
             {
                 CURLMcode performResult;
+                EventSourceTrace("Ask libcurl to perform any available work...");
                 while ((performResult = Interop.Http.MultiPerform(_multiHandle)) == CURLMcode.CURLM_CALL_MULTI_PERFORM) ;
+                EventSourceTrace("...done performing work: {0}", performResult);
                 ThrowIfCURLMError(performResult);
             }
 
@@ -542,9 +545,12 @@ namespace System.Net.Http
             /// <summary>Handle a libcurl message received as part of processing work.  This should signal a completed operation.</summary>
             private void HandleCurlMessage(Interop.Http.CURLMSG message, IntPtr easyHandle, CURLcode result)
             {
-                Debug.Assert(message == Interop.Http.CURLMSG.CURLMSG_DONE, $"CURLMSG_DONE is supposed to be the only message type, but got {message}");
                 if (message != Interop.Http.CURLMSG.CURLMSG_DONE)
+                {
+                    Debug.Fail($"CURLMSG_DONE is supposed to be the only message type, but got {message}");
+                    EventSourceTrace("Unexpected CURLMSG: {0}", message);
                     return;
+                }
 
                 // Get the GCHandle pointer from the easy handle's state
                 IntPtr gcHandlePtr;
