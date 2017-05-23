@@ -1440,7 +1440,7 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
 
   // The registers trashed by the CORINFO_HELP_STOP_FOR_GC helper
   // See vm\arm\amshelpers.asm for more details.
-  #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_FLOATRET | RBM_INTRET))
+  #define RBM_STOP_FOR_GC_TRASH     (RBM_CALLEE_TRASH & ~(RBM_DOUBLERET | RBM_INTRET))
 
   // The registers trashed by the CORINFO_HELP_INIT_PINVOKE_FRAME helper.
   #define RBM_INIT_PINVOKE_FRAME_TRASH (RBM_CALLEE_TRASH | RBM_PINVOKE_TCB | RBM_PINVOKE_SCRATCH)
