@@ -63,9 +63,7 @@ namespace System.Net.Tests
         [InlineData("application/json", 152)]
         [InlineData("  applICATion/jSOn   ", 152)]
         [InlineData("garbage", 143)]
-        // The managed implementation should set ContentType directly in the headers instead of tracking it with its own field.
-        // The managed implementation should trim the value.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentType_SetAndSend_Success(string contentType, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -82,8 +80,7 @@ namespace System.Net.Tests
         [InlineData(null, null)]
         [InlineData("", null)]
         [InlineData("\r \t \n", "")]
-        // The managed implementation should store ContentType in Headers, not as a separate variable.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentType_SetNullEmptyOrWhitespace_ResetsContentType(string contentType, string expectedContentType)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -110,8 +107,7 @@ namespace System.Net.Tests
             Assert.Null(response.ContentType);
         }
 
-        // The managed implementation should not throw setting ContentType after the headers are sent.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentType_SetAfterHeadersSent_DoesNothing()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -127,8 +123,7 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Content-Type", clientResponse);
         }
 
-        // The managed implementation should throw an ObjectDisposedException getting OutputStream when disposed.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task OutputStream_GetDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -141,9 +136,7 @@ namespace System.Net.Tests
         [InlineData("  http://MICROSOFT.com   ", 152)]
         [InlineData("garbage", 139)]
         [InlineData("http://domain:-1", 148)]
-        // The managed implementation should set Location directly in Headers rather than track it with its own variable.
-        // The managed implementation should trim the value.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task RedirectLocation_SetAndSend_Success(string redirectLocation, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -212,8 +205,7 @@ namespace System.Net.Tests
         [InlineData(404, "HTTP/1.1 404 Not Found", 127)]
         [InlineData(401, "HTTP/1.1 401 Unauthorized", 130)]
         [InlineData(999, "HTTP/1.1 999 ", 118)]
-        // The managed implementation should update StatusDescription when setting StatusCode.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19976, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusCode_SetAndSend_Success(int statusCode, string startLine, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -239,7 +231,7 @@ namespace System.Net.Tests
         }
 
         // The managed implementation should not throw setting StatusCode after headers were sent.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusCode_SetAfterHeadersSent_DoesNothing()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -315,8 +307,7 @@ namespace System.Net.Tests
         [InlineData(505, "Http Version Not Supported")]
         [InlineData(507, "Insufficient Storage")]
         [InlineData(999, "")]
-        // The managed implementation should set StatusDescription when setting the StatusCode.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19976, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusDescription_GetWithCustomStatusCode_ReturnsExpected(int statusCode, string expectedDescription)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -337,8 +328,7 @@ namespace System.Net.Tests
         [InlineData("A !#\t1\u1234", "A !#\t14", 125)] // 
         [InlineData("StatusDescription", "StatusDescription", 135)]
         [InlineData("  StatusDescription  ", "  StatusDescription  ", 139)]
-        // The managed implementation should use WebHeaderEncoding to encode unicode headers.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19976, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusDescription_SetCustom_Success(string statusDescription, string expectedStatusDescription, int expectedNumberOfBytes)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -351,8 +341,7 @@ namespace System.Net.Tests
             Assert.StartsWith($"HTTP/1.1 200 {expectedStatusDescription}\r\n", clientResponse);
         }
         
-        // The managed implementation should throw an ArgumentNullException setting StatusDescription to null.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19976, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusDescription_SetNull_ThrowsArgumentNullException()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -366,8 +355,7 @@ namespace System.Net.Tests
         [InlineData("\u007F")]
         [InlineData("\r")]
         [InlineData("\n")]
-        // The managed implementation should validate the value to make sure it contains no control characters.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19976, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusDescription_SetInvalid_ThrowsArgumentException(string statusDescription)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -378,7 +366,7 @@ namespace System.Net.Tests
         }
         
         // The managed implementation should throw setting StatusDescription when disposed.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task StatusDescription_SetDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -547,7 +535,7 @@ namespace System.Net.Tests
         }
         
         // The managed implementation should not throw setting KeepAlive after sending the headers.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task KeepAlive_SetAfterHeadersSent_DoesNothing()
         {
             using (HttpListenerResponse response = await GetResponse())
