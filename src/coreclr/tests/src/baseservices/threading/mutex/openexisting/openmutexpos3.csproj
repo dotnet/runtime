@@ -23,8 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="OpenMutexPos3.cs" />
-    <Compile Include="..\OpenMutexCommon.cs" />
+    <Compile Include="openmutexpos3.cs" />
+    <Compile Include="..\openmutexcommon.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
