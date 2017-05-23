@@ -820,7 +820,9 @@ PROFILE_DISABLED_TESTS += \
 	vt-sync-method.exe \
 	resolve_method_bug.2.exe \
 	resolve_field_bug.2.exe \
-	resolve_type_bug.2.exe
+	resolve_type_bug.2.exe \
+	bug-81691.exe \
+	bug-327438.2.exe
 
 # Tests which rely on remoting
 PROFILE_DISABLED_TESTS += \
@@ -943,7 +945,9 @@ PROFILE_DISABLED_TESTS += \
 	sgen-domain-unload-2.exe
 
 PROFILE_DISABLED_TESTS += \
-	appdomain-loader.exe
+	appdomain-loader.exe \
+	assemblyresolve_event3.exe \
+	appdomain-serialize-exception.exe
 endif
 
 if HYBRID_AOT_TESTS

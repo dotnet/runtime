@@ -6060,8 +6060,10 @@ emit_marshal_object (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_ldloc (mb, 0);
 			mono_mb_emit_icall (mb, conv_to_icall (MONO_MARSHAL_CONV_FTN_DEL, NULL));
 			mono_mb_emit_stloc (mb, 3);
-		} else if (klass == mono_defaults.stringbuilder_class){
-			// FIXME: implement
+		} else if (klass == mono_defaults.stringbuilder_class) {
+			// FIXME:
+			char *msg = g_strdup_printf ("Return marshalling of stringbuilders is not implemented.");
+			mono_mb_emit_exception_marshal_directive (mb, msg);
 		} else {
 			/* set src */
 			mono_mb_emit_stloc (mb, 0);
