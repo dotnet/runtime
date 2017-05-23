@@ -4,6 +4,11 @@
 
   <Import Project="dependencies.props" />
 
+  <!-- Build as portable by default -->
+  <PropertyGroup>
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+  </PropertyGroup>
+
   <!-- Branch Info -->
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
