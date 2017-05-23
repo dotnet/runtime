@@ -5071,7 +5071,7 @@ GenTreePtr Compiler::impImportLdvirtftn(GenTreePtr              thisPtr,
     }
 
     // CoreRT generic virtual method
-    if (((pCallInfo->sig.callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
+    if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
     {
         GenTreePtr runtimeMethodHandle = nullptr;
         if (pCallInfo->exactContextNeedsRuntimeLookup)
@@ -6888,7 +6888,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->gtCall.gtCallObjp = thisPtrCopy;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if (((sig->callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
+                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
                 {
                     // CoreRT generic virtual method: need to handle potential fat function pointers
                     addFatPointerCandidate(call->AsCall());
