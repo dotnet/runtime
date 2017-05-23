@@ -6142,9 +6142,15 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
         childrenCctorDependent[i] = false;
     }
 
-    // Initclass CLS_VARs are the base case of cctor dependent trees.
-    bool treeIsCctorDependent = (tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0));
-    bool treeIsInvariant      = true;
+    // Initclass CLS_VARs and IconHandles are the base cases of cctor dependent trees.
+    // In the IconHandle case, it's of course the dereference, rather than the constant itself, that is
+    // truly dependent on the cctor.  So a more precise approach would be to separately propagate
+    // isCctorDependent and isAddressWhoseDereferenceWouldBeCctorDependent, but we don't for simplicity/throughput;
+    // the constant itself would be considered non-hoistable anyway, since optIsCSEcandidate returns
+    // false for constants.
+    bool treeIsCctorDependent = ((tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0)) ||
+                                 (tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)));
+    bool treeIsInvariant = true;
     for (unsigned childNum = 0; childNum < nChildren; childNum++)
     {
         if (!optHoistLoopExprsForTree(tree->GetChild(childNum), lnum, hoistCtxt, pFirstBlockAndBeforeSideEffect,
@@ -6172,9 +6178,9 @@ bool Compiler::optHoistLoopExprsForTree(GenTreePtr        tree,
                         // with the static field reference.
                         treeIsCctorDependent = false;
                         // Hoisting the static field without hoisting the initialization would be
-                        // incorrect; unset childrenHoistable for the field to ensure this doesn't
-                        // happen.
-                        childrenHoistable[0] = false;
+                        // incorrect, make sure we consider the field (which we flagged as
+                        // cctor-dependent) non-hoistable.
+                        noway_assert(!childrenHoistable[childNum]);
                     }
                 }
             }
