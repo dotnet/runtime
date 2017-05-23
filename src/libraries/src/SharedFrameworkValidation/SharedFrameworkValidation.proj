@@ -13,25 +13,52 @@
     <_PublishRID Condition="'$(_PublishRID)'==''">unix-$(ArchGroup)</_PublishRID>
   </PropertyGroup>
 
-  <Target Name="RestorePackagesProject">
-    <PropertyGroup>
-      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
-    </PropertyGroup>
-    <Exec Command="$(_RestorePackagesCommand)" />
-  </Target>
-
   <Target Name="BuildPackagesProject">
     <PropertyGroup>
-      <_BuildPackagesProjectCommand>"$(DotnetToolCommand)" build $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath)</_BuildPackagesProjectCommand>
-    </PropertyGroup>
-    <Exec Command="$(_BuildPackagesProjectCommand)" />
-  </Target>
-
-  <Target Name="PublishPackagesProject">
-    <PropertyGroup>
+      <_RestorePackagesCommand>"$(DotnetToolCommand)" restore $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_RuntimeFrameworkVersion=$(MicrosoftNETCoreAppPackageVersion) /p:CoreFxExpectedPrerelease=$(CoreFxExpectedPrerelease)</_RestorePackagesCommand>
       <_PublishPackagesProjectCommand>"$(DotnetToolCommand)" publish $(MSBuildThisFileDirectory)/RestoreSDKProject/RestoreSDKProject.csproj /p:_PublishRID=$(_PublishRID) /p:_MetaPackageDestinationFolder=$(SharedFrameworkValidationRefPath) -f netcoreapp2.0 -r $(_PublishRID) -o $(SharedFrameworkValidationRuntimePath)</_PublishPackagesProjectCommand>
     </PropertyGroup>
-    <Exec Command="$(_PublishPackagesProjectCommand)" />
+    <Exec Command="$(_RestorePackagesCommand)" StandardOutputImportance="Low" />
+    <Exec Command="$(_PublishPackagesProjectCommand)" StandardOutputImportance="Low" />
+  </Target>
+
+  <Target Name="BuildDependenciesProject">
+    <MSBuild Projects="../../external/SharedFrameworkValidation/harvestPackages.SharedFramework.depproj"
+             Properties="_PublishRID=$(_PublishRID)"
+             ContinueOnError="ErrorAndStop" />
+  </Target>
+
+  <Target Name="RunApiCompat" DependsOnTargets="BuildDependenciesProject">
+    <PropertyGroup>
+      <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+
+    <!-- Microsoft.NETCore.App Ref vs. runtime packages -->
+    <Exec Command="$(ApiCompatCmd) &quot;$(SharedFrameworkValidationRefPath)&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRuntimePath)&quot;"
+          CustomErrorRegularExpression="Total Issues: [^0]"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+    
+    <!-- Netstandard.Library vs. Microsoft.NETCore.App Ref -->
+    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)/netstandard.dll&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRefPath)&quot;"
+          CustomErrorRegularExpression="Total Issues: [^0]"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+
+    <!-- Last shipped Microsoft.NETCore.App Ref vs. current Microsoft.NETCore.App Ref -->
+    <Exec Command="$(ApiCompatCmd) &quot;$(RefRootPath)SharedFrameworkValidation.LKG&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRefPath)&quot;"
+          CustomErrorRegularExpression="Total Issues: [^0]"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+
+    <!-- Last shipped runtime packages vs current runtime packages -->
+    <Exec Command="$(ApiCompatCmd) &quot;$(BinDir)runtime/SharedFrameworkValidation.LKG&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRuntimePath)&quot; -baseline:&quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGRuntime.CurrentRuntime.txt&quot;"
+          CustomErrorRegularExpression="Total Issues: [^0]"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+
   </Target>
 
   <Target Name="CopyXunitAssemblies">
@@ -45,7 +72,7 @@
     <Copy SourceFiles="%(XunitAssemblies.Identity)" DestinationFolder="$(SharedFrameworkValidationRuntimePath)" />
   </Target>
 
-  <Target Name="ReplaceTestingSharedFrameworkWithRestoredPackages">
+  <Target Name="ReplaceTestingSharedFrameworkWithRestoredPackages" DependsOnTargets="BuildPackagesProject">
     <!-- Deleting the contents of the test shared framework since it will be replaced. -->
     <ItemGroup>
       <_FilesToDelete Include="$(NETCoreAppTestSharedFrameworkPath)\*.*" />
@@ -58,7 +85,7 @@
     <Copy SourceFiles="%(_FilesToCopy.Identity)" DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)" />
   </Target>
 
-  <Target Name="GenerateTestSharedFrameworkDepsFile">
+  <Target Name="GenerateTestSharedFrameworkDepsFile" DependsOnTargets="ReplaceTestingSharedFrameworkWithRestoredPackages">
     <MSBuild Targets="GenerateTestSharedFrameworkDepsFile"
              Projects="$(MSBuildThisFileDirectory)\..\src.builds"
              ContinueOnError="ErrorAndStop" />
@@ -114,13 +141,12 @@
 
   <PropertyGroup>
     <BuildDependsOn>
-      RestorePackagesProject;
       BuildPackagesProject;
-      PublishPackagesProject;
       CopyXunitAssemblies;
       ReplaceTestingSharedFrameworkWithRestoredPackages;
       GenerateTestSharedFrameworkDepsFile;
       GetRepoVersionHashes;
+      RunApiCompat;
     </BuildDependsOn>
   </PropertyGroup>
 
