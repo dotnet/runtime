@@ -122,7 +122,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(responseEntity));
             }
 
-            if (_boundaryType != BoundaryType.Chunked)
+            if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
             {
                 ContentLength64 = responseEntity.Length;
             }
