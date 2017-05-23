@@ -28,6 +28,7 @@ namespace System.Net.Http
 
             private int TlsClientCertCallback(IntPtr ssl, out IntPtr certHandle, out IntPtr privateKeyHandle)
             {
+                EventSourceTrace("SSL: {0}", ssl);
                 const int CertificateSet = 1, NoCertificateSet = 0, SuspendHandshake = -1;
 
                 certHandle = IntPtr.Zero;
@@ -52,16 +53,23 @@ namespace System.Net.Http
                     if (_clientCertificates != null) // manual mode
                     {
                         // If there's one certificate, just use it. Otherwise, try to find the best one.
-                        if (_clientCertificates.Count == 1)
+                        int certCount = _clientCertificates.Count;
+                        if (certCount == 1)
                         {
+                            EventSourceTrace("Single certificate.  Building chain.");
                             certificate = _clientCertificates[0];
                             chain = TLSCertificateExtensions.BuildNewChain(certificate, includeClientApplicationPolicy: false);
                         }
-                        else if (!_clientCertificates.TryFindClientCertificate(issuerNames, out certificate, out chain))
+                        else
                         {
-                            EventSourceTrace("No manual certificate or chain.");
-                            return NoCertificateSet;
+                            EventSourceTrace("Finding the best of {0} certificates", certCount);
+                            if (!_clientCertificates.TryFindClientCertificate(issuerNames, out certificate, out chain))
+                            {
+                                EventSourceTrace("No certificate set.");
+                                return NoCertificateSet;
+                            }
                         }
+                        EventSourceTrace("Chain built.");
                     }
                     else if (!GetAutomaticClientCertificate(issuerNames, out certificate, out chain)) // automatic mode
                     {

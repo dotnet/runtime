@@ -27,6 +27,7 @@ namespace System.Net.Http
 
             internal static void SetSslOptions(EasyRequest easy, ClientCertificateOption clientCertOption)
             {
+                EventSourceTrace("ClientCertificateOption: {0}", clientCertOption, easy:easy);
                 Debug.Assert(clientCertOption == ClientCertificateOption.Automatic || clientCertOption == ClientCertificateOption.Manual);
 
                 // Create a client certificate provider if client certs may be used.
@@ -38,6 +39,8 @@ namespace System.Net.Http
                 IntPtr userPointer = IntPtr.Zero;
                 if (certProvider != null)
                 {
+                    EventSourceTrace("Created certificate provider", easy:easy);
+
                     // The client cert provider needs to be passed through to the callback, and thus
                     // we create a GCHandle to keep it rooted.  This handle needs to be cleaned up
                     // when the request has completed, and a simple and pay-for-play way to do that
@@ -67,6 +70,7 @@ namespace System.Net.Http
             private static void SetSslOptionsForSupportedBackend(EasyRequest easy, ClientCertificateProvider certProvider, IntPtr userPointer)
             {
                 CURLcode answer = easy.SetSslCtxCallback(s_sslCtxCallback, userPointer);
+                EventSourceTrace("Callback registration result: {0}", answer, easy: easy);
                 switch (answer)
                 {
                     case CURLcode.CURLE_OK:
@@ -86,7 +90,6 @@ namespace System.Net.Http
 
                     case CURLcode.CURLE_UNKNOWN_OPTION: // Curl 7.38 and prior
                     case CURLcode.CURLE_NOT_BUILT_IN:   // Curl 7.39 and later
-                        EventSourceTrace("CURLOPT_SSL_CTX_FUNCTION not supported: {0}", answer, easy: easy);
                         SetSslOptionsForUnsupportedBackend(easy, certProvider);
                         break;
 
@@ -181,6 +184,7 @@ namespace System.Net.Http
                 {
                     return CURLcode.CURLE_ABORTED_BY_CALLBACK;
                 }
+                EventSourceTrace(null, easy: easy);
 
                 // Configure the SSL protocols allowed.
                 SslProtocols protocols = easy._handler.SslProtocols;
