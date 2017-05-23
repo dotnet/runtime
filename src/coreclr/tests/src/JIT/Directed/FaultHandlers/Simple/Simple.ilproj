@@ -25,7 +25,7 @@
   </ItemGroup>
   <PropertyGroup></PropertyGroup>
   <ItemGroup>
-    <Compile Include="Simple.il" />
+    <Compile Include="simple.il" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
