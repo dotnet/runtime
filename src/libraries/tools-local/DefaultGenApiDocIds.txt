@@ -1,0 +1,6 @@
+// These attributes should be excluded from reference assemblies.
+
+T:System.Diagnostics.DebuggerBrowsableAttribute
+T:System.Diagnostics.DebuggerDisplayAttribute
+T:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute
+T:System.Runtime.CompilerServices.CompilerGeneratedAttribute
