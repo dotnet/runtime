@@ -23,8 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Add Compile Object Here -->
-    <Compile Include="..\common\InterlockedHelper_CoreCLR.cs" />
-    <Compile Include="IntDecCheckReturn.cs" />
+    <Compile Include="..\common\interlockedhelper_coreclr.cs" />
+    <Compile Include="intdeccheckreturn.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
