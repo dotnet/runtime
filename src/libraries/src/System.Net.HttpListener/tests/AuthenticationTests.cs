@@ -56,6 +56,7 @@ namespace System.Net.Tests
             await ValidateValidUser();
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20099, TestPlatforms.Unix)]
         [MemberData(nameof(BasicAuthenticationHeader_TestData))]
         public async Task BasicAuthentication_InvalidRequest_SendsStatusCodeClient(string header, HttpStatusCode statusCode)
@@ -87,6 +88,7 @@ namespace System.Net.Tests
             yield return new object[] { "abc", HttpStatusCode.InternalServerError };
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20098, TestPlatforms.Unix)]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
