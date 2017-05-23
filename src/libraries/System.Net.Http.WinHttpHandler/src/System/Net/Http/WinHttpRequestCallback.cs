@@ -308,16 +308,6 @@ namespace System.Net.Http
             Debug.Assert((unchecked((int)asyncResult.dwError) != Interop.WinHttp.ERROR_INSUFFICIENT_BUFFER &&
                 unchecked((int)asyncResult.dwError) != unchecked((int)0x80090321)), // SEC_E_BUFFER_TOO_SMALL
                 $"Unexpected async error in WinHttpRequestCallback: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}");
-            
-            // If the failure is not caused by the above error codes, need to get more information from asyncResult.dwResult.
-            // There are only two cases in the below switch statement which explicitly set WinHttpException.
-            Debug.Assert((unchecked((uint)asyncResult.dwResult.ToInt32()) != Interop.WinHttp.API_SEND_REQUEST &&
-                ((unchecked((uint)asyncResult.dwResult.ToInt32()) != Interop.WinHttp.API_RECEIVE_RESPONSE) ||
-                (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_RESEND_REQUEST) ||
-                (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_CLIENT_AUTH_CERT_NEEDED) ||
-                (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED))),
-                $"Unexpected async error in WinHttpRequestCallback: {unchecked((int)asyncResult.dwError)}, WinHttp API: {unchecked((uint)asyncResult.dwResult.ToInt32())}"
-            );
 
             Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
 
