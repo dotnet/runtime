@@ -9,7 +9,7 @@ using System.Runtime.Serialization.Formatters.Tests;
 
 using Xunit;
 
-namespace System.Net.WebHeaderCollectionTests
+namespace System.Net.Tests
 {
     public partial class WebHeaderCollectionTest
     {
