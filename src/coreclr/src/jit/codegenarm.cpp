@@ -44,8 +44,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 
     // Load the address where the finally funclet should return into LR.
     // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do the return.
-    getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
-    getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
+    genMov32RelocatableDisplacement(bbFinallyRet, REG_LR);
 
     // Jump to the finally BB
     inst_JMP(EJ_jmp, block->bbJumpDest);
@@ -63,8 +62,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
 // genEHCatchRet:
 void CodeGen::genEHCatchRet(BasicBlock* block)
 {
-    getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_INTRET);
-    getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, block->bbJumpDest, REG_INTRET);
+    genMov32RelocatableDisplacement(block->bbJumpDest, REG_INTRET);
 }
 
 //------------------------------------------------------------------------
@@ -82,8 +80,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
 
     if (EA_IS_RELOC(size))
     {
-        getEmitter()->emitIns_R_I(INS_movw, size, reg, imm);
-        getEmitter()->emitIns_R_I(INS_movt, size, reg, imm);
+        genMov32RelocatableImmediate(size, imm, reg);
     }
     else if (imm == 0)
     {
@@ -681,8 +678,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
     getEmitter()->emitDataGenEnd();
 
-    getEmitter()->emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, jmpTabBase, treeNode->gtRegNum);
-    getEmitter()->emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, jmpTabBase, treeNode->gtRegNum);
+    genMov32RelocatableDataLabel(jmpTabBase, treeNode->gtRegNum);
 
     genProduceReg(treeNode);
 }
