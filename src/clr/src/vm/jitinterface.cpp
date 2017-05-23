@@ -5208,8 +5208,7 @@ void CEEInfo::getCallInfo(
         directCall = true;
     }
     else
-    // Force all interface calls to be interpreted as if they are virtual.
-    if (pTargetMD->GetMethodTable()->IsInterface())
+    if (pTargetMD->GetMethodTable()->IsInterface() && pTargetMD->IsVirtual())
     {
         directCall = false;
     }
