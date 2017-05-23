@@ -10,7 +10,7 @@ def project = GithubProject
 def branch = GithubBranchName
 def isPR = true
 
-def platformList = ['Debian8.2:x64:Debug', 'PortableLinux:x64:Release', 'Ubuntu:x64:Release', 'Ubuntu16.04:x64:Release', 'Ubuntu16.10:x64:Release', 'Ubuntu:arm:Release', 'Ubuntu16.04:arm:Release', 'OSX10.12:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Windows_NT:arm:Debug', 'Fedora24:x64:Debug', 'OpenSUSE42.1:x64:Debug', 'Tizen:armel:Release']
+def platformList = ['Linux:x64:Release', 'Linux:arm:Release', 'OSX:x64:Release', 'Windows_NT:x64:Release', 'Windows_NT:x86:Debug', 'Windows_NT:arm:Debug', 'Tizen:armel:Release']
 
 def static getBuildJobName(def configuration, def os, def architecture) {
     return configuration.toLowerCase() + '_' + os.toLowerCase() + '_' + architecture.toLowerCase()
@@ -40,7 +40,7 @@ platformList.each { platform ->
     if (os == 'Windows_NT') {
         buildCommand = ".\\build.cmd ${buildArgs}"
         if ((architecture == 'arm' || architecture == 'arm64')) {
-            buildCommand += " -PortableBuild=true -SkipTests=true"
+            buildCommand += " -SkipTests=true"
         }
     }
     else if (os == 'Tizen') {
@@ -48,36 +48,29 @@ platformList.each { platform ->
         dockerContainer = "ubuntu1404_cross_prereqs_v4-tizen_rootfs"
 
         dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture}.tizen.build --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildArgs += " -DistroRid=tizen.4.0.0-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true -- /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json"
+        buildArgs += " -DistroRid=tizen.4.0.0-${architecture} -SkipTests=true -DisableCrossgen=true -PortableBuild=false -CrossBuild=true -- /p:OverridePackageSource=https:%2F%2Ftizen.myget.org/F/dotnet-core/api/v3/index.json"
         buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
     }
-    else if ((os.startsWith("Ubuntu")) && 
-             (architecture == 'arm' || architecture == 'armel')) {
-          
-        if (os == 'Ubuntu') {
+    else if (os == "Linux") {
+
+        // Prep for Portable Linux builds take place on Ubuntu 14.04
+        if (architecture == 'arm' || architecture == 'armel') {
             dockerContainer = "ubuntu-14.04-cross-0cd4667-20172211042239"
-            crossbuildargs = " -CrossBuild=true"
+            dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture} --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
+            buildArgs += " -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true"
+            buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
+
+            osForGHTrigger = "Linux"
+            os = "Ubuntu"
         }
-        else if (os == 'Ubuntu16.04') {
-            dockerContainer = "ubuntu-16.04-cross-ef0ac75-20175511035548"
+        else {
+            // Jenkins non-Ubuntu CI machines don't have docker
+            buildCommand = "./build.sh ${buildArgs}"
+            
+            // Trigger a portable Linux build that runs on RHEL7.2
+            osForGHTrigger = "Linux"
+            os = "RHEL7.2"
         }
-        dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture} --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildArgs += " -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true${crossbuildargs}"
-        buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
-    }
-    else if (os == "Ubuntu") {
-        dockerContainer = "ubuntu-14.04-debpkg-e5cf912-20175003025046"
-        dockerCommand = "docker run --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-        buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
-    }
-    else if (os == "PortableLinux") {
-        // Jenkins non-Ubuntu CI machines don't have docker
-        buildArgs += " -PortableBuild=true"
-        buildCommand = "./build.sh ${buildArgs}"
-        
-        // Trigger a portable Linux build that runs on RHEL7.2
-        osForGHTrigger = "PortableLinux"
-        os = "RHEL7.2"
     }
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
@@ -105,15 +98,8 @@ platformList.each { platform ->
         Utilities.addMSTestResults(newJob, '**/*-testResults.trx')
     }
 
-    if (os == 'Ubuntu16.04' && architecture == 'arm') {
-        // Don't enable by default
-        def contextString = "${osForGHTrigger} ${architecture} ${configuration}"
-        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${contextString} Build", "(?i).*test\\W+${contextString}.*", true /* trigger on comment phrase only */)
-    }
-    else {
-        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
-    }
-
+    Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osForGHTrigger} ${architecture} ${configuration} Build")
+    
     ArchivalSettings settings = new ArchivalSettings();
     def archiveString = ["tar.gz", "zip", "deb", "msi", "pkg", "exe", "nupkg"].collect { "Bin/*/packages/*.${it},Bin/*/corehost/*.${it}" }.join(",")
     settings.addFiles(archiveString)
