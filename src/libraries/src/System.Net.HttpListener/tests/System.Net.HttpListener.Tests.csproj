@@ -14,6 +14,7 @@
     <Compile Include="GetContextHelper.cs" />
     <Compile Include="HttpListenerContextTests.cs" />
     <Compile Include="HttpListenerPrefixCollectionTests.cs" />
+    <Compile Include="HttpListenerResponseTests.Cookies.cs" />
     <Compile Include="HttpListenerResponseTests.Headers.cs" />
     <Compile Include="HttpListenerResponseTests.cs" />
     <Compile Include="HttpListenerRequestTests.cs" />
