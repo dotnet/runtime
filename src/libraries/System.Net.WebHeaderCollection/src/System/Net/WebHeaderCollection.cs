@@ -306,7 +306,7 @@ namespace System.Net
 
         public void Add(string header)
         {
-            if (string.IsNullOrWhiteSpace(header))
+            if (string.IsNullOrEmpty(header))
             {
                 throw new ArgumentNullException(nameof(header));
             }
@@ -335,6 +335,15 @@ namespace System.Net
 
         public override void Add(string name, string value)
         {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Format(SR.net_emptyStringCall, nameof(name)), nameof(name));
+            }
+
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
@@ -399,7 +408,7 @@ namespace System.Net
         /// </devdoc>
         public override void Remove(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentNullException(nameof(name));
             }

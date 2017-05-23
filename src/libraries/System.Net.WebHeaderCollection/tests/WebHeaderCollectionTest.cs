@@ -206,12 +206,38 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [InlineData("name")]
+        [InlineData("nAMe")]
+        public void Remove_HeaderExists_RemovesFromCollection(string name)
+        {
+            var headers = new WebHeaderCollection()
+            {
+                { "name", "value" }
+            };
+            headers.Remove(name);
+            Assert.Empty(headers);
+
+            headers.Remove(name);
+            Assert.Empty(headers);
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Remove_NullOrEmptyName_Throws(string name)
+        public void Remove_NullOrEmptyHeader_ThrowsArgumentNullException(string name)
         {
-            WebHeaderCollection w = new WebHeaderCollection();
-            AssertExtensions.Throws<ArgumentNullException>("name", () => w.Remove(name));
+            var headers = new WebHeaderCollection();
+            AssertExtensions.Throws<ArgumentNullException>("name", () => headers.Remove(name));
+        }
+
+        [Theory]
+        [InlineData(" \r \t \n")]
+        [InlineData("  name  ")]
+        [MemberData(nameof(InvalidValues))]
+        public void Remove_InvalidHeader_ThrowsArgumentException(string name)
+        {
+            var headers = new WebHeaderCollection();
+            AssertExtensions.Throws<ArgumentException>("name", () => headers.Remove(name));
         }
 
         [Fact]
@@ -404,8 +430,107 @@ namespace System.Net.Tests
             }
         }
 
+        public static IEnumerable<object[]> Add_Value_TestData()
+        {
+            yield return new object[] { null, string.Empty };
+            yield return new object[] { string.Empty, string.Empty };
+            yield return new object[] { "VaLue", "VaLue" };
+            yield return new object[] { "  value  ", "value" };
+
+            // Documentation says this should fail but it does not.
+            string longString = new string('a', 65536);
+            yield return new object[] { longString, longString };
+        }
+
+        [Theory]
+        [MemberData(nameof(Add_Value_TestData))]
+        public void Add_ValidValue_Success(string value, string expectedValue)
+        {
+            var headers = new WebHeaderCollection
+            {
+                { "name", value }
+            };
+
+            Assert.Equal(expectedValue, headers["name"]);
+        }
+
         [Fact]
-        public void HttpRequestHeader_Add_Remove_Success()
+        public void Add_HeaderAlreadyExists_AppendsValue()
+        {
+            var headers = new WebHeaderCollection
+            {
+                { "name", "value1" },
+                { "name", null },
+                { "name", "value2" },
+                { "NAME", "value3" },
+                { "name", "" }
+            };
+            Assert.Equal("value1,,value2,value3,", headers["name"]);
+        }
+
+        [Fact]
+        public void Add_NullName_ThrowsArgumentNullException()
+        {
+            var headers = new WebHeaderCollection();
+            Assert.Throws<ArgumentNullException>("name", () => headers.Add(null, "value"));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("(")]
+        [InlineData("\r \t \n")]
+        [InlineData("  name  ")]
+        [MemberData(nameof(InvalidValues))]
+        public void Add_InvalidName_ThrowsArgumentException(string name)
+        {
+            var headers = new WebHeaderCollection();
+            Assert.Throws<ArgumentException>("name", () => headers.Add(name, "value"));
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidValues))]
+        public void Add_InvalidValue_ThrowsArgumentException(string value)
+        {
+            var headers = new WebHeaderCollection();
+            Assert.Throws<ArgumentException>("value", () => headers.Add("name", value));
+        }
+
+        [Fact]
+        public void Add_ValidHeader_AddsToHeaders()
+        {
+            var headers = new WebHeaderCollection()
+            {
+                "name:value1",
+                "name:",
+                "NaMe:value2",
+                "name:  ",
+            };
+            Assert.Equal("value1,,value2,", headers["name"]);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void Add_NullHeader_ThrowsArgumentNullException(string header)
+        {
+            var headers = new WebHeaderCollection();
+            Assert.Throws<ArgumentNullException>("header", () => headers.Add(header));
+        }
+
+        [Theory]
+        [InlineData(" \r \t \n", "header")]
+        [InlineData("nocolon", "header")]
+        [InlineData("  :value", "name")]
+        [InlineData("name  :value", "name")]
+        [InlineData("name:va\rlue", "value")]
+        public void Add_InvalidHeader_ThrowsArgumentException(string header, string paramName)
+        {
+            var headers = new WebHeaderCollection();
+            Assert.Throws<ArgumentException>(paramName, () => headers.Add(header));
+        }
+
+        [Fact]
+        public void HttpRequestHeader_Add_Rmemove_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
             w.Add(HttpRequestHeader.Warning, "Warning1");
@@ -500,20 +625,6 @@ namespace System.Net.Tests
             string maxStr = new string(arr);
             Assert.Throws<ArgumentException>(() => w.Add(HttpRequestHeader.ContentLength,maxStr));
             Assert.Throws<ArgumentException>(() => w.Add("ContentLength", maxStr));
-        }
-
-        [Fact]
-        public void HttpRequestHeader_AddMissingColon_Failure()
-        {
-            WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w.Add("ContentType#text/html"));
-        }
-
-        [Fact]
-        public void HttpRequestHeader_Remove_Failure()
-        {
-            WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>(() => w.Remove(null));
         }
 
         [Fact]
