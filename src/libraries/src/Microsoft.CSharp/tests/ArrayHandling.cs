@@ -135,11 +135,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             dynamic d = new int[2, 3, 4];
             Assert.Equal(2 * 3 * 4, d.Length);
 
-            d = Array.CreateInstance(typeof(string), new[] {5, 6, 8}, new[] {-2, 4, 3});
-            Assert.Equal(5 * 6 * 8, d.Length);
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                d = Array.CreateInstance(typeof(string), new[] {5, 6, 8}, new[] {-2, 4, 3});
+                Assert.Equal(5 * 6 * 8, d.Length);
+            }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void NonSZ1RArrayLenght()
         {
             dynamic d = Array.CreateInstance(typeof(int), new[] {23}, new[] {-2});
