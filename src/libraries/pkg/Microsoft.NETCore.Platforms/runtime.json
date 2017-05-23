@@ -36,6 +36,12 @@
         "win-x64": {
             "#import": [ "win" ]
         },
+        "win-arm": {
+            "#import": [ "win" ]
+        },
+        "win-arm64": {
+            "#import": [ "win" ]
+        },
 
         "win7": {
             "#import": [ "win" ]
@@ -57,7 +63,7 @@
             "#import": [ "win8", "win7-x64" ]
         },
         "win8-arm": {
-            "#import": [ "win8" ]
+            "#import": [ "win8", "win-arm" ]
         },
 
         "win81": {
@@ -86,7 +92,7 @@
             "#import": [ "win10", "win81-arm" ]
         },
         "win10-arm64": {
-            "#import": [ "win10" ]
+            "#import": [ "win10", "win-arm64" ]
         },
 
         "aot": {
