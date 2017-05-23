@@ -6360,10 +6360,27 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     assert(!varTypeIsFloating(op2Type));
 
     instruction ins;
+    var_types   type = TYP_UNKNOWN;
 
     if (tree->OperIs(GT_TEST_EQ, GT_TEST_NE))
     {
         ins = INS_test;
+
+        // Unlike many xarch instructions TEST doesn't have a form with a 16/32/64 bit first operand and
+        // an 8 bit immediate second operand. But if the immediate value fits in 8 bits then we can simply
+        // emit a 8 bit TEST instruction, unless we're targeting x86 and the first operand is a non-byteable
+        // register.
+        // Note that lowering does something similar but its main purpose is to allow memory operands to be
+        // contained so it doesn't handle other kind of operands. It could do more but on x86 that results
+        // in additional register constrains and that may be worse than wasting 3 bytes on an immediate.
+        if (
+#ifdef _TARGET_X86_
+            (!op1->isUsedFromReg() || isByteReg(op1->gtRegNum)) &&
+#endif
+            (op2->IsCnsIntOrI() && genTypeCanRepresentValue(TYP_UBYTE, op2->AsIntCon()->IconValue())))
+        {
+            type = TYP_UBYTE;
+        }
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
@@ -6377,42 +6394,44 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
         ins = INS_cmp;
     }
 
-    var_types type;
+    if (type == TYP_UNKNOWN)
+    {
+        if (op1Type == op2Type)
+        {
+            type = op1Type;
+        }
+        else if (genTypeSize(op1Type) == genTypeSize(op2Type))
+        {
+            // If the types are different but have the same size then we'll use TYP_INT or TYP_LONG.
+            // This primarily deals with small type mixes (e.g. byte/ubyte) that need to be widened
+            // and compared as int. We should not get long type mixes here but handle that as well
+            // just in case.
+            type = genTypeSize(op1Type) == 8 ? TYP_LONG : TYP_INT;
+        }
+        else
+        {
+            // In the types are different simply use TYP_INT. This deals with small type/int type
+            // mixes (e.g. byte/short ubyte/int) that need to be widened and compared as int.
+            // Lowering is expected to handle any mixes that involve long types (e.g. int/long).
+            type = TYP_INT;
+        }
 
-    if (op1Type == op2Type)
-    {
-        type = op1Type;
-    }
-    else if (genTypeSize(op1Type) == genTypeSize(op2Type))
-    {
-        // If the types are different but have the same size then we'll use TYP_INT or TYP_LONG.
-        // This primarily deals with small type mixes (e.g. byte/ubyte) that need to be widened
-        // and compared as int. We should not get long type mixes here but handle that as well
-        // just in case.
-        type = genTypeSize(op1Type) == 8 ? TYP_LONG : TYP_INT;
-    }
-    else
-    {
-        // In the types are different simply use TYP_INT. This deals with small type/int type
-        // mixes (e.g. byte/short ubyte/int) that need to be widened and compared as int.
-        // Lowering is expected to handle any mixes that involve long types (e.g. int/long).
-        type = TYP_INT;
+        // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
+        assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
+        // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
+        assert(!(varTypeIsSmallInt(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
+        // If op1 is smaller then it cannot be in memory, we're probably missing a cast
+        assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
+        // If op2 is smaller then it cannot be in memory, we're probably missing a cast
+        assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
+        // If op2 is a constant then it should fit in the common type
+        assert(!op2->IsCnsIntOrI() || genTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
     }
 
-    // The common type cannot be larger than the machine word size
+    // The type cannot be larger than the machine word size
     assert(genTypeSize(type) <= genTypeSize(TYP_I_IMPL));
-    // The common type cannot be smaller than any of the operand types, we're probably mixing int/long
-    assert(genTypeSize(type) >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
-    // Small unsigned int types (TYP_BOOL can use anything) should use unsigned comparisons
-    assert(!(varTypeIsSmallInt(type) && varTypeIsUnsigned(type)) || ((tree->gtFlags & GTF_UNSIGNED) != 0));
-    // If op1 is smaller then it cannot be in memory, we're probably missing a cast
-    assert((genTypeSize(op1Type) >= genTypeSize(type)) || !op1->isUsedFromMemory());
-    // If op2 is smaller then it cannot be in memory, we're probably missing a cast
-    assert((genTypeSize(op2Type) >= genTypeSize(type)) || !op2->isUsedFromMemory());
-    // If op2 is a constant then it should fit in the common type
-    assert(!op2->IsCnsIntOrI() || genTypeCanRepresentValue(type, op2->AsIntCon()->IconValue()));
 
     getEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
 
