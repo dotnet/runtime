@@ -238,6 +238,42 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             _process.StartInfo.Environment[userDir] = userprofile;
             return this;
         }
+        public Command SanitizeGlobalLocation()
+        {
+            if (RuntimeEnvironment.OperatingSystemPlatform != Platform.Windows)
+            {
+                var current_path = _process.StartInfo.Environment["PATH"];
+                var new_path = new System.Text.StringBuilder();
+                //Remove any global dotnet that has been set
+                foreach (var sub_path in current_path.Split(Path.PathSeparator))
+                {
+                    var candidate = Path.Combine(sub_path, "dotnet");
+                    if (!File.Exists(candidate))
+                    {
+                        new_path.Append(sub_path);
+                        new_path.Append(Path.PathSeparator);
+                    }
+                }
+                _process.StartInfo.Environment["PATH"] = new_path.ToString();
+            }
+            return this;
+        }
+        public Command WithGlobalLocation(string global)
+        {
+
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            {
+               throw new NotImplementedException("Global location override needs work ");
+            }
+            else
+            {
+                var current_path = _process.StartInfo.Environment["PATH"];
+                _process.StartInfo.Environment["PATH"] = current_path + Path.PathSeparator + global;
+            }
+
+           
+            return this;
+        }
 
         public Command EnvironmentVariable(string name, string value)
         {
