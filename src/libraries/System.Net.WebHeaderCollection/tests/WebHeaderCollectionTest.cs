@@ -206,12 +206,38 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [InlineData("name")]
+        [InlineData("nAMe")]
+        public void Remove_HeaderExists_RemovesFromCollection(string name)
+        {
+            var headers = new WebHeaderCollection()
+            {
+                { "name", "value" }
+            };
+            headers.Remove(name);
+            Assert.Empty(headers);
+
+            headers.Remove(name);
+            Assert.Empty(headers);
+        }
+
+        [Theory]
         [InlineData(null)]
         [InlineData("")]
-        public void Remove_NullOrEmptyName_Throws(string name)
+        public void Remove_NullOrEmptyHeader_ThrowsArgumentNullException(string name)
         {
-            WebHeaderCollection w = new WebHeaderCollection();
-            AssertExtensions.Throws<ArgumentNullException>("name", () => w.Remove(name));
+            var headers = new WebHeaderCollection();
+            AssertExtensions.Throws<ArgumentNullException>("name", () => headers.Remove(name));
+        }
+
+        [Theory]
+        [InlineData(" \r \t \n")]
+        [InlineData("  name  ")]
+        [MemberData(nameof(InvalidValues))]
+        public void Remove_InvalidHeader_ThrowsArgumentException(string name)
+        {
+            var headers = new WebHeaderCollection();
+            AssertExtensions.Throws<ArgumentException>("name", () => headers.Remove(name));
         }
 
         [Fact]
@@ -485,7 +511,6 @@ namespace System.Net.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("")]
-        [InlineData(" \r \t \n")]
         public void Add_NullHeader_ThrowsArgumentNullException(string header)
         {
             var headers = new WebHeaderCollection();
@@ -493,6 +518,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [InlineData(" \r \t \n", "header")]
         [InlineData("nocolon", "header")]
         [InlineData("  :value", "name")]
         [InlineData("name  :value", "name")]
@@ -599,20 +625,6 @@ namespace System.Net.Tests
             string maxStr = new string(arr);
             Assert.Throws<ArgumentException>(() => w.Add(HttpRequestHeader.ContentLength,maxStr));
             Assert.Throws<ArgumentException>(() => w.Add("ContentLength", maxStr));
-        }
-
-        [Fact]
-        public void HttpRequestHeader_AddMissingColon_Failure()
-        {
-            WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(() => w.Add("ContentType#text/html"));
-        }
-
-        [Fact]
-        public void HttpRequestHeader_Remove_Failure()
-        {
-            WebHeaderCollection w = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>(() => w.Remove(null));
         }
 
         [Fact]
