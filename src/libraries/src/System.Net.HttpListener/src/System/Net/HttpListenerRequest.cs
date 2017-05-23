@@ -16,39 +16,15 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
-        private string[] _acceptTypes;
-        private string[] _userLanguages;
         private CookieCollection _cookies;
         private bool? _keepAlive;
         private string _rawUrl;
         private Uri _requestUri;
         private Version _version;
 
-        public string[] AcceptTypes
-        {
-            get
-            {
-                if (_acceptTypes == null)
-                {
-                    _acceptTypes = Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]);
-                }
+        public string[] AcceptTypes => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]);
 
-                return _acceptTypes;
-            }
-        }
-
-        public string[] UserLanguages
-        {
-            get
-            {
-                if (_userLanguages == null)
-                {
-                    _userLanguages = Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.AcceptLanguage]);
-                }
-
-                return _userLanguages;
-            }
-        }
+        public string[] UserLanguages => Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.AcceptLanguage]);
 
         private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
         {

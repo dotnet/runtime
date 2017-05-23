@@ -14,7 +14,6 @@ namespace System.Net.Tests
 {
     public class HttpListenerRequestTests
     {
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
@@ -25,7 +24,11 @@ namespace System.Net.Tests
         {
             await GetRequest("POST", "", new string[] { acceptString }, (_, request) =>
             {
-                Assert.Same(request.AcceptTypes, request.AcceptTypes);
+                Assert.Equal(request.AcceptTypes, request.AcceptTypes);
+                if (expected != null)
+                {
+                    Assert.NotSame(request.AcceptTypes, request.AcceptTypes);
+                }
                 Assert.Equal(expected, request.AcceptTypes);
             });
         }
@@ -209,7 +212,6 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData("Accept-Language: Lang1,Lang2,Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
         [InlineData("Accept-Language: Lang1, Lang2, Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
@@ -222,7 +224,11 @@ namespace System.Net.Tests
         {
             await GetRequest("POST", "", new string[] { userLanguageString }, (_, request) =>
             {
-                Assert.Same(request.UserLanguages, request.UserLanguages);
+                Assert.Equal(request.UserLanguages, request.UserLanguages);
+                if (expected != null)
+                {
+                    Assert.NotSame(request.UserLanguages, request.UserLanguages);
+                }
                 Assert.Equal(expected, request.UserLanguages);
             });
         }
@@ -378,16 +384,21 @@ namespace System.Net.Tests
             };
 
             // Unicode queries are destroyed by HttpListener.
-            yield return new object[]
+            // [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
+            // 
+            if (!PlatformDetection.IsFullFramework)
             {
-                "?name1=+&name2=\u1234&\u0100=value&name3=\u00FF", new NameValueCollection
+                yield return new object[]
                 {
-                    { "name1", " " },
-                    { "name2", "á\u0088´" },
-                    { "Ä\u0080", "value" },
-                    { "name3", "Ã¿" }
-                }
-            };
+                    "?name1=+&name2=\u1234&\u0100=value&name3=\u00FF", new NameValueCollection
+                    {
+                        { "name1", " " },
+                        { "name2", "á\u0088´" },
+                        { "Ä\u0080", "value" },
+                        { "name3", "Ã¿" }
+                    }
+                };
+            }
 
             yield return new object[] { "", new NameValueCollection() };
             yield return new object[] { "?", new NameValueCollection() };
@@ -420,7 +431,6 @@ namespace System.Net.Tests
             };
         }
 
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(QueryString_TestData))]
         public async Task QueryString_GetProperty_ReturnsExpected(string query, NameValueCollection expected)
