@@ -738,7 +738,7 @@ void FieldDesc::SaveContents(DataImage *image)
     // image.
     // 
 
-    if (IsILOnlyRVAField())
+    if (IsRVA())
     {
         //
         // Move the RVA data into the prejit image.
