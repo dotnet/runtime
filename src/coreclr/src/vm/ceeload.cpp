@@ -9512,7 +9512,7 @@ void Module::Arrange(DataImage *image)
             else if (TypeFromToken(token) == mdtFieldDef)
             {
                 FieldDesc *pFD = LookupFieldDef(token);
-                if (pFD && pFD->IsILOnlyRVAField())
+                if (pFD && pFD->IsRVA())
                 {
                     if (entry->flags & (1 << RVAFieldData))
                     {

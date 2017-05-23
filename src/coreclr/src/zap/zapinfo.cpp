@@ -2675,41 +2675,6 @@ void ZapInfo::getModuleNativeEntryPointRange(void** pStart, void** pEnd)
     // Initialize outparams to default range of (0,0).
     *pStart = 0;
     *pEnd = 0;
-
-    // If this is ILONLY, there are no native entry points.
-    if (m_pImage->m_ModuleDecoder.IsILOnly())
-    {
-        return;
-    }
-
-    rvaStart = rvaEnd = 0;
-
-    // Walk the section table looking for a section named .nep.
-
-    IMAGE_SECTION_HEADER *section = m_pImage->m_ModuleDecoder.FindFirstSection();
-    IMAGE_SECTION_HEADER *sectionEnd = section + m_pImage->m_ModuleDecoder.GetNumberOfSections();
-    while (section < sectionEnd)
-    {
-        if (strncmp((const char *)(section->Name), ".nep", IMAGE_SIZEOF_SHORT_NAME) == 0)
-        {
-            rvaStart = VAL32(section->VirtualAddress);
-            rvaEnd = rvaStart + VAL32(section->Misc.VirtualSize);
-            if (rvaStart < rvaEnd)
-            {
-                // RVA will be fixed up to the actual address at runtime
-                CORCOMPILE_EE_INFO_TABLE * pEEInfoTable = (CORCOMPILE_EE_INFO_TABLE *)m_pImage->m_pEEInfoTable->GetData();
-                pEEInfoTable->nativeEntryPointStart = (BYTE*)((ULONG_PTR)rvaStart);
-                pEEInfoTable->nativeEntryPointEnd = (BYTE*)((ULONG_PTR)rvaEnd);
-
-                *pStart = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
-                    offsetof(CORCOMPILE_EE_INFO_TABLE, nativeEntryPointStart));
-                *pEnd = m_pImage->GetInnerPtr(m_pImage->m_pEEInfoTable,
-                    offsetof(CORCOMPILE_EE_INFO_TABLE, nativeEntryPointEnd));
-            }
-            break;
-        }
-        section++;
-    }
 }
 
 DWORD ZapInfo::getExpectedTargetArchitecture()
@@ -3212,10 +3177,6 @@ unsigned ZapInfo::getArrayRank(CORINFO_CLASS_HANDLE cls)
 void * ZapInfo::getArrayInitializationData(CORINFO_FIELD_HANDLE field, DWORD size)
 {
     if (m_pEEJitInfo->getClassModule(m_pEEJitInfo->getFieldClass(field)) != m_pImage->m_hModule)
-        return NULL;
-
-    // FieldDesc::SaveContents() does not save the RVA blob for IJW modules.
-    if (!m_pImage->m_ModuleDecoder.IsILOnly())
         return NULL;
 
     void * arrayData = m_pEEJitInfo->getArrayInitializationData(field, size);
