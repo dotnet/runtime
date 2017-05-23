@@ -39,13 +39,8 @@ namespace System.Net
     {
         private long _contentLength;
         private bool _clSet;
-        private string _contentType;
-        private bool _keepAlive = true;
-        private HttpResponseStream _outputStream;
         private Version _version = HttpVersion.Version11;
-        private string _location;
         private int _statusCode = 200;
-        private string _statusDescription = "OK";
         private bool _chunked;
         private HttpListenerContext _context;
         internal object _headersLock = new object();
@@ -74,37 +69,11 @@ namespace System.Net
             }
         }
 
-        public string ContentType
+        private void EnsureResponseStream()
         {
-            get => _contentType;
-            set
+            if (_responseStream == null)
             {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _contentType = value;
-            }
-        }
-
-        public bool KeepAlive
-        {
-            get => _keepAlive;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _keepAlive = value;
-            }
-        }
-
-        public Stream OutputStream
-        {
-            get
-            {
-                if (_outputStream == null)
-                    _outputStream = _context.Connection.GetResponseStream();
-                return _outputStream;
+                _responseStream = _context.Connection.GetResponseStream();
             }
         }
 
@@ -126,18 +95,6 @@ namespace System.Net
             }
         }
 
-        public string RedirectLocation
-        {
-            get => _location;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _location = value;
-            }
-        }
-
         public bool SendChunked
         {
             get => _chunked;
@@ -156,19 +113,12 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                CheckSentHeaders();
 
                 if (value < 100 || value > 999)
                     throw new ProtocolViolationException(SR.net_invalidstatus);
 
                 _statusCode = value;
             }
-        }
-
-        public string StatusDescription
-        {
-            get => _statusDescription;
-            set => _statusDescription = value;
         }
 
         private void Dispose() => Close(true);
@@ -197,8 +147,7 @@ namespace System.Net
 
         public void Close(byte[] responseEntity, bool willBlock)
         {
-            if (Disposed)
-                return;
+            CheckDisposed();
 
             if (responseEntity == null)
                 throw new ArgumentNullException(nameof(responseEntity));
@@ -217,12 +166,6 @@ namespace System.Net
             _statusDescription = templateResponse._statusDescription;
             _keepAlive = templateResponse._keepAlive;
             _version = templateResponse._version;
-        }
-
-        public void Redirect(string url)
-        {
-            StatusCode = 302; // Found
-            _location = url;
         }
 
         private bool FindCookie(Cookie cookie)
@@ -247,11 +190,6 @@ namespace System.Net
         {
             if (!isWebSocketHandshake)
             {
-                if (_contentType != null)
-                {
-                    _webHeaders.Set(HttpKnownHeaderNames.ContentType, _contentType);
-                }
-
                 if (_webHeaders[HttpKnownHeaderNames.Server] == null)
                     _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
                 CultureInfo inv = CultureInfo.InvariantCulture;
@@ -319,9 +257,6 @@ namespace System.Net
                         _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
                 }
 
-                if (_location != null)
-                    _webHeaders.Set(HttpKnownHeaderNames.Location, _location);
-
                 if (_cookies != null)
                 {
                     foreach (Cookie cookie in _cookies)
@@ -331,13 +266,16 @@ namespace System.Net
 
             Encoding encoding = Encoding.Default;
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
-            writer.Write("HTTP/{0} {1} {2}\r\n", _version, _statusCode, _statusDescription);
-            string headers_str = FormatHeaders(_webHeaders);
-            writer.Write(headers_str);
+            writer.Write("HTTP/{0} {1} ", _version, _statusCode);
+            writer.Flush();
+            byte[] statusDescriptionBytes = WebHeaderEncoding.GetBytes(StatusDescription);
+            ms.Write(statusDescriptionBytes, 0, statusDescriptionBytes.Length);
+            writer.Write("\r\n");
+
+            writer.Write(FormatHeaders(_webHeaders));
             writer.Flush();
             int preamble = encoding.GetPreamble().Length;
-            if (_outputStream == null)
-                _outputStream = _context.Connection.GetResponseStream();
+            EnsureResponseStream();
 
             /* Assumes that the ms was at position 0 */
             ms.Position = preamble;

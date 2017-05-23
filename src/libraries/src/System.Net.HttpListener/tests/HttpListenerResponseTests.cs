@@ -33,22 +33,20 @@ namespace System.Net.Tests
 
         protected string GetClientResponse(int expectedLength)
         {
-            string response = string.Empty;
+            byte[] buffer = new byte[expectedLength];
 
-            while (true)
+            int totalReceived = 0;
+            while (totalReceived < expectedLength)
             {
-                byte[] buffer = new byte[expectedLength + 1];
-                int bytesReceived = Client.Receive(buffer);
-
-                response += Encoding.UTF8.GetString(buffer, 0, bytesReceived);
-
-                if (bytesReceived == expectedLength)
+                int bytesReceived = Client.Receive(buffer, totalReceived, buffer.Length - totalReceived, SocketFlags.None);
+                if (bytesReceived == 0)
                 {
-                    break;
+                    throw new Exception($"Unexpected early end of response: received {totalReceived} bytes, expected {expectedLength}");
                 }
+                totalReceived += bytesReceived;
             }
 
-            return response;
+            return Encoding.UTF8.GetString(buffer, 0, totalReceived);
         }
 
         protected async Task<HttpListenerResponse> GetResponse(string httpVersion = "1.1")
@@ -139,8 +137,7 @@ namespace System.Net.Tests
             }
         }
 
-        // The managed implementation should set Location directly in the Headers rather than tracking it with its own field.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task Redirect_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -383,8 +380,7 @@ namespace System.Net.Tests
             }
         }
 
-        // The managed implementation should throw an ObjectDisposedException calling CloseResponseEntity when already disposed.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19971, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task CloseResponseEntity_AlreadyDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();

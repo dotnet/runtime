@@ -23,11 +23,8 @@ namespace System.Net
             Closed,
         }
 
-        private string _statusDescription;
-        private bool _keepAlive;
         private ResponseState _responseState;
 
-        private HttpResponseStream _responseStream;
         private long _contentLength;
         private BoundaryType _boundaryType;
         private Interop.HttpApi.HTTP_RESPONSE _nativeResponse;
@@ -42,7 +39,6 @@ namespace System.Net
             _nativeResponse.StatusCode = (ushort)HttpStatusCode.OK;
             _nativeResponse.Version.MajorVersion = 1;
             _nativeResponse.Version.MinorVersion = 1;
-            _keepAlive = true;
             _responseState = ResponseState.Created;
         }
 
@@ -56,51 +52,6 @@ namespace System.Net
 
         private HttpListenerRequest HttpListenerRequest => HttpListenerContext.Request;
 
-        public string ContentType
-        {
-            get => Headers[HttpKnownHeaderNames.ContentType];
-            set
-            {
-                CheckDisposed();
-                if (string.IsNullOrEmpty(value))
-                {
-                    Headers.Remove(HttpKnownHeaderNames.ContentType);
-                }
-                else
-                {
-                    Headers.Set(HttpKnownHeaderNames.ContentType, value);
-                }
-            }
-        }
-
-        public Stream OutputStream
-        {
-            get
-            {
-                CheckDisposed();
-                EnsureResponseStream();
-                return _responseStream;
-            }
-        }
-
-        public string RedirectLocation
-        {
-            get => Headers[HttpResponseHeader.Location];
-            set
-            {
-                // note that this doesn't set the status code to a redirect one
-                CheckDisposed();
-                if (string.IsNullOrEmpty(value))
-                {
-                    Headers.Remove(HttpKnownHeaderNames.Location);
-                }
-                else
-                {
-                    Headers.Set(HttpKnownHeaderNames.Location, value);
-                }
-            }
-        }
-
         public int StatusCode
         {
             get => _nativeResponse.StatusCode;
@@ -112,45 +63,6 @@ namespace System.Net
                     throw new ProtocolViolationException(SR.net_invalidstatus);
                 }
                 _nativeResponse.StatusCode = (ushort)value;
-            }
-        }
-
-        public string StatusDescription
-        {
-            get
-            {
-                if (_statusDescription == null)
-                {
-                    // if the user hasn't set this, generated on the fly, if possible.
-                    // We know this one is safe, no need to verify it as in the setter.
-                    _statusDescription = HttpStatusDescription.Get(StatusCode);
-                }
-                if (_statusDescription == null)
-                {
-                    _statusDescription = string.Empty;
-                }
-                return _statusDescription;
-            }
-            set
-            {
-                CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                // Need to verify the status description doesn't contain any control characters except HT.  We mask off the high
-                // byte since that's how it's encoded.
-                for (int i = 0; i < value.Length; i++)
-                {
-                    char c = (char)(0x000000ff & (uint)value[i]);
-                    if ((c <= 31 && c != (byte)'\t') || c == 127)
-                    {
-                        throw new ArgumentException(SR.net_WebHeaderInvalidControlChars, "name");
-                    }
-                }
-
-                _statusDescription = value;
             }
         }
 
@@ -210,24 +122,6 @@ namespace System.Net
                     _contentLength = -1;
                 }
             }
-        }
-
-        public bool KeepAlive
-        {
-            get => _keepAlive;
-            set
-            {
-                CheckDisposed();
-                _keepAlive = value;
-            }
-        }
-
-        public void Redirect(string url)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
-            Headers[HttpResponseHeader.Location] = url;
-            StatusCode = (int)HttpStatusCode.Redirect;
-            StatusDescription = HttpStatusDescription.Get(StatusCode);
         }
 
         public long ContentLength64

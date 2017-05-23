@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace System.Net
@@ -10,6 +11,9 @@ namespace System.Net
     public sealed unsafe partial class HttpListenerResponse : IDisposable
     {
         private CookieCollection _cookies;
+        private bool _keepAlive = true;
+        private HttpResponseStream _responseStream;
+        private string _statusDescription;
         private WebHeaderCollection _webHeaders = new WebHeaderCollection();
 
         public WebHeaderCollection Headers
@@ -27,10 +31,104 @@ namespace System.Net
 
         public Encoding ContentEncoding { get; set; }
 
+        public string ContentType
+        {
+            get => Headers[HttpKnownHeaderNames.ContentType];
+            set
+            {
+                CheckDisposed();
+                if (string.IsNullOrEmpty(value))
+                {
+                    Headers.Remove(HttpKnownHeaderNames.ContentType);
+                }
+                else
+                {
+                    Headers.Set(HttpKnownHeaderNames.ContentType, value);
+                }
+            }
+        }
+
         public CookieCollection Cookies
         {
             get => _cookies ?? (_cookies = new CookieCollection());
             set => _cookies = value;
+        }
+
+        public bool KeepAlive
+        {
+            get => _keepAlive;
+            set
+            {
+                CheckDisposed();
+                _keepAlive = value;
+            }
+        }
+
+        public Stream OutputStream
+        {
+            get
+            {
+                CheckDisposed();
+                EnsureResponseStream();
+                return _responseStream;
+            }
+        }
+
+        public string RedirectLocation
+        {
+            get => Headers[HttpResponseHeader.Location];
+            set
+            {
+                // note that this doesn't set the status code to a redirect one
+                CheckDisposed();
+                if (string.IsNullOrEmpty(value))
+                {
+                    Headers.Remove(HttpKnownHeaderNames.Location);
+                }
+                else
+                {
+                    Headers.Set(HttpKnownHeaderNames.Location, value);
+                }
+            }
+        }
+
+        public string StatusDescription
+        {
+            get
+            {
+                if (_statusDescription == null)
+                {
+                    // if the user hasn't set this, generated on the fly, if possible.
+                    // We know this one is safe, no need to verify it as in the setter.
+                    _statusDescription = HttpStatusDescription.Get(StatusCode);
+                }
+                if (_statusDescription == null)
+                {
+                    _statusDescription = string.Empty;
+                }
+                return _statusDescription;
+            }
+            set
+            {
+                CheckDisposed();
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                // Need to verify the status description doesn't contain any control characters except HT.  We mask off the high
+                // byte since that's how it's encoded.
+                for (int i = 0; i < value.Length; i++)
+                {
+                    char c = (char)(0x000000ff & (uint)value[i]);
+                    if ((c <= 31 && c != (byte)'\t') || c == 127)
+                    {
+                        throw new ArgumentException(SR.net_WebHeaderInvalidControlChars, "name");
+                    }
+                }
+
+                _statusDescription = value;
+            }
         }
 
         public void AddHeader(string name, string value)
@@ -53,6 +151,14 @@ namespace System.Net
             }
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
             Cookies.Add(cookie);
+        }
+
+        public void Redirect(string url)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"url={url}");
+            Headers[HttpResponseHeader.Location] = url;
+            StatusCode = (int)HttpStatusCode.Redirect;
+            StatusDescription = HttpStatusDescription.Get(StatusCode);
         }
 
         public void SetCookie(Cookie cookie)
