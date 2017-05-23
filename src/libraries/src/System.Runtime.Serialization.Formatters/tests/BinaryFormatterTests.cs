@@ -75,7 +75,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return TimeSpan.FromDays(7);
             yield return new Version(1, 2, 3, 4);
             yield return new Guid("0CACAA4D-C6BD-420A-B660-2F557337CA89");
-            yield return new AttributeUsageAttribute(AttributeTargets.Class);
             yield return new List<int>();
             yield return new List<int>() { 1, 2, 3, 4, 5 };
             yield return new Dictionary<int, string>() { { 1, "test" }, { 2, "another test" } };
@@ -134,10 +133,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var arr = Array.CreateInstance(typeof(string), new[] { 1, 2 }, new[] { 3, 4 });
             arr.SetValue("hello", new[] { 3, 5 });
             yield return arr;
-
-            // Various globalization types
-            yield return CultureInfo.CurrentCulture;
-            yield return CultureInfo.InvariantCulture;
 
             // Internal specialized equality comparers
             yield return EqualityComparer<byte>.Default;
@@ -294,74 +289,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static IEnumerable<object[]> SerializableExceptions()
         {
-            yield return new object[] { new AbandonedMutexException() };
-            yield return new object[] { new AggregateException(new FieldAccessException(), new MemberAccessException()) };
-            yield return new object[] { new AmbiguousMatchException() };
-            yield return new object[] { new ArgumentException("message", "paramName") };
-            yield return new object[] { new ArgumentNullException("paramName") };
-            yield return new object[] { new ArgumentOutOfRangeException("paramName", 42, "message") };
-            yield return new object[] { new ArithmeticException() };
-            yield return new object[] { new ArrayTypeMismatchException("message") };
-            yield return new object[] { new BadImageFormatException("message", "filename") };
-            yield return new object[] { new COMException() };
-            yield return new object[] { new CultureNotFoundException() };
-            yield return new object[] { new DataMisalignedException("message") };
-            yield return new object[] { new DecoderFallbackException() };
-            yield return new object[] { new DirectoryNotFoundException() };
-            yield return new object[] { new DivideByZeroException() };
-            yield return new object[] { new DllNotFoundException() };
-            yield return new object[] { new EncoderFallbackException() };
-            yield return new object[] { new EndOfStreamException() };
-            yield return new object[] { new EventSourceException() };
+            yield return new object[] { new AggregateException(new Exception(), new Exception("message")) };            
             yield return new object[] { new Exception("message") };
-            yield return new object[] { new FieldAccessException("message", new FieldAccessException()) };
-            yield return new object[] { new FileLoadException() };
-            yield return new object[] { new FileNotFoundException() };
-            yield return new object[] { new FormatException("message") };
-            yield return new object[] { new IndexOutOfRangeException() };
-            yield return new object[] { new InsufficientExecutionStackException() };
-            yield return new object[] { new InvalidCastException() };
-            yield return new object[] { new InvalidComObjectException() };
-            yield return new object[] { new InvalidOleVariantTypeException() };
-            yield return new object[] { new InvalidOperationException() };
-            yield return new object[] { new InvalidProgramException() };
-            yield return new object[] { new InvalidTimeZoneException() };
-            yield return new object[] { new IOException() };
-            yield return new object[] { new KeyNotFoundException() };
-            yield return new object[] { new LockRecursionException() };
-            yield return new object[] { new MarshalDirectiveException() };
-            yield return new object[] { new MemberAccessException() };
-            yield return new object[] { new MethodAccessException() };
-            yield return new object[] { new MissingFieldException() };
-            yield return new object[] { new MissingMemberException() };
-            yield return new object[] { new NotImplementedException() };
-            yield return new object[] { new NotSupportedException() };
-            yield return new object[] { new NullReferenceException() };
-            yield return new object[] { new ObjectDisposedException("objectName") };
-            yield return new object[] { new OperationCanceledException(new CancellationTokenSource().Token) };
-            yield return new object[] { new OutOfMemoryException() };
-            yield return new object[] { new OverflowException() };
-            yield return new object[] { new PathTooLongException() };
-            yield return new object[] { new PlatformNotSupportedException() };
-            yield return new object[] { new RankException() };
-            yield return new object[] { new SafeArrayRankMismatchException() };
-            yield return new object[] { new SafeArrayTypeMismatchException() };
-            yield return new object[] { new SecurityException() };
-            yield return new object[] { new SEHException() };
-            yield return new object[] { new SemaphoreFullException() };
-            yield return new object[] { new SerializationException() };
-            yield return new object[] { new SynchronizationLockException() };
-            yield return new object[] { new TargetInvocationException("message", new Exception()) };
-            yield return new object[] { new TargetParameterCountException() };
-            yield return new object[] { new TaskCanceledException(Task.CompletedTask) };
-            yield return new object[] { new TaskSchedulerException() };
-            yield return new object[] { new TimeoutException() };
-            yield return new object[] { new TypeAccessException() };
-            yield return new object[] { new TypeInitializationException(typeof(string).FullName, new Exception()) };
-            yield return new object[] { new TypeLoadException() };
-            yield return new object[] { new UnauthorizedAccessException("message", new ArgumentNullException()) };
-            yield return new object[] { new VerificationException() };
-            yield return new object[] { new WaitHandleCannotBeOpenedException() };
         }
 
         [Theory]
@@ -372,47 +301,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         private static int Identity(int i) => i;
-
-        [Fact]
-        public void Roundtrip_Delegates_NoTarget()
-        {
-            Func<int, int> expected = Identity;
-            Assert.Null(expected.Target);
-
-            Func<int, int> actual = FormatterClone(expected);
-
-            Assert.NotSame(expected, actual);
-            Assert.Same(expected.GetMethodInfo(), actual.GetMethodInfo());
-            Assert.Equal(expected(42), actual(42));
-        }
-
-        [Fact]
-        public void Roundtrip_Delegates_Target()
-        {
-            var owsam = new ObjectWithStateAndMethod { State = 42 };
-            Func<int> expected = owsam.GetState;
-            Assert.Same(owsam, expected.Target);
-
-            Func<int> actual = FormatterClone(expected);
-
-            Assert.NotSame(expected, actual);
-            Assert.NotSame(expected.Target, actual.Target);
-            Assert.Equal(expected(), actual());
-        }
-
-        public static IEnumerable<object[]> SerializableObjectsWithFuncOfObjectToCompare()
-        {
-            object target = 42;
-            yield return new object[] { new Random(), new Func<object, object>(o => ((Random)o).Next()) };
-        }
-
-        [Theory]
-        [MemberData(nameof(SerializableObjectsWithFuncOfObjectToCompare))]
-        public void Roundtrip_ObjectsWithComparers(object obj, Func<object, object> getResult)
-        {
-            object actual = FormatterClone(obj);
-            Assert.Equal(getResult(obj), getResult(actual));
-        }
 
         public static IEnumerable<object[]> ValidateNonSerializableTypes_MemberData()
         {

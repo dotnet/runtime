@@ -313,12 +313,6 @@ namespace System.Reflection.Tests
             Assert.Equal(1, types.Count);
             Assert.Equal("System.Reflection.TestModule.Dummy, System.Reflection.TestModule, Version=1.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", types[0].AssemblyQualifiedName);
         }
-
-        [Fact]
-        public void SerializeModule()
-        {
-            Assert.Equal(TestModule, BinaryFormatterHelpers.Clone(TestModule));
-        }
     }
 
     public class Foo<T>
