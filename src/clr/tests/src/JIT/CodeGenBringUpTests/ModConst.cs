@@ -201,6 +201,11 @@ static class ModProgram
             return Fail;
         }
 
+        if (ModConst.I4_Mod_1(1) != 0)
+        {
+            return Fail;
+        }
+
         if (ModConst.I4_Mod_Minus1(42) != 0)
         {
             return Fail;
