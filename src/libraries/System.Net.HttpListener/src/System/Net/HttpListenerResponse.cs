@@ -140,7 +140,7 @@ namespace System.Net
         public void AppendHeader(string name, string value)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"name={name}, value={value}");
-            Headers.Add(value);
+            Headers.Add(name, value);
         }
 
         public void AppendCookie(Cookie cookie)
@@ -167,22 +167,15 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
-            bool added = false;
-            try
-            {
-                Cookies.Add(cookie);
-                added = true;
-            }
-            catch (CookieException)
-            {
-                Debug.Assert(!added);
-            }
+
+            Cookie newCookie = cookie.Clone();
+            int added = Cookies.InternalAdd(newCookie, true);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"cookie: {cookie}");
 
-            if (!added)
+            if (added != 1)
             {
-                // cookie already existed and couldn't be replaced
+                // The Cookie already existed and couldn't be replaced.
                 throw new ArgumentException(SR.net_cookie_exists, nameof(cookie));
             }
         }

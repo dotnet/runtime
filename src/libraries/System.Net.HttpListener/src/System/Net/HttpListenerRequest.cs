@@ -50,24 +50,6 @@ namespace System.Net
             }
         }
 
-        private static Func<CookieCollection, Cookie, bool, int> s_internalAddMethod = null;
-        private static Func<CookieCollection, Cookie, bool, int> InternalAddMethod
-        {
-            get
-            {
-                if (s_internalAddMethod == null)
-                {
-                    // We need to use CookieCollection.InternalAdd, as this method performs no validation on the Cookies.
-                    // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
-                    MethodInfo method = typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.NonPublic | BindingFlags.Instance);
-                    Debug.Assert(method != null, "We need to use an internal method named InternalAdd that is declared on Cookie.");
-                    s_internalAddMethod = (Func<CookieCollection, Cookie, bool, int>)Delegate.CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>), method);
-                }
-
-                return s_internalAddMethod;
-            }
-        }
-
         private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
@@ -87,7 +69,7 @@ namespace System.Net
                     continue;
                 }
 
-                InternalAddMethod(cookies, cookie, true);
+                cookies.InternalAdd(cookie, true);
             }
             return cookies;
         }
