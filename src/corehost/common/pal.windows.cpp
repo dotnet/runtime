@@ -195,14 +195,16 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
-bool pal::get_global_dotnet_dir(pal::string_t* dir)
+bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
 {
-    if (!get_file_path_from_env(_X("ProgramFiles"), dir))
+    pal::string_t dir;
+    if (!get_file_path_from_env(_X("ProgramFiles"), &dir))
     {
         return false;
     }
 
-    append_path(dir, _X("dotnet"));
+    append_path(&dir, _X("dotnet"));
+    dirs->push_back(dir);
     return true;
 }
 
