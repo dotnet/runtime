@@ -65,6 +65,7 @@ namespace System.Collections.Tests
         protected override bool IsReadOnly => true;
         protected override bool Enumerator_Current_UndefinedOperation_Throws => true;
         protected override Type ICollection_NonGeneric_CopyTo_ArrayOfEnumType_ThrowType => typeof(ArgumentException);
+        protected override bool SupportsSerialization => false;
 
         protected override Type ICollection_NonGeneric_CopyTo_IndexLargerThanArrayCount_ThrowType => typeof(ArgumentOutOfRangeException);
 

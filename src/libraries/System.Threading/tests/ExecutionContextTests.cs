@@ -40,30 +40,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        public static void SerializationTest()
-        {
-            ThreadTestHelpers.RunTestInBackgroundThread(() =>
-            {
-                var asyncLocal = new AsyncLocal<int>();
-                asyncLocal.Value = 1;
-                ExecutionContext executionContext = ExecutionContext.Capture();
-                VerifyExecutionContext(executionContext, asyncLocal, 1);
-
-                Assert.Throws<ArgumentNullException>(() => executionContext.GetObjectData(null, new StreamingContext()));
-
-                var binaryFormatter = new BinaryFormatter();
-                var memoryStream = new MemoryStream();
-                binaryFormatter.Serialize(memoryStream, executionContext);
-                memoryStream.Close();
-                byte[] binaryData = memoryStream.ToArray();
-
-                memoryStream = new MemoryStream(binaryData);
-                executionContext = (ExecutionContext)binaryFormatter.Deserialize(memoryStream);
-                memoryStream.Close();
-            });
-        }
-
-        [Fact]
         public static void FlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

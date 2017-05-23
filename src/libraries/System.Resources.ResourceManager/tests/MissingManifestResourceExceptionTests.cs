@@ -33,13 +33,5 @@ namespace System.Resources.Tests
             Assert.Equal(message, mmre.Message);
             Assert.Same(innerException, mmre.InnerException);
         }
-
-        [Fact]
-        public void Serialization()
-        {
-            const string message = "FATAL ERROR: The pizza could not be found.";
-            var ex = new MissingManifestResourceException(message);
-            BinaryFormatterHelpers.AssertRoundtrips(ex);
-        }
     }
 }

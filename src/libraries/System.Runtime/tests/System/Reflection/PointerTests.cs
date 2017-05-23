@@ -223,14 +223,5 @@ namespace System.Reflection.Tests
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
         }
-
-        [Theory]
-        [MemberData(nameof(Pointers))]
-        public void PointerSerializes(int value)
-        {
-            object pointer = Pointer.Box(unchecked((void*)value), typeof(int*));
-            Pointer cloned = BinaryFormatterHelpers.Clone((Pointer)pointer);
-            Assert.Equal((ulong)Pointer.Unbox(pointer), (ulong)Pointer.Unbox(cloned));
-        }
     }
 }

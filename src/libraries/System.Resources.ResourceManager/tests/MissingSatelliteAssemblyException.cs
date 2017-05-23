@@ -43,13 +43,5 @@ namespace System.Resources.Tests
             Assert.Equal(message, msae.Message);
             Assert.Same(innerException, msae.InnerException);
         }
-
-        [Fact]
-        public void Serialization()
-        {
-            const string cultureName = "fr-FR";
-            MissingSatelliteAssemblyException msae = new MissingSatelliteAssemblyException("message", cultureName);
-            BinaryFormatterHelpers.AssertRoundtrips(msae);
-        }
     }
 }
