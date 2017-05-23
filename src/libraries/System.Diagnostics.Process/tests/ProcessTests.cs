@@ -1017,6 +1017,7 @@ namespace System.Diagnostics.Tests
             Assert.NotEqual(0, e.NativeErrorCode);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In Desktop Process.UseShellExecute is true by default so this will not throw")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Needs permissions on Unix
         // NativeErrorCode not 193 on Windows Nano for ERROR_BAD_EXE_FORMAT, issue #10290
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

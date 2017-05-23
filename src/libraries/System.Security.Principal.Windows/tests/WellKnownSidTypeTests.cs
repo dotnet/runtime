@@ -75,7 +75,19 @@ public class WellKnownSidTypeTests
     [InlineData(WellKnownSidType.BuiltinPerformanceLoggingUsersSid)]
     [InlineData(WellKnownSidType.BuiltinAuthorizationAccessSid)]
     [InlineData(WellKnownSidType.WinBuiltinTerminalServerLicenseServersSid)]
-    [InlineData(WellKnownSidType.WinBuiltinTerminalServerLicenseServersSid)]
+    public void CanCreateSecurityIdentifierFromWellKnownSidType(WellKnownSidType sidType)
+    {
+        using (var identity = WindowsIdentity.GetCurrent())
+        {
+            var currentDomainSid = identity.Owner.AccountDomainSid;
+            var wellKnownSidInstance = new SecurityIdentifier(sidType, currentDomainSid);
+
+            Assert.True(wellKnownSidInstance.IsWellKnown(sidType));
+        }
+    }
+
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This SidTypes are only available in .NET Core")]
+    [ConditionalTheory(nameof(AccountIsDomainJoined))]
     [InlineData(WellKnownSidType.WinBuiltinDCOMUsersSid)]
     [InlineData(WellKnownSidType.WinBuiltinIUsersSid)]
     [InlineData(WellKnownSidType.WinIUserSid)]
@@ -114,7 +126,7 @@ public class WellKnownSidTypeTests
     [InlineData(WellKnownSidType.WinCapabilitySharedUserCertificatesSid)]
     [InlineData(WellKnownSidType.WinCapabilityEnterpriseAuthenticationSid)]
     [InlineData(WellKnownSidType.WinCapabilityRemovableStorageSid)]
-    public void CanCreateSecurityIdentifierFromWellKnownSidType(WellKnownSidType sidType)
+    public void CanCreateSecurityIdentifierFromWellKnownSidType_Netcoreapp(WellKnownSidType sidType)
     {
         using (var identity = WindowsIdentity.GetCurrent())
         {
