@@ -44,7 +44,7 @@ Daily Builds
 |   **Ubuntu 16.10 (x64)**   |   [![][ubuntu-16.10-badge-master]][ubuntu-16.10-version-master]<br>[Host][ubuntu-16.10-host-master] ([Checksum][ubuntu-16.10-host-checksum-master])<br>[Host FX Resolver][ubuntu-16.10-hostfxr-master] ([Checksum][ubuntu-16.10-hostfxr-checksum-master])<br>[Shared Framework][ubuntu-16.10-sharedfx-master] ([Checksum][ubuntu-16.10-sharedfx-checksum-master])<br>  |   [![][ubuntu-16.10-badge-2.0.X]][ubuntu-16.10-version-2.0.X]<br>[Host][ubuntu-16.10-host-2.0.X] ([Checksum][ubuntu-16.10-host-checksum-2.0.X])<br>[Host FX Resolver][ubuntu-16.10-hostfxr-2.0.X] ([Checksum][ubuntu-16.10-hostfxr-checksum-2.0.X])<br>[Shared Framework][ubuntu-16.10-sharedfx-2.0.X] ([Checksum][ubuntu-16.10-sharedfx-checksum-2.0.X])<br>  |   [![][ubuntu-16.10-badge-1.1.X]][ubuntu-16.10-version-1.1.X]<br>[Host][ubuntu-16.10-host-1.1.X]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-16.10-sharedfx-1.1.X]<br>[tar.gz][ubuntu-16.10-targz-1.1.X]   |   N/A   |
 |   **Debian 8.2 (x64)**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[Host][debian-8.2-host-master] ([Checksum][debian-8.2-host-checksum-master])<br>[Host FX Resolver][debian-8.2-hostfxr-master] ([Checksum][debian-8.2-hostfxr-checksum-master])<br>[Shared Framework][debian-8.2-sharedfx-master] ([Checksum][debian-8.2-sharedfx-checksum-master])<br>  |   [![][debian-8.2-badge-2.0.X]][debian-8.2-version-2.0.X]<br>[Host][debian-8.2-host-2.0.X] ([Checksum][debian-8.2-host-checksum-2.0.X])<br>[Host FX Resolver][debian-8.2-hostfxr-2.0.X] ([Checksum][debian-8.2-hostfxr-checksum-2.0.X])<br>[Shared Framework][debian-8.2-sharedfx-2.0.X] ([Checksum][debian-8.2-sharedfx-checksum-2.0.X])<br>  |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[Host][debian-8.2-host-1.1.X]<br>[Host FX Resolver][debian-8.2-hostfxr-1.1.X]<br>[Shared Framework][debian-8.2-sharedfx-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[Host][debian-8.2-host-preview]<br>[Host FX Resolver][debian-8.2-hostfxr-preview]<br>[Shared Framework][debian-8.2-sharedfx-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
 |   **CentOS 7.1 (x64)**     |   N/A   |   N/A   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
-|   **RHEL 7.2 (x64)**       |   N/A   |   N/A   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
+|   **RHEL 7.2 (x64)**       |   [![][rhel7-badge-master]][rhel7-version-master]<br>[Host][rhel7-host-master] ([Checksum][rhel7-host-checksum-master])<br>[Host FX Resolver][rhel7-hostfxr-master] ([Checksum][rhel7-hostfxr-checksum-master])<br>[Shared Framework][rhel7-sharedfx-master] ([Checksum][rhel7-sharedfx-checksum-master])<br>  |   [![][rhel7-badge-2.0.X]][rhel7-version-2.0.X]<br>[Host][rhel7-host-2.0.X] ([Checksum][rhel7-host-checksum-2.0.X])<br>[Host FX Resolver][rhel7-hostfxr-2.0.X] ([Checksum][rhel7-hostfxr-checksum-2.0.X])<br>[Shared Framework][rhel7-sharedfx-2.0.X] ([Checksum][rhel7-sharedfx-checksum-2.0.X])<br>   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |    [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23 (x64)**      |   N/A   |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24 (x64)**      |   N/A   |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
 |   **OpenSUSE 42.1 (x64)**  |   N/A   |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
@@ -256,7 +256,6 @@ Daily Builds
 [ubuntu-16.04-sharedfx-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-sharedframework-ubuntu.16.04-x64.latest.deb
 [ubuntu-16.04-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-ubuntu.16.04-x64.latest.tar.gz
 
-
 [ubuntu-16.10-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.16.10-x64_Release_version_badge.svg
 [ubuntu-16.10-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.ubuntu.16.10.x64.version
 [ubuntu-16.10-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-ubuntu.16.10-x64.latest.deb
@@ -315,7 +314,6 @@ Daily Builds
 [debian-8.2-sharedfx-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Installers/Latest/dotnet-sharedframework-debian-x64.latest.deb
 [debian-8.2-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-debian-x64.latest.tar.gz
 
-
 [centos-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_CentOS_x64_Release_version_badge.svg
 [centos-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.centos.x64.version
 [centos-targz-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/dotnet-centos-x64.latest.tar.gz
@@ -324,6 +322,23 @@ Daily Builds
 [centos-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.centos.x64.version
 [centos-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-centos-x64.latest.tar.gz
 
+[rhel7-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_rhel.7-x64_Release_version_badge.svg
+[rhel7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.rhel.7.x64.version
+[rhel7-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-rhel.7-x64.latest.rpm
+[rhel7-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-rhel.7-x64.latest.rpm.sha512
+[rhel7-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-rhel.7-x64.latest.rpm
+[rhel7-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-rhel.7-x64.latest.rpm.sha512
+[rhel7-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-rhel.7-x64.latest.rpm
+[rhel7-sharedfx-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-rhel.7-x64.latest.rpm.sha512
+
+[rhel7-badge-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/sharedfx_rhel.7-x64_Release_version_badge.svg
+[rhel7-version-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/latest.sharedfx.rhel.7.x64.version
+[rhel7-host-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-rhel.7-x64.latest.rpm
+[rhel7-host-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-host-rhel.7-x64.latest.rpm.sha512
+[rhel7-hostfxr-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-rhel.7-x64.latest.rpm
+[rhel7-hostfxr-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-hostfxr-rhel.7-x64.latest.rpm.sha512
+[rhel7-sharedfx-2.0.X]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-rhel.7-x64.latest.rpm
+[rhel7-sharedfx-checksum-2.0.X]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-sharedframework-rhel.7-x64.latest.rpm.sha512
 
 [rhel-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_RHEL_x64_Release_version_badge.svg
 [rhel-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.rhel.x64.version

@@ -280,16 +280,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CompressedFileExtension Condition="'$(OSGroup)' == 'Windows_NT'">.zip</CompressedFileExtension>
-    <CompressedFileExtension Condition="'$(OSGroup)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
-    <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
-    <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
-    <InstallerExtension Condition="'$(OSGroup)' != 'Windows_NT' and '$(OSGroup)' != 'OSX'">.deb</InstallerExtension>
-    <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
-  </PropertyGroup>
-  
-  <PropertyGroup>
     <SharedHostInstallerStart>$(PackagesOutDir)dotnet-host-</SharedHostInstallerStart>
     <HostFxrInstallerStart>$(PackagesOutDir)dotnet-hostfxr-</HostFxrInstallerStart>
     <SharedFrameworkInstallerStart>$(PackagesOutDir)dotnet-sharedframework-</SharedFrameworkInstallerStart>
@@ -316,6 +306,8 @@
     <TargetsUnix>false</TargetsUnix>
     <TargetsUbuntu>false</TargetsUbuntu>
     <TargetsDebian>false</TargetsDebian>
+    <TargetsRhel>false</TargetsRhel>
+    <TargetsCentos>false</TargetsCentos>
   </PropertyGroup>
   <Choose>
     <When Condition="$(TargetRid.StartsWith('win'))">
@@ -343,6 +335,20 @@
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
+    <When Condition="$(TargetRid.StartsWith('rhel'))">
+      <PropertyGroup>
+        <TargetsRhel>true</TargetsRhel>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+        <When Condition="$(TargetRid.StartsWith('centos'))">
+      <PropertyGroup>
+        <TargetsCentos>true</TargetsCentos>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>
@@ -350,6 +356,17 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
+
+  <PropertyGroup>
+    <CompressedFileExtension Condition="'$(OSGroup)' == 'Windows_NT'">.zip</CompressedFileExtension>
+    <CompressedFileExtension Condition="'$(OSGroup)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
+    <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
+    <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true'">.deb</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true'">.rpm</InstallerExtension>
+    <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -362,7 +379,6 @@
     <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
-
 
   <!-- Use Roslyn Compilers to build --> 
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
