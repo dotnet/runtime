@@ -64,6 +64,9 @@
   <data name="net_headers_rsp" xml:space="preserve">
     <value>This collection holds request headers and cannot contain the specified response header.</value>
   </data>
+  <data name="net_emptyStringCall" xml:space="preserve">
+    <value>The parameter '{0}' cannot be an empty string.</value>
+  </data>
   <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
     <value>Specified value has invalid Control characters.</value>
   </data>
