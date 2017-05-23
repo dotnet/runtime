@@ -183,7 +183,7 @@ bool is_executable(const pal::string_t& file_path)
 }
 
 static
-bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
+bool locate_dotnet_on_path(std::vector<pal::string_t>* dotnet_exes)
 {
     pal::string_t path;
     if (!pal::getenv(_X("PATH"), &path))
@@ -204,12 +204,17 @@ bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
         append_path(&tok, _X("dotnet"));
         if (pal::realpath(&tok) && is_executable(tok))
         {
-            *dotnet_exe = tok;
-            return true;
+            dotnet_exes->push_back(tok);
         }
         tok.clear();
     }
-    return false;
+
+    if (dotnet_exes->empty())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool pal::get_local_dotnet_dir(pal::string_t* recv)
@@ -234,16 +239,21 @@ bool pal::get_local_dotnet_dir(pal::string_t* recv)
     return true;
 }
 
- bool pal::get_global_dotnet_dir(pal::string_t* recv)
+ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
-    recv->clear();
-    pal::string_t dotnet_exe;
-    if (!locate_dotnet_on_path(&dotnet_exe))
+    
+     std::vector<pal::string_t> dotnet_exes;
+    if (!locate_dotnet_on_path(&dotnet_exes))
     {
         return false;
     }
-    pal::string_t dir = get_directory(dotnet_exe);
-    recv->assign(dir);
+
+    for (pal::string_t path : dotnet_exes)
+    {
+        pal::string_t dir = get_directory(path);
+        recv->push_back(dir);
+    }
+
     return true;
 }
 
