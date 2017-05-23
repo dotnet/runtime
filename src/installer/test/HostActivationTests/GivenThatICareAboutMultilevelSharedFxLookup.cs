@@ -159,14 +159,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .Pass()
                 .And
                 .HaveStdErrContaining(_exeSelectedMessage);
-
-            // Remove dummy folders from user dir
-            DeleteAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.0");
         }
 
         [Fact]
         public void SharedFxLookup_Must_Roll_Forward_Before_Looking_Into_Another_Folder()
         {
+            //https://github.com/dotnet/core-setup/issues/1553
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            {
+                return;
+            }
+
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
@@ -407,6 +410,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         [Fact]
         public void Roll_Forward_On_No_Candidate_Fx_Must_Look_Into_All_Lookup_Folders()
         {
+            //https://github.com/dotnet/core-setup/issues/1553
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            {
+                return;
+            }
+
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
@@ -467,6 +476,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         [Fact]
         public void Roll_Forward_On_No_Candidate_Fx_May_Be_Enabled_Through_Runtimeconfig_Json_File()
         {
+            //https://github.com/dotnet/core-setup/issues/1553
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            {
+                return;
+            }
+
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
@@ -509,6 +524,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
         [Fact]
         public void Roll_Forward_On_No_Candidate_Fx_May_Be_Enabled_Through_Argument()
         {
+            //https://github.com/dotnet/core-setup/issues/1553
+            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
+            {
+                return;
+            }
+            
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
