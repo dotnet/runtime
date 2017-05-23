@@ -27,6 +27,7 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.False(cws.Options.UseDefaultCredentials);
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(WebSocketsSupported))]
         public static void SetBuffer_InvalidArgs_Throws()
         {

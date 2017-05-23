@@ -14,6 +14,7 @@ namespace System.Net.Tests
 {
     public class HttpListenerRequestTests
     {
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
@@ -208,6 +209,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData("Accept-Language: Lang1,Lang2,Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
         [InlineData("Accept-Language: Lang1, Lang2, Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
@@ -418,6 +420,7 @@ namespace System.Net.Tests
             };
         }
 
+        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(QueryString_TestData))]
         public async Task QueryString_GetProperty_ReturnsExpected(string query, NameValueCollection expected)
