@@ -43,7 +43,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20161)]
         public async Task AppendHeader_ValidValue_AddsHeaderToCollection()
         {
             HttpListenerResponse response = await GetResponse();
@@ -56,15 +55,15 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20161)]
-        public async Task AppendHeader_NullOrWhitespaceName_ThrowsArgumentNullException()
+        [ActiveIssue(20164)]
+        public async Task AppendHeader_NullName_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
             Assert.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20161)]
+        [ActiveIssue(20164)]
         public async Task AppendHeader_InvalidNameOrValue_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();

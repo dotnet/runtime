@@ -87,9 +87,8 @@ namespace System.Net.Tests
             };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20165, TestPlatforms.AnyUnix)]
         [MemberData(nameof(Cookies_TestData))]
-        [ActiveIssue(20162)]
         public async Task Cookies_SetAndSend_ClientReceivesExpectedHeaders(CookieCollection cookies, int expectedBytes, string expectedSetCookie, string expectedSetCookie2)
         {
             HttpListenerResponse response = await GetResponse();
@@ -120,7 +119,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20165, TestPlatforms.AnyUnix)]
         public async Task Cookies_SetInHeader_ClientReceivesExpectedHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -134,7 +133,7 @@ namespace System.Net.Tests
             Assert.Contains($"{Environment.NewLine}Set-Cookie2: name2=value2{Environment.NewLine}", clientResponse);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20165, TestPlatforms.AnyUnix)]
         public async Task Cookies_SetCookie2InHeadersButNotInCookies_RemovesFromHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -153,7 +152,7 @@ namespace System.Net.Tests
             Assert.Contains($"{Environment.NewLine}Set-Cookie2: name3=value3; Port=\"200\"; Version=1{Environment.NewLine}", clientResponse);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20165, TestPlatforms.AnyUnix)]
         public async Task Cookies_SetCookieInHeadersButNotInCookies_RemovesFromHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -214,7 +213,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20160)]
         public async Task SetCookie_ValidCookie_ClonesCookie()
         {
             HttpListenerResponse response = await GetResponse();
@@ -234,7 +232,6 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20159)]
         public async Task SetCookie_CookieDoesntExist_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();
