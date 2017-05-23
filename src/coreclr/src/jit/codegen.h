@@ -110,10 +110,6 @@ private:
     // branch to on condition being false.
     static void genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], bool jmpToTrueLabel[2]);
 
-#if !defined(_TARGET_64BIT_)
-    static void genJumpKindsForTreeLongHi(GenTreePtr cmpTree, emitJumpKind jmpKind[2]);
-#endif //! defined(_TARGET_64BIT_)
-
     static bool genShouldRoundFP();
 
     GenTreeIndir indirForm(var_types type, GenTree* base);

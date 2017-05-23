@@ -240,7 +240,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 #ifdef _TARGET_ARM_
 
         case GT_JCC:
-            genCodeForJcc(treeNode->AsJumpCC());
+            genCodeForJcc(treeNode->AsCC());
             break;
 
 #endif // _TARGET_ARM_
@@ -2568,7 +2568,7 @@ void CodeGen::genCodeForJumpTrue(GenTreePtr tree)
 // Arguments:
 //    tree - the node
 //
-void CodeGen::genCodeForJcc(GenTreeJumpCC* tree)
+void CodeGen::genCodeForJcc(GenTreeCC* tree)
 {
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
