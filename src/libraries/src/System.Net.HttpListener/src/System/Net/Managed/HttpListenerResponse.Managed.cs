@@ -31,49 +31,29 @@
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace System.Net
 {
     public sealed partial class HttpListenerResponse : IDisposable
     {
         private long _contentLength;
-        private bool _clSet;
         private Version _version = HttpVersion.Version11;
         private int _statusCode = 200;
-        private bool _chunked;
-        private HttpListenerContext _context;
         internal object _headersLock = new object();
         private bool _forceCloseChunked;
 
         internal HttpListenerResponse(HttpListenerContext context)
         {
-            _context = context;
+            _httpContext = context;
         }
 
         internal bool ForceCloseChunked => _forceCloseChunked;
-
-        public long ContentLength64
-        {
-            get => _contentLength;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
-
-                _clSet = true;
-                _contentLength = value;
-            }
-        }
 
         private void EnsureResponseStream()
         {
             if (_responseStream == null)
             {
-                _responseStream = _context.Connection.GetResponseStream();
+                _responseStream = _httpContext.Connection.GetResponseStream();
             }
         }
 
@@ -92,18 +72,6 @@ namespace System.Net
                     throw new ArgumentException(SR.net_wrongversion, nameof(value));
 
                 _version = value;
-            }
-        }
-
-        public bool SendChunked
-        {
-            get => _chunked;
-            set
-            {
-                CheckDisposed();
-                CheckSentHeaders();
-
-                _chunked = value;
             }
         }
 
@@ -142,7 +110,7 @@ namespace System.Net
         private void Close(bool force)
         {
             Disposed = true;
-            _context.Connection.Close(force);
+            _httpContext.Connection.Close(force);
         }
 
         public void Close(byte[] responseEntity, bool willBlock)
@@ -150,11 +118,41 @@ namespace System.Net
             CheckDisposed();
 
             if (responseEntity == null)
+            {
                 throw new ArgumentNullException(nameof(responseEntity));
+            }
 
-            ContentLength64 = responseEntity.Length;
-            OutputStream.Write(responseEntity, 0, (int)_contentLength);
-            Close(false);
+            if (_boundaryType != BoundaryType.Chunked)
+            {
+                ContentLength64 = responseEntity.Length;
+            }
+
+            if (willBlock)
+            {
+                try
+                {
+                    OutputStream.Write(responseEntity, 0, responseEntity.Length);
+                }
+                finally
+                {
+                    Close(false);
+                }
+            }
+            else
+            {
+                OutputStream.BeginWrite(responseEntity, 0, responseEntity.Length, iar =>
+                {
+                    var thisRef = (HttpListenerResponse)iar.AsyncState;
+                    try
+                    {
+                        thisRef.OutputStream.EndWrite(iar);
+                    }
+                    finally
+                    {
+                        thisRef.Close(false);
+                    }
+                }, this);
+            }
         }
 
         public void CopyFrom(HttpListenerResponse templateResponse)
@@ -191,26 +189,49 @@ namespace System.Net
             if (!isWebSocketHandshake)
             {
                 if (_webHeaders[HttpKnownHeaderNames.Server] == null)
-                    _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
-                CultureInfo inv = CultureInfo.InvariantCulture;
-                if (_webHeaders[HttpKnownHeaderNames.Date] == null)
-                    _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", inv));
-
-                if (!_chunked)
                 {
-                    if (!_clSet && closing)
-                    {
-                        _clSet = true;
-                        _contentLength = 0;
-                    }
-
-                    if (_clSet)
-                        _webHeaders.Set(HttpKnownHeaderNames.ContentLength, _contentLength.ToString(inv));
+                    _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
                 }
 
-                Version v = _context.Request.ProtocolVersion;
-                if (!_clSet && !_chunked && v >= HttpVersion.Version11)
-                    _chunked = true;
+                if (_webHeaders[HttpKnownHeaderNames.Date] == null)
+                {
+                    _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
+                }
+
+                if (_boundaryType == BoundaryType.None)
+                {
+                    if (HttpListenerRequest.ProtocolVersion <= HttpVersion.Version10)
+                    {
+                        _keepAlive = false;
+                    }
+                    else
+                    {
+                        _boundaryType = BoundaryType.Chunked;
+                    }
+
+                    if (CanSendResponseBody(_httpContext.Response.StatusCode))
+                    {
+                        _contentLength = -1;
+                    }
+                    else
+                    {
+                        _boundaryType = BoundaryType.ContentLength;
+                        _contentLength = 0;
+                    }
+                }
+
+                if (_boundaryType != BoundaryType.Chunked)
+                {
+                    if (_boundaryType != BoundaryType.ContentLength && closing)
+                    {
+                        _contentLength = CanSendResponseBody(_httpContext.Response.StatusCode) ? -1 : 0;
+                    }
+
+                    if (_boundaryType == BoundaryType.ContentLength)
+                    {
+                        _webHeaders.Set(HttpKnownHeaderNames.ContentLength, _contentLength.ToString("D", CultureInfo.InvariantCulture));
+                    }
+                }
 
                 /* Apache forces closing the connection for these status codes:
                  *	HttpStatusCode.BadRequest 		        400
@@ -226,8 +247,10 @@ namespace System.Net
                         || _statusCode == (int)HttpStatusCode.RequestUriTooLong || _statusCode == (int)HttpStatusCode.InternalServerError
                         || _statusCode == (int)HttpStatusCode.ServiceUnavailable);
 
-                if (conn_close == false)
-                    conn_close = !_context.Request.KeepAlive;
+                if (!conn_close)
+                {
+                    conn_close = !_httpContext.Request.KeepAlive;
+                }
 
                 // They sent both KeepAlive: true and Connection: close
                 if (!_keepAlive || conn_close)
@@ -236,10 +259,12 @@ namespace System.Net
                     conn_close = true;
                 }
 
-                if (_chunked)
+                if (SendChunked)
+                {
                     _webHeaders.Set(HttpKnownHeaderNames.TransferEncoding, HttpHeaderStrings.Chunked);
+                }
 
-                int reuses = _context.Connection.Reuses;
+                int reuses = _httpContext.Connection.Reuses;
                 if (reuses >= 100)
                 {
                     _forceCloseChunked = true;
@@ -250,17 +275,17 @@ namespace System.Net
                     }
                 }
 
-                if (!conn_close)
+                if (!conn_close && _httpContext.Request.ProtocolVersion <= HttpVersion.Version10)
                 {
-                    _webHeaders.Set(HttpKnownHeaderNames.KeepAlive, String.Format("timeout=15,max={0}", 100 - reuses));
-                    if (_context.Request.ProtocolVersion <= HttpVersion.Version10)
-                        _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
+                    _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
                 }
 
                 if (_cookies != null)
                 {
                     foreach (Cookie cookie in _cookies)
+                    {
                         _webHeaders.Set(HttpKnownHeaderNames.SetCookie, CookieToClientString(cookie));
+                    }
                 }
             }
 

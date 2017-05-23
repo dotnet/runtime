@@ -24,8 +24,7 @@ namespace System.Net.Tests
             Assert.Equal(Encoding.Unicode, response.ContentEncoding);
             response.Close();
 
-            // The managed implementation should not send Keep-Alive headers.
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 120 : 125);
+            string clientResponse = GetClientResponse(120);
             Assert.DoesNotContain("Content-Encoding", clientResponse);
         }
 
@@ -38,8 +37,7 @@ namespace System.Net.Tests
             response.ContentEncoding = Encoding.Unicode;
             Assert.Equal(Encoding.Unicode, response.ContentEncoding);
 
-            // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19978, TestPlatforms.AnyUnix)]
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 120 : 125);
+            string clientResponse = GetClientResponse(120);
             Assert.DoesNotContain("Content-Encoding", clientResponse);
         }
 
@@ -55,8 +53,7 @@ namespace System.Net.Tests
                 Assert.Equal(Encoding.Unicode, response.ContentEncoding);
             }
 
-            // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19978, TestPlatforms.AnyUnix)].
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 111 : 130);
+            string clientResponse = GetClientResponse(111);
             Assert.DoesNotContain("Content-Encoding", clientResponse);
         }
 
@@ -388,8 +385,7 @@ namespace System.Net.Tests
                 Assert.Equal("Hello", response.StatusDescription);
             }
 
-            // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19978, TestPlatforms.AnyUnix)].
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 111 : 130);
+            string clientResponse = GetClientResponse(111);
             Assert.StartsWith("HTTP/1.1 200 OK\r\n", clientResponse);
         }
 
@@ -455,8 +451,7 @@ namespace System.Net.Tests
                 Assert.False(response.SendChunked);
             }
 
-            // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19978, TestPlatforms.AnyUnix)].
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 111 : 130);
+            string clientResponse = GetClientResponse(111);
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
         
@@ -480,9 +475,7 @@ namespace System.Net.Tests
 
         [InlineData(true, 120)]
         [InlineData(false, 139)]
-        // The managed implementation should not set the Keep-Alive header ever.
-        // The managed implementation should send Connection: Close if keepAlive == false.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19978, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task KeepAlive_GetSet_ReturnsExpected(bool keepAlive, int expectedNumberOfBytes)
         {
             HttpListenerResponse response = await GetResponse();
@@ -517,8 +510,7 @@ namespace System.Net.Tests
             }
         }
         
-        // The managed implementation should not set the Keep-Alive header ever.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19978, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task KeepAlive_SetDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -534,7 +526,6 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Connection", clientResponse);
         }
         
-        // The managed implementation should not throw setting KeepAlive after sending the headers.
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task KeepAlive_SetAfterHeadersSent_DoesNothing()
         {
@@ -551,9 +542,7 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
         
-        // The managed implementation should set KeepAlive to false when sending headers and
-        // context.Request.ProtocolVersion == 1.0.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19977, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task KeepAlive_NoBoundaryAndRequestHttpRequestVersionMinorIsZero_SetsToFalseWhenSendingHeaders()
         {
             using (HttpListenerResponse response = await GetResponse("1.0"))
@@ -589,8 +578,7 @@ namespace System.Net.Tests
     
         [InlineData(0, 106)]
         [InlineData(10, 117)]
-        // The managed implementation should set SendChunked to true by default.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19973, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentLength64_GetSet_ReturnsExpected(int contentLength64, int expectedNumberOfBytes)
         {
             HttpListenerResponse response = await GetResponse();
@@ -624,9 +612,7 @@ namespace System.Net.Tests
         [InlineData(205, 0, 117)]
         [InlineData(304, 0, 116)]
         [InlineData(200, -1, 120)]
-        // The managed implementation should ContentLength to 0 after sending headers if the code is 100, 101, 204, 205 or 304.
-        // The managed implementation should ContentLength to -1 after sending chunked content.
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19973, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentLength64_NotSetAndGetAfterSendingHeaders_ReturnValueDependsOnStatusCode(int statusCode, int expectedContentLength64, int expectedNumberOfBytes)
         {
             HttpListenerResponse response = await GetResponse();
@@ -648,8 +634,7 @@ namespace System.Net.Tests
             }
         }
 
-        // The managed implementation should ContentLength to -1 after sending headers if no ContentLength is specified.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19973, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentLength64_SetDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -675,13 +660,11 @@ namespace System.Net.Tests
                 Assert.Equal(SimpleMessage.Length, response.ContentLength64);
             }
 
-            // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19978, TestPlatforms.AnyUnix)]
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 111 : 130);
+            string clientResponse = GetClientResponse(111);
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
 
-        // The managed implementation should not pass Content-Length: 0 if it is not set.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19973, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task ContentLength64_SetNegative_ThrowsArgumentOutOfRangeException()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -765,8 +748,7 @@ namespace System.Net.Tests
                 Assert.Equal(headers, response.Headers);
             }
 
-            // The managed implementation should not send Keep-Alive headers: [ActiveIssue(19978, TestPlatforms.AnyUnix)].
-            string clientResponse = GetClientResponse(Helpers.IsWindowsImplementation ? 159 : 164);
+            string clientResponse = GetClientResponse(159);
             Assert.Contains("\r\nName1: Value1\r\nName2: Value2\r\nName3: \r\n", clientResponse);
         }
 

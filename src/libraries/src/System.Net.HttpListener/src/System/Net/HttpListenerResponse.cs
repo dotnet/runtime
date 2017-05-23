@@ -10,7 +10,9 @@ namespace System.Net
 {
     public sealed unsafe partial class HttpListenerResponse : IDisposable
     {
+        private BoundaryType _boundaryType = BoundaryType.None;
         private CookieCollection _cookies;
+        private HttpListenerContext _httpContext;
         private bool _keepAlive = true;
         private HttpResponseStream _responseStream;
         private string _statusDescription;
@@ -44,6 +46,69 @@ namespace System.Net
                 else
                 {
                     Headers.Set(HttpKnownHeaderNames.ContentType, value);
+                }
+            }
+        }
+
+        private HttpListenerContext HttpListenerContext => _httpContext;
+
+        private HttpListenerRequest HttpListenerRequest => HttpListenerContext.Request;
+
+        internal EntitySendFormat EntitySendFormat
+        {
+            get => (EntitySendFormat)_boundaryType;
+            set
+            {
+                CheckDisposed();
+                CheckSentHeaders();
+                if (value == EntitySendFormat.Chunked && HttpListenerRequest.ProtocolVersion.Minor == 0)
+                {
+                    throw new ProtocolViolationException(SR.net_nochunkuploadonhttp10);
+                }
+                _boundaryType = (BoundaryType)value;
+                if (value != EntitySendFormat.ContentLength)
+                {
+                    _contentLength = -1;
+                }
+            }
+        }
+
+        public bool SendChunked
+        {
+            get => EntitySendFormat == EntitySendFormat.Chunked;
+            set => EntitySendFormat = value ? EntitySendFormat.Chunked : EntitySendFormat.ContentLength;
+        }
+
+        // We MUST NOT send message-body when we send responses with these Status codes
+        private static readonly int[] s_noResponseBody = { 100, 101, 204, 205, 304 };
+
+        private static bool CanSendResponseBody(int responseCode)
+        {
+            for (int i = 0; i < s_noResponseBody.Length; i++)
+            {
+                if (responseCode == s_noResponseBody[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public long ContentLength64
+        {
+            get => _contentLength;
+            set
+            {
+                CheckDisposed();
+                CheckSentHeaders();
+                if (value >= 0)
+                {
+                    _contentLength = value;
+                    _boundaryType = BoundaryType.ContentLength;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_clsmall);
                 }
             }
         }
