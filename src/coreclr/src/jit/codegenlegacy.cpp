@@ -13063,22 +13063,12 @@ void CodeGen::genCodeForBBlist()
                 bbFinallyRet = block->bbNext->bbJumpDest;
                 bbFinallyRet->bbFlags |= BBF_JMP_TARGET;
 
-#if 0
-            // We don't know the address of finally funclet yet.  But adr requires the offset
-            // to finally funclet from current IP is within 4095 bytes. So this code is disabled
-            // for now.
-            getEmitter()->emitIns_J_R (INS_adr,
-                                     EA_4BYTE,
-                                     bbFinallyRet,
-                                     REG_LR);
-#else  // 0
                 // Load the address where the finally funclet should return into LR.
                 // The funclet prolog/epilog will do "push {lr}" / "pop {pc}" to do
                 // the return.
                 getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
                 getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, bbFinallyRet, REG_LR);
                 regTracker.rsTrackRegTrash(REG_LR);
-#endif // 0
 
                 // Jump to the finally BB
                 inst_JMP(EJ_jmp, block->bbJumpDest);
@@ -21364,7 +21354,7 @@ regNumber CodeGen::genPInvokeCallProlog(LclVarDsc*            frameListRoot,
 
 #if CPU_LOAD_STORE_ARCH
     regNumber tmpReg = regSet.rsGrabReg(RBM_ALLINT & ~genRegMask(tcbReg));
-    getEmitter()->emitIns_J_R(INS_adr, EA_PTRSIZE, returnLabel, tmpReg);
+    getEmitter()->emitIns_R_L(INS_adr, EA_PTRSIZE, returnLabel, tmpReg);
     regTracker.rsTrackRegTrash(tmpReg);
     getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, tmpReg, compiler->lvaInlinedPInvokeFrameVar,
                               pInfo->inlinedCallFrameInfo.offsetOfReturnAddress);
