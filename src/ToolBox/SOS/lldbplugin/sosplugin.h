@@ -23,6 +23,3 @@ setsostidCommandInitialize(lldb::SBDebugger debugger);
 
 bool
 setclrpathCommandInitialize(lldb::SBDebugger debugger);
-
-bool
-corerunCommandInitialize(lldb::SBDebugger debugger);
