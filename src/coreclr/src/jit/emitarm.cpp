@@ -1436,6 +1436,19 @@ DONE:
 
 /*****************************************************************************
  *
+ *  emitIns_valid_imm_for_vldst_offset() returns true when the immediate 'imm'
+ *   can be encoded as the offset in a vldr/vstr instruction, i.e. when it is
+ *   a non-negative multiple of 4 that is less than 1024.
+ */
+/*static*/ bool emitter::emitIns_valid_imm_for_vldst_offset(int imm)
+{
+    if ((imm & 0x3fc) == imm)
+        return true;
+    return false;
+}
+
+/*****************************************************************************
+ *
  *  Add an instruction with no operands.
  */
 
