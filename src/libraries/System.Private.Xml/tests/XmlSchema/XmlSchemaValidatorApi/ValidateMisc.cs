@@ -769,7 +769,7 @@ namespace System.Xml.Tests
  </sub>
 </root>";
 
-        public void CreateSchema1()
+        public void CreateSchema1(string testDirectory)
         {
             string commonxsd = @"<?xml version='1.0' encoding='utf-8'?>
 <Schema:schema  elementFormDefault='qualified'
@@ -798,21 +798,21 @@ namespace System.Xml.Tests
  <Schema:element name='sub' type='CommonType'/>
 </Schema:schema>";
 
-            using (XmlWriter w = XmlWriter.Create("commonstructure.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "commonstructure.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(commonxsd)))
                 {
                     w.WriteNode(r, true);
                 }
             }
-            using (XmlWriter w = XmlWriter.Create("subschema1.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "subschema1.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(sub1)))
                 {
                     w.WriteNode(r, true);
                 }
             }
-            using (XmlWriter w = XmlWriter.Create("subschema2.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "subschema2.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(sub2)))
                 {
@@ -821,7 +821,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public void CreateSchema2()
+        public void CreateSchema2(string testDirectory)
         {
             string sub1 = @"<?xml version='1.0' encoding='utf-8'?>
 <Schema:schema targetNamespace='sub1'
@@ -862,28 +862,28 @@ namespace System.Xml.Tests
  </Schema:complexType>
 </Schema:schema>";
 
-            using (XmlWriter w = XmlWriter.Create("commonstructure1.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "commonstructure1.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(commonxsd1)))
                 {
                     w.WriteNode(r, true);
                 }
             }
-            using (XmlWriter w = XmlWriter.Create("commonstructure2.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "commonstructure2.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(commonxsd2)))
                 {
                     w.WriteNode(r, true);
                 }
             }
-            using (XmlWriter w = XmlWriter.Create("subschema1.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "subschema1.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(sub1)))
                 {
                     w.WriteNode(r, true);
                 }
             }
-            using (XmlWriter w = XmlWriter.Create("subschema2.xsd"))
+            using (XmlWriter w = XmlWriter.Create(Path.Combine(testDirectory, "subschema2.xsd")))
             {
                 using (XmlReader r = XmlReader.Create(new StringReader(sub2)))
                 {
@@ -894,48 +894,66 @@ namespace System.Xml.Tests
 
         //TFS_538324
         [Fact]
+        [ActiveIssue(20148, ~TestPlatforms.Windows)]
         public void XSDValidationGeneratesInvalidError_1()
         {
-            Initialize();
-            CreateSchema1();
-            XmlReaderSettings settings = new XmlReaderSettings();
-            settings.XmlResolver = new XmlUrlResolver();
-            settings.Schemas.XmlResolver = new XmlUrlResolver();
-            settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd)));
-            settings.ValidationType = ValidationType.Schema;
-            XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
-            XmlDocument doc = new XmlDocument();
+            using (var tempDirectory = new TempDirectory())
+            {
+                Initialize();
+                CreateSchema1(tempDirectory.Path);
+                XmlReaderSettings settings = new XmlReaderSettings();
+                settings.XmlResolver = new XmlUrlResolver();
+                settings.Schemas.XmlResolver = new XmlUrlResolver();
+                // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
+                settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
+                settings.ValidationType = ValidationType.Schema;
+                XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
+                XmlDocument doc = new XmlDocument();
 
-            doc.Load(reader);
+                doc.Load(reader);
 
-            ValidationEventHandler valEventHandler = new ValidationEventHandler(ValidationCallback);
-            doc.Validate(valEventHandler);
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
-            return;
+                ValidationEventHandler valEventHandler = new ValidationEventHandler(ValidationCallback);
+                doc.Validate(valEventHandler);
+                Assert.Equal(warningCount, 0);
+                Assert.Equal(errorCount, 0);
+            }
         }
 
         //TFS_538324
         [Fact]
+        [ActiveIssue(20148, ~TestPlatforms.Windows)]
         public void XSDValidationGeneratesInvalidError_2()
         {
-            Initialize();
-            CreateSchema2();
-            XmlReaderSettings settings = new XmlReaderSettings();
-            settings.XmlResolver = new XmlUrlResolver();
-            settings.Schemas.XmlResolver = new XmlUrlResolver();
-            settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd)));
-            settings.ValidationType = ValidationType.Schema;
-            XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
-            XmlDocument doc = new XmlDocument();
+            using (var tempDirectory = new TempDirectory())
+            {
+                Initialize();
+                CreateSchema2(tempDirectory.Path);
+                XmlReaderSettings settings = new XmlReaderSettings();
+                settings.XmlResolver = new XmlUrlResolver();
+                settings.Schemas.XmlResolver = new XmlUrlResolver();
+                // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
+                settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
+                settings.ValidationType = ValidationType.Schema;
+                XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
+                XmlDocument doc = new XmlDocument();
 
-            doc.Load(reader);
+                doc.Load(reader);
 
-            ValidationEventHandler valEventHandler = new ValidationEventHandler(ValidationCallback);
-            doc.Validate(valEventHandler);
-            Assert.Equal(warningCount, 0);
-            Assert.Equal(errorCount, 0);
-            return;
+                ValidationEventHandler valEventHandler = new ValidationEventHandler(ValidationCallback);
+                doc.Validate(valEventHandler);
+                Assert.Equal(warningCount, 0);
+                Assert.Equal(errorCount, 0);
+            }
+        }
+
+        private string EnsureTrailingSlash(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                throw new ArgumentException();
+
+            return path[path.Length - 1] == Path.DirectorySeparatorChar ? 
+                path : 
+                path + Path.DirectorySeparatorChar;
         }
 
         private static string xsd445844 = @"<?xml version='1.0' encoding='utf-8' ?>
