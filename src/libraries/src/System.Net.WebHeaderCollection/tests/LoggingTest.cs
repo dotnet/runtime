@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
-    public class LoggingTest
+    public class WebHeaderCollectionLoggingTest
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
