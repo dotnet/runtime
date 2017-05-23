@@ -74,5 +74,12 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
 }
 
 stage ('Execute Tests') {
-    waitForHelixRuns(submittedHelixJson, "Linux x64 Tests - ${Config}")
+    def contextBase
+    if (OuterLoop) {
+        contextBase = "Linux x64 Tests w/outer - ${Config}"
+    }
+    else {
+        contextBase = "Linux x64 Tests - ${Config}"
+    }
+    waitForHelixRuns(submittedHelixJson, contextBase)
 }

@@ -58,5 +58,12 @@ simpleNode('Windows_NT','latest') {
 }
 
 stage ('Execute Tests') {
-    waitForHelixRuns(submittedHelixJson, "Windows x64 Tests - ${Config}")
+    def contextBase
+    if (OuterLoop) {
+        contextBase = "Win x64 tests w/outer - ${Config}"
+    }
+    else {
+        contextBase = "Win x64 tests - ${Config}"
+    }
+    waitForHelixRuns(submittedHelixJson, contextBase)
 }
