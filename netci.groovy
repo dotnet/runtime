@@ -57,7 +57,7 @@ platformList.each { platform ->
         if (architecture == 'arm' || architecture == 'armel') {
             dockerContainer = "ubuntu-14.04-cross-0cd4667-20172211042239"
             dockerCommand = "docker run -e ROOTFS_DIR=/crossrootfs/${architecture} --name ${dockerContainer} --rm -v \${WORKSPACE}:${dockerWorkingDirectory} -w=${dockerWorkingDirectory} ${dockerRepository}:${dockerContainer}"
-            buildArgs += " -PortableBuild=true -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true"
+            buildArgs += " -DistroRid=linux-${architecture} -SkipTests=true -DisableCrossgen=true -CrossBuild=true"
             buildCommand = "${dockerCommand} ./build.sh ${buildArgs}"
 
             osForGHTrigger = "Linux"
@@ -75,6 +75,7 @@ platformList.each { platform ->
     else {
         // Jenkins non-Ubuntu CI machines don't have docker
         buildCommand = "./build.sh ${buildArgs}"
+        os = "OSX10.12"
     }
 
     def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
