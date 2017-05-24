@@ -2,7 +2,9 @@
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Library Name="*System.Configuration.ConfigurationManager*">
     <Assembly Name="System.Configuration.ConfigurationManager">
-       <Type Name="System.Configuration.ClientConfigurationHost" Dynamic="Required All" Activate="Required All" />
+       <!--Both types are instantiated using CreateInstance from TypeUtil.CreateInstance -->
+       <Type Name="System.Configuration.ClientConfigurationHost" Dynamic="Required All" />
+       <Type Name="System.Configuration.ProtectedConfigurationSection" Dynamic="Required All" />
     </Assembly>
   </Library>
 </Directives>
