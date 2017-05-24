@@ -22,9 +22,9 @@
          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
     <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
-  
-  
+
   <Import Project="netcoreapp1.0.props" />
+  <Import Project="netcoreapp1.1.props" />
 
   <!-- Identity / Reference package content -->
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
