@@ -17,6 +17,7 @@ namespace System.Net
         private List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
         private List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
         private Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
+        private bool _unsafeConnectionNtlmAuthentication;
 
         public HttpListenerTimeoutManager TimeoutManager
         {
@@ -61,8 +62,13 @@ namespace System.Net
 
         public bool UnsafeConnectionNtlmAuthentication
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            // NTLM isn't currently supported, so this is a nop anyway and we can just roundtrip the value
+            get => _unsafeConnectionNtlmAuthentication;
+            set
+            {
+                CheckDisposed();
+                _unsafeConnectionNtlmAuthentication = value;
+            }
         }
 
         public void Stop()
