@@ -1449,6 +1449,14 @@ class DacHolder
 // Holder-specific clr::SafeAddRef and clr::SafeRelease helper functions.
 namespace clr
 {
+    // Copied from utilcode.h. We can't include the header directly because there
+    // is circular reference.
+    // Forward declare the overload which is used by 'SafeAddRef' below.
+    template <typename ItfT>
+    static inline
+    typename std::enable_if< std::is_pointer<ItfT>::value, ItfT >::type
+    SafeAddRef(ItfT pItf);
+
     template < typename ItfT > __checkReturn
     ItfT *
     SafeAddRef(ReleaseHolder<ItfT> & pItf)
