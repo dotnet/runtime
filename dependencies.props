@@ -9,20 +9,20 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>08ad835fac10ec04e5302ab59fda6cacdde98a60</CoreFxCurrentRef>
-    <CoreClrCurrentRef>08ad835fac10ec04e5302ab59fda6cacdde98a60</CoreClrCurrentRef>
-    <StandardCurrentRef>08ad835fac10ec04e5302ab59fda6cacdde98a60</StandardCurrentRef>
-    <WCFCurrentRef>08ad835fac10ec04e5302ab59fda6cacdde98a60</WCFCurrentRef>
+    <CoreFxCurrentRef>2ded50b86b1599881e556363fa62bc7bde850525</CoreFxCurrentRef>
+    <CoreClrCurrentRef>2ded50b86b1599881e556363fa62bc7bde850525</CoreClrCurrentRef>
+    <StandardCurrentRef>2ded50b86b1599881e556363fa62bc7bde850525</StandardCurrentRef>
+    <WCFCurrentRef>2ded50b86b1599881e556363fa62bc7bde850525</WCFCurrentRef>
   </PropertyGroup>
   
   <PropertyGroup>
-    <CoreFxVersion>4.4.0-preview2-25322-03</CoreFxVersion>
-    <PlatformPackageVersion>2.0.0-preview2-25322-03</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.0.0-preview2-25322-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <CoreFxVersion>4.4.0-preview2-25324-02</CoreFxVersion>
+    <PlatformPackageVersion>2.0.0-preview2-25324-02</PlatformPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.0.0-preview2-25324-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
-    <NETStandardVersion>2.0.0-preview2-25322-01</NETStandardVersion>
+    <NETStandardVersion>2.0.0-preview2-25324-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.4.0-preview2-25322-02</WcfVersion>
+    <WcfVersion>4.4.0-preview2-25324-01</WcfVersion>
   </PropertyGroup>
   
   <!-- Package dependency verification/auto-upgrade configuration. -->
