@@ -80,7 +80,7 @@ class SampleProfilerEventInstance : public EventPipeEventInstance
 
 public:
 
-    SampleProfilerEventInstance(Thread *pThread);
+    SampleProfilerEventInstance(EventPipeEvent &event, Thread *pThread, BYTE *pData, unsigned int length);
 };
 
 #endif // FEATURE_PERFTRACING

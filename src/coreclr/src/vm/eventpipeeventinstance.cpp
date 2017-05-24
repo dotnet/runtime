@@ -198,8 +198,8 @@ bool EventPipeEventInstance::EnsureConsistency()
 }
 #endif // _DEBUG
 
-SampleProfilerEventInstance::SampleProfilerEventInstance(Thread *pThread)
-    :EventPipeEventInstance(*SampleProfiler::s_pThreadTimeEvent, pThread->GetOSThreadId(), NULL, 0)
+SampleProfilerEventInstance::SampleProfilerEventInstance(EventPipeEvent &event, Thread *pThread, BYTE *pData, unsigned int length)
+    :EventPipeEventInstance(event, pThread->GetOSThreadId(), pData, length)
 {
     LIMITED_METHOD_CONTRACT;
 }
