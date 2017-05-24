@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
-    [Serializable]
     public class CultureNotFoundException : ArgumentException
     {
         private string _invalidCultureName; // unrecognized culture name

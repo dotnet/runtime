@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    [Serializable]
     public partial class FileLoadException : IOException
     {
         public FileLoadException()

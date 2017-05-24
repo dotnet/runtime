@@ -51,7 +51,6 @@ namespace System.Collections.Generic
     // reasons. Adding another base class (even one with no fields)
     // means another generic instantiation, which can be costly esp.
     // for value types.
-
     [Serializable]
     internal sealed class GenericComparer<T> : Comparer<T> where T : IComparable<T>
     {
@@ -112,7 +111,6 @@ namespace System.Collections.Generic
             GetType().GetHashCode();
     }
 
-    [Serializable]
     internal sealed class ComparisonComparer<T> : Comparer<T>
     {
         private readonly Comparison<T> _comparison;
@@ -133,7 +131,6 @@ namespace System.Collections.Generic
     // and have a SerializationInfo/StreamingContext ctor,
     // since we want to serialize as ObjectComparer for
     // back-compat reasons (see below).
-
     [Serializable]
     internal sealed class Int32EnumComparer<T> : Comparer<T>, ISerializable where T : struct
     {

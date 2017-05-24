@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class StrongNameKeyPair : IDeserializationCallback, ISerializable
     {
         private bool _keyPairExported;

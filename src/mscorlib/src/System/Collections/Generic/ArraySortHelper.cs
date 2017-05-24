@@ -368,7 +368,6 @@ namespace System.Collections.Generic
         }
     }
 
-    [Serializable()]
     internal class GenericArraySortHelper<T>
         : IArraySortHelper<T>
         where T : IComparable<T>

@@ -149,7 +149,6 @@ namespace System.Resources
     // is one such example.
     //
 
-    [Serializable]
     public class ResourceManager
     {
         internal class CultureNameResourceSetPair

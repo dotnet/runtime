@@ -316,7 +316,6 @@ namespace System
             }
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;

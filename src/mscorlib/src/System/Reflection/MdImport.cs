@@ -161,7 +161,6 @@ namespace System.Reflection
         Invalid = 0x7FFFFFFF,
     }
 
-    [Serializable]
     internal struct ConstArray
     {
         public IntPtr Signature { get { return m_constArray; } }
@@ -186,7 +185,6 @@ namespace System.Reflection
         internal IntPtr m_constArray;
     }
 
-    [Serializable]
     internal struct MetadataToken
     {
         #region Implicit Cast Operators

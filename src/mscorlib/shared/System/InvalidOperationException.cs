@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class InvalidOperationException : SystemException
     {
         public InvalidOperationException()

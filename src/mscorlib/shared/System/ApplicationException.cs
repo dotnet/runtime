@@ -23,7 +23,6 @@ namespace System
     // ApplicationException extends but adds no new functionality to 
     // RecoverableException.
     // 
-    [Serializable]
     public class ApplicationException : Exception
     {
         // Creates a new ApplicationException with its message string set to

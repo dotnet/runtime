@@ -44,7 +44,6 @@ namespace System.Threading
         }
     }
 
-    [Serializable]
     public sealed class ExecutionContext : IDisposable, ISerializable
     {
         internal static readonly ExecutionContext Default = new ExecutionContext();

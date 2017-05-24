@@ -30,7 +30,6 @@ using System.Reflection;
 
 namespace System.IO
 {
-    [Serializable]
     public abstract class Stream : MarshalByRefObject, IDisposable
     {
         public static readonly Stream Null = new NullStream();
@@ -854,7 +853,6 @@ namespace System.IO
             SynchronousAsyncResult.EndWrite(asyncResult);
         }
 
-        [Serializable]
         private sealed class NullStream : Stream
         {
             internal NullStream() { }
@@ -1093,7 +1091,6 @@ namespace System.IO
 
         // SyncStream is a wrapper around a stream that takes 
         // a lock for every operation making it thread safe.
-        [Serializable]
         internal sealed class SyncStream : Stream, IDisposable
         {
             private Stream _stream;

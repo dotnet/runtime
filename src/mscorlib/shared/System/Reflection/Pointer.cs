@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     [CLSCompliant(false)]
     public sealed unsafe class Pointer : ISerializable
     {

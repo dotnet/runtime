@@ -42,7 +42,6 @@ namespace System.Globalization
     **      Hijri       0001/01/01   9666/04/03
     */
 
-    [Serializable]
     public partial class HijriCalendar : Calendar
     {
         public static readonly int HijriEra = 1;

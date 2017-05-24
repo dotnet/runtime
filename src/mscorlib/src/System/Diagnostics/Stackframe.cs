@@ -12,7 +12,6 @@ using System.Diagnostics.Contracts;
 namespace System.Diagnostics
 {
     // There is no good reason for the methods of this class to be virtual.
-    [Serializable]
     public class StackFrame
     {
         private MethodBase method;

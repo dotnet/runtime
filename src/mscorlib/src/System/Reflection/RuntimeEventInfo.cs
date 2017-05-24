@@ -10,7 +10,6 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal unsafe sealed class RuntimeEventInfo : EventInfo, ISerializable
     {
         #region Private Data Members

@@ -8,7 +8,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
-    [Serializable]
     internal class CompatibleComparer : IEqualityComparer
     {
         private IComparer _comparer;

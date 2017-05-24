@@ -15,7 +15,6 @@ namespace System
     using System.Diagnostics;
     using System.Diagnostics.Contracts;
 
-    [Serializable]
     [ClassInterface(ClassInterfaceType.AutoDual)]
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class Delegate : ICloneable, ISerializable

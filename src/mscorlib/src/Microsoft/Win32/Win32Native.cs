@@ -399,7 +399,6 @@ namespace Microsoft.Win32
             internal int bInheritHandle = 0;
         }
 
-        [Serializable]
         [StructLayout(LayoutKind.Sequential)]
         internal struct WIN32_FILE_ATTRIBUTE_DATA
         {
@@ -723,7 +722,6 @@ namespace Microsoft.Win32
         }
 
         // Win32 Structs in N/Direct style
-        [Serializable]
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         [BestFitMapping(false)]
         internal class WIN32_FIND_DATA

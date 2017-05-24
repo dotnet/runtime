@@ -15,7 +15,6 @@ namespace System.Diagnostics
     // 
     // The default filter brings up a simple Win32 dialog with 3 buttons.
 
-    [Serializable]
     abstract internal class AssertFilter
     {
         // Called when an assert fails.  This should be overridden with logic which

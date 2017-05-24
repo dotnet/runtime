@@ -18,7 +18,6 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    [Serializable]
     public class IOException : SystemException
     {
         // For debugging purposes, store the complete path in the IOException

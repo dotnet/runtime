@@ -18,7 +18,6 @@ namespace System.Text
     // Latin1Encoding is a simple override to optimize the GetString version of Latin1Encoding.
     // because of the best fit cases we can't do this when encoding the string, only when decoding
     //
-    [Serializable]
     internal class Latin1Encoding : EncodingNLS, ISerializable
     {
         // Used by Encoding.Latin1 for lazy initialization

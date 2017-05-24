@@ -17,7 +17,6 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public class SafeArrayTypeMismatchException : SystemException
     {
         public SafeArrayTypeMismatchException()

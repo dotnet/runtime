@@ -21,7 +21,6 @@ namespace System.Text
     // of Encoding objects.
     //
 
-    [Serializable]
     internal class DecoderNLS : Decoder, ISerializable
     {
         // Remember our encoding

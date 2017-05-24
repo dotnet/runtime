@@ -20,7 +20,6 @@ namespace System.Globalization
     // This is public because GetTextElement() is public.
     //
 
-    [Serializable]
     public class TextElementEnumerator : IEnumerator
     {
         private String _str;

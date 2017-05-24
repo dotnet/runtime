@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class NotFiniteNumberException : ArithmeticException
     {
         private double _offendingNumber;

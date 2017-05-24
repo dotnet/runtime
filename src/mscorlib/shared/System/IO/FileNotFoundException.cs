@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 namespace System.IO
 {
     // Thrown when trying to access a file that doesn't exist on disk.
-    [Serializable]
     public partial class FileNotFoundException : IOException
     {
         public FileNotFoundException()

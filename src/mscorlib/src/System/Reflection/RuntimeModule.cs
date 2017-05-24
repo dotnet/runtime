@@ -12,7 +12,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal class RuntimeModule : Module
     {
         internal RuntimeModule() { throw new NotSupportedException(); }

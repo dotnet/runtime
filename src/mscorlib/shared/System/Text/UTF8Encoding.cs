@@ -34,7 +34,6 @@ namespace System.Text
     // used mostly to distinguish UTF-8 text from other encodings, and doesn't
     // switch the byte orderings.
 
-    [Serializable]
     public class UTF8Encoding : Encoding
     {
         /*
@@ -53,7 +52,6 @@ namespace System.Text
         private const int UTF8_CODEPAGE = 65001;
 
         // Allow for devirtualization (see https://github.com/dotnet/coreclr/pull/9230)
-        [Serializable]
         internal sealed class UTF8EncodingSealed : UTF8Encoding
         {
             public UTF8EncodingSealed(bool encoderShouldEmitUTF8Identifier) : base(encoderShouldEmitUTF8Identifier) { }
@@ -2521,7 +2519,6 @@ namespace System.Text
                    UTF8_CODEPAGE + (_emitUTF8Identifier ? 1 : 0);
         }
 
-        [Serializable]
         private sealed class UTF8Encoder : EncoderNLS, ISerializable
         {
             // We must save a high surrogate value until the next call, looking
@@ -2593,7 +2590,6 @@ namespace System.Text
             }
         }
 
-        [Serializable]
         private sealed class UTF8Decoder : DecoderNLS, ISerializable
         {
             // We'll need to remember the previous information. See the comments around definition
