@@ -173,6 +173,7 @@ namespace System
             return false;
         }
 
+        public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsDebian8 => IsDistroAndVersion("debian", "8");
         public static bool IsUbuntu1404 => IsDistroAndVersion("ubuntu", "14.04");
         public static bool IsCentos7 => IsDistroAndVersion("centos", "7");
