@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.4
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Process.Tests", "tests\System.Diagnostics.Process.Tests.csproj", "{E1114510-844C-4BB2-BBAD-8595BD16E24B}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -20,8 +20,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Process", "ref\System.Diagnostics.Process.csproj", "{98B33275-39D8-4997-867D-04C69C69885E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+	ProjectSection(SolutionItems) = preProject
+		tests\Configurations.props = tests\Configurations.props
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+	ProjectSection(SolutionItems) = preProject
+		src\PinvokeAnalyzerExceptionList.analyzerdata = src\PinvokeAnalyzerExceptionList.analyzerdata
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject

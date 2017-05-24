@@ -784,28 +784,6 @@ namespace System.Diagnostics
         }
 
         /// <devdoc>
-        ///     Release the temporary handle we used to get process information.
-        ///     If we used the process handle stored in the process object (we have all access to the handle,) don't release it.
-        /// </devdoc>
-        /// <internalonly/>
-        private void ReleaseProcessHandle(SafeProcessHandle handle)
-        {
-            if (handle == null)
-            {
-                return;
-            }
-
-            if (_haveProcessHandle && handle == _processHandle)
-            {
-                return;
-            }
-#if FEATURE_TRACESWITCH
-            Debug.WriteLineIf(_processTracing.TraceVerbose, "Process - CloseHandle(process)");
-#endif
-            handle.Dispose();
-        }
-
-        /// <devdoc>
         ///     This is called from the threadpool when a process exits.
         /// </devdoc>
         /// <internalonly/>

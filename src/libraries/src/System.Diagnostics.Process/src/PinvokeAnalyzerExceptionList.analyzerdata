@@ -32,3 +32,4 @@ user32.dll!IsWindowVisible
 user32.dll!PostMessageW
 user32.dll!SendMessageTimeoutW
 user32.dll!WaitForInputIdle
+shell32.dll!ShellExecuteExW

@@ -30,14 +30,20 @@
     <Compile Include="System\Collections\Specialized\DictionaryWrapper.cs" />
     <Compile Include="System\Diagnostics\AsyncStreamReader.cs" />
     <Compile Include="System\Diagnostics\DataReceivedEventArgs.cs" />
-    <Compile Include="System\Diagnostics\Process.cs" />
+    <Compile Include="System\Diagnostics\Process.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Diagnostics\ProcessInfo.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.cs" />
-    <Compile Include="System\Diagnostics\ProcessModule.cs" />
+    <Compile Include="System\Diagnostics\ProcessModule.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Diagnostics\ProcessModuleCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessPriorityClass.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.cs" />
-    <Compile Include="System\Diagnostics\ProcessThread.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Diagnostics\ProcessThreadCollection.cs" />
     <Compile Include="System\Diagnostics\ProcessWindowStyle.cs" />
     <Compile Include="System\Diagnostics\ThreadInfo.cs" />
@@ -52,196 +58,199 @@
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.EnumWindows.cs">
-      <Link>Common\Interop\Windows\Interop.EnumWindows.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.EnumWindows.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowTextLength.cs">
-      <Link>Common\Interop\Windows\Interop.GetWindowTextLength.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowTextLengthW.cs">
+      <Link>Common\Interop\Windows\user32\Interop.GetWindowTextLengthW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.SendMessageTimeout.cs">
-      <Link>Common\Interop\Windows\Interop.SendMessageTimeout.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.SendMessageTimeout.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowText.cs">
-      <Link>Common\Interop\Windows\Interop.GetWindowText.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowTextW.cs">
+      <Link>Common\Interop\Windows\user32\Interop.GetWindowTextW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindow.cs">
-      <Link>Common\Interop\Windows\Interop.GetWindow.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.GetWindow.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.PostMessage.cs">
-      <Link>Common\Interop\Windows\Interop.PostMessage.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.PostMessage.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowLong.cs">
-      <Link>Common\Interop\Windows\Interop.GetWindowLong.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.GetWindowLong.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.WaitForInputIdle.cs">
-      <Link>Common\Interop\Windows\Interop.WaitForInputIdle.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.WaitForInputIdle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.IsWindowVisible.cs">
-      <Link>Common\Interop\Windows\Interop.IsWindowVisible.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.IsWindowVisible.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetWindowThreadProcessId.cs">
-      <Link>Common\Interop\Windows\Interop.GetWindowThreadProcessId.cs</Link>
+      <Link>Common\Interop\Windows\user32\Interop.GetWindowThreadProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CloseHandle.cs">
-      <Link>Common\Interop\Windows\Interop.CloseHandle.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.PERF_INFO.cs">
-      <Link>Common\Interop\Windows\Interop.PERF_INFO.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.PERF_INFO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.IsWow64Process_SafeProcessHandle.cs">
-      <Link>Common\Interop\Windows\Interop.IsWow64Process_SafeProcessHandle.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.IsWow64Process_SafeProcessHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetExitCodeProcess.cs">
-      <Link>Common\Interop\Windows\Interop.GetExitCodeProcess.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetExitCodeProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessTimes.cs">
-      <Link>Common\Interop\Windows\Interop.GetProcessTimes.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetProcessTimes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetThreadTimes.cs">
-      <Link>Common\Interop\Windows\Interop.GetThreadTimes.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetThreadTimes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetStdHandle.cs">
-      <Link>Common\Interop\Windows\Interop.GetStdHandle.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetStdHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateProcess.cs">
-      <Link>Common\Interop\Windows\Interop.CreateProcess.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.CreateProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.TerminateProcess.cs">
-      <Link>Common\Interop\Windows\Interop.TerminateProcess.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.TerminateProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcess_SafeProcessHandle.cs">
-      <Link>Common\Interop\Windows\Interop.GetCurrentProcess.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenProcess.cs">
-      <Link>Common\Interop\Windows\Interop.OpenProcess.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.OpenProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
-      <Link>Common\Interop\Windows\Interop.EnumProcessModules.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcesses.cs">
-      <Link>Common\Interop\Windows\Interop.EnumProcesses.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.EnumProcesses.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleInformation.cs">
-      <Link>Common\Interop\Windows\Interop.GetModuleInformation.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetModuleInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleBaseName.cs">
-      <Link>Common\Interop\Windows\Interop.GetModuleBaseName.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetModuleBaseName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetModuleFileNameEx.cs">
-      <Link>Common\Interop\Windows\Interop.GetModuleFileNameEx.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetModuleFileNameEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetProcessWorkingSetSizeEx.cs">
-      <Link>Common\Interop\Windows\Interop.SetProcessWorkingSetSizeEx.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetProcessWorkingSetSizeEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessWorkingSetSizeEx.cs">
-      <Link>Common\Interop\Windows\Interop.GetProcessWorkingSetSizeEx.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetProcessWorkingSetSizeEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetProcessAffinityMask.cs">
-      <Link>Common\Interop\Windows\Interop.SetProcessAffinityMask.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetProcessAffinityMask.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs">
-      <Link>Common\Interop\Windows\Interop.GetProcessAffinityMask.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetThreadPriorityBoost.cs">
-      <Link>Common\Interop\Windows\Interop.GetThreadPriorityBoost.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetThreadPriorityBoost.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadPriorityBoost.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadPriorityBoost.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetThreadPriorityBoost.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessPriorityBoost.cs">
-      <Link>Common\Interop\Windows\Interop.GetProcessPriorityBoost.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetProcessPriorityBoost.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetProcessPriorityBoost.cs">
-      <Link>Common\Interop\Windows\Interop.SetProcessPriorityBoost.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetProcessPriorityBoost.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenThread.cs">
-      <Link>Common\Interop\Windows\Interop.OpenThread.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.OpenThread.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadPriority.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadPriority.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetThreadPriority.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetThreadPriority.cs">
-      <Link>Common\Interop\Windows\Interop.GetThreadPriority.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetThreadPriority.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadAffinityMask.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadAffinityMask.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetThreadAffinityMask.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadIdealProcessor.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadIdealProcessor.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetThreadIdealProcessor.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetPriorityClass.cs">
-      <Link>Common\Interop\Windows\Interop.GetPriorityClass.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetPriorityClass.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetPriorityClass.cs">
-      <Link>Common\Interop\Windows\Interop.SetPriorityClass.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SetPriorityClass.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs">
-      <Link>Common\Interop\Windows\Interop.NtQueryInformationProcess.cs</Link>
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
-      <Link>Common\Interop\Windows\Interop.NtQuerySystemInformation.cs</Link>
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs">
-      <Link>Common\Interop\Windows\Interop.DuplicateHandle.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken.cs">
-      <Link>Common\Interop\Windows\Interop.OpenProcessToken.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.OpenProcessToken.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LookupPrivilegeValue.cs">
-      <Link>Common\Interop\Windows\Interop.LookupPrivilegeValue.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.LookupPrivilegeValue.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges.cs">
-      <Link>Common\Interop\Windows\Interop.AdjustTokenPrivileges.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.AdjustTokenPrivileges.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetComputerName.cs">
-      <Link>Common\Interop\Windows\Interop.GetComputerName.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetComputerName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs">
-      <Link>Common\Interop\Windows\Interop.GetCurrentProcessId.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCurrentProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleCP.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleCP.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetConsoleCP.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetConsoleOutputCP.cs">
-      <Link>Common\Interop\Windows\Interop.GetConsoleOutputCP.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.GetConsoleOutputCP.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CreateProcessWithLogon.cs">
-      <Link>Common\Interop\Windows\Interop.CreateProcessWithLogon.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.CreateProcessWithLogon.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LUID.cs">
-      <Link>Common\Interop\Windows\Interop.LUID.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.LUID.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreatePipe_SafeFileHandle.cs">
-      <Link>Common\Interop\Windows\Interop.CreatePipe.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.CreatePipe.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
       <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ThreadOptions.cs">
-      <Link>Common\Interop\Windows\Interop.ThreadOptions.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.ThreadOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.HandleTypes.cs">
-      <Link>Common\Interop\Windows\Interop.HandleTypes.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ProcessOptions.cs">
-      <Link>Common\Interop\Windows\Interop.ProcessOptions.cs</Link>
+      <Link>Common\Interop\Windows\advapi32\Interop.ProcessOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.HandleOptions.cs">
-      <Link>Common\Interop\Windows\Interop.ProcessOptions.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.ProcessOptions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
-      <Link>Common\Interop\Windows\Interop.MultiByteToWideChar.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
-      <Link>Common\Interop\Windows\Interop.WideCharToMultiByte.cs</Link>
+      <Link>Common\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="$(CommonPath)\Interop\Windows\shell32\Interop.ShellExecuteExW.cs">
+      <Link>Common\Interop\Windows\shell32\Interop.ShellExecuteExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Text\ConsoleEncoding.cs">
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
@@ -265,10 +274,22 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeTokenHandle.cs" />
     <Compile Include="System\Diagnostics\PerformanceCounterLib.cs" />
-    <Compile Include="System\Diagnostics\Process.Windows.cs" />
+    <Compile Include="System\Diagnostics\Process.Windows.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\Process.Win32.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\Process.WinRT.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Diagnostics\ProcessManager.Windows.cs" />
     <Compile Include="System\Diagnostics\ProcessStartInfo.Windows.cs" />
-    <Compile Include="System\Diagnostics\ProcessThread.Windows.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\ProcessStartInfo.Win32.cs" />
+    <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\ProcessStartInfo.WinRT.cs" />
+    <Compile Include="System\Diagnostics\ProcessThread.Windows.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Diagnostics\ProcessThreadTimes.cs" />
     <Compile Include="System\Diagnostics\ProcessWaitHandle.Windows.cs" />
   </ItemGroup>
