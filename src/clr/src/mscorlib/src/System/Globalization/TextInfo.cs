@@ -19,7 +19,6 @@ using System.Text;
 
 namespace System.Globalization
 {
-    [Serializable]
     public partial class TextInfo : ICloneable, IDeserializationCallback
     {
         ////--------------------------------------------------------------------//

@@ -123,7 +123,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }
 
     // Note: One day we may make these return IReadOnlyCollection<T>
-    [Serializable]
     [DebuggerDisplay("Count = {Count}")]
     internal sealed class ReadOnlyDictionaryKeyCollection<TKey, TValue> : IEnumerable<TKey>
     {
@@ -178,7 +177,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }  // public class ReadOnlyDictionaryKeyCollection<TKey, TValue>
 
 
-    [Serializable]
     internal sealed class ReadOnlyDictionaryKeyEnumerator<TKey, TValue> : IEnumerator<TKey>
     {
         private readonly IReadOnlyDictionary<TKey, TValue> dictionary;
@@ -220,7 +218,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }  // class ReadOnlyDictionaryKeyEnumerator<TKey, TValue>
 
 
-    [Serializable]
     [DebuggerDisplay("Count = {Count}")]
     internal sealed class ReadOnlyDictionaryValueCollection<TKey, TValue> : IEnumerable<TValue>
     {
@@ -279,7 +276,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }  // public class ReadOnlyDictionaryValueCollection<TKey, TValue>
 
 
-    [Serializable]
     internal sealed class ReadOnlyDictionaryValueEnumerator<TKey, TValue> : IEnumerator<TValue>
     {
         private readonly IReadOnlyDictionary<TKey, TValue> dictionary;

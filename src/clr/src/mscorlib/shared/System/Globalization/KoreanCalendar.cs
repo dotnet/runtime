@@ -23,7 +23,6 @@ namespace System.Globalization
     ============================================================================*/
 
 
-    [Serializable]
     public class KoreanCalendar : Calendar
     {
         //

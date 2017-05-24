@@ -14,7 +14,6 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal sealed class RuntimeMethodInfo : MethodInfo, ISerializable, IRuntimeMethodInfo
     {
         #region Private Data Members

@@ -17,7 +17,6 @@ using System.Security;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public sealed class BStrWrapper
     {
         public BStrWrapper(String value)

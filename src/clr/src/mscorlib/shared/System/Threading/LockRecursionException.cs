@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class LockRecursionException : System.Exception
     {
         public LockRecursionException()

@@ -22,7 +22,6 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Serializable]
     public class TypeLoadException : SystemException, ISerializable
     {
         public TypeLoadException()

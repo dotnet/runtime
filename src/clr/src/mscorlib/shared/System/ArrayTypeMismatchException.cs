@@ -18,7 +18,6 @@ namespace System
     // The ArrayMismatchException is thrown when an attempt to store
     // an object of the wrong type within an array occurs.
     // 
-    [Serializable]
     public class ArrayTypeMismatchException : SystemException
     {
         // Creates a new ArrayMismatchException with its message string set to

@@ -9,7 +9,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    [Serializable]
     public sealed class EncoderReplacementFallback : EncoderFallback
     {
         // Our variables

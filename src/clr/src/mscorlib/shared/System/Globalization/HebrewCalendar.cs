@@ -62,7 +62,6 @@ namespace System.Globalization
     // Gregorian to Hebrew Lunar from 1583 to 2239.
 
 
-    [Serializable]
     public class HebrewCalendar : Calendar
     {
         public static readonly int HebrewEra = 1;

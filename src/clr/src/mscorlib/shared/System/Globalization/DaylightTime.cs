@@ -5,7 +5,6 @@
 namespace System.Globalization
 {
     // This class represents a starting/ending time for a period of daylight saving time.
-    [Serializable]
     public class DaylightTime
     {
         private readonly DateTime _start;

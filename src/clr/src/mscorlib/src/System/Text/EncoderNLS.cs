@@ -21,7 +21,6 @@ namespace System.Text
     // of Encoding objects.
     //
 
-    [Serializable]
     internal class EncoderNLS : Encoder, ISerializable
     {
         // Need a place for the last left over character, most of our encodings use this

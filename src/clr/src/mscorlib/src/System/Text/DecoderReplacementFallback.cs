@@ -8,7 +8,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    [Serializable]
     public sealed class DecoderReplacementFallback : DecoderFallback
     {
         // Our variables

@@ -11,7 +11,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
-    [Serializable]
     internal class LogSwitch
     {
         // ! WARNING ! 

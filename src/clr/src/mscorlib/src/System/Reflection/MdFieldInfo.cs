@@ -9,7 +9,6 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal sealed unsafe class MdFieldInfo : RuntimeFieldInfo, ISerializable
     {
         #region Private Data Members

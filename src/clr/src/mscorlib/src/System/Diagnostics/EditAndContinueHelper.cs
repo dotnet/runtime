@@ -16,7 +16,6 @@ using System;
 
 namespace System.Diagnostics
 {
-    [Serializable]
     internal sealed class EditAndContinueHelper
     {
 #pragma warning disable 169

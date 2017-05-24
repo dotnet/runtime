@@ -17,7 +17,6 @@ using System.Security;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public sealed class DispatchWrapper
     {
         public DispatchWrapper(Object obj)

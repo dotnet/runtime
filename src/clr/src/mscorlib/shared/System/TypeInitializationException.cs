@@ -19,7 +19,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class TypeInitializationException : SystemException
     {
         private String _typeName;

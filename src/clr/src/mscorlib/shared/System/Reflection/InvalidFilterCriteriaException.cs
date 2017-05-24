@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class InvalidFilterCriteriaException : ApplicationException
     {
         public InvalidFilterCriteriaException()

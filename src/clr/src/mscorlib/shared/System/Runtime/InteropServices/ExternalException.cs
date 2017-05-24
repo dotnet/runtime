@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices
     // Base exception for COM Interop errors &; Structured Exception Handler
     // exceptions.
     // 
-    [Serializable]
     public class ExternalException : SystemException
     {
         public ExternalException()

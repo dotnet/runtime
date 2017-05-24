@@ -4,7 +4,6 @@
 
 namespace System
 {
-    [Serializable]
     public abstract class MarshalByRefObject
     {
         protected MarshalByRefObject()

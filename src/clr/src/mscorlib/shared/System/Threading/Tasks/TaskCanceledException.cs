@@ -19,7 +19,6 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Represents an exception used to communicate task cancellation.
     /// </summary>
-    [Serializable]
     public class TaskCanceledException : OperationCanceledException
     {
         [NonSerialized]

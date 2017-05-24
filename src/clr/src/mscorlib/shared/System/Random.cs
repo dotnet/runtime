@@ -18,7 +18,6 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Serializable]
     public class Random
     {
         //

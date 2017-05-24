@@ -10,7 +10,6 @@ using System.Threading;
 namespace System.Globalization
 {
     // Gregorian Calendars use Era Info
-    [Serializable]
     internal class EraInfo
     {
         internal int era;          // The value of the era.
@@ -55,7 +54,6 @@ namespace System.Globalization
     // This calendar recognizes two era values:
     // 0 CurrentEra (AD) 
     // 1 BeforeCurrentEra (BC) 
-    [Serializable]
     internal class GregorianCalendarHelper
     {
         // 1 tick = 100ns = 10E-7 second

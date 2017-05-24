@@ -10,7 +10,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    [Serializable]
     public abstract class EncoderFallback
     {
         // disable csharp compiler warning #0414: field assigned unused value

@@ -9,7 +9,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
-    [Serializable]
 #if CORECLR
     internal
 #else

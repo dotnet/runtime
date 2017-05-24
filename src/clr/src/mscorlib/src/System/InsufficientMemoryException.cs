@@ -22,7 +22,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class InsufficientMemoryException : OutOfMemoryException
     {
         public InsufficientMemoryException()

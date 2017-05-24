@@ -13,7 +13,6 @@ using System.Reflection.Emit;
 
 namespace System
 {
-    [Serializable]
     [System.Runtime.InteropServices.ComVisible(true)]
     public abstract class MulticastDelegate : Delegate
     {
@@ -50,49 +49,7 @@ namespace System
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            int targetIndex = 0;
-            Object[] invocationList = _invocationList as Object[];
-            if (invocationList == null)
-            {
-                MethodInfo method = Method;
-                // A MethodInfo object can be a RuntimeMethodInfo, a RefEmit method (MethodBuilder, etc), or a DynamicMethod
-                // One can only create delegates on RuntimeMethodInfo and DynamicMethod.
-                // If it is not a RuntimeMethodInfo (must be a DynamicMethod) or if it is an unmanaged function pointer, throw
-                if (!(method is RuntimeMethodInfo) || IsUnmanagedFunctionPtr())
-                    throw new SerializationException(SR.Serialization_InvalidDelegateType);
-
-                // We can't deal with secure delegates either.
-                if (!InvocationListLogicallyNull() && !_invocationCount.IsNull() && !_methodPtrAux.IsNull())
-                    throw new SerializationException(SR.Serialization_InvalidDelegateType);
-
-                DelegateSerializationHolder.GetDelegateSerializationInfo(info, this.GetType(), Target, method, targetIndex);
-            }
-            else
-            {
-                DelegateSerializationHolder.DelegateEntry nextDe = null;
-                int invocationCount = (int)_invocationCount;
-                for (int i = invocationCount; --i >= 0;)
-                {
-                    MulticastDelegate d = (MulticastDelegate)invocationList[i];
-                    MethodInfo method = d.Method;
-                    // If it is not a RuntimeMethodInfo (must be a DynamicMethod) or if it is an unmanaged function pointer, skip
-                    if (!(method is RuntimeMethodInfo) || IsUnmanagedFunctionPtr())
-                        continue;
-
-                    // We can't deal with secure delegates either.
-                    if (!d.InvocationListLogicallyNull() && !d._invocationCount.IsNull() && !d._methodPtrAux.IsNull())
-                        continue;
-
-                    DelegateSerializationHolder.DelegateEntry de = DelegateSerializationHolder.GetDelegateSerializationInfo(info, d.GetType(), d.Target, method, targetIndex++);
-                    if (nextDe != null)
-                        nextDe.Entry = de;
-
-                    nextDe = de;
-                }
-                // if nothing was serialized it is a delegate over a DynamicMethod, so just throw
-                if (nextDe == null)
-                    throw new SerializationException(SR.Serialization_InvalidDelegateType);
-            }
+            throw new SerializationException(SR.Serialization_DelegatesNotSupported);
         }
 
         // equals returns true IIF the delegate is not null and has the

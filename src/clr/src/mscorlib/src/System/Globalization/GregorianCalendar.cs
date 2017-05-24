@@ -13,9 +13,6 @@ namespace System.Globalization
     // This calendar recognizes two era values:
     // 0 CurrentEra (AD)
     // 1 BeforeCurrentEra (BC)
-
-    [Serializable]
-
     public class GregorianCalendar : Calendar
     {
         /*

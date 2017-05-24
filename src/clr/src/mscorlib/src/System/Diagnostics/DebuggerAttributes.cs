@@ -18,21 +18,18 @@ using System.Diagnostics.Contracts;
 
 namespace System.Diagnostics
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
     public sealed class DebuggerStepThroughAttribute : Attribute
     {
         public DebuggerStepThroughAttribute() { }
     }
 
-    [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor, Inherited = false)]
     public sealed class DebuggerHiddenAttribute : Attribute
     {
         public DebuggerHiddenAttribute() { }
     }
 
-    [Serializable]
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Struct, Inherited = false)]
     public sealed class DebuggerNonUserCodeAttribute : Attribute
     {

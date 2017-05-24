@@ -17,7 +17,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class OutOfMemoryException : SystemException
     {
         public OutOfMemoryException()

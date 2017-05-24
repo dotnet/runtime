@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Security
 {
-    [Serializable]
     public class SecurityException : SystemException
     {
         public SecurityException()
