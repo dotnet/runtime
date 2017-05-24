@@ -6,9 +6,11 @@
     </NETCoreApp11Dependency>
     <NETCoreApp11Dependency Include="Microsoft.CodeAnalysis.CSharp">
       <Version>1.3.0</Version>
+      <Exclude>Compile</Exclude>
     </NETCoreApp11Dependency>
     <NETCoreApp11Dependency Include="Microsoft.CodeAnalysis.VisualBasic">
       <Version>1.3.0</Version>
+      <Exclude>Compile</Exclude>
     </NETCoreApp11Dependency>
     <NETCoreApp11Dependency Include="Microsoft.CSharp">
       <Version>4.3.0</Version>
@@ -99,6 +101,7 @@
     </NETCoreApp11Dependency>
     <NETCoreApp11Dependency Include="System.Runtime.Loader">
       <Version>4.3.0</Version>
+      <Exclude>Compile</Exclude>
     </NETCoreApp11Dependency>
     <NETCoreApp11Dependency Include="System.Security.Cryptography.Algorithms">
       <Version>4.3.0</Version>
