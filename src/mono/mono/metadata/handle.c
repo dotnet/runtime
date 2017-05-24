@@ -252,7 +252,7 @@ mono_handle_stack_alloc (void)
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
 	stack->interior = interior;
-#ifdef MONO_HANDLE_TRACK_OWNER
+#ifdef MONO_HANDLE_TRACK_SP
 	stack->stackmark_sp = NULL;
 #endif
 	return stack;
