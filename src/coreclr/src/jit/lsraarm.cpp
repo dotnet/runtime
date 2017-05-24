@@ -567,49 +567,56 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_ARR_OFFSET:
             // This consumes the offset, if any, the arrObj and the effective index,
             // and produces the flattened offset for this dimension.
-            info->srcCount         = 3;
-            info->dstCount         = 1;
-            info->internalIntCount = 1;
+            info->srcCount = 3;
+            info->dstCount = 1;
 
             // we don't want to generate code for this
             if (tree->gtArrOffs.gtOffset->IsIntegralConst(0))
             {
                 MakeSrcContained(tree, tree->gtArrOffs.gtOffset);
             }
+            else
+            {
+                // Here we simply need an internal register, which must be different
+                // from any of the operand's registers, but may be the same as targetReg.
+                info->internalIntCount = 1;
+            }
             break;
 
         case GT_LEA:
         {
-            GenTreeAddrMode* lea = tree->AsAddrMode();
+            GenTreeAddrMode* lea    = tree->AsAddrMode();
+            unsigned         offset = lea->gtOffset;
 
-            GenTree* base  = lea->Base();
-            GenTree* index = lea->Index();
-            unsigned cns   = lea->gtOffset;
-
-            // This LEA is instantiating an address,
-            // so we set up the srcCount and dstCount here.
+            // This LEA is instantiating an address, so we set up the srcCount and dstCount here.
             info->srcCount = 0;
-            if (base != nullptr)
+            if (lea->HasBase())
             {
                 info->srcCount++;
             }
-            if (index != nullptr)
+            if (lea->HasIndex())
             {
                 info->srcCount++;
             }
             info->dstCount = 1;
 
-            // On ARM we may need a single internal register
-            // (when both conditions are true then we still only need a single internal register)
-            if ((index != nullptr) && (cns != 0))
+            // An internal register may be needed too; the logic here should be in sync with the
+            // genLeaInstruction()'s requirements for a such register.
+            if (lea->HasBase() && lea->HasIndex())
             {
-                // ARM does not support both Index and offset so we need an internal register
-                info->internalIntCount = 1;
+                if (offset != 0)
+                {
+                    // We need a register when we have all three: base reg, index reg and a non-zero offset.
+                    info->internalIntCount = 1;
+                }
             }
-            else if (!emitter::emitIns_valid_imm_for_add(cns, INS_FLAGS_DONT_CARE))
+            else if (lea->HasBase())
             {
-                // This offset can't be contained in the add instruction, so we need an internal register
-                info->internalIntCount = 1;
+                if (!emitter::emitIns_valid_imm_for_add(offset, INS_FLAGS_DONT_CARE))
+                {
+                    // We need a register when we have an offset that is too large to encode in the add instruction.
+                    info->internalIntCount = 1;
+                }
             }
         }
         break;
