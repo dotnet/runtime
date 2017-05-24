@@ -1222,7 +1222,7 @@ public:
     inline void SetFieldDescList (FieldDesc* pFieldDescList)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFieldDescList.SetValue(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pFieldDescList), pFieldDescList);
+        m_pFieldDescList.SetValue(pFieldDescList);
     }
 #endif // !DACCESS_COMPILE
 
@@ -1645,7 +1645,7 @@ public:
     inline void SetChunks (MethodDescChunk* pChunks)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pChunks.SetValueMaybeNull(PTR_HOST_MEMBER_TADDR(EEClass, this, m_pChunks), pChunks);
+        m_pChunks.SetValueMaybeNull(pChunks);
     }
 #endif // !DACCESS_COMPILE
     void AddChunk (MethodDescChunk* pNewChunk);

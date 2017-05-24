@@ -309,7 +309,10 @@ template <typename TYPE>
 struct LookupMap : LookupMapBase
 {
     static TYPE GetValueAt(PTR_TADDR pValue, TADDR* pFlags, TADDR supportedFlags);
+
+#ifndef DACCESS_COMPILE
     static void SetValueAt(PTR_TADDR pValue, TYPE value, TADDR flags);
+#endif // DACCESS_COMPILE
 
     TYPE GetElement(DWORD rid, TADDR* pFlags);
     void SetElement(DWORD rid, TYPE value, TADDR flags);
@@ -366,6 +369,7 @@ public:
         SetElement(rid, value, flags);
     }
 
+#ifndef DACCESS_COMPILE
     void AddFlag(DWORD rid, TADDR flag)
     {
         WRAPPER_NO_CONTRACT;
@@ -386,6 +390,7 @@ public:
         TYPE existingValue = GetValueAt(pElement, &existingFlags, supportedFlags);
         SetValueAt(pElement, existingValue, existingFlags | flag);
     }
+#endif // DACCESS_COMPILE
 
     //
     // Try to store an association in a map. Will never throw or fail.

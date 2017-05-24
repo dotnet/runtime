@@ -2057,7 +2057,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_methodTable.IsNull());
         _ASSERTE(pMT != NULL);
-        m_methodTable.SetValue(PTR_HOST_MEMBER_TADDR(MethodDescChunk, this, m_methodTable), pMT);
+        m_methodTable.SetValue(pMT);
     }
 
     inline void SetSizeAndCount(ULONG sizeOfMethodDescs, COUNT_T methodDescCount)
