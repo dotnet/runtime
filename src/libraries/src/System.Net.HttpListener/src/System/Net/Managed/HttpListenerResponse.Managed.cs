@@ -316,6 +316,9 @@ namespace System.Net
             SentHeaders = !isWebSocketHandshake;
         }
 
+        private static bool HeaderCanHaveEmptyValue(string name) =>
+            !string.Equals(name, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase);
+
         private static string FormatHeaders(WebHeaderCollection headers)
         {
             var sb = new StringBuilder();
@@ -324,9 +327,34 @@ namespace System.Net
             {
                 string key = headers.GetKey(i);
                 string[] values = headers.GetValues(i);
+
+                int startingLength = sb.Length;
+
+                sb.Append(key).Append(": ");
+                bool anyValues = false;
                 for (int j = 0; j < values.Length; j++)
                 {
-                    sb.Append(key).Append(": ").Append(values[j]).Append("\r\n");
+                    string value = values[j];
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        if (anyValues)
+                        {
+                            sb.Append(", ");
+                        }
+                        sb.Append(value);
+                        anyValues = true;
+                    }
+                }
+
+                if (anyValues || HeaderCanHaveEmptyValue(key))
+                {
+                    // Complete the header
+                    sb.Append("\r\n");
+                }
+                else
+                {
+                    // Empty header; remove it.
+                    sb.Length = startingLength;
                 }
             }
 

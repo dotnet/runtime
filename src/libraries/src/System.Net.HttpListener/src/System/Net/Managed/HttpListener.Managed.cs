@@ -68,9 +68,10 @@ namespace System.Net
         public void Stop()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
+
+            lock (_internalLock)
             {
-                lock (_internalLock)
+                try
                 {
                     CheckDisposed();
                     if (_state == State.Stopped)
@@ -79,18 +80,17 @@ namespace System.Net
                     }
 
                     Close(false);
-
-                    _state = State.Stopped;
                 }
-            }
-            catch (Exception exception)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Stop {exception}");
-                throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                catch (Exception exception)
+                {
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Stop {exception}");
+                    throw;
+                }
+                finally
+                {
+                    _state = State.Stopped;
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                }
             }
         }
 
