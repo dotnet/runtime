@@ -368,7 +368,7 @@ namespace System.Net
 
         public IPEndPoint RemoteEndPoint => _context.Connection.RemoteEndPoint;
 
-        public Guid RequestTraceIdentifier => Guid.Empty;
+        public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();
 
         private IAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
         {

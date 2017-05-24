@@ -180,21 +180,12 @@ namespace System.Net.Tests
             });
         }
         
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20237, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task RequestTraceIdentifier_GetWindows_ReturnsExpected()
         {
             await GetRequest("POST", null, null, (_, request) =>
             {
                 Assert.NotEqual(Guid.Empty, request.RequestTraceIdentifier);
-            });
-        }
-
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsNotWindowsImplementation))] // [ActiveIssue(20237, TestPlatforms.AnyUnix)]
-        public async Task RequestTraceIdentifier_GetUnix_ReturnsExpected()
-        {
-            await GetRequest("POST", null, null, (_, request) =>
-            {
-                Assert.Equal(Guid.Empty, request.RequestTraceIdentifier);
             });
         }
 
