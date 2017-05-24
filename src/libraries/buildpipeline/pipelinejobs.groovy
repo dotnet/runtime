@@ -22,7 +22,7 @@ def linuxPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'bui
             // CentOS 7.3, RedHat 7.3, Debian 8.7, Ubuntu 14.04, Ubuntu 16.04, Ubuntu 16.10, openSuSE 42.2 and Fedora 25
 
             // One for just innerloop.
-            linuxPipeline.triggerPipelineOnGithubPRComment("Portable ${osName} ${configurationGroup} Build", "(?i).*test\\W+portable\\W+linux\\W+${configurationGroup}\\W+pipeline.*",
+            linuxPipeline.triggerPipelineOnEveryGithubPR("Portable ${osName} ${configurationGroup} Build", "(?i).*test\\W+portable\\W+linux\\W+${configurationGroup}\\W+pipeline.*",
                 ['Config':configurationGroup, 'OuterLoop':false])
             // Add one for outerloop
             linuxPipeline.triggerPipelineOnGithubPRComment("Portable Outerloop ${osName} ${configurationGroup} Build", "(?i).*test\\W+outerloop\\W+portable\\W+linux\\W+${configurationGroup}\\W+pipeline.*",
@@ -40,7 +40,7 @@ def windowsPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'b
             // Windows 10, Windows 7, Windows 8.1 and Windows Nano
 
             // One for just innerloop
-            windowsPipeline.triggerPipelineOnGithubPRComment("Portable ${osName} ${configurationGroup} Build", "(?i).*test\\W+portable\\W+windows\\W+${configurationGroup}\\W+pipeline.*",
+            windowsPipeline.triggerPipelineOnEveryGithubPR("Portable ${osName} ${configurationGroup} Build", "(?i).*test\\W+portable\\W+windows\\W+${configurationGroup}\\W+pipeline.*",
                 ['Config':configurationGroup, 'OuterLoop':false])
             // Add one for outerloop
             windowsPipeline.triggerPipelineOnGithubPRComment("Portable Outerloop ${osName} ${configurationGroup} Build", "(?i).*test\\W+outerloop\\W+portable\\W+windows\\W+${configurationGroup}\\W+pipeline.*",

@@ -1,9 +1,9 @@
 @Library('dotnet-ci') _
 
-// Incoming parameters
+// Incoming parameters.  Access with "params.<param name>".
 // Config - Build configuration. Note that we don't using 'Configuration' since it's used
 //          in the build scripts and this can cause problems.
-// Outerloop - If true, runs outerloop, if false runs just innerloop
+// OuterLoop - If true, runs outerloop, if false runs just innerloop
 
 def submittedHelixJson = null
 
@@ -35,14 +35,14 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
         sh "./sync.sh -p -portable -- /p:ArchGroup=x64"
     }
     stage ('Build Product') {
-        sh "./build.sh -buildArch=x64 -${Config} -portable"
+        sh "./build.sh -buildArch=x64 -${params.Config} -portable"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
-        if (OuterLoop == true) {
+        if (params.OuterLoop) {
             additionalArgs = '-Outerloop'
         }
-        sh "./build-tests.sh -buildArch=x64 -${Config} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true"
+        sh "./build-tests.sh -buildArch=x64 -${params.Config} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true"
     }
     stage ('Submit To Helix For Testing') {
         // Bind the credentials
@@ -66,7 +66,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
                                      'fedora.25.amd64.Open']
             
 
-            sh "./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${Config} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/portable/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
+            sh "./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.Config} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/portable/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
 
             submittedHelixJson = readJSON file: "${logFolder}/SubmittedHelixRuns.txt"
         }
@@ -75,11 +75,11 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
 
 stage ('Execute Tests') {
     def contextBase
-    if (OuterLoop == true) {
-        contextBase = "Linux x64 Tests w/outer - ${Config}"
+    if (params.OuterLoop) {
+        contextBase = "Linux x64 Tests w/outer - ${params.Config}"
     }
     else {
-        contextBase = "Linux x64 Tests - ${Config}"
+        contextBase = "Linux x64 Tests - ${params.Config}"
     }
     waitForHelixRuns(submittedHelixJson, contextBase)
 }
