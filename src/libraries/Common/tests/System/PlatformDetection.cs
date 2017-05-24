@@ -66,6 +66,18 @@ namespace System
             return runningVersion != null && runningVersion >= net470;
         }
 
+        public static bool IsNetfxBelow471()
+        {
+            if (!IsFullFramework)
+            {
+                return false;
+            }
+
+            Version net471 = new Version(4, 7, 1);
+            Version runningVersion = GetFrameworkVersion();
+            return runningVersion != null && runningVersion < net471;
+        }
+
         public static Version GetFrameworkVersion()
         {
             string[] descriptionArray = RuntimeInformation.FrameworkDescription.Split(' ');

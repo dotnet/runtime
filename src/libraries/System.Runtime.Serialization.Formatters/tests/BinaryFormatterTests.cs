@@ -37,15 +37,45 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [MemberData(nameof(ValidateBasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
-            object result = FormatterClone(obj, null, assemblyFormat, filterLevel, typeFormat);
+            object clone = FormatterClone(obj, null, assemblyFormat, filterLevel, typeFormat);
             if (!ReferenceEquals(obj, string.Empty)) // "" is interned and will roundtrip as the same object
             {
-                Assert.NotSame(obj, result);
+                Assert.NotSame(obj, clone);
             }
-            Assert.Equal(obj, result);
+
+            CheckForAnyEquals(obj, clone);
         }
 
-        private static object LoadFromFile(string base64Str)
+        //private static void Serialize()
+        //{
+        //    IEnumerable<object[]> objs = SerializableObjects();
+        //    List<string> serializedHashes = new List<string>();
+        //    for (int i = 0; i < objs.Count(); i++)
+        //    {
+        //        var obj = objs.ElementAt(i)[0];
+        //        BinaryFormatter bf = new BinaryFormatter();
+        //        using (MemoryStream ms = new MemoryStream())
+        //        {
+        //            bf.Serialize(ms, obj);
+        //            string serializedHash = Convert.ToBase64String(ms.ToArray());
+        //            serializedHashes.Add(i + ". " + obj.GetType().Name + ": " + serializedHash);
+        //        }
+        //    }
+
+        //    File.WriteAllLines("serializables.txt", serializedHashes);
+        //}
+
+        private static string SerializeObjectToHash(object original)
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bf.Serialize(ms, original);
+                return Convert.ToBase64String(ms.ToArray());
+            }
+        }
+
+        private static object DeserializeObjectHash(object original, string base64Str)
         {
             var binaryFormatter = new BinaryFormatter();
             byte[] serializedObj = Convert.FromBase64String(base64Str);
@@ -57,10 +87,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(SerializableObjects))]
-        public void ValidateAgainstFile(object original, string coreBase64, string netfxBase64)
+        public void ValidateTfmHashes(object original, string[] tfmBase64Hashes)
         {
-            CheckForAnyEquals(original, LoadFromFile(coreBase64));
-            //CheckForAnyEquals(originalType, LoadFromFile(netfxBase64));
+            if (tfmBase64Hashes == null || tfmBase64Hashes.Length < 2)
+            {
+                throw new InvalidOperationException($"Type {original} has no base64 hashes to deserialize and test equality against. " +
+                    $"Hash for object is: " + SerializeObjectToHash(original));
+            }
+
+            foreach (string tfmBase64Hash in tfmBase64Hashes)
+            {
+                CheckForAnyEquals(original, DeserializeObjectHash(original, tfmBase64Hash));
+            }
         }
 
         private void CheckForAnyEquals(object original, object clone)
@@ -68,10 +106,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (original != null && clone != null)
             {
                 object result = null;
-                Type originalTypeType = original.GetType();
+                Type originalType = original.GetType();
 
                 // Check if custom equality extension method is available
-                MethodInfo customEqualityCheck = GetExtensionMethod(typeof(EqualityExtensions).Assembly, originalTypeType);
+                MethodInfo customEqualityCheck = GetExtensionMethod(typeof(EqualityExtensions).Assembly, originalType);
                 if (customEqualityCheck != null)
                 {
                     result = customEqualityCheck.Invoke(original, new object[] { original, clone });
@@ -79,12 +117,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 else
                 {
                     // Check if object.Equals(object) is overridden and if not check if there is a more concrete equality check implementation
-                    bool equalsNotOverridden = originalTypeType.GetMethod("Equals", new Type[] { typeof(object) }).DeclaringType == typeof(object);
+                    bool equalsNotOverridden = originalType.GetMethod("Equals", new Type[] { typeof(object) }).DeclaringType == typeof(object);
                     if (equalsNotOverridden)
                     {
                         // If type doesn't override Equals(object) method then check if there is a more concrete implementation
                         // e.g. if type implements IEquatable<T>.
-                        MethodInfo equalsMethod = originalTypeType.GetMethod("Equals", new Type[] { originalTypeType });
+                        MethodInfo equalsMethod = originalType.GetMethod("Equals", new Type[] { originalType });
                         if (equalsMethod.DeclaringType != typeof(object))
                         {
                             result = equalsMethod.Invoke(original, new object[] { clone });
@@ -94,12 +132,17 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
                 if (result != null)
                 {
-                    Assert.True((bool)result);
+                    Assert.True((bool)result, "Error during equality check of type " + originalType.FullName);
                     return;
                 }
             }
 
-            Assert.Equal(original, clone);
+            try { Assert.Equal(original, clone); }
+            catch (Exception)
+            {
+                Console.WriteLine("Error during equality check of type " + original?.GetType()?.FullName);
+                throw;
+            }
         }
 
         private static MethodInfo GetExtensionMethod(Assembly assembly, Type extendedType)
@@ -128,10 +171,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 f.Serialize(s, obj[0]);
             }
             s.Position = 0;
-            foreach (object obj in objects)
+            foreach (object[] obj in objects)
             {
-                object result = f.Deserialize(s);
-                Assert.Equal(obj, result);
+                object clone = f.Deserialize(s);
+                CheckForAnyEquals(obj[0], clone);
             }
         }
 
@@ -154,8 +197,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static IEnumerable<object> SerializableExceptions()
         {
             var exception = new Exception("Exception message", new Exception("Inner exception message"));
-            yield return new AggregateException("Aggregate exception message", exception);
-            yield return exception;
+            yield return new object[] { new AggregateException("Aggregate exception message", exception) };
+            yield return new object[] { exception };
         }
 
         [Theory]
@@ -163,35 +206,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void Roundtrip_Exceptions(Exception expected)
         {
             BinaryFormatterHelpers.AssertRoundtrips(expected);
-        }
-
-        private static int Identity(int i) => i;
-
-        [Fact]
-        public void Roundtrip_Delegates_NoTarget()
-        {
-            Func<int, int> expected = Identity;
-            Assert.Null(expected.Target);
-
-            Func<int, int> actual = FormatterClone(expected);
-
-            Assert.NotSame(expected, actual);
-            Assert.Same(expected.GetMethodInfo(), actual.GetMethodInfo());
-            Assert.Equal(expected(42), actual(42));
-        }
-
-        [Fact]
-        public void Roundtrip_Delegates_Target()
-        {
-            var owsam = new ObjectWithStateAndMethod { State = 42 };
-            Func<int> expected = owsam.GetState;
-            Assert.Same(owsam, expected.Target);
-
-            Func<int> actual = FormatterClone(expected);
-
-            Assert.NotSame(expected, actual);
-            Assert.NotSame(expected.Target, actual.Target);
-            Assert.Equal(expected(), actual());
         }
 
         public static IEnumerable<object[]> SerializableObjectsWithFuncOfObjectToCompare()
