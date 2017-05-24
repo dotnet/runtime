@@ -12,13 +12,13 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms">
-      <Version>2.0.0-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(PlatformPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>2.0.0-$(CoreClrExpectedPrerelease)</Version>
+      <Version>$(CoreClrPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.ILAsm">
-      <Version>2.0.0-$(CoreClrExpectedPrerelease)</Version>
+      <Version>$(CoreClrPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
