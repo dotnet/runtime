@@ -13222,26 +13222,14 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         varTypeIsStruct(tempTyp) || (tempTyp == TYP_BLK) || (tempTyp == TYP_LCLBLK);
                     const unsigned varSize = useExactSize ? varDsc->lvExactSize : genTypeSize(temp);
 
+                    // Make sure we do not enregister this lclVar.
+                    lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
+
                     // If the size of the load is greater than the size of the lclVar, we cannot fold this access into
                     // a lclFld: the access represented by an lclFld node must begin at or after the start of the
                     // lclVar and must not extend beyond the end of the lclVar.
-                    if ((ival1 < 0) || ((ival1 + genTypeSize(typ)) > varSize))
+                    if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= varSize))
                     {
-                        lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
-                    }
-                    else
-                    {
-                        // Make sure we don't separately promote the fields of this struct.
-                        if (varDsc->lvRegStruct)
-                        {
-                            // We can enregister, but can't promote.
-                            varDsc->lvPromoted = false;
-                        }
-                        else
-                        {
-                            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_LocalField));
-                        }
-
                         // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
                         // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
                         // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
