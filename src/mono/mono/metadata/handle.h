@@ -25,7 +25,6 @@
 
 G_BEGIN_DECLS
 
-
 /*
 Handle stack.
 
@@ -73,13 +72,8 @@ typedef struct {
 #endif
 } HandleChunkElem;
 
-/* number of guint32's needed to store the interior pointers bitmap */
-#define INTERIOR_HANDLE_BITMAP_WORDS ((OBJECTS_PER_HANDLES_CHUNK + 31) / 32)
-
 struct _HandleChunk {
 	int size; //number of handles
-	/* bits in the range 0..size-1 of interior_bitmap are valid; rest are ignored. */
-	guint32 interior_bitmap [INTERIOR_HANDLE_BITMAP_WORDS];
 	HandleChunk *prev, *next;
 	HandleChunkElem elems [OBJECTS_PER_HANDLES_CHUNK];
 };
@@ -90,10 +84,13 @@ typedef struct {
 #ifdef MONO_HANDLE_TRACK_SP
 	gpointer stackmark_sp; // C stack pointer top when from most recent mono_stack_mark_init
 #endif
+	/* Chunk for storing interior pointers. Not extended right now */
+	HandleChunk *interior;
 } HandleStack;
 
+// Keep this in sync with RuntimeStructs.cs
 typedef struct {
-	int size;
+	int size, interior_size;
 	HandleChunk *chunk;
 #ifdef MONO_HANDLE_TRACK_SP
 	gpointer prev_sp; // C stack pointer from prior mono_stack_mark_init
@@ -108,11 +105,12 @@ typedef void (*GcScanFunc) (gpointer*, gpointer);
 #ifndef MONO_HANDLE_TRACK_OWNER
 MonoRawHandle mono_handle_new (MonoObject *object);
 MonoRawHandle mono_handle_new_full (gpointer rawptr, gboolean interior);
+MonoRawHandle mono_handle_new_interior (gpointer rawptr);
 #else
 MonoRawHandle mono_handle_new (MonoObject *object, const char* owner);
 MonoRawHandle mono_handle_new_full (gpointer rawptr, gboolean interior, const char *owner);
+MonoRawHandle mono_handle_new_interior (gpointer rawptr, const char *owner);
 #endif
-
 
 void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise);
 gboolean mono_handle_stack_is_empty (HandleStack *stack);
@@ -134,6 +132,7 @@ mono_stack_mark_init (MonoThreadInfo *info, HandleStackMark *stackmark)
 	HandleStack *handles = (HandleStack *)info->handle_stack;
 	stackmark->size = handles->top->size;
 	stackmark->chunk = handles->top;
+	stackmark->interior_size = handles->interior->size;
 #ifdef MONO_HANDLE_TRACK_SP
 	stackmark->prev_sp = handles->stackmark_sp;
 	handles->stackmark_sp = sptop;
@@ -148,6 +147,7 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 	old_top->size = stackmark->size;
 	mono_memory_write_barrier ();
 	handles->top = old_top;
+	handles->interior->size = stackmark->interior_size;
 #ifdef MONO_HANDLE_TRACK_SP
 	mono_memory_write_barrier (); /* write to top before prev_sp */
 	handles->stackmark_sp = stackmark->prev_sp;
@@ -402,20 +402,6 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_ARRAY_GETREF(DEST, HANDLE, IDX) do {		\
 		mono_handle_array_getref (MONO_HANDLE_CAST(MonoObject, (DEST)), (HANDLE), (IDX)); \
 	} while (0)
-
-/* Handles into the interior of objects.
- *
- * Typically when working with value types, we pass them by reference.  In the case where the value type
- * is a field in a managed class, the reference will be a pointer into the middle of a managed object.
- * We need to identify such pointers in order for SGen to scan them correctly.
- */
-
-#ifndef MONO_HANDLE_TRACK_OWNER
-#define MONO_HANDLE_NEW_GET_VALPTR(HANDLE,TYPE,FIELD) (TYPE_VALUE_HANDLE_NAME(TYPE))(mono_handle_new_full (&(HANDLE)->__raw->FIELD), TRUE))
-#else
-#define MONO_HANDLE_NEW_GET_VALPTR(HANDLE,TYPE,FIELD) (TYPE_VALUE_HANDLE_NAME(TYPE))(mono_handle_new_full (&(HANDLE)->__raw->FIELD), TRUE, HANDLE_OWNER_STRINGIFY(__FILE__, __LINE__))
-#endif
-
 
 #define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
 	mono_handle_assign (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_CAST(MonoObject, (SRCH)))

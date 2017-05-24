@@ -12337,9 +12337,9 @@ static MonoObjectHandle
 mono_icall_handle_new (gpointer rawobj)
 {
 #ifdef MONO_HANDLE_TRACK_OWNER
-	return mono_handle_new_full (rawobj, FALSE, "<marshal args>");
+	return mono_handle_new (rawobj, "<marshal args>");
 #else
-	return mono_handle_new_full (rawobj, FALSE);
+	return mono_handle_new (rawobj);
 #endif
 }
 
@@ -12347,8 +12347,8 @@ static MonoObjectHandle
 mono_icall_handle_new_interior (gpointer rawobj)
 {
 #ifdef MONO_HANDLE_TRACK_OWNER
-	return mono_handle_new_full (rawobj, TRUE, "<marshal args>");
+	return mono_handle_new_interior (rawobj, "<marshal args>");
 #else
-	return mono_handle_new_full (rawobj, TRUE);
+	return mono_handle_new_interior (rawobj);
 #endif
 }

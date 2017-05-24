@@ -40,7 +40,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # This can be reset to 0 when Mono's version number is bumped
 # since it's part of the corlib version (the prefix '1' in the full
 # version number is to ensure the number isn't treated as octal in C)
-MONO_CORLIB_COUNTER=1
+MONO_CORLIB_COUNTER=2
 MONO_CORLIB_VERSION=`printf "1%02d%02d%02d%03d" $MONO_VERSION_MAJOR $MONO_VERSION_MINOR $MONO_VERSION_BUILD $MONO_CORLIB_COUNTER`
 
 AC_DEFINE_UNQUOTED(MONO_CORLIB_VERSION,$MONO_CORLIB_VERSION,[Version of the corlib-runtime interface])
