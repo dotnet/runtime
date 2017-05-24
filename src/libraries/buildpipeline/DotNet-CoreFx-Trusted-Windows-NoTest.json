@@ -331,9 +331,6 @@
       "value": "HEAD",
       "allowOverride": true
     },
-    "Build.Clean": {
-      "value": "all"
-    },
     "PB_VsoAccountName": {
       "value": "dn-bot"
     },
