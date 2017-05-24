@@ -270,9 +270,6 @@
     "PB_VsoCorefxGitUrl": {
       "value": "https://github.com/dotnet/corefx"
     },
-    "Build.Clean": {
-      "value": "all"
-    },
     "PB_BuildArguments": {
       "value": "-buildArch=x64 -Release",
       "allowOverride": true
