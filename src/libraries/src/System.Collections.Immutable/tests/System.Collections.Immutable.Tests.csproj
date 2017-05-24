@@ -116,6 +116,10 @@
     <None Include="ClassDiagram1.cd" />
     <Compile Include="ImmutableArray\ImmutableArray.Generic.Tests.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <TargetingPackExclusions Include="System.Collections.Immutable" />
+    <ReferenceFromRuntime Include="System.Collections.Immutable" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
