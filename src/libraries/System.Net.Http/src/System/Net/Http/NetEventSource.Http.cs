@@ -75,7 +75,7 @@ namespace System.Net
                 fixed (char* string4Bytes = arg4)
                 fixed (char* string5Bytes = arg5)
                 {
-                    const int NumEventDatas = 4;
+                    const int NumEventDatas = 5;
                     var descrs = stackalloc EventData[NumEventDatas];
 
                     descrs[0].DataPointer = (IntPtr)(&arg1);
