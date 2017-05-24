@@ -17974,11 +17974,13 @@ void Compiler::fgMarkDemotedImplicitByRefArgs()
         {
             if (varDsc->lvPromoted)
             {
-                // The parameter is simply a pointer now, so clear lvPromoted.
+                // The parameter is simply a pointer now, so clear lvPromoted.  It was left set
+                // by fgRetypeImplicitByRefArgs to communicate to fgMorphImplicitByRefArgs that
+                // appearances of this arg needed to be rewritten to a new promoted struct local.
                 varDsc->lvPromoted = false;
 
                 // Clear the lvFieldLclStart value that was set by fgRetypeImplicitByRefArgs
-                // to tell fgMorphImplicitByRefArgs how to rewrite appearances of this arg.
+                // to tell fgMorphImplicitByRefArgs which local is the new promoted struct one.
                 varDsc->lvFieldLclStart = 0;
             }
             else if (varDsc->lvFieldLclStart != 0)
