@@ -1382,9 +1382,9 @@ VOID UMThunkMarshInfo::RunTimeInit()
     UINT16 cbRetPop = 0;
 
     //
-    // m_cbStackArgSize represents the number of arg bytes for the MANAGED signature
+    // cbStackArgSize represents the number of arg bytes for the MANAGED signature
     //
-    m_cbStackArgSize = 0;
+    UINT32 cbStackArgSize = 0;
 
     int offs = 0;
 
@@ -1410,9 +1410,10 @@ VOID UMThunkMarshInfo::RunTimeInit()
         else
         {
             offs += StackElemSize(cbSize);
-            m_cbStackArgSize += StackElemSize(cbSize);
+            cbStackArgSize += StackElemSize(cbSize);
         }
     }
+    m_cbStackArgSize = cbStackArgSize;
     m_cbActualArgSize = (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : offs;
 
     PInvokeStaticSigInfo sigInfo;
