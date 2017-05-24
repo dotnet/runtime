@@ -59,7 +59,7 @@ namespace System.Net.Tests
     public static class Helpers
     {
         public static bool IsWindowsImplementation { get; } = PlatformDetection.IsWindows && PlatformDetection.IsNotOneCoreUAP;
-        public static bool IsNotWindowsImplementation => !IsWindowsImplementation;
+        public static bool IsNotWindowsImplementation => !IsWindowsImplementation && PlatformDetection.IsNotOneCoreUAP;
 
         public static void WaitForSocketShutdown(Socket socket)
         {
