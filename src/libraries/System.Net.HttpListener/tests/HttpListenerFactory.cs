@@ -153,6 +153,8 @@ namespace System.Net.Tests
 
         public byte[] GetContent(string httpVersion, string requestType, string query, string text, IEnumerable<string> headers, bool headerOnly)
         {
+            headers = headers ?? Enumerable.Empty<string>();
+
             Uri listeningUri = new Uri(ListeningUrl);
             string rawUrl = listeningUri.PathAndQuery;
             if (query != null)
@@ -160,12 +162,16 @@ namespace System.Net.Tests
                 rawUrl += query;
             }
 
-            string content = $"{requestType} {rawUrl} HTTP/{httpVersion}\r\nHost: {listeningUri.Host}\r\n";
-            if (text != null)
+            string content = $"{requestType} {rawUrl} HTTP/{httpVersion}\r\n";
+            if (!headers.Any(header => header.ToLower().StartsWith("host:")))
+            {
+                content += $"Host: { listeningUri.Host}\r\n";
+            }
+            if (text != null && !headers.Any(header => header.ToLower().StartsWith("content-length:")))
             {
                 content += $"Content-Length: {text.Length}\r\n";
             }
-            foreach (string header in headers ?? Enumerable.Empty<string>())
+            foreach (string header in headers)
             {
                 content += header + "\r\n";
             }
