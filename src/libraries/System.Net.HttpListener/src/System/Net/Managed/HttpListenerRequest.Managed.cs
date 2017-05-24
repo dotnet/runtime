@@ -253,7 +253,7 @@ namespace System.Net
 
             string name = header.Substring(0, colon).Trim();
             string val = header.Substring(colon + 1).Trim();
-            if (name.Equals("content-length", StringComparison.InvariantCultureIgnoreCase))
+            if (name.Equals("content-length", StringComparison.OrdinalIgnoreCase))
             {
                 long parsedContentLength = long.Parse(val);
                 if (parsedContentLength < 0 || (_clSet && parsedContentLength != _contentLength))
@@ -266,7 +266,7 @@ namespace System.Net
                     _clSet = true;
                 }
             }
-            else if (name.Equals("transfer-encoding", StringComparison.InvariantCultureIgnoreCase))
+            else if (name.Equals("transfer-encoding", StringComparison.OrdinalIgnoreCase))
             {
                 if (Headers[HttpKnownHeaderNames.TransferEncoding] != null)
                 {
