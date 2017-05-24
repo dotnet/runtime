@@ -66,7 +66,7 @@ namespace System.Net
             _version = HttpVersion.Version10;
         }
 
-        private static char[] s_separators = new char[] { ' ' };
+        private static readonly char[] s_separators = new char[] { ' ' };
 
         internal void SetRequestLine(string req)
         {
@@ -103,12 +103,22 @@ namespace System.Net
             try
             {
                 _version = new Version(parts[2].Substring(5));
-                if (_version.Major < 1)
-                    throw new Exception();
             }
             catch
             {
                 _context.ErrorMessage = "Invalid request line (version).";
+                return;
+            }
+
+            if (_version.Major < 1)
+            {
+                _context.ErrorMessage = "Invalid request line (version).";
+                return;
+            }
+            if (_version != HttpVersion.Version10 && _version != HttpVersion.Version11)
+            {
+                _context.ErrorStatus = (int)HttpStatusCode.HttpVersionNotSupported;
+                _context.ErrorMessage = HttpStatusDescription.Get(HttpStatusCode.HttpVersionNotSupported);
                 return;
             }
         }
@@ -238,24 +248,31 @@ namespace System.Net
 
             string name = header.Substring(0, colon).Trim();
             string val = header.Substring(colon + 1).Trim();
-            string lower = name.ToLower(CultureInfo.InvariantCulture);
-            _headers.Set(name, val);
-            switch (lower)
+            if (name.Equals("content-length", StringComparison.InvariantCultureIgnoreCase))
             {
-                case "content-length":
-                    try
-                    {
-                        _contentLength = long.Parse(val.Trim());
-                        if (_contentLength < 0)
-                            _context.ErrorMessage = "Invalid Content-Length.";
-                        _clSet = true;
-                    }
-                    catch
-                    {
-                        _context.ErrorMessage = "Invalid Content-Length.";
-                    }
+                long parsedContentLength = long.Parse(val);
+                if (parsedContentLength < 0 || (_clSet && parsedContentLength != _contentLength))
+                {
+                    _context.ErrorMessage = "Invalid Content-Length.";
+                }
+                else
+                {
+                    _contentLength = parsedContentLength;
+                    _clSet = true;
+                }
+            }
+            else if (name.Equals("transfer-encoding", StringComparison.InvariantCultureIgnoreCase))
+            {
+                if (Headers[HttpKnownHeaderNames.TransferEncoding] != null)
+                {
+                    _context.ErrorStatus = (int)HttpStatusCode.NotImplemented;
+                    _context.ErrorMessage = HttpStatusDescription.Get(HttpStatusCode.NotImplemented);
+                }
+            }
 
-                    break;
+            if (_context.ErrorMessage == null)
+            {
+                _headers.Set(name, val);
             }
         }
 

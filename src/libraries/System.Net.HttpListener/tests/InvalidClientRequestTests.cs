@@ -36,13 +36,9 @@ namespace System.Net.Tests
             yield return new object[] { "GET {path} HTTP/1.1.1", null, null, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/aaa", null, null, null, "Bad Request" };
 
-            // [ActiveIssue(20228, TestPlatforms.AnyUnix)]
-            if (Helpers.IsWindowsImplementation)
-            {
-                yield return new object[] { "GET {path} HTTP/2.2", null, null, null, "Version Not Supported" };
-                yield return new object[] { "GET {path} HTTP/2.0", null, null, null, "Version Not Supported" };
-                yield return new object[] { "GET {path} HTTP/3.0", null, null, null, "Version Not Supported" };
-            }
+            yield return new object[] { "GET {path} HTTP/2.2", null, null, null, "Version Not Supported" };
+            yield return new object[] { "GET {path} HTTP/2.0", null, null, null, "Version Not Supported" };
+            yield return new object[] { "GET {path} HTTP/3.0", null, null, null, "Version Not Supported" };
 
             // Invalid verb
             yield return new object[] { "( {path} HTTP/1.1", null, null, null, "Bad Request" };
@@ -72,20 +68,12 @@ namespace System.Net.Tests
             yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Content-Length: -10" }, "\r\n", "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: -9223372036854775809" }, "\r\n", "Bad Request" };
 
-            // [ActiveIssue(20229, TestPlatforms.AnyUnix)]
-            if (Helpers.IsWindowsImplementation)
-            {
-                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: 1", "Content-Length: 2" }, "\r\n", "Bad Request" };
-            }
+            yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Content-Length: 1", "Content-Length: 2" }, "\r\n", "Bad Request" };
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: garbage" }, "\r\n", "Not Implemented" };
             yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: garbage" }, "\r\n", "Not Implemented" };
 
-            // [ActiveIssue(20231, TestPlatforms.AnyUnix)]
-            if (Helpers.IsWindowsImplementation)
-            {
-                yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: chunked", "Transfer-Encoding: chunked" }, "\r\n", "Not Implemented" };
-            }
+            yield return new object[] { "POST {path} HTTP/1.1", null, new string[] { "Transfer-Encoding: chunked", "Transfer-Encoding: chunked" }, "\r\n", "Not Implemented" };
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "NoValue" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { ":" }, null, "Bad Request" };
@@ -95,12 +83,8 @@ namespace System.Net.Tests
             yield return new object[] { "GET {path} HTTP/1.1", "", null, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", "Host: \r\n", null, null, "Bad Request" };
 
-            // [ActiveIssue(20230, TestPlatforms.AnyUnix)]
-            if (Helpers.IsWindowsImplementation)
-            {
-                yield return new object[] { "GET /something{path} HTTP/1.1", null, null, null, "Not Found" };
-                yield return new object[] { "GET {path}../ HTTP/1.1", null, null, null, "Not Found" };
-            }
+            yield return new object[] { "GET /something{path} HTTP/1.1", null, null, null, "Not Found" };
+            yield return new object[] { "GET {path}../ HTTP/1.1", null, null, null, "Not Found" };
 
             // No body
             yield return new object[] { "POST {path} HTTP/1.1", null, null, null, "Length Required" };
@@ -126,7 +110,7 @@ namespace System.Net.Tests
 
                     host = host ?? $"Host: {listeningUri.Host}\r\n";
                     string fullRequest = $"{requestLineWithPathAndQuery}\r\n{host}{string.Join("\r\n", headers ?? new string[0])}{content}\r\n";
-                    
+
                     Task<HttpListenerContext> serverTask = Factory.GetListener().GetContextAsync();
                     client.Send(Encoding.Default.GetBytes(fullRequest));
 
