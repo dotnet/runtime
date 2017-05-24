@@ -255,7 +255,8 @@ public:
     unsigned char lvHasILStoreOp : 1;         // there is at least one STLOC or STARG on this local
     unsigned char lvHasMultipleILStoreOp : 1; // there is more than one STLOC on this local
 
-    unsigned char lvIsTemp : 1; // Short-lifetime compiler temp
+    unsigned char lvIsTemp : 1; // Short-lifetime compiler temp (if lvIsParam is false), or implicit byref parameter
+                                // (if lvIsParam is true)
 #if OPT_BOOL_OPS
     unsigned char lvIsBoolean : 1; // set if variable is boolean
 #endif
@@ -286,7 +287,9 @@ public:
                                // checks)
     unsigned char lvIsUnsafeBuffer : 1; // Does this contain an unsafe buffer requiring buffer overflow security checks?
     unsigned char lvPromoted : 1; // True when this local is a promoted struct, a normed struct, or a "split" long on a
-                                  // 32-bit target.
+                                  // 32-bit target.  For implicit byref parameters, this gets hijacked between
+                                  // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
+                                  // references to the arg are being rewritten as references to a promoted shadow local.
     unsigned char lvIsStructField : 1;          // Is this local var a field of a promoted struct local?
     unsigned char lvContainsFloatingFields : 1; // Does this struct contains floating point fields?
     unsigned char lvOverlappingFields : 1;      // True when we have a struct with possibly overlapping fields
@@ -332,7 +335,9 @@ public:
 
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
-                                  // local.
+                                  // local.  For implicit byref parameters, this gets hijacked between
+                                  // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to point to the
+                                  // struct local created to model the parameter's struct promotion, if any.
         unsigned lvParentLcl; // The index of the local var representing the parent (i.e. the promoted struct local).
                               // Valid on promoted struct local fields.
     };
@@ -656,11 +661,16 @@ public:
 
     regMaskSmall lvPrefReg; // set of regs it prefers to live in
 
-    unsigned short lvVarIndex;  // variable tracking index
-    unsigned short lvRefCnt;    // unweighted (real) reference count
-    unsigned       lvRefCntWtd; // weighted reference count
-    int            lvStkOffs;   // stack offset of home
-    unsigned       lvExactSize; // (exact) size of the type in bytes
+    unsigned short lvVarIndex; // variable tracking index
+    unsigned short lvRefCnt;   // unweighted (real) reference count.  For implicit by reference
+                               // parameters, this gets hijacked from fgMarkImplicitByRefArgs
+                               // through fgMarkDemotedImplicitByRefArgs, to provide a static
+                               // appearance count (computed during address-exposed analysis)
+                               // that fgMakeOutgoingStructArgCopy consults during global morph
+                               // to determine if eliding its copy is legal.
+    unsigned lvRefCntWtd;      // weighted reference count
+    int      lvStkOffs;        // stack offset of home
+    unsigned lvExactSize;      // (exact) size of the type in bytes
 
     // Is this a promoted struct?
     // This method returns true only for structs (including SIMD structs), not for
@@ -4879,8 +4889,7 @@ private:
     bool fgMorphImplicitByRefArgs(GenTreePtr tree);
     GenTreePtr fgMorphImplicitByRefArgs(GenTreePtr tree, bool isAddr);
 
-    // Clear up annotations for any struct promotion temps created for implicit byrefs that
-    // wound up unused (due e.g. to being address-exposed and not worth promoting).
+    // Clear up annotations for any struct promotion temps created for implicit byrefs.
     void fgMarkDemotedImplicitByRefArgs();
 
     static fgWalkPreFn  fgMarkAddrTakenLocalsPreCB;
