@@ -2492,7 +2492,10 @@ void MethodDesc::Reset()
     }
 
     if (HasNativeCodeSlot())
-        NativeCodeSlot::SetValueMaybeNullAtPtr(GetAddrOfNativeCodeSlot(), NULL);
+    {
+        RelativePointer<TADDR> *pRelPtr = (RelativePointer<TADDR> *)GetAddrOfNativeCodeSlot();
+        pRelPtr->SetValueMaybeNull(NULL);
+    }
     _ASSERTE(!HasNativeCode());
 }
 

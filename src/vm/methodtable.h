@@ -1671,12 +1671,13 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    inline void SetNonVirtualSlotsArray(PTR_PCODE slots)
+    inline void SetNonVirtualSlotsArray(PCODE *slots)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasNonVirtualSlotsArray());
-        
-        RelativePointer<PTR_PCODE>::SetValueAtPtr(GetNonVirtualSlotsPtr(), slots);
+
+        RelativePointer<PCODE *> *pRelPtr = (RelativePointer<PCODE *> *)GetNonVirtualSlotsPtr();
+        pRelPtr->SetValue(slots);
     }
 
     inline void SetHasSingleNonVirtualSlot()
@@ -2456,7 +2457,9 @@ public:
         _ASSERTE(HasDispatchMapSlot());
 
         TADDR pSlot = GetMultipurposeSlotPtr(enum_flag_HasDispatchMapSlot, c_DispatchMapSlotOffsets);
-        RelativePointer<PTR_DispatchMap>::SetValueAtPtr(pSlot, pDispatchMap);
+
+        RelativePointer<DispatchMap *> *pRelPtr = (RelativePointer<DispatchMap *> *)pSlot;
+        pRelPtr->SetValue(pDispatchMap);
     }
 #endif // !DACCESS_COMPILE
 

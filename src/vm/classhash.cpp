@@ -47,7 +47,7 @@ PTR_VOID EEClassHashEntry::GetData()
 }
 
 #ifndef DACCESS_COMPILE
-void EEClassHashEntry::SetData(PTR_VOID data)
+void EEClassHashEntry::SetData(void *data)
 {
     CONTRACTL
     {
@@ -60,7 +60,10 @@ void EEClassHashEntry::SetData(PTR_VOID data)
     // TypeHandles are encoded as a relative pointer rather than a regular pointer to avoid the need for image
     // fixups (any TypeHandles in this hash are defined in the same module).
     if (((TADDR)data & EECLASSHASH_TYPEHANDLE_DISCR) == 0)
-        RelativePointer<PTR_VOID>::SetValueMaybeNullAtPtr((TADDR)&m_Data, data);
+    {
+        RelativePointer<void *> *pRelPtr = (RelativePointer<void *> *) &m_Data;
+        pRelPtr->SetValueMaybeNull(data);
+    }
     else
         m_Data = data;
 }
