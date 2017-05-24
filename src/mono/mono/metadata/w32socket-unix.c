@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
@@ -27,7 +28,6 @@
 #endif
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif
