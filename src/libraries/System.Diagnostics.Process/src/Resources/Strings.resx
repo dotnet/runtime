@@ -154,9 +154,6 @@
   <data name="PendingAsyncOperation" xml:space="preserve">
     <value>An async read operation has already been started on the stream.</value>
   </data>
-  <data name="UseShellExecute" xml:space="preserve">
-    <value>UseShellExecute must always be set to false.</value>
-  </data>
   <data name="InvalidParameter" xml:space="preserve">
     <value>Invalid value '{1}' for parameter '{0}'.</value>
   </data>
@@ -237,5 +234,14 @@
   </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
+  </data>
+  <data name="CantStartAsUser" xml:space="preserve">
+    <value>The Process object must have the UseShellExecute property set to false in order to start a process as a user.</value>
+  </data>
+  <data name="CantUseEnvVars" xml:space="preserve">
+    <value>The Process object must have the UseShellExecute property set to false in order to use environment variables.</value>
+  </data>
+  <data name="UseShellExecuteNotSupported" xml:space="preserve">
+    <value>UseShellExecute is not supported on this platform.</value>
   </data>
 </root>

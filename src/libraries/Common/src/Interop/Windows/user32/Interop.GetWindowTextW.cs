@@ -4,12 +4,13 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 internal partial class Interop
 {
     internal partial class User32
     {
-        [DllImport(Libraries.User32, EntryPoint = "GetWindowTextLengthW")]
-        public static extern int GetWindowTextLength(IntPtr hWnd);
+        [DllImport(Libraries.User32, ExactSpelling = true, SetLastError = true, CharSet = CharSet.Unicode)]
+        public static extern int GetWindowTextW(IntPtr hWnd, [Out]StringBuilder lpString, int nMaxCount);
     }
 }
