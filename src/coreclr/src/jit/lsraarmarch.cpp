@@ -81,27 +81,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     info->srcCount = 2;
     info->dstCount = tree->OperIs(GT_CMP) ? 0 : 1;
 
-#ifdef _TARGET_ARM_
-
-    GenTreePtr op1     = tree->gtOp.gtOp1;
-    GenTreePtr op2     = tree->gtOp.gtOp2;
-    var_types  op1Type = op1->TypeGet();
-    var_types  op2Type = op2->TypeGet();
-
-    // Long compares will consume GT_LONG nodes, each of which produces two results.
-    // Thus for each long operand there will be an additional source.
-    // TODO-ARM-CQ: Mark hiOp2 and loOp2 as contained if it is a constant.
-    if (varTypeIsLong(op1Type))
-    {
-        info->srcCount++;
-    }
-    if (varTypeIsLong(op2Type))
-    {
-        info->srcCount++;
-    }
-
-#endif // _TARGET_ARM_
-
     CheckImmedAndMakeContained(tree, tree->gtOp.gtOp2);
 }
 
