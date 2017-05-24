@@ -71,7 +71,7 @@ namespace System.Net.Tests
 
                 if (statusCode == HttpStatusCode.Unauthorized)
                 {
-                    Assert.Equal("Basic realm =\"\"", response.Headers.WwwAuthenticate.ToString());
+                    Assert.Equal("Basic realm=\"\"", response.Headers.WwwAuthenticate.ToString());
                 }
                 else
                 {
@@ -103,7 +103,7 @@ namespace System.Net.Tests
             using (var client = new HttpClient())
             {
                 HttpResponseMessage response = await AuthenticationFailure(client, HttpStatusCode.Unauthorized);
-                Assert.Equal($"Basic realm =\"{realm}\"", response.Headers.WwwAuthenticate.ToString());
+                Assert.Equal($"Basic realm=\"{realm}\"", response.Headers.WwwAuthenticate.ToString());
             }
         }
 
