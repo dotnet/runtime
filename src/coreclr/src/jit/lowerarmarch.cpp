@@ -30,6 +30,123 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "lsra.h"
 
 //------------------------------------------------------------------------
+// IsCallTargetInRange: Can a call target address be encoded in-place?
+//
+// Return Value:
+//    True if the addr fits into the range.
+//
+bool Lowering::IsCallTargetInRange(void* addr)
+{
+#ifdef _TARGET_ARM64_
+    // TODO-ARM64-CQ:  This is a workaround to unblock the JIT from getting calls working.
+    // Currently, we'll be generating calls using blr and manually loading an absolute
+    // call target in a register using a sequence of load immediate instructions.
+    //
+    // As you can expect, this is inefficient and it's not the recommended way as per the
+    // ARM64 ABI Manual but will get us getting things done for now.
+    // The work to get this right would be to implement PC-relative calls, the bl instruction
+    // can only address things -128 + 128MB away, so this will require getting some additional
+    // code to get jump thunks working.
+    return true;
+#elif _TARGET_ARM_
+    return comp->codeGen->validImmForBL((ssize_t)addr);
+#endif
+}
+
+//------------------------------------------------------------------------
+// IsContainableImmed: Is an immediate encodable in-place?
+//
+// Return Value:
+//    True if the immediate can be folded into an instruction,
+//    for example small enough and non-relocatable.
+bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
+{
+    if (varTypeIsFloating(parentNode->TypeGet()))
+    {
+        // We can contain a floating point 0.0 constant in a compare instruction
+        switch (parentNode->OperGet())
+        {
+            default:
+                return false;
+
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+                if (childNode->IsIntegralConst(0))
+                {
+#ifdef _TARGET_ARM_
+                    // TODO-ARM-Cleanup: not tested yet.
+                    NYI_ARM("ARM IsContainableImmed for floating point type");
+#endif
+                    return true;
+                }
+                break;
+        }
+    }
+    else
+    {
+        // Make sure we have an actual immediate
+        if (!childNode->IsCnsIntOrI())
+            return false;
+        if (childNode->IsIconHandle() && comp->opts.compReloc)
+            return false;
+
+        ssize_t  immVal = childNode->gtIntCon.gtIconVal;
+        emitAttr attr   = emitActualTypeSize(childNode->TypeGet());
+        emitAttr size   = EA_SIZE(attr);
+
+        switch (parentNode->OperGet())
+        {
+            default:
+                return false;
+
+            case GT_ADD:
+            case GT_SUB:
+#ifdef _TARGET_ARM64_
+                if (emitter::emitIns_valid_imm_for_add(immVal, size))
+#elif _TARGET_ARM_
+                if (emitter::emitIns_valid_imm_for_add(immVal, INS_FLAGS_DONT_CARE))
+#endif
+                    return true;
+                break;
+
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+#ifdef _TARGET_ARM64_
+                if (emitter::emitIns_valid_imm_for_cmp(immVal, size))
+                    return true;
+                break;
+#endif
+            case GT_AND:
+            case GT_OR:
+            case GT_XOR:
+#ifdef _TARGET_ARM64_
+                if (emitter::emitIns_valid_imm_for_alu(immVal, size))
+#elif _TARGET_ARM_
+                if (emitter::emitIns_valid_imm_for_alu(immVal))
+#endif
+                    return true;
+                break;
+#ifdef _TARGET_ARM64_
+            case GT_STORE_LCL_VAR:
+                if (immVal == 0)
+                    return true;
+                break;
+#endif
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreLoc: Lower a store of a lclVar
 //
 // Arguments:
