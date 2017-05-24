@@ -216,6 +216,12 @@
     <RemoveDir Condition="Exists('$(debIntermediatesDir)')" Directories="$(debIntermediatesDir)" />
     <MakeDir Directories="$(debIntermediatesDir)" />
 
+    <!-- Compute ICU Version --> 
+    <Exec Command="apt-cache search --names-only '^libicu[0-9]+$' | cut -d' ' -f1" 
+          ConsoleToMSBuild="true"> 
+       <Output TaskParameter="ConsoleOutput" PropertyName="LibIcuPackageName" /> 
+    </Exec> 
+
     <!-- Create empty debian layout -->
     <RemoveDir Condition="Exists('$(debLayoutDirectory)')" Directories="$(debLayoutDirectory)" />
     <MakeDir Directories="$(debLayoutDirectory)" />
@@ -248,6 +254,10 @@
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
         <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
       </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%LIBICU_PACKAGE_NAME%"> 
+        <ReplacementString>$(LibIcuPackageName)</ReplacementString> 
+      </SharedFrameworkTokenValue> 
+
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
