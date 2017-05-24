@@ -12,6 +12,7 @@ namespace System.Numerics
     /// A complex number z is a number of the form z = x + yi, where x and y 
     /// are real numbers, and i is the imaginary unit, with the property i2= -1.
     /// </summary>
+    [Serializable]
     public struct Complex : IEquatable<Complex>, IFormattable
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
@@ -29,20 +30,21 @@ namespace System.Numerics
         // This value is used inside Asin and Acos.
         private static readonly double s_log2 = Math.Log(2.0);
 
-        private double _real;
-        private double _imaginary;
+        // Do not rename, these fields are needed for binary serialization
+        private double m_real;
+        private double m_imaginary;
         
         public Complex(double real, double imaginary)
         {
-            _real = real;
-            _imaginary = imaginary;
+            m_real = real;
+            m_imaginary = imaginary;
         }
 
-        public double Real { get { return _real; } }
-        public double Imaginary { get { return _imaginary; } }
+        public double Real { get { return m_real; } }
+        public double Imaginary { get { return m_imaginary; } }
 
         public double Magnitude { get { return Abs(this); } }
-        public double Phase { get { return Math.Atan2(_imaginary, _real); } }
+        public double Phase { get { return Math.Atan2(m_imaginary, m_real); } }
 
         public static Complex FromPolarCoordinates(double magnitude, double phase)
         {
@@ -76,34 +78,34 @@ namespace System.Numerics
         
         public static Complex operator -(Complex value)  /* Unary negation of a complex number */
         {
-            return new Complex(-value._real, -value._imaginary);
+            return new Complex(-value.m_real, -value.m_imaginary);
         }
         
         public static Complex operator +(Complex left, Complex right)
         {
-            return new Complex(left._real + right._real, left._imaginary + right._imaginary);
+            return new Complex(left.m_real + right.m_real, left.m_imaginary + right.m_imaginary);
         }
 
         public static Complex operator -(Complex left, Complex right)
         {
-            return new Complex(left._real - right._real, left._imaginary - right._imaginary);
+            return new Complex(left.m_real - right.m_real, left.m_imaginary - right.m_imaginary);
         }
 
         public static Complex operator *(Complex left, Complex right)
         {
             // Multiplication:  (a + bi)(c + di) = (ac -bd) + (bc + ad)i
-            double result_Realpart = (left._real * right._real) - (left._imaginary * right._imaginary);
-            double result_Imaginarypart = (left._imaginary * right._real) + (left._real * right._imaginary);
-            return new Complex(result_Realpart, result_Imaginarypart);
+            double result_realpart = (left.m_real * right.m_real) - (left.m_imaginary * right.m_imaginary);
+            double result_imaginarypart = (left.m_imaginary * right.m_real) + (left.m_real * right.m_imaginary);
+            return new Complex(result_realpart, result_imaginarypart);
         }
 
         public static Complex operator /(Complex left, Complex right)
         {
             // Division : Smith's formula.
-            double a = left._real;
-            double b = left._imaginary;
-            double c = right._real;
-            double d = right._imaginary;
+            double a = left.m_real;
+            double b = left.m_imaginary;
+            double c = right.m_real;
+            double d = right.m_imaginary;
 
             if (Math.Abs(d) < Math.Abs(c))
             {
@@ -119,7 +121,7 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            return Hypot(value._real, value._imaginary);
+            return Hypot(value.m_real, value.m_imaginary);
         }
 
         private static double Hypot(double a, double b)
@@ -191,13 +193,13 @@ namespace System.Numerics
         public static Complex Conjugate(Complex value)
         {
             // Conjugate of a Complex number: the conjugate of x+i*y is x-i*y
-            return new Complex(value._real, -value._imaginary);
+            return new Complex(value.m_real, -value.m_imaginary);
         }
 
         public static Complex Reciprocal(Complex value)
         {
             // Reciprocal of a Complex number : the reciprocal of x+i*y is 1/(x+i*y)
-            if (value._real == 0 && value._imaginary == 0)
+            if (value.m_real == 0 && value.m_imaginary == 0)
             {
                 return Zero;
             }
@@ -206,12 +208,12 @@ namespace System.Numerics
         
         public static bool operator ==(Complex left, Complex right)
         {
-            return left._real == right._real && left._imaginary == right._imaginary;
+            return left.m_real == right.m_real && left.m_imaginary == right.m_imaginary;
         }
 
         public static bool operator !=(Complex left, Complex right)
         {
-            return left._real != right._real || left._imaginary != right._imaginary;
+            return left.m_real != right.m_real || left.m_imaginary != right.m_imaginary;
         }
 
         public override bool Equals(object obj)
@@ -222,47 +224,47 @@ namespace System.Numerics
 
         public bool Equals(Complex value)
         {
-            return _real.Equals(value._real) && _imaginary.Equals(value._imaginary);
+            return m_real.Equals(value.m_real) && m_imaginary.Equals(value.m_imaginary);
         }
 
         public override int GetHashCode()
         {
             int n1 = 99999997;
-            int realHash = _real.GetHashCode() % n1;
-            int imaginaryHash = _imaginary.GetHashCode();
+            int realHash = m_real.GetHashCode() % n1;
+            int imaginaryHash = m_imaginary.GetHashCode();
             int finalHash = realHash ^ imaginaryHash;
             return finalHash;
         }
 
         public override string ToString()
         {
-            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", _real, _imaginary);
+            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", m_real, m_imaginary);
         }
 
         public string ToString(string format)
         {
-            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", _real.ToString(format, CultureInfo.CurrentCulture), _imaginary.ToString(format, CultureInfo.CurrentCulture));
+            return string.Format(CultureInfo.CurrentCulture, "({0}, {1})", m_real.ToString(format, CultureInfo.CurrentCulture), m_imaginary.ToString(format, CultureInfo.CurrentCulture));
         }
 
         public string ToString(IFormatProvider provider)
         {
-            return string.Format(provider, "({0}, {1})", _real, _imaginary);
+            return string.Format(provider, "({0}, {1})", m_real, m_imaginary);
         }
 
         public string ToString(string format, IFormatProvider provider)
         {
-            return string.Format(provider, "({0}, {1})", _real.ToString(format, provider), _imaginary.ToString(format, provider));
+            return string.Format(provider, "({0}, {1})", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
         }
 
         public static Complex Sin(Complex value)
         {
             // We need both sinh and cosh of imaginary part. To avoid multiple calls to Math.Exp with the same value,
             // we compute them both here from a single call to Math.Exp.
-            double p = Math.Exp(value._imaginary);
+            double p = Math.Exp(value.m_imaginary);
             double q = 1.0 / p;
             double sinh = (p - q) * 0.5;
             double cosh = (p + q) * 0.5;
-            return new Complex(Math.Sin(value._real) * cosh, Math.Cos(value._real) * sinh);
+            return new Complex(Math.Sin(value.m_real) * cosh, Math.Cos(value.m_real) * sinh);
             // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
             // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
             // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
@@ -273,8 +275,8 @@ namespace System.Numerics
         public static Complex Sinh(Complex value)
         {
             // Use sinh(z) = -i sin(iz) to compute via sin(z).
-            Complex sin = Sin(new Complex(-value._imaginary, value._real));
-            return new Complex(sin._imaginary, -sin._real);
+            Complex sin = Sin(new Complex(-value.m_imaginary, value.m_real));
+            return new Complex(sin.m_imaginary, -sin.m_real);
         }
 
         public static Complex Asin(Complex value)
@@ -299,18 +301,18 @@ namespace System.Numerics
         }
 
         public static Complex Cos(Complex value) {
-            double p = Math.Exp(value._imaginary);
+            double p = Math.Exp(value.m_imaginary);
             double q = 1.0 / p;
             double sinh = (p - q) * 0.5;
             double cosh = (p + q) * 0.5;
-            return new Complex(Math.Cos(value._real) * cosh, -Math.Sin(value._real) * sinh);
+            return new Complex(Math.Cos(value.m_real) * cosh, -Math.Sin(value.m_real) * sinh);
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Cosh", Justification = "Cosh is the name of a mathematical function.")]
         public static Complex Cosh(Complex value)
         {
             // Use cosh(z) = cos(iz) to compute via cos(z).
-            return Cos(new Complex(-value._imaginary, value._real));
+            return Cos(new Complex(-value.m_imaginary, value.m_real));
         }
 
         public static Complex Acos(Complex value)
@@ -345,12 +347,12 @@ namespace System.Numerics
             //   tan z = (sin(2x) / cosh(2y) + i \tanh(2y)) / (1 + cos(2x) / cosh(2y))
             // which correctly computes the (tiny) real part and the (normal-sized) imaginary part.
             
-            double x2 = 2.0 * value._real;
-            double y2 = 2.0 * value._imaginary;
+            double x2 = 2.0 * value.m_real;
+            double y2 = 2.0 * value.m_imaginary;
             double p = Math.Exp(y2);
             double q = 1.0 / p;
             double cosh = (p + q) * 0.5;
-            if (Math.Abs(value._imaginary) <= 4.0)
+            if (Math.Abs(value.m_imaginary) <= 4.0)
             {
                 double sinh = (p - q) * 0.5;
                 double D = Math.Cos(x2) + cosh;
@@ -367,8 +369,8 @@ namespace System.Numerics
         public static Complex Tanh(Complex value)
         {
             // Use tanh(z) = -i tan(iz) to compute via tan(z).
-            Complex tan = Tan(new Complex(-value._imaginary, value._real));
-            return new Complex(tan._imaginary, -tan._real);
+            Complex tan = Tan(new Complex(-value.m_imaginary, value.m_real));
+            return new Complex(tan.m_imaginary, -tan.m_real);
         }
 
         public static Complex Atan(Complex value)
@@ -497,7 +499,7 @@ namespace System.Numerics
 
         public static Complex Log(Complex value)
         {
-            return new Complex(Math.Log(Abs(value)), Math.Atan2(value._imaginary, value._real));
+            return new Complex(Math.Log(Abs(value)), Math.Atan2(value.m_imaginary, value.m_real));
         }
 
         public static Complex Log(Complex value, double baseValue)
@@ -513,9 +515,9 @@ namespace System.Numerics
 
         public static Complex Exp(Complex value)
         {
-            double expReal = Math.Exp(value._real);
-            double cosImaginary = expReal * Math.Cos(value._imaginary);
-            double sinImaginary = expReal * Math.Sin(value._imaginary);
+            double expReal = Math.Exp(value.m_real);
+            double cosImaginary = expReal * Math.Cos(value.m_imaginary);
+            double sinImaginary = expReal * Math.Sin(value.m_imaginary);
             return new Complex(cosImaginary, sinImaginary);
         }
 
@@ -523,16 +525,16 @@ namespace System.Numerics
         public static Complex Sqrt(Complex value)
         {
 
-            if (value._imaginary == 0.0)
+            if (value.m_imaginary == 0.0)
             {
                 // Handle the trivial case quickly.
-                if (value._real < 0.0)
+                if (value.m_real < 0.0)
                 {
-                    return new Complex(0.0, Math.Sqrt(-value._real));
+                    return new Complex(0.0, Math.Sqrt(-value.m_real));
                 }
                 else
                 {
-                    return new Complex(Math.Sqrt(value._real), 0.0);
+                    return new Complex(Math.Sqrt(value.m_real), 0.0);
                 }
             }
             else
@@ -565,35 +567,35 @@ namespace System.Numerics
                 // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
                 // when we encounter very large components to avoid intermediate infinities.
                 bool rescale = false;
-                if ((Math.Abs(value._real) >= s_sqrtRescaleThreshold) || (Math.Abs(value._imaginary) >= s_sqrtRescaleThreshold))
+                if ((Math.Abs(value.m_real) >= s_sqrtRescaleThreshold) || (Math.Abs(value.m_imaginary) >= s_sqrtRescaleThreshold))
                 {
-                    if (double.IsInfinity(value._imaginary) && !double.IsNaN(value._real))
+                    if (double.IsInfinity(value.m_imaginary) && !double.IsNaN(value.m_real))
                     {
                         // We need to handle infinite imaginary parts specially because otherwise
                         // our formulas below produce inf/inf = NaN. The NaN test is necessary
                         // so that we return NaN rather than (+inf,inf) for (NaN,inf).
-                        return (new Complex(double.PositiveInfinity, value._imaginary));
+                        return (new Complex(double.PositiveInfinity, value.m_imaginary));
                     }
                     else
                     {
-                        value._real *= 0.25;
-                        value._imaginary *= 0.25;
+                        value.m_real *= 0.25;
+                        value.m_imaginary *= 0.25;
                         rescale = true;
                     }
                 }
  
                 // This is the core of the algorithm. Everything else is special case handling.
                 double x, y;
-                if (value._real >= 0.0)
+                if (value.m_real >= 0.0)
                 {
-                    x = Math.Sqrt((Hypot(value._real, value._imaginary) + value._real) * 0.5);
-                    y = value._imaginary / (2.0 * x);
+                    x = Math.Sqrt((Hypot(value.m_real, value.m_imaginary) + value.m_real) * 0.5);
+                    y = value.m_imaginary / (2.0 * x);
                 }
                 else
                 {
-                    y = Math.Sqrt((Hypot(value._real, value._imaginary) - value._real) * 0.5);
-                    if (value._imaginary < 0.0) y = -y;
-                    x = value._imaginary / (2.0 * y);
+                    y = Math.Sqrt((Hypot(value.m_real, value.m_imaginary) - value.m_real) * 0.5);
+                    if (value.m_imaginary < 0.0) y = -y;
+                    x = value.m_imaginary / (2.0 * y);
                 }
 
                 if (rescale)
@@ -620,10 +622,10 @@ namespace System.Numerics
                 return Zero;
             }
 
-            double valueReal = value._real;
-            double valueImaginary = value._imaginary;
-            double powerReal = power._real;
-            double powerImaginary = power._imaginary;
+            double valueReal = value.m_real;
+            double valueImaginary = value.m_imaginary;
+            double powerReal = power.m_real;
+            double powerImaginary = power.m_imaginary;
 
             double rho = Abs(value);
             double theta = Math.Atan2(valueImaginary, valueReal);
@@ -641,8 +643,8 @@ namespace System.Numerics
         
         private static Complex Scale(Complex value, double factor)
         {
-            double realResult = factor * value._real;
-            double imaginaryResuilt = factor * value._imaginary;
+            double realResult = factor * value.m_real;
+            double imaginaryResuilt = factor * value.m_imaginary;
             return new Complex(realResult, imaginaryResuilt);
         }
 
