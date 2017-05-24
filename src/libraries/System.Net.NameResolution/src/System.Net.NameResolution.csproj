@@ -47,6 +47,9 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\NameResolutionPal.Windows.cs" />
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\IntPtrHelper.cs">
       <Link>Common\System\Net\IntPtrHelper.cs</Link>
     </Compile>
@@ -112,9 +115,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeFreeAddrInfo.cs">
       <Link>Interop\Windows\Winsock\SafeFreeAddrInfo.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
