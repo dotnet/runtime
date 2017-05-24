@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public class CustomAttributeFormatException : FormatException
     {
         public CustomAttributeFormatException()

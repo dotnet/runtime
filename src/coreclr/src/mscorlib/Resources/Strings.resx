@@ -3287,6 +3287,9 @@
   <data name="Serialization_DateTimeTicksOutOfRange" xml:space="preserve">
     <value>Invalid serialized DateTime data. Ticks must be between DateTime.MinValue.Ticks and DateTime.MaxValue.Ticks.</value>
   </data>
+  <data name="Serialization_DelegatesNotSupported" xml:space="preserve">
+    <value>Serializing delegates is not supported on this platform.</value>
+  </data>
   <data name="Serialization_InsufficientDeserializationState" xml:space="preserve">
     <value>Insufficient state to deserialize the object. Missing field '{0}'. More information is needed.</value>
   </data>

@@ -20,7 +20,6 @@ namespace System.Collections.Concurrent
     /// </remarks>
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(SystemCollectionsConcurrent_ProducerConsumerCollectionDebugView<>))]
-    [Serializable]
     internal class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         // This implementation provides an unbounded, multi-producer multi-consumer queue

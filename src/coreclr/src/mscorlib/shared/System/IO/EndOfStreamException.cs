@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    [Serializable]
     public class EndOfStreamException : IOException
     {
         public EndOfStreamException()

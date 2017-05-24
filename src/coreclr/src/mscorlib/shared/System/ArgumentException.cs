@@ -20,7 +20,6 @@ namespace System
     // the contract of the method.  Ideally it should give a meaningful error
     // message describing what was wrong and which parameter is incorrect.
     // 
-    [Serializable]
     public class ArgumentException : SystemException
     {
         private String _paramName;

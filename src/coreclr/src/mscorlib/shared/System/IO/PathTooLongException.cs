@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 
 namespace System.IO
 {
-    [Serializable]
     public class PathTooLongException : IOException
     {
         public PathTooLongException()

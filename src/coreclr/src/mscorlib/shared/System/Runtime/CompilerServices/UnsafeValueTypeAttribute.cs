@@ -4,7 +4,6 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Struct)]
     sealed public class UnsafeValueTypeAttribute : Attribute
     {

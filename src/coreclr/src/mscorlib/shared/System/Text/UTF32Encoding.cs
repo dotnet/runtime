@@ -21,7 +21,6 @@ namespace System.Text
     // mark is used mostly to distinguish UTF-32 text from other encodings, and doesn't
     // switch the byte orderings.
 
-    [Serializable]
     public sealed class UTF32Encoding : Encoding
     {
         /*
@@ -1200,7 +1199,6 @@ namespace System.Text
                    CodePage + (_emitUTF32ByteOrderMark ? 4 : 0) + (_bigEndian ? 8 : 0);
         }
 
-        [Serializable]
         private sealed class UTF32Decoder : DecoderNLS
         {
             // Need a place to store any extra bytes we may have picked up

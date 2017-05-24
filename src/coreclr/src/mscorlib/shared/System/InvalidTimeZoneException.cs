@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class InvalidTimeZoneException : Exception
     {
         public InvalidTimeZoneException()

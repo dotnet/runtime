@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class DBNull : ISerializable, IConvertible
     {
         private DBNull()

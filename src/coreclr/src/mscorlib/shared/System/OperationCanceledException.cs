@@ -17,7 +17,6 @@ using System.Threading;
 
 namespace System
 {
-    [Serializable]
     public class OperationCanceledException : SystemException
     {
         [NonSerialized]

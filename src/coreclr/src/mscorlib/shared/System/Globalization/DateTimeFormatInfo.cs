@@ -49,7 +49,6 @@ namespace System.Globalization
     }
 
 
-    [Serializable]
     public sealed class DateTimeFormatInfo : IFormatProvider, ICloneable
     {
         // cache for the invariant culture.

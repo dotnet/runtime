@@ -6,7 +6,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-    [Serializable]
     public abstract class EastAsianLunisolarCalendar : Calendar
     {
         internal const int LeapMonth = 0;

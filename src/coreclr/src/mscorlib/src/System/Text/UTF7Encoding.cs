@@ -13,7 +13,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    [Serializable]
     public class UTF7Encoding : Encoding
     {
         private const String base64Chars =
@@ -832,7 +831,6 @@ namespace System.Text
             return charCount;
         }
 
-        [Serializable]
         // Of all the amazing things... This MUST be Decoder so that our com name
         // for System.Text.Decoder doesn't change
         private sealed class Decoder : DecoderNLS, ISerializable
@@ -898,7 +896,6 @@ namespace System.Text
             }
         }
 
-        [Serializable]
         // Of all the amazing things... This MUST be Encoder so that our com name
         // for System.Text.Encoder doesn't change
         private sealed class Encoder : EncoderNLS, ISerializable
@@ -959,7 +956,6 @@ namespace System.Text
 
         // Preexisting UTF7 behavior for bad bytes was just to spit out the byte as the next char
         // and turn off base64 mode if it was in that mode.  We still exit the mode, but now we fallback.
-        [Serializable]
         private sealed class DecoderUTF7Fallback : DecoderFallback
         {
             // Construction.  Default replacement fallback uses no best fit and ? replacement string

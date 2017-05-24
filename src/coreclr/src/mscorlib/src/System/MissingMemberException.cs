@@ -21,7 +21,6 @@ using System.Diagnostics.Contracts;
 
 namespace System
 {
-    [Serializable]
     public class MissingMemberException : MemberAccessException, ISerializable
     {
         public MissingMemberException()

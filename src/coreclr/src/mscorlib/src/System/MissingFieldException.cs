@@ -17,7 +17,6 @@ using System.Globalization;
 
 namespace System
 {
-    [Serializable]
     public class MissingFieldException : MissingMemberException, ISerializable
     {
         public MissingFieldException()

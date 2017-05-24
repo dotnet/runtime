@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class WaitHandleCannotBeOpenedException : ApplicationException
     {
         public WaitHandleCannotBeOpenedException() : base(SR.Threading_WaitHandleCannotBeOpenedException)

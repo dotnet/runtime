@@ -11,7 +11,6 @@ using MdToken = System.Reflection.MetadataToken;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal unsafe sealed class RuntimeParameterInfo : ParameterInfo, ISerializable
     {
         #region Static Members

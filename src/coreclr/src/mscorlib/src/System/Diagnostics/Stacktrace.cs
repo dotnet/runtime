@@ -22,7 +22,6 @@ namespace System.Diagnostics
     // Modifying the order or fields of this object may require other changes 
     // to the unmanaged definition of the StackFrameHelper class, in 
     // VM\DebugDebugger.h. The binder will catch some of these layout problems.
-    [Serializable]
     internal class StackFrameHelper : IDisposable
     {
         [NonSerialized]
@@ -251,7 +250,6 @@ namespace System.Diagnostics
     // In order to ensure trusted code can trust the data it gets from a 
     // StackTrace, we use an InheritanceDemand to prevent partially-trusted
     // subclasses.
-    [Serializable]
     public class StackTrace
     {
         private StackFrame[] frames;

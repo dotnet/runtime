@@ -19,11 +19,9 @@ namespace System.Text
     // Note: IsAlwaysNormalized remains false because 1/2 the code points are unassigned, so they'd
     //       use fallbacks, and we cannot guarantee that fallbacks are normalized.
 
-    [Serializable]
     public class ASCIIEncoding : Encoding
     {
         // Allow for devirtualization (see https://github.com/dotnet/coreclr/pull/9230)
-        [Serializable]
         internal sealed class ASCIIEncodingSealed : ASCIIEncoding { }
 
         // Used by Encoding.ASCII for lazy initialization

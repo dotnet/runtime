@@ -18,7 +18,6 @@ using System.Reflection;
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public struct PropertyToken
     {
         public static readonly PropertyToken Empty = new PropertyToken();

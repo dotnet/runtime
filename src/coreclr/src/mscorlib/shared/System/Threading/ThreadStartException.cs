@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public sealed class ThreadStartException : SystemException
     {
         internal ThreadStartException()

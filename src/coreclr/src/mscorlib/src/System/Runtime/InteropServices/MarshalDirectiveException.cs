@@ -17,7 +17,6 @@ using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public class MarshalDirectiveException : SystemException
     {
         public MarshalDirectiveException()

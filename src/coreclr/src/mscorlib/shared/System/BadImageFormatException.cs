@@ -17,7 +17,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public partial class BadImageFormatException : SystemException
     {
         private String _fileName;  // The name of the corrupt PE file.

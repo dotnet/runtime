@@ -14,7 +14,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    [Serializable]
     public class UnicodeEncoding : Encoding
     {
         // Used by Encoding.BigEndianUnicode/Unicode for lazy initialization
@@ -1983,7 +1982,6 @@ namespace System.Text
                    (byteOrderMark ? 4 : 0) + (bigEndian ? 8 : 0);
         }
 
-        [Serializable]
         private sealed class Decoder : System.Text.DecoderNLS, ISerializable
         {
             internal int lastByte = -1;

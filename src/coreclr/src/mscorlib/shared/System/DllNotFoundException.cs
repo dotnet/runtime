@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class DllNotFoundException : TypeLoadException
     {
         public DllNotFoundException()

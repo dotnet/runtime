@@ -9,7 +9,6 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    [Serializable]
     internal abstract class RuntimeFieldInfo : FieldInfo, ISerializable
     {
         #region Private Data Members

@@ -21,7 +21,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     /// </summary>
     /// <typeparam name="TKey">Type of objects that act as keys.</typeparam>    
     /// <typeparam name="TValue">Type of objects that act as entries / values.</typeparam>
-    [Serializable]
     [DebuggerDisplay("Count = {Count}")]
     internal sealed class ConstantSplittableMap<TKey, TValue> : IMapView<TKey, TValue>
     {
@@ -169,7 +168,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region IKeyValuePair Enumerator
 
-        [Serializable]
         internal struct IKeyValuePairEnumerator : IEnumerator<IKeyValuePair<TKey, TValue>>
         {
             private KeyValuePair<TKey, TValue>[] _array;
