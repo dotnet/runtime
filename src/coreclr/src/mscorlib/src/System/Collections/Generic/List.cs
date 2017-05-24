@@ -1254,7 +1254,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<T>, System.Collections.IEnumerator
         {
             private List<T> list;

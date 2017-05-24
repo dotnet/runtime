@@ -18,7 +18,6 @@ using System.Diagnostics.Contracts;
 namespace System.Collections
 {
     ///    This is a simple implementation of IDictionary that is empty and readonly.
-    [Serializable]
     internal sealed class EmptyReadOnlyDictionaryInternal : IDictionary
     {
         // Note that this class must be agile with respect to AppDomains.  See its usage in

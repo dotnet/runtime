@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     internal class AppDomainUnloadedException : SystemException
     {
         public AppDomainUnloadedException()

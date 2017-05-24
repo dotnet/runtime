@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public sealed class TargetInvocationException : ApplicationException
     {
         public TargetInvocationException(Exception inner)

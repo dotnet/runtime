@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public sealed class ReflectionTypeLoadException : SystemException, ISerializable
     {
         public ReflectionTypeLoadException(Type[] classes, Exception[] exceptions)

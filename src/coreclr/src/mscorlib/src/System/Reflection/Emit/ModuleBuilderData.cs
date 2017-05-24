@@ -19,7 +19,6 @@ namespace System.Reflection.Emit
     // This is a package private class. This class hold all of the managed
     // data member for ModuleBuilder. Note that what ever data members added to
     // this class cannot be accessed from the EE.
-    [Serializable]
     internal class ModuleBuilderData
     {
         internal ModuleBuilderData(ModuleBuilder module, String strModuleName, String strFileName, int tkFile)

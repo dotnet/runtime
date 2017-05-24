@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices
 {
     // Exception for Structured Exception Handler exceptions.
     // 
-    [Serializable]
     public class SEHException : ExternalException
     {
         public SEHException()

@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System.Resources
 {
-    [Serializable]
     public class MissingManifestResourceException : SystemException
     {
         public MissingManifestResourceException()

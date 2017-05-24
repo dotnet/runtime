@@ -16,7 +16,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class ThreadStateException : SystemException
     {
         public ThreadStateException()

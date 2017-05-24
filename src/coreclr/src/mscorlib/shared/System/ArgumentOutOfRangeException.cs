@@ -18,7 +18,6 @@ namespace System
 {
     // The ArgumentOutOfRangeException is thrown when an argument 
     // is outside the legal range for that argument.  
-    [Serializable]
     public class ArgumentOutOfRangeException : ArgumentException
     {
         private Object _actualValue;

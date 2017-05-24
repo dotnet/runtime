@@ -18,7 +18,6 @@ using System.Reflection;
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public struct MethodToken
     {
         public static readonly MethodToken Empty = new MethodToken();

@@ -20,7 +20,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
-    [Serializable]
     internal sealed class Comparer : IComparer, ISerializable
     {
         private CompareInfo m_compareInfo;

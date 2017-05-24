@@ -15,7 +15,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class NullReferenceException : SystemException
     {
         public NullReferenceException()

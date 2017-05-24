@@ -13,7 +13,6 @@ using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    [Serializable]
     public abstract class DecoderFallback
     {
         internal bool bIsMicrosoftBestFitFallback = false;

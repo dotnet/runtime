@@ -8,7 +8,6 @@ using System.Globalization;
 
 namespace System.Text
 {
-    [Serializable]
     public sealed class DecoderExceptionFallback : DecoderFallback
     {
         // Construction
@@ -99,7 +98,6 @@ namespace System.Text
     }
 
     // Exception for decoding unknown byte sequences.
-    [Serializable]
     public sealed class DecoderFallbackException : ArgumentException
     {
         private byte[] bytesUnknown = null;

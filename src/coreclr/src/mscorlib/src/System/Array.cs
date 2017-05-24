@@ -2415,7 +2415,6 @@ namespace System
             }
         }
 
-        [Serializable]
         private sealed class SZArrayEnumerator : IEnumerator, ICloneable
         {
             private Array _array;
@@ -2461,7 +2460,6 @@ namespace System
             }
         }
 
-        [Serializable]
         private sealed class ArrayEnumerator : IEnumerator, ICloneable
         {
             private Array array;
@@ -2723,7 +2721,6 @@ namespace System
         // This is a normal generic Enumerator for SZ arrays. It doesn't have any of the "this" stuff
         // that SZArrayHelper does.
         //
-        [Serializable]
         private sealed class SZGenericArrayEnumerator<T> : IEnumerator<T>
         {
             private T[] _array;

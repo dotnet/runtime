@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
-    [Serializable]
     [DebuggerDisplay("Count = {Count}")]
     internal sealed class DictionaryKeyCollection<TKey, TValue> : ICollection<TKey>
     {
@@ -83,7 +82,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     }  // public class DictionaryKeyCollection<TKey, TValue>
 
 
-    [Serializable]
     internal sealed class DictionaryKeyEnumerator<TKey, TValue> : IEnumerator<TKey>
     {
         private readonly IDictionary<TKey, TValue> dictionary;

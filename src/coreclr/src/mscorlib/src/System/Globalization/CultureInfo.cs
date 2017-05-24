@@ -44,7 +44,6 @@ namespace System.Globalization
     using StringLcidDictionary = LowLevelDictionary<int, CultureInfo>;
 #endif
 
-    [Serializable]
     public partial class CultureInfo : IFormatProvider, ICloneable
     {
         //--------------------------------------------------------------------//

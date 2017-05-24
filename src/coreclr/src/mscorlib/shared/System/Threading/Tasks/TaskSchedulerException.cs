@@ -20,7 +20,6 @@ namespace System.Threading.Tasks
     /// Represents an exception used to communicate an invalid operation by a
     /// <see cref="T:System.Threading.Tasks.TaskScheduler"/>.
     /// </summary>
-    [Serializable]
     public class TaskSchedulerException : Exception
     {
         /// <summary>

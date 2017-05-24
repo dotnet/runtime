@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    [Serializable]
     public sealed class Missing : ISerializable
     {
         public static readonly Missing Value = new Missing();

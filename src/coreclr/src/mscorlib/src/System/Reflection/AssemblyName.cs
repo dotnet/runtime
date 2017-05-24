@@ -27,7 +27,6 @@ namespace System.Reflection
     using System.Diagnostics.Contracts;
     using System.Text;
 
-    [Serializable]
     public sealed class AssemblyName : ICloneable, ISerializable, IDeserializationCallback
     {
         //

@@ -908,7 +908,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Serializable]
         public struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>,
             IDictionaryEnumerator
         {
@@ -1037,7 +1036,6 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(Mscorlib_DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-        [Serializable]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
         {
             private Dictionary<TKey, TValue> dictionary;
@@ -1188,7 +1186,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
-            [Serializable]
             public struct Enumerator : IEnumerator<TKey>, System.Collections.IEnumerator
             {
                 private Dictionary<TKey, TValue> dictionary;
@@ -1267,7 +1264,6 @@ namespace System.Collections.Generic
 
         [DebuggerTypeProxy(typeof(Mscorlib_DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
-        [Serializable]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>
         {
             private Dictionary<TKey, TValue> dictionary;
@@ -1416,7 +1412,6 @@ namespace System.Collections.Generic
                 get { return ((ICollection)dictionary).SyncRoot; }
             }
 
-            [Serializable]
             public struct Enumerator : IEnumerator<TValue>, System.Collections.IEnumerator
             {
                 private Dictionary<TKey, TValue> dictionary;

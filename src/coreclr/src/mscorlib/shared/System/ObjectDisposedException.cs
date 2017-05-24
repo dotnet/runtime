@@ -11,7 +11,6 @@ namespace System
     ///    <para> The exception that is thrown when accessing an object that was
     ///       disposed.</para>
     /// </devdoc>
-    [Serializable]
     public class ObjectDisposedException : InvalidOperationException
     {
         private String _objectName;

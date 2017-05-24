@@ -81,7 +81,6 @@ namespace System.Text
     // generally executes faster.
     //
 
-    [Serializable]
     public abstract class Encoding : ICloneable
     {
         // For netcore we use UTF8 as default encoding since ANSI isn't available
@@ -1408,7 +1407,6 @@ namespace System.Text
             decoder.ClearMustFlush();
         }
 
-        [Serializable]
         internal sealed class DefaultEncoder : Encoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
@@ -1530,7 +1528,6 @@ namespace System.Text
             }
         }
 
-        [Serializable]
         internal sealed class DefaultDecoder : Decoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;

@@ -23,7 +23,6 @@ namespace System
     using System.Diagnostics.Contracts;
     using StackCrawlMark = System.Threading.StackCrawlMark;
 
-    [Serializable]
     public unsafe struct RuntimeTypeHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -753,7 +752,6 @@ namespace System
         }
     }
 
-    [Serializable]
     public unsafe struct RuntimeMethodHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
@@ -1133,7 +1131,6 @@ namespace System
         }
     }
 
-    [Serializable]
     public unsafe struct RuntimeFieldHandle : ISerializable
     {
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.

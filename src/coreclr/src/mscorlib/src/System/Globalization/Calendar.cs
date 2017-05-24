@@ -28,7 +28,6 @@ namespace System.Globalization
     // The calculation of hour/minute/second is moved to Calendar from GregorianCalendar,
     // since most of the calendars (or all?) have the same way of calcuating hour/minute/second.
 
-    [Serializable]
     public abstract partial class Calendar : ICloneable
     {
         // Number of 100ns (10E-7 second) ticks per time unit

@@ -14,7 +14,6 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    [Serializable]
     public class AbandonedMutexException : SystemException
     {
         private int _mutexIndex = -1;

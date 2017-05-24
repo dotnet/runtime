@@ -32,7 +32,6 @@ namespace System.Resources
     // enumerates over an IResourceReader, loading every name and value, and 
     // stores them in a hash table.  Custom IResourceReaders can be used.
     //
-    [Serializable]
     public class ResourceSet : IDisposable, IEnumerable
     {
         [NonSerialized] protected IResourceReader Reader;
