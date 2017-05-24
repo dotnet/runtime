@@ -118,6 +118,7 @@ HandleStack* mono_handle_stack_alloc (void);
 void mono_handle_stack_free (HandleStack *handlestack);
 MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
 void mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
+void mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain);
 
 #ifdef MONO_HANDLE_TRACK_SP
 void mono_handle_chunk_leak_check (HandleStack *handles);
