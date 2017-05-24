@@ -1631,8 +1631,7 @@ mono_class_setup_fields (MonoClass *klass)
 			char *class_name = mono_type_get_full_name (klass);
 			char *type_name = mono_type_full_name (field->type);
 
-			mono_class_set_type_load_failure (klass, "");
-			g_warning ("Invalid type %s for instance field %s:%s", type_name, class_name, field->name);
+			mono_class_set_type_load_failure (klass, "Invalid type %s for instance field %s:%s", type_name, class_name, field->name);
 			g_free (class_name);
 			g_free (type_name);
 			break;
