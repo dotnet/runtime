@@ -290,9 +290,17 @@
   </PropertyGroup>
   
   <PropertyGroup>
+    <CombinedInstallerStart>$(PackagesOutDir)dotnet-runtime-</CombinedInstallerStart>
     <SharedHostInstallerStart>$(PackagesOutDir)dotnet-host-</SharedHostInstallerStart>
     <HostFxrInstallerStart>$(PackagesOutDir)dotnet-hostfxr-</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart>$(PackagesOutDir)dotnet-sharedframework-</SharedFrameworkInstallerStart>
+    <SharedFrameworkInstallerStart>$(PackagesOutDir)dotnet-runtime-</SharedFrameworkInstallerStart>
+
+    <!-- OSX specific intermediate package suffix -->
+    <InstallerStartSuffix Condition="'$(OSGroup)' == 'OSX'">internal</InstallerStartSuffix>
+    <SharedHostInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
+    <HostFxrInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
+
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->

@@ -16,20 +16,20 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ProductMoniker>$(PackageTargetRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
-    <HostResolverVersionMoniker>$(PackageTargetRid).$(HostResolverVersion)</HostResolverVersionMoniker>
+    <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
+    <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CombinedCompressedFile>dotnet-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
-    <HostFxrCompressedFile>dotnet-hostfxr-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
-    <SharedFrameworkCompressedFile>dotnet-sharedframework-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
-    <SharedFrameworkSymbolsCompressedFile>dotnet-sharedframework-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
+    <CombinedCompressedFile>dotnet-runtime-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
+    <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
+    <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+    <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CombinedInstallerFile>$(PackagesOutDir)dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
-    <CombinedInstallerEngine>$(PackagesOutDir)dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
+    <CombinedInstallerFile>$(CombinedInstallerStart)$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
+    <CombinedInstallerEngine>$(CombinedInstallerStart)$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
     <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
@@ -40,6 +40,6 @@
     <ProductBrandPrefix Condition="'$(ReleaseBrandSuffix)'!=''">Microsoft .NET Core $(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandPrefix>
     <SharedHostBrandName>$(ProductBrandPrefix) Host</SharedHostBrandName>
     <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver</HostFxrBrandName>
-    <SharedFrameworkBrandName>$(ProductBrandPrefix)  Runtime</SharedFrameworkBrandName>
+    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime</SharedFrameworkBrandName>
   </PropertyGroup>
 </Project>
