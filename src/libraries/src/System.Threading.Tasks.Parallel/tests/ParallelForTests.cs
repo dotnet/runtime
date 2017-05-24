@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Security;
 
 using Xunit;
@@ -1225,6 +1226,138 @@ namespace System.Threading.Tasks.Tests
 
             // Verification
             Assert.False(withinTaskId == null || withinTaskId < 0, "Task.CurrentId called from within a Task must be non-negative");
+        }
+
+        private const int CancelForTestLoopIterations = 500;
+
+        private static void VerifyCancelTestState(
+            bool gotCancellationException,
+            bool reportedAsCompleted,
+            int actuallyCompletedCount)
+        {
+            Assert.Equal(reportedAsCompleted, !gotCancellationException);
+            if (reportedAsCompleted)
+            {
+                Assert.Equal(CancelForTestLoopIterations, actuallyCompletedCount);
+            }
+        }
+
+        [Fact]
+        public static void CancelForIntTest()
+        {
+            for (int i = 0; i < 100; ++i)
+            {
+                var cancellationTokenSource = new CancellationTokenSource();
+                bool gotCancellationException = false;
+                bool reportedAsCompleted = false;
+                var parallelOptions = new ParallelOptions { CancellationToken = cancellationTokenSource.Token };
+                int completedCount = 0;
+                try
+                {
+                    reportedAsCompleted =
+                        Parallel.For(
+                            0,
+                            CancelForTestLoopIterations,
+                            parallelOptions,
+                            value =>
+                            {
+                                Interlocked.Increment(ref completedCount);
+
+                                if (!cancellationTokenSource.IsCancellationRequested)
+                                {
+                                    Task.Run(() => cancellationTokenSource.Cancel());
+                                }
+                            }).IsCompleted;
+                }
+                catch (OperationCanceledException)
+                {
+                    gotCancellationException = true;
+                }
+                int actuallyCompletedCount = Interlocked.CompareExchange(ref completedCount, 0, 0);
+
+                VerifyCancelTestState(gotCancellationException, reportedAsCompleted, actuallyCompletedCount);
+            }
+        }
+
+        [Fact]
+        public static void CancelForLongTest()
+        {
+            for (int i = 0; i < 100; ++i)
+            {
+                var cancellationTokenSource = new CancellationTokenSource();
+                bool gotCancellationException = false;
+                bool reportedAsCompleted = false;
+                var parallelOptions = new ParallelOptions { CancellationToken = cancellationTokenSource.Token };
+                int completedCount = 0;
+                try
+                {
+                    reportedAsCompleted =
+                        Parallel.For(
+                            (long)0,
+                            (long)CancelForTestLoopIterations,
+                            parallelOptions,
+                            value =>
+                            {
+                                Interlocked.Increment(ref completedCount);
+
+                                if (!cancellationTokenSource.IsCancellationRequested)
+                                {
+                                    Task.Run(() => cancellationTokenSource.Cancel());
+                                }
+                            }).IsCompleted;
+                }
+                catch (OperationCanceledException)
+                {
+                    gotCancellationException = true;
+                }
+                int actuallyCompletedCount = Interlocked.CompareExchange(ref completedCount, 0, 0);
+
+                VerifyCancelTestState(gotCancellationException, reportedAsCompleted, actuallyCompletedCount);
+            }
+        }
+
+        private static IEnumerable<object[]> CancelForEachTest_MemberData()
+        {
+            var array = new int[CancelForTestLoopIterations];
+            yield return new object[] { array };
+            yield return new object[] { array.Select(i => i) };
+        }
+
+        [Theory]
+        [MemberData(nameof(CancelForEachTest_MemberData))]
+        public static void CancelForEachTest(IEnumerable<int> enumerable)
+        {
+            for (int i = 0; i < 100; ++i)
+            {
+                var cancellationTokenSource = new CancellationTokenSource();
+                bool gotCancellationException = false;
+                bool reportedAsCompleted = false;
+                var parallelOptions = new ParallelOptions { CancellationToken = cancellationTokenSource.Token };
+                int completedCount = 0;
+                try
+                {
+                    reportedAsCompleted =
+                        Parallel.ForEach(
+                            enumerable,
+                            parallelOptions,
+                            value =>
+                            {
+                                Interlocked.Increment(ref completedCount);
+
+                                if (!cancellationTokenSource.IsCancellationRequested)
+                                {
+                                    Task.Run(() => cancellationTokenSource.Cancel());
+                                }
+                            }).IsCompleted;
+                }
+                catch (OperationCanceledException)
+                {
+                    gotCancellationException = true;
+                }
+                int actuallyCompletedCount = Interlocked.CompareExchange(ref completedCount, 0, 0);
+
+                VerifyCancelTestState(gotCancellationException, reportedAsCompleted, actuallyCompletedCount);
+            }
         }
 
         #region Helper Classes and Methods
