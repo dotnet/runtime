@@ -89,7 +89,7 @@ static void ftnptr_eh_callback_default (guint32 gchandle);
 static MonoFtnPtrEHCallback ftnptr_eh_callback = ftnptr_eh_callback_default;
 
 static void
-delegate_hash_table_add (MonoDelegate *d);
+delegate_hash_table_add (MonoDelegateHandle d);
 
 static void
 delegate_hash_table_remove (MonoDelegate *d);
@@ -179,8 +179,14 @@ mono_string_to_byvalwstr (gpointer dst, MonoString *src, int size);
 gpointer
 mono_delegate_to_ftnptr (MonoDelegate *delegate);
 
+gpointer
+mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error);
+
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
+
+MonoDelegateHandle
+mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error);
 
 gpointer
 mono_array_to_savearray (MonoArray *array);
@@ -431,25 +437,44 @@ mono_marshal_unlock_internal (void)
 
 /* This is a JIT icall, it sets the pending exception and return NULL on error */
 gpointer
-mono_delegate_to_ftnptr (MonoDelegate *delegate)
+mono_delegate_to_ftnptr (MonoDelegate *delegate_raw)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
+	MONO_HANDLE_DCL (MonoDelegate, delegate);
+	gpointer result = mono_delegate_handle_to_ftnptr (delegate, &error);
+	mono_error_set_pending_exception (&error);
+	HANDLE_FUNCTION_RETURN_VAL (result);
+}
+
+gpointer
+mono_delegate_handle_to_ftnptr (MonoDelegateHandle delegate, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	gpointer result = NULL;
+	error_init (error);
 	MonoMethod *method, *wrapper;
 	MonoClass *klass;
 	uint32_t target_handle = 0;
 
-	if (!delegate)
-		return NULL;
+	if (MONO_HANDLE_IS_NULL (delegate))
+		goto leave;
 
-	if (delegate->delegate_trampoline)
-		return delegate->delegate_trampoline;
+	if (MONO_HANDLE_GETVAL (delegate, delegate_trampoline)) {
+		result = MONO_HANDLE_GETVAL (delegate, delegate_trampoline);
+		goto leave;
+	}
 
-	klass = ((MonoObject *)delegate)->vtable->klass;
+	klass = mono_handle_class (delegate);
 	g_assert (klass->delegate);
 
-	method = delegate->method;
-	if (delegate->method_is_virtual)
-		method = mono_object_get_virtual_method (delegate->target, method);
+	method = MONO_HANDLE_GETVAL (delegate, method);
+	if (MONO_HANDLE_GETVAL (delegate, method_is_virtual)) {
+		MonoObjectHandle delegate_target = MONO_HANDLE_NEW_GET (MonoObject, delegate, target);
+		method = mono_object_handle_get_virtual_method (delegate_target, method, error);
+		if (!is_ok (error))
+			goto leave;
+	}
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
 		const char *exc_class, *exc_arg;
@@ -458,38 +483,39 @@ mono_delegate_to_ftnptr (MonoDelegate *delegate)
 		ftnptr = mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 		if (!ftnptr) {
 			g_assert (exc_class);
-			mono_set_pending_exception (mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
-			return NULL;
+			mono_error_set_generic_error (error, "System", exc_class, "%s", exc_arg);
+			goto leave;
 		}
-		return ftnptr;
+		result = ftnptr;
+		goto leave;
 	}
 
-	if (delegate->target) {
+	MonoObjectHandle delegate_target = MONO_HANDLE_NEW_GET (MonoObject, delegate, target);
+	if (!MONO_HANDLE_IS_NULL (delegate_target)) {
 		/* Produce a location which can be embedded in JITted code */
-		target_handle = mono_gchandle_new_weakref (delegate->target, FALSE);
+		target_handle = mono_gchandle_new_weakref (MONO_HANDLE_RAW (delegate_target), FALSE); /* FIXME: a version of mono_gchandle_new_weakref that takes a coop handle */
 	}
 
-	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_handle, &error);
-	if (!is_ok (&error))
-		goto fail;
+	wrapper = mono_marshal_get_managed_wrapper (method, klass, target_handle, error);
+	if (!is_ok (error))
+		goto leave;
 
-	delegate->delegate_trampoline = mono_compile_method_checked (wrapper, &error);
-	if (!is_ok (&error))
-		goto fail;
+	MONO_HANDLE_SETVAL (delegate, delegate_trampoline, gpointer, mono_compile_method_checked (wrapper, error));
+	if (!is_ok (error))
+		goto leave;
 
 	// Add the delegate to the delegate hash table
 	delegate_hash_table_add (delegate);
 
 	/* when the object is collected, collect the dynamic method, too */
-	mono_object_register_finalizer ((MonoObject*)delegate);
+	mono_object_register_finalizer ((MonoObject*) MONO_HANDLE_RAW (delegate));
 
-	return delegate->delegate_trampoline;
+	result = MONO_HANDLE_GETVAL (delegate, delegate_trampoline);
 
-fail:
-	if (target_handle != 0)
+leave:
+	if (!is_ok (error) && target_handle != 0)
 		mono_gchandle_free (target_handle);
-	mono_error_set_pending_exception (&error);
-	return NULL;
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /* 
@@ -521,7 +547,7 @@ delegate_hash_table_remove (MonoDelegate *d)
 }
 
 static void
-delegate_hash_table_add (MonoDelegate *d)
+delegate_hash_table_add (MonoDelegateHandle d)
 {
 	guint32 gchandle;
 	guint32 old_gchandle;
@@ -529,14 +555,15 @@ delegate_hash_table_add (MonoDelegate *d)
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
+	gpointer delegate_trampoline = MONO_HANDLE_GETVAL (d, delegate_trampoline);
 	if (mono_gc_is_moving ()) {
-		gchandle = mono_gchandle_new_weakref ((MonoObject*)d, FALSE);
-		old_gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
-		g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, GUINT_TO_POINTER (gchandle));
+		gchandle = mono_gchandle_new_weakref ((MonoObject*) MONO_HANDLE_RAW (d), FALSE);
+		old_gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, delegate_trampoline));
+		g_hash_table_insert (delegate_hash_table, delegate_trampoline, GUINT_TO_POINTER (gchandle));
 		if (old_gchandle)
 			mono_gchandle_free (old_gchandle);
 	} else {
-		g_hash_table_insert (delegate_hash_table, d->delegate_trampoline, d);
+		g_hash_table_insert (delegate_hash_table, delegate_trampoline, MONO_HANDLE_RAW (d));
 	}
 	mono_marshal_unlock ();
 }
@@ -590,12 +617,23 @@ parse_unmanaged_function_pointer_attr (MonoClass *klass, MonoMethodPInvoke *piin
 MonoDelegate*
 mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
+	MonoDelegateHandle result = mono_ftnptr_to_delegate_handle (klass, ftn, &error);
+	mono_error_set_pending_exception (&error);
+	HANDLE_FUNCTION_RETURN_OBJ (result);
+}
+
+MonoDelegateHandle
+mono_ftnptr_to_delegate_handle (MonoClass *klass, gpointer ftn, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
 	guint32 gchandle;
-	MonoDelegate *d;
+	MonoDelegateHandle d = MONO_HANDLE_NEW (MonoDelegate, NULL);
 
 	if (ftn == NULL)
-		return NULL;
+		goto leave;
 
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
@@ -605,30 +643,26 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, ftn));
 		mono_marshal_unlock ();
 		if (gchandle)
-			d = (MonoDelegate*)mono_gchandle_get_target (gchandle);
-		else
-			d = NULL;
+			MONO_HANDLE_ASSIGN (d, MONO_HANDLE_CAST (MonoDelegate, mono_gchandle_get_target_handle (gchandle)));
 	} else {
-		d = (MonoDelegate *)g_hash_table_lookup (delegate_hash_table, ftn);
+		MONO_HANDLE_ASSIGN (d, MONO_HANDLE_NEW (MonoDelegate, g_hash_table_lookup (delegate_hash_table, ftn)));
 		mono_marshal_unlock ();
 	}
-	if (d == NULL) {
+	if (MONO_HANDLE_IS_NULL (d)) {
 		/* This is a native function, so construct a delegate for it */
 		MonoMethodSignature *sig;
 		MonoMethod *wrapper;
 		MonoMarshalSpec **mspecs;
 		MonoMethod *invoke = mono_get_delegate_invoke (klass);
 		MonoMethodPInvoke piinfo;
-		MonoObject *this_obj;
+		MonoObjectHandle  this_obj;
 		int i;
 
 		if (use_aot_wrappers) {
 			wrapper = mono_marshal_get_native_func_wrapper_aot (klass);
-			this_obj = mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, &error);
-			if (!is_ok (&error)) {
-				mono_error_set_pending_exception (&error);
-				return NULL;
-			}
+			this_obj = MONO_HANDLE_NEW (MonoObject, mono_value_box_checked (mono_domain_get (), mono_defaults.int_class, &ftn, error));
+			if (!is_ok (error))
+				goto leave;
 		} else {
 			memset (&piinfo, 0, sizeof (piinfo));
 			parse_unmanaged_function_pointer_attr (klass, &piinfo);
@@ -640,7 +674,7 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			sig->hasthis = 0;
 
 			wrapper = mono_marshal_get_native_func_wrapper (klass->image, sig, &piinfo, mspecs, ftn);
-			this_obj = NULL;
+			this_obj = MONO_HANDLE_NEW (MonoObject, NULL);
 
 			for (i = mono_method_signature (invoke)->param_count; i >= 0; i--)
 				if (mspecs [i])
@@ -649,25 +683,24 @@ mono_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
 			g_free (sig);
 		}
 
-		d = (MonoDelegate*)mono_object_new_checked (mono_domain_get (), klass, &error);
-		if (!mono_error_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
-		gpointer compiled_ptr = mono_compile_method_checked (wrapper, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
-		mono_delegate_ctor_with_method ((MonoObject*)d, this_obj, compiled_ptr, wrapper, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		MONO_HANDLE_ASSIGN (d, MONO_HANDLE_NEW (MonoDelegate, mono_object_new_checked (mono_domain_get (), klass, error)));
+		if (!is_ok (error))
+			goto leave;
+		gpointer compiled_ptr = mono_compile_method_checked (wrapper, error);
+		if (!is_ok (error))
+			goto leave;
+
+		mono_delegate_ctor_with_method (MONO_HANDLE_CAST (MonoObject, d), this_obj, compiled_ptr, wrapper, error);
+		if (!is_ok (error))
+			goto leave;
 	}
 
-	if (d->object.vtable->domain != mono_domain_get ()) {
-		mono_set_pending_exception (mono_get_exception_not_supported ("Delegates cannot be marshalled from native code into a domain other than their home domain"));
-		return NULL;
-	}
+	g_assert (!MONO_HANDLE_IS_NULL (d));
+	if (MONO_HANDLE_DOMAIN (d) != mono_domain_get ())
+		mono_error_set_not_supported (error, "Delegates cannot be marshalled from native code into a domain other than their home domain");
 
-	return d;
+leave:
+	HANDLE_FUNCTION_RETURN_REF (MonoDelegate, d);
 }
 
 void
@@ -11025,18 +11058,23 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error (void)
 }
 
 guint32 
-ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rtype)
+ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionTypeHandle rtype, MonoError *error)
 {
 	MonoClass *klass;
 	MonoType *type;
 	guint32 layout;
 
-	MONO_CHECK_ARG_NULL (rtype, 0);
+	error_init (error);
 
-	type = rtype->type;
+	if (MONO_HANDLE_IS_NULL (rtype)) {
+		mono_error_set_argument_null (error, "type", "");
+		return 0;
+	}
+
+	type = MONO_HANDLE_GETVAL (rtype, type);
 	klass = mono_class_from_mono_type (type);
 	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_for_class_failure (error, klass);
 		return 0;
 	}
 
@@ -11045,13 +11083,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOf (MonoReflectionType *rty
 	if (type->type == MONO_TYPE_PTR || type->type == MONO_TYPE_FNPTR) {
 		return sizeof (gpointer);
 	} else if (layout == TYPE_ATTRIBUTE_AUTO_LAYOUT) {
-		gchar *msg;
-		MonoException *exc;
-
-		msg = g_strdup_printf ("Type %s cannot be marshaled as an unmanaged structure.", klass->name);
-		exc = mono_get_exception_argument ("t", msg);
-		g_free (msg);
-		mono_set_pending_exception (exc);
+		mono_error_set_argument (error, "t", "Type %s cannot be marshaled as an unmanaged structure.", klass->name);
 		return 0;
 	}
 
@@ -11157,26 +11189,29 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gpointer s
 }
 
 int
-ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *type, MonoString *field_name)
+ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHandle ref_type, MonoStringHandle field_name, MonoError *error)
 {
-	MonoError error;
-	MonoMarshalType *info;
-	MonoClass *klass;
-	char *fname;
-	int match_index = -1;
-	
-	MONO_CHECK_ARG_NULL (type, 0);
-	MONO_CHECK_ARG_NULL (field_name, 0);
-
-	fname = mono_string_to_utf8_checked (field_name, &error);
-	if (mono_error_set_pending_exception (&error))
+	error_init (error);
+	if (MONO_HANDLE_IS_NULL (ref_type)) {
+		mono_error_set_argument_null (error, "type", "");
 		return 0;
-	klass = mono_class_from_mono_type (type->type);
-	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+	}
+	if (MONO_HANDLE_IS_NULL (field_name)) {
+		mono_error_set_argument_null (error, "fieldName", "");
 		return 0;
 	}
 
+	char *fname = mono_string_handle_to_utf8 (field_name, error);
+	return_val_if_nok (error, 0);
+
+	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass *klass = mono_class_from_mono_type (type);
+	if (!mono_class_init (klass)) {
+		mono_error_set_for_class_failure (error, klass);
+		return 0;
+	}
+
+	int match_index = -1;
 	while (klass && match_index == -1) {
 		MonoClassField* field;
 		int i = 0;
@@ -11198,21 +11233,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionType *t
 	g_free (fname);
 
 	if(match_index == -1) {
-		MonoException* exc;
-		gchar *tmp;
-
 		/* Get back original class instance */
-		klass = mono_class_from_mono_type (type->type);
+		klass = mono_class_from_mono_type (type);
 
-		tmp = g_strdup_printf ("Field passed in is not a marshaled member of the type %s", klass->name);
-		exc = mono_get_exception_argument ("fieldName", tmp);
-		g_free (tmp);
- 
-		mono_set_pending_exception ((MonoException*)exc);
+		mono_error_set_argument (error, "fieldName", "Field passed in is not a marshaled member of the type %s", klass->name);
 		return 0;
 	}
 
-	info = mono_marshal_load_type_info (klass);     
+	MonoMarshalType *info = mono_marshal_load_type_info (klass);
 	return info->fields [match_index].offset;
 }
 
@@ -11438,22 +11466,24 @@ ves_icall_System_Runtime_InteropServices_Marshal_UnsafeAddrOfPinnedArrayElement 
 	return mono_array_addr_with_size_fast (arrayobj, mono_array_element_size (arrayobj->obj.vtable->klass), index);
 }
 
-MonoDelegate*
-ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionType *type)
+MonoDelegateHandle
+ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal (void *ftn, MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoClass *klass = mono_type_get_class (type->type);
+	error_init (error);
+	MonoClass *klass = mono_type_get_class (MONO_HANDLE_GETVAL (type, type));
 	if (!mono_class_init (klass)) {
-		mono_set_pending_exception (mono_class_get_exception_for_failure (klass));
+		mono_error_set_for_class_failure (error, klass);
 		return NULL;
 	}
 
-	return mono_ftnptr_to_delegate (klass, ftn);
+	return mono_ftnptr_to_delegate_handle (klass, ftn, error);
 }
 
 gpointer
-ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegate *delegate)
+ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegateHandle delegate, MonoError *error)
 {
-	return mono_delegate_to_ftnptr (delegate);
+	error_init (error);
+	return mono_delegate_handle_to_ftnptr (delegate, error);
 }
 
 /**

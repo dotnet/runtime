@@ -655,10 +655,10 @@ void
 mono_method_return_message_restore (MonoMethod *method, gpointer *params, MonoArray *out_args, MonoError *error);
 
 gboolean
-mono_delegate_ctor_with_method (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoMethod *method, MonoError *error);
+mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoMethod *method, MonoError *error);
 
 gboolean
-mono_delegate_ctor	    (MonoObject *this_obj, MonoObject *target, gpointer addr, MonoError *error);
+mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error);
 
 void*
 mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
@@ -768,11 +768,17 @@ struct _MonoDelegate {
 	MonoBoolean method_is_virtual;
 };
 
+/* Safely access System.Delegate from native code */
+TYPED_HANDLE_DECL (MonoDelegate);
+
 typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
 struct _MonoMulticastDelegate {
 	MonoDelegate delegate;
 	MonoArray *delegates;
 };
+
+/* Safely access System.MulticastDelegate from native code */
+TYPED_HANDLE_DECL (MonoMulticastDelegate);
 
 struct _MonoReflectionField {
 	MonoObject object;

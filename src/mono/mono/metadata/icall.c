@@ -6170,99 +6170,92 @@ ves_icall_RuntimeType_MakePointerType (MonoReflectionTypeHandle ref_type, MonoEr
 	return mono_type_get_object_handle (domain, &pklass->byval_arg, error);
 }
 
-ICALL_EXPORT MonoObject *
-ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target,
-						   MonoReflectionMethod *info, MonoBoolean throwOnBindFailure)
+ICALL_EXPORT MonoObjectHandle
+ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionTypeHandle ref_type, MonoObjectHandle target,
+						   MonoReflectionMethodHandle info, MonoBoolean throwOnBindFailure, MonoError *error)
 {
-	MonoError error;
-	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
-	MonoObject *delegate;
+	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass *delegate_class = mono_class_from_mono_type (type);
 	gpointer func;
-	MonoMethod *method = info->method;
+	MonoMethod *method = MONO_HANDLE_GETVAL (info, method);
 	MonoMethodSignature *sig = mono_method_signature(method);
 
-	mono_class_init_checked (delegate_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	mono_class_init_checked (delegate_class, error);
+	return_val_if_nok (error, NULL_HANDLE);
 
 	if (!(delegate_class->parent == mono_defaults.multicastdelegate_class)) {
 		/* FIXME improve this exception message */
-		mono_error_set_execution_engine (&error, "file %s: line %d (%s): assertion failed: (%s)", __FILE__, __LINE__,
+		mono_error_set_execution_engine (error, "file %s: line %d (%s): assertion failed: (%s)", __FILE__, __LINE__,
 						 __func__,
 						 "delegate_class->parent == mono_defaults.multicastdelegate_class");
-		mono_error_set_pending_exception (&error);
-		return NULL;
+		return NULL_HANDLE;
 	}
 
 	if (mono_security_core_clr_enabled ()) {
-		if (!mono_security_core_clr_ensure_delegate_creation (method, &error)) {
+		MonoError security_error;
+		if (!mono_security_core_clr_ensure_delegate_creation (method, &security_error)) {
 			if (throwOnBindFailure)
-				mono_error_set_pending_exception (&error);
+				mono_error_move (error, &security_error);
 			else
-				mono_error_cleanup (&error);
-			return NULL;
+				mono_error_cleanup (&security_error);
+			return NULL_HANDLE;
 		}
 	}
 
 	if (sig->generic_param_count && method->wrapper_type == MONO_WRAPPER_NONE) {
 		if (!method->is_inflated) {
-			mono_set_pending_exception(mono_get_exception_argument("method", " Cannot bind to the target method because its signature differs from that of the delegate type"));
-			return NULL;
+			mono_error_set_argument (error, "method", " Cannot bind to the target method because its signature differs from that of the delegate type");
+			return NULL_HANDLE;
 		}
 	}
 
-	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoObjectHandle delegate = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (MONO_HANDLE_DOMAIN (ref_type), delegate_class, error));
+	return_val_if_nok (error, NULL_HANDLE);
 
 	if (method_is_dynamic (method)) {
 		/* Creating a trampoline would leak memory */
-		func = mono_compile_method_checked (method, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		func = mono_compile_method_checked (method, error);
+		return_val_if_nok (error, NULL_HANDLE);
 	} else {
-		if (target && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_object_class (target))
-			method = mono_object_get_virtual_method (target, method);
-		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		if (!MONO_HANDLE_IS_NULL (target) && method->flags & METHOD_ATTRIBUTE_VIRTUAL && method->klass != mono_handle_class (target)) {
+			method = mono_object_handle_get_virtual_method (target, method, error);
+			return_val_if_nok (error, NULL_HANDLE);
+		}
+		gpointer trampoline = mono_runtime_create_jump_trampoline (mono_domain_get (), method, TRUE, error);
+		return_val_if_nok (error, NULL_HANDLE);
 		func = mono_create_ftnptr (mono_domain_get (), trampoline);
 	}
 
-	mono_delegate_ctor_with_method (delegate, target, func, method, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	mono_delegate_ctor_with_method (delegate, target, func, method, error);
+	return_val_if_nok (error, NULL_HANDLE);
 	return delegate;
 }
 
-ICALL_EXPORT MonoMulticastDelegate *
-ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegate *delegate)
+ICALL_EXPORT MonoMulticastDelegateHandle
+ves_icall_System_Delegate_AllocDelegateLike_internal (MonoDelegateHandle delegate, MonoError *error)
 {
-	MonoError error;
-	MonoMulticastDelegate *ret;
+	error_init (error);
 
-	g_assert (mono_class_has_parent (mono_object_class (delegate), mono_defaults.multicastdelegate_class));
+	MonoClass *klass = mono_handle_class (delegate);
+	g_assert (mono_class_has_parent (klass, mono_defaults.multicastdelegate_class));
 
-	ret = (MonoMulticastDelegate*) mono_object_new_checked (mono_object_domain (delegate), mono_object_class (delegate), &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoMulticastDelegateHandle ret = MONO_HANDLE_NEW (MonoMulticastDelegate,  mono_object_new_checked (MONO_HANDLE_DOMAIN (delegate), klass, error));
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoMulticastDelegate, NULL_HANDLE));
 
-	ret->delegate.invoke_impl = mono_runtime_create_delegate_trampoline (mono_object_class (delegate));
+	MONO_HANDLE_SETVAL (MONO_HANDLE_CAST (MonoDelegate, ret), invoke_impl, gpointer, mono_runtime_create_delegate_trampoline (klass));
 
 	return ret;
 }
 
-ICALL_EXPORT MonoReflectionMethod*
-ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegate *delegate)
+ICALL_EXPORT MonoReflectionMethodHandle
+ves_icall_System_Delegate_GetVirtualMethod_internal (MonoDelegateHandle delegate, MonoError *error)
 {
-	MonoReflectionMethod *ret = NULL;
-	MonoError error;
-	MonoMethod *m;
+	error_init (error);
 
-	m = mono_object_get_virtual_method (delegate->target, delegate->method);
-	ret = mono_method_get_object_checked (mono_domain_get (), m, m->klass, &error);
-	mono_error_set_pending_exception (&error);
-	return ret;
+	MonoObjectHandle delegate_target = MONO_HANDLE_NEW_GET (MonoObject, delegate, target);
+	MonoMethod *m = mono_object_handle_get_virtual_method (delegate_target, MONO_HANDLE_GETVAL (delegate, method), error);
+	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
+	return mono_method_get_object_handle (mono_domain_get (), m, m->klass, error);
 }
 
 /* System.Buffer */
@@ -7508,38 +7501,34 @@ prelink_method (MonoMethod *method, MonoError *error)
 		return;
 	mono_lookup_pinvoke_call (method, &exc_class, &exc_arg);
 	if (exc_class) {
-		mono_error_set_exception_instance (error,
-			mono_exception_from_name_msg (mono_defaults.corlib, "System", exc_class, exc_arg));
+		mono_error_set_generic_error (error, "System", exc_class, "%s", exc_arg);
 		return;
 	}
 	/* create the wrapper, too? */
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethod *method)
+ves_icall_System_Runtime_InteropServices_Marshal_Prelink (MonoReflectionMethodHandle method, MonoError *error)
 {
-	MonoError error;
+	error_init (error);
 
-	prelink_method (method->method, &error);
-	mono_error_set_pending_exception (&error);
+	prelink_method (MONO_HANDLE_GETVAL (method, method), error);
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionType *type)
+ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll (MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoError error;
-	MonoClass *klass = mono_class_from_mono_type (type->type);
+	error_init (error);
+	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (type, type));
 	MonoMethod* m;
 	gpointer iter = NULL;
 
-	mono_class_init_checked (klass, &error);
-	if (mono_error_set_pending_exception (&error))
-		return;
+	mono_class_init_checked (klass, error);
+	return_if_nok (error);
 
 	while ((m = mono_class_get_methods (klass, &iter))) {
-		prelink_method (m, &error);
-		if (mono_error_set_pending_exception (&error))
-			return;
+		prelink_method (m, error);
+		return_if_nok (error);
 	}
 }
 

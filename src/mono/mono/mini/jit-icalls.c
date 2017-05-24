@@ -1458,11 +1458,15 @@ mono_generic_class_init (MonoVTable *vtable)
 }
 
 void
-ves_icall_mono_delegate_ctor (MonoObject *this_obj, MonoObject *target, gpointer addr)
+ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, gpointer addr)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoError error;
+	MONO_HANDLE_DCL (MonoObject, this_obj);
+	MONO_HANDLE_DCL (MonoObject, target);
 	mono_delegate_ctor (this_obj, target, addr, &error);
 	mono_error_set_pending_exception (&error);
+	HANDLE_FUNCTION_RETURN ();
 }
 
 gpointer
