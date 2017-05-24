@@ -463,6 +463,7 @@ TESTS_CS_SRC=		\
 	assemblyresolve_event2.2.cs	\
 	appdomain-unload-callback.cs	\
 	appdomain-unload-doesnot-raise-pending-events.cs	\
+	appdomain-unload-asmload.cs	\
 	unload-appdomain-on-shutdown.cs	\
 	bug-47295.cs	\
 	loader.cs	\
