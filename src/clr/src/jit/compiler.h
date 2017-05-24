@@ -4879,8 +4879,7 @@ private:
     bool fgMorphImplicitByRefArgs(GenTreePtr tree);
     GenTreePtr fgMorphImplicitByRefArgs(GenTreePtr tree, bool isAddr);
 
-    // Clear up annotations for any struct promotion temps created for implicit byrefs that
-    // wound up unused (due e.g. to being address-exposed and not worth promoting).
+    // Clear up annotations for any struct promotion temps created for implicit byrefs.
     void fgMarkDemotedImplicitByRefArgs();
 
     static fgWalkPreFn  fgMarkAddrTakenLocalsPreCB;
