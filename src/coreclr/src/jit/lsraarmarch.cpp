@@ -79,7 +79,7 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     info->srcCount = 2;
-    info->dstCount = 1;
+    info->dstCount = tree->OperIs(GT_CMP) ? 0 : 1;
 
 #ifdef _TARGET_ARM_
 
