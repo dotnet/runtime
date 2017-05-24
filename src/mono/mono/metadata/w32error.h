@@ -42,6 +42,7 @@
 #define ERROR_FILENAME_EXCED_RANGE 206
 #define ERROR_DIRECTORY            267
 #define ERROR_IO_PENDING           997
+#define ERROR_CANT_RESOLVE_FILENAME 1921
 #define ERROR_ENCRYPTION_FAILED    6000
 #define WSAEINTR                   10004
 #define WSAEBADF                   10009

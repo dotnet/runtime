@@ -2518,7 +2518,6 @@ gboolean mono_w32file_delete(const gunichar2 *name)
 	gchar *filename;
 	gint retval;
 	gboolean ret = FALSE;
-	guint32 attrs;
 #if 0
 	struct stat statbuf;
 	FileShare *shareinfo;
@@ -2536,14 +2535,6 @@ gboolean mono_w32file_delete(const gunichar2 *name)
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unicode conversion returned NULL", __func__);
 
 		mono_w32error_set_last (ERROR_INVALID_NAME);
-		return(FALSE);
-	}
-
-	attrs = mono_w32file_get_attributes (name);
-	if (attrs == INVALID_FILE_ATTRIBUTES) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: file attributes error", __func__);
-		/* Error set by mono_w32file_get_attributes() */
-		g_free (filename);
 		return(FALSE);
 	}
 
@@ -3748,7 +3739,7 @@ mono_w32file_get_attributes (const gunichar2 *name)
 	}
 
 	result = _wapi_stat (utf8_name, &buf);
-	if (result == -1 && errno == ENOENT) {
+	if (result == -1 && (errno == ENOENT || errno == ELOOP)) {
 		/* Might be a dangling symlink... */
 		result = _wapi_lstat (utf8_name, &buf);
 	}

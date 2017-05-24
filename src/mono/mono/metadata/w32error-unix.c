@@ -65,7 +65,7 @@ mono_w32error_unix_to_win32 (guint32 error)
 	case EIO: return ERROR_INVALID_HANDLE;
 	case EINTR: return ERROR_IO_PENDING; /* best match I could find */
 	case EPIPE: return ERROR_WRITE_FAULT;
-	case ELOOP: return ERROR_ACCESS_DENIED; /* Empirically found by testing desktop dotnet. */
+	case ELOOP: return ERROR_CANT_RESOLVE_FILENAME;
 
 	default:
 		g_error ("%s: unknown error (%d) \"%s\"", __FILE__, error, g_strerror (error));
