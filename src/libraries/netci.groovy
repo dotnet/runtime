@@ -13,8 +13,7 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 // Globals
 
 // Map of osName -> osGroup.
-def osGroupMap = ['Windows 10':'Windows_NT',
-                  'Windows 7':'Windows_NT',
+def osGroupMap = ['Windows 7':'Windows_NT',
                   'Windows_NT':'Windows_NT',
                   'Ubuntu14.04':'Linux',
                   'Ubuntu16.04':'Linux',
@@ -30,8 +29,7 @@ def osGroupMap = ['Windows 10':'Windows_NT',
                   'LinuxARMEmulator': 'Linux',
                   'PortableLinux': 'Linux']
 
-def osShortName = ['Windows 10': 'win10',
-                   'Windows 7' : 'win7',
+def osShortName = ['Windows 7' : 'win7',
                    'Windows_NT' : 'windows_nt',
                    'Ubuntu14.04' : 'ubuntu14.04',
                    'Ubuntu16.04' : 'ubuntu16.04',
@@ -48,7 +46,7 @@ def osShortName = ['Windows 10': 'win10',
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
 
-def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 
+def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 
                                         'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'],
                         'netfx': ['Windows_NT']]
 
@@ -145,7 +143,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                     steps {
-                        if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                        if (osName == 'Windows 7' || osName == 'Windows_NT') {
                             batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -framework:${targetGroup} -${configurationGroup}")
                             batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -framework:${targetGroup} -${configurationGroup} -outerloop -- /p:IsCIBuild=true")
                             batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin\\runtime\\${targetGroup}-${osGroup}-${configurationGroup}-${archGroup}")
@@ -297,7 +295,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     osForMachineAffinity = "RHEL7.2"
                 }
                 def archGroup = "x64"
-                if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                if (osName == 'Windows 7' || osName == 'Windows_NT') {
                     // On Windows, use different architectures for Debug and Release.
                     archGroup = buildArchConfiguration[configurationGroup]
                 }
@@ -307,7 +305,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                     // On Windows we use the packer to put together everything. On *nix we use tar
                     steps {
-                        if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                        if (osName == 'Windows 7' || osName == 'Windows_NT') {
                             batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${archGroup} -framework:${targetGroup}")
                             batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -os:${osGroup} -buildArch:${archGroup} -framework:${targetGroup} -- /p:IsCIBuild=true")
                             batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
