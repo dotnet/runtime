@@ -131,7 +131,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType)",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) -- /p:OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
