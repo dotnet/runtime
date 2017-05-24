@@ -45,7 +45,12 @@ namespace System.Net
         {
             public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
             {
-                throw new NotImplementedException();
+                if (kind != ChannelBindingKind.Endpoint)
+                {
+                    throw new NotSupportedException(SR.Format(SR.net_listener_invalid_cbt_type, kind.ToString()));
+                }
+
+                return null;
             }
         }
 

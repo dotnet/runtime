@@ -316,16 +316,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsNotWindowsImplementation))] // [ActiveIssue(20239, TestPlatforms.AnyUnix)]
-        public async Task TransportContext_GetUnix_ThrowsNotImplementedException()
-        {
-            await GetRequest("POST", null, null, (_, request) =>
-            {
-                Assert.Throws<NotImplementedException>(() => request.TransportContext.GetChannelBinding(ChannelBindingKind.Endpoint));
-            });
-        }
-
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20239, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task TransportContext_GetChannelBinding_ReturnsExpected()
         {
             // This might not work on other devices:
@@ -337,8 +328,7 @@ namespace System.Net.Tests
             });
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20239, TestPlatforms.AnyUnix)]
-        [InlineData(ChannelBindingKind.Unique)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(ChannelBindingKind.Unique)]
         public async Task TransportContext_GetChannelBindingInvalid_ThrowsNotSupportedException(ChannelBindingKind kind)
         {
