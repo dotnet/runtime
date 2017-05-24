@@ -2027,18 +2027,8 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 void Lowering::LowerCompare(GenTree* cmp)
 {
 #ifndef _TARGET_64BIT_
-
-#ifdef _TARGET_ARM_
-    // TODO-ARM: Later ARM32 should make use of same condition of x86 once support for GT_CMP and GT_SETCC is added.
-    LIR::Use cmpUse;
-    if ((cmp->gtGetOp1()->TypeGet() == TYP_LONG) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-        cmpUse.User()->OperIs(GT_JTRUE))
-#elif defined(_TARGET_X86_)
     if (cmp->gtGetOp1()->TypeGet() == TYP_LONG)
-#endif
     {
-// TODO-ARM: This code should be enabled for ARM32 once support for GT_CMP and GT_SETCC is added.
-#if _TARGET_X86_
         // Currently this handles only relops that produce a value or aren't used.
         // The same approach can be used for relops that feed a GT_JTRUE, see the #if 0
         // below and its associated comment.
@@ -2167,7 +2157,6 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             return;
         }
-#endif
 
         // For 32-bit targets any comparison that feeds a `GT_JTRUE` node must be lowered such that
         // the liveness of the operands to the comparison is properly visible to the rest of the
