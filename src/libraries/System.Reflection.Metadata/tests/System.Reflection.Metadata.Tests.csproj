@@ -135,5 +135,10 @@
     <None Include="Resources\Misc\Signed.cs" />
     <EmbeddedResource Include="Resources\Misc\Signed.exe" />
   </ItemGroup>
+    <ItemGroup>
+    <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
+    <TargetingPackExclusions Include="System.Reflection.Metadata" />
+    <ReferenceFromRuntime Include="System.Reflection.Metadata" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
