@@ -94,4 +94,5 @@
     <NuGetTargetMonikerShort>netcoreapp2.0</NuGetTargetMonikerShort>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
+
 </Project>
