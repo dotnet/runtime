@@ -299,18 +299,8 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentException>("value", "CustomChannelBinding", () => listener.ExtendedProtectionPolicy = protectionPolicy);
             }
         }
-
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsNotWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
-        public void UnsafeConnectionNtlmAuthentication_Unix_ThrowsPlatformNotSupportedException()
-        {
-            using (var listener = new HttpListener())
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => listener.UnsafeConnectionNtlmAuthentication);
-                Assert.Throws<PlatformNotSupportedException>(() => listener.UnsafeConnectionNtlmAuthentication = false);
-            }
-        }
         
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void UnsafeConnectionNtlmAuthentication_SetGet_ReturnsExpected()
         {
             using (var listener = new HttpListener())
@@ -328,7 +318,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void UnsafeConnectionNtlmAuthentication_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
