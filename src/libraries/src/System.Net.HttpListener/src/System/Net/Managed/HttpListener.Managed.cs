@@ -339,8 +339,7 @@ namespace System.Net
             }
 
             HttpListenerContext context = ares.GetContext();
-            context.ParseAuthentication(SelectAuthenticationScheme(context));
-
+            context.ParseAuthentication(context.AuthenticationSchemes);
             return context;
         }
 

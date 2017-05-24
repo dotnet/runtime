@@ -229,7 +229,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20100, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task AuthenticationSchemeSelectorDelegate_ThrowsException_SendsInternalServerErrorToClient()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
@@ -241,7 +241,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20100, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void AuthenticationSchemeSelectorDelegate_ThrowsOutOfMemoryException_RethrowsException()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;

@@ -112,11 +112,30 @@ namespace System.Net
             _context = context;
             lock (_locker)
             {
-                AuthenticationSchemes schemes = context._listener.SelectAuthenticationScheme(context);
-                if ((schemes == AuthenticationSchemes.Basic || context._listener.AuthenticationSchemes == AuthenticationSchemes.Negotiate) && context.Request.Headers["Authorization"] == null)
+                bool selectionFailure = false;
+                try
                 {
-                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    context.Response.Headers["WWW-Authenticate"] = schemes + " realm=\"" + context._listener.Realm + "\"";
+                    context.AuthenticationSchemes = context._listener.SelectAuthenticationScheme(context);
+                }
+                catch (OutOfMemoryException oom)
+                {
+                    context.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+                    _exception = oom;
+                }
+                catch
+                {
+                    selectionFailure = true;
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+
+                if (selectionFailure || 
+                    ((context.AuthenticationSchemes == AuthenticationSchemes.Basic || context._listener.AuthenticationSchemes == AuthenticationSchemes.Negotiate) && context.Request.Headers["Authorization"] == null))
+                {
+                    if (!selectionFailure)
+                    {
+                        context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                        context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
+                    }
                     context.Response.OutputStream.Close();
                     IAsyncResult ares = context._listener.BeginGetContext(_cb, _state);
                     _forward = (ListenerAsyncResult)ares;
