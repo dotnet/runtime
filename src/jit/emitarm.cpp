@@ -7787,6 +7787,14 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(!"Invalid ins for overflow check");
         }
     }
+
+    if (dst->gtSetFlags())
+    {
+        assert((ins == INS_add) || (ins == INS_adc) || (ins == INS_sub) || (ins == INS_sbc) || (ins == INS_and) ||
+               (ins == INS_orr) || (ins == INS_eor) || (ins == INS_orn));
+        flags = INS_FLAGS_SET;
+    }
+
     if (intConst != nullptr)
     {
         emitIns_R_R_I(ins, attr, dst->gtRegNum, nonIntReg->gtRegNum, intConst->IconValue(), flags);

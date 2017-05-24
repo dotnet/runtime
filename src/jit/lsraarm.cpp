@@ -639,6 +639,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_LE:
         case GT_GE:
         case GT_GT:
+        case GT_CMP:
             TreeNodeInfoInitCmp(tree);
             break;
 
@@ -739,6 +740,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_LABEL:
         case GT_PINVOKE_PROLOG:
         case GT_JCC:
+        case GT_SETCC:
         case GT_MEMORYBARRIER:
         case GT_OBJ:
             info->dstCount = tree->IsValue() ? 1 : 0;
