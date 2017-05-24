@@ -7,7 +7,8 @@ using Windows.Storage;
 using Xunit;
 
 namespace System.IO
-{
+{   
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/18940")]
     public class CreateSafeFileHandleTests
     {
         [Fact]
