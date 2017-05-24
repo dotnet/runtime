@@ -10,6 +10,13 @@
 #include "common.h"
 #include "eventpipe.h"
 
+enum class SampleProfilerSampleType
+{
+    Error = 0,
+    External = 1,
+    Managed = 2
+};
+
 class SampleProfiler
 {
 
@@ -46,6 +53,13 @@ class SampleProfiler
         static const GUID s_providerID;
         static EventPipeProvider *s_pEventPipeProvider;
         static EventPipeEvent *s_pThreadTimeEvent;
+
+        // Event payloads.
+        // External represents a sample in external or native code.
+        // Managed represents a sample in managed code.
+        static BYTE *s_pPayloadExternal;
+        static BYTE *s_pPayloadManaged;
+        static const unsigned int c_payloadSize = sizeof(unsigned int);
 
         // Thread shutdown event for synchronization between Disable() and the sampling thread.
         static CLREventStatic s_threadShutdownEvent;

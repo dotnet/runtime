@@ -7514,6 +7514,11 @@ void HandleGCSuspensionForInterruptedThread(CONTEXT *interruptedContext)
     if (pThread->PreemptiveGCDisabled() != TRUE)
         return;
 
+#ifdef FEATURE_PERFTRACING
+    // Mark that the thread is currently in managed code.
+    pThread->SaveGCModeOnSuspension();
+#endif // FEATURE_PERFTRACING
+
     PCODE ip = GetIP(interruptedContext);
 
     // This function can only be called when the interrupted thread is in 
