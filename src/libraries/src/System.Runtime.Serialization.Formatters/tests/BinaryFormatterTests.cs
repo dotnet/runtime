@@ -78,9 +78,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
                 else
                 {
-                    // Check if object.Equals(object) is overriden and if not check if there is a more concrete equality check implementation
-                    bool equalsNotOverriden = originalTypeType.GetMethod("Equals", new Type[] { typeof(object) }).DeclaringType == typeof(object);
-                    if (equalsNotOverriden)
+                    // Check if object.Equals(object) is overridden and if not check if there is a more concrete equality check implementation
+                    bool equalsNotOverridden = originalTypeType.GetMethod("Equals", new Type[] { typeof(object) }).DeclaringType == typeof(object);
+                    if (equalsNotOverridden)
                     {
                         // If type doesn't override Equals(object) method then check if there is a more concrete implementation
                         // e.g. if type implements IEquatable<T>.
