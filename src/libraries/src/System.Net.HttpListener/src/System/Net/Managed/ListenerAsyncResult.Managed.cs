@@ -112,7 +112,7 @@ namespace System.Net
             _context = context;
             lock (_locker)
             {
-                bool selectionFailure = false;
+                bool authFailure = false;
                 try
                 {
                     context.AuthenticationSchemes = context._listener.SelectAuthenticationScheme(context);
@@ -124,18 +124,26 @@ namespace System.Net
                 }
                 catch
                 {
-                    selectionFailure = true;
+                    authFailure = true;
                     context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 }
 
-                if (selectionFailure || 
-                    ((context.AuthenticationSchemes == AuthenticationSchemes.Basic || context._listener.AuthenticationSchemes == AuthenticationSchemes.Negotiate) && context.Request.Headers["Authorization"] == null))
+                if (context.AuthenticationSchemes != AuthenticationSchemes.None &&
+                    (context.AuthenticationSchemes & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.Anonymous &&
+                    (context.AuthenticationSchemes & AuthenticationSchemes.Basic) != AuthenticationSchemes.Basic)
                 {
-                    if (!selectionFailure)
-                    {
-                        context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                        context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
-                    }
+                    authFailure = true;
+                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                }
+                else if (context.AuthenticationSchemes == AuthenticationSchemes.Basic && context.Request.Headers["Authorization"] == null)
+                {
+                    authFailure = true;
+                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                    context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
+                }
+
+                if (authFailure)
+                {
                     context.Response.OutputStream.Close();
                     IAsyncResult ares = context._listener.BeginGetContext(_cb, _state);
                     _forward = (ListenerAsyncResult)ares;
