@@ -28,7 +28,7 @@ simpleNode('Windows_NT','latest') {
     }
     stage ('Build Tests') {
         def additionalArgs = ''
-        if (Outerloop) {
+        if (OuterLoop == true) {
             additionalArgs = '-Outerloop'
         }
         bat ".\\build-tests.cmd -buildArch=x64 -${Config} -SkipTests -portable ${additionalArgs} -- /p:RuntimeOS=win10 /p:ArchiveTests=true"
@@ -59,7 +59,7 @@ simpleNode('Windows_NT','latest') {
 
 stage ('Execute Tests') {
     def contextBase
-    if (OuterLoop) {
+    if (OuterLoop == true) {
         contextBase = "Win x64 tests w/outer - ${Config}"
     }
     else {

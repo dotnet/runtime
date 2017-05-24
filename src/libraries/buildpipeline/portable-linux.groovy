@@ -39,7 +39,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
     }
     stage ('Build Tests') {
         def additionalArgs = ''
-        if (Outerloop) {
+        if (OuterLoop == true) {
             additionalArgs = '-Outerloop'
         }
         sh "./build-tests.sh -buildArch=x64 -${Config} -SkipTests ${additionalArgs} -- /p:ArchiveTests=true /p:EnableDumpling=true"
@@ -75,7 +75,7 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
 
 stage ('Execute Tests') {
     def contextBase
-    if (OuterLoop) {
+    if (OuterLoop == true) {
         contextBase = "Linux x64 Tests w/outer - ${Config}"
     }
     else {
