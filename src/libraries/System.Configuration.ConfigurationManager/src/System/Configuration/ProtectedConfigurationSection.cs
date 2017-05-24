@@ -34,6 +34,8 @@ namespace System.Configuration
             s_properties = new ConfigurationPropertyCollection { s_propProviders, s_propDefaultProvider };
         }
 
+        public ProtectedConfigurationSection(){}       
+
         protected internal override ConfigurationPropertyCollection Properties => s_properties;
 
         private ProtectedProviderSettings ProtectedProviders => (ProtectedProviderSettings)base[s_propProviders];
