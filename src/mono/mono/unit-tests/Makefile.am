@@ -10,6 +10,7 @@ endif
 if !CROSS_COMPILE
 if !HOST_WIN32
 if SUPPORT_BOEHM
+if SUPPORT_SGEN
 
 noinst_LTLIBRARIES = libtestlib.la
 libtestlib_la_SOURCES =
@@ -54,6 +55,7 @@ check-local:
 		echo "</test-case></results></test-suite></test-results>" >> TestResult-unit-tests.xml; \
 	fi;
 
+endif SUPPORT_SGEN
 endif SUPPORT_BOEHM
 endif !HOST_WIN32
 endif !CROSS_COMPILE

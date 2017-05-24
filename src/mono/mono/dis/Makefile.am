@@ -8,7 +8,7 @@ if SUPPORT_SGEN
 metadata_lib=$(top_builddir)/mono/metadata/libmonoruntimesgen-static.la
 gc_lib=$(top_builddir)/mono/sgen/libmonosgen-static.la
 else
-metadata_lib=$(top_builddir)/mono/metadata/libmonoruntime-static.a
+metadata_lib=$(top_builddir)/mono/metadata/libmonoruntime-static.la
 gc_lib=$(LIBGC_STATIC_LIBS)
 endif
 
