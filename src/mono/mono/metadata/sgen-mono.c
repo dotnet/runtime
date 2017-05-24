@@ -893,6 +893,10 @@ mono_gc_clear_domain (MonoDomain * domain)
 
 	sgen_clear_nursery_fragments ();
 
+	FOREACH_THREAD (info) {
+		mono_handle_stack_free_domain ((HandleStack*)info->client_info.info.handle_stack, domain);
+	} FOREACH_THREAD_END
+
 	if (sgen_mono_xdomain_checks && domain != mono_get_root_domain ()) {
 		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_NORMAL);
 		sgen_scan_for_registered_roots_in_domain (domain, ROOT_TYPE_WBARRIER);

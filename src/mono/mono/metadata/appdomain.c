@@ -1148,6 +1148,7 @@ leave:
 MonoAssembly*
 mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, MonoAssembly *requesting, gboolean refonly, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
 	MonoAssembly *ret = NULL;
 	MonoMethod *method;
 	MonoBoolean isrefonly;
@@ -1156,7 +1157,7 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	error_init (error);
 
 	if (mono_runtime_get_no_exec ())
-		return ret;
+		goto leave;
 
 	g_assert (domain != NULL && !MONO_HANDLE_IS_NULL (fname));
 
@@ -1167,14 +1168,16 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	MonoReflectionAssemblyHandle requesting_handle;
 	if (requesting) {
 		requesting_handle = mono_assembly_get_object_handle (domain, requesting, error);
-		return_val_if_nok (error, ret);
+		if (!is_ok (error))
+			goto leave;
 	}
 	params [0] = MONO_HANDLE_RAW (fname);
 	params[1] = requesting ? MONO_HANDLE_RAW (requesting_handle) : NULL;
 	params [2] = &isrefonly;
 	MonoReflectionAssemblyHandle result = MONO_HANDLE_NEW (MonoReflectionAssembly, mono_runtime_invoke_checked (method, domain->domain, params, error));
 	ret = !MONO_HANDLE_IS_NULL (result) ? MONO_HANDLE_GETVAL (result, assembly) : NULL;
-	return ret;
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
 MonoAssembly *
@@ -1243,6 +1246,7 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 static void
 mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 {
+	HANDLE_FUNCTION_ENTER ();
 	static MonoClassField *assembly_load_field;
 	static MonoMethod *assembly_load_method;
 	MonoError error;
@@ -1253,7 +1257,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 
 	if (!domain->domain)
 		/* This can happen during startup */
-		return;
+		goto leave;
 #ifdef ASSEMBLY_LOAD_DEBUG
 	fprintf (stderr, "Loading %s into domain %s\n", assembly->aname.name, domain->friendly_name);
 #endif
@@ -1271,7 +1275,7 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 	mono_field_get_value ((MonoObject*) domain->domain, assembly_load_field, &load_value);
 	if (load_value == NULL) {
 		/* No events waiting to be triggered */
-		return;
+		goto leave;
 	}
 
 	MonoReflectionAssemblyHandle ref_assembly = mono_assembly_get_object_handle (domain, assembly, &error);
@@ -1286,6 +1290,8 @@ mono_domain_fire_assembly_load (MonoAssembly *assembly, gpointer user_data)
 
 	mono_runtime_invoke_checked (assembly_load_method, domain->domain, params, &error);
 	mono_error_cleanup (&error);
+leave:
+	HANDLE_FUNCTION_RETURN ();
 }
 
 /*

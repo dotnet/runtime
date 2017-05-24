@@ -252,7 +252,7 @@ mono_handle_stack_alloc (void)
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
 	stack->interior = interior;
-#ifdef MONO_HANDLE_TRACK_OWNER
+#ifdef MONO_HANDLE_TRACK_SP
 	stack->stackmark_sp = NULL;
 #endif
 	return stack;
@@ -274,6 +274,40 @@ mono_handle_stack_free (HandleStack *stack)
 	g_free (c);
 	g_free (stack->interior);
 	g_free (stack);
+}
+
+void
+mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
+{
+	/* Called by the GC while clearing out objects of the given domain from the heap. */
+	/* If there are no handles-related bugs, there is nothing to do: if a
+	 * thread accessed objects from the domain it was aborted, so any
+	 * threads left alive cannot have any handles that point into the
+	 * unloading domain.  However if there is a handle leak, the handle stack is not */
+	if (!stack)
+		return;
+	/* Root domain only unloaded when mono is shutting down, don't need to check anything */
+	if (domain == mono_get_root_domain () || mono_runtime_is_shutting_down ())
+		return;
+	HandleChunk *cur = stack->bottom;
+	HandleChunk *last = stack->top;
+	if (!cur)
+		return;
+	while (cur) {
+		for (int idx = 0; idx < cur->size; ++idx) {
+			HandleChunkElem *elem = &cur->elems[idx];
+			if (!elem->o)
+				continue;
+			g_assert (mono_object_domain (elem->o) != domain);
+		}
+		if (cur == last)
+			break;
+		cur = cur->next;
+	}
+	/* We don't examine the interior pointers here because the GC treats
+	 * them conservatively and anyway we don't have enough information here to
+	 * find the object's vtable.
+	 */
 }
 
 static void
