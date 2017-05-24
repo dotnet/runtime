@@ -1628,7 +1628,7 @@ namespace System.Net
 
             if ((authenticationScheme & AuthenticationSchemes.Basic) != 0)
             {
-                AddChallenge(ref challenges, "Basic realm =\"" + Realm + "\"");
+                AddChallenge(ref challenges, "Basic realm=\"" + Realm + "\"");
             }
 
             return challenges;
