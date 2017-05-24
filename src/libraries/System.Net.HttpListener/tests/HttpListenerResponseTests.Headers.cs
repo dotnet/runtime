@@ -54,20 +54,19 @@ namespace System.Net.Tests
             Assert.Equal("value1,value2", response.Headers["name"]);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20164)]
-        public async Task AppendHeader_NullName_ThrowsArgumentNullException()
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(null)]
+        [InlineData("")]
+        public async Task AppendHeader_NullOrEmptyName_ThrowsArgumentNullException(string name)
         {
             HttpListenerResponse response = await GetResponse();
             Assert.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [ActiveIssue(20164)]
         public async Task AppendHeader_InvalidNameOrValue_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentException>("name", () => response.AppendHeader("", ""));
             Assert.Throws<ArgumentException>("name", () => response.AppendHeader("\r \t \n", ""));
             Assert.Throws<ArgumentException>("name", () => response.AppendHeader("(", ""));
             Assert.Throws<ArgumentException>("value", () => response.AppendHeader("name", "value1\rvalue2\r"));
