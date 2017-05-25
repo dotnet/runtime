@@ -94,8 +94,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData("POST", "Content-Length: 9223372036854775807", 9223372036854775807)]
-        // [ActiveIssue(20232, TestPlatforms.AnyUnix)] [InlineData("POST", "Content-Length: 9223372036854775808", 0)]
+        [InlineData("POST", "Content-Length: 9223372036854775807", 9223372036854775807)] // long.MaxValue
+        [InlineData("POST", "Content-Length: 9223372036854775808", 0)] // long.MaxValue + 1
+        [InlineData("POST", "Content-Length: 18446744073709551615 ", 0)] // ulong.MaxValue
         [InlineData("POST", "Content-Length: 0", 0)]
         [InlineData("PUT", "Content-Length: 0", 0)]
         [InlineData("PUT", "Content-Length: 1", 1)]
