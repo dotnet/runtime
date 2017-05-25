@@ -115,6 +115,7 @@ namespace System.Security.Cryptography.X509Certificates
         protected X509Certificate2(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public bool Archived

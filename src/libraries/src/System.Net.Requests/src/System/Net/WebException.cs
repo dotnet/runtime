@@ -52,6 +52,7 @@ namespace System.Net
 
         protected WebException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public WebExceptionStatus Status
@@ -72,7 +73,7 @@ namespace System.Net
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            GetObjectData(serializationInfo, streamingContext);
+            base.GetObjectData(serializationInfo, streamingContext);
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)

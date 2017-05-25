@@ -43,39 +43,9 @@ namespace System.Data
             LoadTypeValues(node);
         }
 
-        private SimpleType(SerializationInfo info, StreamingContext context)
-        {
-            _baseType = info.GetString("SimpleType.BaseType");
-            _baseSimpleType = (SimpleType)info.GetValue("SimpleType.BaseSimpleType", typeof(SimpleType));
-
-            if (info.GetBoolean("SimpleType.XmlBaseType.XmlQualifiedNameExists"))
-            {
-                string xmlQNName = info.GetString("SimpleType.XmlBaseType.Name");
-                string xmlQNNamespace = info.GetString("SimpleType.XmlBaseType.Namespace");
-                _xmlBaseType = new XmlQualifiedName(xmlQNName, xmlQNNamespace);
-            }
-            else
-            {
-                _xmlBaseType = null;
-            }
-            _name = info.GetString("SimpleType.Name");
-            _ns = info.GetString("SimpleType.NS");
-            _maxLength = info.GetInt32("SimpleType.MaxLength");
-            _length = info.GetInt32("SimpleType.Length");
-        }
-
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("SimpleType.BaseType", _baseType);
-            info.AddValue("SimpleType.BaseSimpleType", _baseSimpleType);
-            XmlQualifiedName xmlQN = (_xmlBaseType as XmlQualifiedName);
-            info.AddValue("SimpleType.XmlBaseType.XmlQualifiedNameExists", xmlQN != null ? true : false);
-            info.AddValue("SimpleType.XmlBaseType.Name", xmlQN != null ? xmlQN.Name : null);
-            info.AddValue("SimpleType.XmlBaseType.Namespace", xmlQN != null ? xmlQN.Namespace : null);
-            info.AddValue("SimpleType.Name", _name);
-            info.AddValue("SimpleType.NS", _ns);
-            info.AddValue("SimpleType.MaxLength", _maxLength);
-            info.AddValue("SimpleType.Length", _length);
+            throw new PlatformNotSupportedException();
         }
 
         internal void LoadTypeValues(XmlSchemaSimpleType node)

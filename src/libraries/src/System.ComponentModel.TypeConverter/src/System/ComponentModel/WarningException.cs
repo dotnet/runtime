@@ -66,8 +66,7 @@ namespace System.ComponentModel
         /// </summary>
         protected WarningException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            HelpUrl = (string)info.GetValue("helpUrl", typeof(string));
-            HelpTopic = (string)info.GetValue("helpTopic", typeof(string));
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -83,19 +82,10 @@ namespace System.ComponentModel
         public string HelpTopic { get; }
 
         /// <summary>
-        ///     Need this since Exception implements ISerializable and we have fields to save out.
+        ///     Need this since Exception implements ISerializable.
         /// </summary>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            info.AddValue("helpUrl", HelpUrl);
-            info.AddValue("helpTopic", HelpTopic);
-
             base.GetObjectData(info, context);
         }
     }

@@ -32,6 +32,7 @@ namespace System.Security.Cryptography
         protected CryptographicUnexpectedOperationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

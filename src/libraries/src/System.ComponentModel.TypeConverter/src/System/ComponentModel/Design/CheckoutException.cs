@@ -70,6 +70,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         protected CheckoutException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>

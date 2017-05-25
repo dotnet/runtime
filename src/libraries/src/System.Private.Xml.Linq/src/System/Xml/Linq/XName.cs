@@ -189,28 +189,9 @@ namespace System.Xml.Linq
         /// </summary>
         /// <param name="info">The <see cref="SerializationInfo"/> to populate with data</param>
         /// <param name="context">The destination for this serialization</param>
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
-            if (info == null) throw new ArgumentNullException(nameof(info));
-            info.AddValue("name", ToString());
-            info.SetType(typeof(NameSerializer));
-        }
-    }
-
-    internal sealed class NameSerializer : IObjectReference, ISerializable
-    {
-        string _expandedName;
-
-        private NameSerializer(SerializationInfo info, StreamingContext context) {
-            if (info == null) throw new ArgumentNullException(nameof(info));
-            _expandedName = info.GetString("name");
-        }
-
-        object IObjectReference.GetRealObject(StreamingContext context) {
-            return XName.Get(_expandedName);
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) {
-            throw new NotSupportedException(); // nop
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            throw new PlatformNotSupportedException();
         }
     }
 }

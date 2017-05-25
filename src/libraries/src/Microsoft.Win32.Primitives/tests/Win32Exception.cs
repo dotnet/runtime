@@ -101,12 +101,5 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(expected: "Unknown error (0x23)", actual: ex.Message);
             }
         }
-
-        [Fact]
-        public static void GetObjectData_InvalidArgs_Throws()
-        {
-            var e = new Win32Exception();
-            AssertExtensions.Throws<ArgumentNullException>("info", () => e.GetObjectData(null, default(StreamingContext)));
-        }
     }
 }

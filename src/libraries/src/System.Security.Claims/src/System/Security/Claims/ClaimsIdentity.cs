@@ -258,12 +258,7 @@ namespace System.Security.Claims
 
         protected ClaimsIdentity(SerializationInfo info, StreamingContext context)
         {
-            if (null == info)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            Deserialize(info, context, true);
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -1057,31 +1052,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">Thrown if the info parameter is null.</exception>
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (null == info)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            const string Version = "1.0";
-            info.AddValue(VersionKey, Version);
-            if (!string.IsNullOrEmpty(_authenticationType))
-            {
-                info.AddValue(AuthenticationTypeKey, _authenticationType);
-            }
-
-            info.AddValue(NameClaimTypeKey, _nameClaimType);
-            info.AddValue(RoleClaimTypeKey, _roleClaimType);
-
-            if (!string.IsNullOrEmpty(_label))
-            {
-                info.AddValue(LabelKey, _label);
-            }
-
-            // actor
-            if (_actor != null || _bootstrapContext != null || (_instanceClaims != null && _instanceClaims.Count > 0))
-            {
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Serialization); // BinaryFormatter needed
-            }
+            throw new PlatformNotSupportedException();
         }
 
         private void Deserialize(SerializationInfo info, StreamingContext context, bool useContext)

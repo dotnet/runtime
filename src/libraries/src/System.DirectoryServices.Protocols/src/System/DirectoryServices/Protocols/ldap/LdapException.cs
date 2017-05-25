@@ -80,6 +80,7 @@ namespace System.DirectoryServices.Protocols
         internal PartialResultsCollection results = new PartialResultsCollection();
         protected LdapException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public LdapException() : base() { }
@@ -132,8 +133,7 @@ namespace System.DirectoryServices.Protocols
                 return this.results;
             }
         }
-
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, SerializationFormatter = true)]
+        
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
@@ -144,6 +144,7 @@ namespace System.DirectoryServices.Protocols
     {
         protected TlsOperationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public TlsOperationException() : base() { }

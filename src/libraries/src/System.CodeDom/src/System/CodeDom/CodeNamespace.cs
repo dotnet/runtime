@@ -29,8 +29,6 @@ namespace System.CodeDom
             Name = name;
         }
 
-        private CodeNamespace(SerializationInfo info, StreamingContext context) { }
-
         public CodeTypeDeclarationCollection Types
         {
             get

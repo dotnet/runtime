@@ -25,7 +25,7 @@ namespace System.Configuration
         protected ConfigurationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Init(info.GetString("filename"), info.GetInt32("line"));
+            throw new PlatformNotSupportedException();
         }
 
         [Obsolete("This class is obsolete, to create a new exception create a System.Configuration!System.Configuration.ConfigurationErrorsException")]
@@ -92,8 +92,6 @@ namespace System.Configuration
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("filename", _filename);
-            info.AddValue("line", _line);
         }
 
         [Obsolete("This class is obsolete, use System.Configuration!System.Configuration.ConfigurationErrorsException.GetFilename instead")]

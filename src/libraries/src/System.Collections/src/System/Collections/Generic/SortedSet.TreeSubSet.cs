@@ -45,12 +45,6 @@ namespace System.Collections.Generic
                 VersionCheckImpl();
             }
 
-            private TreeSubSet(SerializationInfo info, StreamingContext context)
-            {
-                _siInfo = info;
-                OnDeserializationImpl(info);
-            }
-
             internal override bool AddIfNotPresent(T item)
             {
                 if (!IsWithinRange(item))
@@ -349,17 +343,7 @@ namespace System.Collections.Generic
 
             protected override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
-
-                info.AddValue(MaxName, _max, typeof(T));
-                info.AddValue(MinName, _min, typeof(T));
-                info.AddValue(LowerBoundActiveName, _lBoundActive);
-                info.AddValue(UpperBoundActiveName, _uBoundActive);
-
-                base.GetObjectData(info, context);
+                throw new PlatformNotSupportedException();
             }
 
             void IDeserializationCallback.OnDeserialization(Object sender)

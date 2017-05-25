@@ -30,9 +30,8 @@ namespace System.Net.Mail
 
         protected SmtpFailedRecipientsException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _innerExceptions = (SmtpFailedRecipientException[])info.GetValue("innerExceptions", typeof(SmtpFailedRecipientException[]));
+            throw new PlatformNotSupportedException();
         }
-
 
         public SmtpFailedRecipientsException(string message, SmtpFailedRecipientException[] innerExceptions) :
             base(message, innerExceptions != null && innerExceptions.Length > 0 ? innerExceptions[0].FailedRecipient : null,
@@ -70,13 +69,12 @@ namespace System.Net.Mail
         [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            GetObjectData(serializationInfo, streamingContext);
+            base.GetObjectData(serializationInfo, streamingContext);
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
-            serializationInfo.AddValue("innerExceptions", _innerExceptions, typeof(SmtpFailedRecipientException[]));
         }
     }
 }

@@ -10,7 +10,11 @@ namespace System.Security
     public partial class HostProtectionException : System.SystemException
     {
         public HostProtectionException() { }
-        protected HostProtectionException(SerializationInfo info, StreamingContext context) { }
+        protected HostProtectionException(SerializationInfo info, StreamingContext context)
+        {
+            throw new PlatformNotSupportedException();
+        }
+
         public HostProtectionException(string message) { }
         public HostProtectionException(string message, Exception e) { }
         public HostProtectionException(string message, HostProtectionResource protectedResources, HostProtectionResource demandedResources) { }

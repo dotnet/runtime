@@ -21,6 +21,7 @@ namespace System.Configuration
         protected SettingsPropertyIsReadOnlyException(SerializationInfo info, StreamingContext context)
              : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public SettingsPropertyIsReadOnlyException()

@@ -28,7 +28,7 @@ namespace System.Net
         protected HttpListenerException(SerializationInfo serializationInfo, StreamingContext streamingContext)
             : base(serializationInfo, streamingContext)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, NativeErrorCode.ToString() + ":" + Message);
+            throw new PlatformNotSupportedException();
         }
 
         // the base class returns the HResult with this property

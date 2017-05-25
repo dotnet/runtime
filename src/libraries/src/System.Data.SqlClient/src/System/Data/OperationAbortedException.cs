@@ -12,10 +12,6 @@ namespace System.Data
             HResult = unchecked((int)0x80131936);
         }
 
-        private OperationAbortedException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
-
         internal static OperationAbortedException Aborted(Exception inner)
         {
             OperationAbortedException e;

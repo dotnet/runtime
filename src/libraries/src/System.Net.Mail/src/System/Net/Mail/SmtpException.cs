@@ -95,9 +95,8 @@ namespace System.Net.Mail
 
         protected SmtpException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext)
         {
-            _statusCode = (SmtpStatusCode)serializationInfo.GetInt32("Status");
+            throw new PlatformNotSupportedException();
         }
-
 
         internal SmtpException(SmtpStatusCode statusCode, string serverMessage, bool serverResponse) : base(GetMessageForStatus(statusCode, serverMessage))
         {
@@ -110,13 +109,12 @@ namespace System.Net.Mail
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            GetObjectData(serializationInfo, streamingContext);
+            base.GetObjectData(serializationInfo, streamingContext);
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
-            serializationInfo.AddValue("Status", (int)_statusCode, typeof(int));
         }
 
         public SmtpStatusCode StatusCode

@@ -907,37 +907,39 @@ namespace System.Transactions
             SerializationInfo serializationInfo,
             StreamingContext context)
         {
-            TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
-            if (etwLog.IsEnabled())
-            {
-                etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-            }
+            //TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
+            //if (etwLog.IsEnabled())
+            //{
+            //    etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
+            //}
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            //if (Disposed)
+            //{
+            //    throw new ObjectDisposedException(nameof(Transaction));
+            //}
 
-            if (serializationInfo == null)
-            {
-                throw new ArgumentNullException(nameof(serializationInfo));
-            }
+            //if (serializationInfo == null)
+            //{
+            //    throw new ArgumentNullException(nameof(serializationInfo));
+            //}
 
-            if (_complete)
-            {
-                throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
-            }
+            //if (_complete)
+            //{
+            //    throw TransactionException.CreateTransactionCompletedException(DistributedTxId);
+            //}
 
-            lock (_internalTransaction)
-            {
-                _internalTransaction.State.GetObjectData(_internalTransaction, serializationInfo, context);
-            }
+            //lock (_internalTransaction)
+            //{
+            //    _internalTransaction.State.GetObjectData(_internalTransaction, serializationInfo, context);
+            //}
 
-            if (etwLog.IsEnabled())
-            {
-                etwLog.TransactionSerialized(this, "Transaction");
-                etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
-            }
+            //if (etwLog.IsEnabled())
+            //{
+            //    etwLog.TransactionSerialized(this, "Transaction");
+            //    etwLog.MethodExit(TraceSourceType.TraceSourceLtm, this);
+            //}
+
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>

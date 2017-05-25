@@ -35,23 +35,9 @@ namespace System
             _servicePack = servicePack;
         }
 
-        private OperatingSystem(SerializationInfo info, StreamingContext context)
-        {
-            _version = (Version)info.GetValue("_version", typeof(Version));
-            _platform = (PlatformID)info.GetValue("_platform", typeof(PlatformID));
-            _servicePack = info.GetString("_servicePack");
-        }
-
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            info.AddValue("_version", _version);
-            info.AddValue("_platform", _platform);
-            info.AddValue("_servicePack", _servicePack);
+            throw new PlatformNotSupportedException();
         }
 
         public PlatformID Platform => _platform;

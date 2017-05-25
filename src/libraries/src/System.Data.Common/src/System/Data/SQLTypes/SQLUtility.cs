@@ -44,6 +44,7 @@ namespace System.Data.SqlTypes
         // <fxcop ignore=SerializableTypesMustHaveMagicConstructorWithAdequateSecurity />
         protected SqlTypeException(SerializationInfo si, StreamingContext sc) : base(SqlTypeExceptionSerialization(si, sc), sc)
         {
+            throw new PlatformNotSupportedException();
         }
 
         private static SerializationInfo SqlTypeExceptionSerialization(SerializationInfo si, StreamingContext sc)
@@ -75,12 +76,6 @@ namespace System.Data.SqlTypes
             HResult = HResults.SqlNullValue;
         }
 
-        // runtime will call even if private...
-        // <fxcop ignore=SerializableTypesMustHaveMagicConstructorWithAdequateSecurity />
-        private SqlNullValueException(SerializationInfo si, StreamingContext sc) : base(SqlNullValueExceptionSerialization(si, sc), sc)
-        {
-        }
-
         private static SerializationInfo SqlNullValueExceptionSerialization(SerializationInfo si, StreamingContext sc)
         {
             if ((null != si) && (1 == si.MemberCount))
@@ -108,12 +103,6 @@ namespace System.Data.SqlTypes
         public SqlTruncateException(string message, Exception e) : base(message, e)
         {
             HResult = HResults.SqlTruncate;
-        }
-
-        // runtime will call even if private...
-        // <fxcop ignore=SerializableTypesMustHaveMagicConstructorWithAdequateSecurity />
-        private SqlTruncateException(SerializationInfo si, StreamingContext sc) : base(SqlTruncateExceptionSerialization(si, sc), sc)
-        {
         }
 
         private static SerializationInfo SqlTruncateExceptionSerialization(SerializationInfo si, StreamingContext sc)
@@ -144,12 +133,6 @@ namespace System.Data.SqlTypes
         {
             HResult = HResults.SqlNullValue;
         }
-
-        // runtime will call even if private...
-        // <fxcop ignore=SerializableTypesMustHaveMagicConstructorWithAdequateSecurity />
-        private SqlNotFilledException(SerializationInfo si, StreamingContext sc) : base(si, sc)
-        {
-        }
     } // SqlNotFilledException
 
     public sealed class SqlAlreadyFilledException : SqlTypeException
@@ -167,12 +150,6 @@ namespace System.Data.SqlTypes
         public SqlAlreadyFilledException(string message, Exception e) : base(message, e)
         {
             HResult = HResults.SqlNullValue;
-        }
-
-        // runtime will call even if private...
-        // <fxcop ignore=SerializableTypesMustHaveMagicConstructorWithAdequateSecurity />
-        private SqlAlreadyFilledException(SerializationInfo si, StreamingContext sc) : base(si, sc)
-        {
         }
     } // SqlNotFilledException
 }

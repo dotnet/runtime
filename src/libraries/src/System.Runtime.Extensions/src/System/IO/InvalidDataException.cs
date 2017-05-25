@@ -22,9 +22,5 @@ namespace System.IO
             : base(message, innerException)
         {
         }
-
-        private InvalidDataException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
     }
 }

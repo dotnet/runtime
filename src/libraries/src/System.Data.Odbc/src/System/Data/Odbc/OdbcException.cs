@@ -12,8 +12,6 @@ namespace System.Data.Odbc
     {
         private OdbcErrorCollection _odbcErrors = new OdbcErrorCollection();
 
-        private ODBC32.RETCODE _retcode;    // DO NOT REMOVE! only needed for serialization purposes, because Everett had it.
-
         internal static OdbcException CreateException(OdbcErrorCollection errors, ODBC32.RetCode retcode)
         {
             StringBuilder builder = new StringBuilder();
@@ -36,14 +34,6 @@ namespace System.Data.Odbc
             HResult = HResults.OdbcException;
         }
 
-        // runtime will call even if private...
-        private OdbcException(SerializationInfo si, StreamingContext sc) : base(si, sc)
-        {
-            _retcode = (ODBC32.RETCODE)si.GetValue("odbcRetcode", typeof(ODBC32.RETCODE));
-            _odbcErrors = (OdbcErrorCollection)si.GetValue("odbcErrors", typeof(OdbcErrorCollection));
-            HResult = HResults.OdbcException;
-        }
-
         public OdbcErrorCollection Errors
         {
             get
@@ -52,16 +42,8 @@ namespace System.Data.Odbc
             }
         }
 
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags = System.Security.Permissions.SecurityPermissionFlag.SerializationFormatter)]
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
-            // MDAC 72003
-            if (null == si)
-            {
-                throw new ArgumentNullException("si");
-            }
-            si.AddValue("odbcRetcode", _retcode, typeof(ODBC32.RETCODE));
-            si.AddValue("odbcErrors", _odbcErrors, typeof(OdbcErrorCollection));
             base.GetObjectData(si, context);
         }
 

@@ -58,8 +58,7 @@ namespace System.ComponentModel
         /// </summary>
         protected LicenseException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            LicensedType = (Type)info.GetValue("type", typeof(Type));
-            _instance = info.GetValue("instance", typeof(object));
+            throw new PlatformNotSupportedException();
         }
 
         /// <summary>
@@ -68,19 +67,10 @@ namespace System.ComponentModel
         public Type LicensedType { get; }
 
         /// <summary>
-        ///     Need this since Exception implements ISerializable and we have fields to save out.
+        ///     Need this since Exception implements ISerializable.
         /// </summary>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            info.AddValue("type", LicensedType);
-            info.AddValue("instance", _instance);
-
             base.GetObjectData(info, context);
         }
     }
