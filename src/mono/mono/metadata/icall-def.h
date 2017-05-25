@@ -737,7 +737,7 @@ ICALL(WINDOWSRUNTIME_UNM_5, "WindowsGetStringRawBuffer", ves_icall_System_Runtim
 #endif
 
 ICALL_TYPE(ACTS, "System.Runtime.Remoting.Activation.ActivationServices", ACTS_1)
-ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance)
+HANDLES(ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance))
 ICALL(ACTS_2, "EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation)
 
 ICALL_TYPE(CONTEXT, "System.Runtime.Remoting.Contexts.Context", CONTEXT_1)
@@ -755,7 +755,7 @@ HANDLES(ICALL(REALP_2, "InternalGetTransparentProxy", ves_icall_Remoting_RealPro
 ICALL_TYPE(REMSER, "System.Runtime.Remoting.RemotingServices", REMSER_0)
 HANDLES(ICALL(REMSER_0, "GetVirtualMethod", ves_icall_Remoting_RemotingServices_GetVirtualMethod))
 ICALL(REMSER_1, "InternalExecute", ves_icall_InternalExecute)
-ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
+HANDLES(ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy))
 #endif
 
 ICALL_TYPE(RVH, "System.Runtime.Versioning.VersioningHelper", RVH_1)

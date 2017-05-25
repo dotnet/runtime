@@ -6924,12 +6924,13 @@ ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (void)
 
 #ifndef DISABLE_REMOTING
 ICALL_EXPORT MonoBoolean
-ves_icall_IsTransparentProxy (MonoObject *proxy)
+ves_icall_IsTransparentProxy (MonoObjectHandle proxy, MonoError *error)
 {
-	if (!proxy)
+	error_init (error);
+	if (MONO_HANDLE_IS_NULL (proxy))
 		return 0;
 
-	if (mono_object_is_transparent_proxy (proxy))
+	if (mono_class_is_transparent_proxy (mono_handle_class (proxy)))
 		return 1;
 
 	return 0;
@@ -7021,41 +7022,30 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 
 #endif
 
-ICALL_EXPORT MonoObject *
-ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionType *type)
+ICALL_EXPORT MonoObjectHandle
+ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance (MonoReflectionTypeHandle type, MonoError *error)
 {
-	MonoError error;
-	MonoClass *klass;
-	MonoDomain *domain;
-	MonoObject *ret;
+	error_init (error);
 	
-	domain = mono_object_domain (type);
-	klass = mono_class_from_mono_type (type->type);
-	mono_class_init_checked (klass, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (type);
+	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (type, type));
+	mono_class_init_checked (klass, error);
+	return_val_if_nok (error, NULL_HANDLE);
 
 	if (MONO_CLASS_IS_INTERFACE (klass) || mono_class_is_abstract (klass)) {
-		mono_set_pending_exception (mono_get_exception_argument ("type", "Type cannot be instantiated"));
-		return NULL;
+		mono_error_set_argument (error, "type", "Type cannot be instantiated");
+		return NULL_HANDLE;
 	}
 
 	if (klass->rank >= 1) {
 		g_assert (klass->rank == 1);
-		ret = (MonoObject *) mono_array_new_checked (domain, klass->element_class, 0, &error);
-		mono_error_set_pending_exception (&error);
-		return ret;
+		return MONO_HANDLE_CAST (MonoObject, mono_array_new_handle (domain, klass->element_class, 0, error));
 	} else {
-		MonoVTable *vtable = mono_class_vtable_full (domain, klass, &error);
-		if (!is_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return NULL;
-		}
-		/* Bypass remoting object creation check */
-		ret = mono_object_new_alloc_specific_checked (vtable, &error);
-		mono_error_set_pending_exception (&error);
+		MonoVTable *vtable = mono_class_vtable_full (domain, klass, error);
+		return_val_if_nok (error, NULL_HANDLE);
 
-		return ret;
+		/* Bypass remoting object creation check */
+		return MONO_HANDLE_NEW (MonoObject, mono_object_new_alloc_specific_checked (vtable, error));
 	}
 }
 
