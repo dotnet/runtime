@@ -613,8 +613,7 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Transfer-Encoding", clientResponse);
         }
         
-        // The managed implementation should KeepAlive directly in Headers rather than tracking it with its own field.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19972, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task KeepAlive_ContentLengthBoundaryAndRequestHttpVersionMinorIsZero_DoesNotChangeWhenSendingHeaders()
         {
             using (HttpListenerResponse response = await GetResponse("1.0"))
