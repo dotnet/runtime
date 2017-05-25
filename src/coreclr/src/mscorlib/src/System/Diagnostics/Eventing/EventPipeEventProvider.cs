@@ -62,7 +62,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (userDataCount == 0)
                 {
-                    EventPipeInternal.WriteEvent(eventHandle, eventID, null, 0);
+                    EventPipeInternal.WriteEvent(eventHandle, eventID, null, 0, activityId, relatedActivityId);
                     return 0;
                 }
 
@@ -82,7 +82,7 @@ namespace System.Diagnostics.Tracing
                         uint singleUserDataSize = userData[i].Size;
                         WriteToBuffer(pData, length, ref offset, singleUserDataPtr, singleUserDataSize);
                     }
-                    EventPipeInternal.WriteEvent(eventHandle, eventID, pData, length);
+                    EventPipeInternal.WriteEvent(eventHandle, eventID, pData, length, activityId, relatedActivityId);
                 }
             }
             return 0;
