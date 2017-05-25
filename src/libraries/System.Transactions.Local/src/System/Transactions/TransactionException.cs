@@ -99,6 +99,7 @@ namespace System.Transactions
         /// <param name="context"></param>
         protected TransactionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         internal static TransactionException Create(string message, Guid distributedTxId)
@@ -239,6 +240,7 @@ namespace System.Transactions
         /// <param name="context"></param>
         protected TransactionAbortedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 
@@ -298,6 +300,7 @@ namespace System.Transactions
         /// <param name="context"></param>
         protected TransactionInDoubtException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 
@@ -356,6 +359,7 @@ namespace System.Transactions
         /// <param name="context"></param>
         protected TransactionManagerCommunicationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 
@@ -393,6 +397,7 @@ namespace System.Transactions
         /// <param name="context"></param>
         protected TransactionPromotionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

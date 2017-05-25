@@ -30,7 +30,7 @@ namespace System
 
         protected ContextMarshalException(SerializationInfo info, StreamingContext context): base(info, context)
         {
-            HResult = HResults.COR_E_CONTEXTMARSHAL;
+            throw new PlatformNotSupportedException();
         }
     }
 

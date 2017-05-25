@@ -22,9 +22,8 @@ namespace System.Net.Mail
 
         protected SmtpFailedRecipientException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _failedRecipient = info.GetString("failedRecipient");
+            throw new PlatformNotSupportedException();
         }
-
 
         public SmtpFailedRecipientException(SmtpStatusCode statusCode, string failedRecipient) : base(statusCode)
         {
@@ -52,13 +51,12 @@ namespace System.Net.Mail
         [SuppressMessage("Microsoft.Security", "CA2123:OverrideLinkDemandsShouldBeIdenticalToBase", Justification = "System.dll is still using pre-v4 security model and needs this demand")]
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            GetObjectData(serializationInfo, streamingContext);
+            base.GetObjectData(serializationInfo, streamingContext);
         }
 
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);
-            serializationInfo.AddValue("failedRecipient", _failedRecipient, typeof(string));
         }
     }
 }

@@ -32,12 +32,6 @@ namespace System.IO
             Init(fileName);
         }
 
-        private FileInfo(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            _name = Path.GetFileName(OriginalPath);
-            DisplayPath = GetDisplayPath(OriginalPath);
-        }
-
         [System.Security.SecurityCritical]
         private void Init(String fileName)
         {

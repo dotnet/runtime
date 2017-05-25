@@ -50,12 +50,5 @@ namespace System.Tests
             Assert.Equal(os.Version, os2.Version);
             Assert.Equal(os.VersionString, os2.VersionString);
         }
-
-        [Fact]
-        public static void GetObjectData_InvalidArgs_Throws()
-        {
-            var os = new OperatingSystem(PlatformID.Win32NT, new Version(10, 0));
-            AssertExtensions.Throws<ArgumentNullException>("info", () => os.GetObjectData(null, new StreamingContext()));
-        }
     }
 }

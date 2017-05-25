@@ -34,14 +34,20 @@ namespace System.Net
 
         protected WebRequest() { }
 
-        protected WebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
+        protected WebRequest(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         void ISerializable.GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            GetObjectData(serializationInfo, streamingContext);
+            throw new PlatformNotSupportedException();
         }
 
-        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext) { }
+        protected virtual void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         // Create a WebRequest.
         //

@@ -96,28 +96,6 @@ namespace System.Data.SqlTypes
             AssertValid();
         }
 
-        // Constructor required for serialization. Deserializes as a Buffer. If the bits have been tampered with
-        // then this will throw a SerializationException or a InvalidCastException.
-        private SqlChars(SerializationInfo info, StreamingContext context)
-        {
-            _stream = null;
-            _rgchWorkBuf = null;
-
-            if (info.GetBoolean("IsNull"))
-            {
-                _state = SqlBytesCharsState.Null;
-                _rgchBuf = null;
-            }
-            else
-            {
-                _state = SqlBytesCharsState.Buffer;
-                _rgchBuf = (char[])info.GetValue("data", typeof(char[]));
-                _lCurLen = _rgchBuf.Length;
-            }
-
-            AssertValid();
-        }
-
         // --------------------------------------------------------------
         //	  Public properties
         // --------------------------------------------------------------
@@ -575,25 +553,7 @@ namespace System.Data.SqlTypes
         // array is serialized, except for Null, in which case this state is kept.
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            switch (_state)
-            {
-                case SqlBytesCharsState.Null:
-                    info.AddValue("IsNull", true);
-                    break;
-
-                case SqlBytesCharsState.Buffer:
-                    info.AddValue("IsNull", false);
-                    info.AddValue("data", _rgchBuf);
-                    break;
-
-                case SqlBytesCharsState.Stream:
-                    CopyStreamToBuffer();
-                    goto case SqlBytesCharsState.Buffer;
-
-                default:
-                    Debug.Assert(false);
-                    goto case SqlBytesCharsState.Null;
-            }
+            throw new PlatformNotSupportedException();
         }
 
         // --------------------------------------------------------------

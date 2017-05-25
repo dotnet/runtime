@@ -80,8 +80,7 @@ namespace System.Text
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            CodePageEncodingSurrogate.SerializeEncoding(this, info, context);
-            info.SetType(typeof(CodePageEncodingSurrogate));
+            throw new PlatformNotSupportedException();
         }
 
         // Just a helper as we cannot use 'this' when calling 'base(...)' 

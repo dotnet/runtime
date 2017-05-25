@@ -32,18 +32,6 @@ namespace System.CodeDom.Tests
 			Assert.Empty(codeNamespace.Comments);
 		}
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do internal Reflection on framework types.")]
-        public void Ctor_SerializationInfo_StreamingContext()
-        {
-            ConstructorInfo constructor = typeof(CodeNamespace).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(SerializationInfo), typeof(StreamingContext) }, null);
-            var codeNamespace = (CodeNamespace)constructor.Invoke(new object[] { default(SerializationInfo), default(StreamingContext) });
-            Assert.Empty(codeNamespace.Name);
-            Assert.Empty(codeNamespace.Types);
-            Assert.Empty(codeNamespace.Imports);
-            Assert.Empty(codeNamespace.Comments);
-        }
-
 		[Theory]
 		[MemberData(nameof(String_TestData))]
 		public void Name_Set_Get_ReturnsExpected(string value)

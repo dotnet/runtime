@@ -24,7 +24,9 @@ namespace System.DirectoryServices.AccountManagement
 
         protected PrincipalException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
-        { }
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 
     public class MultipleMatchesException : PrincipalException
@@ -39,7 +41,9 @@ namespace System.DirectoryServices.AccountManagement
 
         protected MultipleMatchesException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
-        { }
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 
     public class NoMatchingPrincipalException : PrincipalException
@@ -54,7 +58,9 @@ namespace System.DirectoryServices.AccountManagement
 
         protected NoMatchingPrincipalException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
-        { }
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 
     public class PasswordException : PrincipalException
@@ -69,7 +75,9 @@ namespace System.DirectoryServices.AccountManagement
 
         protected PasswordException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
-        { }
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 
     public class PrincipalExistsException : PrincipalException
@@ -84,7 +92,9 @@ namespace System.DirectoryServices.AccountManagement
 
         protected PrincipalExistsException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
-        { }
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 
     public class PrincipalServerDownException : PrincipalException
@@ -117,16 +127,11 @@ namespace System.DirectoryServices.AccountManagement
         protected PrincipalServerDownException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            _errorCode = info.GetInt32("errorCode");
-            _serverName = (string)info.GetValue("serverName", typeof(String));
+            throw new PlatformNotSupportedException();
         }
 
-        [System.Security.SecurityCritical]
-        [SecurityPermission(System.Security.Permissions.SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("errorCode", _errorCode);
-            info.AddValue("serverName", _serverName, typeof(String));
             base.GetObjectData(info, context);
         }
     }
@@ -155,14 +160,11 @@ namespace System.DirectoryServices.AccountManagement
         protected PrincipalOperationException(SerializationInfo info, StreamingContext context) :
                     base(info, context)
         {
-            _errorCode = info.GetInt32("errorCode");
+            throw new PlatformNotSupportedException();
         }
 
-        [System.Security.SecurityCritical]
-        [SecurityPermission(System.Security.Permissions.SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("errorCode", _errorCode);
             base.GetObjectData(info, context);
         }
 

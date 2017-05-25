@@ -79,28 +79,12 @@ namespace System.Security.Authentication.ExtendedProtection
 
         protected ExtendedProtectionPolicy(SerializationInfo info, StreamingContext context)
         {
-            _policyEnforcement = (PolicyEnforcement)info.GetInt32(policyEnforcementName);
-            _protectionScenario = (ProtectionScenario)info.GetInt32(protectionScenarioName);
-            _customServiceNames = (ServiceNameCollection)info.GetValue(customServiceNamesName, typeof(ServiceNameCollection));
-
-            byte[] channelBindingData = (byte[])info.GetValue(customChannelBindingName, typeof(byte[]));
-            if (channelBindingData != null)
-            {
-                throw new PlatformNotSupportedException();
-            }
+            throw new PlatformNotSupportedException();
         }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (_customChannelBinding != null)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
-            info.AddValue(policyEnforcementName, (int)_policyEnforcement);
-            info.AddValue(protectionScenarioName, (int)_protectionScenario);
-            info.AddValue(customServiceNamesName, _customServiceNames, typeof(ServiceNameCollection));
-            info.AddValue(customChannelBindingName, null, typeof(byte[]));
+            throw new PlatformNotSupportedException();
         }
 
         public ServiceNameCollection CustomServiceNames

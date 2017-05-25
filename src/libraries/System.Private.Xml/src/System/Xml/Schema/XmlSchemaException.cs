@@ -31,44 +31,13 @@ namespace System.Xml.Schema
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException5"]/*' />
         protected XmlSchemaException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _res = (string)info.GetValue("res", typeof(string));
-            _args = (string[])info.GetValue("args", typeof(string[]));
-            _sourceUri = (string)info.GetValue("sourceUri", typeof(string));
-            _lineNumber = (int)info.GetValue("lineNumber", typeof(int));
-            _linePosition = (int)info.GetValue("linePosition", typeof(int));
-
-            // deserialize optional members
-            string version = null;
-            foreach (SerializationEntry e in info)
-            {
-                if (e.Name == "version")
-                {
-                    version = (string)e.Value;
-                }
-            }
-
-            if (version == null)
-            {
-                // deserializing V1 exception
-                _message = CreateMessage(_res, _args);
-            }
-            else
-            {
-                // deserializing V2 or higher exception -> exception message is serialized by the base class (Exception._message)
-                _message = null;
-            }
+            throw new PlatformNotSupportedException();
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.GetObjectData"]/*' />
-		public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("res", _res);
-            info.AddValue("args", _args);
-            info.AddValue("sourceUri", _sourceUri);
-            info.AddValue("lineNumber", _lineNumber);
-            info.AddValue("linePosition", _linePosition);
-            info.AddValue("version", "2.0");
         }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException1"]/*' />

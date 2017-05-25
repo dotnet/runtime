@@ -35,11 +35,6 @@ namespace System.IO
             DisplayPath = GetDisplayName(OriginalPath);
         }
 
-        private DirectoryInfo(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            DisplayPath = GetDisplayName(OriginalPath);
-        }
-
         public override String Name
         {
             get

@@ -2078,7 +2078,6 @@ namespace System.Transactions
             serializableTx.GetObjectData(serializationInfo, context);
         }
 
-
         internal override void ChangeStatePromotedAborted(InternalTransaction tx)
         {
             TransactionStatePromotedAborted.EnterState(tx);

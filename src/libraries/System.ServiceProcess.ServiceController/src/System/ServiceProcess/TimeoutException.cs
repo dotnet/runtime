@@ -30,6 +30,7 @@ namespace System.ServiceProcess
         protected TimeoutException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

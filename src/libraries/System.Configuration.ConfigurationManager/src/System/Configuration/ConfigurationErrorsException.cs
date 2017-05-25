@@ -103,37 +103,7 @@ namespace System.Configuration
         protected ConfigurationErrorsException(SerializationInfo info, StreamingContext context) :
             base(info, context)
         {
-            int firstLine;
-            int count;
-
-            // Retrieve out members
-            string firstFilename = info.GetString(SerializationParamFilename);
-            firstLine = info.GetInt32(SerializationParamLine);
-
-            Init(firstFilename, firstLine);
-
-            // Retrieve errors for _errors object
-            count = info.GetInt32(SerializationParamErrorCount);
-
-            if (count == 0) return;
-            _errors = new ConfigurationException[count];
-
-            for (int i = 0; i < count; i++)
-            {
-                string numPrefix = i.ToString(CultureInfo.InvariantCulture);
-
-                string currentType = info.GetString(numPrefix + SerializationParamErrorType);
-                Type currentExceptionType = Type.GetType(currentType, true);
-
-                // Only allow our exception types
-                if ((currentExceptionType != typeof(ConfigurationException)) &&
-                    (currentExceptionType != typeof(ConfigurationErrorsException)))
-                    throw ExceptionUtil.UnexpectedError("ConfigurationErrorsException");
-
-                _errors[i] = (ConfigurationException)
-                    info.GetValue(numPrefix + SerializationParamErrorData,
-                        currentExceptionType);
-            }
+            throw new PlatformNotSupportedException();
         }
 
         // The message includes the file/line number information.
@@ -196,35 +166,7 @@ namespace System.Configuration
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            int subErrors = 0;
-
-            // call base implementation
             base.GetObjectData(info, context);
-
-            // Serialize our members
-            info.AddValue(SerializationParamFilename, Filename);
-            info.AddValue(SerializationParamLine, Line);
-
-            // Serialize rest of errors, along with count
-            // (since first error duplicates this error, only worry if
-            //  there is more than one)
-            if ((_errors != null) &&
-                (_errors.Length > 1))
-            {
-                subErrors = _errors.Length;
-
-                for (int i = 0; i < _errors.Length; i++)
-                {
-                    string numPrefix = i.ToString(CultureInfo.InvariantCulture);
-
-                    info.AddValue(numPrefix + SerializationParamErrorData,
-                        _errors[i]);
-                    info.AddValue(numPrefix + SerializationParamErrorType,
-                        _errors[i].GetType());
-                }
-            }
-
-            info.AddValue(SerializationParamErrorCount, subErrors);
         }
 
         // Get file and linenumber from an XML Node in a DOM

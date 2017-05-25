@@ -63,17 +63,11 @@ namespace System.ComponentModel
 
         protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            nativeErrorCode = info.GetInt32(nameof(NativeErrorCode));
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            info.AddValue(nameof(NativeErrorCode), nativeErrorCode);
             base.GetObjectData(info, context);
         }
 

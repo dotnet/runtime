@@ -17,7 +17,10 @@ namespace System.Xml.Schema
         private Object _sourceNodeObject;
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.XmlSchemaException5"]/*' />
-        protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected XmlSchemaValidationException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException.GetObjectData"]/*' />
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

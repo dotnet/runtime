@@ -19,11 +19,6 @@ namespace System.Configuration
             IsReadOnly = true;
         }
 
-        private PropertyInformationCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
-        {
-        }
-
         public PropertyInformation this[string propertyName]
         {
             get

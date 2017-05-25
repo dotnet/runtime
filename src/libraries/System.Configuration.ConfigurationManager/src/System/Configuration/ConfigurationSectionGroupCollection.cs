@@ -27,11 +27,6 @@ namespace System.Configuration
             }
         }
 
-        private ConfigurationSectionGroupCollection(SerializationInfo serializationInfo, StreamingContext streamingContext)
-            : base(serializationInfo, streamingContext)
-        {
-        }
-
         // Indexer via name
         public ConfigurationSectionGroup this[string name] => Get(name);
 
