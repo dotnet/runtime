@@ -20,8 +20,8 @@ namespace System.Drawing
         /// </summary>
         public static readonly Point Empty = new Point();
 
-        private int _x;
-        private int _y;
+        private int x; // Do not rename (binary serialization) 
+        private int y; // Do not rename (binary serialization) 
 
         /// <summary>
         ///    Initializes a new instance of the <see cref='System.Drawing.Point'/> class
@@ -29,8 +29,8 @@ namespace System.Drawing
         /// </summary>
         public Point(int x, int y)
         {
-            _x = x;
-            _y = y;
+            this.x = x;
+            this.y = y;
         }
 
         /// <summary>
@@ -41,8 +41,8 @@ namespace System.Drawing
         /// </summary>
         public Point(Size sz)
         {
-            _x = sz.Width;
-            _y = sz.Height;
+            x = sz.Width;
+            y = sz.Height;
         }
 
         /// <summary>
@@ -51,8 +51,8 @@ namespace System.Drawing
         /// </summary>
         public Point(int dw)
         {
-            _x = LowInt16(dw);
-            _y = HighInt16(dw);
+            x = LowInt16(dw);
+            y = HighInt16(dw);
         }
 
         /// <summary>
@@ -61,15 +61,15 @@ namespace System.Drawing
         ///    </para>
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => _x == 0 && _y == 0;
+        public bool IsEmpty => x == 0 && y == 0;
 
         /// <summary>
         ///    Gets the x-coordinate of this <see cref='System.Drawing.Point'/>.
         /// </summary>
         public int X
         {
-            get { return _x; }
-            set { _x = value; }
+            get { return x; }
+            set { x = value; }
         }
 
         /// <summary>
@@ -79,8 +79,8 @@ namespace System.Drawing
         /// </summary>
         public int Y
         {
-            get { return _y; }
-            set { _y = value; }
+            get { return y; }
+            set { y = value; }
         }
 
         /// <summary>

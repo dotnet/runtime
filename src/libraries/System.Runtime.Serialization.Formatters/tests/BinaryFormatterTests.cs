@@ -46,7 +46,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             CheckForAnyEquals(obj, clone);
         }
 
-        //private static void Serialize()
+        //[Fact]
+        //public void Serialize()
         //{
         //    IEnumerable<object[]> objs = SerializableObjects();
         //    List<string> serializedHashes = new List<string>();
@@ -58,7 +59,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         //        {
         //            bf.Serialize(ms, obj);
         //            string serializedHash = Convert.ToBase64String(ms.ToArray());
-        //            serializedHashes.Add(i + ". " + obj.GetType().Name + ": " + serializedHash);
+        //            serializedHashes.Add(serializedHash);
         //        }
         //    }
 

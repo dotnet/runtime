@@ -19,9 +19,9 @@ namespace System.ComponentModel
     [Serializable]
     public class BindingList<T> : Collection<T>, IBindingList, ICancelAddNew, IRaiseItemChangedEvents
     {
-        private int _addNewPos = -1;
-        private bool _raiseListChangedEvents = true;
-        private bool _raiseItemChangedEvents;
+        private int addNewPos = -1; // Do not rename (binary serialization)
+        private bool raiseListChangedEvents = true; // Do not rename (binary serialization)
+        private bool raiseItemChangedEvents; // Do not rename (binary serialization)
 
         [NonSerialized]
         private PropertyDescriptorCollection _itemTypeProperties;
@@ -38,10 +38,10 @@ namespace System.ComponentModel
         [NonSerialized]
         private int _lastChangeIndex = -1;
 
-        private bool _allowNew = true;
-        private bool _allowEdit = true;
-        private bool _allowRemove = true;
-        private bool _userSetAllowNew;
+        private bool allowNew = true; // Do not rename (binary serialization)
+        private bool allowEdit = true; // Do not rename (binary serialization)
+        private bool allowRemove = true; // Do not rename (binary serialization)
+        private bool userSetAllowNew; // Do not rename (binary serialization)
 
         #region Constructors
 
@@ -64,13 +64,13 @@ namespace System.ComponentModel
         private void Initialize()
         {
             // Set the default value of AllowNew based on whether type T has a default constructor
-            _allowNew = ItemTypeHasDefaultConstructor;
+            allowNew = ItemTypeHasDefaultConstructor;
 
             // Check for INotifyPropertyChanged
             if (typeof(INotifyPropertyChanged).IsAssignableFrom(typeof(T)))
             {
                 // Supports INotifyPropertyChanged
-                _raiseItemChangedEvents = true;
+                raiseItemChangedEvents = true;
 
                 // Loop thru the items already in the collection and hook their change notification.
                 foreach (T item in Items)
@@ -177,14 +177,14 @@ namespace System.ComponentModel
         {
             get
             {
-                return _raiseListChangedEvents;
+                return raiseListChangedEvents;
             }
 
             set
             {
-                if (_raiseListChangedEvents != value)
+                if (raiseListChangedEvents != value)
                 {
-                    _raiseListChangedEvents = value;
+                    raiseListChangedEvents = value;
                 }
             }
         }
@@ -206,7 +206,7 @@ namespace System.ComponentModel
         // Private helper method
         private void FireListChanged(ListChangedType type, int index)
         {
-            if (_raiseListChangedEvents)
+            if (raiseListChangedEvents)
             {
                 OnListChanged(new ListChangedEventArgs(type, index));
             }
@@ -221,9 +221,9 @@ namespace System.ComponentModel
 
         protected override void ClearItems()
         {
-            EndNew(_addNewPos);
+            EndNew(addNewPos);
 
-            if (_raiseItemChangedEvents)
+            if (raiseItemChangedEvents)
             {
                 foreach (T item in Items)
                 {
@@ -237,10 +237,10 @@ namespace System.ComponentModel
 
         protected override void InsertItem(int index, T item)
         {
-            EndNew(_addNewPos);
+            EndNew(addNewPos);
             base.InsertItem(index, item);
 
-            if (_raiseItemChangedEvents)
+            if (raiseItemChangedEvents)
             {
                 HookPropertyChanged(item);
             }
@@ -251,14 +251,14 @@ namespace System.ComponentModel
         protected override void RemoveItem(int index)
         {
             // Need to all RemoveItem if this on the AddNew item
-            if (!_allowRemove && !(_addNewPos >= 0 && _addNewPos == index))
+            if (!allowRemove && !(addNewPos >= 0 && addNewPos == index))
             {
                 throw new NotSupportedException();
             }
 
-            EndNew(_addNewPos);
+            EndNew(addNewPos);
 
-            if (_raiseItemChangedEvents)
+            if (raiseItemChangedEvents)
             {
                 UnhookPropertyChanged(this[index]);
             }
@@ -269,14 +269,14 @@ namespace System.ComponentModel
 
         protected override void SetItem(int index, T item)
         {
-            if (_raiseItemChangedEvents)
+            if (raiseItemChangedEvents)
             {
                 UnhookPropertyChanged(this[index]);
             }
 
             base.SetItem(index, item);
 
-            if (_raiseItemChangedEvents)
+            if (raiseItemChangedEvents)
             {
                 HookPropertyChanged(item);
             }
@@ -293,10 +293,10 @@ namespace System.ComponentModel
         /// </summary>
         public virtual void CancelNew(int itemIndex)
         {
-            if (_addNewPos >= 0 && _addNewPos == itemIndex)
+            if (addNewPos >= 0 && addNewPos == itemIndex)
             {
-                RemoveItem(_addNewPos);
-                _addNewPos = -1;
+                RemoveItem(addNewPos);
+                addNewPos = -1;
             }
         }
 
@@ -305,9 +305,9 @@ namespace System.ComponentModel
         /// </summary>
         public virtual void EndNew(int itemIndex)
         {
-            if (_addNewPos >= 0 && _addNewPos == itemIndex)
+            if (addNewPos >= 0 && addNewPos == itemIndex)
             {
-                _addNewPos = -1;
+                addNewPos = -1;
             }
         }
 
@@ -335,7 +335,7 @@ namespace System.ComponentModel
             object newItem = AddNewCore();
 
             // Record position of new item (to support cancellation later on)
-            _addNewPos = (newItem != null) ? IndexOf((T)newItem) : -1;
+            addNewPos = (newItem != null) ? IndexOf((T)newItem) : -1;
 
             // Return new item to caller
             return newItem;
@@ -379,9 +379,9 @@ namespace System.ComponentModel
             {
                 //If the user set AllowNew, return what they set.  If we have a default constructor, allowNew will be 
                 //true and we should just return true.
-                if (_userSetAllowNew || _allowNew)
+                if (userSetAllowNew || allowNew)
                 {
-                    return _allowNew;
+                    return allowNew;
                 }
                 //Even if the item doesn't have a default constructor, the user can hook AddingNew to provide an item.
                 //If there's a handler for this, we should allow new.
@@ -390,10 +390,10 @@ namespace System.ComponentModel
             set
             {
                 bool oldAllowNewValue = AllowNew;
-                _userSetAllowNew = true;
+                userSetAllowNew = true;
                 //Note that we don't want to set allowNew only if AllowNew didn't match value,
                 //since AllowNew can depend on onAddingNew handler
-                _allowNew = value;
+                allowNew = value;
                 if (oldAllowNewValue != value)
                 {
                     FireListChanged(ListChangedType.Reset, -1);
@@ -410,13 +410,13 @@ namespace System.ComponentModel
         {
             get
             {
-                return _allowEdit;
+                return allowEdit;
             }
             set
             {
-                if (_allowEdit != value)
+                if (allowEdit != value)
                 {
-                    _allowEdit = value;
+                    allowEdit = value;
                     FireListChanged(ListChangedType.Reset, -1);
                 }
             }
@@ -431,13 +431,13 @@ namespace System.ComponentModel
         {
             get
             {
-                return _allowRemove;
+                return allowRemove;
             }
             set
             {
-                if (_allowRemove != value)
+                if (allowRemove != value)
                 {
-                    _allowRemove = value;
+                    allowRemove = value;
                     FireListChanged(ListChangedType.Reset, -1);
                 }
             }
@@ -615,7 +615,7 @@ namespace System.ComponentModel
         ///     of type ItemChanged as a result of property changes on individual list items
         ///     unless those items support INotifyPropertyChanged
         /// </summary>
-        bool IRaiseItemChangedEvents.RaisesItemChangedEvents => _raiseItemChangedEvents;
+        bool IRaiseItemChangedEvents.RaisesItemChangedEvents => raiseItemChangedEvents;
 
         #endregion
     }
