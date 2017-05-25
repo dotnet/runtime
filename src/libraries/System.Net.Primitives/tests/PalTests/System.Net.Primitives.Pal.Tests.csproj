@@ -14,8 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
          System.Net.Internals namespace. -->
@@ -25,7 +23,6 @@
   <ItemGroup>
     <TargetingPackExclusions Include="System.Net.Primitives" />
   </ItemGroup>
-
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs">
       <Link>ProductionCode\System\Net\Sockets\AddressFamily.cs</Link>
@@ -58,7 +55,6 @@
       <Link>ProductionCode\Common\System\IO\StringBuilderCache.cs</Link>
     </Compile>
   </ItemGroup>
-
   <ItemGroup>
     <Compile Include="HostInformationPalTest.cs" />
     <Compile Include="SocketAddressPalTest.cs" />
