@@ -40,7 +40,7 @@
       "description": "Indicates if this is a portable build.",
       "valueType": "property",
       "values": [ "True", "False"],
-      "defaultValue": "false"
+      "defaultValue": "true"
     },
     "SkipTests": {
       "description": "Enables/Disables running tests.",
@@ -411,7 +411,7 @@
            "CmakeBuildType": "default",
            "HostOs": "default",
            "ProcessorCount": "default",
-           "AdditionalArgs": "default",
+           "AdditionalArgs": "-portable",
            "ToolSetDir": "default"
          }
       }
