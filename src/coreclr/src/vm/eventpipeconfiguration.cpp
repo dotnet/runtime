@@ -370,7 +370,9 @@ EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPip
         *m_pMetadataEvent,
         GetCurrentThreadId(),
         pInstancePayload,
-        instancePayloadSize);
+        instancePayloadSize,
+        NULL /* pActivityId */,
+        NULL /* pRelatedActivityId */);
 
     // Set the timestamp to match the source event, because the metadata event
     // will be emitted right before the source event.

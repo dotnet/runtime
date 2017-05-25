@@ -19,7 +19,7 @@ class EventPipeEventInstance
 
 public:
 
-    EventPipeEventInstance(EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length);
+    EventPipeEventInstance(EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 
     // Get the event associated with this instance.
     EventPipeEvent* GetEvent() const;
@@ -55,6 +55,8 @@ protected:
     EventPipeEvent *m_pEvent;
     DWORD m_threadID;
     LARGE_INTEGER m_timeStamp;
+    GUID m_activityId;
+    GUID m_relatedActivityId;
 
     BYTE *m_pData;
     unsigned int m_dataLength;
