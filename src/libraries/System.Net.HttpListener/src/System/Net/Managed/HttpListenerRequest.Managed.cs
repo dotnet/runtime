@@ -120,7 +120,7 @@ namespace System.Net
                 _context.ErrorMessage = "Invalid request line (version).";
                 return;
             }
-            if (_version != HttpVersion.Version10 && _version != HttpVersion.Version11)
+            if (_version.Major > 1)
             {
                 _context.ErrorStatus = (int)HttpStatusCode.HttpVersionNotSupported;
                 _context.ErrorMessage = HttpStatusDescription.Get(HttpStatusCode.HttpVersionNotSupported);

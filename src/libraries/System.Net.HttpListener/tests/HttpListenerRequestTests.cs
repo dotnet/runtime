@@ -478,6 +478,14 @@ namespace System.Net.Tests
         [Theory]
         [InlineData("1.0")]
         [InlineData("1.1")]
+        [InlineData("1.2")]
+        [InlineData("1.3")]
+        [InlineData("1.4")]
+        [InlineData("1.5")]
+        [InlineData("1.6")]
+        [InlineData("1.7")]
+        [InlineData("1.8")]
+        [InlineData("1.9")]
         public async Task ProtocolVersion_GetProperty_ReturnsExpected(string httpVersion)
         {
             var version = new Version(httpVersion);
