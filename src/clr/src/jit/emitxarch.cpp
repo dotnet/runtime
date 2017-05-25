@@ -2878,12 +2878,12 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     GenTreeLclVar* lclVar = nullptr;
     if (src->isLclVarUsedFromMemory())
     {
-        assert(src->IsRegOptional());
+        assert(src->IsRegOptional() || !emitComp->lvaTable[src->gtLclVar.gtLclNum].lvIsRegCandidate());
         lclVar = src->AsLclVar();
     }
     if (dst->isLclVarUsedFromMemory())
     {
-        assert(dst->IsRegOptional());
+        assert(dst->IsRegOptional() || !emitComp->lvaTable[dst->gtLclVar.gtLclNum].lvIsRegCandidate());
         lclVar = dst->AsLclVar();
     }
 
