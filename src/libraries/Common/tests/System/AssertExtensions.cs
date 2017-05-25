@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
 
@@ -53,6 +54,17 @@ namespace System
             where T : ArgumentException
         {
             T exception = Assert.Throws<T>(testCode);
+
+            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
+                Assert.Equal(paramName, exception.ParamName);
+
+            return exception;
+        }
+
+        public static async Task<T> ThrowsAsync<T>(string paramName, Func<Task> testCode)
+            where T : ArgumentException
+        {
+            T exception = await Assert.ThrowsAsync<T>(testCode);
 
             if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
                 Assert.Equal(paramName, exception.ParamName);

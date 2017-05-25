@@ -289,7 +289,7 @@ namespace System.Net.Tests
         {
             using (var listener = new HttpListener())
             {
-                Assert.Throws<ArgumentNullException>("value", () => listener.ExtendedProtectionPolicy = null);
+                AssertExtensions.Throws<ArgumentNullException>("value", () => listener.ExtendedProtectionPolicy = null);
             }
         }
 
