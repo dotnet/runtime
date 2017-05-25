@@ -167,24 +167,6 @@ namespace System.Net
             _version = templateResponse._version;
         }
 
-        private bool FindCookie(Cookie cookie)
-        {
-            string name = cookie.Name;
-            string domain = cookie.Domain;
-            string path = cookie.Path;
-            foreach (Cookie c in _cookies)
-            {
-                if (name != c.Name)
-                    continue;
-                if (domain != c.Domain)
-                    continue;
-                if (path == c.Path)
-                    return true;
-            }
-
-            return false;
-        }
-
         internal void SendHeaders(bool closing, MemoryStream ms, bool isWebSocketHandshake = false)
         {
             if (!isWebSocketHandshake)
@@ -289,13 +271,7 @@ namespace System.Net
                     }
                 }
 
-                if (_cookies != null)
-                {
-                    foreach (Cookie cookie in _cookies)
-                    {
-                        _webHeaders.Set(HttpKnownHeaderNames.SetCookie, CookieToClientString(cookie));
-                    }
-                }
+                ComputeCookies();
             }
 
             Encoding encoding = Encoding.Default;
@@ -359,52 +335,6 @@ namespace System.Net
             }
 
             return sb.Append("\r\n").ToString();
-        }
-
-        private static string CookieToClientString(Cookie cookie)
-        {
-            if (cookie.Name.Length == 0)
-                return String.Empty;
-
-            StringBuilder result = new StringBuilder(64);
-
-            if (cookie.Version > 0)
-                result.Append("Version=").Append(cookie.Version).Append(";");
-
-            result.Append(cookie.Name).Append("=").Append(cookie.Value);
-
-            if (cookie.Path != null && cookie.Path.Length != 0)
-                result.Append(";Path=").Append(QuotedString(cookie, cookie.Path));
-
-            if (cookie.Domain != null && cookie.Domain.Length != 0)
-                result.Append(";Domain=").Append(QuotedString(cookie, cookie.Domain));
-
-            if (cookie.Port != null && cookie.Port.Length != 0)
-                result.Append(";Port=").Append(cookie.Port);
-
-            return result.ToString();
-        }
-
-        private static string QuotedString(Cookie cookie, string value)
-        {
-            if (cookie.Version == 0 || IsToken(value))
-                return value;
-            else
-                return "\"" + value.Replace("\"", "\\\"") + "\"";
-        }
-
-        private static string s_tspecials = "()<>@,;:\\\"/[]?={} \t";   // from RFC 2965, 2068
-
-        private static bool IsToken(string value)
-        {
-            int len = value.Length;
-            for (int i = 0; i < len; i++)
-            {
-                char c = value[i];
-                if (c < 0x20 || c >= 0x7f || s_tspecials.IndexOf(c) != -1)
-                    return false;
-            }
-            return true;
         }
 
         private bool Disposed { get; set; }
