@@ -70,14 +70,14 @@
            Text=" Missing parameters for debian publish." />
            
     <ItemGroup>
-      <DebInstallerFile Include="$(SharedHostInstallerStart)$(ProductMoniker).deb" >
+      <DebInstallerFile Include="$(SharedHostInstallerFile)" >
         <PackageName>dotnet-host</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(HostFxrInstallerStart)$(HostResolverVersionMoniker).deb" >
-        <PackageName>dotnet-hostfxr-$(HostResolverVersion.ToLower())</PackageName>
+      <DebInstallerFile Include="$(HostFxrInstallerFile)" >
+        <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('$(HostFxrInstallerFile)'))</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(SharedFrameworkInstallerStart)$(ProductMoniker).deb">
-        <PackageName>dotnet-runtime-$(SharedFrameworkNugetVersion.ToLower())</PackageName>
+      <DebInstallerFile Include="$(SharedFrameworkInstallerFile)">
+        <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('$(SharedFrameworkInstallerFile)'))</PackageName>
       </DebInstallerFile>
 
       <DebInstallerFile>
