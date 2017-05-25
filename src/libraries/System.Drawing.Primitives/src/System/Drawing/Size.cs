@@ -22,8 +22,8 @@ namespace System.Drawing
         /// </summary>
         public static readonly Size Empty = new Size();
 
-        private int _width;
-        private int _height;
+        private int width; // Do not rename (binary serialization) 
+        private int height; // Do not rename (binary serialization) 
 
         /**
          * Create a new Size object from a point
@@ -36,8 +36,8 @@ namespace System.Drawing
         /// </summary>
         public Size(Point pt)
         {
-            _width = pt.X;
-            _height = pt.Y;
+            width = pt.X;
+            height = pt.Y;
         }
 
         /**
@@ -49,8 +49,8 @@ namespace System.Drawing
         /// </summary>
         public Size(int width, int height)
         {
-            _width = width;
-            _height = height;
+            this.width = width;
+            this.height = height;
         }
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace System.Drawing
         ///    width and height.
         /// </summary>
         [Browsable(false)]
-        public bool IsEmpty => _width == 0 && _height == 0;
+        public bool IsEmpty => width == 0 && height == 0;
 
         /**
          * Horizontal dimension
@@ -111,8 +111,8 @@ namespace System.Drawing
         /// </summary>
         public int Width
         {
-            get { return _width; }
-            set { _width = value; }
+            get { return width; }
+            set { width = value; }
         }
 
         /**
@@ -125,8 +125,8 @@ namespace System.Drawing
         /// </summary>
         public int Height
         {
-            get { return _height; }
-            set { _height = value; }
+            get { return height; }
+            set { height = value; }
         }
 
         /// <summary>
@@ -189,6 +189,6 @@ namespace System.Drawing
         ///    <see cref='System.Drawing.Size'/>.
         ///    </para>
         /// </summary>
-        public override string ToString() => "{Width=" + _width.ToString() + ", Height=" + _height.ToString() + "}";
+        public override string ToString() => "{Width=" + width.ToString() + ", Height=" + height.ToString() + "}";
     }
 }

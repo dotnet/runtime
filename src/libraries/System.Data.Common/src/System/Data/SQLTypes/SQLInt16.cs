@@ -18,8 +18,8 @@ namespace System.Data.SqlTypes
     [XmlSchemaProvider("GetXsdType")]
     public struct SqlInt16 : INullable, IComparable, IXmlSerializable
     {
-        private bool _fNotNull; // false if null
-        private short _value;
+        private bool m_fNotNull; // false if null. Do not rename (binary serialization)
+        private short m_value; // Do not rename (binary serialization)
 
         private static readonly int s_MASKI2 = ~0x00007fff;
 
@@ -27,20 +27,20 @@ namespace System.Data.SqlTypes
         // construct a Null
         private SqlInt16(bool fNull)
         {
-            _fNotNull = false;
-            _value = 0;
+            m_fNotNull = false;
+            m_value = 0;
         }
 
         public SqlInt16(short value)
         {
-            _value = value;
-            _fNotNull = true;
+            m_value = value;
+            m_fNotNull = true;
         }
 
         // INullable
         public bool IsNull
         {
-            get { return !_fNotNull; }
+            get { return !m_fNotNull; }
         }
 
         // property: Value
@@ -48,8 +48,8 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                if (_fNotNull)
-                    return _value;
+                if (m_fNotNull)
+                    return m_value;
                 else
                     throw new SqlNullValueException();
             }
@@ -69,7 +69,7 @@ namespace System.Data.SqlTypes
 
         public override string ToString()
         {
-            return IsNull ? SQLResource.NullString : _value.ToString((IFormatProvider)null);
+            return IsNull ? SQLResource.NullString : m_value.ToString((IFormatProvider)null);
         }
 
         public static SqlInt16 Parse(string s)
@@ -80,18 +80,16 @@ namespace System.Data.SqlTypes
                 return new SqlInt16(short.Parse(s, null));
         }
 
-
         // Unary operators
         public static SqlInt16 operator -(SqlInt16 x)
         {
-            return x.IsNull ? Null : new SqlInt16((short)-x._value);
+            return x.IsNull ? Null : new SqlInt16((short)-x.m_value);
         }
 
         public static SqlInt16 operator ~(SqlInt16 x)
         {
-            return x.IsNull ? Null : new SqlInt16((short)~x._value);
+            return x.IsNull ? Null : new SqlInt16((short)~x.m_value);
         }
-
 
         // Binary operators
 
@@ -101,7 +99,7 @@ namespace System.Data.SqlTypes
             if (x.IsNull || y.IsNull)
                 return Null;
 
-            int iResult = x._value + y._value;
+            int iResult = x.m_value + y.m_value;
             if ((((iResult >> 15) ^ (iResult >> 16)) & 1) != 0) // Bit 15 != bit 16
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
@@ -113,7 +111,7 @@ namespace System.Data.SqlTypes
             if (x.IsNull || y.IsNull)
                 return Null;
 
-            int iResult = x._value - y._value;
+            int iResult = x.m_value - y.m_value;
             if ((((iResult >> 15) ^ (iResult >> 16)) & 1) != 0) // Bit 15 != bit 16
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
             else
@@ -125,7 +123,7 @@ namespace System.Data.SqlTypes
             if (x.IsNull || y.IsNull)
                 return Null;
 
-            int iResult = x._value * y._value;
+            int iResult = x.m_value * y.m_value;
             int iTemp = iResult & s_MASKI2;
             if (iTemp != 0 && iTemp != s_MASKI2)
                 throw new OverflowException(SQLResource.ArithOverflowMessage);
@@ -138,12 +136,12 @@ namespace System.Data.SqlTypes
             if (x.IsNull || y.IsNull)
                 return Null;
 
-            if (y._value != 0)
+            if (y.m_value != 0)
             {
-                if ((x._value == short.MinValue) && (y._value == -1))
+                if ((x.m_value == short.MinValue) && (y.m_value == -1))
                     throw new OverflowException(SQLResource.ArithOverflowMessage);
 
-                return new SqlInt16((short)(x._value / y._value));
+                return new SqlInt16((short)(x.m_value / y.m_value));
             }
             else
                 throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
@@ -154,12 +152,12 @@ namespace System.Data.SqlTypes
             if (x.IsNull || y.IsNull)
                 return Null;
 
-            if (y._value != 0)
+            if (y.m_value != 0)
             {
-                if ((x._value == short.MinValue) && (y._value == -1))
+                if ((x.m_value == short.MinValue) && (y.m_value == -1))
                     throw new OverflowException(SQLResource.ArithOverflowMessage);
 
-                return new SqlInt16((short)(x._value % y._value));
+                return new SqlInt16((short)(x.m_value % y.m_value));
             }
             else
                 throw new DivideByZeroException(SQLResource.DivideByZeroMessage);
@@ -168,20 +166,18 @@ namespace System.Data.SqlTypes
         // Bitwise operators
         public static SqlInt16 operator &(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)(x._value & y._value));
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)(x.m_value & y.m_value));
         }
 
         public static SqlInt16 operator |(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? Null : new SqlInt16(unchecked((short)((ushort)x._value | (ushort)y._value)));
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16(unchecked((short)((ushort)x.m_value | (ushort)y.m_value)));
         }
 
         public static SqlInt16 operator ^(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)(x._value ^ y._value));
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)(x.m_value ^ y.m_value));
         }
-
-
 
         // Implicit conversions
 
@@ -272,7 +268,7 @@ namespace System.Data.SqlTypes
         // Overloading comparison operators
         public static SqlBoolean operator ==(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value == y._value);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x.m_value == y.m_value);
         }
 
         public static SqlBoolean operator !=(SqlInt16 x, SqlInt16 y)
@@ -282,22 +278,22 @@ namespace System.Data.SqlTypes
 
         public static SqlBoolean operator <(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value < y._value);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x.m_value < y.m_value);
         }
 
         public static SqlBoolean operator >(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value > y._value);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x.m_value > y.m_value);
         }
 
         public static SqlBoolean operator <=(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value <= y._value);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x.m_value <= y.m_value);
         }
 
         public static SqlBoolean operator >=(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x._value >= y._value);
+            return (x.IsNull || y.IsNull) ? SqlBoolean.Null : new SqlBoolean(x.m_value >= y.m_value);
         }
 
         //--------------------------------------------------
@@ -445,8 +441,6 @@ namespace System.Data.SqlTypes
             return (SqlString)this;
         }
 
-
-
         // IComparable
         // Compares this object to another object, returning an integer that
         // indicates the relationship.
@@ -510,12 +504,12 @@ namespace System.Data.SqlTypes
             {
                 // Read the next value.
                 reader.ReadElementString();
-                _fNotNull = false;
+                m_fNotNull = false;
             }
             else
             {
-                _value = XmlConvert.ToInt16(reader.ReadElementString());
-                _fNotNull = true;
+                m_value = XmlConvert.ToInt16(reader.ReadElementString());
+                m_fNotNull = true;
             }
         }
 
@@ -527,7 +521,7 @@ namespace System.Data.SqlTypes
             }
             else
             {
-                writer.WriteString(XmlConvert.ToString(_value));
+                writer.WriteString(XmlConvert.ToString(m_value));
             }
         }
 
