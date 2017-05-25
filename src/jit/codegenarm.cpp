@@ -1597,7 +1597,8 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
 {
     // Emit code like that:
     //   ...
-    //   bgt True
+    //   beq True
+    //   bvs True    ; this second branch is typically absent
     //   movs rD, #0
     //   b Next
     // True:
@@ -1605,11 +1606,17 @@ void CodeGen::genSetRegToCond(regNumber dstReg, GenTreePtr tree)
     // Next:
     //   ...
 
-    CompareKind  compareKind = ((tree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
-    emitJumpKind jmpKind     = genJumpKindForOper(tree->gtOper, compareKind);
+    emitJumpKind jumpKind[2];
+    bool         branchToTrueLabel[2];
+    genJumpKindsForTree(tree, jumpKind, branchToTrueLabel);
 
     BasicBlock* labelTrue = genCreateTempLabel();
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmpKind), labelTrue);
+    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind[0]), labelTrue);
+
+    if (jumpKind[1] != EJ_NONE)
+    {
+        getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jumpKind[1]), labelTrue);
+    }
 
     getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(tree->gtType), dstReg, 0);
 
