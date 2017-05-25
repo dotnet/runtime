@@ -6996,18 +6996,13 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 }
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionType *type, MonoBoolean enable)
+ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionTypeHandle type, MonoBoolean enable, MonoError *error)
 {
-	MonoError error;
-	MonoClass *klass;
-	MonoVTable* vtable;
+	error_init (error);
 
-	klass = mono_class_from_mono_type (type->type);
-	vtable = mono_class_vtable_full (mono_domain_get (), klass, &error);
-	if (!is_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return;
-	}
+	MonoClass *klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (type, type));
+	MonoVTable *vtable = mono_class_vtable_full (mono_domain_get (), klass, error);
+	return_if_nok (error);
 
 	mono_vtable_set_is_remote (vtable, enable);
 }
@@ -7015,8 +7010,9 @@ ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (Mo
 #else /* DISABLE_REMOTING */
 
 ICALL_EXPORT void
-ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionType *type, MonoBoolean enable)
+ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation (MonoReflectionTypeHandle type, MonoBoolean enable, MonoError *error)
 {
+	error_init (error);
 	g_assert_not_reached ();
 }
 
