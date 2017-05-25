@@ -36,8 +36,8 @@ to allow in-process tools to get at very rich data.   Because the consumer is as
 within the same process, non-serializable types (e.g. HttpResponseMessage or HttpContext)
 can be passed, which gives the consumer a lot of potential data to work with.    
 
-As explained in [Bridge to EventSource](bridge-to-eventSource), there is a bridge that
-pipes information from DiagnosticSource's to an EventSource.   Thus EventSource
+As explained in [DiagnosticSourceEventSource.cs](System/Diagnostics/DiagnosticSourceEventSource.cs),
+there is a bridge that pipes information from DiagnosticSource's to an EventSource.   Thus EventSource
 consumers can get at all DiagnosticSource events.    While the data payloads from 
 DiagnosticSource can't in general be passed through to the EventSource (because they are 
 not serializable), there is a mechanism in the bridge that enables consumers to specify which fields
