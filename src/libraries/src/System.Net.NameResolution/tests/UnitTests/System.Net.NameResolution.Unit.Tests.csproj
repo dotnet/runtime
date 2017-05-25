@@ -7,7 +7,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>0436</NoWarn> <!-- Avoid warnings about type conflicts for types we're building in -->
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />

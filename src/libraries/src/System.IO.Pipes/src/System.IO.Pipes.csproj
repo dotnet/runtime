@@ -8,7 +8,6 @@
     <DefineConstants>$(DefineConstants)</DefineConstants>
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <!-- Compiled Source Files -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />

@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />

@@ -5,7 +5,6 @@
     <ProjectGuid>{7C395A91-D955-444C-98BF-D3F809A56CE1}</ProjectGuid>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />

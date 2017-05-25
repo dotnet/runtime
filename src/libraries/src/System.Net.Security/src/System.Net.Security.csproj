@@ -9,7 +9,6 @@
   <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <DefineConstants>$(DefineConstants);SYSNETSECURITY_NO_OPENSSL</DefineConstants>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
