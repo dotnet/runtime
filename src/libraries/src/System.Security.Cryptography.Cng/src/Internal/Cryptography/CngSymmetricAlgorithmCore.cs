@@ -151,6 +151,8 @@ namespace Internal.Cryptography
             // is correct, and detached from the input parameter.
             byte[] iv = _outer.Mode.GetCipherIv(rgbIV).CloneByteArray();
 
+            key = _outer.PreprocessKey(key);
+
             return CreateEphemeralCryptoTransformCore(key, iv, encrypting);
         }
 

@@ -13,16 +13,6 @@ namespace Internal.Cryptography
         private const int BitsPerByte = 8;
         private static readonly RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                // CNG does not support 128-bit keys.
-                // Only support 192-bit keys on all platforms for simplicity.
-                return new KeySizes[] { new KeySizes(minSize: 3 * 64, maxSize: 3 * 64, skipSize: 0) };
-            }
-        }
-
         public override ICryptoTransform CreateDecryptor()
         {
             return CreateTransform(Key, IV, encrypting: false);
@@ -73,6 +63,16 @@ namespace Internal.Cryptography
                 long ivSize = rgbIV.Length * (long)BitsPerByte;
                 if (ivSize != BlockSize)
                     throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
+            }
+
+            if (rgbKey.Length == 16)
+            {
+                // Some platforms do not support Two-Key Triple DES, so manually support it here.
+                // Two-Key Triple DES contains two 8-byte keys {K1}{K2} with {K1} appended to make {K1}{K2}{K1}.
+                byte[] newkey = new byte[24];
+                Array.Copy(rgbKey, 0, newkey, 0, 16);
+                Array.Copy(rgbKey, 0, newkey, 16, 8);
+                rgbKey = newkey;
             }
 
             return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, encrypting);
