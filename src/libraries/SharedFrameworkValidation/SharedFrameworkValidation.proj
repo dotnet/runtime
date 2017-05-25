@@ -5,13 +5,55 @@
   <PropertyGroup>
     <SharedFrameworkValidationRefPath>$(RefRootPath)SharedFrameworkValidation</SharedFrameworkValidationRefPath>
     <SharedFrameworkValidationRuntimePath>$(BinDir)runtime/SharedFrameworkValidation</SharedFrameworkValidationRuntimePath>
+    <_LKGSharedFrameworkVersion>1.1.2</_LKGSharedFrameworkVersion>
+    <SharedFrameworkExtractPath>$(RefRootPath)sharedFrameworkZip/shared/Microsoft.NETCore.App/$(MicrosoftNETCoreAppPackageVersion)</SharedFrameworkExtractPath>
+    <LKGSharedFrameworkExtractPath>$(RefRootPath)sharedFrameworkZip.LKG/shared/Microsoft.NETCore.App/$(_LKGSharedFrameworkVersion)</LKGSharedFrameworkExtractPath>
     <_RunTestsScriptName Condition="'$(RunningOnUnix)' != 'true'">CloneAndRunTests.cmd</_RunTestsScriptName>
     <_RunTestsScriptName Condition="'$(RunningOnUnix)' == 'true'">CloneAndRunTests.sh</_RunTestsScriptName>
-    <_PublishRID Condition="'$(OSGroup)'=='Windows_NT'">win-$(ArchGroup)</_PublishRID>
-    <_PublishRID Condition="'$(OSGroup)'=='OSX'">osx-$(ArchGroup)</_PublishRID>
-    <_PublishRID Condition="'$(OSGroup)'=='Linux'">linux-$(ArchGroup)</_PublishRID>
-    <_PublishRID Condition="'$(_PublishRID)'==''">unix-$(ArchGroup)</_PublishRID>
+    <_PublishRID>$(RuntimeOS)-$(ArchGroup)</_PublishRID>
   </PropertyGroup>
+
+  <Target Name="CreateScriptToDownloadSharedFrameworkZip">
+
+    <ItemGroup Condition="'$(RunningOnUnix)' != 'true'">
+      <_DownloadSharedFrameworkScriptLines Include="Invoke-WebRequest %22https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1%22 -OutFile $(ToolsDir.Replace('/', '\'))bootstrap.ps1" />
+      <_DownloadSharedFrameworkScriptLines Include="%26 %22$(ToolsDir.Replace('/', '\'))bootstrap.ps1%22 -Channel %22master%22 -SharedRuntime -Version %22$(MicrosoftNETCoreAppPackageVersion)%22 -InstallDir %22$(RefRootPath.Replace('/', '\'))sharedFrameworkZip%22 | Out-File %22$(BinDir.Replace('/', '\'))bootstrap.log%22" />
+      <_DownloadSharedFrameworkScriptLines Include="%26 %22$(ToolsDir.Replace('/', '\'))bootstrap.ps1%22 -Channel %22rel-1.1.0%22 -InstallDir %22$(RefRootPath.Replace('/', '\'))sharedFrameworkZip.LKG%22 | Out-File %22$(BinDir.Replace('/', '\'))bootstrap.LKG.log%22" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_ScriptName Condition="'$(RunningOnUnix)' != 'true'">$(BinDir)DownloadSharedFramework.ps1</_ScriptName>
+      <_ScriptName Condition="'$(RunningOnUnix)' == 'true'">$(BinDir)DownloadSharedFramework.sh</_ScriptName>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(RunningOnUnix)' == 'true'">
+      <_DownloadSharedFrameworkScriptLines Include="download() {" />
+      <_DownloadSharedFrameworkScriptLines Include="    eval %24invocation" />
+      <_DownloadSharedFrameworkScriptLines Include="    local remote_path=%241" />
+      <_DownloadSharedFrameworkScriptLines Include="    local out_path=%24{2:-}" />
+      <_DownloadSharedFrameworkScriptLines Include="    local failed=false" />
+      <_DownloadSharedFrameworkScriptLines Include="    if [ -z %22%24out_path%22 ]; then" />
+      <_DownloadSharedFrameworkScriptLines Include="        curl --retry 10 -sSL --create-dirs %24remote_path || failed=true" />
+      <_DownloadSharedFrameworkScriptLines Include="    else" />
+      <_DownloadSharedFrameworkScriptLines Include="        curl --retry 10 -sSL --create-dirs -o %24out_path %24remote_path || failed=true" />
+      <_DownloadSharedFrameworkScriptLines Include="    fi" />
+      <_DownloadSharedFrameworkScriptLines Include="    if [ %22%24failed%22 = true ]; then" />
+      <_DownloadSharedFrameworkScriptLines Include="        say_err %22Download failed%22" />
+      <_DownloadSharedFrameworkScriptLines Include="        return 1" />
+      <_DownloadSharedFrameworkScriptLines Include="    fi" />
+      <_DownloadSharedFrameworkScriptLines Include="}" />
+      <_DownloadSharedFrameworkScriptLines Include="download %22https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.sh%22 %22$(ToolsDir.Replace('/', '\'))bootstrap.sh%22" />
+      <_DownloadSharedFrameworkScriptLines Include="chmod a+x %22$(ToolsDir.Replace('/', '\'))bootstrap.sh%22" />
+      <_DownloadSharedFrameworkScriptLines Include="%22$(ToolsDir.Replace('/', '\'))bootstrap.sh%22 --channel %22master%22 --shared-runtime --version %22$(MicrosoftNETCoreAppPackageVersion)%22 --install-dir %22$(RefRootPath.Replace('/', '\'))sharedFrameworkZip%22" />
+      <_DownloadSharedFrameworkScriptLines Include="%22$(ToolsDir.Replace('/', '\'))bootstrap.sh%22 --channel %22rel-1.1.0%22 --install-dir %22$(RefRootPath.Replace('/', '\'))sharedFrameworkZip.LKG%22" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+      File="$(_ScriptName)"
+      Lines="@(_DownloadSharedFrameworkScriptLines)"
+      Overwrite="true"
+      Encoding="Ascii" />
+  </Target>
 
   <Target Name="BuildPackagesProject">
     <PropertyGroup>
@@ -32,6 +74,18 @@
     <PropertyGroup>
       <ApiCompatCmd>$(ToolHostCmd) "$(ToolsDir)ApiCompat.exe"</ApiCompatCmd>
     </PropertyGroup>
+
+    <!-- Exclude Roslyn assemblies as they don't live in our packages any longer -->
+    <ItemGroup>
+      <_SharedFrameworkLKGAssemblies Include="$(BinDir)runtime/SharedFrameworkValidation.LKG/*.dll" />
+      <_SharedFrameworkAssembliesToRemove Include="@(_SharedFrameworkLKGAssemblies)" Condition="$([System.String]::new('%(_SharedFrameworkLKGAssemblies.Identity)').Contains('Microsoft.CodeAnalysis'))" />
+      <_SharedFrameworkLKGAssemblies Remove="@(_SharedFrameworkAssembliesToRemove)" />
+
+      <_LKGSharedFrameworkAssemblies Include="$(LKGSharedFrameworkExtractPath)/*.dll" />
+      <_LKGSharedFrameworkAssembliesToRemove Include="@(_LKGSharedFrameworkAssemblies)" Condition="$([System.String]::new('%(_LKGSharedFrameworkAssemblies.Identity)').Contains('Microsoft.CodeAnalysis'))" />
+      <_LKGSharedFrameworkAssemblies Remove="@(_LKGSharedFrameworkAssembliesToRemove)" />
+
+    </ItemGroup>
 
     <MakeDir Directories="$(IntermediateOutputPath)" />
 
@@ -54,7 +108,19 @@
           StandardOutputImportance="Low" />
 
     <!-- Last shipped runtime packages vs current runtime packages -->
-    <Exec Command="$(ApiCompatCmd) &quot;$(BinDir)runtime/SharedFrameworkValidation.LKG&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRuntimePath)&quot; -baseline:&quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGRuntime.CurrentRuntime.txt&quot;"
+    <Exec Command="$(ApiCompatCmd) &quot;@(_SharedFrameworkLKGAssemblies)&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkValidationRuntimePath)&quot; -baseline:&quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGRuntime.CurrentRuntime.txt&quot;"
+          CustomErrorRegularExpression="Total Issues: [^0]"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+
+    <!-- Microsoft.NETCore.App Ref vs. shared framework -->
+    <Exec Command="$(ApiCompatCmd) &quot;$(PackagesDir)microsoft.netcore.app/$(MicrosoftNETCoreAppPackageVersion)/ref/netcoreapp2.0&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkExtractPath)&quot;"
+          CustomErrorRegularExpression="Total Issues: [^0]"
+          IgnoreStandardErrorWarningFormat="true"
+          StandardOutputImportance="Low" />
+
+    <!-- Last shipped shared framework vs. current shared framework -->
+    <Exec Command="$(ApiCompatCmd) &quot;@(_LKGSharedFrameworkAssemblies)&quot; $(ApiCompatArgs) -implDirs:&quot;$(SharedFrameworkExtractPath)&quot; -baseline:&quot;$(MSBuildThisFileDirectory)ApiCompatBaseline.LKGSharedFramework.CurrentSharedFramework.txt&quot;"
           CustomErrorRegularExpression="Total Issues: [^0]"
           IgnoreStandardErrorWarningFormat="true"
           StandardOutputImportance="Low" />
