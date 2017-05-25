@@ -63,15 +63,16 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                CheckSentHeaders();
-
                 if (value == null)
+                {
                     throw new ArgumentNullException(nameof(value));
-
+                }
                 if (value.Major != 1 || (value.Minor != 0 && value.Minor != 1))
+                {
                     throw new ArgumentException(SR.net_wrongversion, nameof(value));
+                }
 
-                _version = value;
+                _version = new Version(value.Major, value.Minor); // match Windows behavior, trimming to just Major.Minor
             }
         }
 
@@ -122,7 +123,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(responseEntity));
             }
 
-            if (_boundaryType != BoundaryType.Chunked)
+            if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
             {
                 ContentLength64 = responseEntity.Length;
             }
@@ -164,24 +165,6 @@ namespace System.Net
             _statusDescription = templateResponse._statusDescription;
             _keepAlive = templateResponse._keepAlive;
             _version = templateResponse._version;
-        }
-
-        private bool FindCookie(Cookie cookie)
-        {
-            string name = cookie.Name;
-            string domain = cookie.Domain;
-            string path = cookie.Path;
-            foreach (Cookie c in _cookies)
-            {
-                if (name != c.Name)
-                    continue;
-                if (domain != c.Domain)
-                    continue;
-                if (path == c.Path)
-                    return true;
-            }
-
-            return false;
         }
 
         internal void SendHeaders(bool closing, MemoryStream ms, bool isWebSocketHandshake = false)
@@ -275,23 +258,25 @@ namespace System.Net
                     }
                 }
 
-                if (!conn_close && _httpContext.Request.ProtocolVersion <= HttpVersion.Version10)
+                if (HttpListenerRequest.ProtocolVersion <= HttpVersion.Version10)
                 {
-                    _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
-                }
-
-                if (_cookies != null)
-                {
-                    foreach (Cookie cookie in _cookies)
+                    if (_keepAlive)
                     {
-                        _webHeaders.Set(HttpKnownHeaderNames.SetCookie, CookieToClientString(cookie));
+                        Headers[HttpResponseHeader.KeepAlive] = "true";
+                    }
+
+                    if (!conn_close)
+                    {
+                        _webHeaders.Set(HttpKnownHeaderNames.Connection, HttpHeaderStrings.KeepAlive);
                     }
                 }
+
+                ComputeCookies();
             }
 
             Encoding encoding = Encoding.Default;
             StreamWriter writer = new StreamWriter(ms, encoding, 256);
-            writer.Write("HTTP/{0} {1} ", _version, _statusCode);
+            writer.Write("HTTP/1.1 {0} ", _statusCode); // "1.1" matches Windows implementation, which ignores the response version
             writer.Flush();
             byte[] statusDescriptionBytes = WebHeaderEncoding.GetBytes(StatusDescription);
             ms.Write(statusDescriptionBytes, 0, statusDescriptionBytes.Length);
@@ -307,6 +292,9 @@ namespace System.Net
             SentHeaders = !isWebSocketHandshake;
         }
 
+        private static bool HeaderCanHaveEmptyValue(string name) =>
+            !string.Equals(name, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase);
+
         private static string FormatHeaders(WebHeaderCollection headers)
         {
             var sb = new StringBuilder();
@@ -315,59 +303,38 @@ namespace System.Net
             {
                 string key = headers.GetKey(i);
                 string[] values = headers.GetValues(i);
+
+                int startingLength = sb.Length;
+
+                sb.Append(key).Append(": ");
+                bool anyValues = false;
                 for (int j = 0; j < values.Length; j++)
                 {
-                    sb.Append(key).Append(": ").Append(values[j]).Append("\r\n");
+                    string value = values[j];
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        if (anyValues)
+                        {
+                            sb.Append(", ");
+                        }
+                        sb.Append(value);
+                        anyValues = true;
+                    }
+                }
+
+                if (anyValues || HeaderCanHaveEmptyValue(key))
+                {
+                    // Complete the header
+                    sb.Append("\r\n");
+                }
+                else
+                {
+                    // Empty header; remove it.
+                    sb.Length = startingLength;
                 }
             }
 
             return sb.Append("\r\n").ToString();
-        }
-
-        private static string CookieToClientString(Cookie cookie)
-        {
-            if (cookie.Name.Length == 0)
-                return String.Empty;
-
-            StringBuilder result = new StringBuilder(64);
-
-            if (cookie.Version > 0)
-                result.Append("Version=").Append(cookie.Version).Append(";");
-
-            result.Append(cookie.Name).Append("=").Append(cookie.Value);
-
-            if (cookie.Path != null && cookie.Path.Length != 0)
-                result.Append(";Path=").Append(QuotedString(cookie, cookie.Path));
-
-            if (cookie.Domain != null && cookie.Domain.Length != 0)
-                result.Append(";Domain=").Append(QuotedString(cookie, cookie.Domain));
-
-            if (cookie.Port != null && cookie.Port.Length != 0)
-                result.Append(";Port=").Append(cookie.Port);
-
-            return result.ToString();
-        }
-
-        private static string QuotedString(Cookie cookie, string value)
-        {
-            if (cookie.Version == 0 || IsToken(value))
-                return value;
-            else
-                return "\"" + value.Replace("\"", "\\\"") + "\"";
-        }
-
-        private static string s_tspecials = "()<>@,;:\\\"/[]?={} \t";   // from RFC 2965, 2068
-
-        private static bool IsToken(string value)
-        {
-            int len = value.Length;
-            for (int i = 0; i < len; i++)
-            {
-                char c = value[i];
-                if (c < 0x20 || c >= 0x7f || s_tspecials.IndexOf(c) != -1)
-                    return false;
-            }
-            return true;
         }
 
         private bool Disposed { get; set; }
