@@ -44,7 +44,7 @@ Daily Builds
 |   **Ubuntu 16.10 (x64)**   |   [![][ubuntu-16.10-badge-master]][ubuntu-16.10-version-master]<br>[Host][ubuntu-16.10-host-master]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-master]<br>[Shared Framework][ubuntu-16.10-sharedfx-master]<br>  |   [![][ubuntu-16.10-badge-1.1.X]][ubuntu-16.10-version-1.1.X]<br>[Host][ubuntu-16.10-host-1.1.X]<br>[Host FX Resolver][ubuntu-16.10-hostfxr-1.1.X]<br>[Shared Framework][ubuntu-16.10-sharedfx-1.1.X]<br>[tar.gz][ubuntu-16.10-targz-1.1.X]   |   N/A   |
 |   **Debian 8.2 (x64)**     |   [![][debian-8.2-badge-master]][debian-8.2-version-master]<br>[Host][debian-8.2-host-master]<br>[Host FX Resolver][debian-8.2-hostfxr-master]<br>[Shared Framework][debian-8.2-sharedfx-master]<br>  |   [![][debian-8.2-badge-1.1.X]][debian-8.2-version-1.1.X]<br>[Host][debian-8.2-host-1.1.X]<br>[Host FX Resolver][debian-8.2-hostfxr-1.1.X]<br>[Shared Framework][debian-8.2-sharedfx-1.1.X]<br>[tar.gz][debian-8.2-targz-1.1.X]   |   [![][debian-8.2-badge-preview]][debian-8.2-version-preview]<br>[Host][debian-8.2-host-preview]<br>[Host FX Resolver][debian-8.2-hostfxr-preview]<br>[Shared Framework][debian-8.2-sharedfx-preview]<br>[tar.gz][debian-8.2-targz-preview]   |
 |   **CentOS 7.1 (x64)**     |   N/A   |   [![][centos-badge-1.1.X]][centos-version-1.1.X]<br>[tar.gz][centos-targz-1.1.X]   |   [![][centos-badge-preview]][centos-version-preview]<br>[tar.gz][centos-targz-preview]   |
-|   **RHEL 7.2 (x64)**       |   N/A   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
+|   **RHEL 7.2 (x64)**       |   [![][rhel7-badge-master]][rhel7-version-master]<br>[Host][rhel7-host-master]<br>[Host FX Resolver][rhel7-hostfxr-master]<br>[Shared Framework][rhel7-sharedfx-master]<br>   |   [![][rhel-badge-1.1.X]][rhel-version-1.1.X]<br>[tar.gz][rhel-targz-1.1.X]   |   [![][rhel-badge-preview]][rhel-version-preview]<br>[tar.gz][rhel-targz-preview]   |
 |   **Fedora 23 (x64)**      |   N/A   |   [![][fedora-23-badge-1.1.X]][fedora-23-version-1.1.X]<br>[tar.gz][fedora-23-targz-1.1.X]   |   [![][fedora-23-badge-preview]][fedora-23-version-preview]<br>[tar.gz][fedora-23-targz-preview]   |
 |   **Fedora 24 (x64)**      |   N/A   |   [![][fedora-24-badge-1.1.X]][fedora-24-version-1.1.X]<br>[tar.gz][fedora-24-targz-1.1.X]   |   N/A   |
 |   **OpenSUSE 42.1 (x64)**  |   N/A   |   [![][opensuse-42.1-badge-1.1.X]][opensuse-42.1-version-1.1.X]<br>[tar.gz][opensuse-42.1-targz-1.1.X]   |   N/A   |
@@ -215,6 +215,12 @@ Daily Builds
 [centos-version-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/dnvm/latest.sharedfx.centos.x64.version
 [centos-targz-preview]: https://dotnetcli.blob.core.windows.net/dotnet/preview/Binaries/Latest/dotnet-centos-x64.latest.tar.gz
 
+
+[rhel7-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_rhel.7-x64_Release_version_badge.svg
+[rhel7-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.sharedfx.rhel.7.x64.version
+[rhel7-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-rhel.7-x64.latest.rpm
+[rhel7-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-rhel.7-x64.latest.rpm
+[rhel7-sharedfx-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-sharedframework-rhel.7-x64.latest.rpm
 
 [rhel-badge-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/Binaries/Latest/sharedfx_RHEL_x64_Release_version_badge.svg
 [rhel-version-1.1.X]: https://dotnetcli.blob.core.windows.net/dotnet/release/1.1.0/dnvm/latest.sharedfx.rhel.x64.version

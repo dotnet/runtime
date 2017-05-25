@@ -48,5 +48,6 @@
     <PublishRid Include="win-arm" />
     <PublishRid Include="win-arm64" />
     <PublishRid Include="linux-arm" />
+    <PublishRid Include="rhel.7-x64" />
   </ItemGroup>
 </Project>
