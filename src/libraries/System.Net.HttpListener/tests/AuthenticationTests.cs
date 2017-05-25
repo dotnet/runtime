@@ -57,7 +57,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20099, TestPlatforms.Unix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(BasicAuthenticationHeader_TestData))]
         public async Task BasicAuthentication_InvalidRequest_SendsStatusCodeClient(string header, HttpStatusCode statusCode)
         {
@@ -124,6 +124,18 @@ namespace System.Net.Tests
             await ValidateValidUser();
         }
 
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData("somename:somepassword", "somename", "somepassword")]
+        [InlineData("somename:", "somename", "")]
+        [InlineData(":somepassword", "", "somepassword")]
+        [InlineData("somedomain\\somename:somepassword", "somedomain\\somename", "somepassword")]
+        [InlineData("\\somename:somepassword", "\\somename", "somepassword")]
+        public async Task TestBasicAuthenticationWithValidAuthStrings(string authString, string expectedName, string expectedPassword)
+        {
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
+            await ValidateValidUser(authString, expectedName, expectedPassword);
+        }
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task TestAnonymousAuthenticationWithDelegate()
         {
@@ -134,7 +146,7 @@ namespace System.Net.Tests
             await ValidateNullUser();
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
         [ActiveIssue(20096)]
         public async Task NtlmAuthentication_Conversation_ReturnsExpectedType2Message()
         {
@@ -157,7 +169,7 @@ namespace System.Net.Tests
             yield return new object[] { "abcd", HttpStatusCode.BadRequest };
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
         [ActiveIssue(20096)]
         [MemberData(nameof(InvalidNtlmNegotiateAuthentication_TestData))]
         public async Task NtlmAuthentication_InvalidRequestHeaders_ReturnsExpectedStatusCode(string header, HttpStatusCode statusCode)
@@ -180,7 +192,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
         [ActiveIssue(20096)]
         public async Task NegotiateAuthentication_Conversation_ReturnsExpectedType2Message()
         {
@@ -195,7 +207,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
         [ActiveIssue(20096)]
         [MemberData(nameof(InvalidNtlmNegotiateAuthentication_TestData))]
         public async Task NegotiateAuthentication_InvalidRequestHeaders_ReturnsExpectedStatusCode(string header, HttpStatusCode statusCode)
@@ -229,7 +241,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20100, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task AuthenticationSchemeSelectorDelegate_ThrowsException_SendsInternalServerErrorToClient()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
@@ -241,7 +253,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20100, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void AuthenticationSchemeSelectorDelegate_ThrowsOutOfMemoryException_RethrowsException()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
@@ -299,18 +311,8 @@ namespace System.Net.Tests
                 AssertExtensions.Throws<ArgumentException>("value", "CustomChannelBinding", () => listener.ExtendedProtectionPolicy = protectionPolicy);
             }
         }
-
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsNotWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
-        public void UnsafeConnectionNtlmAuthentication_Unix_ThrowsPlatformNotSupportedException()
-        {
-            using (var listener = new HttpListener())
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => listener.UnsafeConnectionNtlmAuthentication);
-                Assert.Throws<PlatformNotSupportedException>(() => listener.UnsafeConnectionNtlmAuthentication = false);
-            }
-        }
         
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void UnsafeConnectionNtlmAuthentication_SetGet_ReturnsExpected()
         {
             using (var listener = new HttpListener())
@@ -328,7 +330,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20101, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public void UnsafeConnectionNtlmAuthentication_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -419,21 +421,27 @@ namespace System.Net.Tests
             }
         }
 
-        private async Task ValidateValidUser()
+        private Task ValidateValidUser() =>
+            ValidateValidUser(string.Format("{0}:{1}", TestUser, TestPassword), TestUser, TestPassword);
+
+        private async Task ValidateValidUser(string authHeader, string expectedUsername, string expectedPassword)
         {
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
             using (HttpClient client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                     Basic,
-                    Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", TestUser, TestPassword))));
+                    Convert.ToBase64String(Encoding.ASCII.GetBytes(authHeader)));
 
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                Task <string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
                 HttpListenerContext listenerContext = await serverContextTask;
 
-                Assert.Equal(TestUser, listenerContext.User.Identity.Name);
-                Assert.True(listenerContext.User.Identity.IsAuthenticated);
+                Assert.Equal(expectedUsername, listenerContext.User.Identity.Name);
+                Assert.Equal(!string.IsNullOrEmpty(expectedUsername), listenerContext.User.Identity.IsAuthenticated);
                 Assert.Equal(Basic, listenerContext.User.Identity.AuthenticationType);
+
+                HttpListenerBasicIdentity id = Assert.IsType<HttpListenerBasicIdentity>(listenerContext.User.Identity);
+                Assert.Equal(expectedPassword, id.Password);
             }
         }
 

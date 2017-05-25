@@ -34,9 +34,6 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
 
-        // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
-        internal AuthenticationSchemes AuthenticationSchemes { get; set; }
-
         // This can be used to cache the results of HttpListener.ExtendedProtectionSelectorDelegate.
         internal ExtendedProtectionPolicy ExtendedProtectionPolicy { get; set; }
 

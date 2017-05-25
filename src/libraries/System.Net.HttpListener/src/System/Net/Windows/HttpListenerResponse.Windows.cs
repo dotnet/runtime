@@ -357,56 +357,6 @@ namespace System.Net
             return statusCode;
         }
 
-        internal void ComputeCookies()
-        {
-            if (NetEventSource.IsEnabled)
-                NetEventSource.Info(this,
-$"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
-            if (_cookies != null)
-            {
-                // now go through the collection, and concatenate all the cookies in per-variant strings
-                string setCookie2 = null;
-                string setCookie = null;
-                for (int index = 0; index < _cookies.Count; index++)
-                {
-                    Cookie cookie = _cookies[index];
-                    string cookieString = cookie.ToServerString();
-                    if (cookieString == null || cookieString.Length == 0)
-                    {
-                        continue;
-                    }
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
-                    if (cookie.IsRfc2965Variant())
-                    {
-                        setCookie2 = setCookie2 == null ? cookieString : setCookie2 + ", " + cookieString;
-                    }
-                    else
-                    {
-                        setCookie = setCookie == null ? cookieString : setCookie + ", " + cookieString;
-                    }
-                }
-                if (!string.IsNullOrEmpty(setCookie))
-                {
-                    Headers.Set(HttpKnownHeaderNames.SetCookie, setCookie);
-                    if (string.IsNullOrEmpty(setCookie2))
-                    {
-                        Headers.Remove(HttpKnownHeaderNames.SetCookie2);
-                    }
-                }
-                if (!string.IsNullOrEmpty(setCookie2))
-                {
-                    Headers.Set(HttpKnownHeaderNames.SetCookie2, setCookie2);
-                    if (string.IsNullOrEmpty(setCookie))
-                    {
-                        Headers.Remove(HttpKnownHeaderNames.SetCookie);
-                    }
-                }
-            }
-            if (NetEventSource.IsEnabled)
-                NetEventSource.Info(this,
-$"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
-        }
-
         internal Interop.HttpApi.HTTP_FLAGS ComputeHeaders()
         {
             Interop.HttpApi.HTTP_FLAGS flags = Interop.HttpApi.HTTP_FLAGS.NONE;

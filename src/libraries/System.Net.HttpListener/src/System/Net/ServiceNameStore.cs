@@ -284,8 +284,8 @@ namespace System.Net
             string hostname = ExtractHostname(uriPrefix, true);
 
             IPAddress ipAddress = null;
-            if (String.Compare(hostname, "*", StringComparison.InvariantCultureIgnoreCase) == 0 ||
-                String.Compare(hostname, "+", StringComparison.InvariantCultureIgnoreCase) == 0 ||
+            if (string.Equals(hostname, "*", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(hostname, "+", StringComparison.OrdinalIgnoreCase) ||
                 IPAddress.TryParse(hostname, out ipAddress))
             {
                 // for a wildcard, register the machine name.  If the caller doesn't have DNS permission

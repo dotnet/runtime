@@ -18,6 +18,9 @@ namespace System.Net
 
         public IPrincipal User => _user;
 
+        // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
+        internal AuthenticationSchemes AuthenticationSchemes { get; set; }
+
         public HttpListenerResponse Response
         {
             get

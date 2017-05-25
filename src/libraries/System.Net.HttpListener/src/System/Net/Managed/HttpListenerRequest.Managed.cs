@@ -45,7 +45,12 @@ namespace System.Net
         {
             public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
             {
-                throw new NotImplementedException();
+                if (kind != ChannelBindingKind.Endpoint)
+                {
+                    throw new NotSupportedException(SR.Format(SR.net_listener_invalid_cbt_type, kind.ToString()));
+                }
+
+                return null;
             }
         }
 
@@ -66,7 +71,7 @@ namespace System.Net
             _version = HttpVersion.Version10;
         }
 
-        private static char[] s_separators = new char[] { ' ' };
+        private static readonly char[] s_separators = new char[] { ' ' };
 
         internal void SetRequestLine(string req)
         {
@@ -103,12 +108,22 @@ namespace System.Net
             try
             {
                 _version = new Version(parts[2].Substring(5));
-                if (_version.Major < 1)
-                    throw new Exception();
             }
             catch
             {
                 _context.ErrorMessage = "Invalid request line (version).";
+                return;
+            }
+
+            if (_version.Major < 1)
+            {
+                _context.ErrorMessage = "Invalid request line (version).";
+                return;
+            }
+            if (_version.Major > 1)
+            {
+                _context.ErrorStatus = (int)HttpStatusCode.HttpVersionNotSupported;
+                _context.ErrorMessage = HttpStatusDescription.Get(HttpStatusCode.HttpVersionNotSupported);
                 return;
             }
         }
@@ -238,24 +253,38 @@ namespace System.Net
 
             string name = header.Substring(0, colon).Trim();
             string val = header.Substring(colon + 1).Trim();
-            string lower = name.ToLower(CultureInfo.InvariantCulture);
-            _headers.Set(name, val);
-            switch (lower)
+            if (name.Equals("content-length", StringComparison.OrdinalIgnoreCase))
             {
-                case "content-length":
-                    try
-                    {
-                        _contentLength = long.Parse(val.Trim());
-                        if (_contentLength < 0)
-                            _context.ErrorMessage = "Invalid Content-Length.";
-                        _clSet = true;
-                    }
-                    catch
-                    {
-                        _context.ErrorMessage = "Invalid Content-Length.";
-                    }
+                // To match Windows behavior:
+                // Content lengths >= 0 and <= long.MaxValue are accepted as is.
+                // Content lengths > long.MaxValue and <= ulong.MaxValue are treated as 0.
+                // Content lengths < 0 cause the requests to fail.
+                // Other input is a failure, too.
+                long parsedContentLength =
+                    ulong.TryParse(val, out ulong parsedUlongContentLength) ? (parsedUlongContentLength <= long.MaxValue ? (long)parsedUlongContentLength : 0) :
+                    long.Parse(val);
+                if (parsedContentLength < 0 || (_clSet && parsedContentLength != _contentLength))
+                {
+                    _context.ErrorMessage = "Invalid Content-Length.";
+                }
+                else
+                {
+                    _contentLength = parsedContentLength;
+                    _clSet = true;
+                }
+            }
+            else if (name.Equals("transfer-encoding", StringComparison.OrdinalIgnoreCase))
+            {
+                if (Headers[HttpKnownHeaderNames.TransferEncoding] != null)
+                {
+                    _context.ErrorStatus = (int)HttpStatusCode.NotImplemented;
+                    _context.ErrorMessage = HttpStatusDescription.Get(HttpStatusCode.NotImplemented);
+                }
+            }
 
-                    break;
+            if (_context.ErrorMessage == null)
+            {
+                _headers.Set(name, val);
             }
         }
 
@@ -346,7 +375,7 @@ namespace System.Net
 
         public IPEndPoint RemoteEndPoint => _context.Connection.RemoteEndPoint;
 
-        public Guid RequestTraceIdentifier => Guid.Empty;
+        public Guid RequestTraceIdentifier { get; } = Guid.NewGuid();
 
         private IAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
         {

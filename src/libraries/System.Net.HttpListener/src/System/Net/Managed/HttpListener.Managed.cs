@@ -17,6 +17,7 @@ namespace System.Net
         private List<HttpListenerContext> _contextQueue = new List<HttpListenerContext>();
         private List<ListenerAsyncResult> _asyncWaitQueue = new List<ListenerAsyncResult>();
         private Dictionary<HttpConnection, HttpConnection> _connections = new Dictionary<HttpConnection, HttpConnection>();
+        private bool _unsafeConnectionNtlmAuthentication;
 
         public HttpListenerTimeoutManager TimeoutManager
         {
@@ -61,16 +62,22 @@ namespace System.Net
 
         public bool UnsafeConnectionNtlmAuthentication
         {
-            get => throw new PlatformNotSupportedException();
-            set => throw new PlatformNotSupportedException();
+            // NTLM isn't currently supported, so this is a nop anyway and we can just roundtrip the value
+            get => _unsafeConnectionNtlmAuthentication;
+            set
+            {
+                CheckDisposed();
+                _unsafeConnectionNtlmAuthentication = value;
+            }
         }
 
         public void Stop()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
+
+            lock (_internalLock)
             {
-                lock (_internalLock)
+                try
                 {
                     CheckDisposed();
                     if (_state == State.Stopped)
@@ -79,18 +86,17 @@ namespace System.Net
                     }
 
                     Close(false);
-
-                    _state = State.Stopped;
                 }
-            }
-            catch (Exception exception)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Stop {exception}");
-                throw;
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                catch (Exception exception)
+                {
+                    if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Stop {exception}");
+                    throw;
+                }
+                finally
+                {
+                    _state = State.Stopped;
+                    if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+                }
             }
         }
 
@@ -339,8 +345,7 @@ namespace System.Net
             }
 
             HttpListenerContext context = ares.GetContext();
-            context.ParseAuthentication(SelectAuthenticationScheme(context));
-
+            context.ParseAuthentication(context.AuthenticationSchemes);
             return context;
         }
 

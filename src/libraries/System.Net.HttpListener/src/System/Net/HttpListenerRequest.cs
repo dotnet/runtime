@@ -181,8 +181,8 @@ namespace System.Net
                     {
                         header = header.ToLower(CultureInfo.InvariantCulture);
                         _keepAlive =
-                            header.IndexOf("close", StringComparison.InvariantCultureIgnoreCase) < 0 ||
-                            header.IndexOf("keep-alive", StringComparison.InvariantCultureIgnoreCase) >= 0;
+                            header.IndexOf("close", StringComparison.OrdinalIgnoreCase) < 0 ||
+                            header.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) >= 0;
                     }
                 }
 

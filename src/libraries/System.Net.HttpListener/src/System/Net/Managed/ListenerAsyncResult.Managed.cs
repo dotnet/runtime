@@ -112,11 +112,49 @@ namespace System.Net
             _context = context;
             lock (_locker)
             {
-                AuthenticationSchemes schemes = context._listener.SelectAuthenticationScheme(context);
-                if ((schemes == AuthenticationSchemes.Basic || context._listener.AuthenticationSchemes == AuthenticationSchemes.Negotiate) && context.Request.Headers["Authorization"] == null)
+                bool authFailure = false;
+                try
                 {
+                    context.AuthenticationSchemes = context._listener.SelectAuthenticationScheme(context);
+                }
+                catch (OutOfMemoryException oom)
+                {
+                    context.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
+                    _exception = oom;
+                }
+                catch
+                {
+                    authFailure = true;
+                    context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                }
+
+                if (context.AuthenticationSchemes != AuthenticationSchemes.None &&
+                    (context.AuthenticationSchemes & AuthenticationSchemes.Anonymous) != AuthenticationSchemes.Anonymous &&
+                    (context.AuthenticationSchemes & AuthenticationSchemes.Basic) != AuthenticationSchemes.Basic)
+                {
+                    authFailure = true;
                     context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    context.Response.Headers["WWW-Authenticate"] = schemes + " realm=\"" + context._listener.Realm + "\"";
+                }
+                else if (context.AuthenticationSchemes == AuthenticationSchemes.Basic)
+                {
+                    HttpStatusCode errorCode = HttpStatusCode.Unauthorized;
+                    string authHeader = context.Request.Headers["Authorization"];
+                    if (authHeader == null ||
+                        !HttpListenerContext.IsBasicHeader(authHeader) ||
+                        authHeader.Length < AuthenticationTypes.Basic.Length + 2 ||
+                        !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out string _, out string __))
+                    {
+                        authFailure = true;
+                        context.Response.StatusCode = (int)errorCode;
+                        if (errorCode == HttpStatusCode.Unauthorized)
+                        {
+                            context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
+                        }
+                    }
+                }
+
+                if (authFailure)
+                {
                     context.Response.OutputStream.Close();
                     IAsyncResult ares = context._listener.BeginGetContext(_cb, _state);
                     _forward = (ListenerAsyncResult)ares;
