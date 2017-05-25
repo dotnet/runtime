@@ -43,6 +43,7 @@ namespace System.Net.Tests
             yield return new object[] { new string[] { "MyProtocol1", "MyProtocol2" }, "MyProtocol2" };
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [MemberData(nameof(SubProtocol_TestData))]
         public async Task AcceptWebSocketAsync_ValidSubProtocol_Success(string[] clientProtocols, string serverProtocol)
@@ -87,6 +88,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData("")]
         [InlineData(" ")]
@@ -115,6 +117,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ArgumentException>("subProtocol", () => context.AcceptWebSocketAsync(subProtocol));
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData("!")]
         [InlineData("#")]
@@ -134,6 +137,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>("keepAliveInterval", () => context.AcceptWebSocketAsync(null, keepAlive));
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData(-1)]
         [InlineData(0)]
@@ -154,6 +158,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ArgumentNullException>("internalBuffer.Array", () => context.AcceptWebSocketAsync(null, 1024, TimeSpan.MaxValue, internalBuffer));
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData(-1)]
         [InlineData(11)]
@@ -165,6 +170,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>("internalBuffer.Offset", () => context.AcceptWebSocketAsync(null, 1024, TimeSpan.MaxValue, internalBuffer));
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData(0, -1)]
         [InlineData(0, 11)]

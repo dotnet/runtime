@@ -376,6 +376,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ActiveIssue(19534, TestPlatforms.OSX)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
@@ -414,6 +415,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ActiveIssue(19534, TestPlatforms.OSX)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [InlineData(true)]
