@@ -2500,7 +2500,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
     regNumber srcReg = op1->gtRegNum;
 
     // Optimize the case of op1 is in memory and trying to access ith element.
-    if (op1->isMemoryOp())
+    if (!op1->isUsedFromReg())
     {
         assert(op1->isContained());
 
@@ -2508,15 +2508,17 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         regNumber indexReg;
         int       offset = 0;
 
-        if (op1->OperGet() == GT_LCL_FLD)
+        if (op1->OperIsLocal())
         {
             // There are three parts to the total offset here:
-            // {offset of local} + {offset of SIMD Vector field} + {offset of element within SIMD vector}.
+            // {offset of local} + {offset of SIMD Vector field (lclFld only)} + {offset of element within SIMD vector}.
             bool     isEBPbased;
             unsigned varNum = op1->gtLclVarCommon.gtLclNum;
             offset += compiler->lvaFrameAddress(varNum, &isEBPbased);
-            offset += op1->gtLclFld.gtLclOffs;
-
+            if (op1->OperGet() == GT_LCL_FLD)
+            {
+                offset += op1->gtLclFld.gtLclOffs;
+            }
             baseReg = (isEBPbased) ? REG_EBP : REG_ESP;
         }
         else
