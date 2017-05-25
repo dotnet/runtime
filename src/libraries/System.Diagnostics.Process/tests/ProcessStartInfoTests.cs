@@ -967,10 +967,18 @@ namespace System.Diagnostics.Tests
 
             using (var process = Process.Start(info))
             {
-                process.WaitForInputIdle(); // Give the file a chance to load
-                Assert.Equal("notepad", process.ProcessName);
-                Assert.StartsWith(Path.GetFileName(tempFile), process.MainWindowTitle);
-                process.Kill();
+                try
+                {
+                    process.WaitForInputIdle(); // Give the file a chance to load
+                    Assert.Equal("notepad", process.ProcessName);
+
+                    // On some Windows versions, the file extension is not included in the title
+                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                }
+                finally
+                {
+                    process.Kill();
+                }
             }
         }
 
@@ -980,8 +988,7 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/20204")]
         public void StartInfo_TextFile_ShellExecute()
         {
-            string tempFilePath = GetTestFilePath();
-            string tempFile = tempFilePath + ".txt";
+            string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
             ProcessStartInfo info = new ProcessStartInfo
@@ -993,11 +1000,18 @@ namespace System.Diagnostics.Tests
 
             using (var process = Process.Start(info))
             {
-                process.WaitForInputIdle(); // Give the file a chance to load
-                Assert.Equal("notepad", process.ProcessName);
-                // On some Windows versions, the file extension is not included in the title
-                Assert.StartsWith(Path.GetFileName(tempFilePath), process.MainWindowTitle);
-                process.Kill();
+                try
+                {
+                    process.WaitForInputIdle(); // Give the file a chance to load
+                    Assert.Equal("notepad", process.ProcessName);
+
+                    // On some Windows versions, the file extension is not included in the title
+                    Assert.StartsWith(Path.GetFileNameWithoutExtension(tempFile), process.MainWindowTitle);
+                }
+                finally
+                {
+                    process.Kill();
+                }
             }
         }
 
