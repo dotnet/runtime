@@ -6,14 +6,5 @@
     <toolConsumerProjectName>dotnet-deb-tool-consumer.csproj</toolConsumerProjectName>
     <consumingProjectDirectory>$(IntermediateOutputRootPath)$(toolConsumerProjectName)</consumingProjectDirectory>
     <debPackaginfConfigPath>$(PackagingRoot)deb/</debPackaginfConfigPath>
-
-    <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
-    <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
-    
-    <HostFxrDebPkgName>dotnet-hostfxr-$(HostResolverVersion)</HostFxrDebPkgName>
-    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
-    
-    <SharedFxDebPkgName>dotnet-runtime-$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
-    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
   </PropertyGroup>
 </Project>
