@@ -85,6 +85,9 @@ namespace System.Diagnostics
                         case Interop.Errors.ERROR_BAD_EXE_FORMAT:
                         case Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH:
                             throw new Win32Exception(error, SR.InvalidApplication);
+                        case Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED:
+                            // This happens on Windows Nano
+                            throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
                         default:
                             throw new Win32Exception(error);
                     }

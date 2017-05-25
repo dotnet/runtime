@@ -947,10 +947,11 @@ namespace System.Diagnostics.Tests
             Process.Start(info);
         }
 
-        [Theory, MemberData(nameof(UseShellExecute))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
+        [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/20204")]
         public void StartInfo_NotepadWithContent(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".txt";
@@ -973,13 +974,14 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // Does not support UseShellExecute
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/20204")]
         public void StartInfo_TextFile_ShellExecute()
         {
-            string tempFile = GetTestFilePath() + ".txt";
+            string tempFilePath = GetTestFilePath();
+            string tempFile = tempFilePath + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_TextFile_ShellExecute");
 
             ProcessStartInfo info = new ProcessStartInfo
@@ -993,9 +995,25 @@ namespace System.Diagnostics.Tests
             {
                 process.WaitForInputIdle(); // Give the file a chance to load
                 Assert.Equal("notepad", process.ProcessName);
-                Assert.StartsWith(Path.GetFileName(tempFile), process.MainWindowTitle);
+                // On some Windows versions, the file extension is not included in the title
+                Assert.StartsWith(Path.GetFileName(tempFilePath), process.MainWindowTitle);
                 process.Kill();
             }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindowsNanoServer))]
+        public void ShellExecute_Nano_Fails_Start()
+        {
+            string tempFile = GetTestFilePath() + ".txt";
+            File.Create(tempFile).Dispose();
+
+            ProcessStartInfo info = new ProcessStartInfo
+            {
+                UseShellExecute = true,
+                FileName = tempFile
+            };
+
+            Assert.Throws<PlatformNotSupportedException>(() => Process.Start(info));
         }
 
         public static TheoryData<bool> UseShellExecute
@@ -1003,15 +1021,20 @@ namespace System.Diagnostics.Tests
             get
             {
                 TheoryData<bool> data = new TheoryData<bool> { false };
-                if (!PlatformDetection.IsUap)
+
+                if (   !PlatformDetection.IsUap // https://github.com/dotnet/corefx/issues/20204
+                    && !PlatformDetection.IsWindowsNanoServer) // By design
                     data.Add(true);
                 return data;
             }
         }
 
+        private const int ERROR_SUCCESS = 0x0;
+        private const int ERROR_FILE_NOT_FOUND = 0x2;
+        private const int ERROR_BAD_EXE_FORMAT = 0xC1;
+
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]  //https://github.com/dotnet/corefx/issues/20288
         public void StartInfo_BadVerb(bool useShellExecute)
         {
             ProcessStartInfo info = new ProcessStartInfo
@@ -1021,12 +1044,11 @@ namespace System.Diagnostics.Tests
                 Verb = "Zlorp"
             };
 
-            Assert.Equal(2, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
+            Assert.Equal(ERROR_FILE_NOT_FOUND, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
         }
 
         [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]  //https://github.com/dotnet/corefx/issues/20288
         public void StartInfo_BadExe(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".exe";
@@ -1038,7 +1060,13 @@ namespace System.Diagnostics.Tests
                 FileName = tempFile
             };
 
-            Assert.Equal(193, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
+            int expected = ERROR_BAD_EXE_FORMAT;
+
+            // Windows Nano bug see #10290
+            if (PlatformDetection.IsWindowsNanoServer)
+                expected = ERROR_SUCCESS;
+
+            Assert.Equal(expected, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
         }
     }
 }
