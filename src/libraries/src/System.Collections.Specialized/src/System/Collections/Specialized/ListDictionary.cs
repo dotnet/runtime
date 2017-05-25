@@ -14,10 +14,10 @@ namespace System.Collections.Specialized
     [Serializable]
     public class ListDictionary : IDictionary
     {
-        private DictionaryNode _head;
-        private int _version;
-        private int _count;
-        private readonly IComparer _comparer;
+        private DictionaryNode head; // Do not rename (binary serialization)
+        private int version; // Do not rename (binary serialization)
+        private int count; // Do not rename (binary serialization)
+        private readonly IComparer comparer; // Do not rename (binary serialization)
         [NonSerialized]
         private Object _syncRoot;
 
@@ -27,7 +27,7 @@ namespace System.Collections.Specialized
 
         public ListDictionary(IComparer comparer)
         {
-            _comparer = comparer;
+            this.comparer = comparer;
         }
 
         public object this[object key]
@@ -38,8 +38,8 @@ namespace System.Collections.Specialized
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
-                DictionaryNode node = _head;
-                if (_comparer == null)
+                DictionaryNode node = head;
+                if (comparer == null)
                 {
                     while (node != null)
                     {
@@ -56,7 +56,7 @@ namespace System.Collections.Specialized
                     while (node != null)
                     {
                         object oldKey = node.key;
-                        if (_comparer.Compare(oldKey, key) == 0)
+                        if (comparer.Compare(oldKey, key) == 0)
                         {
                             return node.value;
                         }
@@ -71,13 +71,13 @@ namespace System.Collections.Specialized
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
-                _version++;
+                version++;
                 DictionaryNode last = null;
                 DictionaryNode node;
-                for (node = _head; node != null; node = node.next)
+                for (node = head; node != null; node = node.next)
                 {
                     object oldKey = node.key;
-                    if ((_comparer == null) ? oldKey.Equals(key) : _comparer.Compare(oldKey, key) == 0)
+                    if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                     {
                         break;
                     }
@@ -99,9 +99,9 @@ namespace System.Collections.Specialized
                 }
                 else
                 {
-                    _head = newNode;
+                    head = newNode;
                 }
-                _count++;
+                count++;
             }
         }
 
@@ -109,7 +109,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return _count;
+                return count;
             }
         }
 
@@ -171,13 +171,13 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            _version++;
+            version++;
             DictionaryNode last = null;
             DictionaryNode node;
-            for (node = _head; node != null; node = node.next)
+            for (node = head; node != null; node = node.next)
             {
                 object oldKey = node.key;
-                if ((_comparer == null) ? oldKey.Equals(key) : _comparer.Compare(oldKey, key) == 0)
+                if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                 }
@@ -193,16 +193,16 @@ namespace System.Collections.Specialized
             }
             else
             {
-                _head = newNode;
+                head = newNode;
             }
-            _count++;
+            count++;
         }
 
         public void Clear()
         {
-            _count = 0;
-            _head = null;
-            _version++;
+            count = 0;
+            head = null;
+            version++;
         }
 
         public bool Contains(object key)
@@ -211,10 +211,10 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            for (DictionaryNode node = _head; node != null; node = node.next)
+            for (DictionaryNode node = head; node != null; node = node.next)
             {
                 object oldKey = node.key;
-                if ((_comparer == null) ? oldKey.Equals(key) : _comparer.Compare(oldKey, key) == 0)
+                if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                 {
                     return true;
                 }
@@ -229,10 +229,10 @@ namespace System.Collections.Specialized
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            if (array.Length - index < _count)
+            if (array.Length - index < count)
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
 
-            for (DictionaryNode node = _head; node != null; node = node.next)
+            for (DictionaryNode node = head; node != null; node = node.next)
             {
                 array.SetValue(new DictionaryEntry(node.key, node.value), index);
                 index++;
@@ -255,13 +255,13 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            _version++;
+            version++;
             DictionaryNode last = null;
             DictionaryNode node;
-            for (node = _head; node != null; node = node.next)
+            for (node = head; node != null; node = node.next)
             {
                 object oldKey = node.key;
-                if ((_comparer == null) ? oldKey.Equals(key) : _comparer.Compare(oldKey, key) == 0)
+                if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                 {
                     break;
                 }
@@ -271,15 +271,15 @@ namespace System.Collections.Specialized
             {
                 return;
             }
-            if (node == _head)
+            if (node == head)
             {
-                _head = node.next;
+                head = node.next;
             }
             else
             {
                 last.next = node.next;
             }
-            _count--;
+            count--;
         }
 
         private class NodeEnumerator : IDictionaryEnumerator
@@ -293,7 +293,7 @@ namespace System.Collections.Specialized
             public NodeEnumerator(ListDictionary list)
             {
                 _list = list;
-                _version = list._version;
+                _version = list.version;
                 _start = true;
                 _current = null;
             }
@@ -344,13 +344,13 @@ namespace System.Collections.Specialized
 
             public bool MoveNext()
             {
-                if (_version != _list._version)
+                if (_version != _list.version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
                 if (_start)
                 {
-                    _current = _list._head;
+                    _current = _list.head;
                     _start = false;
                 }
                 else if (_current != null)
@@ -362,7 +362,7 @@ namespace System.Collections.Specialized
 
             public void Reset()
             {
-                if (_version != _list._version)
+                if (_version != _list.version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
@@ -390,7 +390,7 @@ namespace System.Collections.Specialized
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
 
-                for (DictionaryNode node = _list._head; node != null; node = node.next)
+                for (DictionaryNode node = _list.head; node != null; node = node.next)
                 {
                     array.SetValue(_isKeys ? node.key : node.value, index);
                     index++;
@@ -402,7 +402,7 @@ namespace System.Collections.Specialized
                 get
                 {
                     int count = 0;
-                    for (DictionaryNode node = _list._head; node != null; node = node.next)
+                    for (DictionaryNode node = _list.head; node != null; node = node.next)
                     {
                         count++;
                     }
@@ -444,7 +444,7 @@ namespace System.Collections.Specialized
                 {
                     _list = list;
                     _isKeys = isKeys;
-                    _version = list._version;
+                    _version = list.version;
                     _start = true;
                     _current = null;
                 }
@@ -463,13 +463,13 @@ namespace System.Collections.Specialized
 
                 public bool MoveNext()
                 {
-                    if (_version != _list._version)
+                    if (_version != _list.version)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     }
                     if (_start)
                     {
-                        _current = _list._head;
+                        _current = _list.head;
                         _start = false;
                     }
                     else if (_current != null)
@@ -481,7 +481,7 @@ namespace System.Collections.Specialized
 
                 public void Reset()
                 {
-                    if (_version != _list._version)
+                    if (_version != _list.version)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     }
