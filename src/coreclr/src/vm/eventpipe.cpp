@@ -44,7 +44,7 @@ void EventPipe::Initialize()
 
     s_tracingInitialized = s_configCrst.InitNoThrow(
         CrstEventPipe,
-        (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
+        (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
 
     s_pConfig = new EventPipeConfiguration();
     s_pConfig->Initialize();
