@@ -490,6 +490,15 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx
 	return mono_array_addr_with_size (raw, size, idx);
 }
 
+gunichar2*
+mono_string_handle_pin_chars (MonoStringHandle handle, uint32_t *gchandle)
+{
+	g_assert (gchandle != NULL);
+	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, handle), TRUE);
+	MonoString *raw = MONO_HANDLE_RAW (handle);
+	return mono_string_chars (raw);
+}
+
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
 {
