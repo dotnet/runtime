@@ -1009,8 +1009,9 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Theory, MemberData(nameof(UseShellExecute))]
+        [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]  //https://github.com/dotnet/corefx/issues/20288
         public void StartInfo_BadVerb(bool useShellExecute)
         {
             ProcessStartInfo info = new ProcessStartInfo
@@ -1023,8 +1024,9 @@ namespace System.Diagnostics.Tests
             Assert.Equal(2, Assert.Throws<Win32Exception>(() => Process.Start(info)).NativeErrorCode);
         }
 
-        [Theory, MemberData(nameof(UseShellExecute))]
+        [MemberData(nameof(UseShellExecute))]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]  //https://github.com/dotnet/corefx/issues/20288
         public void StartInfo_BadExe(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".exe";
