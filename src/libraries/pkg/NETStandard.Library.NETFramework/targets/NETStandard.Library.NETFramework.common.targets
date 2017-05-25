@@ -28,6 +28,11 @@
     <!-- Ensure this runs before conflict resolution since the added files may cause conflicts -->
     <HandlePackageFileConflictsDependsOn>ImplicitlyExpandNETStandardFacades;$(HandlePackageFileConflictsDependsOn)</HandlePackageFileConflictsDependsOn>
   </PropertyGroup>
+  
+  <ItemGroup Condition="$(DontTrimNETStandardLibraryNETFramework)' != 'true'">
+    <!-- mark this package as trimmable so that files in the same package aren't automatically rooted -->
+    <TrimmablePackages Include="NETStandard.Library.NETFramework" />
+  </ItemGroup>
 
   <Target Name="ImplicitlyExpandNETStandardFacades"
           AfterTargets="$(ImplicitlyExpandNETStandardFacadesAfter)">
