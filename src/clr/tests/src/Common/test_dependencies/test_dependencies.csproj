@@ -14,16 +14,16 @@
       <Version>1.0.1-prerelease-*</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>4.4.0-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
-      <Version>4.4.0-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>4.4.0-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Permissions">
-      <Version>4.4.0-$(CoreFxExpectedPrerelease)</Version>
+      <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
