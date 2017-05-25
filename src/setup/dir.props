@@ -389,7 +389,7 @@
     <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
     <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
     <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.4-x64'">rhel.7-x64</PackageTargetRid>
     <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
     <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
   </PropertyGroup>
@@ -400,6 +400,15 @@
     <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
+    <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
+    <HostFxrDebPkgName>$([System.IO.Path]::GetFileNameWithoutExtension('$(HostFxrInstallerFile)'))</HostFxrDebPkgName>
+    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
+    <SharedFxDebPkgName>$([System.IO.Path]::GetFileNameWithoutExtension('$(SharedFrameworkInstallerFile)'))</SharedFxDebPkgName>
+    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
   </PropertyGroup>
 
   <PropertyGroup>
