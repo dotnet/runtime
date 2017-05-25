@@ -46,12 +46,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 Object.Equals(@this.Value, other.Value);
         }
 
-        public static bool IsEqual(this StreamingContext @this, StreamingContext other)
-        {
-            return @this.State == @other.State &&
-                Object.Equals(@this.Context, other.Context);
-        }
-
         public static bool IsEqual(this CookieContainer @this, CookieContainer other)
         {
             return @this != null &&
