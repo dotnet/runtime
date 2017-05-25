@@ -75,6 +75,8 @@
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <AssemblyKey>Open</AssemblyKey>
     <RunApiCompat>true</RunApiCompat>
+    <!-- Build as portable by default -->
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true' and '$(Configuration)' != ''">
