@@ -46,11 +46,11 @@ def osShortName = ['Windows 7' : 'win7',
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
 
-def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 
+def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1',
                                         'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'],
                         'netfx': ['Windows_NT']]
 
-def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 
+def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1',
                                         'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'],
                         'netfx': ['Windows_NT']]
 
@@ -289,7 +289,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
             ['Debug', 'Release'].each { configurationGroup ->
                 def osGroup = osGroupMap[osName]
                 def osForMachineAffinity = osName
-                
+
                 if (osForMachineAffinity == 'PortableLinux') {
                     // Portable Linux builds happen on RHEL7.2
                     osForMachineAffinity = "RHEL7.2"
@@ -341,8 +341,8 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Set up triggers
                 if (isPR) {
                     targetGroupString = targetGroupString.replaceAll('_', ' ');
-                    // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1, PortableLinux and OSX on every PR.
-                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX10.12' || osName== 'PortableLinux') {
+                    // Set PR trigger only run netfx jobs automatically on every PR, the other legs are covered by the new portable pipeline legs
+                    if (targetGroup == 'netfx') {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${targetGroupString}${osName} ${configurationGroup} ${archGroup} Build and Test")
                     }
                     else {
@@ -442,8 +442,8 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
             shell("tar -czf bin/build.tar.gz --directory=\"bin/Linux.${archGroup}.${configurationGroup}/native\" .")
         }
     }
-    
-    // The cross build jobs run on Ubuntu 14.04 in spite of the target is Ubuntu 16.04. 
+
+    // The cross build jobs run on Ubuntu 14.04 in spite of the target is Ubuntu 16.04.
     // The ubuntu 14.04 arm-cross-latest version contains the packages needed for cross building corefx
     Utilities.setMachineAffinity(newJob, 'Ubuntu14.04', 'arm-cross-latest')
 
