@@ -1,18 +1,19 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>61076147ca863b39fc5d32253f31d889ccfd1d12</CoreFxCurrentRef>
-    <CoreClrCurrentRef>fcd99ed86a703a16698fcd0027707739c8ef3501</CoreClrCurrentRef>
+    <CoreFxCurrentRef>5dfd662db1b2793a26441fe3c0a8ee5136004aed</CoreFxCurrentRef>
+    <CoreClrCurrentRef>5dfd662db1b2793a26441fe3c0a8ee5136004aed</CoreClrCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>preview2-25319-01</CoreFxExpectedPrerelease>
+    <CoreFxPackageVersion>4.5.0-preview1-25323-02</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview1-25323-02</PlatformPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.0.0-preview2-25316-03</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview1-25323-01</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
   </PropertyGroup>
 
@@ -32,15 +33,20 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    
+
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
 
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>CoreFxExpectedPrerelease</ElementName>
-      <BuildInfoName>CoreFx</BuildInfoName>
+      <ElementName>CoreFxPackageVersion</ElementName>
+      <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PlatformPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Platforms</PackageId>
     </XmlUpdateStep>
     <XmlUpdateStep Include="CoreClr">
       <Path>$(MSBuildThisFileFullPath)</Path>
