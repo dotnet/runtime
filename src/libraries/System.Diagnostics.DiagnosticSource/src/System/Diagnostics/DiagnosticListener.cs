@@ -124,9 +124,9 @@ namespace System.Diagnostics
                 s_allListeners = this;
             }
 
-            // Call IsEnabled just so we insure that the DiagnosticSourceEventSource has been 
-            // constructed (and thus is responsive to ETW requests to be enabled).  
-            DiagnosticSourceEventSource.Logger.IsEnabled();
+            // Touch DiagnosticSourceEventSource.Logger so we insure that the
+            // DiagnosticSourceEventSource has been constructed (and thus is responsive to ETW requests to be enabled).
+            GC.KeepAlive(DiagnosticSourceEventSource.Logger);
         }
 
         /// <summary>
