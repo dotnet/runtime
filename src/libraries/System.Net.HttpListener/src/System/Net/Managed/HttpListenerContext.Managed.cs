@@ -5,6 +5,7 @@
 using System.ComponentModel;
 using System.Net.WebSockets;
 using System.Security.Principal;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -28,63 +29,60 @@ namespace System.Net
         internal bool HaveError => ErrorMessage != null;
 
         internal HttpConnection Connection => _connection;
-        
+
         internal void ParseAuthentication(AuthenticationSchemes expectedSchemes)
         {
             if (expectedSchemes == AuthenticationSchemes.Anonymous)
                 return;
 
             string header = Request.Headers[HttpKnownHeaderNames.Authorization];
-            if (header == null || header.Length < 2)
+            if (string.IsNullOrEmpty(header))
                 return;
 
-            string[] authenticationData = header.Split(new char[] { ' ' }, 2);
-            if (string.Compare(authenticationData[0], AuthenticationTypes.Basic, true) == 0)
+            if (IsBasicHeader(header))
             {
-                _user = ParseBasicAuthentication(authenticationData[1]);
+                _user = ParseBasicAuthentication(header.Substring(AuthenticationTypes.Basic.Length + 1));
             }
         }
 
-        internal IPrincipal ParseBasicAuthentication(string authData)
+        internal IPrincipal ParseBasicAuthentication(string authData) =>
+            TryParseBasicAuth(authData, out HttpStatusCode errorCode, out string username, out string password) ?
+                new GenericPrincipal(new HttpListenerBasicIdentity(username, password), Array.Empty<string>()) :
+                null;
+
+        internal static bool IsBasicHeader(string header) =>
+            header.Length >= 6 &&
+            header[5] == ' ' &&
+            string.Compare(header, 0, AuthenticationTypes.Basic, 0, 5, StringComparison.OrdinalIgnoreCase) == 0;
+
+        internal static bool TryParseBasicAuth(string headerValue, out HttpStatusCode errorCode, out string username, out string password)
         {
+            errorCode = HttpStatusCode.OK;
+            username = password = null;
             try
             {
-                // Basic AUTH Data is a formatted Base64 String
-                string user = null;
-                string password = null;
-                int pos = -1;
-                string authString = Text.Encoding.Default.GetString(Convert.FromBase64String(authData));
-
-                // The format is DOMAIN\username:password
-                // Domain is optional
-
-                pos = authString.IndexOf(':');
-
-                // parse the password off the end
-                password = authString.Substring(pos + 1);
-
-                // discard the password
-                authString = authString.Substring(0, pos);
-
-                // check if there is a domain
-                pos = authString.IndexOf('\\');
-
-                if (pos > 0)
+                if (string.IsNullOrWhiteSpace(headerValue))
                 {
-                    user = authString.Substring(pos);
-                }
-                else
-                {
-                    user = authString;
+                    return false;
                 }
 
-                HttpListenerBasicIdentity identity = new HttpListenerBasicIdentity(user, password);
-                return new GenericPrincipal(identity, new string[0]);
+                string authString = Encoding.UTF8.GetString(Convert.FromBase64String(headerValue));
+                int colonPos = authString.IndexOf(':');
+                if (colonPos < 0)
+                {
+                    // username must be at least 1 char
+                    errorCode = HttpStatusCode.BadRequest;
+                    return false;
+                }
+
+                username = authString.Substring(0, colonPos);
+                password = authString.Substring(colonPos + 1);
+                return true;
             }
-            catch (Exception)
+            catch
             {
-                // Invalid auth data is swallowed silently
-                return null;
+                errorCode = HttpStatusCode.InternalServerError;
+                return false;
             }
         }
 
