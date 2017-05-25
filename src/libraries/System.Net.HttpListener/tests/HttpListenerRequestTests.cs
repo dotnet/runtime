@@ -265,7 +265,7 @@ namespace System.Net.Tests
         {
             await GetRequest("POST", null, null, (_, request) =>
             {
-                Assert.Throws<ArgumentNullException>("asyncResult", () => request.EndGetClientCertificate(null));
+                AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => request.EndGetClientCertificate(null));
             });
         }
 
@@ -278,8 +278,8 @@ namespace System.Net.Tests
                 {
                     IAsyncResult beginGetClientCertificateResult1 = request1.BeginGetClientCertificate(null, null);
 
-                    Assert.Throws<ArgumentException>("asyncResult", () => request2.EndGetClientCertificate(new CustomAsyncResult()));
-                    Assert.Throws<ArgumentException>("asyncResult", () => request2.EndGetClientCertificate(beginGetClientCertificateResult1));
+                    AssertExtensions.Throws<ArgumentException>("asyncResult", () => request2.EndGetClientCertificate(new CustomAsyncResult()));
+                    AssertExtensions.Throws<ArgumentException>("asyncResult", () => request2.EndGetClientCertificate(beginGetClientCertificateResult1));
                 }).Wait();
             });
         }

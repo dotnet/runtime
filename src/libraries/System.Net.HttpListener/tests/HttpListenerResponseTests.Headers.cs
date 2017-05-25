@@ -29,17 +29,17 @@ namespace System.Net.Tests
         public async Task AddHeader_NullOrEmptyName_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentNullException>("name", () => response.AddHeader(null, ""));
-            Assert.Throws<ArgumentNullException>("name", () => response.AddHeader("", ""));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => response.AddHeader(null, ""));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => response.AddHeader("", ""));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task AddHeader_InvalidNameOrValue_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentException>("name", () => response.AddHeader("\r \t \n", ""));
-            Assert.Throws<ArgumentException>("name", () => response.AddHeader("(", ""));
-            Assert.Throws<ArgumentException>("value", () => response.AddHeader("name", "value1\rvalue2\r"));
+            AssertExtensions.Throws<ArgumentException>("name", () => response.AddHeader("\r \t \n", ""));
+            AssertExtensions.Throws<ArgumentException>("name", () => response.AddHeader("(", ""));
+            AssertExtensions.Throws<ArgumentException>("value", () => response.AddHeader("name", "value1\rvalue2\r"));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
@@ -60,16 +60,16 @@ namespace System.Net.Tests
         public async Task AppendHeader_NullOrEmptyName_ThrowsArgumentNullException(string name)
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task AppendHeader_InvalidNameOrValue_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentException>("name", () => response.AppendHeader("\r \t \n", ""));
-            Assert.Throws<ArgumentException>("name", () => response.AppendHeader("(", ""));
-            Assert.Throws<ArgumentException>("value", () => response.AppendHeader("name", "value1\rvalue2\r"));
+            AssertExtensions.Throws<ArgumentException>("name", () => response.AppendHeader("\r \t \n", ""));
+            AssertExtensions.Throws<ArgumentException>("name", () => response.AppendHeader("(", ""));
+            AssertExtensions.Throws<ArgumentException>("value", () => response.AppendHeader("name", "value1\rvalue2\r"));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
@@ -401,7 +401,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Assert.Throws<ArgumentNullException>("value", () => response.StatusDescription = null);
+                AssertExtensions.Throws<ArgumentNullException>("value", () => response.StatusDescription = null);
                 Assert.Equal("OK", response.StatusDescription);
             }
         }
@@ -415,7 +415,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Assert.Throws<ArgumentException>("name", () => response.StatusDescription = statusDescription);
+                AssertExtensions.Throws<ArgumentException>("name", () => response.StatusDescription = statusDescription);
                 Assert.Equal("OK", response.StatusDescription);
             }
         }
@@ -764,7 +764,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Assert.Throws<ArgumentNullException>("value", () => response.ProtocolVersion = null);
+                AssertExtensions.Throws<ArgumentNullException>("value", () => response.ProtocolVersion = null);
                 Assert.Equal(new Version(1, 1), response.ProtocolVersion);
             }
         }
@@ -777,7 +777,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Assert.Throws<ArgumentException>("value", () => response.ProtocolVersion = new Version(major, minor));
+                AssertExtensions.Throws<ArgumentException>("value", () => response.ProtocolVersion = new Version(major, minor));
                 Assert.Equal(new Version(1, 1), response.ProtocolVersion);
             }
         }

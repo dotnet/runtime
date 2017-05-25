@@ -387,7 +387,7 @@ namespace System.Net.Tests
         {
             using (HttpListenerResponse response = await GetResponse())
             {
-                Assert.Throws<ArgumentNullException>("responseEntity", () => response.Close(null, true));
+                AssertExtensions.Throws<ArgumentNullException>("responseEntity", () => response.Close(null, true));
             }
         }
 

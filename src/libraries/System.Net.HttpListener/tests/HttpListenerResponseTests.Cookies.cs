@@ -196,7 +196,7 @@ namespace System.Net.Tests
         public async Task AppendCookie_NullCookie_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentNullException>("cookie", () => response.AppendCookie(null));
+            AssertExtensions.Throws<ArgumentNullException>("cookie", () => response.AppendCookie(null));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
@@ -228,7 +228,7 @@ namespace System.Net.Tests
         public async Task SetCookie_NullCookie_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
-            Assert.Throws<ArgumentNullException>("cookie", () => response.SetCookie(null));
+            AssertExtensions.Throws<ArgumentNullException>("cookie", () => response.SetCookie(null));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
@@ -238,10 +238,10 @@ namespace System.Net.Tests
             var cookie1 = new Cookie("name", "value");
 
             response.SetCookie(cookie1);
-            Assert.Throws<ArgumentException>("cookie", () => response.SetCookie(cookie1));
+            AssertExtensions.Throws<ArgumentException>("cookie", () => response.SetCookie(cookie1));
 
             var cookie2 = new Cookie("name", "value2");
-            Assert.Throws<ArgumentException>("cookie", () => response.SetCookie(cookie2));
+            AssertExtensions.Throws<ArgumentException>("cookie", () => response.SetCookie(cookie2));
             Assert.Equal(new Cookie[] { cookie2 }, response.Cookies.Cast<Cookie>());
         }
     }
