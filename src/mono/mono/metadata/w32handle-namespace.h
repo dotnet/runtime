@@ -26,6 +26,6 @@ void
 mono_w32handle_namespace_unlock (void);
 
 gpointer
-mono_w32handle_namespace_search_handle (MonoW32HandleType type, gchar *name);
+mono_w32handle_namespace_search_handle (MonoW32HandleType type, const gchar *name);
 
 #endif /* _MONO_METADATA_W32HANDLE_NAMESPACE_H_ */
