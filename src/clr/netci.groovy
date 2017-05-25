@@ -1504,9 +1504,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }
 
                         if (!isBuildOnly) {
-                            if (architecture == 'x64' || !isPR) {
-                                Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml')
-                            }
+                            Utilities.addXUnitDotNETResults(newJob, 'bin/**/TestRun*.xml', true)
                             setTestJobTimeOut(newJob, scenario)
                         }
                     }
