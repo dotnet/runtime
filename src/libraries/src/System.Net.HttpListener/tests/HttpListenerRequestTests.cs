@@ -241,18 +241,6 @@ namespace System.Net.Tests
             });
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20238, TestPlatforms.AnyUnix)]
-        public async Task ClientCertificateError_GetWhileGettingCertificate_ThrowsInvalidOperationException()
-        {
-            await GetRequest("POST", null, null, (_, request) =>
-            {
-                request.BeginGetClientCertificate(null, null);
-                Assert.Throws<InvalidOperationException>(() => request.ClientCertificateError);
-                Assert.Throws<InvalidOperationException>(() => request.BeginGetClientCertificate(null, null));
-                Assert.Throws<InvalidOperationException>(() => request.GetClientCertificate());
-            });
-        }
-
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task GetClientCertificate_NoCertificate_ReturnsNull()
         {
