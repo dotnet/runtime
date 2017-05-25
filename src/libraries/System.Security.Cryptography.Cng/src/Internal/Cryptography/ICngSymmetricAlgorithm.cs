@@ -30,6 +30,7 @@ namespace Internal.Cryptography
         bool IsWeakKey(byte[] key);
         SafeAlgorithmHandle GetEphemeralModeHandle();
         string GetNCryptAlgorithmIdentifier();
+        byte[] PreprocessKey(byte[] key);
     }
 }
 

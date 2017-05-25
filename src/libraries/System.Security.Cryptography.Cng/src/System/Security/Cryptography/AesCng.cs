@@ -116,6 +116,11 @@ namespace System.Security.Cryptography
             return Interop.NCrypt.NCRYPT_AES_ALGORITHM;
         }
 
+        byte[] ICngSymmetricAlgorithm.PreprocessKey(byte[] key)
+        {
+            return key;
+        }
+
         private CngSymmetricAlgorithmCore _core;
     }
 }

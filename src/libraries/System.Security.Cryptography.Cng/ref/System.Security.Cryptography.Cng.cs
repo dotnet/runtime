@@ -339,7 +339,6 @@ namespace System.Security.Cryptography
         public TripleDESCng(string keyName, System.Security.Cryptography.CngProvider provider, System.Security.Cryptography.CngKeyOpenOptions openOptions) { }
         public override byte[] Key { get { throw null; } set { } }
         public override int KeySize { get { throw null; } set { } }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor() { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[] rgbIV) { throw null; }
         public override System.Security.Cryptography.ICryptoTransform CreateEncryptor() { throw null; }

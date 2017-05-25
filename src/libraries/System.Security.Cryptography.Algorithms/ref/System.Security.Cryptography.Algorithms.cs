@@ -601,8 +601,6 @@ namespace System.Security.Cryptography
     {
         protected TripleDES() { }
         public override byte[] Key { get { throw null; } set { } }
-        public override System.Security.Cryptography.KeySizes[] LegalBlockSizes { get { throw null; } }
-        public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         public static new System.Security.Cryptography.TripleDES Create() { throw null; }
         public static new System.Security.Cryptography.TripleDES Create(string str) { throw null; }
         public static bool IsWeakKey(byte[] rgbKey) { throw null; }
