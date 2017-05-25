@@ -7,13 +7,23 @@ namespace System.Runtime.CompilerServices
     public static class RuntimeFeature
     {
         /// <summary>
+        /// Name of the Portable PDB feature.
+        /// </summary>
+        public const string PortablePdb = nameof(PortablePdb);
+
+        /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
         /// </summary>
         public static bool IsSupported(string feature)
         {
-            // No features are supported for now.
-            // These features should be added as public const string fields in the same class.
+            // Features should be added as public const string fields in the same class.
             // Example: public const string FeatureName = nameof(FeatureName);
+
+            switch (feature)
+            {
+                case nameof(PortablePdb):
+                    return true;
+            }
 
             return false;
         }
