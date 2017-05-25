@@ -6,7 +6,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ResourcesSourceOutputDirectory>../../src/Resources/</ResourcesSourceOutputDirectory>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>

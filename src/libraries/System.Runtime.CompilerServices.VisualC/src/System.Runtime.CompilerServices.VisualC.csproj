@@ -5,7 +5,6 @@
     <AssemblyName>System.Runtime.CompilerServices.VisualC</AssemblyName>
     <ProjectGuid>{F8C8FBFC-CA6E-4BDA-A1B3-FA4E17C10D9E}</ProjectGuid>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <!-- Shared CoreCLR and .NET Native -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />

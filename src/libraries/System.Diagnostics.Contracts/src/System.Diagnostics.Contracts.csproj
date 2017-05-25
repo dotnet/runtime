@@ -6,7 +6,6 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{13426B04-D1AC-4423-8519-F3EB44943B9D}</ProjectGuid>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
