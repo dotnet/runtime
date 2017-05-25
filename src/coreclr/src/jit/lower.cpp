@@ -104,6 +104,26 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
+// IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
+//
+// Arguments:
+//    node - the node of interest.
+//
+// Notes:
+//    This differs from the isMemoryOp() method on GenTree because it checks for
+//    the case of an untracked local. Note that this won't include locals that
+//    for some reason do not become register candidates, nor those that get
+//    spilled.
+//
+// Return value:
+//    True if this will definitely be a memory reference that could be contained.
+//
+bool Lowering::IsContainableMemoryOp(GenTree* node)
+{
+    return node->isMemoryOp() || (node->IsLocal() && !comp->lvaTable[node->AsLclVar()->gtLclNum].lvTracked);
+}
+
+//------------------------------------------------------------------------
 
 // This is the main entry point for Lowering.
 GenTree* Lowering::LowerNode(GenTree* node)
@@ -2427,7 +2447,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
-        if (op1->isMemoryOp() && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
+        if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
         {
             //
             // If op1's type is small then try to narrow op2 so it has the same type as op1.
@@ -2457,7 +2477,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 // the result of bool returning calls.
                 //
 
-                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || castOp->isMemoryOp())
+                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp))
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
@@ -2502,7 +2522,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 cmp->gtOp.gtOp1 = andOp1;
                 cmp->gtOp.gtOp2 = andOp2;
 
-                if (andOp1->isMemoryOp() && andOp2->IsIntegralConst())
+                if (IsContainableMemoryOp(andOp1) && andOp2->IsIntegralConst())
                 {
                     //
                     // For "test" we only care about the bits that are set in the second operand (mask).

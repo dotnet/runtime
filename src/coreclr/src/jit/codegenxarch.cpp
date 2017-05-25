@@ -714,12 +714,6 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     genConsumeOperands(treeNode->AsOp());
     if (varTypeIsFloating(targetType))
     {
-        // Check that divisor is a valid operand.
-        // Note that a reg optional operand is a treated as a memory op
-        // if no register is allocated to it.
-        assert(divisor->isUsedFromReg() || divisor->isMemoryOp() || divisor->IsCnsFltOrDbl() ||
-               divisor->IsRegOptional());
-
         // Floating point div/rem operation
         assert(oper == GT_DIV || oper == GT_MOD);
 
@@ -829,7 +823,8 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     if (!op1->isUsedFromReg())
     {
         assert(treeNode->OperIsCommutative());
-        assert(op1->isMemoryOp() || op1->IsCnsNonZeroFltOrDbl() || op1->IsIntCnsFitsInI32() || op1->IsRegOptional());
+        assert(op1->isMemoryOp() || op1->IsLocal() || op1->IsCnsNonZeroFltOrDbl() || op1->IsIntCnsFitsInI32() ||
+               op1->IsRegOptional());
 
         op1 = treeNode->gtGetOp2();
         op2 = treeNode->gtGetOp1();

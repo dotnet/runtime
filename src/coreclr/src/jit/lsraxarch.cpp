@@ -400,12 +400,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 info->srcCount = 2;
                 info->dstCount = 1;
 
-                if (op2->isMemoryOp() || op2->IsCnsNonZeroFltOrDbl())
+                if (IsContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
                 {
                     MakeSrcContained(tree, op2);
                 }
                 else if (tree->OperIsCommutative() &&
-                         (op1->IsCnsNonZeroFltOrDbl() || (op1->isMemoryOp() && IsSafeToContainMem(tree, op1))))
+                         (op1->IsCnsNonZeroFltOrDbl() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(tree, op1))))
                 {
                     // Though we have GT_ADD(op1=memOp, op2=non-memOp, we try to reorder the operands
                     // as long as it is safe so that the following efficient code sequence is generated:
@@ -629,7 +629,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             {
                 other = node->gtIndex;
             }
-            else if (node->gtIndex->isMemoryOp())
+            else if (IsContainableMemoryOp(node->gtIndex))
             {
                 other = node->gtIndex;
             }
@@ -640,7 +640,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
             if (node->gtIndex->TypeGet() == node->gtArrLen->TypeGet())
             {
-                if (other->isMemoryOp())
+                if (IsContainableMemoryOp(other))
                 {
                     MakeSrcContained(tree, other);
                 }
@@ -845,7 +845,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 delayUseSrc = op1;
             }
             else if ((op2 != nullptr) &&
-                     (!tree->OperIsCommutative() || (op2->isMemoryOp() && (op2->gtLsraInfo.srcCount == 0))))
+                     (!tree->OperIsCommutative() || (IsContainableMemoryOp(op2) && (op2->gtLsraInfo.srcCount == 0))))
             {
                 delayUseSrc = op2;
             }
@@ -2110,7 +2110,7 @@ void Lowering::TreeNodeInfoInitLogicalOp(GenTree* tree)
         binOpInRMW = IsBinOpInRMWStoreInd(tree);
         if (!binOpInRMW)
         {
-            if (op2->isMemoryOp() && tree->TypeGet() == op2->TypeGet())
+            if (IsContainableMemoryOp(op2) && tree->TypeGet() == op2->TypeGet())
             {
                 directlyEncodable = true;
                 operand           = op2;
@@ -2118,7 +2118,7 @@ void Lowering::TreeNodeInfoInitLogicalOp(GenTree* tree)
             else if (tree->OperIsCommutative())
             {
                 if (IsContainableImmed(tree, op1) ||
-                    (op1->isMemoryOp() && tree->TypeGet() == op1->TypeGet() && IsSafeToContainMem(tree, op1)))
+                    (IsContainableMemoryOp(op1) && tree->TypeGet() == op1->TypeGet() && IsSafeToContainMem(tree, op1)))
                 {
                     // If it is safe, we can reverse the order of operands of commutative operations for efficient
                     // codegen
@@ -2176,7 +2176,7 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(op1->TypeGet() == op2->TypeGet());
 
-                if (op2->isMemoryOp() || op2->IsCnsNonZeroFltOrDbl())
+                if (IsContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
                 {
                     MakeSrcContained(tree, op2);
                 }
@@ -2241,7 +2241,7 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
     }
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (op2->isMemoryOp() && (op2->TypeGet() == tree->TypeGet()))
+    if (IsContainableMemoryOp(op2) && (op2->TypeGet() == tree->TypeGet()))
     {
         MakeSrcContained(tree, op2);
     }
@@ -2280,7 +2280,7 @@ void Lowering::TreeNodeInfoInitIntrinsic(GenTree* tree)
     switch (tree->gtIntrinsic.gtIntrinsicId)
     {
         case CORINFO_INTRINSIC_Sqrt:
-            if (op1->isMemoryOp() || op1->IsCnsNonZeroFltOrDbl())
+            if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
             {
                 MakeSrcContained(tree, op1);
             }
@@ -2581,7 +2581,7 @@ void Lowering::TreeNodeInfoInitSIMD(GenTree* tree)
                 info->srcCount = 1;
             }
 
-            if (op1->isMemoryOp())
+            if (IsContainableMemoryOp(op1))
             {
                 MakeSrcContained(tree, op1);
 
@@ -2805,7 +2805,7 @@ void Lowering::TreeNodeInfoInitCast(GenTree* tree)
         // U8 -> R8 conversion requires that the operand be in a register.
         if (castOpType != TYP_ULONG)
         {
-            if (castOp->isMemoryOp() || castOp->IsCnsNonZeroFltOrDbl())
+            if (IsContainableMemoryOp(castOp) || castOp->IsCnsNonZeroFltOrDbl())
             {
                 MakeSrcContained(tree, castOp);
             }
@@ -3095,7 +3095,7 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         {
             MakeSrcContained(tree, otherOp);
         }
-        else if (otherOp->isMemoryOp() && ((otherOp == op2) || IsSafeToContainMem(tree, otherOp)))
+        else if (IsContainableMemoryOp(otherOp) && ((otherOp == op2) || IsSafeToContainMem(tree, otherOp)))
         {
             MakeSrcContained(tree, otherOp);
         }
@@ -3115,10 +3115,10 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     if (CheckImmedAndMakeContained(tree, op2))
     {
         // If the types are the same, or if the constant is of the correct size,
-        // we can treat the isMemoryOp as contained.
+        // we can treat the MemoryOp as contained.
         if (op1Type == op2Type)
         {
-            if (op1->isMemoryOp())
+            if (IsContainableMemoryOp(op1))
             {
                 MakeSrcContained(tree, op1);
             }
@@ -3167,11 +3167,11 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
         // Note that TEST does not have a r,rm encoding like CMP has but we can still
         // contain the second operand because the emitter maps both r,rm and rm,r to
         // the same instruction code. This avoids the need to special case TEST here.
-        if (op2->isMemoryOp())
+        if (IsContainableMemoryOp(op2))
         {
             MakeSrcContained(tree, op2);
         }
-        else if (op1->isMemoryOp() && IsSafeToContainMem(tree, op1))
+        else if (IsContainableMemoryOp(op1) && IsSafeToContainMem(tree, op1))
         {
             MakeSrcContained(tree, op1);
         }
@@ -3260,7 +3260,7 @@ bool Lowering::TreeNodeInfoInitIfRMWMemOp(GenTreePtr storeInd)
     if (GenTree::OperIsBinary(oper))
     {
         // On Xarch RMW operations require that the source memory-op be in a register.
-        assert(!indirOpSource->isMemoryOp() || indirOpSource->gtLsraInfo.dstCount == 1);
+        assert(!IsContainableMemoryOp(indirOpSource) || indirOpSource->gtLsraInfo.dstCount == 1);
         JITDUMP("Lower succesfully detected an assignment of the form: *addrMode BinOp= source\n");
         info->srcCount = indirOpSource->gtLsraInfo.dstCount;
     }
@@ -3367,11 +3367,11 @@ void Lowering::TreeNodeInfoInitMul(GenTreePtr tree)
     {
         assert(tree->OperGet() == GT_MUL);
 
-        if (op2->isMemoryOp() || op2->IsCnsNonZeroFltOrDbl())
+        if (IsContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(tree, op2);
         }
-        else if (op1->IsCnsNonZeroFltOrDbl() || (op1->isMemoryOp() && IsSafeToContainMem(tree, op1)))
+        else if (op1->IsCnsNonZeroFltOrDbl() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(tree, op1)))
         {
             // Since  GT_MUL is commutative, we will try to re-order operands if it is safe to
             // generate more efficient code sequence for the case of GT_MUL(op1=memOp, op2=non-memOp)
@@ -3460,7 +3460,7 @@ void Lowering::TreeNodeInfoInitMul(GenTreePtr tree)
         }
 
         MakeSrcContained(tree, imm); // The imm is always contained
-        if (other->isMemoryOp())
+        if (IsContainableMemoryOp(other))
         {
             memOp = other; // memOp may be contained below
         }
@@ -3471,7 +3471,7 @@ void Lowering::TreeNodeInfoInitMul(GenTreePtr tree)
     // This is because during codegen we use 'tree' type to derive EmitTypeSize.
     // E.g op1 type = byte, op2 type = byte but GT_MUL tree type is int.
     //
-    if (memOp == nullptr && op2->isMemoryOp())
+    if (memOp == nullptr && IsContainableMemoryOp(op2))
     {
         memOp = op2;
     }
@@ -3610,7 +3610,7 @@ bool Lowering::ExcludeNonByteableRegisters(GenTree* tree)
                 GenTree*  op1      = simdNode->gtGetOp1();
                 GenTree*  op2      = simdNode->gtGetOp2();
                 var_types baseType = simdNode->gtSIMDBaseType;
-                if (!op1->isMemoryOp() && op2->IsCnsIntOrI() && varTypeIsSmallInt(baseType))
+                if (!IsContainableMemoryOp(op1) && op2->IsCnsIntOrI() && varTypeIsSmallInt(baseType))
                 {
                     bool     ZeroOrSignExtnReqd = true;
                     unsigned baseSize           = genTypeSize(baseType);
