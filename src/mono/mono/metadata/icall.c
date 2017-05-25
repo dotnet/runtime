@@ -6922,43 +6922,44 @@ ves_icall_IsTransparentProxy (MonoObject *proxy)
 	return 0;
 }
 
-ICALL_EXPORT MonoReflectionMethod *
+ICALL_EXPORT MonoReflectionMethodHandle
 ves_icall_Remoting_RemotingServices_GetVirtualMethod (
-	MonoReflectionType *rtype, MonoReflectionMethod *rmethod)
+	MonoReflectionTypeHandle rtype, MonoReflectionMethodHandle rmethod, MonoError *error)
 {
-	MonoReflectionMethod *ret = NULL;
-	MonoError error;
+	MonoReflectionMethodHandle ret = MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE);
 
-	MonoClass *klass;
-	MonoMethod *method;
-	MonoMethod **vtable;
-	MonoMethod *res = NULL;
+	error_init (error);
+	if (MONO_HANDLE_IS_NULL (rtype)) {
+		mono_error_set_argument_null (error, "type", "");
+		return ret;
+	}
+	if (MONO_HANDLE_IS_NULL (rmethod)) {
+		mono_error_set_argument_null (error, "method", "");
+		return ret;
+	}
 
-	MONO_CHECK_ARG_NULL (rtype, NULL);
-	MONO_CHECK_ARG_NULL (rmethod, NULL);
-
-	method = rmethod->method;
-	klass = mono_class_from_mono_type (rtype->type);
-	mono_class_init_checked (klass, &error);
-	if (mono_error_set_pending_exception (&error))
-		return NULL;
+	MonoMethod *method = MONO_HANDLE_GETVAL (rmethod, method);
+	MonoType *type = MONO_HANDLE_GETVAL (rtype, type);
+	MonoClass *klass = mono_class_from_mono_type (type);
+	mono_class_init_checked (klass, error);
+	return_val_if_nok (error, ret);
 
 	if (MONO_CLASS_IS_INTERFACE (klass))
-		return NULL;
+		return ret;
 
 	if (method->flags & METHOD_ATTRIBUTE_STATIC)
-		return NULL;
+		return ret;
 
 	if ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		if (klass == method->klass || mono_class_is_subclass_of (klass, method->klass, FALSE))
-			return rmethod;
-		else
-			return NULL;
+			ret = rmethod;
+		return ret;
 	}
 
 	mono_class_setup_vtable (klass);
-	vtable = klass->vtable;
+	MonoMethod **vtable = klass->vtable;
 
+	MonoMethod *res = NULL;
 	if (mono_class_is_interface (method->klass)) {
 		gboolean variance_used = FALSE;
 		/*MS fails with variant interfaces but it's the right thing to do anyway.*/
@@ -6967,17 +6968,16 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 			res = vtable [offs + method->slot];
 	} else {
 		if (!(klass == method->klass || mono_class_is_subclass_of (klass, method->klass, FALSE)))
-			return NULL;
+			return ret;
 
 		if (method->slot != -1)
 			res = vtable [method->slot];
 	}
 
 	if (!res)
-		return NULL;
+		return ret;
 
-	ret = mono_method_get_object_checked (mono_domain_get (), res, NULL, &error);
-	mono_error_set_pending_exception (&error);
+	ret = mono_method_get_object_handle (mono_domain_get (), res, NULL, error);
 	return ret;
 }
 
