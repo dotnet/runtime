@@ -48,7 +48,7 @@ bool Lowering::IsCallTargetInRange(void* addr)
     // can only address things -128 + 128MB away, so this will require getting some additional
     // code to get jump thunks working.
     return true;
-#elif _TARGET_ARM_
+#elif defined(_TARGET_ARM_)
     return comp->codeGen->validImmForBL((ssize_t)addr);
 #endif
 }
@@ -77,10 +77,9 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_GT:
                 if (childNode->IsIntegralConst(0))
                 {
-#ifdef _TARGET_ARM_
                     // TODO-ARM-Cleanup: not tested yet.
                     NYI_ARM("ARM IsContainableImmed for floating point type");
-#endif
+
                     return true;
                 }
                 break;
@@ -107,7 +106,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_SUB:
 #ifdef _TARGET_ARM64_
                 if (emitter::emitIns_valid_imm_for_add(immVal, size))
-#elif _TARGET_ARM_
+#elif defined(_TARGET_ARM_)
                 if (emitter::emitIns_valid_imm_for_add(immVal, INS_FLAGS_DONT_CARE))
 #endif
                     return true;
@@ -129,7 +128,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_XOR:
 #ifdef _TARGET_ARM64_
                 if (emitter::emitIns_valid_imm_for_alu(immVal, size))
-#elif _TARGET_ARM_
+#elif defined(_TARGET_ARM_)
                 if (emitter::emitIns_valid_imm_for_alu(immVal))
 #endif
                     return true;
