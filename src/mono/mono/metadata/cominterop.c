@@ -1090,7 +1090,7 @@ mono_cominterop_get_invoke (MonoMethod *method)
 	for (i = 1; i <= sig->param_count; i++)
 		mono_mb_emit_ldarg (mb, i);
 
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
+	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) || mono_class_is_interface (method->klass)) {
 		MonoMethod * native_wrapper = mono_cominterop_get_native_wrapper(method);
 		mono_mb_emit_managed_call (mb, native_wrapper, NULL);
 	}
