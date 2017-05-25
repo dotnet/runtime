@@ -135,11 +135,22 @@ namespace System.Net
                     authFailure = true;
                     context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                 }
-                else if (context.AuthenticationSchemes == AuthenticationSchemes.Basic && context.Request.Headers["Authorization"] == null)
+                else if (context.AuthenticationSchemes == AuthenticationSchemes.Basic)
                 {
-                    authFailure = true;
-                    context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
-                    context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
+                    HttpStatusCode errorCode = HttpStatusCode.Unauthorized;
+                    string authHeader = context.Request.Headers["Authorization"];
+                    if (authHeader == null ||
+                        !HttpListenerContext.IsBasicHeader(authHeader) ||
+                        authHeader.Length < AuthenticationTypes.Basic.Length + 2 ||
+                        !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out string _, out string __))
+                    {
+                        authFailure = true;
+                        context.Response.StatusCode = (int)errorCode;
+                        if (errorCode == HttpStatusCode.Unauthorized)
+                        {
+                            context.Response.Headers["WWW-Authenticate"] = context.AuthenticationSchemes + " realm=\"" + context._listener.Realm + "\"";
+                        }
+                    }
                 }
 
                 if (authFailure)

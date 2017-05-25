@@ -57,7 +57,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20099, TestPlatforms.Unix)]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         [MemberData(nameof(BasicAuthenticationHeader_TestData))]
         public async Task BasicAuthentication_InvalidRequest_SendsStatusCodeClient(string header, HttpStatusCode statusCode)
         {
@@ -122,6 +122,18 @@ namespace System.Net.Tests
             _listener.AuthenticationSchemeSelectorDelegate += selector;
 
             await ValidateValidUser();
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData("somename:somepassword", "somename", "somepassword")]
+        [InlineData("somename:", "somename", "")]
+        [InlineData(":somepassword", "", "somepassword")]
+        [InlineData("somedomain\\somename:somepassword", "somedomain\\somename", "somepassword")]
+        [InlineData("\\somename:somepassword", "\\somename", "somepassword")]
+        public async Task TestBasicAuthenticationWithValidAuthStrings(string authString, string expectedName, string expectedPassword)
+        {
+            _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
+            await ValidateValidUser(authString, expectedName, expectedPassword);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
@@ -409,21 +421,27 @@ namespace System.Net.Tests
             }
         }
 
-        private async Task ValidateValidUser()
+        private Task ValidateValidUser() =>
+            ValidateValidUser(string.Format("{0}:{1}", TestUser, TestPassword), TestUser, TestPassword);
+
+        private async Task ValidateValidUser(string authHeader, string expectedUsername, string expectedPassword)
         {
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
             using (HttpClient client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                     Basic,
-                    Convert.ToBase64String(Encoding.ASCII.GetBytes(string.Format("{0}:{1}", TestUser, TestPassword))));
+                    Convert.ToBase64String(Encoding.ASCII.GetBytes(authHeader)));
 
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                Task <string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
                 HttpListenerContext listenerContext = await serverContextTask;
 
-                Assert.Equal(TestUser, listenerContext.User.Identity.Name);
-                Assert.True(listenerContext.User.Identity.IsAuthenticated);
+                Assert.Equal(expectedUsername, listenerContext.User.Identity.Name);
+                Assert.Equal(!string.IsNullOrEmpty(expectedUsername), listenerContext.User.Identity.IsAuthenticated);
                 Assert.Equal(Basic, listenerContext.User.Identity.AuthenticationType);
+
+                HttpListenerBasicIdentity id = Assert.IsType<HttpListenerBasicIdentity>(listenerContext.User.Identity);
+                Assert.Equal(expectedPassword, id.Password);
             }
         }
 
