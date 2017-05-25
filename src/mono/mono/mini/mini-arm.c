@@ -337,7 +337,6 @@ mono_arch_have_fast_tls (void)
 #ifdef HAVE_AEABI_READ_TP
 	static gboolean have_fast_tls = FALSE;
         static gboolean inited = FALSE;
-	gpointer tp1, tp2;
 
 	if (mini_get_debug_options ()->use_fallback_tls)
 		return FALSE;
@@ -345,10 +344,14 @@ mono_arch_have_fast_tls (void)
 	if (inited)
 		return have_fast_tls;
 
-	tp1 = __aeabi_read_tp ();
-	asm volatile("mrc p15, 0, %0, c13, c0, 3" : "=r" (tp2));
+	if (v7_supported) {
+		gpointer tp1, tp2;
 
-	have_fast_tls = tp1 && tp1 == tp2;
+		tp1 = __aeabi_read_tp ();
+		asm volatile("mrc p15, 0, %0, c13, c0, 3" : "=r" (tp2));
+
+		have_fast_tls = tp1 && tp1 == tp2;
+	}
 	inited = TRUE;
 	return have_fast_tls;
 #else
@@ -359,6 +362,7 @@ mono_arch_have_fast_tls (void)
 static guint8*
 emit_tls_get (guint8 *code, int dreg, int tls_offset)
 {
+	g_assert (v7_supported);
 	ARM_MRC (code, 15, 0, dreg, 13, 0, 3);
 	ARM_LDR_IMM (code, dreg, dreg, tls_offset);
 	return code;
@@ -368,6 +372,7 @@ static guint8*
 emit_tls_set (guint8 *code, int sreg, int tls_offset)
 {
 	int tp_reg = (sreg != ARMREG_R0) ? ARMREG_R0 : ARMREG_R1;
+	g_assert (v7_supported);
 	ARM_MRC (code, 15, 0, tp_reg, 13, 0, 3);
 	ARM_STR_IMM (code, sreg, tp_reg, tls_offset);
 	return code;
