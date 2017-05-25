@@ -295,14 +295,3 @@ bool get_global_shared_store_dirs(std::vector<pal::string_t>*  dirs, const pal::
     }
     return true;
 }
-
-bool get_local_shared_store_dir(pal::string_t* dir)
-{
-    if (!pal::get_local_dotnet_dir(dir))
-    {
-        return false;
-    }
-
-    append_path(dir, RUNTIME_STORE_DIRECTORY_NAME);
-    return true;
-}
