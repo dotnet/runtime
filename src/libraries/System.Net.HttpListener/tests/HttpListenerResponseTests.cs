@@ -436,6 +436,7 @@ namespace System.Net.Tests
             }
         }
         
+        [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(true)]
         [InlineData(false)]
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]

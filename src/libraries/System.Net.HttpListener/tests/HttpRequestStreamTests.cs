@@ -33,9 +33,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true, "")]
+        //[InlineData(true, "")] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false, "")]
-        [InlineData(true, "Non-Empty")]
+        //[InlineData(true, "Non-Empty")]  // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false, "Non-Empty")]
         public async Task Read_FullLengthAsynchronous_Success(bool transferEncodingChunked, string text)
         {
@@ -77,9 +77,9 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true, "")]
+        // [InlineData(true, "")] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false, "")]
-        [InlineData(true, "Non-Empty")]
+        // [InlineData(true, "Non-Empty")] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false, "Non-Empty")]
         public async Task Read_FullLengthSynchronous_Success(bool transferEncodingChunked, string text)
         {
@@ -121,7 +121,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true)]
+        // [InlineData(true)] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false)]
         public async Task Read_LargeLengthAsynchronous_Success(bool transferEncodingChunked)
         {
@@ -160,7 +160,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true)]
+        // [InlineData(true)] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false)]
         public async Task Read_LargeLengthSynchronous_Success(bool transferEncodingChunked)
         {
@@ -197,9 +197,9 @@ namespace System.Net.Tests
                 context.Response.Close();
             }
         }
-
+        
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true)]
+        // [InlineData(true)] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false)]
         public async Task Read_TooMuchAsynchronous_Success(bool transferEncodingChunked)
         {
@@ -224,7 +224,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true)]
+        // [InlineData(true)] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false)]
         public async Task Read_TooMuchSynchronous_Success(bool transferEncodingChunked)
         {
@@ -249,7 +249,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(true)]
+        // [InlineData(true)] // [ActiveIssue(20246)] // CI hanging frequently
         [InlineData(false)]
         public async Task Read_NotEnoughThenCloseAsynchronous_Success(bool transferEncodingChunked)
         {
@@ -436,6 +436,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [Fact]
         [ActiveIssue(19983, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Read_FromClosedConnectionAsynchronously_ThrowsHttpListenerException()
@@ -466,6 +467,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [Fact]
         [ActiveIssue(19983, platforms: TestPlatforms.AnyUnix)] // No exception thrown
         public async Task Read_FromClosedConnectionSynchronously_ThrowsHttpListenerException()
