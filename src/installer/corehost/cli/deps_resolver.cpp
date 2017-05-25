@@ -152,11 +152,6 @@ void deps_resolver_t::setup_shared_store_probes(
         }
     }
 
-    if (pal::directory_exists(args.local_shared_store))
-    {
-        m_probes.push_back(probe_config_t::lookup(args.local_shared_store));
-    }
-
     if (pal::directory_exists(args.dotnet_shared_store))
     {
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
