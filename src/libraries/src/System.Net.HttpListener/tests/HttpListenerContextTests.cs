@@ -128,6 +128,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<WebSocketException>(() => context.AcceptWebSocketAsync(subProtocol));
         }
 
+        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
         public async Task AcceptWebSocketAsync_InvalidKeepAlive_ThrowsWebSocketException()
         {
