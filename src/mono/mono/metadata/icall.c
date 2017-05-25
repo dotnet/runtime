@@ -3295,6 +3295,103 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 }
 
 #ifndef DISABLE_REMOTING
+static void
+internal_execute_field_getter (MonoDomain *domain, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs, MonoError *error)
+{
+	error_init (error);
+	MonoArray *out_args;
+	MonoClass *k = mono_object_class (this_arg);
+	MonoString *name;
+	char *str;
+			
+	/* If this is a proxy, then it must be a CBO */
+	if (mono_class_is_transparent_proxy (k)) {
+		MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
+		this_arg = tp->rp->unwrapped_server;
+		g_assert (this_arg);
+		k = mono_object_class (this_arg);
+	}
+			
+	name = mono_array_get (params, MonoString *, 1);
+	str = mono_string_to_utf8_checked (name, error);
+	return_if_nok (error);
+		
+	do {
+		MonoClassField* field = mono_class_get_field_from_name (k, str);
+		if (field) {
+			g_free (str);
+			MonoClass *field_klass =  mono_class_from_mono_type (field->type);
+			MonoObject *result;
+			if (field_klass->valuetype) {
+				result = mono_value_box_checked (domain, field_klass, (char *)this_arg + field->offset, error);
+				return_if_nok (error);
+			} else 
+				result = (MonoObject *)*((gpointer *)((char *)this_arg + field->offset));
+
+			out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, error);
+			return_if_nok (error);
+			mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
+			mono_array_setref (out_args, 0, result);
+			return;
+		}
+		k = k->parent;
+	} while (k);
+
+	g_free (str);
+	g_assert_not_reached ();
+}
+
+static void
+internal_execute_field_setter (MonoDomain *domain, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs, MonoError *error)
+{
+	error_init (error);
+	MonoArray *out_args;
+	MonoClass *k = mono_object_class (this_arg);
+	MonoString *name;
+	guint32 size;
+	gint32 align;
+	char *str;
+			
+	/* If this is a proxy, then it must be a CBO */
+	if (mono_class_is_transparent_proxy (k)) {
+		MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
+		this_arg = tp->rp->unwrapped_server;
+		g_assert (this_arg);
+		k = mono_object_class (this_arg);
+	}
+			
+	name = mono_array_get (params, MonoString *, 1);
+	str = mono_string_to_utf8_checked (name, error);
+	return_if_nok (error);
+		
+	do {
+		MonoClassField* field = mono_class_get_field_from_name (k, str);
+		if (field) {
+			g_free (str);
+			MonoClass *field_klass =  mono_class_from_mono_type (field->type);
+			MonoObject *val = (MonoObject *)mono_array_get (params, gpointer, 2);
+
+			if (field_klass->valuetype) {
+				size = mono_type_size (field->type, &align);
+				g_assert (size == mono_class_value_size (field_klass, NULL));
+				mono_gc_wbarrier_value_copy ((char *)this_arg + field->offset, (char*)val + sizeof (MonoObject), 1, field_klass);
+			} else {
+				mono_gc_wbarrier_set_field (this_arg, (char*)this_arg + field->offset, val);
+			}
+
+			out_args = mono_array_new_checked (domain, mono_defaults.object_class, 0, error);
+			return_if_nok (error);
+			mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
+			return;
+		}
+				
+		k = k->parent;
+	} while (k);
+
+	g_free (str);
+	g_assert_not_reached ();
+}
+
 ICALL_EXPORT MonoObject *
 ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, MonoArray *params, MonoArray **outArgs) 
 {
@@ -3308,97 +3405,13 @@ ves_icall_InternalExecute (MonoReflectionMethod *method, MonoObject *this_arg, M
 
 	if (m->klass == mono_defaults.object_class) {
 		if (!strcmp (m->name, "FieldGetter")) {
-			MonoClass *k = mono_object_class (this_arg);
-			MonoString *name;
-			char *str;
-			
-			/* If this is a proxy, then it must be a CBO */
-			if (mono_class_is_transparent_proxy (k)) {
-				MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
-				this_arg = tp->rp->unwrapped_server;
-				g_assert (this_arg);
-				k = mono_object_class (this_arg);
-			}
-			
-			name = mono_array_get (params, MonoString *, 1);
-			str = mono_string_to_utf8_checked (name, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-		
-			do {
-				MonoClassField* field = mono_class_get_field_from_name (k, str);
-				if (field) {
-					g_free (str);
-					MonoClass *field_klass =  mono_class_from_mono_type (field->type);
-					if (field_klass->valuetype) {
-						result = mono_value_box_checked (domain, field_klass, (char *)this_arg + field->offset, &error);
-						if (mono_error_set_pending_exception (&error))
-							return NULL;
-					} else 
-						result = (MonoObject *)*((gpointer *)((char *)this_arg + field->offset));
-				
-					out_args = mono_array_new_checked (domain, mono_defaults.object_class, 1, &error);
-					if (mono_error_set_pending_exception (&error))
-						return NULL;
-					mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
-					mono_array_setref (out_args, 0, result);
-					return NULL;
-				}
-				k = k->parent;
-			} while (k);
-
-			g_free (str);
-			g_assert_not_reached ();
-
+			internal_execute_field_getter (domain, this_arg, params, outArgs, &error);
+			mono_error_set_pending_exception (&error);
+			return NULL;
 		} else if (!strcmp (m->name, "FieldSetter")) {
-			MonoClass *k = mono_object_class (this_arg);
-			MonoString *name;
-			guint32 size;
-			gint32 align;
-			char *str;
-			
-			/* If this is a proxy, then it must be a CBO */
-			if (mono_class_is_transparent_proxy (k)) {
-				MonoTransparentProxy *tp = (MonoTransparentProxy*) this_arg;
-				this_arg = tp->rp->unwrapped_server;
-				g_assert (this_arg);
-				k = mono_object_class (this_arg);
-			}
-			
-			name = mono_array_get (params, MonoString *, 1);
-			str = mono_string_to_utf8_checked (name, &error);
-			if (mono_error_set_pending_exception (&error))
-				return NULL;
-		
-			do {
-				MonoClassField* field = mono_class_get_field_from_name (k, str);
-				if (field) {
-					g_free (str);
-					MonoClass *field_klass =  mono_class_from_mono_type (field->type);
-					MonoObject *val = (MonoObject *)mono_array_get (params, gpointer, 2);
-
-					if (field_klass->valuetype) {
-						size = mono_type_size (field->type, &align);
-						g_assert (size == mono_class_value_size (field_klass, NULL));
-						mono_gc_wbarrier_value_copy ((char *)this_arg + field->offset, (char*)val + sizeof (MonoObject), 1, field_klass);
-					} else {
-						mono_gc_wbarrier_set_field (this_arg, (char*)this_arg + field->offset, val);
-					}
-				
-					out_args = mono_array_new_checked (domain, mono_defaults.object_class, 0, &error);
-					if (mono_error_set_pending_exception (&error))
-						return NULL;
-					mono_gc_wbarrier_generic_store (outArgs, (MonoObject*) out_args);
-
-					return NULL;
-				}
-				
-				k = k->parent;
-			} while (k);
-
-			g_free (str);
-			g_assert_not_reached ();
-
+			internal_execute_field_setter (domain, this_arg, params, outArgs, &error);
+			mono_error_set_pending_exception (&error);
+			return NULL;
 		}
 	}
 
