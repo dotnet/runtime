@@ -46,7 +46,7 @@ EventPipeBuffer::~EventPipeBuffer()
     }
 }
 
-bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *pData, unsigned int dataLength, StackContents *pStack)
+bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *pData, unsigned int dataLength, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack)
 {
     CONTRACTL
     {
@@ -77,7 +77,9 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *p
             event,
             pThread->GetOSThreadId(),
             pDataDest,
-            dataLength);
+            dataLength,
+            pActivityId,
+            pRelatedActivityId);
 
         // Copy the stack if a separate stack trace was provided.
         if(pStack != NULL)
