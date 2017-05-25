@@ -71,13 +71,13 @@
            
     <ItemGroup>
       <DebInstallerFile Include="$(SharedHostInstallerFile)" >
-        <PackageName>dotnet-host</PackageName>
+        <PackageName>$(SharedHostDebPkgName)</PackageName>
       </DebInstallerFile>
       <DebInstallerFile Include="$(HostFxrInstallerFile)" >
-        <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('$(HostFxrInstallerFile)'))</PackageName>
+        <PackageName>$(HostFxrDebPkgName)</PackageName>
       </DebInstallerFile>
       <DebInstallerFile Include="$(SharedFrameworkInstallerFile)">
-        <PackageName>$([System.IO.Path]::GetFileNameWithoutExtension('$(SharedFrameworkInstallerFile)'))</PackageName>
+        <PackageName>$(SharedFxDebPkgName)</PackageName>
       </DebInstallerFile>
 
       <DebInstallerFile>

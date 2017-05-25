@@ -402,6 +402,15 @@
     <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
     <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
   </PropertyGroup>
+  
+  <PropertyGroup>
+    <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
+    <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
+    <HostFxrDebPkgName>$([System.IO.Path]::GetFileNameWithoutExtension('$(HostFxrInstallerFile)'))</HostFxrDebPkgName>
+    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
+    <SharedFxDebPkgName>$([System.IO.Path]::GetFileNameWithoutExtension('$(SharedFrameworkInstallerFile)'))</SharedFxDebPkgName>
+    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
