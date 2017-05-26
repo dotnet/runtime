@@ -39,7 +39,7 @@ namespace System.Net.WebSockets
             ThrowIfReadOnly();
 
             // WebHeaderCollection performs validation of headerName/headerValue.
-            _requestHeaders[headerName] = headerValue;
+            _requestHeaders.Set(headerName, headerValue);
         }
 
         internal WebHeaderCollection RequestHeaders { get { return _requestHeaders; } }
