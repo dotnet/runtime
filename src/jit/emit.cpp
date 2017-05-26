@@ -3341,7 +3341,7 @@ void emitter::emitDispIGlist(bool verbose)
 void emitter::emitDispGCinfo()
 {
     printf("Emitter GC tracking info:");
-    printf("\n  emitPrevGCrefVars(0x%p)=%016llX ", dspPtr(&emitPrevGCrefVars), emitPrevGCrefVars);
+    printf("\n  emitPrevGCrefVars ");
     dumpConvertedVarSet(emitComp, emitPrevGCrefVars);
     printf("\n  emitPrevGCrefRegs(0x%p)=", dspPtr(&emitPrevGCrefRegs));
     printRegMaskInt(emitPrevGCrefRegs);
@@ -3349,7 +3349,7 @@ void emitter::emitDispGCinfo()
     printf("\n  emitPrevByrefRegs(0x%p)=", dspPtr(&emitPrevByrefRegs));
     printRegMaskInt(emitPrevByrefRegs);
     emitDispRegSet(emitPrevByrefRegs);
-    printf("\n  emitInitGCrefVars(0x%p)=%016llX ", dspPtr(&emitInitGCrefVars), emitInitGCrefVars);
+    printf("\n  emitInitGCrefVars ");
     dumpConvertedVarSet(emitComp, emitInitGCrefVars);
     printf("\n  emitInitGCrefRegs(0x%p)=", dspPtr(&emitInitGCrefRegs));
     printRegMaskInt(emitInitGCrefRegs);
@@ -3357,7 +3357,7 @@ void emitter::emitDispGCinfo()
     printf("\n  emitInitByrefRegs(0x%p)=", dspPtr(&emitInitByrefRegs));
     printRegMaskInt(emitInitByrefRegs);
     emitDispRegSet(emitInitByrefRegs);
-    printf("\n  emitThisGCrefVars(0x%p)=%016llX ", dspPtr(&emitThisGCrefVars), emitThisGCrefVars);
+    printf("\n  emitThisGCrefVars ");
     dumpConvertedVarSet(emitComp, emitThisGCrefVars);
     printf("\n  emitThisGCrefRegs(0x%p)=", dspPtr(&emitThisGCrefRegs));
     printRegMaskInt(emitThisGCrefRegs);

@@ -106,6 +106,7 @@ const unsigned lclMAX_TRACKED = UInt64Bits;
 #endif
 
 // These types should be used as the types for VARSET_TP arguments and return values, respectively.
+// Arg type represent the read only argument type, that can't be modified.
 typedef VarSetOpsRaw::ValArgType VARSET_VALARG_TP;
 typedef VarSetOpsRaw::RetValType VARSET_VALRET_TP;
 
@@ -177,28 +178,9 @@ const unsigned lclMAX_ALLSET_TRACKED = UInt64Bits;
 #error "Unrecognized BitSet implemention for AllVarSet."
 #endif
 
-// These types should be used as the types for VARSET_TP arguments and return values, respectively.
+// These types should be used as the types for ALLVARSET_TP arguments and return values, respectively.
 typedef AllVarSetOps::ValArgType ALLVARSET_VALARG_TP;
 typedef AllVarSetOps::RetValType ALLVARSET_VALRET_TP;
-
-// Initialize "varName" to "initVal."  Copies contents, not references; if "varName" is uninitialized, allocates a var
-// set for it (using "comp" for any necessary allocation), and copies the contents of "initVal" into it.
-#define VARSET_INIT(comp, varName, initVal) varName(VarSetOps::MakeCopy(comp, initVal))
-#define ALLVARSET_INIT(comp, varName, initVal) varName(AllVarSetOps::MakeCopy(comp, initVal))
-
-// Initializes "varName" to "initVal", without copying: if "initVal" is an indirect representation, copies its
-// pointer into "varName".
-#if defined(DEBUG) && VARSET_REP_IS_CLASS
-#define VARSET_INIT_NOCOPY(varName, initVal) varName(initVal, 0)
-#else
-#define VARSET_INIT_NOCOPY(varName, initVal) varName(initVal)
-#endif
-
-#if defined(DEBUG) && ALLVARSET_REP_IS_CLASS
-#define ALLVARSET_INIT_NOCOPY(varName, initVal) varName(initVal, 0)
-#else
-#define ALLVARSET_INIT_NOCOPY(varName, initVal) varName(initVal)
-#endif
 
 // The iterator pattern.
 

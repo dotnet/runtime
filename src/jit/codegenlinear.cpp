@@ -164,8 +164,8 @@ void CodeGen::genCodeForBBlist()
         regMaskTP newRegGCrefSet = RBM_NONE;
         regMaskTP newRegByrefSet = RBM_NONE;
 #ifdef DEBUG
-        VARSET_TP VARSET_INIT_NOCOPY(removedGCVars, VarSetOps::MakeEmpty(compiler));
-        VARSET_TP VARSET_INIT_NOCOPY(addedGCVars, VarSetOps::MakeEmpty(compiler));
+        VARSET_TP removedGCVars(VarSetOps::MakeEmpty(compiler));
+        VARSET_TP addedGCVars(VarSetOps::MakeEmpty(compiler));
 #endif
         VARSET_ITER_INIT(compiler, iter, block->bbLiveIn, varIndex);
         while (iter.NextElem(&varIndex))
@@ -497,7 +497,7 @@ void CodeGen::genCodeForBBlist()
         // it up to date for vars that are not register candidates
         // (it would be nice to have a xor set function)
 
-        VARSET_TP VARSET_INIT_NOCOPY(extraLiveVars, VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
+        VARSET_TP extraLiveVars(VarSetOps::Diff(compiler, block->bbLiveOut, compiler->compCurLife));
         VarSetOps::UnionD(compiler, extraLiveVars, VarSetOps::Diff(compiler, compiler->compCurLife, block->bbLiveOut));
         VARSET_ITER_INIT(compiler, extraLiveVarIter, extraLiveVars, extraLiveVarIndex);
         while (extraLiveVarIter.NextElem(&extraLiveVarIndex))

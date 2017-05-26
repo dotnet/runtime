@@ -1863,9 +1863,9 @@ void Interval::setLocalNumber(Compiler* compiler, unsigned lclNum, LinearScan* l
 // this logic cloned from fgInterBlockLocalVarLiveness
 void LinearScan::identifyCandidatesExceptionDataflow()
 {
-    VARSET_TP   VARSET_INIT_NOCOPY(exceptVars, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP   VARSET_INIT_NOCOPY(filterVars, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP   VARSET_INIT_NOCOPY(finallyVars, VarSetOps::MakeEmpty(compiler));
+    VARSET_TP   exceptVars(VarSetOps::MakeEmpty(compiler));
+    VARSET_TP   filterVars(VarSetOps::MakeEmpty(compiler));
+    VARSET_TP   finallyVars(VarSetOps::MakeEmpty(compiler));
     BasicBlock* block;
 
     foreach_block(compiler, block)
@@ -2003,7 +2003,7 @@ void LinearScan::identifyCandidates()
     // for vectors on Arm64, though the actual value may differ.
 
     VarSetOps::AssignNoCopy(compiler, fpCalleeSaveCandidateVars, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP    VARSET_INIT_NOCOPY(fpMaybeCandidateVars, VarSetOps::MakeEmpty(compiler));
+    VARSET_TP    fpMaybeCandidateVars(VarSetOps::MakeEmpty(compiler));
     unsigned int floatVarCount        = 0;
     unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
     unsigned int maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
@@ -2549,7 +2549,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
     // block that we've already seen).  When we encounter a use, if it's
     // not in that set, then it's a last use.
 
-    VARSET_TP VARSET_INIT(compiler, temp, block->bbLiveOut);
+    VARSET_TP temp(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
 
     bool foundDiff          = false;
     auto currentRefPosition = refPositions.rbegin();
@@ -2615,7 +2615,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
         ++currentRefPosition;
     }
 
-    VARSET_TP VARSET_INIT(compiler, temp2, block->bbLiveIn);
+    VARSET_TP temp2(VarSetOps::MakeCopy(compiler, block->bbLiveIn));
     VarSetOps::DiffD(compiler, temp2, temp);
     VarSetOps::DiffD(compiler, temp, block->bbLiveIn);
 
@@ -3323,7 +3323,7 @@ public:
 VARSET_VALRET_TP
 LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc)
 {
-    VARSET_TP VARSET_INIT_NOCOPY(liveLargeVectors, VarSetOps::MakeEmpty(compiler));
+    VARSET_TP liveLargeVectors(VarSetOps::MakeEmpty(compiler));
     regMaskTP fpCalleeKillSet = RBM_NONE;
     if (!VarSetOps::IsEmpty(compiler, largeVectorVars))
     {
@@ -4035,7 +4035,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     buildKillPositionsForNode(tree, currentLoc + 1);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    VARSET_TP VARSET_INIT_NOCOPY(liveLargeVectors, VarSetOps::UninitVal());
+    VARSET_TP liveLargeVectors(VarSetOps::UninitVal());
     if (RBM_FLT_CALLEE_SAVED != RBM_NONE)
     {
         // Build RefPositions for saving any live large vectors.
@@ -4624,7 +4624,7 @@ void LinearScan::buildIntervals()
         // TODO-CQ: Consider how best to tune this.  Currently, if we create DummyDefs for uninitialized
         // variables (which may actually be initialized along the dynamically executed paths, but not
         // on all static paths), we wind up with excessive liveranges for some of these variables.
-        VARSET_TP VARSET_INIT(compiler, newLiveIn, block->bbLiveIn);
+        VARSET_TP newLiveIn(VarSetOps::MakeCopy(compiler, block->bbLiveIn));
         if (predBlock)
         {
             JITDUMP("\n\nSetting BB%02u as the predecessor for determining incoming variable registers of BB%02u\n",
@@ -4713,7 +4713,7 @@ void LinearScan::buildIntervals()
         // Note that a block ending with GT_JMP has no successors and hence the variables
         // for which dummy use ref positions are added are arguments of the method.
 
-        VARSET_TP   VARSET_INIT(compiler, expUseSet, block->bbLiveOut);
+        VARSET_TP   expUseSet(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
         BasicBlock* nextBlock = getNextBlock();
         if (nextBlock != nullptr)
         {
@@ -6668,18 +6668,18 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
     VarToRegMap inVarToRegMap     = getInVarToRegMap(currentBlock->bbNum);
     bool        hasCriticalInEdge = blockInfo[currentBlock->bbNum].hasCriticalInEdge;
 
-    VARSET_TP VARSET_INIT_NOCOPY(liveIn, currentBlock->bbLiveIn);
+    const VARSET_TP* liveIn = &currentBlock->bbLiveIn;
 #ifdef DEBUG
     if (getLsraExtendLifeTimes())
     {
-        VarSetOps::AssignNoCopy(compiler, liveIn, compiler->lvaTrackedVars);
+        liveIn = &compiler->lvaTrackedVars;
     }
     // If we are rotating register assignments at block boundaries, we want to make the
     // inactive registers available for the rotation.
     regMaskTP inactiveRegs = RBM_NONE;
 #endif // DEBUG
     regMaskTP liveRegs = RBM_NONE;
-    VARSET_ITER_INIT(compiler, iter, liveIn, varIndex);
+    VARSET_ITER_INIT(compiler, iter, *liveIn, varIndex);
     while (iter.NextElem(&varIndex))
     {
         unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
@@ -6893,15 +6893,15 @@ void LinearScan::processBlockEndLocations(BasicBlock* currentBlock)
     assert(currentBlock != nullptr && currentBlock->bbNum == curBBNum);
     VarToRegMap outVarToRegMap = getOutVarToRegMap(curBBNum);
 
-    VARSET_TP VARSET_INIT_NOCOPY(liveOut, currentBlock->bbLiveOut);
+    const VARSET_TP* liveOut = &currentBlock->bbLiveOut;
 #ifdef DEBUG
     if (getLsraExtendLifeTimes())
     {
-        VarSetOps::AssignNoCopy(compiler, liveOut, compiler->lvaTrackedVars);
+        liveOut = &compiler->lvaTrackedVars;
     }
 #endif // DEBUG
     regMaskTP liveRegs = RBM_NONE;
-    VARSET_ITER_INIT(compiler, iter, liveOut, varIndex);
+    VARSET_ITER_INIT(compiler, iter, *liveOut, varIndex);
     while (iter.NextElem(&varIndex))
     {
         Interval* interval = getIntervalForLocalVar(varIndex);
@@ -9325,16 +9325,15 @@ void LinearScan::addResolution(
 
 void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
 {
-    VARSET_TP VARSET_INIT_NOCOPY(outResolutionSet,
-                                 VarSetOps::Intersection(compiler, block->bbLiveOut, resolutionCandidateVars));
+    VARSET_TP outResolutionSet(VarSetOps::Intersection(compiler, block->bbLiveOut, resolutionCandidateVars));
     if (VarSetOps::IsEmpty(compiler, outResolutionSet))
     {
         return;
     }
-    VARSET_TP VARSET_INIT_NOCOPY(sameResolutionSet, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP VARSET_INIT_NOCOPY(sameLivePathsSet, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP VARSET_INIT_NOCOPY(singleTargetSet, VarSetOps::MakeEmpty(compiler));
-    VARSET_TP VARSET_INIT_NOCOPY(diffResolutionSet, VarSetOps::MakeEmpty(compiler));
+    VARSET_TP sameResolutionSet(VarSetOps::MakeEmpty(compiler));
+    VARSET_TP sameLivePathsSet(VarSetOps::MakeEmpty(compiler));
+    VARSET_TP singleTargetSet(VarSetOps::MakeEmpty(compiler));
+    VARSET_TP diffResolutionSet(VarSetOps::MakeEmpty(compiler));
 
     // Get the outVarToRegMap for this block
     VarToRegMap outVarToRegMap = getOutVarToRegMap(block->bbNum);
@@ -9515,8 +9514,7 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
             // Check only the vars in diffResolutionSet that are live-in to this successor.
             bool        needsResolution   = false;
             VarToRegMap succInVarToRegMap = getInVarToRegMap(succBlock->bbNum);
-            VARSET_TP   VARSET_INIT_NOCOPY(edgeResolutionSet,
-                                         VarSetOps::Intersection(compiler, diffResolutionSet, succBlock->bbLiveIn));
+            VARSET_TP   edgeResolutionSet(VarSetOps::Intersection(compiler, diffResolutionSet, succBlock->bbLiveIn));
             VARSET_ITER_INIT(compiler, iter, edgeResolutionSet, varIndex);
             while (iter.NextElem(&varIndex))
             {
@@ -9611,8 +9609,7 @@ void LinearScan::resolveEdges()
         // we may need resolution at the beginning of this block.
         // This may be true even if it's the block we used for starting locations,
         // if a variable was spilled.
-        VARSET_TP VARSET_INIT_NOCOPY(inResolutionSet,
-                                     VarSetOps::Intersection(compiler, block->bbLiveIn, resolutionCandidateVars));
+        VARSET_TP inResolutionSet(VarSetOps::Intersection(compiler, block->bbLiveIn, resolutionCandidateVars));
         if (!VarSetOps::IsEmpty(compiler, inResolutionSet))
         {
             if (uniquePredBlock != nullptr)
@@ -9641,8 +9638,8 @@ void LinearScan::resolveEdges()
             BasicBlock* succBlock = block->GetSucc(0, compiler);
             if (succBlock->GetUniquePred(compiler) == nullptr)
             {
-                VARSET_TP VARSET_INIT_NOCOPY(outResolutionSet, VarSetOps::Intersection(compiler, succBlock->bbLiveIn,
-                                                                                       resolutionCandidateVars));
+                VARSET_TP outResolutionSet(
+                    VarSetOps::Intersection(compiler, succBlock->bbLiveIn, resolutionCandidateVars));
                 if (!VarSetOps::IsEmpty(compiler, outResolutionSet))
                 {
                     resolveEdge(block, succBlock, ResolveJoin, outResolutionSet);

@@ -45,7 +45,7 @@ void CodeGen::genDyingVars(VARSET_VALARG_TP beforeSet, VARSET_VALARG_TP afterSet
     unsigned   varNum;
     LclVarDsc* varDsc;
     regMaskTP  regBit;
-    VARSET_TP  VARSET_INIT_NOCOPY(deadSet, VarSetOps::Diff(compiler, beforeSet, afterSet));
+    VARSET_TP  deadSet(VarSetOps::Diff(compiler, beforeSet, afterSet));
 
     if (VarSetOps::IsEmpty(compiler, deadSet))
         return;
@@ -5626,12 +5626,10 @@ void CodeGen::genCodeForQmark(GenTreePtr tree, regMaskTP destReg, regMaskTP best
             // If any candidates are not alive at the GT_QMARK node, then they
             // need to be spilled
 
-            VARSET_TP VARSET_INIT(compiler, rsLiveNow, compiler->compCurLife);
-            VARSET_TP VARSET_INIT_NOCOPY(rsLiveAfter, compiler->fgUpdateLiveSet(compiler->compCurLife,
-                                                                                compiler->compCurLifeTree, tree));
+            const VARSET_TP& rsLiveNow(compiler->compCurLife);
+            VARSET_TP rsLiveAfter(compiler->fgUpdateLiveSet(compiler->compCurLife, compiler->compCurLifeTree, tree));
 
-            VARSET_TP VARSET_INIT_NOCOPY(regVarLiveNow,
-                                         VarSetOps::Intersection(compiler, compiler->raRegVarsMask, rsLiveNow));
+            VARSET_TP regVarLiveNow(VarSetOps::Intersection(compiler, compiler->raRegVarsMask, rsLiveNow));
 
             VARSET_ITER_INIT(compiler, iter, regVarLiveNow, varIndex);
             while (iter.NextElem(&varIndex))
@@ -12515,7 +12513,7 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        VARSET_TP VARSET_INIT_NOCOPY(liveSet, VarSetOps::UninitVal());
+        VARSET_TP liveSet(VarSetOps::UninitVal());
 
         regMaskTP gcrefRegs = 0;
         regMaskTP byrefRegs = 0;
@@ -20616,16 +20614,18 @@ GenTreePtr Compiler::fgLegacyPerStatementLocalVarLiveness(GenTreePtr startNode, 
 {
     GenTreePtr tree;
 
-    VARSET_TP VARSET_INIT(this, defSet_BeforeSplit, fgCurDefSet); // Store the current fgCurDefSet and fgCurUseSet so
-    VARSET_TP VARSET_INIT(this, useSet_BeforeSplit, fgCurUseSet); // we can restore then before entering the elseTree.
+    VARSET_TP defSet_BeforeSplit(VarSetOps::MakeCopy(this, fgCurDefSet)); // Store the current fgCurDefSet and
+                                                                          // fgCurUseSet so
+    VARSET_TP useSet_BeforeSplit(VarSetOps::MakeCopy(this, fgCurUseSet)); // we can restore then before entering the
+                                                                          // elseTree.
 
     MemoryKindSet memoryUse_BeforeSplit   = fgCurMemoryUse;
     MemoryKindSet memoryDef_BeforeSplit   = fgCurMemoryDef;
     MemoryKindSet memoryHavoc_BeforeSplit = fgCurMemoryHavoc;
 
-    VARSET_TP VARSET_INIT_NOCOPY(defSet_AfterThenTree, VarSetOps::MakeEmpty(this)); // These two variables will store
-                                                                                    // the USE and DEF sets after
-    VARSET_TP VARSET_INIT_NOCOPY(useSet_AfterThenTree, VarSetOps::MakeEmpty(this)); // evaluating the thenTree.
+    VARSET_TP defSet_AfterThenTree(VarSetOps::MakeEmpty(this)); // These two variables will store
+                                                                // the USE and DEF sets after
+    VARSET_TP useSet_AfterThenTree(VarSetOps::MakeEmpty(this)); // evaluating the thenTree.
 
     MemoryKindSet memoryUse_AfterThenTree   = fgCurMemoryUse;
     MemoryKindSet memoryDef_AfterThenTree   = fgCurMemoryDef;
