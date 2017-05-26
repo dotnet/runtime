@@ -3331,10 +3331,12 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 //
 void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 {
-    GenTree*  data       = tree->Data();
-    GenTree*  addr       = tree->Addr();
-    var_types targetType = tree->TypeGet();
-    emitter*  emit       = getEmitter();
+    GenTree*    data       = tree->Data();
+    GenTree*    addr       = tree->Addr();
+    var_types   targetType = tree->TypeGet();
+    emitter*    emit       = getEmitter();
+    emitAttr    attr       = emitTypeSize(tree);
+    instruction ins        = ins_Store(targetType);
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -3409,11 +3411,38 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
         if (tree->gtFlags & GTF_IND_VOLATILE)
         {
-            // issue a full memory barrier a before volatile StInd
-            instGen_MemoryBarrier();
+            bool useStoreRelease = (dataReg >= REG_INT_FIRST) && (dataReg <= REG_ZR) && !addr->isContained() &&
+                                   ((attr == EA_1BYTE) || !(tree->gtFlags & GTF_IND_UNALIGNED));
+
+            if (useStoreRelease)
+            {
+                switch (EA_SIZE(attr))
+                {
+                    case EA_1BYTE:
+                        assert(ins == INS_strb);
+                        ins = INS_stlrb;
+                        break;
+                    case EA_2BYTE:
+                        assert(ins == INS_strh);
+                        ins = INS_stlrh;
+                        break;
+                    case EA_4BYTE:
+                    case EA_8BYTE:
+                        assert(ins == INS_str);
+                        ins = INS_stlr;
+                        break;
+                    default:
+                        assert(false); // We should not get here
+                }
+            }
+            else
+            {
+                // issue a full memory barrier before a volatile StInd
+                instGen_MemoryBarrier();
+            }
         }
 
-        emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), dataReg, tree);
+        emit->emitInsLoadStoreOp(ins, attr, dataReg, tree);
     }
 }
 
