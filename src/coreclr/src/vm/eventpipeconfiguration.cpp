@@ -207,7 +207,7 @@ void EventPipeConfiguration::SetCircularBufferSize(size_t circularBufferSize)
 }
 
 void EventPipeConfiguration::Enable(
-    uint circularBufferSizeInMB,
+    unsigned int circularBufferSizeInMB,
     EventPipeProviderConfiguration *pProviders,
     int numProviders)
 {

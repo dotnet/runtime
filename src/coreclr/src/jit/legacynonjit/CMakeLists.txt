@@ -3,7 +3,6 @@ project(legacynonjit)
 add_definitions(-DALT_JIT)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
-add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 remove_definitions(-DFEATURE_SIMD)
@@ -14,6 +13,10 @@ add_definitions(-DLEGACY_BACKEND)
 remove_definitions(-D_TARGET_X86_=1)
 add_definitions(-D_TARGET_ARM_)
 set(JIT_ARCH_ALTJIT_SOURCES ${JIT_ARM_SOURCES})
+
+if(FEATURE_READYTORUN)
+  add_definitions(-DFEATURE_READYTORUN_COMPILER)
+endif(FEATURE_READYTORUN)
 
 if(WIN32)
   add_definitions(-DFX_VER_INTERNALNAME_STR=legacynonjit.dll)

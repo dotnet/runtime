@@ -52,7 +52,7 @@ public:
 
     // Enable the event pipe.
     void Enable(
-        uint circularBufferSizeInMB,
+        unsigned int circularBufferSizeInMB,
         EventPipeProviderConfiguration *pProviders,
         int numProviders);
 
