@@ -82,7 +82,37 @@ namespace System.Runtime.Serialization.Formatters.Tests
             byte[] serializedObj = Convert.FromBase64String(base64Str);
             using (var serializedStream = new MemoryStream(serializedObj))
             {
-                return binaryFormatter.Deserialize(serializedStream);
+                try
+                {
+                    return binaryFormatter.Deserialize(serializedStream);
+                }
+                catch
+                {
+                    Console.WriteLine($"Deserialization of type {original.GetType().FullName} failed");
+                    throw;
+                }
+            }
+        }
+
+        [Fact]
+        public void Seri()
+        {
+#pragma warning disable CS0618 // Type or member is obsolete
+            object obj = TimeZone.CurrentTimeZone;
+#pragma warning restore CS0618 // Type or member is obsolete
+            string base64 = null;
+
+            BinaryFormatter bf = new BinaryFormatter();
+            using (MemoryStream ms = new MemoryStream())
+            {
+                bf.Serialize(ms, obj);
+                base64 = Convert.ToBase64String(ms.ToArray());
+            }
+
+            byte[] serializedObj = Convert.FromBase64String(base64);
+            using (var serializedStream = new MemoryStream(serializedObj))
+            {
+                var x = bf.Deserialize(serializedStream);
             }
         }
 
@@ -98,7 +128,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             foreach (string tfmBase64Hash in tfmBase64Hashes)
             {
-                CheckForAnyEquals(original, DeserializeObjectHash(original, tfmBase64Hash));
+                if (!string.IsNullOrWhiteSpace(tfmBase64Hash))
+                {
+                    CheckForAnyEquals(original, DeserializeObjectHash(original, tfmBase64Hash));
+                }
             }
         }
 
@@ -138,7 +171,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
             }
 
-            try { Assert.Equal(original, clone); }
+            try
+            {
+                Assert.Equal(original, clone);
+            }
             catch (Exception)
             {
                 Console.WriteLine("Error during equality check of type " + original?.GetType()?.FullName);
@@ -151,7 +187,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (extendedType.IsGenericType)
             {
                 return typeof(EqualityExtensions).GetMethods()
-                    .SingleOrDefault(m => m.Name == "IsEqual" && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType.Name == extendedType.Name)
+                    ?.SingleOrDefault(m => m.Name == "IsEqual" && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType.Name == extendedType.Name)
                     ?.MakeGenericMethod(extendedType.GenericTypeArguments[0]);
             }
             else
