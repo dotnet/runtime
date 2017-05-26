@@ -15,10 +15,10 @@ namespace System.Collections.ObjectModel
     {
         private const int defaultThreshold = 0;
 
-        private readonly IEqualityComparer<TKey> _comparer;
-        private Dictionary<TKey, TItem> _dict;
-        private int _keyCount;
-        private readonly int _threshold;
+        private readonly IEqualityComparer<TKey> comparer; // Do not rename (binary serialization)
+        private Dictionary<TKey, TItem> dict; // Do not rename (binary serialization)
+        private int keyCount; // Do not rename (binary serialization)
+        private readonly int threshold; // Do not rename (binary serialization)
 
         protected KeyedCollection() : this(null, defaultThreshold) { }
 
@@ -44,8 +44,8 @@ namespace System.Collections.ObjectModel
                 throw new ArgumentOutOfRangeException(nameof(dictionaryCreationThreshold), SR.ArgumentOutOfRange_InvalidThreshold);
             }
 
-            _comparer = comparer;
-            _threshold = dictionaryCreationThreshold;
+            this.comparer = comparer;
+            threshold = dictionaryCreationThreshold;
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace System.Collections.ObjectModel
         {
             get
             {
-                return _comparer;
+                return comparer;
             }
         }
 
@@ -90,14 +90,14 @@ namespace System.Collections.ObjectModel
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (_dict != null)
+            if (dict != null)
             {
-                return _dict.ContainsKey(key);
+                return dict.ContainsKey(key);
             }
 
             foreach (TItem item in Items)
             {
-                if (_comparer.Equals(GetKeyForItem(item), key)) return true;
+                if (comparer.Equals(GetKeyForItem(item), key)) return true;
             }
             return false;
         }
@@ -109,15 +109,15 @@ namespace System.Collections.ObjectModel
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (_dict != null)
+            if (dict != null)
             {
-                return _dict.TryGetValue(key, out item);
+                return dict.TryGetValue(key, out item);
             }
 
             foreach (TItem itemInItems in Items)
             {
                 TKey keyInItems = GetKeyForItem(itemInItems);
-                if (keyInItems != null && _comparer.Equals(key, keyInItems))
+                if (keyInItems != null && comparer.Equals(key, keyInItems))
                 {
                     item = itemInItems;
                     return true;
@@ -131,13 +131,13 @@ namespace System.Collections.ObjectModel
         private bool ContainsItem(TItem item)
         {
             TKey key;
-            if ((_dict == null) || ((key = GetKeyForItem(item)) == null))
+            if ((dict == null) || ((key = GetKeyForItem(item)) == null))
             {
                 return Items.Contains(item);
             }
 
             TItem itemInDict;
-            bool exist = _dict.TryGetValue(key, out itemInDict);
+            bool exist = dict.TryGetValue(key, out itemInDict);
             if (exist)
             {
                 return EqualityComparer<TItem>.Default.Equals(itemInDict, item);
@@ -152,15 +152,15 @@ namespace System.Collections.ObjectModel
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (_dict != null)
+            if (dict != null)
             {
                 TItem item;
-                return _dict.TryGetValue(key, out item) && Remove(item);
+                return dict.TryGetValue(key, out item) && Remove(item);
             }
 
             for (int i = 0; i < Items.Count; i++)
             {
-                if (_comparer.Equals(GetKeyForItem(Items[i]), key))
+                if (comparer.Equals(GetKeyForItem(Items[i]), key))
                 {
                     RemoveItem(i);
                     return true;
@@ -171,7 +171,7 @@ namespace System.Collections.ObjectModel
 
         protected IDictionary<TKey, TItem> Dictionary
         {
-            get { return _dict; }
+            get { return dict; }
         }
 
         protected void ChangeItemKey(TItem item, TKey newKey)
@@ -183,7 +183,7 @@ namespace System.Collections.ObjectModel
             }
 
             TKey oldKey = GetKeyForItem(item);
-            if (!_comparer.Equals(oldKey, newKey))
+            if (!comparer.Equals(oldKey, newKey))
             {
                 if (newKey != null)
                 {
@@ -200,12 +200,12 @@ namespace System.Collections.ObjectModel
         protected override void ClearItems()
         {
             base.ClearItems();
-            if (_dict != null)
+            if (dict != null)
             {
-                _dict.Clear();
+                dict.Clear();
             }
 
-            _keyCount = 0;
+            keyCount = 0;
         }
 
         protected abstract TKey GetKeyForItem(TItem item);
@@ -235,11 +235,11 @@ namespace System.Collections.ObjectModel
             TKey newKey = GetKeyForItem(item);
             TKey oldKey = GetKeyForItem(Items[index]);
 
-            if (_comparer.Equals(oldKey, newKey))
+            if (comparer.Equals(oldKey, newKey))
             {
-                if (newKey != null && _dict != null)
+                if (newKey != null && dict != null)
                 {
-                    _dict[newKey] = item;
+                    dict[newKey] = item;
                 }
             }
             else
@@ -259,14 +259,14 @@ namespace System.Collections.ObjectModel
 
         private void AddKey(TKey key, TItem item)
         {
-            if (_dict != null)
+            if (dict != null)
             {
-                _dict.Add(key, item);
+                dict.Add(key, item);
             }
-            else if (_keyCount == _threshold)
+            else if (keyCount == threshold)
             {
                 CreateDictionary();
-                _dict.Add(key, item);
+                dict.Add(key, item);
             }
             else
             {
@@ -275,19 +275,19 @@ namespace System.Collections.ObjectModel
                     throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                 }
 
-                _keyCount++;
+                keyCount++;
             }
         }
 
         private void CreateDictionary()
         {
-            _dict = new Dictionary<TKey, TItem>(_comparer);
+            dict = new Dictionary<TKey, TItem>(comparer);
             foreach (TItem item in Items)
             {
                 TKey key = GetKeyForItem(item);
                 if (key != null)
                 {
-                    _dict.Add(key, item);
+                    dict.Add(key, item);
                 }
             }
         }
@@ -295,13 +295,13 @@ namespace System.Collections.ObjectModel
         private void RemoveKey(TKey key)
         {
             Debug.Assert(key != null, "key shouldn't be null!");
-            if (_dict != null)
+            if (dict != null)
             {
-                _dict.Remove(key);
+                dict.Remove(key);
             }
             else
             {
-                _keyCount--;
+                keyCount--;
             }
         }
     }

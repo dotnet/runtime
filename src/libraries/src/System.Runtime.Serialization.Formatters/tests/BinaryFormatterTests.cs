@@ -94,28 +94,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        [Fact]
-        public void Seri()
-        {
-#pragma warning disable CS0618 // Type or member is obsolete
-            object obj = TimeZone.CurrentTimeZone;
-#pragma warning restore CS0618 // Type or member is obsolete
-            string base64 = null;
-
-            BinaryFormatter bf = new BinaryFormatter();
-            using (MemoryStream ms = new MemoryStream())
-            {
-                bf.Serialize(ms, obj);
-                base64 = Convert.ToBase64String(ms.ToArray());
-            }
-
-            byte[] serializedObj = Convert.FromBase64String(base64);
-            using (var serializedStream = new MemoryStream(serializedObj))
-            {
-                var x = bf.Deserialize(serializedStream);
-            }
-        }
-
         [Theory]
         [MemberData(nameof(SerializableObjects))]
         public void ValidateTfmHashes(object original, string[] tfmBase64Hashes)
@@ -128,6 +106,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
             foreach (string tfmBase64Hash in tfmBase64Hashes)
             {
+                // Currently for valuetuples
                 if (!string.IsNullOrWhiteSpace(tfmBase64Hash))
                 {
                     CheckForAnyEquals(original, DeserializeObjectHash(original, tfmBase64Hash));
