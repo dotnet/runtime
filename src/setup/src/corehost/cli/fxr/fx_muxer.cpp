@@ -831,12 +831,42 @@ int muxer_usage(bool is_sdk_present)
 }
 
 // Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
-void append_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths)
+void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths, const pal::string_t& tfm)
 {
-    pal::string_t real = path;
-    if (pal::realpath(&real))
+    pal::string_t probe_path = path;
+
+    if (pal::realpath(&probe_path) && pal::directory_exists(probe_path))
     {
-        realpaths->push_back(real);
+        realpaths->push_back(probe_path);
+    }
+    else
+    {
+        //Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
+        pal::string_t placeholder = _X("|arch|");
+        placeholder.push_back(DIR_SEPARATOR);
+        placeholder.append(_X("|tfm|"));
+        auto pos_placeholder = probe_path.find_last_of(placeholder);
+
+        if (pos_placeholder != pal::string_t::npos)
+        {
+            pal::string_t segment = get_arch();
+            segment.push_back(DIR_SEPARATOR);
+            segment.append(tfm);
+            probe_path.replace(pos_placeholder - placeholder.length() + 1, placeholder.length(), segment);
+
+            if (pal::directory_exists(probe_path))
+            {
+                realpaths->push_back(probe_path);
+            }
+            else
+            {
+                trace::verbose(_X("Ignoring host interpreted additional probing path %s as it does not exist."),probe_path.c_str());
+            }
+        }
+        else
+        {
+            trace::verbose(_X("Ignoring additional probing path %s as it does not exist."),probe_path.c_str());
+        }
     }
 }
 
@@ -991,11 +1021,11 @@ int fx_muxer_t::read_config_and_execute(
     std::vector<pal::string_t> probe_realpaths;
     for (const auto& path : spec_probe_paths)
     {
-        append_realpath(path, &probe_realpaths);
+        append_probe_realpath(path, &probe_realpaths, config.get_tfm());
     }
     for (const auto& path : config.get_probe_paths())
     {
-        append_realpath(path, &probe_realpaths);
+        append_probe_realpath(path, &probe_realpaths, config.get_tfm());
     }
 
     // 'Roll forward on no candidate fx' is disabled by default. It can be enabled through:
