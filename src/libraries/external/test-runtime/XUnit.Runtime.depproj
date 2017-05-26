@@ -87,6 +87,16 @@
     <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
+  <!-- System.Data.SqlClient tests require sni.dll in the test folder -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
+      <Version>$(PackageVersion)-$(CoreFxExpectedPrerelease)</Version>
+    </PackageReference>
+    <PackageToInclude Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni"/>
+    <PackageToInclude Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni"/>
+    <PackageToInclude Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni"/>
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <PackageToInclude Include="xunit.performance.core"/>
     <PackageToInclude Include="xunit.performance.api"/>

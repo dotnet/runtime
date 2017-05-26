@@ -24,7 +24,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.SSPI
         /// <param name="pvGetKeyArgument">This parameter is not used and should be set to NULL</param>
         /// <param name="phCredential">A pointer to a CredHandle structure to receive the credential handle</param>
         /// <param name="ptsExpiry">A pointer to a TimeStamp structure that receives the time at which the returned credentials expire</param>
-        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Auto)]
+        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, EntryPoint="AcquireCredentialsHandleW")]
         internal static extern int AcquireCredentialsHandle(
             string pszPrincipal,
             string pszPackage,
@@ -51,7 +51,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.SSPI
         /// <param name="pOutput">A pointer to a SecBufferDesc structure that contains the output buffer descriptor</param>
         /// <param name="pfContextAttr">A pointer to a variable that receives a set of bit flags that indicate the attributes of the established context</param>
         /// <param name="ptsTimeStamp">A pointer to a TimeStamp structure that receives the expiration time of the context</param>
-        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Auto, SetLastError = false)]
+        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = false, EntryPoint="InitializeSecurityContextW")]
         internal static extern int InitializeSecurityContext(ref SecurityHandle phCredential,
             IntPtr phContext,
             string pszTargetName,
@@ -80,7 +80,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.SSPI
         /// <param name="pOutput">A pointer to a SecBufferDesc structure that contains the output buffer descriptor</param>
         /// <param name="pfContextAttr">A pointer to a variable that receives a set of bit flags that indicate the attributes of the established context</param>
         /// <param name="ptsTimeStamp">A pointer to a TimeStamp structure that receives the expiration time of the context</param>
-        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Auto, SetLastError = false)]
+        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, SetLastError = false, EntryPoint="InitializeSecurityContextW")]
         internal static extern int InitializeSecurityContext(ref SecurityHandle phCredential,
             ref SecurityHandle phContext,
             string pszTargetName,
@@ -168,7 +168,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.SSPI
         /// </summary>
         /// <param name="packageName">Pointer to a null-terminated string that specifies the name of the security package</param>
         /// <param name="ppPackageInfo">Pointer to a variable that receives a pointer to a SecPkgInfo structure containing information about the specified security package</param>
-        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Auto)]
+        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, EntryPoint="QuerySecurityPackageInfoW")]
         internal static extern int QuerySecurityPackageInfo([MarshalAs(UnmanagedType.LPTStr)] string packageName, ref IntPtr ppPackageInfo);
 
         /// <summary>
