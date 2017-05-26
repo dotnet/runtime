@@ -238,9 +238,7 @@ namespace System.Collections.ObjectModel
             NotifyCollectionChangedEventHandler handler = CollectionChanged;
             if (handler != null)
             {
-                // Not calling BlockReentrancy() here to avoid the IDisposable box allocation.
-                _blockReentrancyCount++;
-                using (new BlockReentrancyDisposable(this))
+                using (BlockReentrancy())
                 {
                     handler(this, e);
                 }
@@ -262,9 +260,8 @@ namespace System.Collections.ObjectModel
         /// </remarks>
         protected IDisposable BlockReentrancy()
         {
-            _blockReentrancyCount++;
-            // Lazily box the struct as IDisposable once and reuse the same boxed instance with subsequent calls.
-            return _boxedBlockReentrancyDisposable ?? (_boxedBlockReentrancyDisposable = new BlockReentrancyDisposable(this));
+            _monitor.Enter();
+            return _monitor;
         }
 
         /// <summary> Check and assert for reentrant attempts to change this collection. </summary>
@@ -272,7 +269,7 @@ namespace System.Collections.ObjectModel
         /// while another collection change is still being notified to other listeners </exception>
         protected void CheckReentrancy()
         {
-            if (_blockReentrancyCount > 0)
+            if (_monitor.Busy)
             {
                 // we can allow changes if there's only one listener - the problem
                 // only arises if reentrant changes make the original event args
@@ -350,17 +347,23 @@ namespace System.Collections.ObjectModel
 
         #region Private Types
 
-        private struct BlockReentrancyDisposable : IDisposable
+        // this class helps prevent reentrant calls
+        [Serializable]
+        private class SimpleMonitor : IDisposable
         {
-            private readonly ObservableCollection<T> _collection;
-
-            public BlockReentrancyDisposable(ObservableCollection<T> collection)
+            public void Enter()
             {
-                Debug.Assert(collection != null);
-                _collection = collection;
+                ++_busyCount;
             }
 
-            public void Dispose() => _collection._blockReentrancyCount--;
+            public void Dispose()
+            {
+                --_busyCount;
+            }
+
+            public bool Busy { get { return _busyCount > 0; } }
+
+            int _busyCount;
         }
 
         #endregion Private Types
@@ -373,8 +376,7 @@ namespace System.Collections.ObjectModel
 
         #region Private Fields
 
-        private int _blockReentrancyCount;
-        private IDisposable _boxedBlockReentrancyDisposable; // Lazily allocated only when a subclass calls BlockReentrancy().
+        private readonly SimpleMonitor _monitor = new SimpleMonitor();
         #endregion Private Fields
     }
 
