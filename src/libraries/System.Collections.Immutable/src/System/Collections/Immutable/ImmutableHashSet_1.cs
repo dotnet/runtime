@@ -189,7 +189,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableHashSet<T> Add(T item)
         {
-            Requires.NotNullAllowStructs(item, nameof(item));
             Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
 
             var result = Add(item, this.Origin);
@@ -201,7 +200,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> Remove(T item)
         {
-            Requires.NotNullAllowStructs(item, nameof(item));
             Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
 
             var result = Remove(item, this.Origin);
@@ -223,8 +221,6 @@ namespace System.Collections.Immutable
         [Pure]
         public bool TryGetValue(T equalValue, out T actualValue)
         {
-            Requires.NotNullAllowStructs(equalValue, nameof(equalValue));
-
             int hashCode = _equalityComparer.GetHashCode(equalValue);
             HashBucket bucket;
             if (_root.TryGetValue(hashCode, out bucket))
@@ -435,7 +431,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool Contains(T item)
         {
-            Requires.NotNullAllowStructs(item, nameof(item));
             return Contains(item, this.Origin);
         }
 
@@ -644,8 +639,6 @@ namespace System.Collections.Immutable
         /// </summary>
         private static MutationResult Add(T item, MutationInput origin)
         {
-            Requires.NotNullAllowStructs(item, nameof(item));
-
             OperationResult result;
             int hashCode = origin.EqualityComparer.GetHashCode(item);
             HashBucket bucket = origin.Root.GetValueOrDefault(hashCode);
@@ -665,8 +658,6 @@ namespace System.Collections.Immutable
         /// </summary>
         private static MutationResult Remove(T item, MutationInput origin)
         {
-            Requires.NotNullAllowStructs(item, nameof(item));
-
             var result = OperationResult.NoChangeRequired;
             int hashCode = origin.EqualityComparer.GetHashCode(item);
             HashBucket bucket;

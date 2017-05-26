@@ -134,6 +134,12 @@ namespace System.Collections.Immutable.Tests
             set = ImmutableHashSet.CreateRange(comparer, (IEnumerable<string>)new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(comparer, set.KeyComparer);
+
+            set = ImmutableHashSet.Create(default(string));
+            Assert.Equal(1, set.Count);
+
+            set = ImmutableHashSet.CreateRange(new[] { null, "a", null, "b" });
+            Assert.Equal(3, set.Count);
         }
 
         /// <summary>

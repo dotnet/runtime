@@ -265,7 +265,6 @@ namespace System.Collections.Immutable.Tests
         public void Remove()
         {
             var builder = ImmutableSortedSet.Create("a").ToBuilder();
-            AssertExtensions.Throws<ArgumentNullException>("key", () => builder.Remove(null));
             Assert.False(builder.Remove("b"));
             Assert.True(builder.Remove("a"));
         }
@@ -327,6 +326,28 @@ namespace System.Collections.Immutable.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder[3]);
+        }
+
+        [Fact]
+        public void NullHandling()
+        {
+            var builder = ImmutableSortedSet<string>.Empty.ToBuilder();
+            Assert.True(builder.Add(null));
+            Assert.False(builder.Add(null));
+            Assert.True(builder.Contains(null));
+            Assert.True(builder.Remove(null));
+
+            builder.UnionWith(new[] { null, "a" });
+            Assert.True(builder.IsSupersetOf(new[] { null, "a" }));
+            Assert.True(builder.IsSubsetOf(new[] { null, "a" }));
+            Assert.True(builder.IsProperSupersetOf(new[] { default(string) }));
+            Assert.True(builder.IsProperSubsetOf(new[] { null, "a", "b" }));
+
+            builder.IntersectWith(new[] { default(string) });
+            Assert.Equal(1, builder.Count);
+
+            builder.ExceptWith(new[] { default(string) });
+            Assert.False(builder.Remove(null));
         }
 
         [Fact]

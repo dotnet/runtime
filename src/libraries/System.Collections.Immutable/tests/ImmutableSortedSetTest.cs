@@ -185,6 +185,11 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(~5, set.IndexOf(55));
             Assert.Equal(~9, set.IndexOf(95));
             Assert.Equal(~10, set.IndexOf(105));
+
+            var nullableSet = ImmutableSortedSet<int?>.Empty;
+            Assert.Equal(~0, nullableSet.IndexOf(null));
+            nullableSet = nullableSet.Add(null).Add(0);
+            Assert.Equal(0, nullableSet.IndexOf(null));
         }
 
         [Fact]
@@ -305,6 +310,12 @@ namespace System.Collections.Immutable.Tests
             set = ImmutableSortedSet.CreateRange(comparer, (IEnumerable<string>)new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(comparer, set.KeyComparer);
+
+            set = ImmutableSortedSet.Create(default(string));
+            Assert.Equal(1, set.Count);
+
+            set = ImmutableSortedSet.CreateRange(new[] { null, "a", null, "b" });
+            Assert.Equal(3, set.Count);
         }
 
         [Fact]
