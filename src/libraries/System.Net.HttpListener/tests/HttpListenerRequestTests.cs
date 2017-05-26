@@ -94,23 +94,75 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData("POST", "Content-Length: 9223372036854775807", 9223372036854775807)] // long.MaxValue
-        [InlineData("POST", "Content-Length: 9223372036854775808", 0)] // long.MaxValue + 1
-        [InlineData("POST", "Content-Length: 18446744073709551615 ", 0)] // ulong.MaxValue
-        [InlineData("POST", "Content-Length: 0", 0)]
-        [InlineData("PUT", "Content-Length: 0", 0)]
-        [InlineData("PUT", "Content-Length: 1", 1)]
-        [InlineData("PUT", "Content-Length: 1\nContent-Length: 1", 1)]
-        [InlineData("POST", "Transfer-Encoding: chunked", -1)]
-        [InlineData("PUT", "Transfer-Encoding: chunked", -1)]
-        [InlineData("PUT", "Transfer-Encoding: chunked", -1)]
-        [InlineData("PUT", "Content-Length: 10\nTransfer-Encoding: chunked", -1)]
-        [InlineData("PUT", "Transfer-Encoding: chunked\nContent-Length: 10", -1)]
-        public async Task ContentLength_GetProperty_ReturnsExpected(string method, string contentLengthString, long expected)
+        [InlineData("POST", "Content-Length: 9223372036854775807", 9223372036854775807, true)] // long.MaxValue
+        [InlineData("POST", "Content-Length: 9223372036854775808", 0, false)] // long.MaxValue + 1
+        [InlineData("POST", "Content-Length: 18446744073709551615 ", 0, false)] // ulong.MaxValue
+        [InlineData("POST", "Content-Length: 0", 0, false)]
+        [InlineData("PUT", "Content-Length: 0", 0, false)]
+        [InlineData("PUT", "Content-Length: 1", 1, true)]
+        [InlineData("PUT", "Content-Length: 1\nContent-Length: 1", 1, true)]
+        [InlineData("POST", "Transfer-Encoding: chunked", -1, true)]
+        [InlineData("PUT", "Transfer-Encoding: chunked", -1, true)]
+        [InlineData("PUT", "Transfer-Encoding: chunked", -1, true)]
+        [InlineData("PUT", "Content-Length: 10\nTransfer-Encoding: chunked", -1, true)]
+        [InlineData("PUT", "Transfer-Encoding: chunked\nContent-Length: 10", -1, true)]
+        public async Task ContentLength_GetProperty_ReturnsExpected(string method, string contentLengthString, long expected, bool hasEntityBody)
         {
             await GetRequest(method, "", contentLengthString.Split('\n'), (_, request) =>
             {
                 Assert.Equal(expected, request.ContentLength64);
+                Assert.Equal(hasEntityBody, request.HasEntityBody);
+            }, content: "\r\n");
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(100)]
+        [InlineData("-100")]
+        [InlineData("")]
+        [InlineData("abc")]
+        [InlineData("9223372036854775808")]
+        [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task ContentLength_ManuallySetInHeaders_ReturnsExpected(string newValue)
+        {
+            await GetRequest("POST", null, new string[] { "Content-Length: 1" }, (_, request) =>
+            {
+                Assert.Equal("1", request.Headers["Content-Length"]);
+
+                request.Headers.Set("Content-Length", newValue);
+                Assert.Equal(newValue, request.Headers["Content-Length"]);
+                Assert.Equal(1, request.ContentLength64);
+
+                Assert.True(request.HasEntityBody);
+            }, content: "\r\n");
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()
+        {
+            await GetRequest("POST", null, new string[] { "Content-Length: 1" }, (_, request) =>
+            {
+                Assert.Equal("1", request.Headers["Content-Length"]);
+
+                request.Headers.Remove("Content-Length");
+                Assert.Equal(1, request.ContentLength64);
+
+                Assert.True(request.HasEntityBody);
+            }, content: "\r\n");
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public async Task ContentLength_SetInHeadersAfterAccessingProperty_DoesNothing()
+        {
+            await GetRequest("POST", null, new string[] { "Content-Length: 1" }, (_, request) =>
+            {
+                Assert.Equal("1", request.Headers["Content-Length"]);
+                Assert.Equal(1, request.ContentLength64);
+
+                request.Headers.Set("Content-Length", "1000");
+                Assert.Equal(1, request.ContentLength64);
+
+                Assert.True(request.HasEntityBody);
             }, content: "\r\n");
         }
 
@@ -164,10 +216,16 @@ namespace System.Net.Tests
 
                 HttpListenerRequest request = context.Request;
                 Assert.Equal(client.RemoteEndPoint.ToString(), request.UserHostAddress);
+
                 Assert.Equal(client.RemoteEndPoint, request.LocalEndPoint);
+                Assert.Same(request.LocalEndPoint, request.LocalEndPoint);
+
                 Assert.Equal(client.LocalEndPoint, request.RemoteEndPoint);
+                Assert.Same(request.RemoteEndPoint, request.RemoteEndPoint);
 
                 Assert.Equal(factory.ListeningUrl, request.Url.ToString());
+                Assert.Same(request.Url, request.Url);
+
                 Assert.Equal($"/{factory.Path}/", request.RawUrl);
             }
         }
