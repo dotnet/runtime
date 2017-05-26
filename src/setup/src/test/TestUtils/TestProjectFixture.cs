@@ -235,6 +235,65 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return this;
         }
 
+        public TestProjectFixture StoreProject(
+            DotNetCli dotnet = null,
+            string runtime = null,
+            string framework = "netcoreapp2.0",
+            string manifest = null,
+            string outputDirectory = null)
+        {
+            dotnet = dotnet ?? _sdkDotnet;
+            outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
+
+            var storeArgs = new List<string>();
+            storeArgs.Add("--runtime");
+            if (runtime != null)
+            {
+                storeArgs.Add(runtime);
+            }
+            else
+            {
+               storeArgs.Add(CurrentRid);
+            }
+
+            if (framework != null)
+            {
+                storeArgs.Add("--framework");
+                storeArgs.Add(framework);
+            }
+
+                storeArgs.Add("--manifest");
+            if (manifest != null)
+            {
+                storeArgs.Add(manifest);
+            }
+            else
+            {
+                 storeArgs.Add(_sourceTestProject.ProjectFile);
+            }
+
+            if (outputDirectory != null)
+            {
+                storeArgs.Add("-o");
+                storeArgs.Add(outputDirectory);
+            }
+
+            storeArgs.Add("--working-dir");
+            storeArgs.Add("store_workin_dir");
+
+            dotnet.Store(storeArgs.ToArray())
+                .WorkingDirectory(_testProject.ProjectDirectory)
+                .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .EnsureSuccessful();
+
+            _testProject.LoadOutputFiles();
+
+            return this;
+        }
+
         public TestProjectFixture PublishProject(
             DotNetCli dotnet = null,
             string runtime = null,
