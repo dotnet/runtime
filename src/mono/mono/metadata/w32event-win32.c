@@ -84,15 +84,28 @@ ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Events_OpenEvent_internal (MonoString *name, gint32 rights, gint32 *error)
+ves_icall_System_Threading_Events_OpenEvent_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error)
 {
 	gpointer handle;
 
-	*error = ERROR_SUCCESS;
+	error_init (error);
 
-	handle = OpenEvent (rights, FALSE, mono_string_chars (name));
+	*err = ERROR_SUCCESS;
+
+	uint32_t gchandle = 0;
+	gunichar2 *uniname = NULL;
+
+	if (!MONO_HANDLE_IS_NULL (name))
+		uniname = mono_string_handle_pin_chars (name, &gchandle);
+
+	MONO_ENTER_GC_SAFE;
+	handle = OpenEvent (rights, FALSE, uniname);
 	if (!handle)
-		*error = GetLastError ();
+		*err = GetLastError ();
+	MONO_EXIT_GC_SAFE;
+
+	if (gchandle)
+		mono_gchandle_free (gchandle);
 
 	return handle;
 }
