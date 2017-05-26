@@ -121,8 +121,9 @@ namespace System.Xml.Serialization
 
 #if uapaot
         // this method must be called before any generated deserialization methods are called
-        internal void Init(XmlReader r, string encodingStyle)
+        internal void Init(XmlReader r, XmlDeserializationEvents events, string encodingStyle)
         {
+            _events = events;
             _r = r;
             _soap12 = (encodingStyle == Soap12.Encoding);
 
