@@ -82,7 +82,6 @@ namespace System.Collections.Immutable
             /// <param name="frozen">Whether this node is prefrozen.</param>
             private Node(T key, Node left, Node right, bool frozen = false)
             {
-                Requires.NotNullAllowStructs(key, nameof(key));
                 Requires.NotNull(left, nameof(left));
                 Requires.NotNull(right, nameof(right));
                 Debug.Assert(!frozen || (left._frozen && right._frozen));
@@ -343,7 +342,6 @@ namespace System.Collections.Immutable
             /// <returns>The new tree.</returns>
             internal Node Add(T key, IComparer<T> comparer, out bool mutated)
             {
-                Requires.NotNullAllowStructs(key, nameof(key));
                 Requires.NotNull(comparer, nameof(comparer));
 
                 if (this.IsEmpty)
@@ -390,7 +388,6 @@ namespace System.Collections.Immutable
             /// <returns>The new tree.</returns>
             internal Node Remove(T key, IComparer<T> comparer, out bool mutated)
             {
-                Requires.NotNullAllowStructs(key, nameof(key));
                 Requires.NotNull(comparer, nameof(comparer));
 
                 if (this.IsEmpty)
@@ -469,7 +466,6 @@ namespace System.Collections.Immutable
             [Pure]
             internal bool Contains(T key, IComparer<T> comparer)
             {
-                Requires.NotNullAllowStructs(key, nameof(key));
                 Requires.NotNull(comparer, nameof(comparer));
                 return !this.Search(key, comparer).IsEmpty;
             }
@@ -497,7 +493,6 @@ namespace System.Collections.Immutable
             [Pure]
             internal Node Search(T key, IComparer<T> comparer)
             {
-                Requires.NotNullAllowStructs(key, nameof(key));
                 Requires.NotNull(comparer, nameof(comparer));
 
                 if (this.IsEmpty)
@@ -531,7 +526,6 @@ namespace System.Collections.Immutable
             [Pure]
             internal int IndexOf(T key, IComparer<T> comparer)
             {
-                Requires.NotNullAllowStructs(key, nameof(key));
                 Requires.NotNull(comparer, nameof(comparer));
 
                 if (this.IsEmpty)

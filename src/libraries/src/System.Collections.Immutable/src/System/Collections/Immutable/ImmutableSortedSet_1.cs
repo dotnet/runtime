@@ -182,7 +182,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableSortedSet<T> Add(T value)
         {
-            Requires.NotNullAllowStructs(value, nameof(value));
             Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
             bool mutated;
             return this.Wrap(_root.Add(value, _comparer, out mutated));
@@ -194,7 +193,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableSortedSet<T> Remove(T value)
         {
-            Requires.NotNullAllowStructs(value, nameof(value));
             Contract.Ensures(Contract.Result<ImmutableSortedSet<T>>() != null);
             bool mutated;
             return this.Wrap(_root.Remove(value, _comparer, out mutated));
@@ -215,8 +213,6 @@ namespace System.Collections.Immutable
         [Pure]
         public bool TryGetValue(T equalValue, out T actualValue)
         {
-            Requires.NotNullAllowStructs(equalValue, nameof(equalValue));
-
             Node searchResult = _root.Search(equalValue, _comparer);
             if (searchResult.IsEmpty)
             {
@@ -593,7 +589,6 @@ namespace System.Collections.Immutable
         /// </returns>
         public int IndexOf(T item)
         {
-            Requires.NotNullAllowStructs(item, nameof(item));
             return _root.IndexOf(item, _comparer);
         }
 
@@ -606,7 +601,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public bool Contains(T value)
         {
-            Requires.NotNullAllowStructs(value, nameof(value));
             return _root.Contains(value, _comparer);
         }
 
