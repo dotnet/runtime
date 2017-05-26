@@ -39,7 +39,7 @@ namespace BasicEventSourceTests
         /// Tests bTraceListener path. 
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18806")]
+        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -53,7 +53,7 @@ namespace BasicEventSourceTests
         /// Tests bTraceListener path using events instead of virtual callbacks. 
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18806")]
+        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_Manifest_EventListener_UseEvents()
         {
             Test_WriteEvent(new EventListenerListener(true), false);
@@ -77,7 +77,7 @@ namespace BasicEventSourceTests
         /// Tests both the ETW and TraceListener paths. 
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18806")]
+        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -92,7 +92,7 @@ namespace BasicEventSourceTests
         /// instead of virtual callbacks. 
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18806")]
+        [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
         {
             Test_WriteEvent(new EventListenerListener(true), true);

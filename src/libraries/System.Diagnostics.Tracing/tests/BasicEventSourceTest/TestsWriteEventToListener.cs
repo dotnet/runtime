@@ -16,7 +16,7 @@ namespace BasicEventSourceTests
     public class TestsWriteEventToListener
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19462")]
+        [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ArgsBasicTypes()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -161,7 +161,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19462")]
+        [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ArgsCornerCases()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -313,7 +313,7 @@ namespace BasicEventSourceTests
 #endif // USE_ETW
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19462")]
+        [ActiveIssue("dotnet/corefx #19462", TargetFrameworkMonikers.NetFramework)]
         public void Test_WriteEvent_ZeroKwds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

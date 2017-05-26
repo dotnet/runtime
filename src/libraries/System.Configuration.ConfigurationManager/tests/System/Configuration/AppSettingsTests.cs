@@ -61,7 +61,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19336")]
+        [ActiveIssue("dotnet/corefx #19336", TargetFrameworkMonikers.NetFramework)]
         public void AddToAppSettings_Save()
         {
             using (var temp = new TempConfig(TestData.EmptyConfig))
