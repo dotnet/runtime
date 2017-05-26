@@ -105,11 +105,10 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_ADD:
             case GT_SUB:
 #ifdef _TARGET_ARM64_
-                if (emitter::emitIns_valid_imm_for_add(immVal, size))
+                return emitter::emitIns_valid_imm_for_add(immVal, size);
 #elif defined(_TARGET_ARM_)
-                if (emitter::emitIns_valid_imm_for_add(immVal, INS_FLAGS_DONT_CARE))
+                return emitter::emitIns_valid_imm_for_add(immVal, INS_FLAGS_DONT_CARE);
 #endif
-                    return true;
                 break;
 
             case GT_EQ:
@@ -119,19 +118,17 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_GE:
             case GT_GT:
 #ifdef _TARGET_ARM64_
-                if (emitter::emitIns_valid_imm_for_cmp(immVal, size))
-                    return true;
+                return emitter::emitIns_valid_imm_for_cmp(immVal, size);
                 break;
 #endif
             case GT_AND:
             case GT_OR:
             case GT_XOR:
 #ifdef _TARGET_ARM64_
-                if (emitter::emitIns_valid_imm_for_alu(immVal, size))
+                return emitter::emitIns_valid_imm_for_alu(immVal, size);
 #elif defined(_TARGET_ARM_)
-                if (emitter::emitIns_valid_imm_for_alu(immVal))
+                return emitter::emitIns_valid_imm_for_alu(immVal);
 #endif
-                    return true;
                 break;
 #ifdef _TARGET_ARM64_
             case GT_STORE_LCL_VAR:
