@@ -77,17 +77,11 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void ValidAccessLevelCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;
-            AssertExtensions.ThrowsIf<UnauthorizedAccessException>(PlatformDetection.IsWinRT && (mapAccess == MemoryMappedFileAccess.ReadExecute ||
-                mapAccess == MemoryMappedFileAccess.ReadWriteExecute ||
-                viewAccess == MemoryMappedFileAccess.ReadExecute ||
-                viewAccess == MemoryMappedFileAccess.ReadWriteExecute), () =>
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
+            using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(0, Capacity, viewAccess))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
-                using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(0, Capacity, viewAccess))
-                {
-                    ValidateMemoryMappedViewAccessor(acc, Capacity, viewAccess);
-                }
-            });
+                ValidateMemoryMappedViewAccessor(acc, Capacity, viewAccess);
+            }
         }
 
         [Theory]
@@ -107,15 +101,10 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidAccessLevelsCombinations(MemoryMappedFileAccess mapAccess, MemoryMappedFileAccess viewAccess)
         {
             const int Capacity = 4096;
-            AssertExtensions.ThrowsIf<UnauthorizedAccessException>(PlatformDetection.IsWinRT &&
-                (mapAccess == MemoryMappedFileAccess.ReadExecute ||
-                mapAccess == MemoryMappedFileAccess.ReadWriteExecute), () =>
+            using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
-                {
-                    Assert.Throws<UnauthorizedAccessException>(() => mmf.CreateViewAccessor(0, Capacity, viewAccess));
-                }
-            });
+                Assert.Throws<UnauthorizedAccessException>(() => mmf.CreateViewAccessor(0, Capacity, viewAccess));
+            }
         }
 
         /// <summary>
