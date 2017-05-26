@@ -32,6 +32,9 @@ struct MonoW32HandleNamedMutex {
 	MonoW32HandleNamespace sharedns;
 };
 
+gpointer
+mono_w32mutex_open (const gchar* utf8_name, gint32 right G_GNUC_UNUSED, gint32 *error);
+
 static void
 thread_own_mutex (MonoInternalThread *internal, gpointer handle)
 {
@@ -437,17 +440,25 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name, gint32 rights G_GNUC_UNUSED, gint32 *error)
+ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint32 rights G_GNUC_UNUSED, gint32 *err, MonoError *error)
+{
+	error_init (error);
+	gchar *utf8_name = mono_string_handle_to_utf8 (name, error);
+	return_val_if_nok (error, NULL);
+	gpointer handle = mono_w32mutex_open (utf8_name, rights, err);
+	g_free (utf8_name);
+	return handle;
+}
+
+gpointer
+mono_w32mutex_open (const gchar* utf8_name, gint32 right G_GNUC_UNUSED, gint32 *error)
 {
 	gpointer handle;
-	gchar *utf8_name;
 
 	*error = ERROR_SUCCESS;
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
-
-	utf8_name = g_utf16_to_utf8 (mono_string_chars (name), -1, NULL, NULL, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Opening named mutex [%s]",
 		__func__, utf8_name);
@@ -467,8 +478,6 @@ ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name, gint32 ri
 		__func__, handle);
 
 cleanup:
-	g_free (utf8_name);
-
 	mono_w32handle_namespace_unlock ();
 
 	return handle;

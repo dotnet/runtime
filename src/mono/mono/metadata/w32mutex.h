@@ -22,7 +22,7 @@ MonoBoolean
 ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle);
 
 gpointer
-ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name, gint32 rights, gint32 *error);
+ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error);
 
 typedef struct MonoW32HandleNamedMutex MonoW32HandleNamedMutex;
 

@@ -56,15 +56,24 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name, gint32 rights, gint32 *error)
+ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error)
 {
 	HANDLE ret;
 
-	*error = ERROR_SUCCESS;
+	error_init (error);
+	*err = ERROR_SUCCESS;
 
-	ret = OpenMutex (rights, FALSE, mono_string_chars (name));
+	uint32_t gchandle = 0;
+	gunichar2 *uniname = NULL;
+	if (!MONO_HANDLE_IS_NULL (name))
+		uniname = mono_string_handle_pin_chars (name, &gchandle);
+	MONO_ENTER_GC_SAFE;
+	ret = OpenMutex (rights, FALSE, uniname);
 	if (!ret)
-		*error = GetLastError ();
+		*err = GetLastError ();
+	MONO_EXIT_GC_SAFE;
+	if (gchandle != 0)
+		mono_gchandle_free (gchandle);
 
 	return ret;
 }
