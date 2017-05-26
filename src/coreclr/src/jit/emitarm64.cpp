@@ -8482,7 +8482,7 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
     regMaskTP           gcrefRegs;
     regMaskTP           byrefRegs;
 
-    VARSET_TP VARSET_INIT_NOCOPY(GCvars, VarSetOps::UninitVal());
+    VARSET_TP GCvars(VarSetOps::UninitVal());
 
     // Is this a "fat" call descriptor?
     if (id->idIsLargeCall())
@@ -8617,7 +8617,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     assert(REG_NA == (int)REG_NA);
 
-    VARSET_TP VARSET_INIT_NOCOPY(GCvars, VarSetOps::UninitVal());
+    VARSET_TP GCvars(VarSetOps::UninitVal());
 
     /* What instruction format have we got? */
 

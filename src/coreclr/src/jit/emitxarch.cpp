@@ -10368,7 +10368,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     assert(ins != INS_imul || size >= EA_4BYTE);                  // Has no 'w' bit
     assert(instrIs3opImul(id->idIns()) == 0 || size >= EA_4BYTE); // Has no 'w' bit
 
-    VARSET_TP VARSET_INIT_NOCOPY(GCvars, VarSetOps::UninitVal());
+    VARSET_TP GCvars(VarSetOps::UninitVal());
 
     // What instruction format have we got?
     switch (id->idInsFmt())

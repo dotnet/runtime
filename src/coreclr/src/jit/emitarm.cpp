@@ -5540,7 +5540,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     assert(REG_NA == (int)REG_NA);
 
-    VARSET_TP VARSET_INIT_NOCOPY(GCvars, VarSetOps::UninitVal());
+    VARSET_TP GCvars(VarSetOps::UninitVal());
 
     /* What instruction format have we got? */
 

@@ -45,16 +45,6 @@ private:
 #endif
     }
 
-#ifdef DEBUG
-    // In debug, make sure we don't have any public assignment, by making this private.
-    BitSetUint64& operator=(const BitSetUint64& bs)
-    {
-        m_bits  = bs.m_bits;
-        m_epoch = bs.m_epoch;
-        return (*this);
-    }
-#endif // DEBUG
-
     bool operator==(const BitSetUint64& bs) const
     {
         return m_bits == bs.m_bits
@@ -64,14 +54,16 @@ private:
             ;
     }
 
-#ifndef DEBUG
-    // In debug we also want the default copy constructor to be private, to make inadvertent
-    // default initializations illegal.  Debug builds therefore arrange to use the
-    // non-default constructor defined below that takes an extra argument where one would
-    // otherwise use a copy constructor.  In non-debug builds, we don't pass the extra dummy
-    // int argument, and just make copy constructor defined here visible.
 public:
-#endif
+    BitSetUint64& operator=(const BitSetUint64& bs)
+    {
+        m_bits = bs.m_bits;
+#ifdef DEBUG
+        m_epoch = bs.m_epoch;
+#endif // DEBUG
+        return (*this);
+    }
+
     BitSetUint64(const BitSetUint64& bs)
         : m_bits(bs.m_bits)
 #ifdef DEBUG
@@ -79,14 +71,6 @@ public:
 #endif
     {
     }
-
-#ifdef DEBUG
-public:
-    // But we add a public constructor that's *almost* the default constructor.
-    BitSetUint64(const BitSetUint64& bs, int xxx) : m_bits(bs.m_bits), m_epoch(bs.m_epoch)
-    {
-    }
-#endif
 
 private:
     // Return the number of bits set in the BitSet.
@@ -162,6 +146,13 @@ private:
         return res;
     }
 
+    inline bool IsEmptyUnion(Env env, const BitSetUint64& bs2) const
+    {
+        CheckEpoch(env);
+        bs2.CheckEpoch(env);
+        return Uint64BitSetOps::IsEmptyUnion(env, m_bits, bs2.m_bits);
+    }
+
     inline void UnionD(Env env, const BitSetUint64& bs2)
     {
         CheckEpoch(env);
@@ -198,6 +189,15 @@ private:
     {
         CheckEpoch(env);
         return Uint64BitSetOps::IsEmpty(env, m_bits);
+    }
+
+    inline void LivenessD(Env env, const BitSetUint64& def, const BitSetUint64& use, const BitSetUint64& out)
+    {
+        CheckEpoch(env);
+        def.CheckEpoch(env);
+        use.CheckEpoch(env);
+        out.CheckEpoch(env);
+        return Uint64BitSetOps::LivenessD(env, m_bits, def.m_bits, use.m_bits, out.m_bits);
     }
 
     inline bool IsSubset(Env env, const BitSetUint64& bs2) const
@@ -406,6 +406,11 @@ public:
         return bs.Count(env);
     }
 
+    static bool IsEmptyUnion(Env env, BSTValArg bs1, BSTValArg bs2)
+    {
+        return bs1.IsEmptyUnion(env, bs2);
+    }
+
     static void UnionD(Env env, BST& bs1, BSTValArg bs2)
     {
         bs1.UnionD(env, bs2);
@@ -471,6 +476,10 @@ public:
         return bs1.IsEmptyIntersection(env, bs2);
     }
 
+    static void LivenessD(Env env, BST& in, BSTValArg def, BSTValArg use, BSTValArg out)
+    {
+        in.LivenessD(env, def, use, out);
+    }
     static bool IsSubset(Env env, BSTValArg bs1, BSTValArg bs2)
     {
         return bs1.IsSubset(env, bs2);

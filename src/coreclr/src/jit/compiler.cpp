@@ -8273,7 +8273,7 @@ FILE* Compiler::compJitFuncInfoFile = nullptr;
 
 #ifdef DEBUG
 
-// dumpConvertedVarSet() is just like dumpVarSet(), except we assume the varset bits are tracked
+// dumpConvertedVarSet() dumps the varset bits that are tracked
 // variable indices, and we convert them to variable numbers, sort the variable numbers, and
 // print them as variable numbers. To do this, we use a temporary set indexed by
 // variable number. We can't use the "all varset" type because it is still size-limited, and might
@@ -8371,7 +8371,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  *
  *
  * The following don't require a Compiler* to work:
- *      dVarSet                     : Display a VARSET_TP (call dumpVarSet()).
  *      dRegMask                    : Display a regMaskTP (call dspRegMask(mask)).
  */
 

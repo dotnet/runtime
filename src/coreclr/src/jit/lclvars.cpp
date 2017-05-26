@@ -7242,7 +7242,7 @@ void Compiler::lvaStressLclFld()
 #ifdef DEBUG
 void Compiler::lvaDispVarSet(VARSET_VALARG_TP set)
 {
-    VARSET_TP VARSET_INIT_NOCOPY(allVars, VarSetOps::MakeEmpty(this));
+    VARSET_TP allVars(VarSetOps::MakeEmpty(this));
     lvaDispVarSet(set, allVars);
 }
 

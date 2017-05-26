@@ -9298,7 +9298,7 @@ void Compiler::fgUpdateRefCntForExtract(GenTreePtr wholeTree, GenTreePtr keptTre
 
 VARSET_VALRET_TP Compiler::fgGetVarBits(GenTreePtr tree)
 {
-    VARSET_TP VARSET_INIT_NOCOPY(varBits, VarSetOps::MakeEmpty(this));
+    VARSET_TP varBits(VarSetOps::MakeEmpty(this));
 
     assert(tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_FLD || tree->gtOper == GT_REG_VAR);
 

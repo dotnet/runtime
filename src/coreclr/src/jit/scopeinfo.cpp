@@ -656,7 +656,7 @@ void CodeGen::siUpdate()
     }
 #endif // FEATURE_EH_FUNCLETS
 
-    VARSET_TP VARSET_INIT_NOCOPY(killed, VarSetOps::Diff(compiler, siLastLife, compiler->compCurLife));
+    VARSET_TP killed(VarSetOps::Diff(compiler, siLastLife, compiler->compCurLife));
     assert(VarSetOps::IsSubset(compiler, killed, compiler->lvaTrackedVars));
 
     VARSET_ITER_INIT(compiler, iter, killed, i);
