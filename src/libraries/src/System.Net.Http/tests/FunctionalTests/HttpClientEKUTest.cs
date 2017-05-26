@@ -19,8 +19,11 @@ namespace System.Net.Http.Functional.Tests
     {
         // Curl + OSX SecureTransport doesn't support the custom certificate callback.
         private static bool BackendSupportsCustomCertificateHandling =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+#if TargetsWindows
+            true;
+#else
+            CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false;
+#endif
 
         private static bool CanTestCertificates =>
             Capability.IsTrustedRootCertificateInstalled() && 
@@ -29,8 +32,10 @@ namespace System.Net.Http.Functional.Tests
         private static bool CanTestClientCertificates =>
             CanTestCertificates && BackendSupportsCustomCertificateHandling;
 
+#if !TargetsWindows
         [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
         private static extern string CurlSslVersionDescription();
+#endif
         
         public const int TestTimeoutMilliseconds = 15 * 1000;
 
