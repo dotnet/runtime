@@ -31,6 +31,7 @@
 //
 
 using System.Collections;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -79,12 +80,6 @@ namespace System.Net
         private int _trailerState;
         private List<Chunk> _chunks;
 
-        public ChunkStream(byte[] buffer, int offset, int size, WebHeaderCollection headers)
-                    : this(headers)
-        {
-            Write(buffer, offset, size);
-        }
-
         public ChunkStream(WebHeaderCollection headers)
         {
             _headers = headers;
@@ -100,13 +95,6 @@ namespace System.Net
             _chunkRead = 0;
             _totalWritten = 0;
             _chunks.Clear();
-        }
-
-        public void WriteAndReadBack(byte[] buffer, int offset, int size, ref int read)
-        {
-            if (offset + read > 0)
-                Write(buffer, offset, offset + read);
-            read = Read(buffer, offset, size);
         }
 
         public int Read(byte[] buffer, int offset, int size)
@@ -143,6 +131,10 @@ namespace System.Net
 
         public void Write(byte[] buffer, int offset, int size)
         {
+            // Note, the logic here only works when offset is 0 here.
+            // Otherwise, it would treat "size" as the end offset instead of an actual byte count from offset.
+            Debug.Assert(offset == 0);
+
             if (offset < size)
                 InternalWrite(buffer, ref offset, size);
         }
