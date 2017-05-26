@@ -107,7 +107,7 @@ void EventPipe::Shutdown()
 
 void EventPipe::Enable(
     LPCWSTR strOutputPath,
-    uint circularBufferSizeInMB,
+    unsigned int circularBufferSizeInMB,
     EventPipeProviderConfiguration *pProviders,
     int numProviders)
 {
