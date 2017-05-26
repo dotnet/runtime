@@ -539,8 +539,8 @@ public:
 
     friend class Iter;
 
-    typedef size_t* ValArgType;
-    typedef size_t* RetValType;
+    typedef const BitSetShortLongRep& ValArgType;
+    typedef BitSetShortLongRep        RetValType;
 };
 
 template <typename Env, typename BitSetTraits>

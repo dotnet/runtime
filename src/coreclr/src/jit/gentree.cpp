@@ -3040,8 +3040,8 @@ bool Compiler::lvaLclVarRefs(GenTreePtr tree, GenTreePtr* findPtr, varRefKinds* 
     genTreeOps   oper;
     unsigned     kind;
     varRefKinds  refs = VR_NONE;
-    ALLVARSET_TP ALLVARSET_INIT_NOCOPY(allVars, AllVarSetOps::UninitVal());
-    VARSET_TP    VARSET_INIT_NOCOPY(trkdVars, VarSetOps::UninitVal());
+    ALLVARSET_TP allVars(AllVarSetOps::UninitVal());
+    VARSET_TP    trkdVars(VarSetOps::UninitVal());
     if (findPtr)
     {
         AllVarSetOps::AssignNoCopy(this, allVars, AllVarSetOps::MakeEmpty(this));
@@ -3219,7 +3219,7 @@ AGAIN:
             unsigned dim;
             for (dim = 0; dim < tree->gtArrElem.gtArrRank; dim++)
             {
-                VARSET_TP VARSET_INIT_NOCOPY(tmpVs, VarSetOps::UninitVal());
+                VARSET_TP tmpVs(VarSetOps::UninitVal());
                 if (!lvaLclVarRefsAccum(tree->gtArrElem.gtArrInds[dim], findPtr, refsPtr, &allVars, &trkdVars))
                 {
                     return false;
@@ -3309,7 +3309,7 @@ bool Compiler::lvaLclVarRefsAccum(
 {
     if (findPtr)
     {
-        ALLVARSET_TP ALLVARSET_INIT_NOCOPY(tmpVs, AllVarSetOps::UninitVal());
+        ALLVARSET_TP tmpVs(AllVarSetOps::UninitVal());
         if (!lvaLclVarRefs(tree, findPtr, refsPtr, &tmpVs))
         {
             return false;
@@ -3319,7 +3319,7 @@ bool Compiler::lvaLclVarRefsAccum(
     }
     else
     {
-        VARSET_TP VARSET_INIT_NOCOPY(tmpVs, VarSetOps::UninitVal());
+        VARSET_TP tmpVs(VarSetOps::UninitVal());
         if (!lvaLclVarRefs(tree, findPtr, refsPtr, &tmpVs))
         {
             return false;

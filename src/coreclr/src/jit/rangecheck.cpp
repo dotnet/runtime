@@ -479,7 +479,7 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
 }
 
 // Merge assertions on the edge flowing into the block about a variable.
-void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, const ASSERT_VALARG_TP assertions, Range* pRange)
+void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertions, Range* pRange)
 {
     if (BitVecOps::IsEmpty(m_pCompiler->apTraits, assertions))
     {

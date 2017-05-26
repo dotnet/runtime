@@ -566,8 +566,7 @@ struct genLivenessSet
     regMaskSmall gcRefRegs;
     regMaskSmall byRefRegs;
 
-    genLivenessSet()
-        : VARSET_INIT_NOCOPY(liveSet, VarSetOps::UninitVal()), VARSET_INIT_NOCOPY(varPtrSet, VarSetOps::UninitVal())
+    genLivenessSet() : liveSet(VarSetOps::UninitVal()), varPtrSet(VarSetOps::UninitVal())
     {
     }
 };

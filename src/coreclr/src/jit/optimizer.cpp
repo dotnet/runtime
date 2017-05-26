@@ -5866,7 +5866,7 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
     }
 #endif
 
-    VARSET_TP VARSET_INIT_NOCOPY(loopVars, VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
+    VARSET_TP loopVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, pLoopDsc->lpVarUseDef));
 
     pLoopDsc->lpVarInOutCount    = VarSetOps::Count(this, pLoopDsc->lpVarInOut);
     pLoopDsc->lpLoopVarCount     = VarSetOps::Count(this, loopVars);
@@ -5880,8 +5880,8 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
         // Since 64-bit variables take up two registers on 32-bit targets, we increase
         //  the Counts such that each TYP_LONG variable counts twice.
         //
-        VARSET_TP VARSET_INIT_NOCOPY(loopLongVars, VarSetOps::Intersection(this, loopVars, lvaLongVars));
-        VARSET_TP VARSET_INIT_NOCOPY(inOutLongVars, VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaLongVars));
+        VARSET_TP loopLongVars(VarSetOps::Intersection(this, loopVars, lvaLongVars));
+        VARSET_TP inOutLongVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaLongVars));
 
 #ifdef DEBUG
         if (verbose)
@@ -5914,8 +5914,8 @@ void Compiler::optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt)
 
     if (floatVarsCount > 0)
     {
-        VARSET_TP VARSET_INIT_NOCOPY(loopFPVars, VarSetOps::Intersection(this, loopVars, lvaFloatVars));
-        VARSET_TP VARSET_INIT_NOCOPY(inOutFPVars, VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaFloatVars));
+        VARSET_TP loopFPVars(VarSetOps::Intersection(this, loopVars, lvaFloatVars));
+        VARSET_TP inOutFPVars(VarSetOps::Intersection(this, pLoopDsc->lpVarInOut, lvaFloatVars));
 
         pLoopDsc->lpLoopVarFPCount     = VarSetOps::Count(this, loopFPVars);
         pLoopDsc->lpVarInOutFPCount    = VarSetOps::Count(this, inOutFPVars);
@@ -7481,7 +7481,7 @@ GenTreePtr Compiler::optFindLocalInit(BasicBlock* block,
 
     // If any local in the RHS is killed in intervening code, or RHS has an indirection, return NULL.
     varRefKinds rhsRefs = VR_NONE;
-    VARSET_TP   VARSET_INIT_NOCOPY(rhsLocals, VarSetOps::UninitVal());
+    VARSET_TP   rhsLocals(VarSetOps::UninitVal());
     bool        b = lvaLclVarRefs(rhs, nullptr, &rhsRefs, &rhsLocals);
     if (!b || !VarSetOps::IsEmptyIntersection(this, rhsLocals, *pKilledInOut) || (rhsRefs != VR_NONE))
     {

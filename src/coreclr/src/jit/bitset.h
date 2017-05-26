@@ -224,6 +224,9 @@ class BitSetOps
     // Returns the number of members in "bs".
     static unsigned Count(Env env, BitSetValueArgType bs);
 
+    // Return true if the union of bs1 and bs2 is empty.
+    static bool IsEmptyUnion(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2);
+
     // Returns "true" iff "i" is a member of "bs".
     static bool IsMember(Env env, const BitSetValueArgType bs, unsigned i);
 
@@ -252,8 +255,13 @@ class BitSetOps
 
     // Destructively modify "bs1" to be the set difference of "bs1" and "bs2".
     static void DiffD(Env env, BitSetType& bs1, BitSetValueArgType bs2);
+    
     // Returns a new BitSet that is the set difference of "bs1" and "bs2".
     static BitSetValueRetType Diff(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2);
+
+    // Compute the live_in set. Variable is alive if there is use or it is out set, but not in def.
+    // in = use | (out & ~def)
+    static void LivenessD(Env env, BitSetType& in, BitSetValueArgType def, BitSetValueArgType use, BitSetValueArgType out);
 
     // Returns true iff "bs2" is a subset of "bs1."
     static bool IsSubset(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2);

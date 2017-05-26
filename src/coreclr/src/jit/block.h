@@ -1091,8 +1091,7 @@ struct BasicBlock : private LIR::Range
     GenTreeStmt* FirstNonPhiDef();
     GenTree*     FirstNonPhiDefOrCatchArgAsg();
 
-    BasicBlock()
-        : VARSET_INIT_NOCOPY(bbLiveIn, VarSetOps::UninitVal()), VARSET_INIT_NOCOPY(bbLiveOut, VarSetOps::UninitVal())
+    BasicBlock() : bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
     }
 
