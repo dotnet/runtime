@@ -160,7 +160,6 @@ namespace System.Xml.Serialization
         internal string DefaultNamespace = null;
 #endif
         private Type _rootType;
-        private Type[] _extraTypes;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
         private static volatile XmlSerializerNamespaces s_defaultNamespaces;
@@ -211,13 +210,8 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-#if !uapaot
         public XmlSerializer(Type type, Type[] extraTypes) : this(type, null, extraTypes, null, null, null)
-#else
-        public XmlSerializer(Type type, Type[] extraTypes) : this(type)
-#endif
         {
-            _extraTypes = extraTypes;
         }
 
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.XmlSerializer4"]/*' />
@@ -521,7 +515,7 @@ namespace System.Xml.Serialization
         {
             if (_mapping == null || !_mapping.GenerateSerializer)
             {
-                _mapping = GenerateXmlTypeMapping(_rootType, null, _extraTypes, null, DefaultNamespace);
+                _mapping = GenerateXmlTypeMapping(_rootType, null, null, null, DefaultNamespace);
             }
 
             return _mapping;
