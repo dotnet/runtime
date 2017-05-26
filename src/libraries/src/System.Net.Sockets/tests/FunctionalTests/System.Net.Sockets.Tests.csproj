@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}</ProjectGuid>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
