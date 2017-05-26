@@ -35,7 +35,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "See dotnet/corert#1736")]
+        [ActiveIssue("dotnet/corert#1736", TargetFrameworkMonikers.Uap)]
         public void Comparer_EqualsShouldBeOverriddenAndWorkForDifferentInstances_cloned()
         {
             var comparer = Comparer<T>.Default;
@@ -62,7 +62,7 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "See dotnet/corert#1736")]
+        [ActiveIssue("dotnet/corert#1736", TargetFrameworkMonikers.Uap)]
         public void Comparer_GetHashCodeShouldBeOverriddenAndBeTheSameAsLongAsTheTypeIsTheSame_cloned()
         {
             var comparer = Comparer<T>.Default;

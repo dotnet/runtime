@@ -26,7 +26,7 @@ namespace System.Data.SqlClient.Tests
         public static bool IsConnectionStringConfigured() => s_tcpConnStr != "\"\"";
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteScalarTest()
         {
             RemoteInvoke(() =>
@@ -48,7 +48,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteScalarErrorTest()
         {
             RemoteInvoke(() =>
@@ -72,7 +72,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteNonQueryTest()
         {
             RemoteInvoke(() =>
@@ -94,7 +94,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteNonQueryErrorTest()
         {
             RemoteInvoke(() =>
@@ -132,7 +132,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteReaderTest()
         {
             RemoteInvoke(() =>
@@ -155,7 +155,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteReaderErrorTest()
         {
             RemoteInvoke(() =>
@@ -181,7 +181,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteReaderWithCommandBehaviorTest()
         {
             RemoteInvoke(() =>
@@ -226,7 +226,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteXmlReaderErrorTest()
         {
             RemoteInvoke(() =>
@@ -252,7 +252,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteScalarAsyncTest()
         {
             RemoteInvoke(() =>
@@ -274,7 +274,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteScalarAsyncErrorTest()
         {
             RemoteInvoke(() =>
@@ -298,7 +298,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteNonQueryAsyncTest()
         {
             RemoteInvoke(() =>
@@ -320,7 +320,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteNonQueryAsyncErrorTest()
         {
             RemoteInvoke(() =>
@@ -343,7 +343,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteReaderAsyncTest()
         {
             RemoteInvoke(() =>
@@ -366,7 +366,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ExecuteReaderAsyncErrorTest()
         {
             RemoteInvoke(() =>
@@ -439,7 +439,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ConnectionOpenTest()
         {
             RemoteInvoke(() =>
@@ -460,7 +460,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ConnectionOpenErrorTest()
         {
             RemoteInvoke(() =>
@@ -477,7 +477,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ConnectionOpenAsyncTest()
         {
             RemoteInvoke(() =>
@@ -494,7 +494,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17925")]
+        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         public void ConnectionOpenAsyncErrorTest()
         {
             RemoteInvoke(() =>

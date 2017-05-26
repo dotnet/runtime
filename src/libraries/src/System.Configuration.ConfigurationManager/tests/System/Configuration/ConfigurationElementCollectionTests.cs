@@ -204,7 +204,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19338")]
+        [ActiveIssue("dotnet/corefx #19338", TargetFrameworkMonikers.NetFramework)]
         public void EqualsNullIsFalse()
         {
             // Note: this null refs on desktop

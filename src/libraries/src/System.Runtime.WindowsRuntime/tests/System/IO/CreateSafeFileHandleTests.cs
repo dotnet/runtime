@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO
 {   
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/18940")]
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/18940", TargetFrameworkMonikers.UapAot)]
     public class CreateSafeFileHandleTests
     {
         [Fact]

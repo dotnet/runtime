@@ -57,7 +57,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(EnumerableTestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16790")] 
+        [ActiveIssue("dotnet/corefx #16790", TargetFrameworkMonikers.NetFramework)]
         public void SortedSet_Generic_Constructor_IEnumerable_IComparer_Netcoreapp(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);
@@ -67,7 +67,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(EnumerableTestData))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16790")]
+        [ActiveIssue("dotnet/corefx #16790", ~TargetFrameworkMonikers.NetFramework)]
         public void SortedSet_Generic_Constructor_IEnumerable_IComparer_Netfx(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);
@@ -77,7 +77,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(EnumerableTestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16790")]
+        [ActiveIssue("dotnet/corefx #16790", TargetFrameworkMonikers.NetFramework)]
         public void SortedSet_Generic_Constructor_IEnumerable_IComparer_NullComparer_Netcoreapp(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);

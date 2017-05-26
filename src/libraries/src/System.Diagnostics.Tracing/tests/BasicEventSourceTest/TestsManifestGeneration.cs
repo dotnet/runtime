@@ -25,7 +25,7 @@ namespace BasicEventSourceTests
         /// EventSource would fail when an EventSource was named "EventSource".
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18808")]
+        [ActiveIssue("dotnet/corefx #18808", TargetFrameworkMonikers.NetFramework)]
         public void Test_EventSource_NamedEventSource()
         {
             using (var es = new SdtEventSources.DontPollute.EventSource())
