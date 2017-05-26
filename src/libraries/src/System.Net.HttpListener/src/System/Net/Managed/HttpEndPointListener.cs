@@ -38,15 +38,15 @@ namespace System.Net
 {
     internal sealed class HttpEndPointListener
     {
-        private HttpListener _listener;
-        private IPEndPoint _endpoint;
-        private Socket _socket;
+        private readonly HttpListener _listener;
+        private readonly IPEndPoint _endpoint;
+        private readonly Socket _socket;
+        private readonly Dictionary<HttpConnection, HttpConnection> _unregisteredConnections;
         private Dictionary<ListenerPrefix, HttpListener> _prefixes;
         private List<ListenerPrefix> _unhandledPrefixes; // host = '*'
         private List<ListenerPrefix> _allPrefixes;       // host = '+'
         private X509Certificate _cert;
         private bool _secure;
-        private Dictionary<HttpConnection, HttpConnection> _unregisteredConnections;
 
         public HttpEndPointListener(HttpListener listener, IPAddress addr, int port, bool secure)
         {
@@ -62,11 +62,12 @@ namespace System.Net
             _socket = new Socket(addr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             _socket.Bind(_endpoint);
             _socket.Listen(500);
+
             SocketAsyncEventArgs args = new SocketAsyncEventArgs();
             args.UserToken = this;
             args.Completed += OnAccept;
-            Socket dummy = null;
-            Accept(_socket, args, ref dummy);
+            Accept(args);
+
             _prefixes = new Dictionary<ListenerPrefix, HttpListener>();
             _unregisteredConnections = new Dictionary<HttpConnection, HttpConnection>();
         }
@@ -76,27 +77,21 @@ namespace System.Net
             get { return _listener; }
         }
 
-        private static void Accept(Socket socket, SocketAsyncEventArgs e, ref Socket accepted)
+        private void Accept(SocketAsyncEventArgs e)
         {
             e.AcceptSocket = null;
             bool asyn;
             try
             {
-                asyn = socket.AcceptAsync(e);
+                asyn = _socket.AcceptAsync(e);
             }
-            catch
+            catch (ObjectDisposedException)
             {
-                if (accepted != null)
-                {
-                    try
-                    {
-                        accepted.Close();
-                    }
-                    catch
-                    {
-                    }
-                    accepted = null;
-                }
+                // Once the listener starts running, it kicks off an async accept,
+                // and each subsequent accept initiates the next async accept.  At
+                // point if the listener is torn down, the socket will be disposed
+                // and the AcceptAsync on the socket can fail with an ODE.  Far from
+                // ideal, but for now just eat such exceptions.
                 return;
             }
             if (!asyn)
@@ -107,13 +102,11 @@ namespace System.Net
 
         private static void ProcessAccept(SocketAsyncEventArgs args)
         {
-            Socket accepted = null;
-            if (args.SocketError == SocketError.Success)
-                accepted = args.AcceptSocket;
-
             HttpEndPointListener epl = (HttpEndPointListener)args.UserToken;
 
-            Accept(epl._socket, args, ref accepted);
+            Socket accepted = args.SocketError == SocketError.Success ? args.AcceptSocket : null;
+            epl.Accept(args);
+
             if (accepted == null)
                 return;
 
@@ -122,6 +115,7 @@ namespace System.Net
                 accepted.Close();
                 return;
             }
+
             HttpConnection conn = new HttpConnection(accepted, epl, epl._secure, epl._cert);
             lock (epl._unregisteredConnections)
             {
