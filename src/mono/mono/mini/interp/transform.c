@@ -3237,8 +3237,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				++td.ip;
 				break;
 			case CEE_UNALIGNED_:
-				++td.ip;
-				/* FIX: should do something? */;
+				td.ip += 2;
 				break;
 			case CEE_VOLATILE_:
 				++td.ip;

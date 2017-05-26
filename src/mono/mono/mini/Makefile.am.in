@@ -502,6 +502,8 @@ test_sources = 			\
 	aot-tests.cs \
 	gc-test.cs \
 	gshared.cs \
+	unaligned.cs	\
+	MemoryIntrinsics.il	\
 	mixed.cs
 
 if NACL_CODEGEN
@@ -521,6 +523,7 @@ regtests_UNIVERSAL = \
 	devirtualization.exe \
 	generics.exe \
 	basic-simd.exe \
+	unaligned.exe	\
 	basic-vectors.exe
 
 if NACL_CODEGEN
@@ -654,6 +657,9 @@ nacl.exe: nacl.cs TestDriver.dll
 generics.exe: generics.cs TestDriver.dll generics-variant-types.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:generics-variant-types.dll -r:$(CLASS)/System.Core.dll
 
+unaligned.exe: unaligned.cs TestDriver.dll MemoryIntrinsics.dll
+	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:MemoryIntrinsics.dll
+
 %.exe: %.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll
 
@@ -664,6 +670,9 @@ TestDriver.dll: $(srcdir)/TestDriver.cs $(srcdir)/TestHelpers.cs
 	$(MCS) -out:$@ -target:library $^
 
 generics-variant-types.dll: generics-variant-types.il
+	$(ILASM) -dll -output=$@ $<
+
+MemoryIntrinsics.dll: MemoryIntrinsics.il
 	$(ILASM) -dll -output=$@ $<
 
 if NACL_CODEGEN
@@ -770,6 +779,7 @@ gsharedvtcheck:
 	$(MAKE) fullaotcheck GSHAREDVT=1
 
 fullaot_regtests = $(regtests) aot-tests.exe $(if $(GSHAREDVT),gshared.exe)
+fullaot_testing_deps = generics-variant-types.dll TestDriver.dll MemoryIntrinsics.dll
 
 FULLAOT_LIBS_UNIVERSAL = \
 	mscorlib.dll \
@@ -795,17 +805,18 @@ FULLAOT_LIBS_DISABLED += \
 	System.Configuration.dll
 endif
 
+
 FULLAOT_LIBS = $(filter-out $(FULLAOT_LIBS_DISABLED),$(FULLAOT_LIBS_UNIVERSAL))
 
 FULLAOT_TMP_DIR=$(top_builddir)/mono/mini/fullaot-tmp
 
 # This currently only works on amd64/arm
-fullaotcheck: $(mono) $(fullaot_regtests)
+fullaotcheck: $(mono) $(fullaot_regtests) $(fullaot_testing_deps)
 	rm -rf $(FULLAOT_TMP_DIR)
 	mkdir $(FULLAOT_TMP_DIR)
 	$(MAKE) fullaot-libs AOT_FLAGS="full,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)" GSHAREDVT=$(GSHAREDVT)
-	cp $(regtests) $(fullaot_regtests) generics-variant-types.dll TestDriver.dll $(FULLAOT_TMP_DIR)/
-	MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot="full,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)" $(FULLAOT_TMP_DIR)/{generics-variant-types.dll,TestDriver.dll,*.exe} || exit 1
+	cp $(regtests) $(fullaot_regtests) $(fullaot_testing_deps) $(FULLAOT_TMP_DIR)/
+	MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) $(LLVM_AOT_RUNTIME_OPTS) $(GSHAREDVT_RUNTIME_OPTS) --aot="full,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)" $(FULLAOT_TMP_DIR)/{*.dll,*.exe} || exit 1
 	ln -s $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),$$PWD/mono) $(FULLAOT_TMP_DIR)/
 	for i in $(fullaot_regtests); do echo $$i; MONO_PATH=$(FULLAOT_TMP_DIR) $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) --full-aot $(FULLAOT_TMP_DIR)/$$i --exclude '!FULLAOT' $(ARCH_FULLAOT_EXCLUDE) || exit 1; done
 
@@ -827,8 +838,8 @@ llvmonlycheck: mono $(llvmonly_regtests)
 	rm -rf fullaot-tmp
 	mkdir fullaot-tmp
 	$(MAKE) fullaot-libs AOT_FLAGS="llvmonly,$(MONO_FULLAOT_ADDITIONAL_ARGS)$(INVARIANT_AOT_OPTIONS)"
-	cp $(llvmonly_regtests) generics-variant-types.dll TestDriver.dll fullaot-tmp/
-	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  $(MOBILE_RUNTIME_ARG) --aot=llvmonly fullaot-tmp/{generics-variant-types.dll,TestDriver.dll,*.exe} || exit 1
+	cp $(llvmonly_regtests) $(fullaot_testing_deps) fullaot-tmp/
+	MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper  $(MOBILE_RUNTIME_ARG) --aot=llvmonly fullaot-tmp/{*.dll,*.exe} || exit 1
 	ln -s $$PWD/mono fullaot-tmp/
 	for i in $(llvmonly_regtests); do echo $$i; MONO_PATH=fullaot-tmp $(top_builddir)/runtime/mono-wrapper $(MOBILE_RUNTIME_ARG) --llvmonly fullaot-tmp/$$i --exclude '!BITCODE' || exit 1; done
 

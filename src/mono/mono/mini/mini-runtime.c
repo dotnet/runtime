@@ -583,22 +583,22 @@ break_count (void)
 G_GNUC_UNUSED gboolean
 mono_debug_count (void)
 {
-	static int count = 0;
+	static int count = 0, int_val = 0;
 	static gboolean inited;
-	static char *value;
 
 	count ++;
 
 	if (!inited) {
-		value = g_getenv ("COUNT");
+		char *value = g_getenv ("COUNT");
+		if (value) {
+			int_val = atoi (value);
+			g_free (value);
+		}
 		inited = TRUE;
 	}
 
-	if (!value)
+	if (!int_val)
 		return TRUE;
-
-	int int_val = atoi (value);
-	g_free (value);
 
 	if (count == int_val)
 		break_count ();
