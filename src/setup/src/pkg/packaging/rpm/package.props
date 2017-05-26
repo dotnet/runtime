@@ -7,7 +7,7 @@
     <SharedHostRpmPkgName>$(SharedHostRpmPkgName.ToLower())</SharedHostRpmPkgName>
     <HostFxrRpmPkgName>dotnet-hostfxr-$(HostResolverVersion)</HostFxrRpmPkgName>
     <HostFxrRpmPkgName>$(HostFxrRpmPkgName.ToLower())</HostFxrRpmPkgName>
-    <SharedFxRpmPkgName>dotnet-sharedframework-$(SharedFrameworkName)-$(SharedFrameworkNugetVersion)</SharedFxRpmPkgName>
+    <SharedFxRpmPkgName>dotnet-runtime-$(SharedFrameworkNugetVersion)</SharedFxRpmPkgName>
     <SharedFxRpmPkgName>$(SharedFxRpmPkgName.ToLower())</SharedFxRpmPkgName>
     <TemplatesDir>$(MSBuildThisFileDirectory)/templates</TemplatesDir>
     <ScriptsDir>$(MSBuildThisFileDirectory)/scripts</ScriptsDir>

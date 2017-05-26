@@ -1,6 +1,7 @@
 {
-  "maintainer_name": "Microsoft",
-  "maintainer_email": "dotnetcore@microsoft.com",
+  "maintainer_name": ".NET Core Team",
+  "maintainer_email": "dotnetpackages@dotnetfoundation.org",
+  "vendor": ".NET Foundation",
   
   "package_name": "%HOSTFXR_RPM_PACKAGE_NAME%",
   "install_root": "/usr/share/dotnet",
