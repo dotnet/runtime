@@ -803,7 +803,7 @@ namespace System.Net
 
                 if (value <= 0 && value != System.Threading.Timeout.Infinite)
                 {
-                    throw new ArgumentOutOfRangeException("value", SR.net_io_timeout_use_gt_zero);
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_io_timeout_use_gt_zero);
                 }
 
                 _readWriteTimeout = value;
