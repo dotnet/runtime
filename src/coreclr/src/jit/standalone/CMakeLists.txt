@@ -2,8 +2,11 @@ project(ryujit)
 
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
-add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
+
+if(FEATURE_READYTORUN)
+  add_definitions(-DFEATURE_READYTORUN_COMPILER)
+endif(FEATURE_READYTORUN)
 
 if(CLR_CMAKE_TARGET_ARCH_ARM)
   add_definitions(-DLEGACY_BACKEND)

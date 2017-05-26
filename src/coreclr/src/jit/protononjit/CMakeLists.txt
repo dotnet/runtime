@@ -3,11 +3,14 @@ project(protononjit)
 add_definitions(-DALT_JIT)
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
-add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
 
 remove_definitions(-DFEATURE_SIMD)
 remove_definitions(-DFEATURE_AVX_SUPPORT)
+
+if(FEATURE_READYTORUN)
+  add_definitions(-DFEATURE_READYTORUN_COMPILER)
+endif(FEATURE_READYTORUN)
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386)
     remove_definitions(-D_TARGET_X86_=1)
