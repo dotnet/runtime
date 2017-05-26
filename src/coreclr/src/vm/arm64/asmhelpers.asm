@@ -326,8 +326,7 @@ NotInHeap
 ;   x15  : trashed
 ;
     WRITE_BARRIER_ENTRY JIT_WriteBarrier
-        dmb      ish
-        str      x15, [x14]
+        stlr     x15, [x14]
 
 #ifdef WRITE_BARRIER_CHECK
         ; Update GC Shadow Heap  
