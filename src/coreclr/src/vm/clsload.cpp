@@ -1337,6 +1337,9 @@ TypeHandle ClassLoader::LookupTypeKeyUnderLock(TypeKey *pKey,
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
+    // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+    GCX_MAYBE_COOP_NO_THREAD_BROKEN(!IsGCThread());
+
     CrstHolder ch(pLock);
     return pTable->GetValue(pKey);
 }
@@ -3742,6 +3745,9 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
         Module *pLoaderModule = ComputeLoaderModule(pTypeKey);
         EETypeHashTable *pTable = pLoaderModule->GetAvailableParamTypes();
 
+        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+        GCX_COOP();
+
         CrstHolder ch(&pLoaderModule->GetClassLoader()->m_AvailableTypesLock);
 
         // The type could have been loaded by a different thread as side-effect of avoiding deadlocks caused by LoadsTypeViolation
@@ -3806,6 +3812,9 @@ TypeHandle ClassLoader::PublishType(TypeKey *pTypeKey, TypeHandle typeHnd)
     {
         Module *pModule = pTypeKey->GetModule();
         mdTypeDef typeDef = pTypeKey->GetTypeToken();
+
+        // m_AvailableTypesLock has to be taken in cooperative mode to avoid deadlocks during GC
+        GCX_COOP();
 
         CrstHolder ch(&pModule->GetClassLoader()->m_AvailableTypesLock);
 
