@@ -187,7 +187,7 @@ namespace LinkBench
                 xdoc.Root.Add(new XElement(ns + "ItemGroup",
                     new XElement(ns + "PackageReference",
                         new XAttribute("Include", "ILLink.Tasks"),
-                        new XAttribute("Version", "0.1.4-preview"))));
+                        new XAttribute("Version", "0.1.4-preview-737646"))));
                 added = true;
             }
             using (var fs = new FileStream(csproj, FileMode.Create))
@@ -262,16 +262,16 @@ namespace LinkBench
             new Benchmark("Corefx",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\pretrimmed",
                 "corefx\\bin\\ILLinkTrimAssembly\\netcoreapp-Windows_NT-Release-x64\\trimmed"),
-            /*new Benchmark("Roslyn",
+            new Benchmark("Roslyn",
                 "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\publish",
-                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked") */
+                "roslyn\\Binaries\\Release\\Exes\\CscCore\\win7-x64\\Linked") 
         };
 
         static int UsageError()
         {
             Console.WriteLine("Usage: LinkBench [--nosetup] [--nobuild] [--perf:runid <id>] [<benchmarks>]");
             Console.WriteLine("  --nosetup: Don't clone and fixup benchmark repositories");
-            Console.WriteLine("  --nosetup: Don't build and link benchmarks");
+            Console.WriteLine("  --nobuild: Don't build and link benchmarks");
             Console.WriteLine("  --perf:runid: Specify the ID to append to benchmark result files");
             Console.WriteLine("    Benchmarks: HelloWorld, WebAPI, MusicStore, MusicStore_R2R, CoreFX, Roslyn");
             Console.WriteLine("                Default is to run all the above benchmarks.");
@@ -370,6 +370,7 @@ namespace LinkBench
             AssetsDir = linkBenchSrcDir + "assets\\";
 
             Environment.SetEnvironmentVariable("LinkBenchRoot", LinkBenchRoot);
+            Environment.SetEnvironmentVariable("__dotnet", LinkBenchRoot + "\\.Net\\dotnet.exe");
             Environment.SetEnvironmentVariable("__dotnet1", LinkBenchRoot + "\\.Net1\\dotnet.exe");
             Environment.SetEnvironmentVariable("__dotnet2", LinkBenchRoot + "\\.Net2\\dotnet.exe");
 
