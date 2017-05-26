@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20360", TargetFrameworkMonikers.NetFramework)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
@@ -85,7 +85,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         public async Task ConnectAsync_AddHostHeader_Success(Uri server)
@@ -98,7 +97,7 @@ namespace System.Net.WebSockets.Client.Tests
             using (var cws = new ClientWebSocket())
             {
                 // Set the Host header to the logical address
-                cws.Options.SetRequestHeader("Host", logicalHost);
+                cws.Options.SetRequestHeader("WebSocketHost", logicalHost);
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
                     // Connect using the physical address
@@ -123,7 +122,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 Assert.Equal(WebSocketMessageType.Text, recvResult.MessageType);
                 string headers = WebSocketData.GetTextFromBuffer(segment);
-                Assert.Contains($"Host:{logicalHost}", headers, StringComparison.Ordinal);
+                Assert.Contains($"WebSocketHost:{logicalHost}", headers, StringComparison.Ordinal);
 
                 await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
             }

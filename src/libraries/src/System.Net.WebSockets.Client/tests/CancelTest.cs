@@ -150,7 +150,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
         
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
@@ -163,6 +162,7 @@ namespace System.Net.WebSockets.Client.Tests
                 
                 Task recieve = cws.ReceiveAsync(segment, cts.Token);
                 cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => recieve);
                 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ReceiveAsync(segment, CancellationToken.None));
