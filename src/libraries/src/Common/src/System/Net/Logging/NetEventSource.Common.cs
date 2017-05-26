@@ -240,7 +240,7 @@ namespace System.Net
 
         [Event(ErrorEventId, Level = EventLevel.Warning, Keywords = Keywords.Default)]
         private void ErrorMessage(string thisOrContextObject, string memberName, string message) =>
-            WriteEvent(InfoEventId, thisOrContextObject, memberName ?? MissingMember, message);
+            WriteEvent(ErrorEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
         #region Fail
@@ -274,7 +274,7 @@ namespace System.Net
 
         [Event(CriticalFailureEventId, Level = EventLevel.Critical, Keywords = Keywords.Debug)]
         private void CriticalFailure(string thisOrContextObject, string memberName, string message) =>
-            WriteEvent(InfoEventId, thisOrContextObject, memberName ?? MissingMember, message);
+            WriteEvent(CriticalFailureEventId, thisOrContextObject, memberName ?? MissingMember, message);
         #endregion
 
         #region DumpBuffer
