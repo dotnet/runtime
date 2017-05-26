@@ -146,6 +146,7 @@ public static partial class OverlappedTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPool.UnsafeQueueNativeOverlapped is not supported on Unix
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/20365", TargetFrameworkMonikers.UapAot)]
     public static unsafe void PackPosTest()
     {
 #pragma warning disable 618
@@ -171,6 +172,7 @@ public static partial class OverlappedTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPool.UnsafeQueueNativeOverlapped is not supported on Unix
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/20365", TargetFrameworkMonikers.UapAot)]
     public static unsafe void PackPosTest1()
     {
         Overlapped ov = new Overlapped();
