@@ -12,12 +12,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public class InternalConnectionWrapper
     {
-        private static class SNIInternals
-        {
-            [DllImport("sniinternals.dll", CallingConvention = CallingConvention.Cdecl)]
-            internal static extern uint SNIKillConnection(SafeHandle connection);
-        }
-
         private static Dictionary<string, string> s_killByTSqlConnectionStrings = new Dictionary<string, string>();
         private static ReaderWriterLockSlim s_killByTSqlConnectionStringsLock = new ReaderWriterLockSlim();
 
