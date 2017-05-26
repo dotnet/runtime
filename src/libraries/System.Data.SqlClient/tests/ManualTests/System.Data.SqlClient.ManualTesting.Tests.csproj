@@ -11,6 +11,7 @@
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
     </Compile>
     <Compile Include="DataCommon\CheckConnStrSetupFactAttribute.cs" />
+    <Compile Include="SQL\AdapterTest\AdapterTest.cs" />
     <Compile Include="SQL\Common\AsyncDebugScope.cs" />
     <Compile Include="SQL\Common\ConnectionPoolWrapper.cs" />
     <Compile Include="SQL\Common\InternalConnectionWrapper.cs" />
