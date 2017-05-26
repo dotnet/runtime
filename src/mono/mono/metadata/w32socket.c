@@ -102,6 +102,9 @@
 #define LOGDEBUG(...)  
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
+static gboolean
+addrinfo_to_IPHostEntry_handles (MonoAddressInfo *info, MonoStringHandleOut h_name, MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list, gboolean add_local_ips, MonoError *error);
+
 #ifdef HOST_WIN32
 
 static SOCKET
@@ -2439,123 +2442,153 @@ ves_icall_System_Net_Sockets_Socket_IOControl_internal (gsize sock, gint32 code,
 }
 
 static gboolean 
-addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gboolean add_local_ips, MonoError *error)
+addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name_raw, MonoArray **h_aliases_raw, MonoArray **h_addr_list_raw, gboolean add_local_ips, MonoError *error)
 {
-	gint32 count, i;
-	MonoAddressEntry *ai = NULL;
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	MonoStringHandle h_name = MONO_HANDLE_NEW (MonoString, NULL);
+	MonoArrayHandle h_aliases = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandle h_addr_list = MONO_HANDLE_NEW (MonoArray, NULL);
+	gboolean ret = addrinfo_to_IPHostEntry_handles (info, h_name, h_aliases, h_addr_list, add_local_ips, error);
+	*h_name_raw = MONO_HANDLE_RAW (h_name);
+	*h_aliases_raw = MONO_HANDLE_RAW (h_aliases);
+	*h_addr_list_raw = MONO_HANDLE_RAW (h_addr_list);
+	HANDLE_FUNCTION_RETURN_VAL (ret);
+}
+
+static gboolean
+addrinfo_add_string (MonoDomain *domain, const char *s, MonoArrayHandle arr, int index, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	error_init (error);
+	MonoStringHandle str = mono_string_new_handle (domain, s, error);
+	if (!is_ok (error))
+		goto leave;
+	MONO_HANDLE_ARRAY_SETREF (arr, index, str);
+leave:
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
+
+}
+
+static int
+addrinfo_add_local_ips (MonoDomain *domain, MonoArrayHandleOut h_addr_list, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
 	struct in_addr *local_in = NULL;
 	int nlocal_in = 0;
 	struct in6_addr *local_in6 = NULL;
 	int nlocal_in6 = 0;
-	int addr_index;
+	int addr_index = 0;
+
+	error_init (error);
+	local_in = (struct in_addr *) mono_get_local_interfaces (AF_INET, &nlocal_in);
+	local_in6 = (struct in6_addr *) mono_get_local_interfaces (AF_INET6, &nlocal_in6);
+	if (nlocal_in || nlocal_in6) {
+		char addr [INET6_ADDRSTRLEN];
+		MONO_HANDLE_ASSIGN (h_addr_list,  mono_array_new_handle (domain, mono_get_string_class (), nlocal_in + nlocal_in6, error));
+		if (!is_ok (error))
+			goto leave;
+			
+		if (nlocal_in) {
+			int i;
+
+			for (i = 0; i < nlocal_in; i++) {
+				MonoAddress maddr;
+				mono_address_init (&maddr, AF_INET, &local_in [i]);
+				if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
+					if (!addrinfo_add_string (domain, addr, h_addr_list, addr_index, error))
+						goto leave;
+					addr_index++;
+				}
+			}
+		}
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
+		if (nlocal_in6) {
+			int i;
+
+			for (i = 0; i < nlocal_in6; i++) {
+				MonoAddress maddr;
+				mono_address_init (&maddr, AF_INET6, &local_in6 [i]);
+				if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
+					if (!addrinfo_add_string (domain, addr, h_addr_list, addr_index, error))
+						goto leave;
+					addr_index++;
+				}
+			}
+		}
+#endif
+	}
+
+leave:
+	g_free (local_in);
+	g_free (local_in6);
+	HANDLE_FUNCTION_RETURN_VAL (addr_index);
+}
+
+static gboolean 
+addrinfo_to_IPHostEntry_handles (MonoAddressInfo *info, MonoStringHandleOut h_name, MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list, gboolean add_local_ips, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MonoAddressEntry *ai = NULL;
 	MonoDomain *domain = mono_domain_get ();
 
 	error_init (error);
-	addr_index = 0;
-	*h_aliases = mono_array_new_checked (domain, mono_get_string_class (), 0, error);
-	return_val_if_nok (error, FALSE);
+	MONO_HANDLE_ASSIGN (h_aliases, mono_array_new_handle (domain, mono_get_string_class (), 0, error));
+	if (!is_ok (error))
+		goto leave;
 	if (add_local_ips) {
-		local_in = (struct in_addr *) mono_get_local_interfaces (AF_INET, &nlocal_in);
-		local_in6 = (struct in6_addr *) mono_get_local_interfaces (AF_INET6, &nlocal_in6);
-		if (nlocal_in || nlocal_in6) {
-			char addr [INET6_ADDRSTRLEN];
-			*h_addr_list = mono_array_new_checked (domain, mono_get_string_class (), nlocal_in + nlocal_in6, error);
-			if (!is_ok (error))
-				goto leave;
-			
-			if (nlocal_in) {
-				MonoString *addr_string;
-				int i;
-
-				for (i = 0; i < nlocal_in; i++) {
-					MonoAddress maddr;
-					mono_address_init (&maddr, AF_INET, &local_in [i]);
-					if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
-						addr_string = mono_string_new_checked (domain, addr, error);
-						if (!is_ok (error))
-							goto leave;
-						mono_array_setref (*h_addr_list, addr_index, addr_string);
-						addr_index++;
-					}
-				}
-			}
-#ifdef HAVE_STRUCT_SOCKADDR_IN6
-			if (nlocal_in6) {
-				MonoString *addr_string;
-				int i;
-
-				for (i = 0; i < nlocal_in6; i++) {
-					MonoAddress maddr;
-					mono_address_init (&maddr, AF_INET6, &local_in6 [i]);
-					if (mono_networking_addr_to_str (&maddr, addr, sizeof (addr))) {
-						addr_string = mono_string_new_checked (domain, addr, error);
-						if (!is_ok (error))
-							goto leave;
-						mono_array_setref (*h_addr_list, addr_index, addr_string);
-						addr_index++;
-					}
-				}
-			}
-#endif
-		leave:
-			g_free (local_in);
-			g_free (local_in6);
-			if (info)
-				mono_free_address_info (info);
-			return is_ok (error);;
-		}
-
-		g_free (local_in);
-		g_free (local_in6);
+		int addr_index = addrinfo_add_local_ips (domain, h_addr_list, error);
+		if (!is_ok (error))
+			goto leave;
+		if (addr_index > 0)
+			goto leave;
 	}
 
-	for (count = 0, ai = info->entries; ai != NULL; ai = ai->next) {
+	gint32 count = 0;
+	for (ai = info->entries; ai != NULL; ai = ai->next) {
 		if (ai->family != AF_INET && ai->family != AF_INET6)
 			continue;
 		count++;
 	}
 
-	*h_addr_list = mono_array_new_checked (domain, mono_get_string_class (), count, error);
+	int addr_index = 0;
+	MONO_HANDLE_ASSIGN (h_addr_list, mono_array_new_handle (domain, mono_get_string_class (), count, error));
 	if (!is_ok (error))
-		goto leave2;
+		goto leave;
 
-	for (ai = info->entries, i = 0; ai != NULL; ai = ai->next) {
+	gboolean name_assigned = FALSE;
+	for (ai = info->entries; ai != NULL; ai = ai->next) {
 		MonoAddress maddr;
-		MonoString *addr_string;
 		char buffer [INET6_ADDRSTRLEN]; /* Max. size for IPv6 */
 
 		if ((ai->family != PF_INET) && (ai->family != PF_INET6))
 			continue;
 
 		mono_address_init (&maddr, ai->family, &ai->address);
+		const char *addr = NULL;
 		if (mono_networking_addr_to_str (&maddr, buffer, sizeof (buffer)))
-			addr_string = mono_string_new_checked (domain, buffer, error);
+			addr = buffer;
 		else
-			addr_string = mono_string_new_checked (domain, "", error);
-		if (!is_ok (error))
-			goto leave2;
+			addr = "";
+		if (!addrinfo_add_string (domain, addr, h_addr_list, addr_index, error))
+			goto leave;
 
-		mono_array_setref (*h_addr_list, addr_index, addr_string);
-
-		if (!i) {
-			i++;
-			if (ai->canonical_name != NULL) {
-				*h_name = mono_string_new_checked (domain, ai->canonical_name, error);
-			} else {
-				*h_name = mono_string_new_checked (domain, buffer, error);
-			}
+		if (!name_assigned) {
+			name_assigned = TRUE;
+			const char *name = ai->canonical_name != NULL ? ai->canonical_name : buffer;
+			MONO_HANDLE_ASSIGN (h_name, mono_string_new_handle (domain, name, error));
 			if (!is_ok (error))
-				goto leave2;
+				goto leave;
 		}
 
 		addr_index++;
 	}
 
-leave2:
+leave:
 	if (info)
 		mono_free_address_info (info);
 
-	return is_ok (error);
+	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
 MonoBoolean
