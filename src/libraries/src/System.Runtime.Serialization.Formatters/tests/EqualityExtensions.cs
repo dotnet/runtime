@@ -38,12 +38,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static bool IsEqual<T>(this Lazy<T> @this, Lazy<T> other)
         {
             // Force value creation for lazy original object
-            var val = @this.Value;
+            T thisVal = @this.Value;
+            T otherVal = other.Value;
 
             return @this != null &&
                 other != null &&
                 @this.IsValueCreated == other.IsValueCreated &&
-                Object.Equals(@this.Value, other.Value);
+                Object.Equals(thisVal, otherVal);
         }
 
         public static bool IsEqual(this CookieContainer @this, CookieContainer other)
