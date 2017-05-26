@@ -48,16 +48,12 @@
         <Private>false</Private>
         <NuGetPackageId>NETStandard.Library.NETFramework</NuGetPackageId>
         <NuGetPackageVersion>$(NETStandardLibraryNETFrameworkPackageVersion)</NuGetPackageVersion>
-        <NuGetIsFrameworkReference>false</NuGetIsFrameworkReference>
-        <NuGetSourceType>Package</NuGetSourceType>
       </Reference>
 
       <ReferenceCopyLocalPaths Include="@(_NETStandardLibraryNETFrameworkLib)">
         <Private>false</Private>
         <NuGetPackageId>NETStandard.Library.NETFramework</NuGetPackageId>
         <NuGetPackageVersion>$(NETStandardLibraryPackageVersion)</NuGetPackageVersion>
-        <NuGetIsFrameworkReference>false</NuGetIsFrameworkReference>
-        <NuGetSourceType>Package</NuGetSourceType>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
   </Target>
