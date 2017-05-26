@@ -170,7 +170,7 @@ class EventPipe
         // Enable tracing via the event pipe.
         static void Enable(
             LPCWSTR strOutputPath,
-            uint circularBufferSizeInMB,
+            unsigned int circularBufferSizeInMB,
             EventPipeProviderConfiguration *pProviders,
             int numProviders);
 

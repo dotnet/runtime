@@ -654,7 +654,9 @@ public:
 
     ULONG Release();
 
+#ifdef FEATURE_READYTORUN_COMPILER
     void GetSerializedInlineTrackingMap(SBuffer* pBuffer);
+#endif
 
     void Error(mdToken token, Exception * pException);
 };

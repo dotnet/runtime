@@ -1295,11 +1295,13 @@ class ICorCompilePreloader
             CORINFO_METHOD_HANDLE method, 
             CORINFO_METHOD_HANDLE duplicateMethod) = 0;
 
+#ifdef FEATURE_READYTORUN_COMPILER
     // Returns a compressed encoding of the inline tracking map 
     // for this compilation
     virtual void GetSerializedInlineTrackingMap(
             IN OUT SBuffer    * pSerializedInlineTrackingMap
             ) = 0;
+#endif
 
     //
     // Release frees the preloader

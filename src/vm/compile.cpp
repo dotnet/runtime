@@ -6826,11 +6826,13 @@ ULONG CEEPreloader::Release()
     return 0;
 }
 
+#ifdef FEATURE_READYTORUN_COMPILER
 void CEEPreloader::GetSerializedInlineTrackingMap(SBuffer* pBuffer)
 {
     InlineTrackingMap * pInlineTrackingMap = m_image->GetInlineTrackingMap();
     PersistentInlineTrackingMapR2R::Save(m_image->GetHeap(), pBuffer, pInlineTrackingMap);
 }
+#endif
 
 void CEEPreloader::Error(mdToken token, Exception * pException)
 {

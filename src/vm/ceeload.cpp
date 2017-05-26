@@ -467,6 +467,7 @@ void Module::InitializeForProfiling()
     }
     else // ReadyToRun image
     {
+#ifdef FEATURE_READYTORUN_COMPILER
         // We already setup the m_methodProfileList in the ReadyToRunInfo constructor
         if (m_methodProfileList != nullptr)
         {
@@ -476,6 +477,7 @@ void Module::InitializeForProfiling()
             // Enable profiling if the ZapBBInstr value says to
             m_nativeImageProfiling = GetAssembly()->IsInstrumented();
         }
+#endif
     }
 
 #ifdef FEATURE_LAZY_COW_PAGES
