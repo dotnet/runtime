@@ -267,7 +267,7 @@ WRITE_BARRIER_END JIT_CheckedWriteBarrier
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 WRITE_BARRIER_ENTRY JIT_WriteBarrier
-    dmb  ST
+    dmb  ish
     str  x15, [x14]
 
 #ifdef WRITE_BARRIER_CHECK
@@ -296,7 +296,7 @@ WRITE_BARRIER_ENTRY JIT_WriteBarrier
 
     // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
     // conditions are caught by INVALIDGCVALUE.
-    dmb  sy
+    dmb  ish
 
     // if ([x14] == x15) goto end
     ldr  x13, [x14]
