@@ -255,7 +255,7 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	MonoArray **h_addr_list, gint32 hint);
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostName_internal (MonoString **h_name);
+ves_icall_System_Net_Dns_GetHostName_internal (MonoStringHandleOut h_name, MonoError *error);
 
 MonoBoolean
 ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode, gint timeout, gint32 *error);

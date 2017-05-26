@@ -2675,19 +2675,19 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 }
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostName_internal (MonoString **h_name)
+ves_icall_System_Net_Dns_GetHostName_internal (MonoStringHandleOut h_name, MonoError *error)
 {
-	MonoError error;
 	gchar hostname [NI_MAXHOST] = { 0 };
 	int ret;
 
+	error_init (error);
+	MONO_ENTER_GC_SAFE;
 	ret = gethostname (hostname, sizeof (hostname));
+	MONO_EXIT_GC_SAFE;
 	if (ret == -1)
 		return FALSE;
 
-	*h_name = mono_string_new_checked (mono_domain_get (), hostname, &error);
-	mono_error_set_pending_exception (&error);
-
+	MONO_HANDLE_ASSIGN (h_name, mono_string_new_handle (mono_domain_get (), hostname, error));
 	return TRUE;
 }
 

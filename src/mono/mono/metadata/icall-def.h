@@ -445,7 +445,7 @@ HANDLES(ICALL(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefined
 ICALL_TYPE(NDNS, "System.Net.Dns", NDNS_1)
 ICALL(NDNS_1, "GetHostByAddr_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByAddr_internal)
 ICALL(NDNS_2, "GetHostByName_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByName_internal)
-ICALL(NDNS_3, "GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal)
+HANDLES(ICALL(NDNS_3, "GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal))
 
 #if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD)
 ICALL_TYPE(MAC_IFACE_PROPS, "System.Net.NetworkInformation.MacOsIPInterfaceProperties", MAC_IFACE_PROPS_1)
