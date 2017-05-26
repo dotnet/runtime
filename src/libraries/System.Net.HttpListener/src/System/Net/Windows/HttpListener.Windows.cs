@@ -1915,7 +1915,7 @@ namespace System.Net
                 _httpListener = httpListener;
                 _connectionId = connectionId;
                 // we can call the Unsafe API here, we won't ever call user code
-                _nativeOverlapped = httpListener._requestQueueBoundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
+                _nativeOverlapped = httpListener.RequestQueueBoundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
             }
 
             internal bool StartOwningDisconnectHandling()
