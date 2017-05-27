@@ -155,9 +155,6 @@ Breaking Change Rules
 
 * Changing a member from `abstract` to `virtual`
 
-* Adding `virtual` to a member  
-> Make note, that marking a member virtual might cause previous consumers to still call the member non-virtually.
-
 * Introducing or removing an override
 > Make note, that introducing an override might cause previous consumers to skip over the override when calling `base`.
 
@@ -179,6 +176,9 @@ successfully bind to that overload, if simply passing an `int` value. However, i
 * Adding or removing `abstract` from a member
 
 * Removing the `virtual` keyword from a member
+
+* Adding `virtual` to a member
+> While this change would often work without breaking too many scenarios because C# compiler tends to emit `callvirt` IL instructions to call non-virtual methods (`callvirt` performs a null check, while a normal `call` won't), we can't rely on it. C# is not the only language we target and the C# compiler increasingly tries to optimize `callvirt` to a normal `call` whenever the target method is non-virtual and the `this` is provably not null (such as a method accessed through the `?.` null propagation operator). Making a method virtual would mean that consumer code would often end up calling it non-virtually.
 
 * Adding or removing `static` keyword from a member
 
