@@ -7379,7 +7379,9 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
 /*static*/ emitter::code_t emitter::insEncodeDatasizeLS(emitter::code_t code, emitAttr size)
 {
-    if (code & 0x00800000) // Is this a sign-extending opcode? (i.e. ldrsw, ldrsh, ldrsb)
+    bool exclusive = ((code & 0x35000000) == 0);
+
+    if ((code & 0x00800000) && !exclusive) // Is this a sign-extending opcode? (i.e. ldrsw, ldrsh, ldrsb)
     {
         assert((size == EA_4BYTE) || (size == EA_8BYTE));
         if ((code & 0x80000000) == 0) // Is it a ldrsh or ldrsb and not ldrsw ?
