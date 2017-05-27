@@ -37,8 +37,6 @@ The [dotnet continuous integration](http://ci.dot.net/) (CI) system will automat
 
 If the CI build fails for any reason, the PR issue will be updated with a link that can be used to determine the cause of the failure.
 
-There is currently minimal test coverage for Linux and OS X builds that can be used by the dotnet CI. We are working to improve that so that more issues can be caught in CI, as is the case with Windows.
-
 ## PR Feedback
 
 Microsoft team and community members will provide feedback on your change. Community feedback is highly valued. You will often see the absence of team feedback if the community has already provided good review feedback. 
