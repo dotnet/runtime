@@ -20,7 +20,7 @@ namespace System
     public partial class BadImageFormatException : SystemException
     {
         private String _fileName;  // The name of the corrupt PE file.
-        private String _fusionLog;  // fusion log (when applicable)
+        private String _fusionLog = null;  // fusion log (when applicable)
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
