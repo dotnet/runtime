@@ -35,18 +35,6 @@ namespace Internal.NativeCrypto
             public const string Sha512 = "SHA512";              // BCRYPT_SHA512_ALGORITHM
         }
 
-        /// <summary>
-        ///     Magic numbers identifying blob types
-        /// </summary>
-        internal enum KeyBlobMagicNumber {
-            ECDHPublicP256 = 0x314B4345,                        // BCRYPT_ECDH_PUBLIC_P256_MAGIC
-            ECDHPublicP384 = 0x334B4345,                        // BCRYPT_ECDH_PUBLIC_P384_MAGIC
-            ECDHPublicP521 = 0x354B4345,                        // BCRYPT_ECDH_PUBLIC_P521_MAGIC
-            ECDsaPublicP256 = 0x31534345,                       // BCRYPT_ECDSA_PUBLIC_P256_MAGIC
-            ECDsaPublicP384 = 0x33534345,                       // BCRYPT_ECDSA_PUBLIC_P384_MAGIC
-            ECDsaPublicP521 = 0x35534345                        // BCRYPT_ECDSA_PUBLIC_P521_MAGIC
-        }
-
         internal static class KeyDerivationFunction
         {
             public const string Hash = "HASH";                  // BCRYPT_KDF_HASH
@@ -301,18 +289,6 @@ namespace Internal.NativeCrypto
 
         [DllImport(Libraries.BCrypt)]
         private static extern uint BCryptCloseAlgorithmProvider(IntPtr hAlgorithm, int dwFlags);
-    }
-
-    internal sealed class SafeHashHandle : SafeBCryptHandle
-    {
-        protected sealed override bool ReleaseHandle()
-        {
-            uint ntStatus = BCryptDestroyHash(handle);
-            return ntStatus == 0;
-        }
-
-        [DllImport(Libraries.BCrypt)]
-        private static extern uint BCryptDestroyHash(IntPtr hHash);
     }
 
     internal sealed class SafeKeyHandle : SafeBCryptHandle
