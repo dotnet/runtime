@@ -544,7 +544,6 @@ namespace System.Collections.Generic
             private int _version;
             private T _current;
             private int _index;
-            private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.
 
             const string LinkedListName = "LinkedList";
             const string CurrentValueName = "Current";
@@ -558,7 +557,6 @@ namespace System.Collections.Generic
                 _node = list.head;
                 _current = default(T);
                 _index = 0;
-                _siInfo = null;
             }
 
             private Enumerator(SerializationInfo info, StreamingContext context)
@@ -630,51 +628,7 @@ namespace System.Collections.Generic
 
             void IDeserializationCallback.OnDeserialization(Object sender)
             {
-                if (_list != null)
-                {
-                    return; // Somebody had a dependency on this Dictionary and fixed us up before the ObjectManager got to it.
-                }
-
-                if (_siInfo == null)
-                {
-                    throw new SerializationException(SR.Serialization_InvalidOnDeser);
-                }
-
-                _list = (LinkedList<T>)_siInfo.GetValue(LinkedListName, typeof(LinkedList<T>));
-                _version = _siInfo.GetInt32(VersionName);
-                _current = (T)_siInfo.GetValue(CurrentValueName, typeof(T));
-                _index = _siInfo.GetInt32(IndexName);
-
-                if (_list._siInfo != null)
-                {
-                    _list.OnDeserialization(sender);
-                }
-
-                if (_index == _list.Count + 1)
-                {
-                    // end of enumeration
-                    _node = null;
-                }
-                else
-                {
-                    _node = _list.First;
-
-                    // We don't care if we can point to the correct node if the LinkedList was changed   
-                    // MoveNext will throw upon next call and Current has the correct value. 
-                    if (_node != null && _index != 0)
-                    {
-                        for (int i = 0; i < _index; i++)
-                        {
-                            _node = _node.next;
-                        }
-                        if (_node == _list.First)
-                        {
-                            _node = null;
-                        }
-                    }
-                }
-
-                _siInfo = null;
+                throw new PlatformNotSupportedException();
             }
         }
     }
