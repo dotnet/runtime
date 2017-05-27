@@ -2,7 +2,7 @@
    http://benchmarksgame.alioth.debian.org/
  *
  * submitted by Josh Goldfoot
- * 
+ *
  */
 
 using System;
@@ -14,7 +14,6 @@ using Microsoft.Xunit.Performance;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 [assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
@@ -24,13 +23,13 @@ public class knucleotide
 {
 #if DEBUG
     const int Iterations = 1;
-    const string InputFile = "knucleotide-input.txt"; 
+    const string InputFile = "knucleotide-input.txt";
     static int[] expectedCountLetter = new int[] { 1480, 974, 970, 1576 };
     static int[] expectedCountPairs = new int[] { 420, 272, 292, 496, 273, 202, 201, 298, 316, 185, 167, 302, 470, 315, 310, 480 };
     static int[] expectedCountFragments = new int[] { 54, 24, 4, 0, 0 };
 #else
     const int Iterations = 10;
-    const string InputFile = "knucleotide-input-big.txt"; 
+    const string InputFile = "knucleotide-input-big.txt";
     static int[] expectedCountLetter = new int[] { 302923, 198136, 197566, 301375 };
     static int[] expectedCountPairs = new int[] { 91779, 60030, 59889, 91225, 60096, 39203, 39081, 59756, 59795, 39190, 39023, 59557, 91253, 59713, 59572, 90837 };
     static int[] expectedCountFragments = new int[] { 11765, 3572, 380, 7, 7 };
@@ -90,7 +89,7 @@ public class knucleotide
     public static int Main(string[] args)
     {
         int iterations = Iterations;
-        
+
         string inputFile = FindInput(InputFile);
         if (inputFile == null)
         {
@@ -258,7 +257,7 @@ public class knucleotide
         {
             throw new Exception("unable to find input");
         }
-        foreach (var iteration in Benchmark.Iterations) 
+        foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
@@ -284,7 +283,7 @@ public class knucleotide
         {
             throw new Exception("unable to find input");
         }
-        foreach (var iteration in Benchmark.Iterations) 
+        foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
             {
