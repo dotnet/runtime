@@ -277,4 +277,20 @@ public class Tests {
 			return 1;
 		return 0;
 	}
+
+	public static int test_0_generic_ptr_to_struct () {
+		int size = Marshal.SizeOf (typeof (SimpleStruct2));
+		IntPtr p = Marshal.AllocHGlobal (size);
+
+		Marshal.WriteInt32 (p, 0, 1); //a
+		Marshal.WriteInt32 (p, 4, 2); //a
+
+		var s = Marshal.PtrToStructure<SimpleStruct2> (p);
+
+		if (s.a != 1)
+			return 1;
+		if (s.b != 2)
+			return 2;
+		return 0;
+	}
 }
