@@ -17,16 +17,6 @@ namespace System.Reflection.Tests
         public SNKeyPairDerived(byte[] arr) : base(arr) {}
         public SNKeyPairDerived(FileStream keyPairFileStream) : base(keyPairFileStream) {}
         protected SNKeyPairDerived(SerializationInfo info, StreamingContext context) : base(info, context) {}
-
-        public SNKeyPairDerived SNKeyPairDerivedClone(ISerializable inter)
-        {
-            SerializationInfo info = new SerializationInfo(typeof(StrongNameKeyPair), new FormatterConverter());
-            StreamingContext context = new StreamingContext();
-
-            inter.GetObjectData(info, context);
-
-            return new SNKeyPairDerived(info, context);
-        }
     }
 
     public class StrongNameKeyPairTests
@@ -37,10 +27,8 @@ namespace System.Reflection.Tests
         public void SNKeyPairDerivedTestPosTest()
         {
             var sKeyPairDerived = new SNKeyPairDerived(s_data);
-            var sKeyPair = sKeyPairDerived.SNKeyPairDerivedClone(sKeyPairDerived);
 
             RunActionWithDataFileStream(fileStream => sKeyPairDerived = new SNKeyPairDerived(fileStream));
-            sKeyPair = sKeyPairDerived.SNKeyPairDerivedClone(sKeyPairDerived);
         }
 
         [Fact]
