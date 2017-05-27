@@ -102,7 +102,9 @@
     <None Include="Resources\Interop\Interop.Mock01.cs" />
     <None Include="Resources\Interop\Interop.Mock01.Impl.cs" />
     <None Include="Resources\Interop\IndexerWithByRefParam.il" />
+    <None Include="Resources\Interop\OtherAccessors.il" />
     <EmbeddedResource Include="Resources\Interop\IndexerWithByRefParam.dll" />
+    <EmbeddedResource Include="Resources\Interop\OtherAccessors.dll" />
     <EmbeddedResource Include="Resources\Interop\Interop.Mock01.dll" />
     <EmbeddedResource Include="Resources\Interop\Interop.Mock01.Impl.dll" />
     <None Include="Resources\Misc\CPPClassLibrary2.h" />
