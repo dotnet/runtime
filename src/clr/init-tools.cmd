@@ -10,7 +10,8 @@ if [%BUILDTOOLS_SOURCE%]==[] set BUILDTOOLS_SOURCE=https://dotnet.myget.org/F/do
 set /P BUILDTOOLS_VERSION=< "%~dp0BuildToolsVersion.txt"
 set BUILD_TOOLS_PATH=%PACKAGES_DIR%Microsoft.DotNet.BuildTools\%BUILDTOOLS_VERSION%\lib\
 set INIT_TOOLS_RESTORE_PROJECT=%~dp0init-tools.msbuild
-set BUILD_TOOLS_SEMAPHORE=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%\init-tools.completed
+set BUILD_TOOLS_SEMAPHORE_DIR=%TOOLRUNTIME_DIR%\%BUILDTOOLS_VERSION%
+set BUILD_TOOLS_SEMAPHORE=%BUILD_TOOLS_SEMAPHORE_DIR%\init-tools.completed
 
 :: if force option is specified then clean the tool runtime and build tools package directory to force it to get recreated
 if [%1]==[force] (
@@ -73,5 +74,8 @@ if not [%INIT_TOOLS_ERRORLEVEL%]==[0] (
 
 :: Create sempahore file
 echo Done initializing tools.
+if NOT exist "%BUILD_TOOLS_SEMAPHORE_DIR%" (
+	mkdir "%BUILD_TOOLS_SEMAPHORE_DIR%"
+)
 echo Init-Tools.cmd completed for BuildTools Version: %BUILDTOOLS_VERSION% > "%BUILD_TOOLS_SEMAPHORE%"
 exit /b 0
