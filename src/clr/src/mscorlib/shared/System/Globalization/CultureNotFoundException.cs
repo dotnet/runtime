@@ -58,15 +58,12 @@ namespace System.Globalization
         protected CultureNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _invalidCultureId = (int?)info.GetValue("InvalidCultureId", typeof(int?));
-            _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("InvalidCultureId", _invalidCultureId, typeof(int?));
-            info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
         }
 
         public virtual Nullable<int> InvalidCultureId

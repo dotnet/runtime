@@ -35,6 +35,9 @@ namespace System
             HResult = __HResults.COR_E_FORMAT;
         }
 
-        protected FormatException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected FormatException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

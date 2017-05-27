@@ -847,32 +847,10 @@ namespace System.Text
                 // base calls reset
             }
 
-            // Constructor called by serialization, have to handle deserializing from Everett
-            internal Decoder(SerializationInfo info, StreamingContext context)
-            {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Get common info
-                this.bits = (int)info.GetValue("bits", typeof(int));
-                this.bitCount = (int)info.GetValue("bitCount", typeof(int));
-                this.firstByte = (bool)info.GetValue("firstByte", typeof(bool));
-                this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
-            }
-
             // ISerializable implementation, get data for this object
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Save Whidbey data
-                info.AddValue("encoding", this.m_encoding);
-                info.AddValue("bits", this.bits);
-                info.AddValue("bitCount", this.bitCount);
-                info.AddValue("firstByte", this.firstByte);
+                throw new PlatformNotSupportedException();
             }
 
             public override void Reset()
@@ -910,30 +888,10 @@ namespace System.Text
                 // base calls reset
             }
 
-            // Constructor called by serialization, have to handle deserializing from Everett
-            internal Encoder(SerializationInfo info, StreamingContext context)
-            {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Get common info
-                this.bits = (int)info.GetValue("bits", typeof(int));
-                this.bitCount = (int)info.GetValue("bitCount", typeof(int));
-                this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
-            }
-
-            // ISerializable implementation, get data for this object
+            // ISerializable implementation
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Save Whidbey data
-                info.AddValue("encoding", this.m_encoding);
-                info.AddValue("bits", this.bits);
-                info.AddValue("bitCount", this.bitCount);
+                throw new PlatformNotSupportedException();
             }
 
             public override void Reset()

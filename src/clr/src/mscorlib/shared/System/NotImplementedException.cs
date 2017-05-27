@@ -34,6 +34,9 @@ namespace System
             HResult = __HResults.E_NOTIMPL;
         }
 
-        protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected NotImplementedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

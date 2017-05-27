@@ -52,6 +52,7 @@ namespace System.Resources
         protected MissingSatelliteAssemblyException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public String CultureName

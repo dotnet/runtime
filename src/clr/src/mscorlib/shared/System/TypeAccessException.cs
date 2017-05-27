@@ -28,6 +28,9 @@ namespace System
             HResult = __HResults.COR_E_TYPEACCESS;
         }
 
-        protected TypeAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected TypeAccessException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

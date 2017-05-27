@@ -298,25 +298,7 @@ namespace System.Reflection
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            //Allocate the serialization info and serialize our static data.
-            info.AddValue("_Name", _Name);
-            info.AddValue("_PublicKey", _PublicKey, typeof(byte[]));
-            info.AddValue("_PublicKeyToken", _PublicKeyToken, typeof(byte[]));
-#if FEATURE_USE_LCID
-            info.AddValue("_CultureInfo", (_CultureInfo == null) ? -1 : _CultureInfo.LCID);
-#endif
-            info.AddValue("_CodeBase", _CodeBase);
-            info.AddValue("_Version", _Version);
-            info.AddValue("_HashAlgorithm", _HashAlgorithm, typeof(AssemblyHashAlgorithm));
-            info.AddValue("_HashAlgorithmForControl", _HashAlgorithmForControl, typeof(AssemblyHashAlgorithm));
-            info.AddValue("_StrongNameKeyPair", _StrongNameKeyPair, typeof(StrongNameKeyPair));
-            info.AddValue("_VersionCompatibility", _VersionCompatibility, typeof(AssemblyVersionCompatibility));
-            info.AddValue("_Flags", _Flags, typeof(AssemblyNameFlags));
-            info.AddValue("_HashForControl", _HashForControl, typeof(byte[]));
+            throw new PlatformNotSupportedException();
         }
 
         public void OnDeserialization(Object sender)
@@ -353,13 +335,6 @@ namespace System.Reflection
             }
 
             m_siInfo = null;
-        }
-
-        // Constructs a new AssemblyName during deserialization.
-        internal AssemblyName(SerializationInfo info, StreamingContext context)
-        {
-            //The graph is not valid until OnDeserialization() has been called.
-            m_siInfo = info;
         }
 
         public AssemblyName(String assemblyName)

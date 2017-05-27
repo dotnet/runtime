@@ -2530,46 +2530,10 @@ namespace System.Text
                 // base calls reset
             }
 
-            // Constructor called by serialization, have to handle deserializing from Everett
-            internal UTF8Encoder(SerializationInfo info, StreamingContext context)
-            {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Get common info
-                this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
-
-                // SurrogateChar happens to mean the same thing
-                this.surrogateChar = (int)info.GetValue("surrogateChar", typeof(int));
-
-                try
-                {
-                    this.m_fallback = (EncoderFallback)info.GetValue("m_fallback", typeof(EncoderFallback));
-                }
-                catch (SerializationException)
-                {
-                    this.m_fallback = null;
-                }
-            }
-
-            // ISerializable implementation, get data for this object
+            // ISerializable implementation
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Save Whidbey data
-                // Just need Everett maxCharSize (BaseCodePageEncoding) or m_maxByteSize (MLangBaseCodePageEncoding)
-                info.AddValue("encoding", this.m_encoding);
-                info.AddValue("surrogateChar", this.surrogateChar);
-
-                info.AddValue("m_fallback", this.m_fallback);
-
-                // Extra stuff for Everett that Whidbey doesn't use
-                info.AddValue("storedSurrogate", this.surrogateChar > 0 ? true : false);
-                info.AddValue("mustFlush", false);  // Everett doesn't actually use this either, but it accidently serialized it!
+                throw new PlatformNotSupportedException();
             }
 
             public override void Reset()
@@ -2604,44 +2568,13 @@ namespace System.Text
             // Constructor called by serialization, have to handle deserializing from Everett
             internal UTF8Decoder(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Get common info
-                this.m_encoding = (Encoding)info.GetValue("encoding", typeof(Encoding));
-
-                try
-                {
-                    // Get whidbey version of bits
-                    this.bits = (int)info.GetValue("wbits", typeof(int));
-                    this.m_fallback = (DecoderFallback)info.GetValue("m_fallback", typeof(DecoderFallback));
-                }
-                catch (SerializationException)
-                {
-                    // Everett calls bits bits instead of wbits, so this is Everett
-                    this.bits = 0;
-                    this.m_fallback = null;
-                }
+                throw new PlatformNotSupportedException();
             }
 
             // ISerializable implementation, get data for this object
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Save new Whidbey data
-                info.AddValue("encoding", this.m_encoding);
-                info.AddValue("wbits", this.bits);          // Special whidbey bits name
-                info.AddValue("m_fallback", this.m_fallback);
-
-                // Everett has extra stuff, we set it all to 0 in case this deserializes in Everett
-                info.AddValue("bits", (int)0);
-                info.AddValue("trailCount", (int)0);
-                info.AddValue("isSurrogate", false);
-                info.AddValue("byteSequence", (int)0);
+                throw new PlatformNotSupportedException();
             }
 
             public override void Reset()

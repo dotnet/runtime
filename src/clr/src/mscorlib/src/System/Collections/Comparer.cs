@@ -43,21 +43,6 @@ namespace System.Collections
             m_compareInfo = culture.CompareInfo;
         }
 
-        private Comparer(SerializationInfo info, StreamingContext context)
-        {
-            m_compareInfo = null;
-            SerializationInfoEnumerator enumerator = info.GetEnumerator();
-            while (enumerator.MoveNext())
-            {
-                switch (enumerator.Name)
-                {
-                    case CompareInfoName:
-                        m_compareInfo = (CompareInfo)info.GetValue(CompareInfoName, typeof(CompareInfo));
-                        break;
-                }
-            }
-        }
-
         // Compares two Objects by calling CompareTo.  If a == 
         // b,0 is returned.  If a implements 
         // IComparable, a.CompareTo(b) is returned.  If a 
@@ -91,16 +76,7 @@ namespace System.Collections
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
-
-            if (m_compareInfo != null)
-            {
-                info.AddValue(CompareInfoName, m_compareInfo);
-            }
+            throw new PlatformNotSupportedException();
         }
     }
 }

@@ -123,6 +123,7 @@ namespace System.Text
 
         internal DecoderFallbackException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public DecoderFallbackException(

@@ -35,6 +35,9 @@ namespace System
             HResult = __HResults.COR_E_TIMEOUT;
         }
 
-        protected TimeoutException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected TimeoutException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

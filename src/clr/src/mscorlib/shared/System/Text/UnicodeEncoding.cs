@@ -1991,47 +1991,16 @@ namespace System.Text
             {
                 // base calls reset
             }
-
-            // Constructor called by serialization, have to handle deserializing from Everett
+            
             internal Decoder(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Get Common Info
-                this.lastByte = (int)info.GetValue("lastByte", typeof(int));
-
-                try
-                {
-                    // Try the encoding, which is only serialized in Whidbey
-                    this.m_encoding = (Encoding)info.GetValue("m_encoding", typeof(Encoding));
-                    this.lastChar = (char)info.GetValue("lastChar", typeof(char));
-                    this.m_fallback = (DecoderFallback)info.GetValue("m_fallback", typeof(DecoderFallback));
-                }
-                catch (SerializationException)
-                {
-                    // Everett didn't serialize the UnicodeEncoding, get the default one
-                    bool bigEndian = (bool)info.GetValue("bigEndian", typeof(bool));
-                    this.m_encoding = new UnicodeEncoding(bigEndian, false);
-                }
+                throw new PlatformNotSupportedException();
             }
 
-            // ISerializable implementation, get data for this object
+            // ISerializable implementation
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                // Any info?
-                if (info == null) throw new ArgumentNullException(nameof(info));
-                Contract.EndContractBlock();
-
-                // Save Whidbey data
-                info.AddValue("m_encoding", this.m_encoding);
-                info.AddValue("m_fallback", this.m_fallback);
-                info.AddValue("lastChar", this.lastChar);       // Unused by everett so it'll probably get lost
-                info.AddValue("lastByte", this.lastByte);
-
-                // Everett Only
-                info.AddValue("bigEndian", ((UnicodeEncoding)(this.m_encoding)).bigEndian);
+                throw new PlatformNotSupportedException();
             }
 
             public override void Reset()

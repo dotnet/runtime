@@ -36,6 +36,9 @@ namespace System
             HResult = __HResults.COR_E_RANK;
         }
 
-        protected RankException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected RankException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
