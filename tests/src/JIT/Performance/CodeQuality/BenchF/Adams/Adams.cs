@@ -15,7 +15,6 @@ using Microsoft.Xunit.Performance;
 
 #if XUNIT_PERF
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 #endif // XUNIT_PERF
 
 namespace Benchstone.BenchF

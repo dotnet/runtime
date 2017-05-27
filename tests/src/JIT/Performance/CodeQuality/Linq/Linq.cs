@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 public class Product
 {

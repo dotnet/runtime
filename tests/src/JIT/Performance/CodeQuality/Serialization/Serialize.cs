@@ -12,7 +12,6 @@ using Newtonsoft.Json.Bson;
 using Microsoft.Xunit.Performance;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace Serialization
 {
