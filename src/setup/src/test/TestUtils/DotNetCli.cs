@@ -41,6 +41,8 @@ namespace Microsoft.DotNet.Cli.Build
         public Command Test(params string[] args) => Exec("test", args);
         public Command Publish(params string[] args) => Exec("publish", args);
 
+        public Command Store(params string[] args) => Exec("store", args);
+
         private void ComputeSharedFxPaths()
         {
             var sharedFxBaseDirectory = Path.Combine(BinPath, "shared", "Microsoft.NETCore.App");

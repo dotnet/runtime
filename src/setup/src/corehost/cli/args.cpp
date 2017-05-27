@@ -39,15 +39,6 @@ void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t
     // Environment variable DOTNET_SHARED_STORE
     (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), init.tfm);
 
-    // User profile based store
-    pal::string_t local_shared_store;
-    if (get_local_shared_store_dir(&local_shared_store))
-    {
-        append_path(&local_shared_store, get_arch());
-        append_path(&local_shared_store, init.tfm.c_str());
-        args->local_shared_store = local_shared_store;
-    }
-
     // "dotnet.exe" relative shared store folder
     if (init.host_mode == host_mode_t::muxer)
     {
