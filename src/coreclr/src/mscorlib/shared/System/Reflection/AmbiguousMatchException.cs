@@ -25,10 +25,5 @@ namespace System.Reflection
         {
             HResult = __HResults.COR_E_AMBIGUOUSMATCH;
         }
-
-        internal AmbiguousMatchException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
     }
 }

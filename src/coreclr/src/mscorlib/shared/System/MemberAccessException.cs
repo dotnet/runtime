@@ -42,6 +42,9 @@ namespace System
             HResult = __HResults.COR_E_MEMBERACCESS;
         }
 
-        protected MemberAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected MemberAccessException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

@@ -773,14 +773,7 @@ namespace System.Reflection
         #region ISerializable Implementation
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            if (m_reflectedTypeCache.IsGlobal)
-                throw new NotSupportedException(SR.NotSupported_GlobalMethodSerialization);
-
-            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
 
         internal string SerializationToString()

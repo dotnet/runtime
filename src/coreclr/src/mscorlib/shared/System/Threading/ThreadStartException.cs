@@ -19,10 +19,5 @@ namespace System.Threading
         {
             HResult = __HResults.COR_E_THREADSTART;
         }
-
-        internal ThreadStartException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
     }
 }

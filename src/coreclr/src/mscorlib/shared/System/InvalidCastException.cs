@@ -38,6 +38,9 @@ namespace System
             HResult = errorCode;
         }
 
-        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected InvalidCastException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

@@ -83,8 +83,7 @@ namespace System
             _stackTraceString = info.GetString("StackTraceString");
             _remoteStackTraceString = info.GetString("RemoteStackTraceString");
             _remoteStackIndex = info.GetInt32("RemoteStackIndex");
-
-            _exceptionMethodString = (String)(info.GetValue("ExceptionMethod", typeof(String)));
+            
             HResult = info.GetInt32("HResult");
             _source = info.GetString("Source");
 
@@ -293,15 +292,8 @@ namespace System
             {
                 return null;
             }
-
-            if (_exceptionMethodString != null)
-            {
-                _exceptionMethod = GetExceptionMethodFromString();
-            }
-            else
-            {
-                _exceptionMethod = GetExceptionMethodFromStackTrace();
-            }
+            
+            _exceptionMethod = GetExceptionMethodFromStackTrace();
             return _exceptionMethod;
         }
 
@@ -434,90 +426,6 @@ namespace System
             return s;
         }
 
-        private String GetExceptionMethodString()
-        {
-            MethodBase methBase = GetTargetSiteInternal();
-            if (methBase == null)
-            {
-                return null;
-            }
-            if (methBase is System.Reflection.Emit.DynamicMethod.RTDynamicMethod)
-            {
-                // DynamicMethods cannot be serialized
-                return null;
-            }
-
-            // Note that the newline separator is only a separator, chosen such that
-            //  it won't (generally) occur in a method name.  This string is used 
-            //  only for serialization of the Exception Method.
-            char separator = '\n';
-            StringBuilder result = new StringBuilder();
-            if (methBase is ConstructorInfo)
-            {
-                RuntimeConstructorInfo rci = (RuntimeConstructorInfo)methBase;
-                Type t = rci.ReflectedType;
-                result.Append((int)MemberTypes.Constructor);
-                result.Append(separator);
-                result.Append(rci.Name);
-                if (t != null)
-                {
-                    result.Append(separator);
-                    result.Append(t.Assembly.FullName);
-                    result.Append(separator);
-                    result.Append(t.FullName);
-                }
-                result.Append(separator);
-                result.Append(rci.ToString());
-            }
-            else
-            {
-                Debug.Assert(methBase is MethodInfo, "[Exception.GetExceptionMethodString]methBase is MethodInfo");
-                RuntimeMethodInfo rmi = (RuntimeMethodInfo)methBase;
-                Type t = rmi.DeclaringType;
-                result.Append((int)MemberTypes.Method);
-                result.Append(separator);
-                result.Append(rmi.Name);
-                result.Append(separator);
-                result.Append(rmi.Module.Assembly.FullName);
-                result.Append(separator);
-                if (t != null)
-                {
-                    result.Append(t.FullName);
-                    result.Append(separator);
-                }
-                result.Append(rmi.ToString());
-            }
-
-            return result.ToString();
-        }
-
-        private MethodBase GetExceptionMethodFromString()
-        {
-            Debug.Assert(_exceptionMethodString != null, "Method string cannot be NULL!");
-            String[] args = _exceptionMethodString.Split(new char[] { '\0', '\n' });
-            if (args.Length != 5)
-            {
-                throw new SerializationException();
-            }
-            SerializationInfo si = new SerializationInfo(typeof(MemberInfoSerializationHolder), new FormatterConverter());
-            si.AddValue("MemberType", (int)Int32.Parse(args[0], CultureInfo.InvariantCulture), typeof(Int32));
-            si.AddValue("Name", args[1], typeof(String));
-            si.AddValue("AssemblyName", args[2], typeof(String));
-            si.AddValue("ClassName", args[3]);
-            si.AddValue("Signature", args[4]);
-            MethodBase result;
-            StreamingContext sc = new StreamingContext(StreamingContextStates.All);
-            try
-            {
-                result = (MethodBase)new MemberInfoSerializationHolder(si, sc).GetRealObject(sc);
-            }
-            catch (SerializationException)
-            {
-                result = null;
-            }
-            return result;
-        }
-
         protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
         {
             add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
@@ -559,7 +467,7 @@ namespace System
             info.AddValue("StackTraceString", tempStackTraceString, typeof(String));
             info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(String));
             info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(Int32));
-            info.AddValue("ExceptionMethod", GetExceptionMethodString(), typeof(String));
+            info.AddValue("ExceptionMethod", null, typeof(String));
             info.AddValue("HResult", HResult);
             info.AddValue("Source", _source, typeof(String));
 
@@ -748,7 +656,7 @@ namespace System
 
         private String _className;  //Needed for serialization.  
         private MethodBase _exceptionMethod;  //Needed for serialization.  
-        private String _exceptionMethodString; //Needed for serialization. 
+        private String _exceptionMethodString; //Needed for serialization.
         internal String _message;
         private IDictionary _data;
         private Exception _innerException;

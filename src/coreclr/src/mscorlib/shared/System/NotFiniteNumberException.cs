@@ -53,13 +53,12 @@ namespace System
 
         protected NotFiniteNumberException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            _offendingNumber = info.GetInt32("OffendingNumber");
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("OffendingNumber", _offendingNumber, typeof(Int32));
         }
 
         public double OffendingNumber

@@ -40,7 +40,5 @@ namespace System
         {
             HResult = __HResults.COR_E_EXECUTIONENGINE;
         }
-
-        internal ExecutionEngineException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

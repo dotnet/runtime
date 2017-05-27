@@ -30,7 +30,5 @@ namespace System
         {
             HResult = __HResults.COR_E_MULTICASTNOTSUPPORTED;
         }
-
-        internal MulticastNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

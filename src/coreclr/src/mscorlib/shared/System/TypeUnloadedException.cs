@@ -25,13 +25,11 @@ namespace System
         {
             HResult = __HResults.COR_E_TYPEUNLOADED;
         }
-
-        //
-        // This constructor is required for serialization;
-        //
+        
         protected TypeUnloadedException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

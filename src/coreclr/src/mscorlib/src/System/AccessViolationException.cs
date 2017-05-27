@@ -36,7 +36,10 @@ namespace System
             HResult = __HResults.E_POINTER;
         }
 
-        protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
 #pragma warning disable 169  // Field is not used from managed.
         private IntPtr _ip;             // Address of faulting instruction.

@@ -23,6 +23,9 @@ namespace System.Threading
         {
         }
 
-        protected LockRecursionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected LockRecursionException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

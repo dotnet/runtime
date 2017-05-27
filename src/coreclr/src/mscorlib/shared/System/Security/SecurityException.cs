@@ -45,6 +45,7 @@ namespace System.Security
         protected SecurityException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public override string ToString() => base.ToString();

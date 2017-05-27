@@ -35,6 +35,9 @@ namespace System
             HResult = __HResults.COR_E_PLATFORMNOTSUPPORTED;
         }
 
-        protected PlatformNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected PlatformNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }
