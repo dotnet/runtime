@@ -12,13 +12,13 @@ Getting Started
 ===============
 
 - [Installing the .NET Core SDK](https://www.microsoft.com/net/core)
-- [[WIP] Official .NET Core Docs](http://dotnet.github.io/docs/)
+- [Official .NET Core Docs](https://docs.microsoft.com/dotnet/core/)
 
 Project Docs
 ============
 
+- [Project Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 - [Developer Guide](project-docs/developer-guide.md)
-- [Project priorities](project-docs/project-priorities.md)
 - [Contributing to .NET Core](project-docs/contributing.md)
 - [Contributing Workflow](project-docs/contributing-workflow.md)
 - [Performance Guidelines](project-docs/performance-guidelines.md)
