@@ -247,7 +247,10 @@ namespace System.Security.Principal
             throw new PlatformNotSupportedException();
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender) { }
+        void IDeserializationCallback.OnDeserialization(object sender)
+        {
+            throw new PlatformNotSupportedException();
+        }
 
         //
         // Factory methods.
