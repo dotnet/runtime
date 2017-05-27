@@ -125,6 +125,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
         }
 
         [Fact]
+        public void Muxer_Activation_With_Templated_AdditionalProbingPath_Succeeds()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+            
+            var store_path = CreateAStore(fixture);
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            var destRuntimeDevConfig = fixture.TestProject.RuntimeDevConfigJson;
+            if (File.Exists(destRuntimeDevConfig))
+            {
+                File.Delete(destRuntimeDevConfig);
+            }
+
+            var additionalProbingPath = store_path + "/|arch|/|tfm|";
+
+            dotnet.Exec(
+                    "exec",
+                    "--additionalprobingpath", additionalProbingPath,
+                    appDll)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdErrContaining($"Adding tpa entry: {Path.Combine(store_path,fixture.RepoDirProvider.BuildArchitecture, fixture.Framework)}");
+        }
+
+        [Fact]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Remote_and_RuntimeConfig_Local_Succeeds()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
@@ -254,6 +288,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             File.Move(testProjectFixture.TestProject.RuntimeConfigJson, destRuntimeConfig);
 
             testProjectFixture.TestProject.RuntimeConfigJson = destRuntimeConfig;
+        }
+
+         private string CreateAStore(TestProjectFixture testProjectFixture)
+        {
+            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
+            if (!Directory.Exists(storeoutputDirectory))
+            {
+                Directory.CreateDirectory(storeoutputDirectory);
+            }
+
+            testProjectFixture.StoreProject(outputDirectory :storeoutputDirectory);
+            
+            return storeoutputDirectory;
         }
     }
 }
