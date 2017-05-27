@@ -152,11 +152,6 @@ void deps_resolver_t::setup_shared_store_probes(
         }
     }
 
-    if (pal::directory_exists(args.local_shared_store))
-    {
-        m_probes.push_back(probe_config_t::lookup(args.local_shared_store));
-    }
-
     if (pal::directory_exists(args.dotnet_shared_store))
     {
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
@@ -239,18 +234,6 @@ void deps_resolver_t::setup_probe_config(
 void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& probe_paths)
 {
     m_additional_probes.assign(probe_paths.begin(), probe_paths.end());
-
-    for (auto iter = m_additional_probes.begin(); iter != m_additional_probes.end(); )
-    {
-        if (pal::directory_exists(*iter))
-        {
-            ++iter;
-        }
-        else
-        {
-            iter = m_additional_probes.erase(iter);
-        }
-    }
 }
 
 /**
