@@ -22,9 +22,9 @@ Binary License
 The following rules are used for determining the binary license:
 
 - .NET Core binary distributions (zips, nuget packages, …) are licensed as MIT (identical to the [.NET Core source license](https://github.com/dotnet/core/blob/master/LICENSE.TXT)).
-- The license link (if there is one) should point to the repository where the file came from, for example: https://github.com/dotnet/corefx/blob/master/LICENSE.TXT.
-- If the contained binaries are built from multiple .NET Core repositories, the license should point to dotnet/core: https://github.com/dotnet/core/blob/master/LICENSE.
-- If the contents are not 100% open source, the distribution should be licensed with the .NET Library license: `https://www.microsoft.com/net/dotnet_library_license.htm`.
+- The license link (if there is one) should point to the repository where the file came from, for example: [dotnet/corefx](https://github.com/dotnet/corefx/blob/master/LICENSE.TXT).
+- If the contained binaries are built from multiple .NET Core repositories, the license should point to [dotnet/core](https://github.com/dotnet/core/blob/master/LICENSE.TXT). 
+- If the contents are not 100% open source, the distribution should be licensed with the [.NET Library license](https://www.microsoft.com/net/dotnet_library_license.htm).
 - It is OK for licensing to be asymmetric for a single distribution type. For example, it’s possible that the .NET Core SDK distribution might be fully open source for Linux but include a closed-source component on Windows. In this case, the SDK would be licensed as MIT on Linux and use the .NET Library License on Windows. It is better to have more open licenses than less.
 - It is OK for the source and binary licenses not to match. For example, the source might be Apache 2 but ships as an MIT binary  The third party notices file should capture the Apache 2 license. This only works for a permissive licenses, however, we have limited the project to that class of licenses already. The value of this approach is that binary licenses are uniform.
 
