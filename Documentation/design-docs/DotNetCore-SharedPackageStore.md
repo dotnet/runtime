@@ -5,7 +5,7 @@ To enable sharing of assemblies among all machine-wide .NET Core applications, a
 
 ### Packages Store
 
-The package store can be either a global system-wide folder or a user local folder:
+The package store can be either a global system-wide folder or a dotnet.exe relative folder:
 
 + **Global**:
     - The `dotnet` root location -- on Windows, the folder is located in `C:\Program Files (x86)\`. See layout below.
@@ -29,17 +29,6 @@ The package store can be either a global system-wide folder or a user local fold
 
 The layout within `netcoreapp*` folders is a NuGet cache layout.
 
-+ **User**: The user local location can be used to override the global location when probing assemblies and uses a very similar layout, except that the `packages/install` folder is NOT supported in the user profile. It is only supported in the global location.
-
-```
-    - %USERPROFILE% or $HOME/
-        - .dotnet
-          - store 
-            - {arch=x86|x64}
-                = do =
-```
-
-**OPEN**: Should we have a `dotnet` relative location as well, if operating out of a zip installation of .NET Core binaries?
 
 ### Composing a runtime (non-ref) package store
 
@@ -116,15 +105,18 @@ Note that this is different from current behavior of `dotnet run` for an applica
 The host will probe in the following order of precedence for `dotnet run` and application activations post `dotnet publish`:
 
 + `$CORE_SERVICING` on Unix or `%ProgramFiles(x86)%\coreservicing` on Windows.
++  Application Bin and Shared FX directory
 + `DOTNET_SHARED_STORE` in the chained order
-+ The user local shared package store in `%USERPROFILE%\.dotnet\store` or `$HOME/.dotnet/store`
-+ The global shared package store
-+ The Shared Framework directory
-+ ~~`DOTNET_HOSTING_OPTIMIZATION_CACHE` deprecated in favor of `DOTNET_SHARED_STORE`~~
-+ `--additionalprobingpaths` specified in the command line
-+ `runtimeOptions.additionalProbingPaths` (includes NuGet cache probe specified by the CLI for `dotnet run`)
-+ Application `bin` directory
++ Store locations
+    - The dotnet.exe relative shared package store
+    - The global shared package store
+    - ~~`DOTNET_HOSTING_OPTIMIZATION_CACHE` deprecated in favor of `DOTNET_SHARED_STORE`~~
++ Additional Probing Paths
+    - `--additionalprobingpaths` specified in the command line
+    - `runtimeOptions.additionalProbingPaths` (includes NuGet cache probe specified by the CLI for `dotnet run`)
 
+**NOTE:**  `--additionalprobingpaths` can be passed template paths like below and the host will interpret `|arch|/|tfm|` appropriately to look for assets: 
+           `%USERPROFILE%\user\cache\|arch|\|tfm|` or `$HOME/user/cache/|arch|/|tfm|`
 ## dotnet publish
 
 Publish will be enhanced to support a filter profile file specified as xml. This file explicitly lists all asset packages that need to be trimmed out of the publish output. The following are examples of how various application types can be published.
