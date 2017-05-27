@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
@@ -1611,14 +1612,17 @@ namespace System.Reflection.Metadata
 
         private readonly int _getterRowId;
         private readonly int _setterRowId;
+        private readonly ImmutableArray<MethodDefinitionHandle> _others;
 
         public MethodDefinitionHandle Getter { get { return MethodDefinitionHandle.FromRowId(_getterRowId); } }
         public MethodDefinitionHandle Setter { get { return MethodDefinitionHandle.FromRowId(_setterRowId); } }
+        public ImmutableArray<MethodDefinitionHandle> Others { get { return _others; } }
 
-        internal PropertyAccessors(int getterRowId, int setterRowId)
+        internal PropertyAccessors(int getterRowId, int setterRowId, ImmutableArray<MethodDefinitionHandle> others)
         {
             _getterRowId = getterRowId;
             _setterRowId = setterRowId;
+            _others = others;
         }
     }
 
@@ -1629,16 +1633,19 @@ namespace System.Reflection.Metadata
         private readonly int _adderRowId;
         private readonly int _removerRowId;
         private readonly int _raiserRowId;
+        private readonly ImmutableArray<MethodDefinitionHandle> _others;
 
         public MethodDefinitionHandle Adder { get { return MethodDefinitionHandle.FromRowId(_adderRowId); } }
         public MethodDefinitionHandle Remover { get { return MethodDefinitionHandle.FromRowId(_removerRowId); } }
         public MethodDefinitionHandle Raiser { get { return MethodDefinitionHandle.FromRowId(_raiserRowId); } }
+        public ImmutableArray<MethodDefinitionHandle> Others { get { return _others; } }
 
-        internal EventAccessors(int adderRowId, int removerRowId, int raiserRowId)
+        internal EventAccessors(int adderRowId, int removerRowId, int raiserRowId, ImmutableArray<MethodDefinitionHandle> others)
         {
             _adderRowId = adderRowId;
             _removerRowId = removerRowId;
             _raiserRowId = raiserRowId;
+            _others = others;
         }
     }
 

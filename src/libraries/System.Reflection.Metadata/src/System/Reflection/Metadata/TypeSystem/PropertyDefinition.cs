@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata.Ecma335;
 
@@ -73,6 +74,7 @@ namespace System.Reflection.Metadata
         {
             int getter = 0;
             int setter = 0;
+            ImmutableArray<MethodDefinitionHandle>.Builder other = null;
 
             ushort methodCount;
             int firstRowId = _reader.MethodSemanticsTable.FindSemanticMethodsForProperty(Handle, out methodCount);
@@ -88,11 +90,18 @@ namespace System.Reflection.Metadata
                     case MethodSemanticsAttributes.Setter:
                         setter = _reader.MethodSemanticsTable.GetMethod(rowId).RowId;
                         break;
-                        // TODO: expose 'Other' collection on PropertyAccessors for completeness.
+
+                    case MethodSemanticsAttributes.Other:
+                        if (other == null)
+                            other = ImmutableArray.CreateBuilder<MethodDefinitionHandle>();
+
+                        other.Add(_reader.MethodSemanticsTable.GetMethod(rowId));
+                        break;
                 }
             }
 
-            return new PropertyAccessors(getter, setter);
+            var otherAccessors = other?.ToImmutable() ?? ImmutableArray<MethodDefinitionHandle>.Empty;
+            return new PropertyAccessors(getter, setter, otherAccessors);
         }
     }
 }

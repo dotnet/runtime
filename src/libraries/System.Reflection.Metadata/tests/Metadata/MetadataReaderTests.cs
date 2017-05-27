@@ -2432,6 +2432,40 @@ namespace System.Reflection.Metadata.Tests
         }
 
         [Fact]
+        public void OtherAccessors()
+        {
+            var reader = GetMetadataReader(Interop.OtherAccessors);
+            var typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.First());
+            Assert.Equal(reader.GetString(typeDef.Name), "<Module>");
+
+            typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(1).First());
+            Assert.Equal(reader.GetString(typeDef.Name), "IContainerObject");
+
+            var propertyDef = reader.GetPropertyDefinition(typeDef.GetProperties().First());
+            var propertyAccessors = propertyDef.GetAccessors();
+
+            Assert.Equal("get_Value", reader.GetString(reader.GetMethodDefinition(propertyAccessors.Getter).Name));
+            Assert.Equal("set_Value", reader.GetString(reader.GetMethodDefinition(propertyAccessors.Setter).Name));
+            Assert.Equal("let_Value", reader.GetString(reader.GetMethodDefinition(propertyAccessors.Others.Single()).Name));
+
+            typeDef = reader.GetTypeDefinition(reader.TypeDefinitions.Skip(2).First());
+            Assert.Equal(reader.GetString(typeDef.Name), "IEventSource");
+
+            var eventDef = reader.GetEventDefinition(typeDef.GetEvents().First());
+            var eventAccessors = eventDef.GetAccessors();
+            var otherAccessorNames = (from methodHandle in eventAccessors.Others
+                                      select reader.GetString(reader.GetMethodDefinition(methodHandle).Name)).ToArray();
+
+            Assert.Equal("add_Notification", reader.GetString(reader.GetMethodDefinition(eventAccessors.Adder).Name));
+            Assert.Equal("remove_Notification", reader.GetString(reader.GetMethodDefinition(eventAccessors.Remover).Name));
+            Assert.True(eventAccessors.Raiser.IsNil);
+
+            // Note that ilasm doesn't retain the order in which other accessors were specified in IL,
+            // so if the DLL resource is rebuilt from IL this test may need to be adjusted.
+            Assert.Equal(new[] { "resume_Notification", "other_Notification", "suspend_Notification" }, otherAccessorNames);
+        }
+
+        [Fact]
         public void GetCustomDebugInformation()
         {
             using (var provider = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(PortablePdbs.DocumentsPdb)))
