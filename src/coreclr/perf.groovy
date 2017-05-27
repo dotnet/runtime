@@ -24,6 +24,7 @@ def static getOSGroup(def os) {
     assert osGroup != null : "Could not find os group for ${os}"
     return osGroupMap[os]
 }
+
 // Setup perflab tests runs
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
@@ -51,34 +52,34 @@ def static getOSGroup(def os) {
                         }
                     }
 
-                if (isPR)
-                {
-                    parameters
+                    if (isPR)
                     {
-                        stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                        parameters
+                        {
+                            stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                        }
                     }
-                }
-                if (isSmoketest)
-                {
-                    parameters
+                    if (isSmoketest)
                     {
-                        stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
-                        stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
+                        parameters
+                        {
+                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
+                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
+                        }
                     }
-                }
-                else
-                {
-                    parameters
+                    else
                     {
-                        stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
-                        stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                        parameters
+                        {
+                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                        }
                     }
-                }
-                def configuration = 'Release'
-                def runType = isPR ? 'private' : 'rolling'
-                def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
-                def uploadString = isSmoketest ? '' : '-uploadToBenchview'
-                    
+                    def configuration = 'Release'
+                    def runType = isPR ? 'private' : 'rolling'
+                    def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                    def uploadString = isSmoketest ? '' : '-uploadToBenchview'
+
                     steps {
                         // Batch
 
@@ -114,7 +115,7 @@ def static getOSGroup(def os) {
                         batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
                     }
                 }
-                
+
                 if (isSmoketest)
                 {
                     Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
@@ -123,10 +124,11 @@ def static getOSGroup(def os) {
                 def archiveSettings = new ArchivalSettings()
                 archiveSettings.addFiles('Perf-*.xml')
                 archiveSettings.addFiles('Perf-*.etl')
+                archiveSettings.addFiles('machinedata.json')
                 Utilities.addArchival(newJob, archiveSettings)
 
                 Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-                
+
                 newJob.with {
                     wrappers {
                         timeout {
@@ -134,7 +136,7 @@ def static getOSGroup(def os) {
                         }
                     }
                 }
-                
+
                 if (isPR) {
                     TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
                     if (isSmoketest)
@@ -185,7 +187,7 @@ def static getOSGroup(def os) {
             def configuration = 'Release'
             def runType = isPR ? 'private' : 'rolling'
             def benchViewName = isPR ? 'coreclr-throughput private %BenchviewCommitName%' : 'coreclr-throughput rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
-                
+
                 steps {
                     // Batch
 
@@ -235,14 +237,14 @@ def static getOSGroup(def os) {
 [true, false].each { isPR ->
     ['Ubuntu14.04'].each { os ->
         def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
-            
+
             label('linux_clr_perf')
-                wrappers {
-                    credentialsBinding {
-                        string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
-                    }
+            wrappers {
+                credentialsBinding {
+                    string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
                 }
-            
+            }
+
             if (isPR)
             {
                 parameters
@@ -250,20 +252,27 @@ def static getOSGroup(def os) {
                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
                 }
             }
+
+            // Cap the maximum number of iterations to 21.
+            parameters {
+                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+            }
+
             def osGroup = getOSGroup(os)
             def architecture = 'x64'
             def configuration = 'Release'
             def runType = isPR ? 'private' : 'rolling'
             def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
-            
+
             steps {
-                shell("bash ./tests/scripts/perf-prep.sh")
+                shell("./tests/scripts/perf-prep.sh")
                 shell("./init-tools.sh")
                 shell("./build.sh ${architecture} ${configuration}")
                 shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
-                shell("""sudo -E bash ./tests/scripts/run-xunit-perf.sh \\
+                shell("""./tests/scripts/run-xunit-perf.sh \\
                 --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
                 --testNativeBinDir=\"\${WORKSPACE}/bin/obj/${osGroup}.${architecture}.${configuration}/tests\" \\
                 --coreClrBinDir=\"\${WORKSPACE}/bin/Product/${osGroup}.${architecture}.${configuration}\" \\
@@ -271,13 +280,15 @@ def static getOSGroup(def os) {
                 --coreFxBinDir=\"\${WORKSPACE}/corefx\" \\
                 --runType=\"${runType}\" \\
                 --benchViewOS=\"${os}\" \\
+                --generatebenchviewdata=\"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" \\
+                --stabilityPrefix=\"taskset 0x00000002 nice --adjustment=-10\" \\
                 --uploadToBenchview""")
             }
         }
 
         // Save machinedata.json to /artifact/bin/ Jenkins dir
         def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('sandbox/perf-*.xml')
+        archiveSettings.addFiles('Perf-*.xml')
         archiveSettings.addFiles('machinedata.json')
         Utilities.addArchival(newJob, archiveSettings)
 
@@ -313,14 +324,14 @@ def static getOSGroup(def os) {
 [true, false].each { isPR ->
     ['Ubuntu14.04'].each { os ->
         def newJob = job(Utilities.getFullJobName(project, "perf_throughput_${os}", isPR)) {
-            
+
             label('linux_clr_perf')
                 wrappers {
                     credentialsBinding {
                         string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
                     }
                 }
-            
+
             if (isPR)
             {
                 parameters
@@ -333,7 +344,7 @@ def static getOSGroup(def os) {
             def configuration = 'Release'
             def runType = isPR ? 'private' : 'rolling'
             def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
-            
+
             steps {
                 shell("bash ./tests/scripts/perf-prep.sh --throughput")
                 shell("./init-tools.sh")
