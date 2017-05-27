@@ -1436,6 +1436,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(((SimpleKnownTypeValue)actual.SimpleTypeValue).StrProperty, "PropertyValue");
     }
 
+    [ActiveIssue(20361)]
     [Fact]
     public static void DCS_ExceptionObject()
     {
@@ -1450,6 +1451,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.HelpLink, actual.HelpLink);
     }
 
+    [ActiveIssue(20361)]
     [Fact]
     public static void DCS_ArgumentExceptionObject()
     {
@@ -1464,6 +1466,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.HelpLink, actual.HelpLink);
     }
 
+    [ActiveIssue(20361)]
     [Fact]
     public static void DCS_ExceptionMessageWithSpecialChars()
     {
