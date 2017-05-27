@@ -9106,10 +9106,25 @@ mono_class_get_methods (MonoClass* klass, gpointer *iter)
 static MonoMethod*
 mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 {
-	MonoMethod** method;
+	gboolean static_iter = FALSE;
+
 	if (!iter)
 		return NULL;
-	if (klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)) {
+
+	/*
+	 * If the lowest bit of the iterator is 1, this is an iterator for static metadata,
+	 * and the upper bits contain an index. Otherwise, the iterator is a pointer into
+	 * klass->methods.
+	 */
+	if ((gsize)(*iter) & 1)
+		static_iter = TRUE;
+	/* Use the static metadata only if klass->methods is not yet initialized */
+	if (!static_iter && !(klass->methods || !MONO_CLASS_HAS_STATIC_METADATA (klass)))
+		static_iter = TRUE;
+
+	if (!static_iter) {
+		MonoMethod** methodptr;
+
 		if (!*iter) {
 			mono_class_setup_methods (klass);
 			/*
@@ -9119,20 +9134,22 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 			if (!klass->methods)
 				return NULL;
 			/* start from the first */
-			method = &klass->methods [0];
+			methodptr = &klass->methods [0];
 		} else {
-			method = (MonoMethod **)*iter;
-			method++;
+			methodptr = (MonoMethod **)*iter;
+			methodptr++;
 		}
+		if (*iter)
+			g_assert ((guint64)(*iter) > 0x100);
 		int mcount = mono_class_get_method_count (klass);
-		while (method < &klass->methods [mcount]) {
-			if (*method && ((*method)->flags & METHOD_ATTRIBUTE_VIRTUAL))
+		while (methodptr < &klass->methods [mcount]) {
+			if (*methodptr && ((*methodptr)->flags & METHOD_ATTRIBUTE_VIRTUAL))
 				break;
-			method ++;
+			methodptr ++;
 		}
-		if (method < &klass->methods [mcount]) {
-			*iter = method;
-			return *method;
+		if (methodptr < &klass->methods [mcount]) {
+			*iter = methodptr;
+			return *methodptr;
 		} else {
 			return NULL;
 		}
@@ -9144,7 +9161,7 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 		if (!*iter) {
 			start_index = 0;
 		} else {
-			start_index = GPOINTER_TO_UINT (*iter);
+			start_index = GPOINTER_TO_UINT (*iter) >> 1;
 		}
 
 		int first_idx = mono_class_get_first_method_idx (klass);
@@ -9165,7 +9182,7 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 			mono_error_cleanup (&error); /* FIXME don't swallow the error */
 
 			/* Add 1 here so the if (*iter) check fails */
-			*iter = GUINT_TO_POINTER (i + 1);
+			*iter  = GUINT_TO_POINTER (((i + 1) << 1) | 1);
 			return res;
 		} else {
 			return NULL;
