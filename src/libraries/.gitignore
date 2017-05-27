@@ -12,6 +12,7 @@ syntax: glob
 *.sln.docstates
 
 # Build results
+.idea/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
