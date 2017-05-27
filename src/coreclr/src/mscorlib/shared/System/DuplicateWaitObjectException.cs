@@ -57,8 +57,10 @@ namespace System
         {
             HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
         }
-
-        // This constructor is required for serialization
-        protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        
+        protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

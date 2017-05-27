@@ -50,6 +50,7 @@ namespace System.Runtime.InteropServices
 
         protected COMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public override String ToString()

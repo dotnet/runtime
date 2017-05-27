@@ -39,6 +39,7 @@ namespace System.Runtime.InteropServices
 
         protected MarshalDirectiveException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

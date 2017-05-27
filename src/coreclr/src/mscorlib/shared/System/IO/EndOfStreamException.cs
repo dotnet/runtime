@@ -29,6 +29,7 @@ namespace System.IO
         protected EndOfStreamException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

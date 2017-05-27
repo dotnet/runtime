@@ -56,16 +56,12 @@ namespace System
         protected BadImageFormatException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _fileName = info.GetString("BadImageFormat_FileName");
-            _fusionLog = info.GetString("BadImageFormat_FusionLog");
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-
-            info.AddValue("BadImageFormat_FileName", _fileName, typeof(String));
-            info.AddValue("BadImageFormat_FusionLog", _fusionLog, typeof(String));
         }
 
         public override String Message

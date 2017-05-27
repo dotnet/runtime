@@ -29,30 +29,10 @@ namespace System.Text
         {
         }
 
-        // Constructor called by serialization.
-        // Note:  We use the base GetObjectData however
-        internal Latin1Encoding(SerializationInfo info, StreamingContext context) :
-            base(Encoding.ISO_8859_1)
-        {
-            // Set up our base, also throws if info was empty
-            DeserializeEncoding(info, context);
-
-            // Nothing unique to Whidbey for Latin1
-        }
-
-        // ISerializable implementation, serialize it as a CodePageEncoding
+        // ISerializable implementation
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            // Make sure to get the base stuff too This throws if info is null
-            SerializeEncoding(info, context);
-            Debug.Assert(info != null, "[Latin1Encoding.GetObjectData] Expected null info to throw");
-
-            // In Everett this is a CodePageEncoding, so it needs maxCharSize
-            info.AddValue("CodePageEncoding+maxCharSize", 1);
-
-            // And extras for Everett's wierdness
-            info.AddValue("CodePageEncoding+m_codePage", this.CodePage);
-            info.AddValue("CodePageEncoding+dataItem", null);
+            throw new PlatformNotSupportedException();
         }
 
         // GetByteCount

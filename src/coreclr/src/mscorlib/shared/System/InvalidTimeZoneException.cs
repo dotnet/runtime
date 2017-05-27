@@ -22,6 +22,9 @@ namespace System
         {
         }
 
-        protected InvalidTimeZoneException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected InvalidTimeZoneException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

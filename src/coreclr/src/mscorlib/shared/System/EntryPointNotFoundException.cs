@@ -36,6 +36,9 @@ namespace System
             HResult = __HResults.COR_E_ENTRYPOINTNOTFOUND;
         }
 
-        protected EntryPointNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected EntryPointNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

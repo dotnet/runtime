@@ -14,10 +14,7 @@ namespace System.Reflection
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info, this);
+            throw new PlatformNotSupportedException();
         }
     }
 }

@@ -82,20 +82,12 @@ namespace System.IO
         protected FileLoadException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            // Base class constructor will check info != null.
-
-            FileName = info.GetString("FileLoad_FileName");
-            FusionLog = info.GetString("FileLoad_FusionLog");
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            // Serialize data for our base classes.  base will verify info != null.
             base.GetObjectData(info, context);
-
-            // Serialize data for this class
-            info.AddValue("FileLoad_FileName", FileName, typeof(string));
-            info.AddValue("FileLoad_FusionLog", FusionLog, typeof(string));
         }
     }
 }

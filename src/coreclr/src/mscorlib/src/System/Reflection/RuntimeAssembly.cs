@@ -259,15 +259,7 @@ namespace System.Reflection
         // ISerializable implementation
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            Contract.EndContractBlock();
-
-            UnitySerializationHolder.GetUnitySerializationInfo(info,
-                                                               UnitySerializationHolder.AssemblyUnity,
-                                                               this.FullName,
-                                                               this);
+            throw new PlatformNotSupportedException();
         }
 
         public override Module ManifestModule

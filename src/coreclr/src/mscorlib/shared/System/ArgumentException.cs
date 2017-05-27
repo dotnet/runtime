@@ -64,13 +64,12 @@ namespace System
         protected ArgumentException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _paramName = info.GetString("ParamName");
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("ParamName", _paramName, typeof(String));
         }
 
         public override String Message
