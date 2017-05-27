@@ -14,7 +14,6 @@ using Xunit;
 using Microsoft.Xunit.Performance;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace Span
 {
@@ -1109,7 +1108,7 @@ namespace Span
         #endregion
 
         #region TestSpanAsSpanStringChar<T>
-        
+
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
         [InlineData(10)]
@@ -1146,7 +1145,7 @@ namespace Span
             }
         }
 
-        #endregion      
+        #endregion
 
         #endregion // TestSpanAPIs
 
@@ -1186,7 +1185,7 @@ namespace Span
                     }
                 }
             }
-            
+
             // The only failure modes are crash/exception.
             return 100;
         }

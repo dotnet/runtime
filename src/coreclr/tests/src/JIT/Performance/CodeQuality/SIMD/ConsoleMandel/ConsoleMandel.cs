@@ -9,7 +9,6 @@ using System.Diagnostics;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace SIMD
 {

@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using Xunit;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace Inlining
 {

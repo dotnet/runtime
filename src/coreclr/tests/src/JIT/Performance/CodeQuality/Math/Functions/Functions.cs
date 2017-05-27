@@ -8,7 +8,6 @@ using System.Diagnostics;
 using Microsoft.Xunit.Performance;
 
 [assembly: OptimizeForBenchmarks]
-[assembly: MeasureInstructionsRetired]
 
 namespace Functions
 {
