@@ -66,6 +66,7 @@
 
 #include <mono/mini/mini.h>
 #include <mono/mini/jit-icalls.h>
+#include <mono/mini/debugger-agent.h>
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -104,6 +105,8 @@ init_frame (MonoInvocation *frame, MonoInvocation *parent_frame, RuntimeMethod *
  * Used for testing.
  */
 GSList *jit_classes;
+/* If TRUE, interpreted code will be interrupted at function entry/backward branches */
+static gboolean ss_enabled;
 
 void ves_exec_method (MonoInvocation *frame);
 
@@ -204,13 +207,26 @@ static void debug_enter (MonoInvocation *frame, int *tracing)
 /* Set the current execution state to the resume state in context */
 #define SET_RESUME_STATE(context) do { \
 		ip = (context)->handler_ip;						\
+		if (frame->ex) { \
 		sp->data.p = frame->ex;											\
 		++sp;															\
+		} \
 		frame->ex = NULL;												\
 		(context)->has_resume_state = 0;								\
 		(context)->handler_frame = NULL;								\
 		goto main_loop;													\
 	} while (0)
+
+static void
+set_context (ThreadContext *context)
+{
+	MonoJitTlsData *jit_tls;
+
+	mono_native_tls_set_value (thread_context_id, context);
+	jit_tls = mono_tls_get_jit_tls ();
+	if (jit_tls)
+		jit_tls->interp_context = context;
+}
 
 static void
 ves_real_abort (int line, MonoMethod *mh,
@@ -233,6 +249,19 @@ ves_real_abort (int line, MonoMethod *mh,
 		ves_real_abort(__LINE__, frame->runtime_method->method, ip, frame->stack, sp); \
 		THROW_EX (mono_get_exception_execution_engine (NULL), ip); \
 	} while (0);
+
+static RuntimeMethod*
+lookup_runtime_method (MonoDomain *domain, MonoMethod *method)
+{
+	RuntimeMethod *rtm;
+	MonoJitDomainInfo *info;
+
+	info = domain_jit_info (domain);
+	mono_domain_jit_code_hash_lock (domain);
+	rtm = mono_internal_hash_table_lookup (&info->interp_code_hash, method);
+	mono_domain_jit_code_hash_unlock (domain);
+	return rtm;
+}
 
 RuntimeMethod*
 mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
@@ -276,6 +305,30 @@ mono_interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
 	return mono_interp_get_runtime_method (domain, method, error);
+}
+
+/*
+ * interp_push_lmf:
+ *
+ * Push an LMF frame on the LMF stack
+ * to mark the transition to native code.
+ * This is needed for the native code to
+ * be able to do stack walks.
+ */
+static void
+interp_push_lmf (MonoLMFExt *ext, MonoInvocation *frame)
+{
+	memset (ext, 0, sizeof (MonoLMFExt));
+	ext->interp_exit = TRUE;
+	ext->interp_exit_data = frame;
+
+	mono_push_lmf (ext);
+}
+
+static void
+interp_pop_lmf (MonoLMFExt *ext)
+{
+	mono_pop_lmf (&ext->lmf);
 }
 
 static inline RuntimeMethod*
@@ -943,19 +996,11 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	context->current_frame = frame;
 	context->managed_code = 0;
 
-	/*
-	 * Push an LMF frame on the LMF stack
-	 * to mark the transition to native code.
-	 */
-	memset (&ext, 0, sizeof (ext));
-	ext.interp_exit = TRUE;
-	ext.interp_exit_data = frame;
-
-	mono_push_lmf (&ext);
+	interp_push_lmf (&ext, frame);
 
 	mono_interp_enter_icall_trampoline (addr, margs);
 
-	mono_pop_lmf (&ext.lmf);
+	interp_pop_lmf (&ext);
 
 	context->managed_code = 1;
 	/* domain can only be changed by native code */
@@ -1307,7 +1352,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	int i, type, isobject = 0;
 	void *ret = NULL;
 	stackval result;
-	stackval *args = alloca (sizeof (stackval) * (sig->param_count + !!sig->hasthis));
+	stackval *args;
 	ThreadContext context_struct;
 	MonoInvocation *old_frame = NULL;
 	jmp_buf env;
@@ -1323,8 +1368,8 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 			context->domain = mono_domain_get ();
 			context->current_frame = old_frame;
 			context->managed_code = 0;
-		} else 
-			mono_native_tls_set_value (thread_context_id, NULL);
+		} else
+			set_context (NULL);
 		if (exc != NULL)
 			*exc = (MonoObject *)frame.ex;
 		return retval;
@@ -1336,7 +1381,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		context_struct.base_frame = &frame;
 		context_struct.env_frame = &frame;
 		context_struct.current_env = &env;
-		mono_native_tls_set_value (thread_context_id, context);
+		set_context (context);
 	}
 	else
 		old_frame = context->current_frame;
@@ -1384,6 +1429,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		break;
 	}
 
+	args = alloca (sizeof (stackval) * (sig->param_count + !!sig->hasthis));
 	if (sig->hasthis)
 		args [0].data.p = obj;
 
@@ -1453,13 +1499,14 @@ handle_enum:
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
 	INIT_FRAME (&frame,context->current_frame,args,&result,mono_get_root_domain (),method,error);
+
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
 	ves_exec_method_with_context (&frame, context, NULL, NULL, -1);
 	context->managed_code = 0;
 	if (context == &context_struct)
-		mono_native_tls_set_value (thread_context_id, NULL);
+		set_context (NULL);
 	else
 		context->current_frame = old_frame;
 	if (frame.ex != NULL) {
@@ -1519,10 +1566,10 @@ interp_entry (InterpEntryData *data)
 		memset (context, 0, sizeof (ThreadContext));
 		context_struct.base_frame = &frame;
 		context_struct.env_frame = &frame;
-		mono_native_tls_set_value (thread_context_id, context);
-	}
-	else
+		set_context (context);
+	} else {
 		old_frame = context->current_frame;
+	}
 	context->domain = mono_domain_get ();
 
 	args = alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
@@ -1615,7 +1662,7 @@ interp_entry (InterpEntryData *data)
 	ves_exec_method_with_context (&frame, context, NULL, NULL, -1);
 	context->managed_code = 0;
 	if (context == &context_struct)
-		mono_native_tls_set_value (thread_context_id, NULL);
+		set_context (NULL);
 	else
 		context->current_frame = old_frame;
 
@@ -2088,8 +2135,17 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif
+
+		MonoLMFExt ext;
+
+		/* Use the parent frame as the current frame is not complete yet */
+		interp_push_lmf (&ext, frame->parent);
+
 		frame->ex = mono_interp_transform_method (frame->runtime_method, context);
 		context->managed_code = 1;
+
+		interp_pop_lmf (&ext);
+
 		if (frame->ex) {
 			rtm = NULL;
 			ip = NULL;
@@ -2112,6 +2168,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 	vtalloc = vt_sp;
 #endif
 	locals = (unsigned char *) vt_sp + rtm->vt_stack_size;
+	frame->locals = locals;
 	child_frame.parent = frame;
 
 	if (filter_exception) {
@@ -2136,10 +2193,18 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 		MINT_IN_CASE(MINT_NOP)
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BREAK)
+		MINT_IN_CASE(MINT_BREAK) {
 			++ip;
-			G_BREAKPOINT (); /* this is not portable... */
+
+			MonoLMFExt ext;
+
+			interp_push_lmf (&ext, frame);
+
+			mono_debugger_agent_user_break ();
+
+			interp_pop_lmf (&ext);
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDNULL) 
 			sp->data.p = NULL;
 			++ip;
@@ -2257,6 +2322,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			vtalloc = vt_sp;
 #endif
 			locals = vt_sp + rtm->vt_stack_size;
+			frame->locals = locals;
 			ip = rtm->new_body_start; /* bypass storing input args from callers frame */
 			MINT_IN_BREAK;
 		}
@@ -2567,15 +2633,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 				}
 			}
 
-			/*
-			 * Push an LMF frame on the LMF stack
-			 * to mark the transition to compiled code.
-			 */
-			memset (&ext, 0, sizeof (ext));
-			ext.interp_exit = TRUE;
-			ext.interp_exit_data = frame;
-
-			mono_push_lmf (&ext);
+			interp_push_lmf (&ext, frame);
 
 			switch (pindex) {
 			case 0: {
@@ -2631,7 +2689,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 				break;
 			}
 
-			mono_pop_lmf (&ext.lmf);
+			interp_pop_lmf (&ext);
 
 			if (context->has_resume_state) {
 				/*
@@ -2819,7 +2877,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VOID)
 			if (sp > frame->stack)
-				g_warning ("ret.void: more values on stack: %d", sp-frame->stack);
+				g_warning ("ret.void: more values on stack: %d %s", sp-frame->stack, mono_method_full_name (frame->runtime_method->method, TRUE));
 			goto exit_frame;
 		MINT_IN_CASE(MINT_RET_VT)
 			i32 = READ32(ip + 1);
@@ -3110,7 +3168,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 				gint offset;
 				ip += 2 * (guint32)sp->data.i;
 				offset = READ32 (ip);
-				ip = st + offset;
+				ip = ip + offset;
 			} else {
 				ip = st;
 			}
@@ -3664,6 +3722,7 @@ array_constructed:
 			frame->ex_handler = NULL;
 			if (!sp->data.p)
 				sp->data.p = mono_get_exception_null_reference ();
+
 			THROW_EX ((MonoException *)sp->data.p, ip);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA_UNSAFE)
@@ -4516,6 +4575,72 @@ array_constructed:
 			++ip;
 			mono_jit_set_domain (context->original_domain);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SDB_INTR_LOC)
+			if (G_UNLIKELY (ss_enabled)) {
+				MonoLMFExt ext;
+				static void (*ss_tramp) (void);
+
+				if (!ss_tramp) {
+					void *tramp = mini_get_single_step_trampoline ();
+					mono_memory_barrier ();
+					ss_tramp = tramp;
+				}
+
+				/*
+				 * Make this point to the MINT_SDB_SEQ_POINT instruction which follows this since
+				 * the address of that instruction is stored as the seq point address.
+				 */
+				frame->ip = ip + 1;
+
+				interp_push_lmf (&ext, frame);
+				/*
+				 * Use the same trampoline as the JIT. This ensures that
+				 * the debugger has the context for the last interpreter
+				 * native frame.
+				 */
+				ss_tramp ();
+				interp_pop_lmf (&ext);
+
+				if (context->has_resume_state) {
+					if (frame == context->handler_frame)
+						SET_RESUME_STATE (context);
+					else
+						goto exit_frame;
+				}
+			}
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SDB_SEQ_POINT)
+			/* Just a placeholder for a breakpoint */
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
+			MonoLMFExt ext;
+
+			static void (*bp_tramp) (void);
+			if (!bp_tramp) {
+				void *tramp = mini_get_breakpoint_trampoline ();
+				mono_memory_barrier ();
+				bp_tramp = tramp;
+			}
+
+			frame->ip = ip;
+
+			interp_push_lmf (&ext, frame);
+			/* Use the same trampoline as the JIT */
+			bp_tramp ();
+			interp_pop_lmf (&ext);
+
+			if (context->has_resume_state) {
+				if (frame == context->handler_frame)
+					SET_RESUME_STATE (context);
+				else
+					goto exit_frame;
+			}
+
+			++ip;
+			MINT_IN_BREAK;
+		}
 
 #define RELOP(datamem, op) \
 	--sp; \
@@ -5061,7 +5186,7 @@ ves_exec_method (MonoInvocation *frame)
 		context_struct.current_env = &env;
 		context_struct.search_for_handler = 0;
 		context_struct.managed_code = 0;
-		mono_native_tls_set_value (thread_context_id, context);
+		set_context (context);
 	}
 	frame->ip = NULL;
 	frame->parent = context->current_frame;
@@ -5079,7 +5204,7 @@ ves_exec_method (MonoInvocation *frame)
 			mono_unhandled_exception ((MonoObject*)frame->ex);
 	}
 	if (context->base_frame == frame)
-		mono_native_tls_set_value (thread_context_id, NULL);
+		set_context (NULL);
 	else
 		context->current_frame = frame->parent;
 }
@@ -5102,7 +5227,7 @@ void
 mono_interp_init ()
 {
 	mono_native_tls_alloc (&thread_context_id, NULL);
-	mono_native_tls_set_value (thread_context_id, NULL);
+	set_context (NULL);
 
 	mono_interp_transform_init ();
 }
@@ -5278,12 +5403,16 @@ mono_interp_regression_list (int verbose, int count, char *images [])
  *   Set the state the interpeter will continue to execute from after execution returns to the interpreter.
  */
 void
-mono_interp_set_resume_state (MonoException *ex, StackFrameInfo *frame, gpointer handler_ip)
+mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoInterpFrameHandle interp_frame, gpointer handler_ip)
 {
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
+	ThreadContext *context;
+
+	g_assert (jit_tls);
+	context = jit_tls->interp_context;
+	g_assert (context);
 
 	context->has_resume_state = TRUE;
-	context->handler_frame = frame->interp_frame;
+	context->handler_frame = interp_frame;
 	/* This is on the stack, so it doesn't need a wbarrier */
 	context->handler_frame->ex = ex;
 	context->handler_ip = handler_ip;
@@ -5329,20 +5458,115 @@ mono_interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
 
 	memset (frame, 0, sizeof (StackFrameInfo));
 	/* pinvoke frames doesn't have runtime_method set */
-	while (iframe && !iframe->runtime_method)
+	while (iframe && !(iframe->runtime_method && iframe->runtime_method->code))
 		iframe = iframe->parent;
 	if (!iframe)
 		return FALSE;
 
 	frame->type = FRAME_TYPE_INTERP;
+	// FIXME:
+	frame->domain = mono_domain_get ();
 	frame->interp_frame = iframe;
 	frame->method = iframe->runtime_method->method;
 	frame->actual_method = frame->method;
 	/* This is the offset in the interpreter IR */
-	frame->native_offset = iframe->ip - iframe->runtime_method->code;
+	frame->native_offset = (guint8*)iframe->ip - (guint8*)iframe->runtime_method->code;
 	frame->ji = iframe->runtime_method->jinfo;
 
 	stack_iter->current = iframe->parent;
 
 	return TRUE;
+}
+
+MonoJitInfo*
+mono_interp_find_jit_info (MonoDomain *domain, MonoMethod *method)
+{
+	RuntimeMethod* rtm;
+
+	rtm = lookup_runtime_method (domain, method);
+	if (rtm)
+		return rtm->jinfo;
+	else
+		return NULL;
+}
+
+void
+mono_interp_set_breakpoint (MonoJitInfo *jinfo, gpointer ip)
+{
+	guint16 *code = (guint16*)ip;
+	g_assert (*code == MINT_SDB_SEQ_POINT);
+	*code = MINT_SDB_BREAKPOINT;
+}
+
+void
+mono_interp_clear_breakpoint (MonoJitInfo *jinfo, gpointer ip)
+{
+	guint16 *code = (guint16*)ip;
+	g_assert (*code == MINT_SDB_BREAKPOINT);
+	*code = MINT_SDB_SEQ_POINT;
+}
+
+MonoJitInfo*
+mono_interp_frame_get_jit_info (MonoInterpFrameHandle frame)
+{
+	MonoInvocation *iframe = (MonoInvocation*)frame;
+
+	g_assert (iframe->runtime_method);
+	return iframe->runtime_method->jinfo;
+}
+
+gpointer
+mono_interp_frame_get_ip (MonoInterpFrameHandle frame)
+{
+	MonoInvocation *iframe = (MonoInvocation*)frame;
+
+	g_assert (iframe->runtime_method);
+	return (gpointer)iframe->ip;
+}
+
+gpointer
+mono_interp_frame_get_arg (MonoInterpFrameHandle frame, int pos)
+{
+	MonoInvocation *iframe = (MonoInvocation*)frame;
+
+	g_assert (iframe->runtime_method);
+
+	int arg_offset = iframe->runtime_method->arg_offsets [pos + (iframe->runtime_method->hasthis ? 1 : 0)];
+
+	return iframe->args + arg_offset;
+}
+
+gpointer
+mono_interp_frame_get_local (MonoInterpFrameHandle frame, int pos)
+{
+	MonoInvocation *iframe = (MonoInvocation*)frame;
+
+	g_assert (iframe->runtime_method);
+
+	return iframe->locals + iframe->runtime_method->local_offsets [pos];
+}
+
+gpointer
+mono_interp_frame_get_this (MonoInterpFrameHandle frame)
+{
+	MonoInvocation *iframe = (MonoInvocation*)frame;
+
+	g_assert (iframe->runtime_method);
+	g_assert (iframe->runtime_method->hasthis);
+
+	int arg_offset = iframe->runtime_method->arg_offsets [0];
+
+	return iframe->args + arg_offset;
+}
+
+void
+mono_interp_start_single_stepping (void)
+{
+	ss_enabled = TRUE;
+}
+
+void
+mono_interp_stop_single_stepping (void)
+{
+	ss_enabled = FALSE;
 }

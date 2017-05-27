@@ -4547,6 +4547,56 @@ mono_personality (void)
 	g_assert_not_reached ();
 }
 
+
+static MonoBreakPolicy
+always_insert_breakpoint (MonoMethod *method)
+{
+	return MONO_BREAK_POLICY_ALWAYS;
+}
+
+static MonoBreakPolicyFunc break_policy_func = always_insert_breakpoint;
+
+/**
+ * mono_set_break_policy:
+ * \param policy_callback the new callback function
+ *
+ * Allow embedders to decide whether to actually obey breakpoint instructions
+ * (both break IL instructions and \c Debugger.Break method calls), for example
+ * to not allow an app to be aborted by a perfectly valid IL opcode when executing
+ * untrusted or semi-trusted code.
+ *
+ * \p policy_callback will be called every time a break point instruction needs to
+ * be inserted with the method argument being the method that calls \c Debugger.Break
+ * or has the IL \c break instruction. The callback should return \c MONO_BREAK_POLICY_NEVER
+ * if it wants the breakpoint to not be effective in the given method.
+ * \c MONO_BREAK_POLICY_ALWAYS is the default.
+ */
+void
+mono_set_break_policy (MonoBreakPolicyFunc policy_callback)
+{
+	if (policy_callback)
+		break_policy_func = policy_callback;
+	else
+		break_policy_func = always_insert_breakpoint;
+}
+
+gboolean
+mini_should_insert_breakpoint (MonoMethod *method)
+{
+	switch (break_policy_func (method)) {
+	case MONO_BREAK_POLICY_ALWAYS:
+		return TRUE;
+	case MONO_BREAK_POLICY_NEVER:
+		return FALSE;
+	case MONO_BREAK_POLICY_ON_DBG:
+		g_warning ("mdb no longer supported");
+		return FALSE;
+	default:
+		g_warning ("Incorrect value returned from break policy callback");
+		return FALSE;
+	}
+}
+
 // Custom handlers currently only implemented by Windows.
 #ifndef HOST_WIN32
 gboolean

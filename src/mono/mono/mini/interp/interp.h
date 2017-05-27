@@ -28,6 +28,8 @@ struct _MonoInterpStackIter {
 	gpointer dummy [8];
 };
 
+typedef gpointer MonoInterpFrameHandle;
+
 int
 mono_interp_regression_list (int verbose, int count, char *images []);
 
@@ -53,7 +55,7 @@ void
 interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 
 void
-mono_interp_set_resume_state (MonoException *ex, StackFrameInfo *frame, gpointer handler_ip);
+mono_interp_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoInterpFrameHandle interp_frame, gpointer handler_ip);
 
 void
 mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip);
@@ -63,5 +65,35 @@ mono_interp_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_dat
 
 gboolean
 mono_interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame);
+
+MonoJitInfo*
+mono_interp_find_jit_info (MonoDomain *domain, MonoMethod *method);
+
+void
+mono_interp_set_breakpoint (MonoJitInfo *jinfo, gpointer ip);
+
+void
+mono_interp_clear_breakpoint (MonoJitInfo *jinfo, gpointer ip);
+
+MonoJitInfo*
+mono_interp_frame_get_jit_info (MonoInterpFrameHandle frame);
+
+gpointer
+mono_interp_frame_get_ip (MonoInterpFrameHandle frame);
+
+gpointer
+mono_interp_frame_get_arg (MonoInterpFrameHandle frame, int pos);
+
+gpointer
+mono_interp_frame_get_local (MonoInterpFrameHandle frame, int pos);
+
+gpointer
+mono_interp_frame_get_this (MonoInterpFrameHandle frame);
+
+void
+mono_interp_start_single_stepping (void);
+
+void
+mono_interp_stop_single_stepping (void);
 
 #endif /* __MONO_MINI_INTERPRETER_H__ */

@@ -106,7 +106,7 @@ mono_interp_dis_mintop(const guint16 *base, const guint16 *ip)
 			if (i > 0)
 				g_print (", ");
 			offset = (gint32)READ32 (p);
-			g_print ("IL_%04x", ip - base + 3 + 2 * sval + offset);
+			g_print ("IL_%04x", p + offset);
 			p += 2;
 		}
 		g_print (")");

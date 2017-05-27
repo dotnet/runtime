@@ -1070,6 +1070,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	mgreg_t *new_reg_locations [MONO_MAX_IREGS];
 	gboolean get_reg_locations = unwind_options & MONO_UNWIND_REG_LOCATIONS;
 	gboolean async = mono_thread_info_is_async_context ();
+	Unwinder unwinder;
 
 	if (mono_llvm_only) {
 		GSList *l, *ips;
@@ -1114,9 +1115,11 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 	memcpy (&ctx, start_ctx, sizeof (MonoContext));
 	memset (reg_locations, 0, sizeof (reg_locations));
 
+	unwinder_init (&unwinder);
+
 	while (MONO_CONTEXT_GET_SP (&ctx) < jit_tls->end_of_stack) {
 		frame.lmf = lmf;
-		res = mono_find_jit_info_ext (domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, get_reg_locations ? new_reg_locations : NULL, &frame);
+		res = unwinder_unwind_frame (&unwinder, domain, jit_tls, NULL, &ctx, &new_ctx, NULL, &lmf, get_reg_locations ? new_reg_locations : NULL, &frame);
 		if (!res)
 			return;
 
@@ -1633,7 +1636,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 
 		gpointer ip;
 		if (in_interp)
-			ip = (guint16*)ji->code_start + frame.native_offset;
+			ip = (guint8*)ji->code_start + frame.native_offset;
 		else
 			ip = MONO_CONTEXT_GET_IP (ctx);
 
@@ -2009,7 +2012,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		}
 
 		if (in_interp)
-			ip = (guint16*)ji->code_start + frame.native_offset;
+			ip = (guint8*)ji->code_start + frame.native_offset;
 		else
 			ip = MONO_CONTEXT_GET_IP (ctx);
 
@@ -2131,7 +2134,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						 * like the call which transitioned to JITted code has succeeded, but the
 						 * return value register etc. is not set, so we have to be careful.
 						 */
-						mono_interp_set_resume_state (mono_ex, &frame, ei->handler_start);
+						mono_interp_set_resume_state (jit_tls, mono_ex, frame.interp_frame, ei->handler_start);
 						/* Undo the IP adjustment done by mono_arch_unwind_frame () */
 #if defined(TARGET_AMD64)
 						ctx->gregs [AMD64_RIP] ++;
@@ -2260,6 +2263,9 @@ mono_debugger_run_finally (MonoContext *start_ctx)
  * mono_handle_exception:
  * \param ctx saved processor state
  * \param obj the exception object
+ *
+ *   Handle the exception OBJ starting from the state CTX. Modify CTX to point to the handler clause if the exception is caught, and
+ * return TRUE.
  */
 gboolean
 mono_handle_exception (MonoContext *ctx, MonoObject *obj)
@@ -3405,33 +3411,5 @@ void
 mono_debug_personality (void)
 {
 	g_assert_not_reached ();
-}
-#endif
-
-#ifndef ENABLE_INTERPRETER
-/* Stubs of interpreter functions */
-void
-mono_interp_set_resume_state (MonoException *ex, StackFrameInfo *frame, gpointer handler_ip)
-{
-	g_assert_not_reached ();
-}
-
-void
-mono_interp_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
-{
-	g_assert_not_reached ();
-}
-
-void
-mono_interp_frame_iter_init (MonoInterpStackIter *iter, gpointer interp_exit_data)
-{
-	g_assert_not_reached ();
-}
-
-gboolean
-mono_interp_frame_iter_next (MonoInterpStackIter *iter, StackFrameInfo *frame)
-{
-	g_assert_not_reached ();
-	return FALSE;
 }
 #endif

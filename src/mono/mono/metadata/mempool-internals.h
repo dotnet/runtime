@@ -61,6 +61,20 @@ g_slist_append_mempool (MonoMemPool *mp, GSList *list, gpointer data)
 		return new_list;
 }
 
+static inline GList*
+g_list_append_mempool (MonoMemPool *mp, GList *list, gpointer data)
+{
+	GList *new_list;
+
+	new_list = (GList *) mono_mempool_alloc0 (mp, sizeof (GList));
+	new_list->data = data;
+	new_list->prev = g_list_last (list);
+	if (new_list->prev)
+		new_list->prev->next = new_list;
+
+	return list ? list : new_list;
+}
+
 char*
 mono_mempool_strdup_vprintf (MonoMemPool *pool, const char *format, va_list args);
 

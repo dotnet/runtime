@@ -401,6 +401,9 @@ interp_sources =	\
 	interp/mintops.def	\
 	interp/mintops.c	\
 	interp/transform.c
+else
+interp_sources = \
+	interp/interp-stubs.c
 endif
 
 if ENABLE_LLVM

@@ -521,3 +521,6 @@ OPDEF(MINT_MONO_JIT_DETACH, "mono_jit_detach", 1, MintOpNoArgs)
 
 // FIXME: MintOp
 OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, MintOpNoArgs)
+OPDEF(MINT_SDB_INTR_LOC, "sdb_intr_loc", 1, MintOpNoArgs)
+OPDEF(MINT_SDB_SEQ_POINT, "sdb_seq_point", 1, MintOpNoArgs)
+OPDEF(MINT_SDB_BREAKPOINT, "sdb_breakpoint", 1, MintOpNoArgs)
