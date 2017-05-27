@@ -639,30 +639,9 @@ namespace System
             return new MetadataImport(_GetMetadataImport(type), type);
         }
 
-        private RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            RuntimeType m = (RuntimeType)info.GetValue("TypeObj", typeof(RuntimeType));
-
-            m_type = m;
-
-            if (m_type == null)
-                throw new SerializationException(SR.Serialization_InsufficientState);
-        }
-
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            if (m_type == null)
-                throw new SerializationException(SR.Serialization_InvalidFieldState);
-
-            info.AddValue("TypeObj", m_type, typeof(RuntimeType));
+            throw new PlatformNotSupportedException();
         }
     }
 
@@ -781,33 +760,9 @@ namespace System
         }
 
         // ISerializable interface
-        private RuntimeMethodHandle(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            MethodBase m = (MethodBase)info.GetValue("MethodObj", typeof(MethodBase));
-
-            m_value = m.MethodHandle.m_value;
-
-            if (m_value == null)
-                throw new SerializationException(SR.Serialization_InsufficientState);
-        }
-
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            if (m_value == null)
-                throw new SerializationException(SR.Serialization_InvalidFieldState);
-
-            // This is either a RuntimeMethodInfo or a RuntimeConstructorInfo
-            MethodBase methodInfo = RuntimeType.GetMethodBase(m_value);
-
-            info.AddValue("MethodObj", methodInfo, typeof(MethodBase));
+            throw new PlatformNotSupportedException();
         }
 
         public IntPtr Value
@@ -1244,35 +1199,9 @@ namespace System
         internal static extern bool AcquiresContextFromThis(RuntimeFieldHandleInternal field);
 
         // ISerializable interface
-        private RuntimeFieldHandle(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            FieldInfo f = (RuntimeFieldInfo)info.GetValue("FieldObj", typeof(RuntimeFieldInfo));
-
-            if (f == null)
-                throw new SerializationException(SR.Serialization_InsufficientState);
-
-            m_ptr = f.FieldHandle.m_ptr;
-
-            if (m_ptr == null)
-                throw new SerializationException(SR.Serialization_InsufficientState);
-        }
-
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-            Contract.EndContractBlock();
-
-            if (m_ptr == null)
-                throw new SerializationException(SR.Serialization_InvalidFieldState);
-
-            RuntimeFieldInfo fldInfo = (RuntimeFieldInfo)RuntimeType.GetFieldInfo(this.GetRuntimeFieldInfo());
-
-            info.AddValue("FieldObj", fldInfo, typeof(RuntimeFieldInfo));
+            throw new PlatformNotSupportedException();
         }
     }
 

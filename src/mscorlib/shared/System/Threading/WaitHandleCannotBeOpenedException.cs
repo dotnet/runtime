@@ -25,6 +25,7 @@ namespace System.Threading
 
         protected WaitHandleCannotBeOpenedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

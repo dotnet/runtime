@@ -33,6 +33,9 @@ namespace System
             HResult = __HResults.COR_E_FIELDACCESS;
         }
 
-        protected FieldAccessException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected FieldAccessException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

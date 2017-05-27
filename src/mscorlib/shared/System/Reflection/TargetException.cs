@@ -27,6 +27,7 @@ namespace System.Reflection
         protected TargetException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

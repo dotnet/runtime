@@ -29,6 +29,7 @@ namespace System.Security
         protected VerificationException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

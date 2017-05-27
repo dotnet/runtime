@@ -61,13 +61,12 @@ namespace System
         protected ArgumentOutOfRangeException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _actualValue = info.GetValue("ActualValue", typeof(Object));
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("ActualValue", _actualValue, typeof(Object));
         }
 
         public override String Message

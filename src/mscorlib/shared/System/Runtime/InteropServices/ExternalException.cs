@@ -50,6 +50,7 @@ namespace System.Runtime.InteropServices
         protected ExternalException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
 
         public virtual int ErrorCode

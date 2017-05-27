@@ -67,6 +67,7 @@ namespace System
 
         protected OperationCanceledException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

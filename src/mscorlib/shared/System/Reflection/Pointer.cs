@@ -21,14 +21,6 @@ namespace System.Reflection
             _ptrType = ptrType;
         }
 
-        private Pointer(SerializationInfo info, StreamingContext context)
-        {
-            _ptr = ((IntPtr)(info.GetValue("_ptr", typeof(IntPtr)))).ToPointer();
-            _ptrType = (Type)info.GetValue("_ptrType", typeof(Type));
-            if (!_ptrType.IsRuntimeImplemented())
-                throw new SerializationException(SR.Arg_MustBeType);
-        }
-
         public static object Box(void* ptr, Type type)
         {
             if (type == null)
@@ -50,8 +42,7 @@ namespace System.Reflection
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("_ptr", new IntPtr(_ptr));
-            info.AddValue("_ptrType", _ptrType);
+            throw new PlatformNotSupportedException();
         }
 
         internal Type GetPointerType() => _ptrType;

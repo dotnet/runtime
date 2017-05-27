@@ -918,58 +918,7 @@ namespace System.Collections
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
-            // This is imperfect - it only works well if all other writes are
-            // also using our synchronized wrapper.  But it's still a good idea.
-            lock (SyncRoot)
-            {
-                // This method hasn't been fully tweaked to be safe for a concurrent writer.
-                int oldVersion = version;
-                info.AddValue(LoadFactorName, loadFactor);
-                info.AddValue(VersionName, version);
-
-                //
-                // We need to maintain serialization compatibility with Everett and RTM.
-                // If the comparer is null or a compatible comparer, serialize Hashtable
-                // in a format that can be deserialized on Everett and RTM.            
-                //
-#pragma warning disable 618
-                IEqualityComparer keyComparerForSerilization = _keycomparer;
-
-                if (keyComparerForSerilization == null)
-                {
-                    info.AddValue(ComparerName, null, typeof(IComparer));
-                    info.AddValue(HashCodeProviderName, null, typeof(IHashCodeProvider));
-                }
-                else if (keyComparerForSerilization is CompatibleComparer)
-                {
-                    CompatibleComparer c = keyComparerForSerilization as CompatibleComparer;
-                    info.AddValue(ComparerName, c.Comparer, typeof(IComparer));
-                    info.AddValue(HashCodeProviderName, c.HashCodeProvider, typeof(IHashCodeProvider));
-                }
-                else
-                {
-                    info.AddValue(KeyComparerName, keyComparerForSerilization, typeof(IEqualityComparer));
-                }
-#pragma warning restore 618
-
-                info.AddValue(HashSizeName, buckets.Length); //This is the length of the bucket array.
-                Object[] serKeys = new Object[count];
-                Object[] serValues = new Object[count];
-                CopyKeys(serKeys, 0);
-                CopyValues(serValues, 0);
-                info.AddValue(KeysName, serKeys, typeof(Object[]));
-                info.AddValue(ValuesName, serValues, typeof(Object[]));
-
-                // Explicitly check to see if anyone changed the Hashtable while we 
-                // were serializing it.  That's a race condition in their code.
-                if (version != oldVersion)
-                    throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
-            }
+            throw new PlatformNotSupportedException();
         }
 
         //
@@ -1185,17 +1134,7 @@ namespace System.Collections
             ==============================================================================*/
             public override void GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
-                Contract.EndContractBlock();
-                // Our serialization code hasn't been fully tweaked to be safe 
-                // for a concurrent writer.
-                lock (_table.SyncRoot)
-                {
-                    info.AddValue("ParentTable", _table, typeof(Hashtable));
-                }
+                throw new PlatformNotSupportedException();
             }
 
             public override int Count

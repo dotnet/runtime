@@ -93,20 +93,12 @@ namespace System.IO
         protected FileNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            // Base class constructor will check info != null.
-
-            FileName = info.GetString("FileNotFound_FileName");
-            FusionLog = info.GetString("FileNotFound_FusionLog");
+            throw new PlatformNotSupportedException();
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            // Serialize data for our base classes.  base will verify info != null.
             base.GetObjectData(info, context);
-
-            // Serialize data for this class
-            info.AddValue("FileNotFound_FileName", FileName, typeof(string));
-            info.AddValue("FileNotFound_FusionLog", FusionLog, typeof(string));
         }
     }
 }

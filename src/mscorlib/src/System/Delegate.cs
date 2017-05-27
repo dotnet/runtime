@@ -544,8 +544,9 @@ namespace System
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            throw new NotSupportedException();
+            throw new PlatformNotSupportedException();
         }
+
         //
         // internal implementation details (FCALLS and utilities)
         //

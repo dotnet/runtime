@@ -30,6 +30,7 @@ namespace System.Resources
         protected MissingManifestResourceException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

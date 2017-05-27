@@ -34,7 +34,5 @@ namespace System
         {
             HResult = __HResults.COR_E_STACKOVERFLOW;
         }
-
-        internal StackOverflowException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

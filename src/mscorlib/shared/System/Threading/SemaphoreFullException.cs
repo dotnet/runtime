@@ -23,6 +23,7 @@ namespace System.Threading
 
         protected SemaphoreFullException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

@@ -34,22 +34,10 @@ namespace System.Text
 
         #region Serialization
 
-        // Constructor called by serialization. called during deserialization.
-        internal EncoderNLS(SerializationInfo info, StreamingContext context)
-        {
-            throw new NotSupportedException(
-                        String.Format(
-                            System.Globalization.CultureInfo.CurrentCulture,
-                            SR.NotSupported_TypeCannotDeserialized, this.GetType()));
-        }
-
-        // ISerializable implementation. called during serialization.
+        // ISerializable implementation.
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            SerializeEncoder(info);
-            info.AddValue("encoding", this.m_encoding);
-            info.AddValue("charLeftOver", this.charLeftOver);
-            info.SetType(typeof(Encoding.DefaultEncoder));
+            throw new PlatformNotSupportedException();
         }
 
         #endregion Serialization 

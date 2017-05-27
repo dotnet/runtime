@@ -71,6 +71,7 @@ namespace System.Threading.Tasks
         protected TaskSchedulerException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }
