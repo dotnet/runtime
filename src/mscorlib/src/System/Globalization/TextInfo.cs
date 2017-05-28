@@ -92,38 +92,9 @@ namespace System.Globalization
             FinishInitialization(_textInfoName);
         }
 
-        [OnSerializing]
-        private void OnSerializing(StreamingContext ctx) { }
-
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-            // Clear these so we can check if we've fixed them yet            
-            _cultureData = null;
-            _cultureName = null;
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            OnDeserialized();
-        }
-
         void IDeserializationCallback.OnDeserialization(Object sender)
         {
-            OnDeserialized();
-        }
-
-        private void OnDeserialized()
-        {
-            // this method will be called twice because of the support of IDeserializationCallback
-            if (_cultureData == null)
-            {
-                // Get the text info name belonging to that culture
-                _cultureData = CultureInfo.GetCultureInfo(_cultureName)._cultureData;
-                _textInfoName = _cultureData.STEXTINFO;
-                FinishInitialization(_textInfoName);
-            }
+            throw new PlatformNotSupportedException();
         }
 
         //
