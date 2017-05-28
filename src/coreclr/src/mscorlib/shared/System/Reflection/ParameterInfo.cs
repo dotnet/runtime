@@ -54,46 +54,7 @@ namespace System.Reflection
 
         public object GetRealObject(StreamingContext context)
         {
-            // Once all the serializable fields have come in we can set up the real
-            // instance based on just two of them (MemberImpl and PositionImpl).
-
-            if (MemberImpl == null)
-                throw new SerializationException(SR.Serialization_InsufficientState);
-
-            ParameterInfo[] args = null;
-
-            switch (MemberImpl.MemberType)
-            {
-                case MemberTypes.Constructor:
-                case MemberTypes.Method:
-                    if (PositionImpl == -1)
-                    {
-                        if (MemberImpl.MemberType == MemberTypes.Method)
-                            return ((MethodInfo)MemberImpl).ReturnParameter;
-                        else
-                            throw new SerializationException(SR.Serialization_BadParameterInfo);
-                    }
-                    else
-                    {
-                        args = ((MethodBase)MemberImpl).GetParametersNoCopy();
-
-                        if (args != null && PositionImpl < args.Length)
-                            return args[PositionImpl];
-                        else
-                            throw new SerializationException(SR.Serialization_BadParameterInfo);
-                    }
-
-                case MemberTypes.Property:
-                    args = ((PropertyInfo)MemberImpl).GetIndexParameters();
-
-                    if (args != null && PositionImpl > -1 && PositionImpl < args.Length)
-                        return args[PositionImpl];
-                    else
-                        throw new SerializationException(SR.Serialization_BadParameterInfo);
-
-                default:
-                    throw new SerializationException(SR.Serialization_NoParameterInfo);
-            }
+            throw new PlatformNotSupportedException();
         }
 
         public override string ToString() => ParameterType.FormatTypeName() + " " + Name;

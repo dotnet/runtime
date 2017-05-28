@@ -303,38 +303,7 @@ namespace System.Reflection
 
         public void OnDeserialization(Object sender)
         {
-            // Deserialization has already been performed
-            if (m_siInfo == null)
-                return;
-
-            _Name = m_siInfo.GetString("_Name");
-            _PublicKey = (byte[])m_siInfo.GetValue("_PublicKey", typeof(byte[]));
-            _PublicKeyToken = (byte[])m_siInfo.GetValue("_PublicKeyToken", typeof(byte[]));
-#if FEATURE_USE_LCID
-            int lcid = (int)m_siInfo.GetInt32("_CultureInfo");
-            if (lcid != -1)
-                _CultureInfo = new CultureInfo(lcid);
-#endif
-
-            _CodeBase = m_siInfo.GetString("_CodeBase");
-            _Version = (Version)m_siInfo.GetValue("_Version", typeof(Version));
-            _HashAlgorithm = (AssemblyHashAlgorithm)m_siInfo.GetValue("_HashAlgorithm", typeof(AssemblyHashAlgorithm));
-            _StrongNameKeyPair = (StrongNameKeyPair)m_siInfo.GetValue("_StrongNameKeyPair", typeof(StrongNameKeyPair));
-            _VersionCompatibility = (AssemblyVersionCompatibility)m_siInfo.GetValue("_VersionCompatibility", typeof(AssemblyVersionCompatibility));
-            _Flags = (AssemblyNameFlags)m_siInfo.GetValue("_Flags", typeof(AssemblyNameFlags));
-
-            try
-            {
-                _HashAlgorithmForControl = (AssemblyHashAlgorithm)m_siInfo.GetValue("_HashAlgorithmForControl", typeof(AssemblyHashAlgorithm));
-                _HashForControl = (byte[])m_siInfo.GetValue("_HashForControl", typeof(byte[]));
-            }
-            catch (SerializationException)
-            { // RTM did not have these defined
-                _HashAlgorithmForControl = AssemblyHashAlgorithm.None;
-                _HashForControl = null;
-            }
-
-            m_siInfo = null;
+            throw new PlatformNotSupportedException();
         }
 
         public AssemblyName(String assemblyName)
