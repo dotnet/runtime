@@ -1419,30 +1419,10 @@ namespace System.Text
                 m_encoding = encoding;
                 m_hasInitializedEncoding = true;
             }
-
-            // Just get it from GetEncoding
+            
             public Object GetRealObject(StreamingContext context)
             {
-                // upon deserialization since the DefaultEncoder implement IObjectReference the 
-                // serialization code tries to do the fixup. The fixup returns another 
-                // IObjectReference (the DefaultEncoder) class and hence so on and on. 
-                // Finally the deserialization logics fails after following maximum references
-                // unless we short circuit with the following
-                if (m_hasInitializedEncoding)
-                {
-                    return this;
-                }
-
-                Encoder encoder = m_encoding.GetEncoder();
-                if (m_fallback != null)
-                    encoder.m_fallback = m_fallback;
-                if (charLeftOver != (char)0)
-                {
-                    EncoderNLS encoderNls = encoder as EncoderNLS;
-                    if (encoderNls != null)
-                        encoderNls.charLeftOver = charLeftOver;
-                }
-                return encoder;
+                throw new PlatformNotSupportedException();
             }
 
             // ISerializable implementation, get data for this object
@@ -1516,24 +1496,9 @@ namespace System.Text
                 m_hasInitializedEncoding = true;
             }
 
-            // Just get it from GetEncoding
             public Object GetRealObject(StreamingContext context)
             {
-                // upon deserialization since the DefaultEncoder implement IObjectReference the 
-                // serialization code tries to do the fixup. The fixup returns another 
-                // IObjectReference (the DefaultEncoder) class and hence so on and on. 
-                // Finally the deserialization logics fails after following maximum references
-                // unless we short circuit with the following
-                if (m_hasInitializedEncoding)
-                {
-                    return this;
-                }
-
-                Decoder decoder = m_encoding.GetDecoder();
-                if (m_fallback != null)
-                    decoder.m_fallback = m_fallback;
-
-                return decoder;
+                throw new PlatformNotSupportedException();
             }
 
             // ISerializable implementation
