@@ -1340,7 +1340,7 @@ void Compiler::optPrintLoopRecording(unsigned loopInd)
     {
         printf(" [over V%02u", optLoopTable[loopInd].lpIterVar());
         printf(" (");
-        printf(GenTree::NodeName(optLoopTable[loopInd].lpIterOper()));
+        printf(GenTree::OpName(optLoopTable[loopInd].lpIterOper()));
         printf(" ");
         printf("%d )", optLoopTable[loopInd].lpIterConst());
 
@@ -1354,7 +1354,7 @@ void Compiler::optPrintLoopRecording(unsigned loopInd)
         }
 
         // If a simple test condition print operator and the limits */
-        printf(GenTree::NodeName(optLoopTable[loopInd].lpTestOper()));
+        printf(GenTree::OpName(optLoopTable[loopInd].lpTestOper()));
 
         if (optLoopTable[loopInd].lpFlags & LPFLG_CONST_LIMIT)
         {
@@ -7593,7 +7593,7 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
            (pLoop->lpIterOper() == GT_SUB || pLoop->lpIterOper() == GT_ASG_SUB))))
     {
         JITDUMP("> Loop test (%s) doesn't agree with the direction (%s) of the pLoop->\n",
-                GenTree::NodeName(pLoop->lpTestOper()), GenTree::NodeName(pLoop->lpIterOper()));
+                GenTree::OpName(pLoop->lpTestOper()), GenTree::OpName(pLoop->lpIterOper()));
         return false;
     }
 

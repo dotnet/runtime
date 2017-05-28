@@ -729,7 +729,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #ifdef DEBUG
             char message[256];
             _snprintf_s(message, _countof(message), _TRUNCATE, "NYI: Unimplemented node type %s",
-                        GenTree::NodeName(tree->OperGet()));
+                        GenTree::OpName(tree->OperGet()));
             NYIRAW(message);
 #else
             NYI_ARM("TreeNodeInfoInit default case");
