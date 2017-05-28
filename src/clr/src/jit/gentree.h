@@ -68,7 +68,7 @@ enum SpecialCodeKind
 
 DECLARE_TYPED_ENUM(genTreeOps, BYTE)
 {
-#define GTNODE(en, sn, st, cm, ok) GT_##en,
+#define GTNODE(en, st, cm, ok) GT_##en,
 #include "gtlist.h"
 
     GT_COUNT,
@@ -1757,10 +1757,6 @@ public:
     static bool Compare(GenTreePtr op1, GenTreePtr op2, bool swapOK = false);
 
 //---------------------------------------------------------------------
-
-#if defined(DEBUG)
-    static const char* NodeName(genTreeOps op);
-#endif
 
 #if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
     static const char* OpName(genTreeOps op);

@@ -770,7 +770,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_CLS_VAR:
             // These nodes are eliminated by rationalizer.
-            JITDUMP("Unexpected node %s in Lower.\n", GenTree::NodeName(tree->OperGet()));
+            JITDUMP("Unexpected node %s in Lower.\n", GenTree::OpName(tree->OperGet()));
             unreached();
             break;
     } // end switch (tree->OperGet())

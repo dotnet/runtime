@@ -21,7 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 /*****************************************************************************/
 
 const unsigned short GenTree::gtOperKindTable[] = {
-#define GTNODE(en, sn, st, cm, ok) ok + GTK_COMMUTE *cm,
+#define GTNODE(en, st, cm, ok) ok + GTK_COMMUTE *cm,
 #include "gtlist.h"
 };
 
@@ -208,24 +208,12 @@ static void printIndent(IndentStack* indentStack)
     indentStack->print();
 }
 
-static const char* nodeNames[] = {
-#define GTNODE(en, sn, st, cm, ok) sn,
-#include "gtlist.h"
-};
-
-const char* GenTree::NodeName(genTreeOps op)
-{
-    assert((unsigned)op < sizeof(nodeNames) / sizeof(nodeNames[0]));
-
-    return nodeNames[op];
-}
-
 #endif
 
 #if defined(DEBUG) || NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 static const char* opNames[] = {
-#define GTNODE(en, sn, st, cm, ok) #en,
+#define GTNODE(en, st, cm, ok) #en,
 #include "gtlist.h"
 };
 
@@ -241,7 +229,7 @@ const char* GenTree::OpName(genTreeOps op)
 #if MEASURE_NODE_SIZE && SMALL_TREE_NODES
 
 static const char* opStructNames[] = {
-#define GTNODE(en, sn, st, cm, ok) #st,
+#define GTNODE(en, st, cm, ok) #st,
 #include "gtlist.h"
 };
 
@@ -270,7 +258,7 @@ unsigned char GenTree::s_gtNodeSizes[GT_COUNT + 1];
 #if NODEBASH_STATS || MEASURE_NODE_SIZE || COUNT_AST_OPERS
 
 unsigned char GenTree::s_gtTrueSizes[GT_COUNT + 1]{
-#define GTNODE(en, sn, st, cm, ok) sizeof(st),
+#define GTNODE(en, st, cm, ok) sizeof(st),
 #include "gtlist.h"
 };
 
@@ -9810,7 +9798,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
     assert(tree);
     if (tree->gtOper < GT_COUNT)
     {
-        name = GenTree::NodeName(tree->OperGet());
+        name = GenTree::OpName(tree->OperGet());
     }
     else
     {
@@ -9829,7 +9817,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
     }
     else if (tree->gtOper == GT_CALL)
     {
-        const char* callType = "call";
+        const char* callType = "CALL";
         const char* gtfType  = "";
         const char* ctType   = "";
         char        gtfTypeBuf[100];
@@ -9838,7 +9826,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
         {
             if ((tree->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT)
             {
-                callType = "callv";
+                callType = "CALLV";
             }
         }
         else if (tree->gtCall.gtCallType == CT_HELPER)
@@ -11192,7 +11180,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
         case GT_JCC:
         case GT_SETCC:
-            printf(" cond=%s", GenTree::NodeName(tree->AsCC()->gtCondition));
+            printf(" cond=%s", GenTree::OpName(tree->AsCC()->gtCondition));
             break;
 
         default:

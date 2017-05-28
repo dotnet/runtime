@@ -401,7 +401,7 @@ static void RewriteAssignmentIntoStoreLclCore(GenTreeOp* assignment,
     genTreeOps storeOp = storeForm(locationOp);
 
 #ifdef DEBUG
-    JITDUMP("rewriting asg(%s, X) to %s(X)\n", GenTree::NodeName(locationOp), GenTree::NodeName(storeOp));
+    JITDUMP("rewriting asg(%s, X) to %s(X)\n", GenTree::OpName(locationOp), GenTree::OpName(storeOp));
 #endif // DEBUG
 
     assignment->SetOper(storeOp);
@@ -583,8 +583,8 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
                 default:
                     unreached();
             }
-            JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::NodeName(location->gtOper),
-                    GenTree::NodeName(storeOper));
+            JITDUMP("Rewriting GT_ASG(%s(X), Y) to %s(X,Y):\n", GenTree::OpName(location->gtOper),
+                    GenTree::OpName(storeOper));
             storeBlk->SetOperRaw(storeOper);
             storeBlk->gtFlags &= ~GTF_DONT_CSE;
             storeBlk->gtFlags |=
