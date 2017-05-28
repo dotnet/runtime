@@ -4153,7 +4153,7 @@ const char* ValueNumStore::VNFuncName(VNFunc vnf)
 {
     if (vnf < VNF_Boundary)
     {
-        return GenTree::NodeName(genTreeOps(vnf));
+        return GenTree::OpName(genTreeOps(vnf));
     }
     else
     {
