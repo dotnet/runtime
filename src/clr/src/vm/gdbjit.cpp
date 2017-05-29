@@ -1146,6 +1146,7 @@ void TypeMember::DumpDebugInfo(char* ptr, int& offset)
 void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
 {
     const int ptrSize = sizeof(TADDR);
+    int bufSize = 0;
     if (ptr != nullptr)
     {
         DebugInfoStaticMember memberEntry;
@@ -1154,19 +1155,47 @@ void TypeMember::DumpStaticDebugInfo(char* ptr, int& offset)
         memberEntry.m_member_specification = m_member_offset;
         memcpy(ptr + offset, &memberEntry, sizeof(DebugInfoStaticMember));
 
-        char buf[ptrSize + 2] = {0};
-        buf[0] = ptrSize + 1;
-        buf[1] = DW_OP_addr;
-
-        for (int i = 0; i < ptrSize; i++)
+        // for value type static fields compute address as:
+        // addr = (*addr+sizeof(OBJECTREF))
+        if (m_member_type->GetTypeHandle().GetSignatureCorElementType() ==
+                ELEMENT_TYPE_VALUETYPE)
         {
-            buf[i + 2] = m_static_member_address >> (i * 8);
-        }
+            bufSize = ptrSize + 6;
 
-        memcpy(ptr + offset + sizeof(DebugInfoStaticMember), &buf, ptrSize + 2);
+            char buf[ptrSize + 6] = {0};
+            buf[0] = ptrSize + 5;
+            buf[1] = DW_OP_addr;
+
+            for (int i = 0; i < ptrSize; i++)
+            {
+                buf[i + 2] = m_static_member_address >> (i * 8);
+            }
+
+            buf[ptrSize + 2] = DW_OP_deref;
+            buf[ptrSize + 3] = DW_OP_const1u;
+            buf[ptrSize + 4] = sizeof(OBJECTREF);
+            buf[ptrSize + 5] = DW_OP_plus;
+
+            memcpy(ptr + offset + sizeof(DebugInfoStaticMember), &buf, bufSize);
+        }
+        else
+        {
+            bufSize = ptrSize + 2;
+
+            char buf[ptrSize + 2] = {0};
+            buf[0] = ptrSize + 1;
+            buf[1] = DW_OP_addr;
+
+            for (int i = 0; i < ptrSize; i++)
+            {
+                buf[i + 2] = m_static_member_address >> (i * 8);
+            }
+
+            memcpy(ptr + offset + sizeof(DebugInfoStaticMember), &buf, bufSize);
+        }
     }
     offset += sizeof(DebugInfoStaticMember);
-    offset += ptrSize + 2;
+    offset += bufSize;
 }
 
 void FunctionMember::MangleName(char *buf, int &buf_offset, const char *name)
