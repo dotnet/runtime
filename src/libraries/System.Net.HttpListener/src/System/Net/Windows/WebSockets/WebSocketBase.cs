@@ -195,8 +195,6 @@ namespace System.Net.WebSockets
         private async Task<WebSocketReceiveResult> ReceiveAsyncCore(ArraySegment<byte> buffer,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(buffer != null);
-
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this);

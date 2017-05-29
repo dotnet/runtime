@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -30,6 +32,7 @@ namespace System.Net.Tests
         }
 
         public static bool IsNotWindows7OrUapCore { get; } = !PlatformDetection.IsWindows7 && PlatformDetection.IsNotOneCoreUAP;
+        public static bool IsNotWindows7OrUapCoreAndIsWindowsImplementation { get; } = IsNotWindows7OrUapCore && Helpers.IsWindowsImplementationAndNotUap;
 
         public static IEnumerable<object[]> SubProtocol_TestData()
         {
@@ -43,8 +46,7 @@ namespace System.Net.Tests
             yield return new object[] { new string[] { "MyProtocol1", "MyProtocol2" }, "MyProtocol2" };
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
-        [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
+        [ConditionalTheory(nameof(IsNotWindows7OrUapCoreAndIsWindowsImplementation))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently
         [MemberData(nameof(SubProtocol_TestData))]
         public async Task AcceptWebSocketAsync_ValidSubProtocol_Success(string[] clientProtocols, string serverProtocol)
         {
@@ -53,20 +55,79 @@ namespace System.Net.Tests
             Assert.Equal(serverProtocol, socketContext.WebSocket.SubProtocol);
         }
 
-        [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
-        public async Task AcceptWebSocketAsync_SocketSpoofingAsWebSocket_ThrowsWebSocketException()
+        [ConditionalFact(nameof(IsNotWindows7OrUapCoreAndIsWindowsImplementation))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently
+        public async Task AcceptWebSocketAsync_ValidWebSocket_SetsUpHeadersInResponse()
         {
-            await GetSocketContext(new string[] { "Connection: Upgrade", "Upgrade: websocket", "Sec-WebSocket-Version: 13", "Sec-WebSocket-Key: Key" }, async context =>
-            {
-                await Assert.ThrowsAsync<WebSocketException>(() => context.AcceptWebSocketAsync(null));
-            });
+            HttpListenerContext context = await GetWebSocketContext(new string[] { "SubProtocol", "SubProtocol2" });
+            HttpListenerWebSocketContext socketContext = await context.AcceptWebSocketAsync("SubProtocol");
+
+            Assert.Equal("SubProtocol", context.Response.Headers["Sec-WebSocket-Protocol"]);
+            Assert.Equal("Upgrade", context.Response.Headers["Connection"], ignoreCase: true);
+            Assert.Null(context.Response.Headers["Sec-WebSocket-Key"]);
+            Assert.Equal(101, context.Response.StatusCode);
+
+            Assert.Equal("SubProtocol, SubProtocol2", socketContext.Headers["Sec-WebSocket-Protocol"]);
+            Assert.Equal(new string[] { "SubProtocol" }, socketContext.SecWebSocketProtocols);
+
+            Assert.NotEmpty(socketContext.Headers["Sec-WebSocket-Key"]);
+            Assert.NotEmpty(socketContext.SecWebSocketKey);
+
+            Assert.Equal("13", socketContext.Headers["Sec-WebSocket-Version"]);
+            Assert.Equal("13", socketContext.SecWebSocketVersion);
+
+            Assert.Equal("Upgrade", socketContext.Headers["Connection"], ignoreCase: true);
+            Assert.Equal("websocket", socketContext.Headers["Upgrade"], ignoreCase: true);
         }
 
         [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
+        public async Task AcceptWebSocketAsync_ValidWebSocket_SetsUpContextProperties()
+        {
+            Socket.Options.SetRequestHeader("origin", "Browser");
+
+            HttpListenerContext context = await GetWebSocketContext(new string[] { "SubProtocol" });
+            HttpListenerWebSocketContext socketContext = await context.AcceptWebSocketAsync("SubProtocol");
+
+            Assert.Equal(new Uri(Factory.ListeningUrl), socketContext.RequestUri);
+            Assert.NotSame(context.Request.Headers, socketContext.Headers);
+            Assert.Equal("Browser", socketContext.Origin, ignoreCase: true);
+            Assert.NotSame(context.Request.Cookies, socketContext.CookieCollection);
+            Assert.Null(socketContext.User);
+            Assert.False(socketContext.IsAuthenticated);
+            Assert.True(socketContext.IsLocal);
+            Assert.False(socketContext.IsSecureConnection);
+        }
+
+        [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
+        public async Task AcceptWebSocketAsync_AuthorizationInHeaders_ThrowsNotImplementedException()
+        {
+            Socket.Options.SetRequestHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes("user:password")));
+            Factory.GetListener().AuthenticationSchemes = AuthenticationSchemes.Basic;
+
+            HttpListenerContext context = await GetWebSocketContext();
+            Assert.Equal("user", context.User.Identity.Name);
+
+            HttpListenerWebSocketContext webSocketContext = await context.AcceptWebSocketAsync(null);
+            IPrincipal user = webSocketContext.User;
+
+            // Should be copied as User gets disposed when HttpListenerContext is closed.
+            Assert.NotSame(context.User, webSocketContext.User);
+
+            Assert.Equal("user", webSocketContext.User.Identity.Name);
+            Assert.Equal("Basic", webSocketContext.User.Identity.AuthenticationType);
+        }
+
+        [ConditionalFact(nameof(IsNotWindows7OrUapCoreAndIsWindowsImplementation))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently
         public async Task AcceptWebSocketAsync_UnsupportedProtocol_ThrowsWebSocketException()
         {
             HttpListenerContext context = await GetWebSocketContext(new string[] { "MyProtocol" });
             await Assert.ThrowsAsync<WebSocketException>(() => context.AcceptWebSocketAsync("MyOtherProtocol"));
+        }
+
+        [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
+        public async Task AcceptWebSocketAsync_NoClientSubProtocol_ThrowsWebSocketException()
+        {
+            HttpListenerContext context = await GetWebSocketContext();
+            await Assert.ThrowsAsync<WebSocketException>(() => context.AcceptWebSocketAsync("SubProtocol"));
         }
 
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
@@ -79,6 +140,7 @@ namespace System.Net.Tests
         [InlineData("Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 1")]
         [InlineData("Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13")]
         [InlineData("Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: ")]
+        [InlineData("Connection: Upgrade\r\nUpgrade: websocket\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: Key")]
         [InlineData("UnknownHeader: random")]
         public async Task AcceptWebSocketAsync_InvalidHeaders_ThrowsWebSocketException(string headers)
         {
@@ -239,6 +301,5 @@ namespace System.Net.Tests
             [FieldOffset(0)] public ArraySegment<byte> Actual;
             [FieldOffset(0)] public FakeArraySegment Fake;
         }
-
     }
 }
