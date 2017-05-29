@@ -30,7 +30,7 @@ namespace System.Net.Tests
 
         public void Dispose() => _factory.Dispose();
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // Managed implementation connects successfully.
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // Managed implementation connects successfully.
         [InlineData("Basic")]
         [InlineData("NTLM")]
         [InlineData("Negotiate")]
@@ -89,7 +89,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20098, TestPlatforms.Unix)]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20098, TestPlatforms.Unix)]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]
@@ -146,7 +146,7 @@ namespace System.Net.Tests
             await ValidateNullUser();
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
         [ActiveIssue(20096)]
         public async Task NtlmAuthentication_Conversation_ReturnsExpectedType2Message()
         {
@@ -169,7 +169,7 @@ namespace System.Net.Tests
             yield return new object[] { "abcd", HttpStatusCode.BadRequest };
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
         [ActiveIssue(20096)]
         [MemberData(nameof(InvalidNtlmNegotiateAuthentication_TestData))]
         public async Task NtlmAuthentication_InvalidRequestHeaders_ReturnsExpectedStatusCode(string header, HttpStatusCode statusCode)
@@ -192,7 +192,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
         [ActiveIssue(20096)]
         public async Task NegotiateAuthentication_Conversation_ReturnsExpectedType2Message()
         {
@@ -207,7 +207,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
         [ActiveIssue(20096)]
         [MemberData(nameof(InvalidNtlmNegotiateAuthentication_TestData))]
         public async Task NegotiateAuthentication_InvalidRequestHeaders_ReturnsExpectedStatusCode(string header, HttpStatusCode statusCode)

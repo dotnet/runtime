@@ -152,7 +152,7 @@ namespace System.Net.Tests
         }
         
         // The managed implementation should also dispose the OutputStream after calling Abort.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19975, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(19975, TestPlatforms.AnyUnix)]
         public async Task Abort_Invoke_ForciblyTerminatesConnection()
         {
             Client.Send(Factory.GetContent("1.1", "POST", null, "Give me a context, please", null, headerOnly: false));
@@ -263,7 +263,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_AllContentLengthAlreadySent_DoesNotSendEntity(bool willBlock)
@@ -391,7 +391,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_SendMoreThanContentLength_ThrowsInvalidOperationException(bool willBlock)

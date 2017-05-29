@@ -14,7 +14,7 @@ namespace System.Net.Tests
     public class HttpListenerWebSocketTests : IDisposable
     {
         public static bool IsNotWindows7OrUapCore { get; } = !PlatformDetection.IsWindows7 && PlatformDetection.IsNotOneCoreUAP;
-        public static bool IsNotWindows7OrUapCoreAndIsWindowsImplementation { get; } = IsNotWindows7OrUapCore && Helpers.IsWindowsImplementation;
+        public static bool IsNotWindows7OrUapCoreAndIsWindowsImplementation { get; } = IsNotWindows7OrUapCore && Helpers.IsWindowsImplementationAndNotUap;
 
         private HttpListenerFactory Factory { get; }
         private HttpListener Listener { get; }
@@ -32,11 +32,6 @@ namespace System.Net.Tests
         {
             Factory.Dispose();
             Client.Dispose();
-
-            if (ClientConnectTask?.IsCompleted == true)
-            {
-                ClientConnectTask?.Dispose();
-            }
         }
 
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
@@ -47,15 +42,15 @@ namespace System.Net.Tests
         public async Task SendAsync_SendWholeBuffer_Success(WebSocketMessageType messageType, bool endOfMessage)
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
-
             await ClientConnectTask;
+
             const string Text = "Hello Web Socket";
             byte[] sentBytes = Encoding.ASCII.GetBytes(Text);
 
             await context.WebSocket.SendAsync(new ArraySegment<byte>(sentBytes), messageType, endOfMessage, new CancellationToken());
 
             byte[] receivedBytes = new byte[sentBytes.Length];
-            WebSocketReceiveResult result = await Client.ReceiveAsync(new ArraySegment<byte>(receivedBytes), new CancellationToken());
+            WebSocketReceiveResult result = await ReceiveAllAsync(Client, receivedBytes.Length, receivedBytes);
             Assert.Equal(messageType, result.MessageType);
             Assert.Equal(endOfMessage, result.EndOfMessage);
             Assert.Null(result.CloseStatus);
@@ -98,15 +93,15 @@ namespace System.Net.Tests
         public async Task ReceiveAsync_ReadWholeBuffer_Success(WebSocketMessageType messageType, bool endOfMessage)
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
-
             await ClientConnectTask;
+
             const string Text = "Hello Web Socket";
             byte[] sentBytes = Encoding.ASCII.GetBytes(Text);
 
             await Client.SendAsync(new ArraySegment<byte>(sentBytes), messageType, endOfMessage, new CancellationToken());
 
             byte[] receivedBytes = new byte[sentBytes.Length];
-            WebSocketReceiveResult result = await context.WebSocket.ReceiveAsync(new ArraySegment<byte>(receivedBytes), new CancellationToken());
+            WebSocketReceiveResult result = await ReceiveAllAsync(context.WebSocket, receivedBytes.Length, receivedBytes);
             Assert.Equal(messageType, result.MessageType);
             Assert.Equal(endOfMessage, result.EndOfMessage);
             Assert.Null(result.CloseStatus);
@@ -119,6 +114,8 @@ namespace System.Net.Tests
         public async Task ReceiveAsync_NoInnerBuffer_ThrowsArgumentNullException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
+            await ClientConnectTask;
+
             await Assert.ThrowsAsync<ArgumentNullException>("buffer.Array", () => context.WebSocket.ReceiveAsync(new ArraySegment<byte>(), new CancellationToken()));
         }
 
@@ -126,8 +123,9 @@ namespace System.Net.Tests
         public async Task ReceiveAsync_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
-            context.WebSocket.Dispose();
+            await ClientConnectTask;
 
+            context.WebSocket.Dispose();
             await Assert.ThrowsAsync<ObjectDisposedException>(() => context.WebSocket.ReceiveAsync(new ArraySegment<byte>(new byte[10]), new CancellationToken()));
         }
 
@@ -213,8 +211,10 @@ namespace System.Net.Tests
                 expectedStatusDescription = string.Empty;
             }
 
-            // Close the client output.
             HttpListenerWebSocketContext context = await GetWebSocketContext();
+            await ClientConnectTask;
+
+            // Close the client output.
             Task clientCloseTask = Client.CloseOutputAsync(status, statusDescription, new CancellationToken());
             byte[] receivedServerBytes = new byte[10];
             Task<WebSocketReceiveResult> serverReceiveTask = context.WebSocket.ReceiveAsync(new ArraySegment<byte>(receivedServerBytes), new CancellationToken());
@@ -329,6 +329,18 @@ namespace System.Net.Tests
 
             context.WebSocket.Dispose();
             Assert.Equal(WebSocketState.Aborted, context.WebSocket.State);
+        }
+
+        private static async Task<WebSocketReceiveResult> ReceiveAllAsync(WebSocket webSocket, int expectedBytes, byte[] buffer)
+        {
+            int totalReceived = 0;
+            WebSocketReceiveResult result = default(WebSocketReceiveResult);
+            while (totalReceived < expectedBytes)
+            {
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                totalReceived += result.Count;
+            }
+            return new WebSocketReceiveResult(totalReceived, result.MessageType, result.EndOfMessage);
         }
 
         private async Task<HttpListenerWebSocketContext> GetWebSocketContext(string[] subProtocols = null)
