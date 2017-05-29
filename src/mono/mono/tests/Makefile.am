@@ -867,6 +867,7 @@ PROFILE_DISABLED_TESTS += \
 	appdomain1.exe	\
 	appdomain2.exe	\
 	appdomain-exit.exe	\
+	appdomain-unload-asmload.exe \
 	appdomain-unload-callback.exe	\
 	appdomain-unload-doesnot-raise-pending-events.exe	\
 	unload-appdomain-on-shutdown.exe	\
@@ -1017,6 +1018,7 @@ INTERP_DISABLED_TESTS = \
 	appdomain-async-invoke.exe \
 	appdomain-exit.exe \
 	appdomain-serialize-exception.exe \
+	appdomain-unload-asmload.exe \
 	appdomain-unload-callback.exe \
 	appdomain-unload-doesnot-raise-pending-events.exe \
 	appdomain-unload.exe \
