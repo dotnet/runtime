@@ -23,6 +23,7 @@
     <Compile Include="InvalidClientRequestTests.cs" />
     <Compile Include="SimpleHttpTests.cs" />
     <Compile Include="HttpListenerFactory.cs" />
+    <Compile Include="HttpListenerWebSocketTests.cs" />
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">

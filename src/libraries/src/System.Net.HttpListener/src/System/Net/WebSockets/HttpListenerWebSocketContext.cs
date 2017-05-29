@@ -91,7 +91,19 @@ namespace System.Net.WebSockets
         {
             if (user != null)
             {
-                throw new NotImplementedException();
+                if (!(user is WindowsPrincipal))
+                {
+                    // AuthenticationSchemes.Basic.
+                    if (user.Identity is HttpListenerBasicIdentity basicIdentity)
+                    {
+                        return new GenericPrincipal(new HttpListenerBasicIdentity(basicIdentity.Name, basicIdentity.Password), null);
+                    }
+                }
+                else
+                {
+                    // AuthenticationSchemes.Digest, AuthenticationSchemes.Negotiate, AuthenticationSchemes.NTLM.
+                    throw new PlatformNotSupportedException();
+                }
             }
 
             return null;
