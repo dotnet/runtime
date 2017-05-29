@@ -1210,6 +1210,7 @@ mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
+/* WARNING: This method can return NULL on sucess */
 static MonoReflectionMethodBodyHandle
 method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoMethod *method, gpointer user_data, MonoError *error)
 {

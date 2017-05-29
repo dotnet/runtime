@@ -118,6 +118,8 @@ check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, 
 		return obj;
 	MONO_HANDLE_ASSIGN (obj, construct (domain, klass, item, user_data, error));
 	return_val_if_nok (error, NULL);
+	if (MONO_HANDLE_IS_NULL (obj))
+		return obj;
 	/* note no caching if there was an error in construction */
 	return cache_object_handle (domain, klass, item, obj);
 }
