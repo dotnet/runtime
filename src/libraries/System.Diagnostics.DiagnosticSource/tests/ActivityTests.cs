@@ -214,8 +214,8 @@ namespace System.Diagnostics.Tests
             child1.SetParentId("123");
             child1.Start();
             Assert.Equal("123", child1.RootId);
-            Assert.True(child1.Id[0] == '|');
-            Assert.True(child1.Id[child1.Id.Length - 1] == '_');
+            Assert.Equal('|', child1.Id[0]);
+            Assert.Equal('_', child1.Id[child1.Id.Length - 1]);
             child1.Stop();
 
             var child2 = new Activity("child2");
@@ -296,7 +296,7 @@ namespace System.Diagnostics.Tests
             // Let's check that duration is 1sec - maximum DateTime.UtcNow error or bigger.
             // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration) 
             // that checks duration precision on netfx.
-            Assert.True(activity.Duration.TotalMilliseconds >= 1000 - MaxClockErrorMSec);
+            Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - MaxClockErrorMSec, double.MaxValue);
         }
 
         /// <summary>
@@ -423,10 +423,10 @@ namespace System.Diagnostics.Tests
                     // We 'fix' DateTime on netfx to be precise; 
                     // comparing Activity StartTime to potentially imprecise DateTime.UtcNow is not correct
                     // this test does not intend fo check StartTime/Duration precision, so we allow anything within 20ms.
-                    Assert.True(startTime.AddMilliseconds(-1 * MaxClockErrorMSec) <= observer.Activity.StartTimeUtc);
-                    Assert.True(observer.Activity.StartTimeUtc < DateTime.UtcNow.AddMilliseconds(MaxClockErrorMSec));
+                    Assert.InRange(observer.Activity.StartTimeUtc, startTime.AddMilliseconds(-1 * MaxClockErrorMSec), DateTime.MaxValue);
+                    Assert.InRange(observer.Activity.StartTimeUtc, DateTime.MinValue, DateTime.UtcNow.AddMilliseconds(MaxClockErrorMSec).AddTicks(-1));
 
-                    Assert.True(observer.Activity.Duration == TimeSpan.Zero);
+                    Assert.Equal(TimeSpan.Zero, observer.Activity.Duration);
 
                     observer.Reset();
 
@@ -439,10 +439,10 @@ namespace System.Diagnostics.Tests
 
                     // Confirm that duration is set. 
                     Assert.NotNull(observer.Activity);
-                    Assert.True(TimeSpan.Zero < observer.Activity.Duration);
+                    Assert.InRange(observer.Activity.Duration, TimeSpan.FromTicks(1), TimeSpan.MaxValue);
 
                     // let's only check that Duration is set in StopActivity, we do not intend to check precision here
-                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow.AddMilliseconds(2 * MaxClockErrorMSec));
+                    Assert.InRange(observer.Activity.StartTimeUtc + observer.Activity.Duration, DateTime.MinValue, DateTime.UtcNow.AddMilliseconds(2 * MaxClockErrorMSec));
                 } 
             }
         }
