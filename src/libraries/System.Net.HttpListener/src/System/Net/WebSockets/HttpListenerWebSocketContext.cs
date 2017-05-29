@@ -102,7 +102,7 @@ namespace System.Net.WebSockets
                 else
                 {
                     // AuthenticationSchemes.Digest, AuthenticationSchemes.Negotiate, AuthenticationSchemes.NTLM.
-                    throw new NotImplementedException();
+                    throw new PlatformNotSupportedException();
                 }
             }
 
