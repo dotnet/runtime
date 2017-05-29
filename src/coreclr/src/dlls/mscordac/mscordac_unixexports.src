@@ -106,6 +106,7 @@ GetLastError
 GetLongPathNameW
 GetModuleFileNameW
 GetProcAddress
+GetProcessAffinityMask
 GetProcessHeap
 GetShortPathNameW
 GetStdHandle
