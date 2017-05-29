@@ -201,15 +201,17 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 			shorten_branch = 1;
 		}
 	} else {
-		offset = 0xffff;
 		if (td->header->code_size <= 25000) /* FIX to be precise somehow? */
 			shorten_branch = 1;
 
 		Reloc *reloc = mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
-		if (shorten_branch)
+		if (shorten_branch) {
+			offset = 0xffff;
 			reloc->type = RELOC_SHORT_BRANCH;
-		else
+		} else {
+			offset = 0xdeadbeef;
 			reloc->type = RELOC_LONG_BRANCH;
+		}
 		reloc->offset = td->new_ip - td->new_code;
 		reloc->target = target;
 		g_ptr_array_add (td->relocs, reloc);
@@ -3796,9 +3798,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			g_assert (td.new_code [reloc->offset + 1] == 0xffff);
 			td.new_code [reloc->offset + 1] = offset;
 			break;
-		case RELOC_LONG_BRANCH:
-			g_assert_not_reached ();
+		case RELOC_LONG_BRANCH: {
+			guint16 *v = (guint16 *) &offset;
+			g_assert (td.new_code [reloc->offset + 1] == 0xbeef);
+			g_assert (td.new_code [reloc->offset + 2] == 0xdead);
+			td.new_code [reloc->offset + 1] = *(guint16 *) v;
+			td.new_code [reloc->offset + 2] = *(guint16 *) (v + 1);
 			break;
+		}
 		case RELOC_SWITCH: {
 			guint16 *v = (guint16*)&offset;
 			td.new_code [reloc->offset] = *(guint16*)v;
