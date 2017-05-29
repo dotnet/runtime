@@ -12,6 +12,7 @@
 #include <mono/metadata/lock-tracer.h>
 #include <mono/utils/mono-codeman.h>
 #include <mono/metadata/mono-hash.h>
+#include <mono/metadata/mono-conc-hash.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-internal-hash.h>
 #include <mono/metadata/mempool-internals.h>
@@ -339,7 +340,7 @@ struct _MonoDomain {
 	MonoGHashTable     *ldstr_table;
 	/* hashtables for Reflection handles */
 	MonoGHashTable     *type_hash;
-	MonoGHashTable     *refobject_hash;
+	MonoConcGHashTable     *refobject_hash;
 	/* maps class -> type initialization exception object */
 	MonoGHashTable    *type_init_exception_hash;
 	/* maps delegate trampoline addr -> delegate object */

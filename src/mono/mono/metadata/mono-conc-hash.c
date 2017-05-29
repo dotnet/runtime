@@ -201,13 +201,14 @@ mono_conc_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func,
 	hash->hash_func = hash_func;
 	hash->equal_func = key_equal_func;
 
-	hash->table = conc_table_new (hash, INITIAL_SIZE);
 	hash->element_count = 0;
 	hash->overflow_count = (int)(INITIAL_SIZE * LOAD_FACTOR);
-
 	hash->gc_type = type;
 	hash->source = source;
 	hash->msg = msg;
+
+	hash->table = conc_table_new (hash, INITIAL_SIZE);
+
 	if (type > MONO_HASH_KEY_VALUE_GC)
 		g_error ("wrong type for gc hashtable");
 
