@@ -94,13 +94,10 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 #endif // __APPLE__
 
-/*++
-Function:
-    GetNumberOfProcessors
 
-Return number of processors available for the current process
---*/
-int GetNumberOfProcessors()
+DWORD
+PALAPI
+PAL_GetLogicalCpuCountFromOS()
 {
     int nrcpus = 0;
 
@@ -170,7 +167,7 @@ GetSystemInfo(
     lpSystemInfo->dwPageSize = pagesize;
     lpSystemInfo->dwActiveProcessorMask_PAL_Undefined = 0;
 
-    nrcpus = GetNumberOfProcessors();
+    nrcpus = PAL_GetLogicalCpuCountFromOS();
     TRACE("dwNumberOfProcessors=%d\n", nrcpus);
     lpSystemInfo->dwNumberOfProcessors = nrcpus;
 
@@ -385,19 +382,6 @@ PALAPI
 PAL_HasGetCurrentProcessorNumber()
 {
     return HAVE_SCHED_GETCPU;
-}
-
-DWORD
-PALAPI
-PAL_GetLogicalCpuCountFromOS()
-{
-    DWORD numLogicalCores = 0;
-
-#if HAVE_SYSCONF
-    numLogicalCores = sysconf(_SC_NPROCESSORS_ONLN);
-#endif
-
-    return numLogicalCores;
 }
 
 size_t
