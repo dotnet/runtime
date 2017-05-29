@@ -6448,18 +6448,31 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     {
         assignedInterval->assignedReg = regRec;
     }
+#ifdef _TARGET_ARM_
+    else if (canRestorePreviousInterval(regRec, assignedInterval))
+#else
     else if (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
              regRec->previousInterval->assignedReg == regRec &&
              regRec->previousInterval->getNextRefPosition() != nullptr)
+#endif
     {
         regRec->assignedInterval = regRec->previousInterval;
         regRec->previousInterval = nullptr;
+
 #ifdef _TARGET_ARM_
         // Update second half RegRecord of a double register for TYP_DOUBLE
         if (regRec->assignedInterval->registerType == TYP_DOUBLE)
         {
             assert(isFloatRegType(regRec->registerType));
             assert(genIsValidDoubleReg(regRec->regNum));
+
+            // Because nextRegRec was defined only when assignedInterval is TYP_DOUBLE,
+            // we should compute nextRegRec when nextRegRec is not defined yet.
+            if (nextRegRec == nullptr)
+            {
+                nextRegNum = REG_NEXT(regRec->regNum);
+                nextRegRec = getRegisterRecord(nextRegNum);
+            }
 
             nextRegRec->assignedInterval = nextRegRec->previousInterval;
             nextRegRec->previousInterval = nullptr;
@@ -6643,6 +6656,36 @@ bool LinearScan::isSecondHalfReg(RegRecord* regRec, Interval* interval)
     }
 
     return false;
+}
+
+//--------------------------------------------------------------------------------------
+// canRestorePreviousInterval: Test if we can restore previous interval
+//
+// Arguments:
+//    regRec - a register which contains previous interval to be restored
+//    assignedInterval - an interval just unassigned
+//
+// Assumptions:
+//    None
+//
+// Return Value:
+//    True only if previous interval of regRec can be restored
+//
+bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval)
+{
+    bool retVal =
+        (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
+         regRec->previousInterval->assignedReg == regRec && regRec->previousInterval->getNextRefPosition() != nullptr);
+
+    if (retVal && regRec->previousInterval->registerType == TYP_DOUBLE)
+    {
+        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
+        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
+
+        retVal = retVal &&
+                 (nextRegRec->assignedInterval == nullptr && regRec->previousInterval == nextRegRec->previousInterval);
+    }
+    return retVal;
 }
 #endif
 
