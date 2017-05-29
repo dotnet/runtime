@@ -95,10 +95,7 @@ namespace System.Net
             }
         }
 
-        public bool CompletedSynchronously
-        {
-            get { return (_synchRead == _count); }
-        }
+        public bool CompletedSynchronously => false;
 
         public bool IsCompleted
         {
