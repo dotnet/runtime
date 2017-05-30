@@ -87,9 +87,16 @@ namespace System.ServiceProcess.Tests
             get { return s_runningWithElevatedPrivileges.Value; }
         }
 
-        private void AssertExpectedProperties(ServiceController testServiceController)
+        private void AssertExpectedProperties(ServiceController testServiceController, bool serviceNameToUpper = false)
         {
-            Assert.Equal(_testService.TestServiceName, testServiceController.ServiceName);
+            if (serviceNameToUpper)
+            {
+                Assert.Equal(_testService.TestServiceName.ToUpperInvariant(), testServiceController.ServiceName);
+            }
+            else
+            {
+                Assert.Equal(_testService.TestServiceName, testServiceController.ServiceName);
+            }
             Assert.Equal(_testService.TestServiceDisplayName, testServiceController.DisplayName);
             Assert.Equal(_testService.TestMachineName, testServiceController.MachineName);
             Assert.Equal(ServiceType.Win32OwnProcess, testServiceController.ServiceType);
@@ -106,7 +113,7 @@ namespace System.ServiceProcess.Tests
         public void ConstructWithServiceName_ToUpper()
         {
             var controller = new ServiceController(_testService.TestServiceName.ToUpperInvariant());
-            AssertExpectedProperties(controller);
+            AssertExpectedProperties(controller, serviceNameToUpper: PlatformDetection.IsFullFramework);
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
