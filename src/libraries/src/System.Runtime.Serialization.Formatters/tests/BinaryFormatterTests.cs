@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
@@ -63,8 +64,37 @@ namespace System.Runtime.Serialization.Formatters.Tests
         //        }
         //    }
 
-        //    File.WriteAllLines("serializables.txt", serializedHashes);
+        //    string path = @"C:\Users\vikto\Documents\src\corefx\src\System.Runtime.Serialization.Formatters\tests\BinaryFormatterTestData.cs";
+        //    string[] lines = File.ReadAllLines(path);
+        //    string[] corelines = serializedHashes.ToArray();
+
+        //    List<string> newLines = new List<string>();
+        //    for (int i = 0, j = 0; i < lines.Length; i++)
+        //    {
+        //        if (!lines[i].Trim().StartsWith("yield") || j >= corelines.Length)
+        //        {
+        //            newLines.Add(lines[i]);
+        //            continue;
+        //        }
+
+        //        string line = lines[i];
+        //        if (PlatformDetection.IsFullFramework)
+        //        {
+        //            line = Regex.Replace(line, ", \"AAEAAAD.+\"", ", \"" + corelines[j] + "\""); // netfx
+        //        }
+        //        else
+        //        {
+        //            line = Regex.Replace(line, "\"AAEAAAD.+\",", "\"" + corelines[j] + "\","); // netcoreapp
+        //        }
+
+        //        newLines.Add(line);
+
+        //        j++;
+        //    }
+
+        //    File.WriteAllLines(path, newLines);
         //}
+
 
         private static string SerializeObjectToHash(object original)
         {
