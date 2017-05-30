@@ -431,15 +431,19 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 	case MONO_TYPE_U4:
 		result->data.i = *(guint32*)data;
 		return;
-	case MONO_TYPE_R4:
-		result->data.f = *(float*)data;
+	case MONO_TYPE_R4: {
+		float tmp;
+		/* memmove handles unaligned case */
+		memmove (&tmp, data, sizeof (float));
+		result->data.f = tmp;
 		return;
+    }
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
-		result->data.l = *(gint64*)data;
+		memmove (&result->data.l, data, sizeof (gint64));
 		return;
 	case MONO_TYPE_R8:
-		result->data.f = *(double*)data;
+		memmove (&result->data.f, data, sizeof (double));
 		return;
 	case MONO_TYPE_STRING:
 	case MONO_TYPE_SZARRAY:
@@ -3197,7 +3201,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_I8)
 			++ip;
-			sp[-1].data.l = *(gint64*)sp[-1].data.p;
+			/* memmove handles unaligned case */
+			memmove (&sp [-1].data.l, sp [-1].data.p, sizeof (gint64));
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_I) {
 			guint16 offset = * (guint16 *)(ip + 1);
