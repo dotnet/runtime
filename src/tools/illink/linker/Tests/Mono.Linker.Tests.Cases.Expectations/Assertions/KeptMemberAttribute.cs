@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
-	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
 	public sealed class KeptMemberAttribute : KeptAttribute {
 
 		public KeptMemberAttribute (string name)
