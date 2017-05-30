@@ -2,7 +2,7 @@
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
-	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
 	public class KeptInterfaceAttribute : KeptAttribute
 	{
 
