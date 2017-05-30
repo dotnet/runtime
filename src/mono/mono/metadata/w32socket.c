@@ -2592,26 +2592,26 @@ leave:
 }
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gint32 hint)
+ves_icall_System_Net_Dns_GetHostByName_internal (MonoStringHandle host, MonoStringHandleOut h_name, MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list, gint32 hint, MonoError *error)
 {
-	MonoError error;
 	gboolean add_local_ips = FALSE, add_info_ok = TRUE;
 	gchar this_hostname [256];
 	MonoAddressInfo *info = NULL;
 
-	char *hostname = mono_string_to_utf8_checked (host, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+	error_init (error);
+
+	char *hostname = mono_string_handle_to_utf8 (host, error);
+	return_val_if_nok (error, FALSE);
 
 	if (*hostname == '\0') {
 		add_local_ips = TRUE;
-		*h_name = host;
+		MONO_HANDLE_ASSIGN (h_name, host);
 	}
 
 	if (!add_local_ips && gethostname (this_hostname, sizeof (this_hostname)) != -1) {
 		if (!strcmp (hostname, this_hostname)) {
 			add_local_ips = TRUE;
-			*h_name = host;
+			MONO_HANDLE_ASSIGN (h_name, host);
 		}
 	}
 
@@ -2629,8 +2629,7 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **
 	g_free(hostname);
 
 	if (add_info_ok) {
-		MonoBoolean result = addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, add_local_ips, &error);
-		mono_error_set_pending_exception (&error);
+		MonoBoolean result = addrinfo_to_IPHostEntry_handles (info, h_name, h_aliases, h_addr_list, add_local_ips, error);
 		return result;
 	}
 	return FALSE;
