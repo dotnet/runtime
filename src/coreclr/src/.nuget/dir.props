@@ -112,9 +112,6 @@
 
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="alpine.3.4.3-x64" />
-    <OfficialBuildRID Include="debian.8-armel">
-      <Platform>armel</Platform>
-    </OfficialBuildRID>
     <OfficialBuildRID Include="debian.8-x64" />
     <OfficialBuildRID Include="fedora.23-x64" />
     <OfficialBuildRID Include="fedora.24-x64" />
