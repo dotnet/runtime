@@ -2441,21 +2441,6 @@ ves_icall_System_Net_Sockets_Socket_IOControl_internal (gsize sock, gint32 code,
 	return (gint)output_bytes;
 }
 
-static gboolean 
-addrinfo_to_IPHostEntry (MonoAddressInfo *info, MonoString **h_name_raw, MonoArray **h_aliases_raw, MonoArray **h_addr_list_raw, gboolean add_local_ips, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	error_init (error);
-	MonoStringHandle h_name = MONO_HANDLE_NEW (MonoString, NULL);
-	MonoArrayHandle h_aliases = MONO_HANDLE_NEW (MonoArray, NULL);
-	MonoArrayHandle h_addr_list = MONO_HANDLE_NEW (MonoArray, NULL);
-	gboolean ret = addrinfo_to_IPHostEntry_handles (info, h_name, h_aliases, h_addr_list, add_local_ips, error);
-	*h_name_raw = MONO_HANDLE_RAW (h_name);
-	*h_aliases_raw = MONO_HANDLE_RAW (h_aliases);
-	*h_addr_list_raw = MONO_HANDLE_RAW (h_addr_list);
-	HANDLE_FUNCTION_RETURN_VAL (ret);
-}
-
 static gboolean
 addrinfo_add_string (MonoDomain *domain, const char *s, MonoArrayHandle arr, int index, MonoError *error)
 {
