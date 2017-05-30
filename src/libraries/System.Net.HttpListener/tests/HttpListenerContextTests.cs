@@ -32,7 +32,6 @@ namespace System.Net.Tests
         }
 
         public static bool IsNotWindows7OrUapCore { get; } = !PlatformDetection.IsWindows7 && PlatformDetection.IsNotOneCoreUAP;
-        public static bool IsNotWindows7OrUapCoreAndIsWindowsImplementation { get; } = IsNotWindows7OrUapCore && Helpers.IsWindowsImplementationAndNotUap;
 
         public static IEnumerable<object[]> SubProtocol_TestData()
         {
@@ -46,7 +45,7 @@ namespace System.Net.Tests
             yield return new object[] { new string[] { "MyProtocol1", "MyProtocol2" }, "MyProtocol2" };
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7OrUapCoreAndIsWindowsImplementation))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently
+        [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [MemberData(nameof(SubProtocol_TestData))]
         public async Task AcceptWebSocketAsync_ValidSubProtocol_Success(string[] clientProtocols, string serverProtocol)
         {
@@ -55,7 +54,7 @@ namespace System.Net.Tests
             Assert.Equal(serverProtocol, socketContext.WebSocket.SubProtocol);
         }
 
-        [ConditionalFact(nameof(IsNotWindows7OrUapCoreAndIsWindowsImplementation))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently
+        [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         public async Task AcceptWebSocketAsync_ValidWebSocket_SetsUpHeadersInResponse()
         {
             HttpListenerContext context = await GetWebSocketContext(new string[] { "SubProtocol", "SubProtocol2" });
@@ -116,7 +115,7 @@ namespace System.Net.Tests
             Assert.Equal("Basic", webSocketContext.User.Identity.AuthenticationType);
         }
 
-        [ConditionalFact(nameof(IsNotWindows7OrUapCoreAndIsWindowsImplementation))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently
+        [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
         public async Task AcceptWebSocketAsync_UnsupportedProtocol_ThrowsWebSocketException()
         {
             HttpListenerContext context = await GetWebSocketContext(new string[] { "MyProtocol" });
@@ -150,7 +149,6 @@ namespace System.Net.Tests
             });
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData("")]
         [InlineData(" ")]
@@ -179,7 +177,6 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentException>("subProtocol", () => context.AcceptWebSocketAsync(subProtocol));
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData("!")]
         [InlineData("#")]
@@ -190,7 +187,6 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<WebSocketException>(() => context.AcceptWebSocketAsync(subProtocol));
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalFact(nameof(IsNotWindows7OrUapCore))]
         public async Task AcceptWebSocketAsync_InvalidKeepAlive_ThrowsWebSocketException()
         {
@@ -200,7 +196,6 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>("keepAliveInterval", () => context.AcceptWebSocketAsync(null, keepAlive));
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData(-1)]
         [InlineData(0)]
@@ -221,7 +216,6 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentNullException>("internalBuffer.Array", () => context.AcceptWebSocketAsync(null, 1024, TimeSpan.MaxValue, internalBuffer));
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData(-1)]
         [InlineData(11)]
@@ -233,7 +227,6 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentOutOfRangeException>("internalBuffer.Offset", () => context.AcceptWebSocketAsync(null, 1024, TimeSpan.MaxValue, internalBuffer));
         }
 
-        [ActiveIssue(20246)] // CI hanging frequently
         [ConditionalTheory(nameof(IsNotWindows7OrUapCore))]
         [InlineData(0, -1)]
         [InlineData(0, 11)]
