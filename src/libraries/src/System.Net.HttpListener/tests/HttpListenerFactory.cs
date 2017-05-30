@@ -5,14 +5,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
-using Xunit;
 
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
+        const int MinPort = 1025;
+        private static readonly object s_createListenerLock = new object();
+        private static int s_nextPort = MinPort;
+
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
@@ -29,44 +33,54 @@ namespace System.Net.Tests
             _path = path ?? Guid.NewGuid().ToString("N");
             string pathComponent = string.IsNullOrEmpty(_path) ? _path : $"{_path}/";
 
-            for (int port = 1025; port <= IPEndPoint.MaxPort; port++)
+            lock (s_createListenerLock)
             {
-                string prefix = $"http://{hostname}:{port}/{pathComponent}";
-
-                var listener = new HttpListener();
-                try
+                foreach (int port in Enumerable.Range(s_nextPort, IPEndPoint.MaxPort - s_nextPort + 1).Concat(Enumerable.Range(MinPort, s_nextPort - MinPort)))
                 {
-                    listener.Prefixes.Add(prefix);
-                    listener.Start();
+                    string prefix = $"http://{hostname}:{port}/{pathComponent}";
 
-                    _processPrefixListener = listener;
-                    _processPrefix = prefix;
-                    _port = port;
-                    break;
-                }
-                catch (Exception e)
-                {
-                    // can't use this prefix
-                    listener.Close();
-
-                    // Remember the exception for later
-                    _processPrefixException = e;
-
-                    if (e is HttpListenerException listenerException)
+                    var listener = new HttpListener();
+                    try
                     {
-                        // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
-                        // then throw.
-                        const int ERROR_ACCESS_DENIED = 5;
-                        if (listenerException.ErrorCode == ERROR_ACCESS_DENIED && (hostname == "*" || hostname == "+"))
+                        listener.Prefixes.Add(prefix);
+                        listener.Start();
+
+                        _processPrefixListener = listener;
+                        _processPrefix = prefix;
+                        _port = port;
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Helpers.IsManagedImplementation)
                         {
-                            throw new InvalidOperationException($"Access denied for host {hostname}");
+                            // Try to avoid reusing the same port from test to test if we're using
+                            // the WinHttp ClientWebSocket against the managed HttpListener.
+                            // https://github.com/dotnet/corefx/issues/20439
+                            s_nextPort = port + 1;
                         }
-                    }
-                    else if (!(e is SocketException))
-                    {
-                        // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
-                        // in trying again.
                         break;
+                    }
+                    catch (Exception e)
+                    {
+                        // can't use this prefix
+                        listener.Close();
+
+                        // Remember the exception for later
+                        _processPrefixException = e;
+
+                        if (e is HttpListenerException listenerException)
+                        {
+                            // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
+                            // then throw.
+                            const int ERROR_ACCESS_DENIED = 5;
+                            if (listenerException.ErrorCode == ERROR_ACCESS_DENIED && (hostname == "*" || hostname == "+"))
+                            {
+                                throw new InvalidOperationException($"Access denied for host {hostname}");
+                            }
+                        }
+                        else if (!(e is SocketException))
+                        {
+                            // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
+                            // in trying again.
+                            break;
+                        }
                     }
                 }
             }
