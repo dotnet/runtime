@@ -558,6 +558,14 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
                 // Update argReg for the next putarg_reg (if any)
                 argReg = genRegArgNext(argReg);
+
+#if defined(_TARGET_ARM_)
+                // A double register is modelled as an even-numbered single one
+                if (entry->Current()->TypeGet() == TYP_DOUBLE)
+                {
+                    argReg = genRegArgNext(argReg);
+                }
+#endif // _TARGET_ARM_
             }
         }
         else
