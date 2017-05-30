@@ -4,6 +4,7 @@
 
 using Xunit;
 using Xunit.Sdk;
+using System.Collections.Generic;
 
 namespace System.Tests
 {
@@ -564,98 +565,106 @@ namespace System.Tests
             AssertEqual(expectedResult, Math.Atan(value), allowedVariance);
         }
 
+        public static IEnumerable<object[]> Atan2_TestData
+        {
+            get
+            {
+                yield return new object[] { double.NegativeInfinity, -1.0, -1.5707963267948966, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi / 2)
+                yield return new object[] { double.NegativeInfinity, -0.0, -1.5707963267948966, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi / 2)
+                yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { double.NegativeInfinity, 0.0, -1.5707963267948966, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi / 2)
+                yield return new object[] { double.NegativeInfinity, 1.0, -1.5707963267948966, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi / 2)
+                yield return new object[] { -1.0, -1.0, -2.3561944901923449, CrossPlatformMachineEpsilon * 10 };    // expected: -(3 * pi / 4)
+                yield return new object[] { -1.0, -0.0, -1.5707963267948966, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi / 2)
+                yield return new object[] { -1.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { -1.0, 0.0, -1.5707963267948966, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi / 2)
+                yield return new object[] { -1.0, 1.0, -0.78539816339744831, CrossPlatformMachineEpsilon };         // expected: -(pi / 4)
+                yield return new object[] { -1.0, double.PositiveInfinity, -0.0, 0.0 };
+                yield return new object[] { -0.99180624439366372, -0.12775121753523991, -1.6988976127008298, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - log2(e))
+                yield return new object[] { -0.99180624439366372, 0.12775121753523991, -1.4426950408889634, CrossPlatformMachineEpsilon * 10 };    // expected: -(log2(e))
+                yield return new object[] { -0.98776594599273553, -0.15594369476537447, -1.7273790912166982, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - sqrt(2))
+                yield return new object[] { -0.98776594599273553, 0.15594369476537447, -1.4142135623730950, CrossPlatformMachineEpsilon * 10 };    // expected: -(sqrt(2))
+                yield return new object[] { -0.90371945743584630, -0.42812514788535792, -2.0132134864942807, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - (2 / sqrt(pi))
+                yield return new object[] { -0.90371945743584630, 0.42812514788535792, -1.1283791670955126, CrossPlatformMachineEpsilon * 10 };    // expected: -(2 / sqrt(pi)
+                yield return new object[] { -0.84147098480789651, -0.54030230586813972, -2.1415926535897932, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - 1)
+                yield return new object[] { -0.84147098480789651, 0.54030230586813972, -1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.74398033695749319, -0.66820151019031295, -2.3025850929940457, CrossPlatformMachineEpsilon * 10 };    // expected: -(ln(10))
+                yield return new object[] { -0.74398033695749319, 0.66820151019031295, -0.83900756059574755, CrossPlatformMachineEpsilon };         // expected: -(pi - ln(10))
+                yield return new object[] { -0.70710678118654752, -0.70710678118654752, -2.3561944901923449, CrossPlatformMachineEpsilon * 10 };    // expected: -(3 * pi / 4),         y: -(1 / sqrt(2))   x: -(1 / sqrt(2))
+                yield return new object[] { -0.70710678118654752, 0.70710678118654752, -0.78539816339744831, CrossPlatformMachineEpsilon };         // expected: -(pi / 4),             y: -(1 / sqrt(2))   x:  (1 / sqrt(2))
+                yield return new object[] { -0.64963693908006244, -0.76024459707563015, -2.4344858724032457, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - (1 / sqrt(2))
+                yield return new object[] { -0.64963693908006244, 0.76024459707563015, -0.70710678118654752, CrossPlatformMachineEpsilon };         // expected: -(1 / sqrt(2))
+                yield return new object[] { -0.63896127631363480, -0.76923890136397213, -2.4484454730298479, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - ln(2))
+                yield return new object[] { -0.63896127631363480, 0.76923890136397213, -0.69314718055994531, CrossPlatformMachineEpsilon };         // expected: -(ln(2))
+                yield return new object[] { -0.59448076852482208, -0.80410982822879171, -2.5049728812222119, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - (2 / pi))
+                yield return new object[] { -0.59448076852482208, 0.80410982822879171, -0.63661977236758134, CrossPlatformMachineEpsilon };         // expected: -(2 / pi)
+                yield return new object[] { -0.42077048331375735, -0.90716712923909839, -2.7072981716865414, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - log10(e))
+                yield return new object[] { -0.42077048331375735, 0.90716712923909839, -0.43429448190325183, CrossPlatformMachineEpsilon };         // expected: -(log10(e))
+                yield return new object[] { -0.41078129050290870, -0.91173391478696510, -2.7182818284590452, CrossPlatformMachineEpsilon * 10 };    // expected: -(e)
+                yield return new object[] { -0.41078129050290870, 0.91173391478696510, -0.42331082513074800, CrossPlatformMachineEpsilon };         // expected: -(pi - e)
+                yield return new object[] { -0.31296179620778659, -0.94976571538163866, -2.8232827674060026, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi - (1 / pi))
+                yield return new object[] { -0.31296179620778659, 0.94976571538163866, -0.31830988618379067, CrossPlatformMachineEpsilon };         // expected: -(1 / pi)
+                yield return new object[] { -0.0, double.NegativeInfinity, -3.1415926535897932, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi)
+                yield return new object[] { -0.0, -1.0, -3.1415926535897932, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi)
+                yield return new object[] { -0.0, -0.0, -3.1415926535897932, CrossPlatformMachineEpsilon * 10 };    // expected: -(pi)
+                yield return new object[] { -0.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { -0.0, 0.0, -0.0, 0.0 };
+                yield return new object[] { -0.0, 1.0, -0.0, 0.0 };
+                yield return new object[] { -0.0, double.PositiveInfinity, -0.0, 0.0 };
+                yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, -1.0, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, -0.0, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, 0.0, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, 1.0, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, 0.0 };
+                yield return new object[] { 0.0, double.NegativeInfinity, 3.1415926535897932, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi)
+                yield return new object[] { 0.0, -1.0, 3.1415926535897932, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi)
+                yield return new object[] { 0.0, -0.0, 3.1415926535897932, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi)
+                yield return new object[] { 0.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { 0.0, 0.0, 0.0, 0.0 };
+                yield return new object[] { 0.0, 1.0, 0.0, 0.0 };
+                yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 0.0 };
+                yield return new object[] { 0.31296179620778659, -0.94976571538163866, 2.8232827674060026, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - (1 / pi))
+                yield return new object[] { 0.31296179620778659, 0.94976571538163866, 0.31830988618379067, CrossPlatformMachineEpsilon };          // expected:  (1 / pi)
+                yield return new object[] { 0.41078129050290870, -0.91173391478696510, 2.7182818284590452, CrossPlatformMachineEpsilon * 10 };     // expected:  (e)
+                yield return new object[] { 0.41078129050290870, 0.91173391478696510, 0.42331082513074800, CrossPlatformMachineEpsilon };          // expected:  (pi - e)
+                yield return new object[] { 0.42077048331375735, -0.90716712923909839, 2.7072981716865414, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - log10(e))
+                yield return new object[] { 0.42077048331375735, 0.90716712923909839, 0.43429448190325183, CrossPlatformMachineEpsilon };          // expected:  (log10(e))
+                yield return new object[] { 0.59448076852482208, -0.80410982822879171, 2.5049728812222119, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - (2 / pi))
+                yield return new object[] { 0.59448076852482208, 0.80410982822879171, 0.63661977236758134, CrossPlatformMachineEpsilon };          // expected:  (2 / pi)
+                yield return new object[] { 0.63896127631363480, -0.76923890136397213, 2.4484454730298479, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - ln(2))
+                yield return new object[] { 0.63896127631363480, 0.76923890136397213, 0.69314718055994531, CrossPlatformMachineEpsilon };          // expected:  (ln(2))
+                yield return new object[] { 0.64963693908006244, -0.76024459707563015, 2.4344858724032457, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - (1 / sqrt(2))
+                yield return new object[] { 0.64963693908006244, 0.76024459707563015, 0.70710678118654752, CrossPlatformMachineEpsilon };          // expected:  (1 / sqrt(2))
+                yield return new object[] { 0.70710678118654752, -0.70710678118654752, 2.3561944901923449, CrossPlatformMachineEpsilon * 10 };     // expected:  (3 * pi / 4),         y:  (1 / sqrt(2))   x: -(1 / sqrt(2))
+                yield return new object[] { 0.70710678118654752, 0.70710678118654752, 0.78539816339744831, CrossPlatformMachineEpsilon };          // expected:  (pi / 4),             y:  (1 / sqrt(2))   x:  (1 / sqrt(2))
+                yield return new object[] { 0.74398033695749319, -0.66820151019031295, 2.3025850929940457, CrossPlatformMachineEpsilon * 10 };     // expected:  (ln(10))
+                yield return new object[] { 0.74398033695749319, 0.66820151019031295, 0.83900756059574755, CrossPlatformMachineEpsilon };          // expected:  (pi - ln(10))
+                yield return new object[] { 0.84147098480789651, -0.54030230586813972, 2.1415926535897932, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - 1)
+                yield return new object[] { 0.84147098480789651, 0.54030230586813972, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 0.90371945743584630, -0.42812514788535792, 2.0132134864942807, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - (2 / sqrt(pi))
+                yield return new object[] { 0.90371945743584630, 0.42812514788535792, 1.1283791670955126, CrossPlatformMachineEpsilon * 10 };     // expected:  (2 / sqrt(pi))
+                yield return new object[] { 0.98776594599273553, -0.15594369476537447, 1.7273790912166982, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - sqrt(2))
+                yield return new object[] { 0.98776594599273553, 0.15594369476537447, 1.4142135623730950, CrossPlatformMachineEpsilon * 10 };     // expected:  (sqrt(2))
+                yield return new object[] { 0.99180624439366372, -0.12775121753523991, 1.6988976127008298, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi - log2(e))
+                yield return new object[] { 0.99180624439366372, 0.12775121753523991, 1.4426950408889634, CrossPlatformMachineEpsilon * 10 };     // expected:  (log2(e))
+                yield return new object[] { 1.0, -1.0, 2.3561944901923449, CrossPlatformMachineEpsilon * 10 };     // expected:  (3 * pi / 4)
+                yield return new object[] { 1.0, -0.0, 1.5707963267948966, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi / 2)
+                yield return new object[] { 1.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { 1.0, 0.0, 1.5707963267948966, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi / 2)
+                yield return new object[] { 1.0, 1.0, 0.78539816339744831, CrossPlatformMachineEpsilon };          // expected:  (pi / 4)
+                yield return new object[] { 1.0, double.PositiveInfinity, 0.0, 0.0 };
+                yield return new object[] { double.PositiveInfinity, -1.0, 1.5707963267948966, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi / 2)
+                yield return new object[] { double.PositiveInfinity, -0.0, 1.5707963267948966, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi / 2)
+                yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { double.PositiveInfinity, 0.0, 1.5707963267948966, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi / 2)
+                yield return new object[] { double.PositiveInfinity, 1.0, 1.5707963267948966, CrossPlatformMachineEpsilon * 10 };     // expected:  (pi / 2)
+            }
+        }
+
         [Theory]
-        [InlineData( double.NegativeInfinity, -1.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData( double.NegativeInfinity, -0.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData( double.NegativeInfinity,  double.NaN,               double.NaN,          0.0)]
-        [InlineData( double.NegativeInfinity,  0.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData( double.NegativeInfinity,  1.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData(-1.0,                     -1.0,                     -2.3561944901923449,  CrossPlatformMachineEpsilon * 10)]    // expected: -(3 * pi / 4)
-        [InlineData(-1.0,                     -0.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData(-1.0,                      double.NaN,               double.NaN,          0.0)]
-        [InlineData(-1.0,                      0.0,                     -1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi / 2)
-        [InlineData(-1.0,                      1.0,                     -0.78539816339744831, CrossPlatformMachineEpsilon)]         // expected: -(pi / 4)
-        [InlineData(-1.0,                      double.PositiveInfinity, -0.0,                 0.0)]
-        [InlineData(-0.99180624439366372,     -0.12775121753523991,     -1.6988976127008298,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - log2(e))
-        [InlineData(-0.99180624439366372,      0.12775121753523991,     -1.4426950408889634,  CrossPlatformMachineEpsilon * 10)]    // expected: -(log2(e))
-        [InlineData(-0.98776594599273553,     -0.15594369476537447,     -1.7273790912166982,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - sqrt(2))
-        [InlineData(-0.98776594599273553,      0.15594369476537447,     -1.4142135623730950,  CrossPlatformMachineEpsilon * 10)]    // expected: -(sqrt(2))
-        [InlineData(-0.90371945743584630,     -0.42812514788535792,     -2.0132134864942807,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - (2 / sqrt(pi))
-        [InlineData(-0.90371945743584630,      0.42812514788535792,     -1.1283791670955126,  CrossPlatformMachineEpsilon * 10)]    // expected: -(2 / sqrt(pi)
-        [InlineData(-0.84147098480789651,     -0.54030230586813972,     -2.1415926535897932,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - 1)
-        [InlineData(-0.84147098480789651,      0.54030230586813972,     -1.0,                 CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-0.74398033695749319,     -0.66820151019031295,     -2.3025850929940457,  CrossPlatformMachineEpsilon * 10)]    // expected: -(ln(10))
-        [InlineData(-0.74398033695749319,      0.66820151019031295,     -0.83900756059574755, CrossPlatformMachineEpsilon)]         // expected: -(pi - ln(10))
-        [InlineData(-0.70710678118654752,     -0.70710678118654752,     -2.3561944901923449,  CrossPlatformMachineEpsilon * 10)]    // expected: -(3 * pi / 4),         y: -(1 / sqrt(2))   x: -(1 / sqrt(2))
-        [InlineData(-0.70710678118654752,      0.70710678118654752,     -0.78539816339744831, CrossPlatformMachineEpsilon)]         // expected: -(pi / 4),             y: -(1 / sqrt(2))   x:  (1 / sqrt(2))
-        [InlineData(-0.64963693908006244,     -0.76024459707563015,     -2.4344858724032457,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - (1 / sqrt(2))
-        [InlineData(-0.64963693908006244,      0.76024459707563015,     -0.70710678118654752, CrossPlatformMachineEpsilon)]         // expected: -(1 / sqrt(2))
-        [InlineData(-0.63896127631363480,     -0.76923890136397213,     -2.4484454730298479,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - ln(2))
-        [InlineData(-0.63896127631363480,      0.76923890136397213,     -0.69314718055994531, CrossPlatformMachineEpsilon)]         // expected: -(ln(2))
-        [InlineData(-0.59448076852482208,     -0.80410982822879171,     -2.5049728812222119,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - (2 / pi))
-        [InlineData(-0.59448076852482208,      0.80410982822879171,     -0.63661977236758134, CrossPlatformMachineEpsilon)]         // expected: -(2 / pi)
-        [InlineData(-0.42077048331375735,     -0.90716712923909839,     -2.7072981716865414,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - log10(e))
-        [InlineData(-0.42077048331375735,      0.90716712923909839,     -0.43429448190325183, CrossPlatformMachineEpsilon)]         // expected: -(log10(e))
-        [InlineData(-0.41078129050290870,     -0.91173391478696510,     -2.7182818284590452,  CrossPlatformMachineEpsilon * 10)]    // expected: -(e)
-        [InlineData(-0.41078129050290870,      0.91173391478696510,     -0.42331082513074800, CrossPlatformMachineEpsilon)]         // expected: -(pi - e)
-        [InlineData(-0.31296179620778659,     -0.94976571538163866,     -2.8232827674060026,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi - (1 / pi))
-        [InlineData(-0.31296179620778659,      0.94976571538163866,     -0.31830988618379067, CrossPlatformMachineEpsilon)]         // expected: -(1 / pi)
-        [InlineData(-0.0,                      double.NegativeInfinity, -3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi)
-        [InlineData(-0.0,                     -1.0,                     -3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi)
-        [InlineData(-0.0,                     -0.0,                     -3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]    // expected: -(pi)
-        [InlineData(-0.0,                      double.NaN,               double.NaN,          0.0)]
-        [InlineData(-0.0,                      0.0,                     -0.0,                 0.0)]
-        [InlineData(-0.0,                      1.0,                     -0.0,                 0.0)]
-        [InlineData(-0.0,                      double.PositiveInfinity, -0.0,                 0.0)]
-        [InlineData( double.NaN,               double.NegativeInfinity,  double.NaN,          0.0)]
-        [InlineData( double.NaN,              -1.0,                      double.NaN,          0.0)]
-        [InlineData( double.NaN,              -0.0,                      double.NaN,          0.0)]
-        [InlineData( double.NaN,               double.NaN,               double.NaN,          0.0)]
-        [InlineData( double.NaN,               0.0,                      double.NaN,          0.0)]
-        [InlineData( double.NaN,               1.0,                      double.NaN,          0.0)]
-        [InlineData( double.NaN,               double.PositiveInfinity,  double.NaN,          0.0)]
-        [InlineData( 0.0,                      double.NegativeInfinity,  3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi)
-        [InlineData( 0.0,                     -1.0,                      3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi)
-        [InlineData( 0.0,                     -0.0,                      3.1415926535897932,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi)
-        [InlineData( 0.0,                      double.NaN,               double.NaN,          0.0)]
-        [InlineData( 0.0,                      0.0,                      0.0,                 0.0)]
-        [InlineData( 0.0,                      1.0,                      0.0,                 0.0)]
-        [InlineData( 0.0,                      double.PositiveInfinity,  0.0,                 0.0)]
-        [InlineData( 0.31296179620778659,     -0.94976571538163866,      2.8232827674060026,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - (1 / pi))
-        [InlineData( 0.31296179620778659,      0.94976571538163866,      0.31830988618379067, CrossPlatformMachineEpsilon)]          // expected:  (1 / pi)
-        [InlineData( 0.41078129050290870,     -0.91173391478696510,      2.7182818284590452,  CrossPlatformMachineEpsilon * 10)]     // expected:  (e)
-        [InlineData( 0.41078129050290870,      0.91173391478696510,      0.42331082513074800, CrossPlatformMachineEpsilon)]          // expected:  (pi - e)
-        [InlineData( 0.42077048331375735,     -0.90716712923909839,      2.7072981716865414,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - log10(e))
-        [InlineData( 0.42077048331375735,      0.90716712923909839,      0.43429448190325183, CrossPlatformMachineEpsilon)]          // expected:  (log10(e))
-        [InlineData( 0.59448076852482208,     -0.80410982822879171,      2.5049728812222119,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - (2 / pi))
-        [InlineData( 0.59448076852482208,      0.80410982822879171,      0.63661977236758134, CrossPlatformMachineEpsilon)]          // expected:  (2 / pi)
-        [InlineData( 0.63896127631363480,     -0.76923890136397213,      2.4484454730298479,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - ln(2))
-        [InlineData( 0.63896127631363480,      0.76923890136397213,      0.69314718055994531, CrossPlatformMachineEpsilon)]          // expected:  (ln(2))
-        [InlineData( 0.64963693908006244,     -0.76024459707563015,      2.4344858724032457,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - (1 / sqrt(2))
-        [InlineData( 0.64963693908006244,      0.76024459707563015,      0.70710678118654752, CrossPlatformMachineEpsilon)]          // expected:  (1 / sqrt(2))
-        [InlineData( 0.70710678118654752,     -0.70710678118654752,      2.3561944901923449,  CrossPlatformMachineEpsilon * 10)]     // expected:  (3 * pi / 4),         y:  (1 / sqrt(2))   x: -(1 / sqrt(2))
-        [InlineData( 0.70710678118654752,      0.70710678118654752,      0.78539816339744831, CrossPlatformMachineEpsilon)]          // expected:  (pi / 4),             y:  (1 / sqrt(2))   x:  (1 / sqrt(2))
-        [InlineData( 0.74398033695749319,     -0.66820151019031295,      2.3025850929940457,  CrossPlatformMachineEpsilon * 10)]     // expected:  (ln(10))
-        [InlineData( 0.74398033695749319,      0.66820151019031295,      0.83900756059574755, CrossPlatformMachineEpsilon)]          // expected:  (pi - ln(10))
-        [InlineData( 0.84147098480789651,     -0.54030230586813972,      2.1415926535897932,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - 1)
-        [InlineData( 0.84147098480789651,      0.54030230586813972,      1.0,                 CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 0.90371945743584630,     -0.42812514788535792,      2.0132134864942807,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - (2 / sqrt(pi))
-        [InlineData( 0.90371945743584630,      0.42812514788535792,      1.1283791670955126,  CrossPlatformMachineEpsilon * 10)]     // expected:  (2 / sqrt(pi))
-        [InlineData( 0.98776594599273553,     -0.15594369476537447,      1.7273790912166982,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - sqrt(2))
-        [InlineData( 0.98776594599273553,      0.15594369476537447,      1.4142135623730950,  CrossPlatformMachineEpsilon * 10)]     // expected:  (sqrt(2))
-        [InlineData( 0.99180624439366372,     -0.12775121753523991,      1.6988976127008298,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi - log2(e))
-        [InlineData( 0.99180624439366372,      0.12775121753523991,      1.4426950408889634,  CrossPlatformMachineEpsilon * 10)]     // expected:  (log2(e))
-        [InlineData( 1.0,                     -1.0,                      2.3561944901923449,  CrossPlatformMachineEpsilon * 10)]     // expected:  (3 * pi / 4)
-        [InlineData( 1.0,                     -0.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
-        [InlineData( 1.0,                      double.NaN,               double.NaN,          0.0)]
-        [InlineData( 1.0,                      0.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
-        [InlineData( 1.0,                      1.0,                      0.78539816339744831, CrossPlatformMachineEpsilon)]          // expected:  (pi / 4)
-        [InlineData( 1.0,                      double.PositiveInfinity,  0.0,                 0.0)]
-        [InlineData( double.PositiveInfinity, -1.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
-        [InlineData( double.PositiveInfinity, -0.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
-        [InlineData( double.PositiveInfinity,  double.NaN,               double.NaN,          0.0)]
-        [InlineData( double.PositiveInfinity,  0.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
-        [InlineData( double.PositiveInfinity,  1.0,                      1.5707963267948966,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
+        [MemberData(nameof(Atan2_TestData))]
         public static void Atan2(double y, double x, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Atan2(y, x), allowedVariance);
@@ -1167,151 +1176,159 @@ namespace System.Tests
             Assert.Equal(ulong.MinValue, Math.Min(ulong.MinValue, ulong.MaxValue));
         }
 
+        public static IEnumerable<object[]> Pow_TestData
+        {
+            get
+            {
+                yield return new object[] { double.NegativeInfinity, double.NegativeInfinity, 0.0, 0.0 };
+                yield return new object[] { double.NegativeInfinity, -1.0, -0.0, 0.0 };
+                yield return new object[] { double.NegativeInfinity, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { double.NegativeInfinity, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { double.NegativeInfinity, 1.0, double.NegativeInfinity, 0.0 };
+                yield return new object[] { double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity, 0.0 };
+                yield return new object[] { -10.0, double.NegativeInfinity, 0.0, 0.0 };
+                yield return new object[] { -10.0, -1.5707963267948966, double.NaN, 0.0 };                                     //          y: -(pi / 2)
+                yield return new object[] { -10.0, -1.0, -0.1, CrossPlatformMachineEpsilon };
+                yield return new object[] { -10.0, -0.78539816339744831, double.NaN, 0.0 };                                     //          y: -(pi / 4)
+                yield return new object[] { -10.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -10.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { -10.0, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -10.0, 0.78539816339744831, double.NaN, 0.0 };                                     //          y:  (pi / 4)
+                yield return new object[] { -10.0, 1.0, -10.0, CrossPlatformMachineEpsilon * 100 };
+                yield return new object[] { -10.0, 1.5707963267948966, double.NaN, 0.0 };                                     //          y:  (pi / 2)
+                yield return new object[] { -10.0, double.PositiveInfinity, double.PositiveInfinity, 0.0 };
+                yield return new object[] { -2.7182818284590452, double.NegativeInfinity, 0.0, 0.0 };                                     // x: -(e)
+                yield return new object[] { -2.7182818284590452, -1.5707963267948966, double.NaN, 0.0 };                                     // x: -(e)  y: -(pi / 2)
+                yield return new object[] { -2.7182818284590452, -1.0, -0.36787944117144232, CrossPlatformMachineEpsilon };             // x: -(e)
+                yield return new object[] { -2.7182818284590452, -0.78539816339744831, double.NaN, 0.0 };                                     // x: -(e)  y: -(pi / 4)
+                yield return new object[] { -2.7182818284590452, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };        // x: -(e)
+                yield return new object[] { -2.7182818284590452, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { -2.7182818284590452, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };        // x: -(e)
+                yield return new object[] { -2.7182818284590452, 0.78539816339744831, double.NaN, 0.0 };                                     // x: -(e)  y:  (pi / 4)
+                yield return new object[] { -2.7182818284590452, 1.0, -2.7182818284590452, CrossPlatformMachineEpsilon * 10 };        // x: -(e)  expected: (e)
+                yield return new object[] { -2.7182818284590452, 1.5707963267948966, double.NaN, 0.0 };                                     // x: -(e)  y:  (pi / 2)
+                yield return new object[] { -2.7182818284590452, double.PositiveInfinity, double.PositiveInfinity, 0.0 };
+                yield return new object[] { -1.0, -1.0, -1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -1.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -1.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { -1.0, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -1.0, 1.0, -1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.0, double.NegativeInfinity, double.PositiveInfinity, 0.0 };
+                yield return new object[] { -0.0, -3.0, double.NegativeInfinity, 0.0 };
+                yield return new object[] { -0.0, -2.0, double.PositiveInfinity, 0.0 };
+                yield return new object[] { -0.0, -1.5707963267948966, double.PositiveInfinity, 0.0 };                                     //          y: -(pi / 2)
+                yield return new object[] { -0.0, -1.0, double.NegativeInfinity, 0.0 };
+                yield return new object[] { -0.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { -0.0, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { -0.0, 1.0, -0.0, 0.0 };
+                yield return new object[] { -0.0, 1.5707963267948966, 0.0, 0.0 };                                     //          y: -(pi / 2)
+                yield return new object[] { -0.0, 2.0, 0.0, 0.0 };
+                yield return new object[] { -0.0, 3.0, -0.0, 0.0 };
+                yield return new object[] { -0.0, double.PositiveInfinity, 0.0, 0.0 };
+                yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, -1.0, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, 1.0, double.NaN, 0.0 };
+                yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, 0.0 };
+                yield return new object[] { 0.0, double.NegativeInfinity, double.PositiveInfinity, 0.0 };
+                yield return new object[] { 0.0, -3.0, double.PositiveInfinity, 0.0 };
+                yield return new object[] { 0.0, -2.0, double.PositiveInfinity, 0.0 };
+                yield return new object[] { 0.0, -1.5707963267948966, double.PositiveInfinity, 0.0 };                                     //          y: -(pi / 2)
+                yield return new object[] { 0.0, -1.0, double.PositiveInfinity, 0.0 };
+                yield return new object[] { 0.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 0.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { 0.0, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 0.0, 1.0, 0.0, 0.0 };
+                yield return new object[] { 0.0, 1.5707963267948966, 0.0, 0.0 };                                     //          y: -(pi / 2)
+                yield return new object[] { 0.0, 2.0, 0.0, 0.0 };
+                yield return new object[] { 0.0, 3.0, 0.0, 0.0 };
+                yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 0.0 };
+                yield return new object[] { 1.0, double.NegativeInfinity, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 1.0, -1.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 1.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 1.0, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 1.0, 1.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 1.0, double.PositiveInfinity, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 2.7182818284590452, double.NegativeInfinity, 0.0, 0.0 };
+                yield return new object[] { 2.7182818284590452, -3.1415926535897932, 0.043213918263772250, CrossPlatformMachineEpsilon / 10 };        // x:  (e)  y: -(pi)
+                yield return new object[] { 2.7182818284590452, -2.7182818284590452, 0.065988035845312537, CrossPlatformMachineEpsilon / 10 };        // x:  (e)  y: -(e)
+                yield return new object[] { 2.7182818284590452, -2.3025850929940457, 0.1, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(ln(10))
+                yield return new object[] { 2.7182818284590452, -1.5707963267948966, 0.20787957635076191, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(pi / 2)
+                yield return new object[] { 2.7182818284590452, -1.4426950408889634, 0.23629008834452270, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(log2(e))
+                yield return new object[] { 2.7182818284590452, -1.4142135623730950, 0.24311673443421421, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(sqrt(2))
+                yield return new object[] { 2.7182818284590452, -1.1283791670955126, 0.32355726390307110, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(2 / sqrt(pi))
+                yield return new object[] { 2.7182818284590452, -1.0, 0.36787944117144232, CrossPlatformMachineEpsilon };             // x:  (e)
+                yield return new object[] { 2.7182818284590452, -0.78539816339744831, 0.45593812776599624, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(pi / 4)
+                yield return new object[] { 2.7182818284590452, -0.70710678118654752, 0.49306869139523979, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(1 / sqrt(2))
+                yield return new object[] { 2.7182818284590452, -0.69314718055994531, 0.5, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(ln(2))
+                yield return new object[] { 2.7182818284590452, -0.63661977236758134, 0.52907780826773535, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(2 / pi)
+                yield return new object[] { 2.7182818284590452, -0.43429448190325183, 0.64772148514180065, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(log10(e))
+                yield return new object[] { 2.7182818284590452, -0.31830988618379067, 0.72737734929521647, CrossPlatformMachineEpsilon };             // x:  (e)  y: -(1 / pi)
+                yield return new object[] { 2.7182818284590452, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };        // x:  (e)
+                yield return new object[] { 2.7182818284590452, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { 2.7182818284590452, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };        // x:  (e)
+                yield return new object[] { 2.7182818284590452, 0.31830988618379067, 1.3748022274393586, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (1 / pi)
+                yield return new object[] { 2.7182818284590452, 0.43429448190325183, 1.5438734439711811, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (log10(e))
+                yield return new object[] { 2.7182818284590452, 0.63661977236758134, 1.8900811645722220, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (2 / pi)
+                yield return new object[] { 2.7182818284590452, 0.69314718055994531, 2.0, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (ln(2))
+                yield return new object[] { 2.7182818284590452, 0.70710678118654752, 2.0281149816474725, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (1 / sqrt(2))
+                yield return new object[] { 2.7182818284590452, 0.78539816339744831, 2.1932800507380155, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (pi / 4)
+                yield return new object[] { 2.7182818284590452, 1.0, 2.7182818284590452, CrossPlatformMachineEpsilon * 10 };        // x:  (e)                      expected: (e)
+                yield return new object[] { 2.7182818284590452, 1.1283791670955126, 3.0906430223107976, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (2 / sqrt(pi))
+                yield return new object[] { 2.7182818284590452, 1.4142135623730950, 4.1132503787829275, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (sqrt(2))
+                yield return new object[] { 2.7182818284590452, 1.4426950408889634, 4.2320861065570819, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (log2(e))
+                yield return new object[] { 2.7182818284590452, 1.5707963267948966, 4.8104773809653517, CrossPlatformMachineEpsilon * 10 };        // x:  (e)  y:  (pi / 2)
+                yield return new object[] { 2.7182818284590452, 2.3025850929940457, 10.0, CrossPlatformMachineEpsilon * 100 };       // x:  (e)  y:  (ln(10))
+                yield return new object[] { 2.7182818284590452, 2.7182818284590452, 15.154262241479264, CrossPlatformMachineEpsilon * 100 };       // x:  (e)  y:  (e)
+                yield return new object[] { 2.7182818284590452, 3.1415926535897932, 23.140692632779269, CrossPlatformMachineEpsilon * 100 };       // x:  (e)  y:  (pi)
+                yield return new object[] { 2.7182818284590452, double.PositiveInfinity, double.PositiveInfinity, 0.0 };                                     // x:  (e)
+                yield return new object[] { 10.0, double.NegativeInfinity, 0.0, 0.0 };
+                yield return new object[] { 10.0, -3.1415926535897932, 0.00072178415907472774, CrossPlatformMachineEpsilon / 1000 };      //          y: -(pi)
+                yield return new object[] { 10.0, -2.7182818284590452, 0.0019130141022243176, CrossPlatformMachineEpsilon / 100 };       //          y: -(e)
+                yield return new object[] { 10.0, -2.3025850929940457, 0.0049821282964407206, CrossPlatformMachineEpsilon / 100 };       //          y: -(ln(10))
+                yield return new object[] { 10.0, -1.5707963267948966, 0.026866041001136132, CrossPlatformMachineEpsilon / 10 };        //          y: -(pi / 2)
+                yield return new object[] { 10.0, -1.4426950408889634, 0.036083192820787210, CrossPlatformMachineEpsilon / 10 };        //          y: -(log2(e))
+                yield return new object[] { 10.0, -1.4142135623730950, 0.038528884700322026, CrossPlatformMachineEpsilon / 10 };        //          y: -(sqrt(2))
+                yield return new object[] { 10.0, -1.1283791670955126, 0.074408205860642723, CrossPlatformMachineEpsilon / 10 };        //          y: -(2 / sqrt(pi))
+                yield return new object[] { 10.0, -1.0, 0.1, CrossPlatformMachineEpsilon };
+                yield return new object[] { 10.0, -0.78539816339744831, 0.16390863613957665, CrossPlatformMachineEpsilon };             //          y: -(pi / 4)
+                yield return new object[] { 10.0, -0.70710678118654752, 0.19628775993505562, CrossPlatformMachineEpsilon };             //          y: -(1 / sqrt(2))
+                yield return new object[] { 10.0, -0.69314718055994531, 0.20269956628651730, CrossPlatformMachineEpsilon };             //          y: -(ln(2))
+                yield return new object[] { 10.0, -0.63661977236758134, 0.23087676451600055, CrossPlatformMachineEpsilon };             //          y: -(2 / pi)
+                yield return new object[] { 10.0, -0.43429448190325183, 0.36787944117144232, CrossPlatformMachineEpsilon };             //          y: -(log10(e))
+                yield return new object[] { 10.0, -0.31830988618379067, 0.48049637305186868, CrossPlatformMachineEpsilon };             //          y: -(1 / pi)
+                yield return new object[] { 10.0, -0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 10.0, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { 10.0, 0.0, 1.0, CrossPlatformMachineEpsilon * 10 };
+                yield return new object[] { 10.0, 0.31830988618379067, 2.0811811619898573, CrossPlatformMachineEpsilon * 10 };        //          y:  (1 / pi)
+                yield return new object[] { 10.0, 0.43429448190325183, 2.7182818284590452, CrossPlatformMachineEpsilon * 10 };        //          y:  (log10(e))      expected: (e)
+                yield return new object[] { 10.0, 0.63661977236758134, 4.3313150290214525, CrossPlatformMachineEpsilon * 10 };        //          y:  (2 / pi)
+                yield return new object[] { 10.0, 0.69314718055994531, 4.9334096679145963, CrossPlatformMachineEpsilon * 10 };        //          y:  (ln(2))
+                yield return new object[] { 10.0, 0.70710678118654752, 5.0945611704512962, CrossPlatformMachineEpsilon * 10 };        //          y:  (1 / sqrt(2))
+                yield return new object[] { 10.0, 0.78539816339744831, 6.1009598002416937, CrossPlatformMachineEpsilon * 10 };        //          y:  (pi / 4)
+                yield return new object[] { 10.0, 1.0, 10.0, CrossPlatformMachineEpsilon * 100 };
+                yield return new object[] { 10.0, 1.1283791670955126, 13.439377934644400, CrossPlatformMachineEpsilon * 100 };       //          y:  (2 / sqrt(pi))
+                yield return new object[] { 10.0, 1.4142135623730950, 25.954553519470081, CrossPlatformMachineEpsilon * 100 };       //          y:  (sqrt(2))
+                yield return new object[] { 10.0, 1.4426950408889634, 27.713733786437790, CrossPlatformMachineEpsilon * 100 };       //          y:  (log2(e))
+                yield return new object[] { 10.0, 1.5707963267948966, 37.221710484165167, CrossPlatformMachineEpsilon * 100 };       //          y:  (pi / 2)
+                yield return new object[] { 10.0, 2.3025850929940457, 200.71743249053009, CrossPlatformMachineEpsilon * 1000 };      //          y:  (ln(10))
+                yield return new object[] { 10.0, 2.7182818284590452, 522.73529967043665, CrossPlatformMachineEpsilon * 1000 };      //          y:  (e)
+                yield return new object[] { 10.0, 3.1415926535897932, 1385.4557313670111, CrossPlatformMachineEpsilon * 10000 };     //          y:  (pi)
+                yield return new object[] { 10.0, double.PositiveInfinity, double.PositiveInfinity, 0.0 };
+                yield return new object[] { double.PositiveInfinity, double.NegativeInfinity, 0.0, 0.0 };
+                yield return new object[] { double.PositiveInfinity, -1.0, 0.0, 0.0 };
+                yield return new object[] { double.PositiveInfinity, -0.0, 1.0, 0.0 };
+                yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, 0.0 };
+                yield return new object[] { double.PositiveInfinity, 0.0, 1.0, 0.0 };
+                yield return new object[] { double.PositiveInfinity, 1.0, double.PositiveInfinity, 0.0 };
+                yield return new object[] { double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity, 0.0 };
+            }
+        }
+
         [Theory]
-        [InlineData( double.NegativeInfinity,  double.NegativeInfinity,  0.0,                     0.0)]
-        [InlineData( double.NegativeInfinity, -1.0,                     -0.0,                     0.0)]
-        [InlineData( double.NegativeInfinity, -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( double.NegativeInfinity,  double.NaN,               double.NaN,              0.0)]
-        [InlineData( double.NegativeInfinity,  0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( double.NegativeInfinity,  1.0,                      double.NegativeInfinity, 0.0)]
-        [InlineData( double.NegativeInfinity,  double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
-        [InlineData(-10.0,                     double.NegativeInfinity,  0.0,                     0.0)]
-        [InlineData(-10.0,                    -1.5707963267948966,       double.NaN,              0.0)]                                     //          y: -(pi / 2)
-        [InlineData(-10.0,                    -1.0,                     -0.1,                     CrossPlatformMachineEpsilon)]
-        [InlineData(-10.0,                    -0.78539816339744831,      double.NaN,              0.0)]                                     //          y: -(pi / 4)
-        [InlineData(-10.0,                    -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-10.0,                     double.NaN,               double.NaN,              0.0)]
-        [InlineData(-10.0,                     0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-10.0,                     0.78539816339744831,      double.NaN,              0.0)]                                     //          y:  (pi / 4)
-        [InlineData(-10.0,                     1.0,                     -10.0,                    CrossPlatformMachineEpsilon * 100)]
-        [InlineData(-10.0,                     1.5707963267948966,       double.NaN,              0.0)]                                     //          y:  (pi / 2)
-        [InlineData(-10.0,                     double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
-        [InlineData(-2.7182818284590452,       double.NegativeInfinity,  0.0,                     0.0)]                                     // x: -(e)
-        [InlineData(-2.7182818284590452,      -1.5707963267948966,       double.NaN,              0.0)]                                     // x: -(e)  y: -(pi / 2)
-        [InlineData(-2.7182818284590452,      -1.0,                     -0.36787944117144232,     CrossPlatformMachineEpsilon)]             // x: -(e)
-        [InlineData(-2.7182818284590452,      -0.78539816339744831,      double.NaN,              0.0)]                                     // x: -(e)  y: -(pi / 4)
-        [InlineData(-2.7182818284590452,      -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]        // x: -(e)
-        [InlineData(-2.7182818284590452,       double.NaN,               double.NaN,              0.0)]
-        [InlineData(-2.7182818284590452,       0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]        // x: -(e)
-        [InlineData(-2.7182818284590452,       0.78539816339744831,      double.NaN,              0.0)]                                     // x: -(e)  y:  (pi / 4)
-        [InlineData(-2.7182818284590452,       1.0,                     -2.7182818284590452,      CrossPlatformMachineEpsilon * 10)]        // x: -(e)  expected: (e)
-        [InlineData(-2.7182818284590452,       1.5707963267948966,       double.NaN,              0.0)]                                     // x: -(e)  y:  (pi / 2)
-        [InlineData(-2.7182818284590452,       double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
-        [InlineData(-1.0,                     -1.0,                     -1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-1.0,                     -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-1.0,                      double.NaN,               double.NaN,              0.0)]
-        [InlineData(-1.0,                      0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-1.0,                      1.0,                     -1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-0.0,                      double.NegativeInfinity,  double.PositiveInfinity, 0.0)]
-        [InlineData(-0.0,                     -3.0,                      double.NegativeInfinity, 0.0)]
-        [InlineData(-0.0,                     -2.0,                      double.PositiveInfinity, 0.0)]
-        [InlineData(-0.0,                     -1.5707963267948966,       double.PositiveInfinity, 0.0)]                                     //          y: -(pi / 2)
-        [InlineData(-0.0,                     -1.0,                      double.NegativeInfinity, 0.0)]
-        [InlineData(-0.0,                     -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-0.0,                      double.NaN,               double.NaN,              0.0)]
-        [InlineData(-0.0,                      0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-0.0,                      1.0,                     -0.0,                     0.0)]
-        [InlineData(-0.0,                      1.5707963267948966,       0.0,                     0.0)]                                     //          y: -(pi / 2)
-        [InlineData(-0.0,                      2.0,                      0.0,                     0.0)]
-        [InlineData(-0.0,                      3.0,                     -0.0,                     0.0)]
-        [InlineData(-0.0,                      double.PositiveInfinity,  0.0,                     0.0)]
-        [InlineData( double.NaN,               double.NegativeInfinity,  double.NaN,              0.0)]
-        [InlineData( double.NaN,              -1.0,                      double.NaN,              0.0)]
-        [InlineData( double.NaN,               double.NaN,               double.NaN,              0.0)]
-        [InlineData( double.NaN,               1.0,                      double.NaN,              0.0)]
-        [InlineData( double.NaN,               double.PositiveInfinity,  double.NaN,              0.0)]
-        [InlineData( 0.0,                      double.NegativeInfinity,  double.PositiveInfinity, 0.0)]
-        [InlineData( 0.0,                     -3.0,                      double.PositiveInfinity, 0.0)]
-        [InlineData( 0.0,                     -2.0,                      double.PositiveInfinity, 0.0)]
-        [InlineData( 0.0,                     -1.5707963267948966,       double.PositiveInfinity, 0.0)]                                     //          y: -(pi / 2)
-        [InlineData( 0.0,                     -1.0,                      double.PositiveInfinity, 0.0)]
-        [InlineData( 0.0,                     -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 0.0,                      double.NaN,               double.NaN,              0.0)]
-        [InlineData( 0.0,                      0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 0.0,                      1.0,                      0.0,                     0.0)]
-        [InlineData( 0.0,                      1.5707963267948966,       0.0,                     0.0)]                                     //          y: -(pi / 2)
-        [InlineData( 0.0,                      2.0,                      0.0,                     0.0)]
-        [InlineData( 0.0,                      3.0,                      0.0,                     0.0)]
-        [InlineData( 0.0,                      double.PositiveInfinity,  0.0,                     0.0)]
-        [InlineData( 1.0,                      double.NegativeInfinity,  1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.0,                     -1.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.0,                     -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.0,                      0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.0,                      1.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.0,                      double.PositiveInfinity,  1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 2.7182818284590452,       double.NegativeInfinity,  0.0,                     0.0)]
-        [InlineData( 2.7182818284590452,      -3.1415926535897932,       0.043213918263772250,    CrossPlatformMachineEpsilon / 10)]        // x:  (e)  y: -(pi)
-        [InlineData( 2.7182818284590452,      -2.7182818284590452,       0.065988035845312537,    CrossPlatformMachineEpsilon / 10)]        // x:  (e)  y: -(e)
-        [InlineData( 2.7182818284590452,      -2.3025850929940457,       0.1,                     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(ln(10))
-        [InlineData( 2.7182818284590452,      -1.5707963267948966,       0.20787957635076191,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(pi / 2)
-        [InlineData( 2.7182818284590452,      -1.4426950408889634,       0.23629008834452270,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(log2(e))
-        [InlineData( 2.7182818284590452,      -1.4142135623730950,       0.24311673443421421,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(sqrt(2))
-        [InlineData( 2.7182818284590452,      -1.1283791670955126,       0.32355726390307110,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(2 / sqrt(pi))
-        [InlineData( 2.7182818284590452,      -1.0,                      0.36787944117144232,     CrossPlatformMachineEpsilon)]             // x:  (e)
-        [InlineData( 2.7182818284590452,      -0.78539816339744831,      0.45593812776599624,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(pi / 4)
-        [InlineData( 2.7182818284590452,      -0.70710678118654752,      0.49306869139523979,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(1 / sqrt(2))
-        [InlineData( 2.7182818284590452,      -0.69314718055994531,      0.5,                     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(ln(2))
-        [InlineData( 2.7182818284590452,      -0.63661977236758134,      0.52907780826773535,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(2 / pi)
-        [InlineData( 2.7182818284590452,      -0.43429448190325183,      0.64772148514180065,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(log10(e))
-        [InlineData( 2.7182818284590452,      -0.31830988618379067,      0.72737734929521647,     CrossPlatformMachineEpsilon)]             // x:  (e)  y: -(1 / pi)
-        [InlineData( 2.7182818284590452,      -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]        // x:  (e)
-        [InlineData( 2.7182818284590452,       double.NaN,               double.NaN,              0.0)]
-        [InlineData( 2.7182818284590452,       0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]        // x:  (e)
-        [InlineData( 2.7182818284590452,       0.31830988618379067,      1.3748022274393586,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (1 / pi)
-        [InlineData( 2.7182818284590452,       0.43429448190325183,      1.5438734439711811,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (log10(e))
-        [InlineData( 2.7182818284590452,       0.63661977236758134,      1.8900811645722220,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (2 / pi)
-        [InlineData( 2.7182818284590452,       0.69314718055994531,      2.0,                     CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (ln(2))
-        [InlineData( 2.7182818284590452,       0.70710678118654752,      2.0281149816474725,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (1 / sqrt(2))
-        [InlineData( 2.7182818284590452,       0.78539816339744831,      2.1932800507380155,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (pi / 4)
-        [InlineData( 2.7182818284590452,       1.0,                      2.7182818284590452,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)                      expected: (e)
-        [InlineData( 2.7182818284590452,       1.1283791670955126,       3.0906430223107976,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (2 / sqrt(pi))
-        [InlineData( 2.7182818284590452,       1.4142135623730950,       4.1132503787829275,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (sqrt(2))
-        [InlineData( 2.7182818284590452,       1.4426950408889634,       4.2320861065570819,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (log2(e))
-        [InlineData( 2.7182818284590452,       1.5707963267948966,       4.8104773809653517,      CrossPlatformMachineEpsilon * 10)]        // x:  (e)  y:  (pi / 2)
-        [InlineData( 2.7182818284590452,       2.3025850929940457,       10.0,                    CrossPlatformMachineEpsilon * 100)]       // x:  (e)  y:  (ln(10))
-        [InlineData( 2.7182818284590452,       2.7182818284590452,       15.154262241479264,      CrossPlatformMachineEpsilon * 100)]       // x:  (e)  y:  (e)
-        [InlineData( 2.7182818284590452,       3.1415926535897932,       23.140692632779269,      CrossPlatformMachineEpsilon * 100)]       // x:  (e)  y:  (pi)
-        [InlineData( 2.7182818284590452,       double.PositiveInfinity,  double.PositiveInfinity, 0.0)]                                     // x:  (e)
-        [InlineData( 10.0,                     double.NegativeInfinity,  0.0,                     0.0)]
-        [InlineData( 10.0,                    -3.1415926535897932,       0.00072178415907472774,  CrossPlatformMachineEpsilon / 1000)]      //          y: -(pi)
-        [InlineData( 10.0,                    -2.7182818284590452,       0.0019130141022243176,   CrossPlatformMachineEpsilon / 100)]       //          y: -(e)
-        [InlineData( 10.0,                    -2.3025850929940457,       0.0049821282964407206,   CrossPlatformMachineEpsilon / 100)]       //          y: -(ln(10))
-        [InlineData( 10.0,                    -1.5707963267948966,       0.026866041001136132,    CrossPlatformMachineEpsilon / 10)]        //          y: -(pi / 2)
-        [InlineData( 10.0,                    -1.4426950408889634,       0.036083192820787210,    CrossPlatformMachineEpsilon / 10)]        //          y: -(log2(e))
-        [InlineData( 10.0,                    -1.4142135623730950,       0.038528884700322026,    CrossPlatformMachineEpsilon / 10)]        //          y: -(sqrt(2))
-        [InlineData( 10.0,                    -1.1283791670955126,       0.074408205860642723,    CrossPlatformMachineEpsilon / 10)]        //          y: -(2 / sqrt(pi))
-        [InlineData( 10.0,                    -1.0,                      0.1,                     CrossPlatformMachineEpsilon)]
-        [InlineData( 10.0,                    -0.78539816339744831,      0.16390863613957665,     CrossPlatformMachineEpsilon)]             //          y: -(pi / 4)
-        [InlineData( 10.0,                    -0.70710678118654752,      0.19628775993505562,     CrossPlatformMachineEpsilon)]             //          y: -(1 / sqrt(2))
-        [InlineData( 10.0,                    -0.69314718055994531,      0.20269956628651730,     CrossPlatformMachineEpsilon)]             //          y: -(ln(2))
-        [InlineData( 10.0,                    -0.63661977236758134,      0.23087676451600055,     CrossPlatformMachineEpsilon)]             //          y: -(2 / pi)
-        [InlineData( 10.0,                    -0.43429448190325183,      0.36787944117144232,     CrossPlatformMachineEpsilon)]             //          y: -(log10(e))
-        [InlineData( 10.0,                    -0.31830988618379067,      0.48049637305186868,     CrossPlatformMachineEpsilon)]             //          y: -(1 / pi)
-        [InlineData( 10.0,                    -0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 10.0,                     double.NaN,               double.NaN,              0.0)]
-        [InlineData( 10.0,                     0.0,                      1.0,                     CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 10.0,                     0.31830988618379067,      2.0811811619898573,      CrossPlatformMachineEpsilon * 10)]        //          y:  (1 / pi)
-        [InlineData( 10.0,                     0.43429448190325183,      2.7182818284590452,      CrossPlatformMachineEpsilon * 10)]        //          y:  (log10(e))      expected: (e)
-        [InlineData( 10.0,                     0.63661977236758134,      4.3313150290214525,      CrossPlatformMachineEpsilon * 10)]        //          y:  (2 / pi)
-        [InlineData( 10.0,                     0.69314718055994531,      4.9334096679145963,      CrossPlatformMachineEpsilon * 10)]        //          y:  (ln(2))
-        [InlineData( 10.0,                     0.70710678118654752,      5.0945611704512962,      CrossPlatformMachineEpsilon * 10)]        //          y:  (1 / sqrt(2))
-        [InlineData( 10.0,                     0.78539816339744831,      6.1009598002416937,      CrossPlatformMachineEpsilon * 10)]        //          y:  (pi / 4)
-        [InlineData( 10.0,                     1.0,                      10.0,                    CrossPlatformMachineEpsilon * 100)]
-        [InlineData( 10.0,                     1.1283791670955126,       13.439377934644400,      CrossPlatformMachineEpsilon * 100)]       //          y:  (2 / sqrt(pi))
-        [InlineData( 10.0,                     1.4142135623730950,       25.954553519470081,      CrossPlatformMachineEpsilon * 100)]       //          y:  (sqrt(2))
-        [InlineData( 10.0,                     1.4426950408889634,       27.713733786437790,      CrossPlatformMachineEpsilon * 100)]       //          y:  (log2(e))
-        [InlineData( 10.0,                     1.5707963267948966,       37.221710484165167,      CrossPlatformMachineEpsilon * 100)]       //          y:  (pi / 2)
-        [InlineData( 10.0,                     2.3025850929940457,       200.71743249053009,      CrossPlatformMachineEpsilon * 1000)]      //          y:  (ln(10))
-        [InlineData( 10.0,                     2.7182818284590452,       522.73529967043665,      CrossPlatformMachineEpsilon * 1000)]      //          y:  (e)
-        [InlineData( 10.0,                     3.1415926535897932,       1385.4557313670111,      CrossPlatformMachineEpsilon * 10000)]     //          y:  (pi)
-        [InlineData( 10.0,                     double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
-        [InlineData( double.PositiveInfinity,  double.NegativeInfinity,  0.0,                     0.0)]
-        [InlineData( double.PositiveInfinity, -1.0,                      0.0,                     0.0)]
-        [InlineData( double.PositiveInfinity, -0.0,                      1.0,                     0.0)]
-        [InlineData( double.PositiveInfinity,  double.NaN,               double.NaN,              0.0)]
-        [InlineData( double.PositiveInfinity,  0.0,                      1.0,                     0.0)]
-        [InlineData( double.PositiveInfinity,  1.0,                      double.PositiveInfinity, 0.0)]
-        [InlineData( double.PositiveInfinity,  double.PositiveInfinity,  double.PositiveInfinity, 0.0)]
+        [MemberData(nameof(Pow_TestData))]
         public static void Pow(double x, double y, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Pow(x, y), allowedVariance);
