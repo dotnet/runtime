@@ -38,6 +38,7 @@ Module Name:
 #else
 #include "env/gcenv.ee.h"
 #endif // BUILD_AS_STANDALONE
+#include "gcconfig.h"
 
 /*
  * Promotion Function Prototypes

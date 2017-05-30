@@ -113,26 +113,6 @@ void record_changed_seg (uint8_t* start, uint8_t* end,
     }
 }
 
-// The runtime needs to know whether we're using workstation or server GC 
-// long before the GCHeap is created.
-void InitializeHeapType(bool bServerHeap)
-{
-    LIMITED_METHOD_CONTRACT;
-#ifdef FEATURE_SVR_GC
-    g_gc_heap_type = bServerHeap ? GC_HEAP_SVR : GC_HEAP_WKS;
-#ifdef WRITE_BARRIER_CHECK
-    if (g_gc_heap_type == GC_HEAP_SVR)
-    {
-        g_GCShadow = 0;
-        g_GCShadowEnd = 0;
-    }
-#endif // WRITE_BARRIER_CHECK
-#else // FEATURE_SVR_GC
-    UNREFERENCED_PARAMETER(bServerHeap);
-    CONSISTENCY_CHECK(bServerHeap == false);
-#endif // FEATURE_SVR_GC
-}
-
 namespace WKS 
 {
     extern void PopulateDacVars(GcDacVars* dacVars);
@@ -176,6 +156,18 @@ InitializeGarbageCollector(
     assert(gcHeap != nullptr);
     assert(gcHandleManager != nullptr);
 
+#ifdef BUILD_AS_STANDALONE
+    assert(clrToGC != nullptr);
+    g_theGCToCLR = clrToGC;
+#else
+    UNREFERENCED_PARAMETER(clrToGC);
+    assert(clrToGC == nullptr);
+#endif
+
+    // Initialize GCConfig before anything else - initialization of our
+    // various components may want to query the current configuration.
+    GCConfig::Initialize();
+
     IGCHandleManager* handleManager = CreateGCHandleManager();
     if (handleManager == nullptr)
     {
@@ -183,19 +175,25 @@ InitializeGarbageCollector(
     }
 
 #ifdef FEATURE_SVR_GC
-    assert(g_gc_heap_type != GC_HEAP_INVALID);
-
-    if (g_gc_heap_type == GC_HEAP_SVR)
+    if (GCConfig::GetServerGC())
     {
+#ifdef WRITE_BARRIER_CHECK
+        g_GCShadow = 0;
+        g_GCShadowEnd = 0;
+#endif // WRITE_BARRIER_CHECK
+
+        g_gc_heap_type = GC_HEAP_SVR;
         heap = SVR::CreateGCHeap();
         SVR::PopulateDacVars(gcDacVars);
     }
     else
     {
+        g_gc_heap_type = GC_HEAP_WKS;
         heap = WKS::CreateGCHeap();
         WKS::PopulateDacVars(gcDacVars);
     }
 #else
+    g_gc_heap_type = GC_HEAP_WKS;
     heap = WKS::CreateGCHeap();
     WKS::PopulateDacVars(gcDacVars);
 #endif
@@ -206,15 +204,6 @@ InitializeGarbageCollector(
     }
 
     g_theGCHeap = heap;
-
-#ifdef BUILD_AS_STANDALONE
-    assert(clrToGC != nullptr);
-    g_theGCToCLR = clrToGC;
-#else
-    UNREFERENCED_PARAMETER(clrToGC);
-    assert(clrToGC == nullptr);
-#endif
-
     *gcHandleManager = handleManager;
     *gcHeap = heap;
     return true;
