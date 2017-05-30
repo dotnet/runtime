@@ -162,7 +162,7 @@ namespace System.ServiceProcess.Tests
         public void Start_NullArg_ThrowsArgumentNullException()
         {
             var controller = new ServiceController(_testService.TestServiceName);
-            AssertExtensions.Throws<ArgumentNullException>("args[0]", () => controller.Start(new string[] { null } ));
+            Assert.Throws<ArgumentNullException>(() => controller.Start(new string[] { null } ));
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
