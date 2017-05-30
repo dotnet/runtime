@@ -22,6 +22,8 @@ namespace System.Diagnostics
             }
         }
 
+        private static readonly object s_ForLock = new Object();
+
         private static void WriteCore(string message)
         {
             // really huge messages mess up both VS and dbmon, so we chop it up into 
