@@ -2636,7 +2636,7 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoStringHandle host, MonoStri
 }
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **h_name, MonoArray **h_aliases, MonoArray **h_addr_list, gint32 hint)
+ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoStringHandle addr, MonoStringHandleOut h_name, MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list, gint32 hint, MonoError *error)
 {
 	char *address;
 	struct sockaddr_in saddr;
@@ -2644,14 +2644,14 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	struct sockaddr_in6 saddr6;
 #endif
 	MonoAddressInfo *info = NULL;
-	MonoError error;
 	gint32 family;
 	gchar hostname [NI_MAXHOST] = { 0 };
 	gboolean ret;
 
-	address = mono_string_to_utf8_checked (addr, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+	error_init (error);
+
+	address = mono_string_handle_to_utf8 (addr, error);
+	return_val_if_nok (error, FALSE);
 
 	if (inet_pton (AF_INET, address, &saddr.sin_addr ) == 1) {
 		family = AF_INET;
@@ -2701,8 +2701,7 @@ ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **
 	if (mono_get_address_info (hostname, 0, hint | MONO_HINT_CANONICAL_NAME | MONO_HINT_CONFIGURED_ONLY, &info) != 0)
 		return FALSE;
 
-	MonoBoolean result = addrinfo_to_IPHostEntry (info, h_name, h_aliases, h_addr_list, FALSE, &error);
-	mono_error_set_pending_exception (&error);
+	MonoBoolean result = addrinfo_to_IPHostEntry_handles (info, h_name, h_aliases, h_addr_list, FALSE, error);
 	return result;
 }
 

@@ -252,8 +252,9 @@ ves_icall_System_Net_Dns_GetHostByName_internal (MonoStringHandle host, MonoStri
 						 gint32 hint, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **h_name, MonoArray **h_aliases,
-	MonoArray **h_addr_list, gint32 hint);
+ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoStringHandle addr, MonoStringHandleOut h_name,
+						 MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list,
+						 gint32 hint, MonoError *error);
 
 MonoBoolean
 ves_icall_System_Net_Dns_GetHostName_internal (MonoStringHandleOut h_name, MonoError *error);
