@@ -32,10 +32,10 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
         sh "./build-managed.sh -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true"
     }
     stage ('Sync') {
-        sh "./sync.sh -p -portable -- /p:ArchGroup=x64"
+        sh "./sync.sh -p -- /p:ArchGroup=x64"
     }
     stage ('Build Product') {
-        sh "./build.sh -buildArch=x64 -${params.Config} -portable"
+        sh "./build.sh -buildArch=x64 -${params.Config}"
     }
     stage ('Build Tests') {
         def additionalArgs = ''
@@ -64,9 +64,9 @@ simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
                                      // 'Ubuntu.1704.Amd64.Open',
                                      'suse.422.amd64.Open',
                                      'fedora.25.amd64.Open']
-            
 
-            sh "./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.Config} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/portable/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
+
+            sh "./Tools/msbuild.sh src/upload-tests.proj /p:ArchGroup=x64 /p:ConfigurationGroup=${params.Config} /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux /p:HelixJobType=test/functional/cli/ /p:HelixSource=${helixSource} /p:BuildMoniker=${helixBuild} /p:HelixCreator=${helixCreator} /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken=\$CloudDropAccessToken /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs /p:TargetQueues=${targetHelixQueues.join('+')} /p:HelixLogFolder=${WORKSPACE}/${logFolder}/ /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt"
 
             submittedHelixJson = readJSON file: "${logFolder}/SubmittedHelixRuns.txt"
         }
