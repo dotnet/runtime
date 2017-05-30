@@ -16,6 +16,7 @@ namespace System.Tests
         static string s_stackTrace;
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UapAot does not support nice stack traces. It's for people who like performance.")]
         public void StackTraceTest()
         {
             //arrange
