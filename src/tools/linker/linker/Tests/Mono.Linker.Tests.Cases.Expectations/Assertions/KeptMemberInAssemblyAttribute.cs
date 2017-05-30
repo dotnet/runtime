@@ -3,7 +3,7 @@
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
-	public class KeptMemberInAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute {
+	public class KeptMemberInAssemblyAttribute : BaseInAssemblyAttribute {
 
 		public KeptMemberInAssemblyAttribute (string assemblyFileName, Type type, params string [] memberNames)
 		{

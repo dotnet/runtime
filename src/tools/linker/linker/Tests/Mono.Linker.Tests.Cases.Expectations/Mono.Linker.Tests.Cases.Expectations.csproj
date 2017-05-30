@@ -37,6 +37,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assertions\BaseInAssemblyAttribute.cs" />
     <Compile Include="Assertions\IgnoreTestCaseAttribute.cs" />
     <Compile Include="Assertions\KeptAssemblyAttribute.cs" />
     <Compile Include="Assertions\KeptAttribute.cs" />

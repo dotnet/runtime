@@ -3,7 +3,7 @@
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 {
 	[AttributeUsage(AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
-	public class RemovedTypeInAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute {
+	public class RemovedTypeInAssemblyAttribute : BaseInAssemblyAttribute {
 		public RemovedTypeInAssemblyAttribute (string assemblyFileName, Type type)
 		{
 			if (type == null)
