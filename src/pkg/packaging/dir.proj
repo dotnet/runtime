@@ -12,7 +12,9 @@
     </PackageTargets>
   </PropertyGroup>
 
-  <Target Name="Build" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="Build" DependsOnTargets="BuildInstallers;BuildCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="BuildInstallers" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="BuildCombinedInstallers" DependsOnTargets="GenerateCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
 
   <Target Name="InitPackage">
     <ItemGroup>
@@ -148,13 +150,14 @@
   <PropertyGroup>
    <InstallerDependsOn>
      GenerateMsis;
-     GenerateBundles;
      GeneratePkgs;
      GenerateDebs;
      GenerateRpms;
    </InstallerDependsOn>
   </PropertyGroup>
   <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
+
+  <Target Name="GenerateCombinedInstallers" DependsOnTargets="InitPackage;GenerateBundles" />
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
     <ItemGroup>

@@ -6,7 +6,19 @@
     <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
     <UsingTask TaskName="ZipFileExtractToDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
 
+    <Target Name="GenerateMsiVersionString">
+      <GenerateMsiVersion
+        Major="$(MajorVersion)"
+        Minor="$(MinorVersion)"
+        Patch="$(PatchVersion)"
+        BuildNumberMajor="$(BuildNumberMajor)"
+        BuildNumberMinor="$(BuildNumberMajor)">
+        <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
+      </GenerateMsiVersion>
+    </Target>
+
     <Target Name="GenerateMsis"
+            DependsOnTargets="GenerateMsiVersionString"
             Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
       
       <PropertyGroup>
@@ -60,15 +72,6 @@
       <RemoveDir Directories="$(WixObjRoot)" />
       <MakeDir Directories="$(WixObjRoot);@(WixOutputs);@(WixOutputs2)" />
 
-      <GenerateMsiVersion
-        Major="$(MajorVersion)"
-        Minor="$(MinorVersion)"
-        Patch="$(PatchVersion)"
-        BuildNumberMajor="$(BuildNumberMajor)"
-        BuildNumberMinor="$(BuildNumberMajor)">
-        <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
-      </GenerateMsiVersion>
-
       <GenerateGuidFromName Name="$(SharedFrameworkInstallerFile)">
         <Output TaskParameter="GeneratedGui" PropertyName="SharedFxUpgradeCode" />
       </GenerateGuidFromName>
@@ -85,7 +88,7 @@
   </Target>
 
   <Target Name="GenerateBundles"
-          DependsOnTargets="GetBundleDisplayVersion"
+          DependsOnTargets="GetBundleDisplayVersion;GenerateMsiVersionString"
           Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
      <PropertyGroup>
         <SharedFxBundleScript>$(WindowsScriptRoot)sharedframework\generatebundle.ps1</SharedFxBundleScript>
