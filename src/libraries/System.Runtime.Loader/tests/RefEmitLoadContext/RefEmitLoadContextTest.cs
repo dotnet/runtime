@@ -30,6 +30,7 @@ namespace System.Runtime.Loader.Tests
         }
     }
 
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyLoadContext not supported on .Net Native")]
     public class RefEmitLoadContextTests
     {
         public static string s_loadFromPath = null;
