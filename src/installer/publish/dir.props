@@ -28,10 +28,10 @@
     <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
-    <InstallerFile Include="$(PackagesOutDir)**/*$(InstallerExtension)" >
+    <InstallerFile Include="$(PackagesOutDir)**/*$(InstallerExtension)" Condition="'$(InstallerExtension)' != ''" >
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
-    <InstallerFile Include="$(PackagesOutDir)**/*$(CombinedInstallerExtension)" >
+    <InstallerFile Include="$(PackagesOutDir)**/*$(CombinedInstallerExtension)" Condition="'$(CombinedInstallerExtension)' != ''" >
       <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
     </InstallerFile>
   </ItemGroup>
