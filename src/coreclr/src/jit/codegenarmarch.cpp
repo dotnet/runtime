@@ -1541,6 +1541,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 }
 
                 argReg = genRegArgNext(argReg);
+
+#if defined(_TARGET_ARM_)
+                // A double register is modelled as an even-numbered single one
+                if (putArgRegNode->TypeGet() == TYP_DOUBLE)
+                {
+                    argReg = genRegArgNext(argReg);
+                }
+#endif // _TARGET_ARM_
             }
         }
         else
