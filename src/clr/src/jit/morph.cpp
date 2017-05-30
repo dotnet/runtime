@@ -8137,8 +8137,16 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
             if (stmtExpr->gtOper == GT_ASG && info.compRetType != TYP_VOID)
             {
                 noway_assert(stmtExpr->gtGetOp1()->OperIsLocal());
+
+                GenTreePtr treeWithLcl = retExpr->gtGetOp1();
+                while (treeWithLcl->gtOper == GT_CAST)
+                {
+                    noway_assert(!treeWithLcl->gtOverflow());
+                    treeWithLcl = treeWithLcl->gtGetOp1();
+                }
+
                 noway_assert(stmtExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum ==
-                             retExpr->gtGetOp1()->AsLclVarCommon()->gtLclNum);
+                             treeWithLcl->AsLclVarCommon()->gtLclNum);
             }
 
             fgRemoveStmt(compCurBB, nextMorphStmt);
