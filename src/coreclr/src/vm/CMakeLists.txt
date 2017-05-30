@@ -122,6 +122,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
 )
 
 set( GC_SOURCES_DAC_AND_WKS_COMMON
+  ../gc/gcconfig.cpp
   ../gc/gccommon.cpp
   ../gc/gcscan.cpp
   ../gc/gcsvr.cpp
