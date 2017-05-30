@@ -15,10 +15,19 @@ namespace System.Runtime.Serialization.Formatters.Tests
     {
         public static bool IsEqual(this WeakReference @this, WeakReference other)
         {
-            return @this != null &&
-                other != null &&
-                @this.TrackResurrection == other.TrackResurrection &&
-                Object.Equals(@this.Target, other.Target);
+            if (@this == null || other == null)
+                return false;
+
+            if (@this.TrackResurrection != other.TrackResurrection)
+                return false;
+
+            // When WeakReference is deserialized, the object it wraps may blip into and out of
+            // existence before we get a chance to compare it, since there are no strong references
+            // to it such that it can then be immediately collected.  Therefore, if we can get both
+            // values, great, compare them.  Otherwise, consider them equal.
+            object a = @this.Target;
+            object b = other.Target;
+            return a != null && b != null ? Equals(a, b) : true;
         }
 
         public static bool IsEqual<T>(this WeakReference<T> @this, WeakReference<T> other)
@@ -27,12 +36,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
             if (@this == null || other == null)
                 return false;
 
-            if (@this.TryGetTarget(out T thisTarget) && other.TryGetTarget(out T otherTarget))
-            {
-                return Object.Equals(thisTarget, otherTarget);
-            }
-
-            return false;
+            // When WeakReference is deserialized, the object it wraps may blip into and out of
+            // existence before we get a chance to compare it, since there are no strong references
+            // to it such that it can then be immediately collected.  Therefore, if we can get both
+            // values, great, compare them.  Otherwise, consider them equal.
+            return @this.TryGetTarget(out T thisTarget) && other.TryGetTarget(out T otherTarget) ?
+                Equals(thisTarget, otherTarget) :
+                true;
         }
 
         public static bool IsEqual<T>(this Lazy<T> @this, Lazy<T> other)
