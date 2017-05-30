@@ -40,6 +40,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				new AssemblyChecker (original, linked).Verify ();
 
 				VerifyLinkingOfOtherAssemblies (original);
+
+				AdditionalChecking (linkResult, original, linked);
 			}
 			finally
 			{
@@ -87,6 +89,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
+		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
+		{
+		}
+
 		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
 		{
 			var checks = BuildOtherAssemblyCheckTable (original);
@@ -114,7 +120,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
 						} else {
-							throw new NotImplementedException ($"Type {expectedTypeName}, has an unknown other assembly attribute of type {checkAttrInAssembly.AttributeType}");
+							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
 						}
 					}
 				}
@@ -199,17 +205,22 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
-		TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
+		protected TypeDefinition GetOriginalTypeFromInAssemblyAttribute (CustomAttribute inAssemblyAttribute)
 		{
 			var attributeValueAsTypeReference = inAssemblyAttribute.ConstructorArguments [1].Value as TypeReference;
 			if (attributeValueAsTypeReference != null)
 				return attributeValueAsTypeReference.Resolve ();
 
 			var assembly = ResolveOriginalsAssembly (inAssemblyAttribute.ConstructorArguments [0].Value.ToString ());
-			return assembly.MainModule.GetType (inAssemblyAttribute.ConstructorArguments [1].Value.ToString ());
+
+			var expectedTypeName = inAssemblyAttribute.ConstructorArguments [1].Value.ToString ();
+			var originalType = assembly.MainModule.GetType (expectedTypeName);
+			if (originalType == null)
+				throw new InvalidOperationException ($"Unable to locate the original type `{expectedTypeName}`");
+			return originalType;
 		}
 
-		static Dictionary<string, List<CustomAttribute>> BuildOtherAssemblyCheckTable (AssemblyDefinition original)
+		Dictionary<string, List<CustomAttribute>> BuildOtherAssemblyCheckTable (AssemblyDefinition original)
 		{
 			var checks = new Dictionary<string, List<CustomAttribute>> ();
 
@@ -227,12 +238,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return checks;
 		}
 
-		static bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
+		protected virtual void UnhandledOtherAssemblyAssertion (string expectedTypeName, CustomAttribute checkAttrInAssembly, TypeDefinition linkedType)
 		{
-			return attr.AttributeType.Name == nameof (RemovedTypeInAssemblyAttribute)
-				|| attr.AttributeType.Name == nameof (KeptTypeInAssemblyAttribute)
-				|| attr.AttributeType.Name == nameof (RemovedMemberInAssemblyAttribute)
-				|| attr.AttributeType.Name == nameof (KeptMemberInAssemblyAttribute);
+			throw new NotImplementedException ($"Type {expectedTypeName}, has an unknown other assembly attribute of type {checkAttrInAssembly.AttributeType}");
+		}
+
+		bool IsTypeInOtherAssemblyAssertion (CustomAttribute attr)
+		{
+			return attr.AttributeType.Resolve ().DerivesFrom (nameof (BaseInAssemblyAttribute));
 		}
 	}
 }

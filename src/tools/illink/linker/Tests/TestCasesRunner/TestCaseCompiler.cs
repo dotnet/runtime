@@ -7,9 +7,9 @@ using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner {
 	public class TestCaseCompiler {
-		public virtual NPath CompileTestIn (NPath outputDirectory, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines)
+		public virtual NPath CompileTestIn (NPath outputDirectory, string outputName, IEnumerable<string> sourceFiles, IEnumerable<string> references, IEnumerable<string> defines)
 		{
-			var compilerOptions = CreateCompilerOptions (outputDirectory, references, defines);
+			var compilerOptions = CreateCompilerOptions (outputDirectory, outputName, references, defines);
 			var provider = CodeDomProvider.CreateProvider ("C#");
 			var result = provider.CompileAssemblyFromFile (compilerOptions, sourceFiles.ToArray ());
 			if (!result.Errors.HasErrors)
@@ -21,14 +21,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			throw new Exception ("Compilation errors: " + errors);
 		}
 
-		protected virtual CompilerParameters CreateCompilerOptions (NPath outputDirectory, IEnumerable<string> references, IEnumerable<string> defines)
+		protected virtual CompilerParameters CreateCompilerOptions (NPath outputDirectory, string outputName, IEnumerable<string> references, IEnumerable<string> defines)
 		{
-			var outputPath = outputDirectory.Combine ("test.exe");
+			var outputPath = outputDirectory.Combine (outputName);
 
 			var compilerParameters = new CompilerParameters
 			{
 				OutputAssembly = outputPath.ToString (),
-				GenerateExecutable = true
+				GenerateExecutable = outputName.EndsWith(".exe")
 			};
 
 			compilerParameters.CompilerOptions = defines?.Aggregate (string.Empty, (buff, arg) => $"{buff} /define:{arg}");
