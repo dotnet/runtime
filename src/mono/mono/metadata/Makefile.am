@@ -193,6 +193,7 @@ common_sources = \
 	mono-endian.c		\
 	mono-endian.h		\
 	mono-hash.h		\
+	mono-conc-hash.h		\
 	mono-mlist.c		\
 	mono-mlist.h		\
 	mono-perfcounters.c	\
@@ -280,6 +281,7 @@ gc_dependent_sources = \
 	gc.c		\
 	monitor.c	\
 	mono-hash.c	\
+	mono-conc-hash.c	\
 	object.c	\
 	dynamic-image.c	\
 	sre.c	\

@@ -75,6 +75,7 @@
     <ClCompile Include="..\mono\metadata\mono-debug.c" />
     <ClCompile Include="..\mono\metadata\mono-endian.c" />
     <ClCompile Include="..\mono\metadata\mono-hash.c" />
+    <ClCompile Include="..\mono\metadata\mono-conc-hash.c" />
     <ClCompile Include="..\mono\metadata\mono-mlist.c" />
     <ClCompile Include="..\mono\metadata\mono-perfcounters.c" />
     <ClCompile Include="..\mono\metadata\nacl-stub.c" />
@@ -181,6 +182,7 @@
     <ClInclude Include="..\mono\metadata\mono-debug.h" />
     <ClInclude Include="..\mono\metadata\mono-endian.h" />
     <ClInclude Include="..\mono\metadata\mono-hash.h" />
+    <ClInclude Include="..\mono\metadata\mono-conc-hash.h" />
     <ClInclude Include="..\mono\metadata\mono-mlist.h" />
     <ClInclude Include="..\mono\metadata\mono-perfcounters-def.h" />
     <ClInclude Include="..\mono\metadata\mono-perfcounters.h" />

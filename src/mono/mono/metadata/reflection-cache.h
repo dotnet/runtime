@@ -48,16 +48,17 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
+
 	mono_domain_lock (domain);
 	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
+		domain->refobject_hash = mono_conc_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
 
-	obj = (MonoObject*) mono_g_hash_table_lookup (domain->refobject_hash, &pe);
+	obj = (MonoObject*) mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe);
 	if (obj == NULL) {
 		ReflectedEntry *e = ALLOC_REFENTRY;
 		e->item = item;
 		e->refclass = klass;
-		mono_g_hash_table_insert (domain->refobject_hash, e, o);
+		mono_conc_g_hash_table_insert (domain->refobject_hash, e, o);
 		obj = o;
 	}
 	mono_domain_unlock (domain);
@@ -71,16 +72,17 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	ReflectedEntry pe;
 	pe.item = item;
 	pe.refclass = klass;
+
 	mono_domain_lock (domain);
 	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
+		domain->refobject_hash = mono_conc_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
 
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_g_hash_table_lookup (domain->refobject_hash, &pe));
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
 		ReflectedEntry *e = ALLOC_REFENTRY;
 		e->item = item;
 		e->refclass = klass;
-		mono_g_hash_table_insert (domain->refobject_hash, e, MONO_HANDLE_RAW (o));
+		mono_conc_g_hash_table_insert (domain->refobject_hash, e, MONO_HANDLE_RAW (o));
 		MONO_HANDLE_ASSIGN (obj, o);
 	}
 	mono_domain_unlock (domain);
@@ -96,11 +98,11 @@ check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
 	ReflectedEntry e;
 	e.item = item;
 	e.refclass = klass;
-	mono_domain_lock (domain);
-	if (!domain->refobject_hash)
-		domain->refobject_hash = mono_g_hash_table_new_type (reflected_hash, reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, "domain reflection objects table");
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_g_hash_table_lookup (domain->refobject_hash, &e));
-	mono_domain_unlock (domain);
+	MonoConcGHashTable *hash = domain->refobject_hash;
+	if (!hash)
+		return MONO_HANDLE_NEW (MonoObject, NULL);
+
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (hash, &e));
 	return obj;
 }
 
@@ -116,6 +118,8 @@ check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, 
 		return obj;
 	MONO_HANDLE_ASSIGN (obj, construct (domain, klass, item, user_data, error));
 	return_val_if_nok (error, NULL);
+	if (MONO_HANDLE_IS_NULL (obj))
+		return obj;
 	/* note no caching if there was an error in construction */
 	return cache_object_handle (domain, klass, item, obj);
 }
