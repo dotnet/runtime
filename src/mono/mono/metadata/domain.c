@@ -1037,10 +1037,6 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	mono_debug_domain_unload (domain);
 
-	mono_appdomains_lock ();
-	appdomains_list [domain->domain_id] = NULL;
-	mono_appdomains_unlock ();
-
 	/* must do this early as it accesses fields and types */
 	if (domain->special_static_fields) {
 		mono_alloc_special_static_data_free (domain->special_static_fields);
@@ -1213,6 +1209,10 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	domain->setup = NULL;
 
 	mono_gc_deregister_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED));
+
+	mono_appdomains_lock ();
+	appdomains_list [domain->domain_id] = NULL;
+	mono_appdomains_unlock ();
 
 	/* FIXME: anything else required ? */
 
