@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(20360, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server)
@@ -85,7 +85,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(18784, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         public async Task ConnectAsync_AddHostHeader_Success(Uri server)
