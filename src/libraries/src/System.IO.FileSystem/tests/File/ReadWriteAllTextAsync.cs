@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -61,10 +62,13 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(100)]
+        [InlineData(4096)]
+        [InlineData(4097)]
+        [InlineData(10000)]
         public async Task ValidWriteAsync(int size)
         {
             string path = GetTestFilePath();
-            string toWrite = new string('c', size);
+            string toWrite = new string(Enumerable.Range(0, size).Select(i => (char)(i + 1)).ToArray());
 
             File.Create(path).Dispose();
             await WriteAsync(path, toWrite);
