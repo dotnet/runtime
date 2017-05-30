@@ -1134,7 +1134,7 @@ namespace System.Diagnostics.Tracing
             /// Address where the one argument lives (if this points to managed memory you must ensure the
             /// managed object is pinned.
             /// </summary>
-            public IntPtr DataPointer { get { return (IntPtr)m_Ptr; } set { m_Ptr = unchecked((long)value); } }
+            public IntPtr DataPointer { get { return (IntPtr)m_Ptr; } set { m_Ptr = unchecked((ulong)value); } }
             /// <summary>
             /// Size of the argument referenced by DataPointer
             /// </summary>
@@ -1150,14 +1150,14 @@ namespace System.Diagnostics.Tracing
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
-                this.m_Ptr = (long)(ulong)(UIntPtr)pointer;
+                this.m_Ptr = (ulong)pointer;
                 this.m_Size = size;
                 this.m_Reserved = reserved; // Mark this descriptor as containing tracelogging-compatible metadata.
             }
 
             //Important, we pass this structure directly to the Win32 EventWrite API, so this structure must be layed out exactly
             // the way EventWrite wants it.  
-            internal long m_Ptr;
+            internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
             internal int m_Reserved;       // Used to pad the size to match the Win32 API
