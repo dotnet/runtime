@@ -365,6 +365,7 @@
         },
         "ReportingParameters": {
           "OperatingSystem": "OSX",
+          "Platform": "x64",
           "Type": "build/product/",
           "ConfigurationGroup": "Debug"
         }
