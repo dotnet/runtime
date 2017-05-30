@@ -107,7 +107,7 @@ namespace System.Tests
             () =>
             {
                 // Clear the test variable
-                Environment.SetEnvironmentVariable(varName, null);
+                Environment.SetEnvironmentVariable(varName, null, target);
             });
         }
 
@@ -142,7 +142,7 @@ namespace System.Tests
             () =>
             {
                 // Clear the test variable
-                Environment.SetEnvironmentVariable(varName, null);
+                Environment.SetEnvironmentVariable(varName, null, target);
             });
         }
 
