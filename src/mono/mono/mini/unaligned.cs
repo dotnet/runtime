@@ -48,7 +48,8 @@ class Tests {
 		int expected = *(int*)ptr;
 
 		Intrinsics.UnalignedStobj<int> (ptr + 1, expected);
-		if (Intrinsics.UnalignedLdobj<float> (ptr + 1) != f)
+		/* we can loose some precision due to r4<->r8 conversions */
+		if (Math.Abs (Intrinsics.UnalignedLdobj<float> (ptr + 1) - f) > 0.01f)
 			return 1;
 
 		return 0;
