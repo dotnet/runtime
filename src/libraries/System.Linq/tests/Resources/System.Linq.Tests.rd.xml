@@ -1,7 +1,7 @@
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Library>
     <!-- Needed because of StringComparer instance in [Theory] data which causes xunit to reflect on its ToString() -->
-    <Type Name="System.StringComparer" Dynamic="Required Public" />
+    <Type Name="System.OrdinalComparer" Dynamic="Required Public" />
 
     <!-- ConsistencyTests.MatchSequencePattern() test explicitly probes these types -->
     <Type Name="System.Linq.Enumerable" Dynamic="Required Public" />
