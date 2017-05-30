@@ -191,7 +191,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec -e ROOTFS_DIR $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) -buildArch=$(PB_Architecture) -$(PB_ConfigurationGroup) $(PB_BuildArguments)",
+        "arguments": "exec -e ROOTFS_DIR $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
