@@ -199,6 +199,9 @@
     <ClCompile Include="..\mono\metadata\mono-hash.c">
       <Filter>Source Files\gc</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\metadata\mono-conc-hash.c">
+      <Filter>Source Files\gc</Filter>
+    </ClCompile>
     <ClCompile Include="..\mono\metadata\object.c">
       <Filter>Source Files\gc</Filter>
     </ClCompile>
@@ -394,6 +397,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\mono-hash.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\metadata\mono-conc-hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\metadata\mono-mlist.h">
