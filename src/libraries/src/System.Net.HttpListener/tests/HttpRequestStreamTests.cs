@@ -482,7 +482,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently, [ActiveIssue(19983, platforms: TestPlatforms.AnyUnix)] // No exception thrown
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task Read_FromClosedConnectionAsynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
@@ -505,13 +505,10 @@ namespace System.Net.Tests
                 byte[] buffer = new byte[expected.Length];
                 await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
                 await Assert.ThrowsAsync<HttpListenerException>(() => context.Request.InputStream.ReadAsync(buffer, 0, buffer.Length));
-
-                // Closing a response from a closed client if no writing has failed should fail.
-                Assert.Throws<HttpListenerException>(() => context.Response.Close());
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20246, TestPlatforms.AnyUnix)] // CI hanging frequently, [ActiveIssue(19983, platforms: TestPlatforms.AnyUnix)] // No exception thrown
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
         public async Task Read_FromClosedConnectionSynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
@@ -534,9 +531,6 @@ namespace System.Net.Tests
                 byte[] buffer = new byte[expected.Length];
                 Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
                 Assert.Throws<HttpListenerException>(() => context.Request.InputStream.Read(buffer, 0, buffer.Length));
-
-                // Closing a response from a closed client if no writing has occured should fail.
-                Assert.Throws<HttpListenerException>(() => context.Response.Close());
             }
         }
     }
