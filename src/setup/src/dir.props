@@ -20,18 +20,6 @@
     <HostPolicyBaseName>$(LibPrefix)hostpolicy$(LibSuffix)</HostPolicyBaseName>      
   </PropertyGroup>
 
-  <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
-  <!-- TODO: chcosta - do we really need this? -->
-  <PropertyGroup Condition="'$(TargetRid)' != ''">
-    <PackageTargetRid>$(TargetRid)</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
-    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>    
-  </PropertyGroup>
-
   <PropertyGroup>
     <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
     <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
