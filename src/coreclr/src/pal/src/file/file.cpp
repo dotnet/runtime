@@ -4056,14 +4056,14 @@ CorUnix::InternalCreatePipe(
 
     /* enable close-on-exec for both pipes; if one gets passed to CreateProcess
        it will be "uncloseonexeced" in order to be inherited */
-    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,1))
+    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreatePipeExit;
     }
-    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,1))
+    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
