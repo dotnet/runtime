@@ -160,9 +160,9 @@ namespace System.Net.WebSockets.Client.Tests
                 var segment = new ArraySegment<byte>(recvBuffer);
                 var cts = new CancellationTokenSource();
                 
-                Task recieve = cws.ReceiveAsync(segment, cts.Token);
+                Task receive = cws.ReceiveAsync(segment, cts.Token);
                 cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => recieve);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receive);
                 
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ReceiveAsync(segment, CancellationToken.None));
