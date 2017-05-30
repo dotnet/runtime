@@ -456,7 +456,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
     [Serializable]
     internal sealed class PointEqualityComparer : IEqualityComparer<Point>
     {
+<<<<<<< HEAD
         public bool Equals(Point x, Point y) => (x.X == y.X) && (x.Y == y.Y);
+=======
+        public bool Equals(Point x, Point y) => x.X == y.X && x.Y == y.Y;
+>>>>>>> Initial
         public int GetHashCode(Point obj) => RuntimeHelpers.GetHashCode(obj);
     }
 
@@ -524,7 +528,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
             for (int i = 0; i < array1.Length; i++)
             {
                 T[] sub1 = array1[i], sub2 = array2[i];
+<<<<<<< HEAD
                 if (sub1 == null || (sub2 == null && (sub1 != sub2)))
+=======
+                if (sub1 == null || sub2 == null && (sub1 != sub2))
+>>>>>>> Initial
                     return false;
                 if (sub1.Length != sub2.Length)
                     return false;
