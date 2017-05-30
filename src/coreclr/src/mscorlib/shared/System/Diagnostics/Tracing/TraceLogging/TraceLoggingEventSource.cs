@@ -562,7 +562,7 @@ namespace System.Diagnostics.Tracing
                         if (eventTypes.typeInfos[i].DataType == typeof(string))
                         {
                             // Write out the size of the string 
-                            descriptors[numDescrs].m_Ptr = (long)&descriptors[numDescrs + 1].m_Size;
+                            descriptors[numDescrs].DataPointer = (IntPtr) (&descriptors[numDescrs + 1].m_Size);
                             descriptors[numDescrs].m_Size = 2;
                             numDescrs++;
 
