@@ -993,3 +993,125 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
     assert(g_pFreeObjectMethodTable != nullptr);
     return g_pFreeObjectMethodTable;
 }
+
+// These are arbitrary, we shouldn't ever be having confrig keys or values
+// longer than these lengths.
+const size_t MaxConfigKeyLength = 255;
+const size_t MaxConfigValueLength = 255;
+
+bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    // these configuration values are given to us via startup flags.
+    if (strcmp(key, "gcServer") == 0)
+    {
+        *value = g_heap_type == GC_HEAP_SVR;
+        return true;
+    }
+
+    if (strcmp(key, "gcConcurrent") == 0)
+    {
+        *value = g_IGCconcurrent != 0;
+        return true;
+    }
+
+    if (strcmp(key, "GCRetainVM") == 0)
+    {
+        *value = !!g_pConfig->GetGCRetainVM();
+        return true;
+    }
+
+    WCHAR configKey[MaxConfigKeyLength];
+    if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    {
+        // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+        return false;
+    }
+
+    // otherwise, ask the config subsystem.
+    if (CLRConfig::IsConfigOptionSpecified(configKey))
+    {
+        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::EEConfig_default };
+        *value = CLRConfig::GetConfigValue(info) != 0;
+        return true;
+    }
+
+    return false;
+}
+
+bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+{
+    CONTRACTL {
+      NOTHROW;
+      GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    WCHAR configKey[MaxConfigKeyLength];
+    if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    {
+        // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+        return false;
+    }
+
+    if (CLRConfig::IsConfigOptionSpecified(configKey))
+    {
+        CLRConfig::ConfigDWORDInfo info { configKey , 0, CLRConfig::EEConfig_default };
+        *value = CLRConfig::GetConfigValue(info);
+        return true;
+    }
+
+    return false;
+}
+
+bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+{
+    CONTRACTL {
+      NOTHROW;
+      GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    WCHAR configKey[MaxConfigKeyLength];
+    if (MultiByteToWideChar(CP_ACP, 0, key, -1 /* key is null-terminated */, configKey, MaxConfigKeyLength) == 0)
+    {
+        // whatever this is... it's not something we care about. (It was too long, wasn't unicode, etc.)
+        return false;
+    }
+
+    CLRConfig::ConfigStringInfo info { configKey, CLRConfig::EEConfig_default };
+    LPWSTR out = CLRConfig::GetConfigValue(info);
+    if (!out)
+    {
+        // config not found
+        return false;
+    }
+
+    // not allocated on the stack since it escapes this function
+    AStringHolder configResult = new (nothrow) char[MaxConfigValueLength];
+    if (!configResult)
+    {
+        CLRConfig::FreeConfigString(out);
+        return false;
+    }
+
+    if (WideCharToMultiByte(CP_ACP, 0, out, -1 /* out is null-terminated */, 
+          configResult.GetValue(), MaxConfigKeyLength, nullptr, nullptr) == 0)
+    {
+        // this should only happen if the config subsystem gives us a string that's not valid
+        // unicode.
+        CLRConfig::FreeConfigString(out);
+        return false;
+    }
+
+    *value = configResult.Extract();
+    CLRConfig::FreeConfigString(out);
+    return true;
+}
+
+void GCToEEInterface::FreeStringConfigValue(const char* value)
+{
+    delete [] value;
+}

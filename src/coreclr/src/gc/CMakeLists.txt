@@ -11,6 +11,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
 endif(CLR_CMAKE_PLATFORM_UNIX)
 
 set( GC_SOURCES
+  gcconfig.cpp
   gccommon.cpp
   gcscan.cpp
   gcsvr.cpp

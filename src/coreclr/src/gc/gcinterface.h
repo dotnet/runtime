@@ -185,12 +185,6 @@ typedef bool (*InitializeGarbageCollectorFunction)(
 // to be used as an argument to GetProcAddress.
 #define INITIALIZE_GC_FUNCTION_NAME "InitializeGarbageCollector"
 
-// The runtime needs to know whether we're using workstation or server GC 
-// long before the GCHeap is created. This function sets the type of
-// heap that will be created, before InitializeGarbageCollector is called
-// and the heap is actually created.
-void InitializeHeapType(bool bServerHeap);
-
 #ifdef WRITE_BARRIER_CHECK
 //always defined, but should be 0 in Server GC
 extern uint8_t* g_GCShadow;

@@ -18,7 +18,7 @@ public:
     // Suspends the EE for the given reason.
     virtual
     void SuspendEE(SUSPEND_REASON reason) = 0;
-    
+
     // Resumes all paused threads, with a boolean indicating
     // if the EE is being restarted because a GC is complete.
     virtual
@@ -166,6 +166,22 @@ public:
     // field to see how many bytes to skip before the next object on a heap segment begins.
     virtual
     MethodTable* GetFreeObjectMethodTable() = 0;
+
+    // Asks the EE for the value of a given configuration key. If the EE does not know or does not
+    // have a value for the requeested config key, false is returned and the value of the passed-in
+    // pointer is undefined. Otherwise, true is returned and the config key's value is written to
+    // the passed-in pointer.
+    virtual
+    bool GetBooleanConfigValue(const char* key, bool* value) = 0;
+
+    virtual
+    bool GetIntConfigValue(const char* key, int64_t* value) = 0;
+
+    virtual
+    bool GetStringConfigValue(const char* key, const char** value) = 0;
+
+    virtual
+    void FreeStringConfigValue(const char* value) = 0;
 };
 
 #endif // _GCINTERFACE_EE_H_
