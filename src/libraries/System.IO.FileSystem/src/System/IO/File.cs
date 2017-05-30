@@ -1005,7 +1005,7 @@ namespace System.IO
                 int index = 0;
                 while (index < count)
                 {
-                    int batchSize = Math.Min(DefaultBufferSize, count);
+                    int batchSize = Math.Min(DefaultBufferSize, count - index);
                     contents.CopyTo(index, buffer, 0, batchSize);
                     cancellationToken.ThrowIfCancellationRequested();
                     await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
