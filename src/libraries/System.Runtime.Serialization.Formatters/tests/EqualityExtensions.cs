@@ -3,10 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-<<<<<<< HEAD
 using System.Collections.Specialized;
-=======
->>>>>>> Initial
 using System.Data;
 using System.Globalization;
 using System.Linq;
@@ -41,27 +38,19 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static bool IsEqual<T>(this Lazy<T> @this, Lazy<T> other)
         {
             // Force value creation for lazy original object
-<<<<<<< HEAD
             T thisVal = @this.Value;
             T otherVal = other.Value;
-=======
-            var val = @this.Value;
->>>>>>> Initial
 
             return @this != null &&
                 other != null &&
                 @this.IsValueCreated == other.IsValueCreated &&
-<<<<<<< HEAD
                 Object.Equals(thisVal, otherVal);
-=======
-                Object.Equals(@this.Value, other.Value);
         }
 
         public static bool IsEqual(this StreamingContext @this, StreamingContext other)
         {
             return @this.State == @other.State &&
                 Object.Equals(@this.Context, other.Context);
->>>>>>> Initial
         }
 
         public static bool IsEqual(this CookieContainer @this, CookieContainer other)
