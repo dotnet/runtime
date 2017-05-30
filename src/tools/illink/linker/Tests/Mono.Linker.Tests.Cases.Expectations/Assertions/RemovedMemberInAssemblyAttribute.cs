@@ -2,7 +2,7 @@
 
 namespace Mono.Linker.Tests.Cases.Expectations.Assertions {
 	[AttributeUsage (AttributeTargets.Class | AttributeTargets.Delegate, AllowMultiple = true, Inherited = false)]
-	public class RemovedMemberInAssemblyAttribute : BaseExpectedLinkedBehaviorAttribute {
+	public class RemovedMemberInAssemblyAttribute : BaseInAssemblyAttribute {
 
 		public RemovedMemberInAssemblyAttribute (string assemblyFileName, Type type, params string [] memberNames)
 		{
