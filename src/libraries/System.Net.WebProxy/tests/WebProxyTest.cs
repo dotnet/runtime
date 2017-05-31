@@ -175,6 +175,7 @@ namespace System.Net.Tests
             yield return new object[] { new Uri($"http://{IPAddress.None}"), false };
         }
 
+        [ActiveIssue(20137, TargetFrameworkMonikers.Uap)]
         [Theory]
         [MemberData(nameof(BypassOnLocal_MemberData))]
         public static void BypassOnLocal_MatchesExpected(Uri destination, bool isLocal)
