@@ -86,10 +86,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public int X;
         public int Y;
 
-        public Point()
-        {
-        }
-
         public Point(int x, int y)
         {
             X = x;
