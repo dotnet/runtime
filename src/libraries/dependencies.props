@@ -10,25 +10,25 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>8196c7b91bed48e2fc47fbdea50b4d75d147f7ce</CoreFxCurrentRef>
-    <CoreClrCurrentRef>969d2bc613cc192283ef4d303803df9e39aa40aa</CoreClrCurrentRef>
+    <CoreClrCurrentRef>46f35127629b164ba18c7dc6bf80cf523fc4e35a</CoreClrCurrentRef>
     <CoreSetupCurrentRef>a3cc536986258354aea31547ac3ddf3dad3cfd9d</CoreSetupCurrentRef>
     <ExternalCurrentRef>5a0606fccb09fce4b47545ae9896139acca547f5</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>8196c7b91bed48e2fc47fbdea50b4d75d147f7ce</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>8196c7b91bed48e2fc47fbdea50b4d75d147f7ce</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>97059fa979a3c8fb8b9fba127c526f15e48c9dde</SniCurrentRef>
-    <StandardCurrentRef>969d2bc613cc192283ef4d303803df9e39aa40aa</StandardCurrentRef>
+    <StandardCurrentRef>46f35127629b164ba18c7dc6bf80cf523fc4e35a</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
     <CoreFxExpectedPrerelease>preview1-25330-06</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>2.1.0-preview1-25330-02</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview1-25331-02</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25322-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25331-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25331-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25331-00</ProjectNTfsTestILCPackageVersion>
-    <NETStandardPackageVersion>2.1.0-preview1-25330-01</NETStandardPackageVersion>
+    <NETStandardPackageVersion>2.1.0-preview1-25331-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25329-02</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
