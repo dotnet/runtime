@@ -12,99 +12,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "debian82_prereqs_2",
-            "Rid": "debian.8"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Debian 8.2",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
             "DockerTag": "rhel7_prereqs_2",
-            "Rid": "rhel.7"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "RedHat 7",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
-            "DockerTag": "ubuntu1404_prereqs_v3",
-            "Rid": "ubuntu.14.04"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
-            "DockerTag": "ubuntu1604_prereqs",
-            "Rid": "ubuntu.16.04"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
-            "DockerTag": "ubuntu1610_prereqs_v2",
-            "Rid": "ubuntu.16.10"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.10",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
-            "DockerTag": "fedora24_prereqs_v4",
-            "Rid": "fedora.24"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Fedora 24",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
-            "DockerTag": "opensuse421_prereqs_v3",
-            "Rid": "opensuse.42.1"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "openSUSE 42.1",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux",
-          "Parameters": {
-            "DockerTag": "rhel7_prereqs_2",
-            "portableBuild": "-portable",
             "Rid": "linux"
           },
           "ReportingParameters": {
@@ -117,20 +25,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Mac",
           "Parameters": {
-            "Rid": "osx.10.12"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "OSX 10.12",
-            "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Mac",
-          "Parameters": {
-            "Rid": "osx",
-            "portableBuild": "-portable"
+            "Rid": "osx"
           },
           "ReportingParameters": {
             "OperatingSystem": "OSX",
@@ -148,19 +43,6 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Architecture": "x64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Windows",
-          "Parameters": {
-            "Architecture": "x64",
-            "portableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
             "SubType" : "PortableBuild",
             "Architecture": "x64",
             "PB_BuildType": null
@@ -170,19 +52,6 @@
           "Name": "DotNet-CoreClr-Trusted-Windows",
           "Parameters": {
             "Architecture": "arm64"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Architecture": "arm64",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Windows",
-          "Parameters": {
-            "Architecture": "arm64",
-            "portableBuild": "-portable"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -200,19 +69,6 @@
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "Type": "build/product/",
-            "Architecture": "arm",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Windows",
-          "Parameters": {
-            "Architecture": "arm",
-            "portableBuild": "-portable"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
             "SubType" : "PortableBuild",
             "Architecture": "arm",
             "PB_BuildType": null
@@ -220,17 +76,8 @@
         },
         {
           "Name": "DotNet-CoreClr-Trusted-Windows-x86",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Architecture": "x86",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Windows-x86",
           "Parameters": {
-            "portableBuild": "-portable"
+            "Architecture": "x86"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -250,42 +97,11 @@
           "Parameters": {
             "DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
             "Architecture": "arm",
-            "Rid": "ubuntu.14.04"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "SubType": "CrossBuild",
-            "Type": "build/product/",
-            "Architecture": "arm",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
-          "Parameters": {
-            "DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
-            "Architecture": "arm",
-            "portableBuild": "-portable",
-            "Rid": "ubuntu.14.04"
+            "Rid": "linux"
           },
           "ReportingParameters": {
             "OperatingSystem": "Linux",
             "SubType": "PortableCrossBuild",
-            "Type": "build/product/",
-            "Architecture": "arm",
-            "PB_BuildType": null
-          }
-        },
-        {
-          "Name": "DotNet-CoreClr-Trusted-Linux-Crossbuild",
-          "Parameters": {
-            "DockerTag": "ubuntu-16.04-cross-ef0ac75-20175511035548",
-            "Architecture": "arm",
-            "Rid": "ubuntu.16.04"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "SubType": "CrossBuild",
             "Type": "build/product/",
             "Architecture": "arm",
             "PB_BuildType": null

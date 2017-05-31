@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages toolset_dir C:\\tools\\clr -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -disableoss $(portableBuild) -- /flp:\"v=diag\"",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages toolset_dir C:\\tools\\clr -OfficialBuildId=$(OfficialBuildId) -Priority=$(Priority) -skiprestore -disableoss -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -131,7 +131,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild)",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -284,9 +284,6 @@
     },
     "TeamName": {
       "value": "DotNetCore"
-    },
-    "portableBuild": {
-      "value": ""
     }
   },
   "retentionRules": [

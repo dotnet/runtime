@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority) $(portableBuild)",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -131,7 +131,7 @@
       },
       "inputs": {
         "filename": "build-packages.cmd",
-        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType) $(portableBuild)",
+        "arguments": "-BuildArch=$(Architecture) -BuildType=$(PB_BuildType)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -294,9 +294,6 @@
     "VsoPassword": {
       "value": null,
       "isSecret": true
-    },
-    "portableBuild": {
-      "value": ""
     }
   },
   "retentionRules": [
