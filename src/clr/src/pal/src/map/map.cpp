@@ -246,7 +246,7 @@ FileMappingInitializationRoutine(
 
     pProcessLocalData->UnixFd = InternalOpen(
         pImmutableData->szFileName,
-        MAPProtectionToFileOpenFlags(pImmutableData->flProtect)
+        MAPProtectionToFileOpenFlags(pImmutableData->flProtect) | O_CLOEXEC
         );
 
     if (-1 == pProcessLocalData->UnixFd)
@@ -510,7 +510,7 @@ CorUnix::InternalCreateFileMapping(
 
 #if HAVE_MMAP_DEV_ZERO
 
-        UnixFd = InternalOpen(pImmutableData->szFileName, O_RDWR);
+        UnixFd = InternalOpen(pImmutableData->szFileName, O_RDWR | O_CLOEXEC);
         if ( -1 == UnixFd )
         {
             ERROR( "Unable to open the file.\n");
@@ -587,7 +587,7 @@ CorUnix::InternalCreateFileMapping(
             // information, though...
             //
             
-            UnixFd = dup(pFileLocalData->unix_fd);
+            UnixFd = fcntl(pFileLocalData->unix_fd, F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
             if (-1 == UnixFd)
             {
                 ERROR( "Unable to duplicate the Unix file descriptor!\n" );

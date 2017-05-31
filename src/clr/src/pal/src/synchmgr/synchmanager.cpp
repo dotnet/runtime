@@ -3525,12 +3525,22 @@ namespace CorUnix
         }
 #else // !CORECLR
         int rgiPipe[] = { -1, -1 };
-        if (pipe(rgiPipe) == -1)
+        int pipeRv =
+#if HAVE_PIPE2
+            pipe2(rgiPipe, O_CLOEXEC);
+#else
+            pipe(rgiPipe);
+#endif // HAVE_PIPE2
+        if (pipeRv == -1)
         {
             ERROR("Unable to create the process pipe\n");
             fRet = false;
             goto CPP_exit;
         }
+#if !HAVE_PIPE2
+        fcntl(rgiPipe[0], F_SETFD, FD_CLOEXEC); // make pipe non-inheritable, if possible
+        fcntl(rgiPipe[1], F_SETFD, FD_CLOEXEC);
+#endif // !HAVE_PIPE2
 #endif // !CORECLR
 
 #if HAVE_KQUEUE && !HAVE_BROKEN_FIFO_KEVENT
