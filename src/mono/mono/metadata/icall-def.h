@@ -443,9 +443,9 @@ HANDLES(ICALL(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefined
 
 #ifndef DISABLE_SOCKETS
 ICALL_TYPE(NDNS, "System.Net.Dns", NDNS_1)
-ICALL(NDNS_1, "GetHostByAddr_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByAddr_internal)
-ICALL(NDNS_2, "GetHostByName_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByName_internal)
-ICALL(NDNS_3, "GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal)
+HANDLES(ICALL(NDNS_1, "GetHostByAddr_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByAddr_internal))
+HANDLES(ICALL(NDNS_2, "GetHostByName_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByName_internal))
+HANDLES(ICALL(NDNS_3, "GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal))
 
 #if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD)
 ICALL_TYPE(MAC_IFACE_PROPS, "System.Net.NetworkInformation.MacOsIPInterfaceProperties", MAC_IFACE_PROPS_1)
@@ -737,8 +737,8 @@ ICALL(WINDOWSRUNTIME_UNM_5, "WindowsGetStringRawBuffer", ves_icall_System_Runtim
 #endif
 
 ICALL_TYPE(ACTS, "System.Runtime.Remoting.Activation.ActivationServices", ACTS_1)
-ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance)
-ICALL(ACTS_2, "EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation)
+HANDLES(ICALL(ACTS_1, "AllocateUninitializedClassInstance", ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClassInstance))
+HANDLES(ICALL(ACTS_2, "EnableProxyActivation", ves_icall_System_Runtime_Activation_ActivationServices_EnableProxyActivation))
 
 ICALL_TYPE(CONTEXT, "System.Runtime.Remoting.Contexts.Context", CONTEXT_1)
 HANDLES(ICALL(CONTEXT_1, "RegisterContext", ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext))
@@ -753,9 +753,9 @@ ICALL(REALP_1, "InternalGetProxyType", ves_icall_Remoting_RealProxy_InternalGetP
 HANDLES(ICALL(REALP_2, "InternalGetTransparentProxy", ves_icall_Remoting_RealProxy_GetTransparentProxy))
 
 ICALL_TYPE(REMSER, "System.Runtime.Remoting.RemotingServices", REMSER_0)
-ICALL(REMSER_0, "GetVirtualMethod", ves_icall_Remoting_RemotingServices_GetVirtualMethod)
+HANDLES(ICALL(REMSER_0, "GetVirtualMethod", ves_icall_Remoting_RemotingServices_GetVirtualMethod))
 ICALL(REMSER_1, "InternalExecute", ves_icall_InternalExecute)
-ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy)
+HANDLES(ICALL(REMSER_2, "IsTransparentProxy", ves_icall_IsTransparentProxy))
 #endif
 
 ICALL_TYPE(RVH, "System.Runtime.Versioning.VersioningHelper", RVH_1)
@@ -912,14 +912,14 @@ ICALL(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait)
 ICALL(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var)
 
 ICALL_TYPE(MUTEX, "System.Threading.Mutex", MUTEX_1)
-ICALL(MUTEX_1, "CreateMutex_internal(bool,string,bool&)", ves_icall_System_Threading_Mutex_CreateMutex_internal)
-ICALL(MUTEX_2, "OpenMutex_internal(string,System.Security.AccessControl.MutexRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Mutex_OpenMutex_internal)
+HANDLES(ICALL(MUTEX_1, "CreateMutex_internal(bool,string,bool&)", ves_icall_System_Threading_Mutex_CreateMutex_internal))
+HANDLES(ICALL(MUTEX_2, "OpenMutex_internal(string,System.Security.AccessControl.MutexRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Mutex_OpenMutex_internal))
 ICALL(MUTEX_3, "ReleaseMutex_internal(intptr)", ves_icall_System_Threading_Mutex_ReleaseMutex_internal)
 
 ICALL_TYPE(NATIVEC, "System.Threading.NativeEventCalls", NATIVEC_1)
 ICALL(NATIVEC_1, "CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal)
-ICALL(NATIVEC_2, "CreateEvent_internal(bool,bool,string,int&)", ves_icall_System_Threading_Events_CreateEvent_internal)
-ICALL(NATIVEC_3, "OpenEvent_internal(string,System.Security.AccessControl.EventWaitHandleRights,int&)", ves_icall_System_Threading_Events_OpenEvent_internal)
+HANDLES(ICALL(NATIVEC_2, "CreateEvent_internal(bool,bool,string,int&)", ves_icall_System_Threading_Events_CreateEvent_internal))
+HANDLES(ICALL(NATIVEC_3, "OpenEvent_internal(string,System.Security.AccessControl.EventWaitHandleRights,int&)", ves_icall_System_Threading_Events_OpenEvent_internal))
 ICALL(NATIVEC_4, "ResetEvent_internal",  ves_icall_System_Threading_Events_ResetEvent_internal)
 ICALL(NATIVEC_5, "SetEvent_internal",    ves_icall_System_Threading_Events_SetEvent_internal)
 

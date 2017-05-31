@@ -247,15 +247,17 @@ ves_icall_System_Net_Sockets_Socket_IOControl_internal (gsize sock, gint32 code,
 	gint32 *error);
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByName_internal (MonoString *host, MonoString **h_name, MonoArray **h_aliases,
-	MonoArray **h_addr_list, gint32 hint);
+ves_icall_System_Net_Dns_GetHostByName_internal (MonoStringHandle host, MonoStringHandleOut h_name,
+						 MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list,
+						 gint32 hint, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoString *addr, MonoString **h_name, MonoArray **h_aliases,
-	MonoArray **h_addr_list, gint32 hint);
+ves_icall_System_Net_Dns_GetHostByAddr_internal (MonoStringHandle addr, MonoStringHandleOut h_name,
+						 MonoArrayHandleOut h_aliases, MonoArrayHandleOut h_addr_list,
+						 gint32 hint, MonoError *error);
 
 MonoBoolean
-ves_icall_System_Net_Dns_GetHostName_internal (MonoString **h_name);
+ves_icall_System_Net_Dns_GetHostName_internal (MonoStringHandleOut h_name, MonoError *error);
 
 MonoBoolean
 ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode, gint timeout, gint32 *error);

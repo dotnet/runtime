@@ -9,19 +9,20 @@
 #include <glib.h>
 
 #include "object.h"
+#include "object-internals.h"
 #include "w32handle-namespace.h"
 
 void
 mono_w32mutex_init (void);
 
 gpointer
-ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoString *name, MonoBoolean *created);
+ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoStringHandle name, MonoBoolean *created, MonoError *error);
 
 MonoBoolean
 ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle);
 
 gpointer
-ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoString *name, gint32 rights, gint32 *error);
+ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error);
 
 typedef struct MonoW32HandleNamedMutex MonoW32HandleNamedMutex;
 

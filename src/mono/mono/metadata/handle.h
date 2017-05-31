@@ -468,6 +468,9 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t ind
 
 #define MONO_ARRAY_HANDLE_PIN(handle,type,index,gchandle_out) mono_array_handle_pin_with_size (MONO_HANDLE_CAST(MonoArray,(handle)), sizeof (type), (index), (gchandle_out))
 
+gunichar2 *
+mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);
+
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
 

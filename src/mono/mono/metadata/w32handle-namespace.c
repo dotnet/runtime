@@ -56,7 +56,7 @@ has_namespace (MonoW32HandleType type)
 typedef struct {
 	gpointer ret;
 	MonoW32HandleType type;
-	gchar *name;
+	const gchar *name;
 } NamespaceSearchHandleData;
 
 static gboolean
@@ -103,7 +103,7 @@ mono_w32handle_namespace_search_handle_callback (gpointer handle, gpointer data,
 }
 
 gpointer
-mono_w32handle_namespace_search_handle (MonoW32HandleType type, gchar *name)
+mono_w32handle_namespace_search_handle (MonoW32HandleType type, const gchar *name)
 {
 	NamespaceSearchHandleData search_data;
 
