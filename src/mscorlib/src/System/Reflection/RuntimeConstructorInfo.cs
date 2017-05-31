@@ -6,12 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Runtime.Serialization;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal sealed class RuntimeConstructorInfo : ConstructorInfo, ISerializable, IRuntimeMethodInfo
+    internal sealed class RuntimeConstructorInfo : ConstructorInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
         private volatile RuntimeType m_declaringType;
@@ -460,19 +459,6 @@ namespace System.Reflection
                 return retValue;
             }
             return RuntimeMethodHandle.InvokeMethod(null, null, sig, true);
-        }
-        #endregion
-
-        #region ISerializable Implementation
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        internal string SerializationToString()
-        {
-            // We don't need the return type for constructors.
-            return FormatNameAndSig(true);
         }
         #endregion
     }
