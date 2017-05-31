@@ -70,6 +70,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "On Desktop, Environment.StackTrace contains internal frames")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UapAot does not support nice stack traces. It's for people who like performance.")]
         public void StackTraceDoesNotStartWithInternalFrame()
         {
              string stackTrace = Environment.StackTrace;
