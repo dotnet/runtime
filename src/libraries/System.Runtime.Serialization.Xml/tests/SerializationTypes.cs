@@ -5186,6 +5186,7 @@ public class Manager : EmployeeC
     public EmployeeC[] emps;
 }
 
+[Serializable]
 public class MyArgumentException : Exception, ISerializable
 {
     private string _paramName;

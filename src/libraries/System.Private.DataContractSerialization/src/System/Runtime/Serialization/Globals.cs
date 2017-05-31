@@ -78,17 +78,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private static Type s_typeOfException;
-        internal static Type TypeOfException
-        {
-            get
-            {
-                if (s_typeOfException == null)
-                    s_typeOfException = typeof(Exception);
-                return s_typeOfException;
-            }
-        }
-
         private static Type s_typeOfString;
         internal static Type TypeOfString
         {
