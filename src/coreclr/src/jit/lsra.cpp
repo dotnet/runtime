@@ -6448,13 +6448,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     {
         assignedInterval->assignedReg = regRec;
     }
-#ifdef _TARGET_ARM_
     else if (canRestorePreviousInterval(regRec, assignedInterval))
-#else
-    else if (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
-             regRec->previousInterval->assignedReg == regRec &&
-             regRec->previousInterval->getNextRefPosition() != nullptr)
-#endif
     {
         regRec->assignedInterval = regRec->previousInterval;
         regRec->previousInterval = nullptr;
@@ -6657,6 +6651,7 @@ bool LinearScan::isSecondHalfReg(RegRecord* regRec, Interval* interval)
 
     return false;
 }
+#endif
 
 //--------------------------------------------------------------------------------------
 // canRestorePreviousInterval: Test if we can restore previous interval
@@ -6677,17 +6672,18 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
         (regRec->previousInterval != nullptr && regRec->previousInterval != assignedInterval &&
          regRec->previousInterval->assignedReg == regRec && regRec->previousInterval->getNextRefPosition() != nullptr);
 
+#ifdef _TARGET_ARM_
     if (retVal && regRec->previousInterval->registerType == TYP_DOUBLE)
     {
         regNumber  nextRegNum = REG_NEXT(regRec->regNum);
         RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
 
-        retVal = retVal &&
-                 (nextRegRec->assignedInterval == nullptr && regRec->previousInterval == nextRegRec->previousInterval);
+        retVal = retVal && nextRegRec->assignedInterval == nullptr;
     }
+#endif
+
     return retVal;
 }
-#endif
 
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock'
