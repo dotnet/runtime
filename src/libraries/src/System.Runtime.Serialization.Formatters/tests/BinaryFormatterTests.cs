@@ -47,7 +47,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             CheckForAnyEquals(obj, clone);
         }
 
-        [Fact]
+        // Used for generating BinaryFormatterTestData.cs
+        //[Fact]
         public void Serialize()
         {
             IEnumerable<object[]> objs = SerializableObjects().Concat(EqualityComparers());
