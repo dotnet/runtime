@@ -696,8 +696,8 @@ private:
 
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
-    bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
 #endif
+    bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
