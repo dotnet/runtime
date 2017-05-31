@@ -306,7 +306,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 bool report_missing_assembly_in_manifest(const deps_entry_t& entry)
 {
     trace::error(_X(
-        "Error: An assembly specified in the application dependencies manifest (%s) was not found:\n"
+        "Error:\n"
+        "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
         "    package: '%s', version: '%s'\n"
         "    path: '%s'"),
         entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
