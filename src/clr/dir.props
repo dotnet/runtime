@@ -78,6 +78,9 @@
 
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
     <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
+
+    <!-- Default to portable build if not explicitly set -->
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
   <!-- Output paths -->

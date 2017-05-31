@@ -139,7 +139,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm -e ROOTFS_DIR $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) $(portableBuild) skipnuget cross -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
+        "arguments": "run --rm -e ROOTFS_DIR $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) skipnuget cross -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -157,7 +157,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./build-packages.sh $(portableBuild) -BuildType=$(PB_BuildType) -BuildArch=$(Architecture)",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./build-packages.sh -BuildType=$(PB_BuildType) -BuildArch=$(Architecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -415,9 +415,6 @@
     "DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_repo"
     },
-    "portableBuild": {
-      "value": ""
-    },
     "ROOTFS_DIR": {
       "value": "/crossrootfs/$(Architecture)"
     },
@@ -450,7 +447,7 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(DockerTag)$(portableBuild)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(DockerTag)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 90,
   "repository": {

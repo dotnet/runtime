@@ -121,7 +121,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) $(portableBuild) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./build.sh $(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId) -- /flp:\"v=diag\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -139,7 +139,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) ./build-packages.sh $(portableBuild) -BuildType=$(PB_BuildType) -BuildArch=$(Architecture)",
+        "arguments": "run --rm $(DockerCommonRunArgs) ./build-packages.sh -BuildType=$(PB_BuildType) -BuildArch=$(Architecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -376,9 +376,6 @@
       "value": "HEAD",
       "allowOverride": true
     },
-    "portableBuild": {
-      "value": ""
-    },
     "DockerVolumeName": {
       "value": "coreclr-$(Build.BuildId)"
     },
@@ -411,7 +408,7 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(DockerTag)$(portableBuild)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(DockerTag)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 90,
   "repository": {
