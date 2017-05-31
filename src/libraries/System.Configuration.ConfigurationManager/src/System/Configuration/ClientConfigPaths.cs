@@ -60,7 +60,7 @@ namespace System.Configuration
                 // used for local paths and "file://" for UNCs. Simply removing the prefix will make
                 // local paths relative on Unix (e.g. "file:///home" will become "home" instead of
                 // "/home").
-                string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.GetName().Name);
+                string configBasePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, exeAssembly.ManifestModule.Name);
                 Uri uri = new Uri(configBasePath);
 
                 if (uri.IsFile)
@@ -203,7 +203,7 @@ namespace System.Configuration
             if (assembly != null)
             {
                 AssemblyName assemblyName = assembly.GetName();
-                Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assemblyName.Name));
+                Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
 
                 hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName);
                 if (hash != null)
