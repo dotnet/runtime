@@ -7,14 +7,14 @@ namespace System.Globalization
     [Serializable]
     public sealed class SortVersion : IEquatable<SortVersion>
     {
-        private int _nlsVersion;
-        private Guid _sortId;
+        private int m_NlsVersion; // Do not rename (binary serialization)
+        private Guid m_SortId; // Do not rename (binary serialization)
 
         public int FullVersion
         {
             get
             {
-                return _nlsVersion;
+                return m_NlsVersion;
             }
         }
 
@@ -22,19 +22,19 @@ namespace System.Globalization
         {
             get
             {
-                return _sortId;
+                return m_SortId;
             }
         }
 
         public SortVersion(int fullVersion, Guid sortId)
         {
-            _sortId = sortId;
-            _nlsVersion = fullVersion;
+            m_SortId = sortId;
+            m_NlsVersion = fullVersion;
         }
 
         internal SortVersion(int nlsVersion, int effectiveId, Guid customVersion)
         {
-            _nlsVersion = nlsVersion;
+            m_NlsVersion = nlsVersion;
 
             if (customVersion == Guid.Empty)
             {
@@ -45,7 +45,7 @@ namespace System.Globalization
                 customVersion = new Guid(0, 0, 0, 0, 0, 0, 0, b1, b2, b3, b4);
             }
 
-            _sortId = customVersion;
+            m_SortId = customVersion;
         }
 
         public override bool Equals(object obj)
@@ -66,12 +66,12 @@ namespace System.Globalization
                 return false;
             }
 
-            return _nlsVersion == other._nlsVersion && _sortId == other._sortId;
+            return m_NlsVersion == other.m_NlsVersion && m_SortId == other.m_SortId;
         }
 
         public override int GetHashCode()
         {
-            return _nlsVersion * 7 | _sortId.GetHashCode();
+            return m_NlsVersion * 7 | m_SortId.GetHashCode();
         }
 
         public static bool operator ==(SortVersion left, SortVersion right)
