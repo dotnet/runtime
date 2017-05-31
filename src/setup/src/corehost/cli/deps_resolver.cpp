@@ -262,8 +262,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             continue;
         }
         pal::string_t probe_dir = config.probe_dir;
-       
-		if (config.probe_deps_json)
+
+        if (config.probe_deps_json)
         {
             // If the deps json has the package name and version, then someone has already done rid selection and
             // put the right asset in the dir. So checking just package name and version would suffice.
@@ -305,15 +305,19 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
 bool report_missing_assembly_in_manifest(const deps_entry_t& entry)
 {
+    trace::error(_X(
+        "Error:\n"
+        "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
+        "    package: '%s', version: '%s'\n"
+        "    path: '%s'"),
+        entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
     if (!entry.runtime_store_manifest_list.empty())
     {
-        trace::error(_X("Error: assembly specified in the dependencies manifest was not found probably due to missing runtime store associated with %s -- package: '%s', version: '%s', path: '%s'"), 
-                entry.runtime_store_manifest_list.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-    }
-    else
-    {
-        trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
-                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+        trace::error(_X(
+            "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
+            "    %s"),
+            entry.runtime_store_manifest_list.c_str());
     }
 
     return false;
