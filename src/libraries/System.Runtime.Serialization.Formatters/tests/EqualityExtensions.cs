@@ -113,5 +113,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             return Object.Equals(@this.Key, other.Key) && Object.Equals(@this.Value, other.Value);
         }
+
+        public static bool IsEqual(this StringDictionary @this, StringDictionary other)
+        {
+            return @this != null &&
+                other != null &&
+                @this.Count == other.Count;
+        }
     }
 }
