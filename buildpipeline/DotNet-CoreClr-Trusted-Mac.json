@@ -49,7 +49,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build.sh",
-        "arguments": "$(PB_BuildType) $(Architecture) $(portableBuild) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId)",
+        "arguments": "$(PB_BuildType) $(Architecture) skipnuget -skiprestore stripSymbols -OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build-packages.sh",
-        "arguments": "-BuildType=$(PB_BuildType) -BuildArch=$(Architecture) $(portableBuild)",
+        "arguments": "-BuildType=$(PB_BuildType) -BuildArch=$(Architecture)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -176,9 +176,6 @@
     },
     "Label": {
       "value": "$(Build.BuildNumber)"
-    },
-    "portableBuild": {
-      "value": ""
     }
   },
   "demands": [

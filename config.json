@@ -225,8 +225,8 @@
     "PortableBuild": {
       "description": "Indicates if this is a portable build.",
       "valueType": "property",
-      "values": [ "0", "1"],
-      "defaultValue": "0"
+      "values": [ "false", "true"],
+      "defaultValue": "true"
     },
     "Rebuild": {
       "description": "Specifies rebuild target.",
@@ -462,12 +462,6 @@
             "RestoreDuringBuild": false
           }
         },
-        "portable": {
-          "description": "Triggers a portable build.",
-          "settings": {
-            "PortableBuild": "1"
-          }
-        },
         "BuildTarget": {
           "description": "Runs the build target.",
           "settings": {
@@ -483,6 +477,7 @@
           "MsBuildErr": "default",
           "MsBuildEventLogging": "default",
           "RestoreDefaultOptimizationDataPackage": "false",
+          "PortableBuild": "true",
           "UsePartialNGENOptimization": "false"
         }
       }
@@ -636,12 +631,6 @@
             "__BuildArch": "default"
           }
         },
-        "portable": {
-          "description": "Triggers a portable build.",
-          "settings": {
-            "PortableBuild": "1"
-          }
-        },
         "buildType": {
           "description": "Specifies configuration to publish, can be Release, Debug or Checked.",
           "settings": {
@@ -661,6 +650,7 @@
           "__BuildOS": "default",
           "MsBuildFileLogging": "/flp:v=detailed;Append;LogFile=build-packages.log",
           "MsBuildEventLogging": "default",
+          "PortableBuild": "true",
           "Project": "src/.nuget/packages.builds"
         }
       }
