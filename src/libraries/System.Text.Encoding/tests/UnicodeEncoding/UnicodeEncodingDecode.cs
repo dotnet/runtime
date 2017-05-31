@@ -73,6 +73,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Decode_TestData))]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20525", TargetFrameworkMonikers.UapAot)]
         public void Decode(byte[] littleEndianBytes, int index, int count, string expected)
         {
             byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
