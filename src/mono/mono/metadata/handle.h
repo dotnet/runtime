@@ -409,6 +409,19 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 
 #define MONO_HANDLE_DOMAIN(HANDLE) (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, HANDLE))))
 
+/* Given an object and a MonoClassField, return the value (must be non-object)
+ * of the field.  It's the caller's responsibility to check that the object is
+ * of the correct class. */
+#define MONO_HANDLE_GET_FIELD_VAL(HANDLE,TYPE,FIELD) *(TYPE *)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, (HANDLE)), (FIELD)))
+
+#define MONO_HANDLE_NEW_GET_FIELD(HANDLE,TYPE,FIELD) MONO_HANDLE_NEW (TYPE, *(TYPE**)(mono_handle_unsafe_field_addr (MONO_HANDLE_CAST (MonoObject, (HANDLE)), (FIELD))))
+
+#define MONO_HANDLE_SET_FIELD_VAL(HANDLE,TYPE,FIELD,VAL) do {		\
+		MonoObjectHandle __obj = (HANDLE);			\
+		MonoClassField *__field = (FIELD);			\
+		TYPE __value = (VAL);					\
+		*(TYPE*)(mono_handle_unsafe_field_addr (__obj, __field)) = __value; \
+	} while (0)
 
 /* Baked typed handles we all want */
 TYPED_HANDLE_DECL (MonoString);
@@ -429,6 +442,13 @@ static inline void
 mono_handle_assign (MonoObjectHandleOut dest, MonoObjectHandle src)
 {
 	mono_gc_wbarrier_generic_store (&dest->__raw, src ? MONO_HANDLE_RAW(src) : NULL);
+}
+
+/* It is unsafe to call this function directly - it does not pin the handle!  Use MONO_HANDLE_GET_FIELD_VAL(). */
+static inline gchar*
+mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
+{
+	return ((gchar *)MONO_HANDLE_RAW (h)) + field->offset;
 }
 
 //FIXME this should go somewhere else
