@@ -107,5 +107,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 other != null &&
                 Object.Equals(GetCompareInfoName(@this), GetCompareInfoName(other));
         }
+
+
+        public static bool IsEqual(this DictionaryEntry @this, DictionaryEntry other)
+        {
+            return Object.Equals(@this.Key, other.Key) && Object.Equals(@this.Value, other.Value);
+        }
     }
 }
