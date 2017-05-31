@@ -46,7 +46,7 @@ namespace System.Configuration
             {
                 if (s_machineConfigFilePath == null)
                 {
-                    string directory = RuntimeEnvironment.GetRuntimeDirectory();
+                    string directory = AppDomain.CurrentDomain.BaseDirectory;
                     s_machineConfigFilePath = Path.Combine(Path.Combine(directory, MachineConfigSubdirectory),
                         MachineConfigFilename);
                 }
