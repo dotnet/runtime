@@ -72,6 +72,14 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(EchoServers))]
+        public async Task PostEmptyContentUsingConflictingSemantics_Success(Uri serverUri)
+        {
+            await PostHelper(serverUri, string.Empty, new StringContent(string.Empty),
+                useContentLengthUpload: true, useChunkedEncodingUpload: true);
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory, MemberData(nameof(EchoServers))]
         public async Task PostUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
