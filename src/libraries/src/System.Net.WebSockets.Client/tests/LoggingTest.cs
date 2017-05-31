@@ -10,6 +10,7 @@ namespace System.Net.WebSockets.Tests
 {
     public class LoggingTest
     {
+        [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         public void EventSource_ExistsWithCorrectId()
