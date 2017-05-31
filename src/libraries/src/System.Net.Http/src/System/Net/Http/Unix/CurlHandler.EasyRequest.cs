@@ -97,6 +97,10 @@ namespace System.Net.Http
                     SetCurlOption(CURLoption.CURLOPT_VERBOSE, 1L);
                 }
 
+                // Before actually configuring the handle based on the state of the request,
+                // do any necessary cleanup of the request object.
+                SanitizeRequestMessage();
+                
                 // Configure the handle
                 SetUrl();
                 SetNetworkingOptions();
@@ -243,6 +247,15 @@ namespace System.Net.Http
 
                 // Release any send transfer state, which will return its buffer to the pool
                 _sendTransferState?.Dispose();
+            }
+
+            private void SanitizeRequestMessage()
+            {
+                // Make sure Transfer-Encoding and Content-Length make sense together.
+                if (_requestMessage.Content != null)
+                {
+                    SetChunkedModeForSend(_requestMessage);
+                }
             }
 
             private void SetUrl()
@@ -692,8 +705,6 @@ namespace System.Net.Http
                 // Add content request headers
                 if (_requestMessage.Content != null)
                 {
-                    SetChunkedModeForSend(_requestMessage);
-
                     AddRequestHeaders(_requestMessage.Content.Headers, slist);
 
                     if (_requestMessage.Content.Headers.ContentType == null)
