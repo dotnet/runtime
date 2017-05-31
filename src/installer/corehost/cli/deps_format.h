@@ -70,13 +70,14 @@ public:
 	const deps_entry_t& try_ni(const deps_entry_t& entry) const;
 
 private:
-    bool load_standalone(const json_value& json, const pal::string_t& target_name);
-    bool load_portable(const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
+    bool load_standalone(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name);
+    bool load_portable(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph);
     bool load(bool portable, const pal::string_t& deps_path, const rid_fallback_graph_t& rid_fallback_graph);
     bool process_runtime_targets(const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph, rid_specific_assets_t* p_assets);
     bool process_targets(const json_value& json, const pal::string_t& target_name, deps_assets_t* p_assets);
 
     void reconcile_libraries_with_targets(
+        const pal::string_t& deps_path,
         const json_value& json,
         const std::function<bool(const pal::string_t&)>& library_exists_fn,
         const std::function<const std::vector<pal::string_t>&(const pal::string_t&, int, bool*)>& get_rel_paths_by_asset_type_fn);
