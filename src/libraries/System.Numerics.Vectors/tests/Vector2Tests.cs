@@ -18,6 +18,7 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("TFS 444567 - Codegen optimization issue", TargetFrameworkMonikers.UapAot)]
         public void Vector2CopyToTest()
         {
             Vector2 v1 = new Vector2(2.0f, 3.0f);
