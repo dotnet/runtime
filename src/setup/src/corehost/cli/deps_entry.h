@@ -21,6 +21,7 @@ struct deps_entry_t
 
     static const std::array<const pal::char_t*, deps_entry_t::asset_types::count> s_known_asset_types;
 
+    pal::string_t deps_file;
     pal::string_t library_type;
     pal::string_t library_name;
     pal::string_t library_version;
