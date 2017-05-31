@@ -38,7 +38,6 @@ usage()
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "skipnuget - skip building nuget packages."
     echo "skiprestoreoptdata - skip restoring optimization data used by profile-based optimizations."
-    echo "portable - build for portable RID."
     echo "verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
 	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
@@ -617,7 +616,7 @@ __DistroRid=""
 __cmakeargs=""
 __SkipGenerateVersion=0
 __DoCrossArchBuild=0
-__PortableBuild=0
+__PortableBuild=1
 __msbuildonunsupportedplatform=0
 __PgoOptDataVersion=""
 __IbcOptDataVersion=""
@@ -674,8 +673,8 @@ while :; do
             __CrossBuild=1
             ;;
             
-        -portable)
-            __PortableBuild=1
+        -portablebuild=false)
+            __PortableBuild=0
             ;;
 
         verbose)
@@ -832,10 +831,20 @@ if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
             __ClangMajorVersion=3
             __ClangMinorVersion=6
         fi
+
+        if [[ "$__BuildArch" == "armel" ]]; then
+            # Armel cross build is Tizen specific and does not support Portable RID build
+            __PortableBuild=0
+        fi
+
     else
         __ClangMajorVersion=3
         __ClangMinorVersion=5
     fi
+fi
+
+if [ $__PortableBuild == 0 ]; then
+	__RunArgs="$__RunArgs -PortableBuild=false"
 fi
 
 # Set dependent variables

@@ -3,16 +3,15 @@
 usage()
 {
     echo "Builds the NuGet packages from the binaries that were built in the Build product binaries step."
-    echo "Usage: build-packages -BuildArch -BuildType [-portable]"
+    echo "Usage: build-packages -BuildArch -BuildType"
     echo "BuildArch can be x64, x86, arm, arm64 (default is x64)"
     echo "BuildType can be release, checked, debug (default is debug)"
-    echo "-portable - build for Portable Distribution"
     echo
     exit 1
 }
 
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-__PortableBuild=0
+__IsPortableBuild=1
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -71,8 +70,9 @@ while :; do
         __Arch=$(echo $1| cut -d'=' -f 2)
         ;;
 
-        -portableBuild)
-            __PortableBuild=1
+        -PortableBuild=false)
+            unprocessedBuildArgs="$unprocessedBuildArgs $1"
+            __IsPortableBuild=0
             ;;
         *)
         unprocessedBuildArgs="$unprocessedBuildArgs $1"
@@ -81,7 +81,7 @@ while :; do
 done
 
 # Portable builds target the base RID
-if [ $__PortableBuild == 1 ]; then
+if [ $__IsPortableBuild == 1 ]; then
     if [ "$__BuildOS" == "Linux" ]; then
         export __DistroRid="linux-$__Arch"
     elif [ "$__BuildOS" == "OSX" ]; then
