@@ -26,10 +26,10 @@ namespace System
         //
         // Member Variables
         //
-        private bool _value;
+        private bool m_value; // Do not rename (binary serialization)
 
-        // The true value. 
-        // 
+        // The true value.
+        //
         internal const int True = 1;
 
         // The false value.
@@ -74,7 +74,7 @@ namespace System
         // Provides a hash code for this instance.
         public override int GetHashCode()
         {
-            return (_value) ? True : False;
+            return (m_value) ? True : False;
         }
 
         /*===================================ToString===================================
@@ -85,7 +85,7 @@ namespace System
         // Converts the boolean value of this instance to a String.
         public override String ToString()
         {
-            if (false == _value)
+            if (false == m_value)
             {
                 return FalseLiteral;
             }
@@ -94,7 +94,7 @@ namespace System
 
         public String ToString(IFormatProvider provider)
         {
-            if (false == _value)
+            if (false == m_value)
             {
                 return FalseLiteral;
             }
@@ -110,13 +110,13 @@ namespace System
                 return false;
             }
 
-            return (_value == ((Boolean)obj)._value);
+            return (m_value == ((Boolean)obj).m_value);
         }
 
         [System.Runtime.Versioning.NonVersionable]
         public bool Equals(Boolean obj)
         {
-            return _value == obj;
+            return m_value == obj;
         }
 
         // Compares this object to another object, returning an integer that
@@ -137,11 +137,11 @@ namespace System
                 throw new ArgumentException(SR.Arg_MustBeBoolean);
             }
 
-            if (_value == ((Boolean)obj)._value)
+            if (m_value == ((Boolean)obj).m_value)
             {
                 return 0;
             }
-            else if (_value == false)
+            else if (m_value == false)
             {
                 return -1;
             }
@@ -150,11 +150,11 @@ namespace System
 
         public int CompareTo(Boolean value)
         {
-            if (_value == value)
+            if (m_value == value)
             {
                 return 0;
             }
-            else if (_value == false)
+            else if (m_value == false)
             {
                 return -1;
             }
@@ -261,7 +261,7 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            return _value;
+            return m_value;
         }
 
         char IConvertible.ToChar(IFormatProvider provider)
@@ -271,57 +271,57 @@ namespace System
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
-            return Convert.ToSByte(_value);
+            return Convert.ToSByte(m_value);
         }
 
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            return Convert.ToByte(_value);
+            return Convert.ToByte(m_value);
         }
 
         short IConvertible.ToInt16(IFormatProvider provider)
         {
-            return Convert.ToInt16(_value);
+            return Convert.ToInt16(m_value);
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            return Convert.ToUInt16(_value);
+            return Convert.ToUInt16(m_value);
         }
 
         int IConvertible.ToInt32(IFormatProvider provider)
         {
-            return Convert.ToInt32(_value);
+            return Convert.ToInt32(m_value);
         }
 
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            return Convert.ToUInt32(_value);
+            return Convert.ToUInt32(m_value);
         }
 
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            return Convert.ToInt64(_value);
+            return Convert.ToInt64(m_value);
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
-            return Convert.ToUInt64(_value);
+            return Convert.ToUInt64(m_value);
         }
 
         float IConvertible.ToSingle(IFormatProvider provider)
         {
-            return Convert.ToSingle(_value);
+            return Convert.ToSingle(m_value);
         }
 
         double IConvertible.ToDouble(IFormatProvider provider)
         {
-            return Convert.ToDouble(_value);
+            return Convert.ToDouble(m_value);
         }
 
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
-            return Convert.ToDecimal(_value);
+            return Convert.ToDecimal(m_value);
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)

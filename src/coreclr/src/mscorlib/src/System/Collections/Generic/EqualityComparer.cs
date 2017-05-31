@@ -10,6 +10,7 @@ using System.Security;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections.Generic
@@ -352,7 +353,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal class EnumEqualityComparer<T> : EqualityComparer<T> where T : struct
+    internal class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
         public override bool Equals(T x, T y)
@@ -370,6 +371,9 @@ namespace System.Collections.Generic
         }
 
         public EnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        protected EnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         // Equals method for the comparer itself.
         public override bool Equals(Object obj) =>
@@ -401,12 +405,23 @@ namespace System.Collections.Generic
             }
             return -1;
         }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // For back-compat we need to serialize the comparers for enums with underlying types other than int as ObjectEqualityComparer 
+            if (Type.GetTypeCode(Enum.GetUnderlyingType(typeof(T))) != TypeCode.Int32) {
+                info.SetType(typeof(ObjectEqualityComparer<T>));
+            }
+        }
     }
 
     [Serializable]
     internal sealed class SByteEnumEqualityComparer<T> : EnumEqualityComparer<T> where T : struct
     {
         public SByteEnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        public SByteEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         [Pure]
         public override int GetHashCode(T obj)
@@ -417,9 +432,12 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T> where T : struct
+    internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T>, ISerializable where T : struct
     {
         public ShortEnumEqualityComparer() { }
+
+        // This is used by the serialization engine.
+        public ShortEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
         [Pure]
         public override int GetHashCode(T obj)
@@ -430,7 +448,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
-    internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T> where T : struct
+    internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
         public override bool Equals(T x, T y)
@@ -478,6 +496,16 @@ namespace System.Collections.Generic
                 if (toFind == current) return i;
             }
             return -1;
+        }
+
+        // This is used by the serialization engine.
+        public LongEnumEqualityComparer(SerializationInfo information, StreamingContext context) { }
+
+        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            // The LongEnumEqualityComparer does not exist on 4.0 so we need to serialize this comparer as ObjectEqualityComparer
+            // to allow for roundtrip between 4.0 and 4.5.
+            info.SetType(typeof(ObjectEqualityComparer<T>));
         }
     }
 }

@@ -25,7 +25,7 @@ namespace System
     public struct Single : IComparable, IFormattable, IConvertible
             , IComparable<Single>, IEquatable<Single>
     {
-        private float _value;
+        private float m_value; // Do not rename (binary serialization)
 
         //
         // Public constants
@@ -88,12 +88,12 @@ namespace System
             if (value is Single)
             {
                 float f = (float)value;
-                if (_value < f) return -1;
-                if (_value > f) return 1;
-                if (_value == f) return 0;
+                if (m_value < f) return -1;
+                if (m_value > f) return 1;
+                if (m_value == f) return 0;
 
                 // At least one of the values is NaN.
-                if (IsNaN(_value))
+                if (IsNaN(m_value))
                     return (IsNaN(f) ? 0 : -1);
                 else // f is NaN.
                     return 1;
@@ -104,12 +104,12 @@ namespace System
 
         public int CompareTo(Single value)
         {
-            if (_value < value) return -1;
-            if (_value > value) return 1;
-            if (_value == value) return 0;
+            if (m_value < value) return -1;
+            if (m_value > value) return 1;
+            if (m_value == value) return 0;
 
             // At least one of the values is NaN.
-            if (IsNaN(_value))
+            if (IsNaN(m_value))
                 return (IsNaN(value) ? 0 : -1);
             else // f is NaN.
                 return 1;
@@ -157,28 +157,28 @@ namespace System
             {
                 return false;
             }
-            float temp = ((Single)obj)._value;
-            if (temp == _value)
+            float temp = ((Single)obj).m_value;
+            if (temp == m_value)
             {
                 return true;
             }
 
-            return IsNaN(temp) && IsNaN(_value);
+            return IsNaN(temp) && IsNaN(m_value);
         }
 
         public bool Equals(Single obj)
         {
-            if (obj == _value)
+            if (obj == m_value)
             {
                 return true;
             }
 
-            return IsNaN(obj) && IsNaN(_value);
+            return IsNaN(obj) && IsNaN(m_value);
         }
 
         public unsafe override int GetHashCode()
         {
-            float f = _value;
+            float f = m_value;
             if (f == 0)
             {
                 // Ensure that 0 and -0 have the same hash code
@@ -191,25 +191,25 @@ namespace System
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatSingle(_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatSingle(_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatSingle(_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatSingle(_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses a float from a String in the given style.  If
@@ -299,7 +299,7 @@ namespace System
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            return Convert.ToBoolean(_value);
+            return Convert.ToBoolean(m_value);
         }
 
         char IConvertible.ToChar(IFormatProvider provider)
@@ -309,57 +309,57 @@ namespace System
 
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
-            return Convert.ToSByte(_value);
+            return Convert.ToSByte(m_value);
         }
 
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            return Convert.ToByte(_value);
+            return Convert.ToByte(m_value);
         }
 
         short IConvertible.ToInt16(IFormatProvider provider)
         {
-            return Convert.ToInt16(_value);
+            return Convert.ToInt16(m_value);
         }
 
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            return Convert.ToUInt16(_value);
+            return Convert.ToUInt16(m_value);
         }
 
         int IConvertible.ToInt32(IFormatProvider provider)
         {
-            return Convert.ToInt32(_value);
+            return Convert.ToInt32(m_value);
         }
 
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            return Convert.ToUInt32(_value);
+            return Convert.ToUInt32(m_value);
         }
 
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            return Convert.ToInt64(_value);
+            return Convert.ToInt64(m_value);
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
-            return Convert.ToUInt64(_value);
+            return Convert.ToUInt64(m_value);
         }
 
         float IConvertible.ToSingle(IFormatProvider provider)
         {
-            return _value;
+            return m_value;
         }
 
         double IConvertible.ToDouble(IFormatProvider provider)
         {
-            return Convert.ToDouble(_value);
+            return Convert.ToDouble(m_value);
         }
 
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
-            return Convert.ToDecimal(_value);
+            return Convert.ToDecimal(m_value);
         }
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)

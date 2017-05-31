@@ -63,20 +63,21 @@ namespace System.Globalization
         // locale, which is what SCOMPAREINFO does.
 
         [OptionalField(VersionAdded = 2)]
-        private string _name;  // The name used to construct this CompareInfo
-        [NonSerialized] 
-        private string _sortName; // The name that defines our behavior
+        private string m_name;  // The name used to construct this CompareInfo. Do not rename (binary serialization)
+
+        [NonSerialized]
+        private string _sortName; // The name that defines our behavior.
 
         [OptionalField(VersionAdded = 3)]
-        private SortVersion _sortVersion;
+        private SortVersion m_sortVersion; // Do not rename (binary serialization)
 
         // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
-        [NonSerialized] 
+        [NonSerialized]
         private readonly bool _invariantMode = GlobalizationMode.Invariant;
 
         internal CompareInfo(CultureInfo culture)
         {
-            _name = culture._name;
+            m_name = culture._name;
             InitSort(culture);
         }
 
@@ -216,7 +217,7 @@ namespace System.Globalization
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            _name = null;
+            m_name = null;
         }
 
         void IDeserializationCallback.OnDeserialization(Object sender)
@@ -232,9 +233,9 @@ namespace System.Globalization
 
         private void OnDeserialized()
         {
-            if (_name != null)
+            if (m_name != null)
             {
-                InitSort(CultureInfo.GetCultureInfo(_name));
+                InitSort(CultureInfo.GetCultureInfo(m_name));
             }
         }
 
@@ -258,10 +259,10 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(_name != null, "CompareInfo.Name Expected _name to be set");
-                if (_name == "zh-CHT" || _name == "zh-CHS")
+                Debug.Assert(m_name != null, "CompareInfo.Name Expected _name to be set");
+                if (m_name == "zh-CHT" || m_name == "zh-CHS")
                 {
-                    return _name;
+                    return m_name;
                 }
 
                 return _sortName;
@@ -1207,11 +1208,11 @@ namespace System.Globalization
         {
             get
             {
-                if (_sortVersion == null)
+                if (m_sortVersion == null)
                 {
                     if (_invariantMode)
                     {
-                        _sortVersion = new SortVersion(0, CultureInfo.LOCALE_INVARIANT, new Guid(0, 0, 0, 0, 0, 0, 0,
+                        m_sortVersion = new SortVersion(0, CultureInfo.LOCALE_INVARIANT, new Guid(0, 0, 0, 0, 0, 0, 0,
                                                                         (byte) (CultureInfo.LOCALE_INVARIANT >> 24),
                                                                         (byte) ((CultureInfo.LOCALE_INVARIANT  & 0x00FF0000) >> 16),
                                                                         (byte) ((CultureInfo.LOCALE_INVARIANT  & 0x0000FF00) >> 8),
@@ -1219,11 +1220,11 @@ namespace System.Globalization
                     }
                     else
                     {
-                        _sortVersion = GetSortVersion();
+                        m_sortVersion = GetSortVersion();
                     }
                 }
 
-                return _sortVersion;
+                return m_sortVersion;
             }
         }
 
