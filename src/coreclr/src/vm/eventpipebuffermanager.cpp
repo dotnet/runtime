@@ -283,7 +283,12 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeEvent &event, 
     // Check to see if we need to allocate a new buffer, and if so, do it here.
     if(allocNewBuffer)
     {
-        GCX_PREEMP();
+        // We previously switched to preemptive mode here, however, this is not safe and can cause deadlocks.
+        // When a GC is started, and background threads are created (for the first BGC), a thread creation event is fired.
+        // When control gets here the buffer is allocated, but then the thread hangs waiting for the GC to complete
+        // (it was marked as started before creating threads) so that it can switch back to cooperative mode.
+        // However, the GC is waiting on this call to return so that it can make forward progress.  Thus it is not safe
+        // to switch to preemptive mode here.
 
         unsigned int requestSize = sizeof(EventPipeEventInstance) + length;
         pBuffer = AllocateBufferForThread(pThread, requestSize);
