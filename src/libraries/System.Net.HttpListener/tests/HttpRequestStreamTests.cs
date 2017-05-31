@@ -77,7 +77,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-//        [InlineData(true, "")]      Issue #20419 - HttpClient problem
+        [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
         [InlineData(false, "Non-Empty")]
