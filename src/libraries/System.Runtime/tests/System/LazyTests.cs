@@ -365,6 +365,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue(19119, TargetFrameworkMonikers.Netcoreapp)]
         public static void Serialization_ValueType()
         {
             Lazy<int> fortytwo = BinaryFormatterHelpers.Clone(new Lazy<int>(() => 42));
@@ -373,6 +374,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue(19119, TargetFrameworkMonikers.Netcoreapp)]
         public static void Serialization_RefType()
         {
             Lazy<string> fortytwo = BinaryFormatterHelpers.Clone(new Lazy<string>(() => "42"));
