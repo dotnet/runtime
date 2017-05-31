@@ -459,8 +459,7 @@ namespace System.Runtime.Serialization
             //
             string typeFullName = GetGeneralTypeName(type);
 
-            return s_knownSerializableTypeInfos.ContainsKey(typeFullName)
-                || Globals.TypeOfException.IsAssignableFrom(type);
+            return s_knownSerializableTypeInfos.ContainsKey(typeFullName);
         }
 
         internal static bool IsNonSerializedMember(Type type, string memberName)
