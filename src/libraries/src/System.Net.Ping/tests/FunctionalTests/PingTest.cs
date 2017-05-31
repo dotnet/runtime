@@ -81,6 +81,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public async Task SendPingAsyncWithIPAddress()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -95,6 +96,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public async Task SendPingAsyncWithIPAddress_AddressAsString()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -109,6 +111,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public async Task SendPingAsyncWithIPAddressAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -123,6 +126,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBuffer()
         {
@@ -167,6 +171,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SendPingAsyncWithIPAddressAndTimeoutAndBufferAndPingOptions()
         {
@@ -212,6 +217,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public async Task SendPingAsyncWithHost()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -226,6 +232,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public async Task SendPingAsyncWithHostAndTimeout()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -240,6 +247,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBuffer()
         {
@@ -284,6 +292,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SendPingAsyncWithHostAndTimeoutAndBufferAndPingOptions()
         {
@@ -328,6 +337,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public static async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -344,6 +354,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public static async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -360,6 +371,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public static async Task SendAsyncs_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddress();
@@ -411,6 +423,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public static async Task Ping_DisposeAfterSend_Success()
         {
             Ping p = new Ping();
@@ -419,6 +432,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public static void Ping_DisposeMultipletimes_Success()
         {
             Ping p = new Ping();
@@ -427,6 +441,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20528", TargetFrameworkMonikers.UapAot)]
         public static void Ping_SendAfterDispose_ThrowsSynchronously()
         {
             Ping p = new Ping();
