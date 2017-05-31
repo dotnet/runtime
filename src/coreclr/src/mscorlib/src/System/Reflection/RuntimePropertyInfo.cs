@@ -6,13 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Text;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal unsafe sealed class RuntimePropertyInfo : PropertyInfo, ISerializable
+    internal unsafe sealed class RuntimePropertyInfo : PropertyInfo
     {
         #region Private Data Members
         private int m_token;
@@ -447,18 +446,6 @@ namespace System.Reflection
         }
         #endregion
 
-        #endregion
-
-        #region ISerializable Implementation
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        internal string SerializationToString()
-        {
-            return FormatNameAndSig(true);
-        }
         #endregion
     }
 }
