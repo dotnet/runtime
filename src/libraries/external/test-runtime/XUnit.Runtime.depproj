@@ -4,7 +4,7 @@
   <PropertyGroup>
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          The only asset that we copy which is RID-specific is sni.dll which is only used in windows, which is why we default to Windows as the RID -->
-    <NugetRuntimeIdentifier>win7-$(ArchGroup)</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier>win10-$(ArchGroup)</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
