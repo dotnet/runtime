@@ -4244,6 +4244,11 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTreePtr node)
 
     if (!isPow2(absDivisorValue))
     {
+        if (comp->opts.MinOpts())
+        {
+            return next;
+        }
+
 #ifdef _TARGET_XARCH_
         ssize_t magic;
         int     shift;
