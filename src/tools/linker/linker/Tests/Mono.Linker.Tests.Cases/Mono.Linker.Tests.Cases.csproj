@@ -57,6 +57,9 @@
     <Compile Include="Basic\UnusedPropertySetterRemoved.cs" />
     <Compile Include="Basic\UsedPropertyIsKept.cs" />
     <Compile Include="Basic\UsedStructIsKept.cs" />
+    <Compile Include="VirtualMethods\ClassUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
+    <Compile Include="VirtualMethods\ClassUsedFromInterfaceHasInterfaceMethodKept.cs" />
+    <Compile Include="VirtualMethods\StructUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
     <Compile Include="VirtualMethods\StructUsedFromInterfaceHasInterfaceMethodKept.cs" />
     <Compile Include="CoreLink\CopyOfCoreLibrariesKeepsUnusedTypes.cs" />
     <Compile Include="CoreLink\LinkingOfCoreLibrariesRemovesUnusedMethods.cs" />
