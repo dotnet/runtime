@@ -2667,6 +2667,9 @@ size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 size_t        gc_heap::last_gc_index = 0;
 size_t        gc_heap::min_segment_size = 0;
+size_t        gc_heap::soh_segment_size = 0;
+size_t        gc_heap::min_loh_segment_size = 0;
+size_t        gc_heap::segment_info_size = 0;
 
 #ifdef GC_CONFIG_DRIVEN
 size_t gc_heap::time_init = 0;
@@ -2963,8 +2966,12 @@ gc_heap::dt_low_ephemeral_space_p (gc_tuning_point tp)
             
             dprintf (GTC_LOG, ("h%d: plan eph size is %Id, new gen0 is %Id", 
                 heap_number, plan_ephemeral_size, new_gen0size));
-            ret = ((size_t)(heap_segment_reserved (ephemeral_heap_segment) - (heap_segment_mem (ephemeral_heap_segment))) <
-                    (plan_ephemeral_size + new_gen0size));
+
+            // If we were in no_gc_region we could have allocated a larger than normal segment,
+            // and the next seg we allocate will be a normal sized seg so if we can't fit the new
+            // ephemeral generations there, do an ephemeral promotion.
+            ret = ((soh_segment_size - segment_info_size) < (plan_ephemeral_size + new_gen0size));
+
             break;
         }
         default:
@@ -4374,9 +4381,6 @@ void virtual_free (void* add, size_t size)
                  size, (size_t)add, (size_t)((uint8_t*)add+size)));
 }
 
-// We have a few places that call this but the seg size doesn't change so call it
-// once and save the result.
-// TODO: move back after we do this.
 static size_t get_valid_segment_size (BOOL large_seg=FALSE)
 {
     size_t seg_size, initial_seg_size;
@@ -4465,7 +4469,7 @@ gc_heap::compute_new_ephemeral_size()
 heap_segment*
 gc_heap::soh_get_segment_to_expand()
 {
-    size_t size = get_valid_segment_size();
+    size_t size = soh_segment_size;
 
     ordered_plug_indices_init = FALSE;
     use_bestfit = FALSE;
@@ -9163,16 +9167,7 @@ heap_segment* gc_heap::make_heap_segment (uint8_t* new_pages, size_t size, int h
     //overlay the heap_segment
     heap_segment* new_segment = (heap_segment*)new_pages;
 
-    uint8_t* start = 0;
-#ifdef BACKGROUND_GC
-    //leave the first page to contain only segment info
-    //because otherwise we could need to revisit the first page frequently in 
-    // background GC.
-    start = new_pages + OS_PAGE_SIZE;
-#else
-    start = new_pages +
-        Align (sizeof (heap_segment), get_alignment_constant (FALSE));
-#endif //BACKGROUND_GC
+    uint8_t* start = new_pages + segment_info_size;
     heap_segment_mem (new_segment) = start;
     heap_segment_used (new_segment) = start;
     heap_segment_reserved (new_segment) = new_pages + size;
@@ -9928,6 +9923,15 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
 
+#ifdef BACKGROUND_GC
+    // leave the first page to contain only segment info
+    // because otherwise we could need to revisit the first page frequently in 
+    // background GC.
+    segment_info_size = OS_PAGE_SIZE;
+#else
+    segment_info_size = Align (sizeof (heap_segment), get_alignment_constant (FALSE));
+#endif //BACKGROUND_GC
+
     reserved_memory = 0;
     unsigned block_count;
 #ifdef MULTIPLE_HEAPS
@@ -10030,12 +10034,8 @@ gc_heap::init_semi_shared()
     eph_gen_starts_size = (Align (min_obj_size)) * max_generation;
 
 #ifdef MARK_LIST
-    size_t gen0size = GCHeap::GetValidGen0MaxSize(get_valid_segment_size());
-    MAYBE_UNUSED_VAR(gen0size);
-
 #ifdef MULTIPLE_HEAPS
-
-    mark_list_size = min (150*1024, max (8192, get_valid_segment_size()/(2*10*32)));
+    mark_list_size = min (150*1024, max (8192, soh_segment_size/(2*10*32)));
     g_mark_list = make_mark_list (mark_list_size*n_heaps);
 
     min_balance_threshold = alloc_quantum_balance_units * CLR_SIZE * 2;
@@ -10049,13 +10049,12 @@ gc_heap::init_semi_shared()
 
 #else //MULTIPLE_HEAPS
 
-    mark_list_size = max (8192, get_valid_segment_size()/(64*32));
+    mark_list_size = max (8192, soh_segment_size/(64*32));
     g_mark_list = make_mark_list (mark_list_size);
 
 #endif //MULTIPLE_HEAPS
 
-    dprintf (3, ("gen0 size: %d, mark_list_size: %d",
-                 gen0size, mark_list_size));
+    dprintf (3, ("mark_list_size: %d", mark_list_size));
 
     if (!g_mark_list)
     {
@@ -10428,7 +10427,7 @@ gc_heap::init_gc_heap (int  h_number)
     }
 #endif //!SEG_MAPPING_TABLE
 
-    heap_segment* seg = get_initial_segment (get_valid_segment_size(), h_number);
+    heap_segment* seg = get_initial_segment (soh_segment_size, h_number);
     if (!seg)
         return 0;
 
@@ -10493,7 +10492,7 @@ gc_heap::init_gc_heap (int  h_number)
     }
 #endif //!SEG_MAPPING_TABLE
     //Create the large segment generation
-    heap_segment* lseg = get_initial_segment(get_valid_segment_size(TRUE), h_number);
+    heap_segment* lseg = get_initial_segment(min_loh_segment_size, h_number);
     if (!lseg)
         return 0;
     lseg->flags |= heap_segment_flags_loh;
@@ -12607,7 +12606,7 @@ BOOL gc_heap::bgc_loh_should_allocate()
 
 size_t gc_heap::get_large_seg_size (size_t size)
 {
-    size_t default_seg_size = get_valid_segment_size(TRUE);
+    size_t default_seg_size = min_loh_segment_size;
 #ifdef SEG_MAPPING_TABLE
     size_t align_size =  default_seg_size;
 #else //SEG_MAPPING_TABLE
@@ -15882,9 +15881,8 @@ start_no_gc_region_status gc_heap::prepare_for_no_gc_region (uint64_t total_size
         allocation_no_gc_loh = (size_t)total_size;
     }
 
-    size_t soh_segment_size = get_valid_segment_size();
     int soh_align_const = get_alignment_constant (TRUE);
-    size_t max_soh_allocated = (soh_segment_size - OS_PAGE_SIZE - eph_gen_starts_size);
+    size_t max_soh_allocated = (soh_segment_size - segment_info_size - eph_gen_starts_size);
 
     int num_heaps = 1;
 #ifdef MULTIPLE_HEAPS
@@ -16219,7 +16217,7 @@ done:
         return TRUE;
     else
     {
-        // We are done with starting the no gc region.
+        // We are done with starting the no_gc_region.
         current_no_gc_region_info.started = TRUE;
         return FALSE;
     }
@@ -29471,7 +29469,7 @@ bool gc_heap::init_dynamic_data()
 #endif //GC_CONFIG_DRIVEN
 
     // get the registry setting for generation 0 size
-    size_t gen0size = GCHeap::GetValidGen0MaxSize(get_valid_segment_size());
+    size_t gen0size = GCHeap::GetValidGen0MaxSize(soh_segment_size);
 
     dprintf (2, ("gen 0 size: %Id", gen0size));
 
@@ -29500,11 +29498,11 @@ bool gc_heap::init_dynamic_data()
 #endif // BACKGROUND_GC
 
 #ifdef MULTIPLE_HEAPS
-    dd->max_size = max (6*1024*1024, min ( Align(get_valid_segment_size()/2), 200*1024*1024));
+    dd->max_size = max (6*1024*1024, min ( Align(soh_segment_size/2), 200*1024*1024));
 #else //MULTIPLE_HEAPS
     dd->max_size = (can_use_concurrent ?
                     6*1024*1024 :
-                    max (6*1024*1024,  min ( Align(get_valid_segment_size()/2), 200*1024*1024)));
+                    max (6*1024*1024,  min ( Align(soh_segment_size/2), 200*1024*1024)));
 #endif //MULTIPLE_HEAPS
     dd->new_allocation = dd->min_gc_size;
     dd->gc_new_allocation = dd->new_allocation;
@@ -29525,11 +29523,11 @@ bool gc_heap::init_dynamic_data()
     dd->min_size = dd->min_gc_size;
 //  dd->max_size = 2397152;
 #ifdef MULTIPLE_HEAPS
-    dd->max_size = max (6*1024*1024, Align(get_valid_segment_size()/2));
+    dd->max_size = max (6*1024*1024, Align(soh_segment_size/2));
 #else //MULTIPLE_HEAPS
     dd->max_size = (can_use_concurrent ?
                     6*1024*1024 :
-                    max (6*1024*1024, Align(get_valid_segment_size()/2)));
+                    max (6*1024*1024, Align(soh_segment_size/2)));
 #endif //MULTIPLE_HEAPS
     dd->new_allocation = dd->min_gc_size;
     dd->gc_new_allocation = dd->new_allocation;
@@ -30116,7 +30114,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
     {
         size_t new_slack_space = 
 #ifdef BIT64
-                    max(min(min(get_valid_segment_size()/32, dd_max_size(dd)), (generation_size (max_generation) / 10)), dd_desired_allocation(dd));
+                    max(min(min(soh_segment_size/32, dd_max_size(dd)), (generation_size (max_generation) / 10)), dd_desired_allocation(dd));
 #else
 #ifdef FEATURE_CORECLR
                     dd_desired_allocation (dd);
@@ -33487,7 +33485,6 @@ HRESULT GCHeap::Init(size_t hn)
 //System wide initialization
 HRESULT GCHeap::Initialize ()
 {
-
     HRESULT hr = S_OK;
 
     if (!GCToOSInterface::Initialize())
@@ -33504,7 +33501,9 @@ HRESULT GCHeap::Initialize ()
 #endif //TRACE_GC
 
     size_t seg_size = get_valid_segment_size();
+    gc_heap::soh_segment_size = seg_size;
     size_t large_seg_size = get_valid_segment_size(TRUE);
+    gc_heap::min_loh_segment_size = large_seg_size;
     gc_heap::min_segment_size = min (seg_size, large_seg_size);
 
 #ifdef MULTIPLE_HEAPS

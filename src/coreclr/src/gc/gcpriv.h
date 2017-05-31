@@ -3002,6 +3002,17 @@ public:
     PER_HEAP_ISOLATED
     size_t min_segment_size;
 
+    // For SOH we always allocate segments of the same
+    // size unless no_gc_region requires larger ones.
+    PER_HEAP_ISOLATED
+    size_t soh_segment_size;
+
+    PER_HEAP_ISOLATED
+    size_t min_loh_segment_size;
+
+    PER_HEAP_ISOLATED
+    size_t segment_info_size;
+
     PER_HEAP
     uint8_t* lowest_address;
 
