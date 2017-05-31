@@ -414,6 +414,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20511", TargetFrameworkMonikers.UapAot)]
         public static void RentBufferFiresRentedDiagnosticEvent()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
@@ -431,6 +432,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20511", TargetFrameworkMonikers.UapAot)]
         public static void ReturnBufferFiresDiagnosticEvent()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
@@ -445,6 +447,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20511", TargetFrameworkMonikers.UapAot)]
         public static void RentingNonExistentBufferFiresAllocatedDiagnosticEvent()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
@@ -452,6 +455,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20511", TargetFrameworkMonikers.UapAot)]
         public static void RentingBufferOverConfiguredMaximumSizeFiresDiagnosticEvent()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
@@ -459,6 +463,7 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20511", TargetFrameworkMonikers.UapAot)]
         public static void RentingManyBuffersFiresExpectedDiagnosticEvents()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 10);
