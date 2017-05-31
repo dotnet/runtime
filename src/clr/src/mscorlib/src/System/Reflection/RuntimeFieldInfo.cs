@@ -4,12 +4,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal abstract class RuntimeFieldInfo : FieldInfo, ISerializable
+    internal abstract class RuntimeFieldInfo : FieldInfo
     {
         #region Private Data Members
         private BindingFlags m_bindingFlags;
@@ -121,13 +120,6 @@ namespace System.Reflection
 
         #region FieldInfo Overrides
         // All implemented on derived classes
-        #endregion
-
-        #region ISerializable Implementation
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
         #endregion
     }
 }

@@ -4,12 +4,11 @@
 
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.Serialization;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal sealed unsafe class MdFieldInfo : RuntimeFieldInfo, ISerializable
+    internal sealed unsafe class MdFieldInfo : RuntimeFieldInfo
     {
         #region Private Data Members
         private int m_tkField;

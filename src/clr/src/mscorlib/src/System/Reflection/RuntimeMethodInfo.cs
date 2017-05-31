@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 using System.Threading;
@@ -14,7 +13,7 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal sealed class RuntimeMethodInfo : MethodInfo, ISerializable, IRuntimeMethodInfo
+    internal sealed class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
         private IntPtr m_handle;
@@ -767,18 +766,6 @@ namespace System.Reflection
 
                 return false;
             }
-        }
-        #endregion
-
-        #region ISerializable Implementation
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        internal string SerializationToString()
-        {
-            return ReturnType.FormatTypeName(true) + " " + FormatNameAndSig(true);
         }
         #endregion
 
