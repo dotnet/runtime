@@ -110,10 +110,7 @@ namespace System.Reflection
         public Type ResolveType(int metadataToken) => ResolveType(metadataToken, null, null);
         public virtual Type ResolveType(int metadataToken, Type[] genericTypeArguments, Type[] genericMethodArguments) { throw NotImplemented.ByDesign; }
 
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
         public override bool Equals(object o) => base.Equals(o);
         public override int GetHashCode() => base.GetHashCode();

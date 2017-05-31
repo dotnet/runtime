@@ -19,7 +19,6 @@ using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime;
-using System.Runtime.Serialization;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
@@ -72,7 +71,7 @@ namespace System
     }
 
     internal class RuntimeType :
-        System.Reflection.TypeInfo, ISerializable, ICloneable
+        System.Reflection.TypeInfo, ICloneable
     {
         #region Definitions
 
@@ -4441,13 +4440,6 @@ namespace System
         public Object Clone()
         {
             return this;
-        }
-        #endregion
-
-        #region ISerializable
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
         #endregion
 
