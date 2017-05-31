@@ -36,6 +36,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(ValidateBasicObjectsRoundtrip_MemberData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] 
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
             object clone = FormatterClone(obj, null, assemblyFormat, filterLevel, typeFormat);
@@ -119,6 +120,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(SerializableObjects))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] 
         public void ValidateTfmHashes(object original, string[] tfmBase64Hashes)
         {
             if (tfmBase64Hashes == null || tfmBase64Hashes.Length < 2)
@@ -127,7 +129,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     $"Hash for object is: " + SerializeObjectToHash(original));
             }
 
-            foreach (string tfmBase64Hash in tfmBase64Hashes)
+            // Take(1) - serialized netfx objects are not supported
+            foreach (string tfmBase64Hash in tfmBase64Hashes.Take(1))
             {
                 // Currently for valuetuples
                 if (!string.IsNullOrWhiteSpace(tfmBase64Hash))
@@ -219,6 +222,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RoundtripManyObjectsInOneStream()
         {
             object[][] objects = SerializableObjects().ToArray();
@@ -265,20 +269,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void Roundtrip_Exceptions(Exception expected)
         {
             BinaryFormatterHelpers.AssertRoundtrips(expected);
-        }
-
-        public static IEnumerable<object[]> SerializableObjectsWithFuncOfObjectToCompare()
-        {
-            object target = 42;
-            yield return new object[] { new Random(), new Func<object, object>(o => ((Random)o).Next()) };
-        }
-
-        [Theory]
-        [MemberData(nameof(SerializableObjectsWithFuncOfObjectToCompare))]
-        public void Roundtrip_ObjectsWithComparers(object obj, Func<object, object> getResult)
-        {
-            object actual = FormatterClone(obj);
-            Assert.Equal(getResult(obj), getResult(actual));
         }
 
         public static IEnumerable<object[]> ValidateNonSerializableTypes_MemberData()
