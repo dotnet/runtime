@@ -443,6 +443,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_GetOonlyDictionary_UseSimpleDictionaryFormat()
     {
         var x = new TypeWithDictionaryGenericMembers();
@@ -1502,6 +1503,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_GenericQueue()
     {
         Queue<int> value = new Queue<int>();
@@ -1515,6 +1517,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_GenericStack()
     {
         var value = new Stack<int>();
@@ -1530,6 +1533,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_Queue()
     {
         var value = new Queue();
@@ -1544,6 +1548,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_Stack()
     {
         var value = new Stack();
@@ -1559,6 +1564,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_SortedList()
     {
         var value = new SortedList();
@@ -1571,6 +1577,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_SystemVersion()
     {
         Version value = new Version(1, 2, 3, 4);
@@ -1681,6 +1688,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_ReadOnlyCollection()
     {
         List<string> list = new List<string>() { "Foo", "Bar" };
@@ -1693,6 +1701,7 @@ public static partial class DataContractJsonSerializerTests
 
     [Fact]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18312")]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_ReadOnlyDictionary()
     {
         var dict = new Dictionary<string, int>();
@@ -2695,6 +2704,8 @@ public static partial class DataContractJsonSerializerTests
 
 #if ReflectionOnly
     [ActiveIssue(18373)]
+#else
+    [ActiveIssue("dotnet/corefx #20481", TargetFrameworkMonikers.UapAot)]
 #endif
     [Fact]
     public static void DCJS_VerifyDictionaryFormat()
@@ -2753,6 +2764,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20483", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_VerifyIndentation()
     {
         var testClass = new TestClass()
