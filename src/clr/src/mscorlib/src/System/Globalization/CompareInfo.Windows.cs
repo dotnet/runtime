@@ -16,7 +16,7 @@ namespace System.Globalization
         {
             _sortName = culture.SortName;
 
-            _name = culture._name;
+            m_name = culture._name;
             _sortName = culture.SortName;
 
             if (_invariantMode)
