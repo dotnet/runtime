@@ -34,28 +34,28 @@
     <When Condition="'$(OSGroup)'=='Windows_NT'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
-        <TestNugetRuntimeId>win7-x64</TestNugetRuntimeId>
+        <TestNugetRuntimeId>win7-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Linux'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='OSX'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.12-x64</TestNugetRuntimeId>
+        <TestNugetRuntimeId>osx.10.12-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='FreeBSD'">
       <PropertyGroup>
         <TargetsUnix>true</TargetsUnix>
         <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-x64</TestNugetRuntimeId>
+        <TestNugetRuntimeId>ubuntu.14.04-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <Otherwise>
