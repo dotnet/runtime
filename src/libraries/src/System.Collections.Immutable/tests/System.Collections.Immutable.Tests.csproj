@@ -121,5 +121,8 @@
     <TargetingPackExclusions Include="System.Collections.Immutable" />
     <ReferenceFromRuntime Include="System.Collections.Immutable" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

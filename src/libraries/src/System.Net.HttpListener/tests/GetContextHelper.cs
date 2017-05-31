@@ -71,15 +71,7 @@ namespace System.Net.Tests
 
         public static void WaitForSocketShutdown(Socket socket)
         {
-            if (PlatformDetection.IsWindows || PlatformDetection.IsOSX)
-            {
-                socket.Shutdown(SocketShutdown.Both);
-                while (SocketConnected(socket));
-            }
-            else
-            {
-                socket.Close();
-            }
+            socket.Close();
         }
 
         public static bool SocketConnected(Socket socket)

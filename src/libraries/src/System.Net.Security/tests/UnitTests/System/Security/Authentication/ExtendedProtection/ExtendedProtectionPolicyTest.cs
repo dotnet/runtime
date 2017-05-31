@@ -14,7 +14,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void Constructor_PolicyEnforcement_NeverParam()
         {
-            var ex = Assert.Throws<ArgumentException>("policyEnforcement", () => new ExtendedProtectionPolicy(PolicyEnforcement.Never, ProtectionScenario.TransportSelected, null));
+            var ex = AssertExtensions.Throws<ArgumentException>("policyEnforcement", () => new ExtendedProtectionPolicy(PolicyEnforcement.Never, ProtectionScenario.TransportSelected, null));
             Assert.Equal(typeof(ArgumentException), ex.GetType());
         }
 
@@ -22,14 +22,14 @@ namespace System.Net.Security.Tests
         public void Constructor_ServiceNameCollection_ZeroElementsParam()
         {
             var paramValue = new ServiceNameCollection(new List<string>());
-            var ex = Assert.Throws<ArgumentException>("customServiceNames", () => new ExtendedProtectionPolicy(PolicyEnforcement.Always, ProtectionScenario.TransportSelected, paramValue));
+            var ex = AssertExtensions.Throws<ArgumentException>("customServiceNames", () => new ExtendedProtectionPolicy(PolicyEnforcement.Always, ProtectionScenario.TransportSelected, paramValue));
             Assert.Equal(typeof(ArgumentException), ex.GetType());
         }
 
         [Fact]
         public void Constructor_ChannelBinding_NullParam()
         {
-            var ex = Assert.Throws<ArgumentNullException>("customChannelBinding", () => new ExtendedProtectionPolicy(PolicyEnforcement.Always, null));
+            var ex = AssertExtensions.Throws<ArgumentNullException>("customChannelBinding", () => new ExtendedProtectionPolicy(PolicyEnforcement.Always, null));
             Assert.Equal(typeof(ArgumentNullException), ex.GetType());
         }
 

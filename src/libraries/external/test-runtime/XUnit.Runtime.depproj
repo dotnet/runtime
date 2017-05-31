@@ -3,9 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
-         This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
-    -->
-    <NugetRuntimeIdentifier>win7-x64</NugetRuntimeIdentifier>
+         The only asset that we copy which is RID-specific is sni.dll which is only used in windows, which is why we default to Windows as the RID -->
+    <NugetRuntimeIdentifier>win10-$(ArchGroup)</NugetRuntimeIdentifier>
     <RidSpecificAssets>true</RidSpecificAssets>
     <OutputPath>$(RuntimePath)</OutputPath>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>

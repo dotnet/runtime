@@ -28,6 +28,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Runtime.ExceptionServices;
@@ -103,9 +104,24 @@ namespace System.Net
                 return nread;
             }
 
+            if (_remainingBody > 0)
+            {
+                size = (int)Math.Min(_remainingBody, (long)size);
+            }
+
             nread = _stream.Read(buffer, offset, size);
-            if (nread > 0 && _remainingBody > 0)
+
+            if (_remainingBody > 0)
+            {
+                if (nread == 0)
+                {
+                    throw new HttpListenerException((int)HttpStatusCode.BadRequest);
+                }
+
+                Debug.Assert(nread <= _remainingBody);
                 _remainingBody -= nread;
+            }
+
             return nread;
         }
 
@@ -138,7 +154,7 @@ namespace System.Net
             // for HTTP pipelining
             if (_remainingBody >= 0 && size > _remainingBody)
             {
-                size = (int)Math.Min(int.MaxValue, _remainingBody);
+                size = (int)Math.Min(_remainingBody, (long)size);
             }
 
             return _stream.BeginRead(buffer, offset, size, cback, state);
@@ -182,8 +198,14 @@ namespace System.Net
                 ExceptionDispatchInfo.Throw(e.InnerException);
             }
 
-            if (_remainingBody > 0 && nread > 0)
+            if (_remainingBody > 0)
             {
+                if (nread == 0)
+                {
+                    throw new HttpListenerException((int)HttpStatusCode.BadRequest);
+                }
+
+                Debug.Assert(nread <= _remainingBody);
                 _remainingBody -= nread;
             }
 
