@@ -6457,19 +6457,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         // Update second half RegRecord of a double register for TYP_DOUBLE
         if (regRec->assignedInterval->registerType == TYP_DOUBLE)
         {
-            assert(isFloatRegType(regRec->registerType));
-            assert(genIsValidDoubleReg(regRec->regNum));
+            RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(regRec);
 
-            // Because nextRegRec was defined only when assignedInterval is TYP_DOUBLE,
-            // we should compute nextRegRec when nextRegRec is not defined yet.
-            if (nextRegRec == nullptr)
-            {
-                nextRegNum = REG_NEXT(regRec->regNum);
-                nextRegRec = getRegisterRecord(nextRegNum);
-            }
-
-            nextRegRec->assignedInterval = nextRegRec->previousInterval;
-            nextRegRec->previousInterval = nullptr;
+            anotherHalfRegRec->assignedInterval = regRec->assignedInterval;
+            anotherHalfRegRec->previousInterval = nullptr;
         }
 #endif // _TARGET_ARM_
 
@@ -6651,6 +6642,42 @@ bool LinearScan::isSecondHalfReg(RegRecord* regRec, Interval* interval)
 
     return false;
 }
+
+//------------------------------------------------------------------------------------------
+// findAnotherHalfRegRec: Find another half RegRecord which forms same ARM32 double register
+//
+// Arguments:
+//    regRec - A float RegRecord
+//
+// Assumptions:
+//    None
+//
+// Return Value:
+//    A RegRecord which forms same double register with regRec
+//
+RegRecord* LinearScan::findAnotherHalfRegRec(RegRecord* regRec)
+{
+    regNumber  anotherHalfRegNum;
+    RegRecord* anotherHalfRegRec;
+
+    assert(genIsValidFloatReg(regRec->regNum));
+
+    // Find another half register for TYP_DOUBLE interval,
+    // following same logic in canRestorePreviousInterval().
+    if (genIsValidDoubleReg(regRec->regNum))
+    {
+        anotherHalfRegNum = REG_NEXT(regRec->regNum);
+        assert(!genIsValidDoubleReg(anotherHalfRegNum));
+    }
+    else
+    {
+        anotherHalfRegNum = REG_PREV(regRec->regNum);
+        assert(genIsValidDoubleReg(anotherHalfRegNum));
+    }
+    anotherHalfRegRec = getRegisterRecord(anotherHalfRegNum);
+
+    return anotherHalfRegRec;
+}
 #endif
 
 //--------------------------------------------------------------------------------------
@@ -6675,10 +6702,9 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
 #ifdef _TARGET_ARM_
     if (retVal && regRec->previousInterval->registerType == TYP_DOUBLE)
     {
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
+        RegRecord* anotherHalfRegRec = findAnotherHalfRegRec(regRec);
 
-        retVal = retVal && nextRegRec->assignedInterval == nullptr;
+        retVal = retVal && anotherHalfRegRec->assignedInterval == nullptr;
     }
 #endif
 
