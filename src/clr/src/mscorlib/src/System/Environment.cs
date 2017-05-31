@@ -497,19 +497,6 @@ namespace System
             return GetEnvironmentVariableCore(variable, target);
         }
 
-        public static IDictionary GetEnvironmentVariables()
-        {
-            // separated from the EnvironmentVariableTarget overload to help with tree shaking in common case
-            return GetEnvironmentVariablesCore();
-        }
-
-        internal static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target)
-        {
-            ValidateTarget(target);
-
-            return GetEnvironmentVariablesCore(target);
-        }
-
         public static void SetEnvironmentVariable(string variable, string value)
         {
             ValidateVariableAndValue(variable, ref value);
@@ -572,51 +559,6 @@ namespace System
             }
         }
 
-        private static Dictionary<string, string> GetRawEnvironmentVariables()
-        {
-            // Format for GetEnvironmentStrings is:
-            // (=HiddenVar=value\0 | Variable=value\0)* \0
-            // See the description of Environment Blocks in MSDN's
-            // CreateProcess page (null-terminated array of null-terminated strings).
-            // Note the =HiddenVar's aren't always at the beginning.
-
-            // Copy strings out, parsing into pairs and inserting into the table.
-            // The first few environment variable entries start with an '='.
-            // The current working directory of every drive (except for those drives
-            // you haven't cd'ed into in your DOS window) are stored in the 
-            // environment block (as =C:=pwd) and the program's exit code is 
-            // as well (=ExitCode=00000000).
-
-            var results = new Dictionary<string, string>();
-            char[] block = GetEnvironmentCharArray();
-            for (int i = 0; i < block.Length; i++)
-            {
-                int startKey = i;
-
-                // Skip to key. On some old OS, the environment block can be corrupted.
-                // Some will not have '=', so we need to check for '\0'. 
-                while (block[i] != '=' && block[i] != '\0') i++;
-                if (block[i] == '\0') continue;
-
-                // Skip over environment variables starting with '='
-                if (i - startKey == 0)
-                {
-                    while (block[i] != 0) i++;
-                    continue;
-                }
-
-                string key = new string(block, startKey, i - startKey);
-                i++;  // skip over '='
-
-                int startValue = i;
-                while (block[i] != 0) i++; // Read to end of this entry 
-                string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
-
-                results[key] = value;
-            }
-            return results;
-        }
-
         private static string GetEnvironmentVariableCore(string variable)
         {
             StringBuilder sb = StringBuilderCache.Acquire(128); // A somewhat reasonable default size
@@ -672,19 +614,66 @@ namespace System
 #endif
         }
 
-        private static IDictionary GetEnvironmentVariablesCore()
+        internal static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables()
         {
-            return GetRawEnvironmentVariables();
+            // Format for GetEnvironmentStrings is:
+            // (=HiddenVar=value\0 | Variable=value\0)* \0
+            // See the description of Environment Blocks in MSDN's
+            // CreateProcess page (null-terminated array of null-terminated strings).
+            // Note the =HiddenVar's aren't always at the beginning.
+
+            // Copy strings out, parsing into pairs and inserting into the table.
+            // The first few environment variable entries start with an '='.
+            // The current working directory of every drive (except for those drives
+            // you haven't cd'ed into in your DOS window) are stored in the 
+            // environment block (as =C:=pwd) and the program's exit code is 
+            // as well (=ExitCode=00000000).
+
+            char[] block = GetEnvironmentCharArray();
+            for (int i = 0; i < block.Length; i++)
+            {
+                int startKey = i;
+
+                // Skip to key. On some old OS, the environment block can be corrupted.
+                // Some will not have '=', so we need to check for '\0'. 
+                while (block[i] != '=' && block[i] != '\0')
+                    i++;
+                if (block[i] == '\0')
+                    continue;
+
+                // Skip over environment variables starting with '='
+                if (i - startKey == 0)
+                {
+                    while (block[i] != 0)
+                        i++;
+                    continue;
+                }
+
+                string key = new string(block, startKey, i - startKey);
+                i++;  // skip over '='
+
+                int startValue = i;
+                while (block[i] != 0)
+                    i++; // Read to end of this entry 
+                string value = new string(block, startValue, i - startValue); // skip over 0 handled by for loop's i++
+
+                yield return new KeyValuePair<string, string>(key, value);
+            }
         }
 
-        private static IDictionary GetEnvironmentVariablesCore(EnvironmentVariableTarget target)
+        internal static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
             if (target == EnvironmentVariableTarget.Process)
-                return GetEnvironmentVariablesCore();
+                return EnumerateEnvironmentVariables();
+            return EnumerateEnvironmentVariablesFromRegistry(target);
+        }
 
+        internal static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariablesFromRegistry(EnvironmentVariableTarget target)
+        {
 #if !FEATURE_WIN32_REGISTRY
             // Without registry support we have nothing to return
-            return new Dictionary<string, string>(0);
+            ValidateTarget(target);
+            yield break;
 #else
             RegistryKey baseKey;
             string keyName;
@@ -701,20 +690,19 @@ namespace System
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)target));
+                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
             }
 
             using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: false))
             {
-                var table = new Dictionary<string, string>();
                 if (environmentKey != null)
                 {
                     foreach (string name in environmentKey.GetValueNames())
                     {
-                        table.Add(name, environmentKey.GetValue(name, "").ToString());
+                        string value = environmentKey.GetValue(name, "").ToString();
+                        yield return new KeyValuePair<string, string>(name, value);
                     }
                 }
-                return table;
             }
 #endif // FEATURE_WIN32_REGISTRY
         }
