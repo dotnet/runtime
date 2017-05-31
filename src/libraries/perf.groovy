@@ -110,7 +110,7 @@ def osShortName = ['Windows 10': 'win10',
                         //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
                         shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
                         "python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name " + "\"" + benchViewName + "\"" + " --user " + "\"dotnet-bot@microsoft.com\"\n" +
-                        "python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type " + runType)
+                        "python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type " + runType)
                         shell("python3.5 \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat/tools/machinedata.py\"")
                         shell("sudo -E bash ./build-managed.sh -release -tests -- /p:Performance=true /p:TargetOS=${osGroup} /m:1 /p:LogToBenchview=true /p:BenchviewRunType=${runType}")
                     }
