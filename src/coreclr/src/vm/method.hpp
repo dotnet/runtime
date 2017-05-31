@@ -3309,7 +3309,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
 
         _ASSERTE(IMD_IsWrapperStubWithInstantiations());
-        return RelativePointer<PTR_MethodDesc>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(InstantiatedMethodDesc, this, m_pWrappedMethodDesc));
+        return RelativeFixupPointer<PTR_MethodDesc>::GetValueAtPtr(PTR_HOST_MEMBER_TADDR(InstantiatedMethodDesc, this, m_pWrappedMethodDesc));
     }
 
 #ifndef DACCESS_COMPILE
