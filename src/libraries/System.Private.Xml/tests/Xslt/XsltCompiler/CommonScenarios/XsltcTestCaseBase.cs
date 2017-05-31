@@ -73,6 +73,11 @@ namespace System.Xml.Tests
             }
         }
 
+        private static string NormalizeLineEndings(string s)
+        {
+            return s.Replace("\r\n", "\n").Replace("\r", "\n");
+        }
+
         protected static void CompareOutput(Stream expectedStream, Stream actualStream, int count = 0)
         {
             actualStream.Seek(0, SeekOrigin.Begin);
@@ -86,8 +91,8 @@ namespace System.Xml.Tests
                     expectedReader.ReadLine();
                 }
 
-                string actual = actualReader.ReadToEnd();
-                string expected = expectedReader.ReadToEnd();
+                string actual = NormalizeLineEndings(actualReader.ReadToEnd());
+                string expected = NormalizeLineEndings(expectedReader.ReadToEnd());
 
                 if (actual.Equals(expected))
                 {
