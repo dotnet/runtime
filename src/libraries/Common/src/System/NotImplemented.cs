@@ -5,22 +5,27 @@
 namespace System
 {
     //
-    // This class enables one to throw a NotImplementedException using the following idiom:
-    //
-    //     throw NotImplemented.ByDesign;
-    //
-    // Used by methods whose intended implementation is to throw a NotImplementedException (typically
-    // virtual methods in public abstract classes that intended to be subclassed by third parties.)
-    //
-    // This makes it distinguishable both from human eyes and CCI from NYI's that truly represent undone work.
+    // Support for tooling-friendly NotImplementedExceptions.
     //
     internal static class NotImplemented
     {
+        /// <summary>
+        /// Permanent NotImplementedException with no message shown to user.
+        /// </summary>
         internal static Exception ByDesign => new NotImplementedException();
 
+        /// <summary>
+        /// Permanent NotImplementedException with localized message shown to user.
+        /// </summary>
         internal static Exception ByDesignWithMessage(string message)
         {
             return new NotImplementedException(message);
         }
+
+        /// <summary>
+        /// Temporary NotImplementedException with no message shown to user.
+        /// Example: Exception.ActiveIssue("https://github.com/dotnet/corefx/issues/xxxx") or Exception.ActiveIssue("TFS xxxxxx").
+        /// </summary>
+        internal static Exception ActiveIssue(string issue) => new NotImplementedException(); 
     }
 }
