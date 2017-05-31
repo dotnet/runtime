@@ -465,7 +465,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             {
                 if (pWrappedMD->IsSharedByGenericMethodInstantiations())
                 {
-                    pDL = pWrappedMD->AsInstantiatedMethodDesc()->m_pDictLayout;
+                    pDL = pWrappedMD->AsInstantiatedMethodDesc()->GetDictLayoutRaw();
                 }
             }
             else if (getWrappedCode)
@@ -1576,7 +1576,7 @@ void InstantiatedMethodDesc::SetupSharedMethodInstantiation(DWORD numGenericArgs
     _ASSERTE(FitsIn<WORD>(numGenericArgs));
     m_wNumGenericArgs = static_cast<WORD>(numGenericArgs);
 
-    m_pDictLayout = pDL;
+    m_pDictLayout.SetValueMaybeNull(pDL);
 
 
     _ASSERTE(IMD_IsSharedByGenericMethodInstantiations());

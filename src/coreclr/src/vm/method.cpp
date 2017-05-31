@@ -2764,7 +2764,7 @@ void MethodDesc::Save(DataImage *image)
 
         if (pNewSMD->HasStoredMethodSig())
         {
-            if (!image->IsStored((void *) pNewSMD->m_pSig))
+            if (!image->IsStored((void *) pNewSMD->m_pSig.GetValueMaybeNull()))
             {
                 // Store signatures that doesn't need restore into a read only section.
                 DataImage::ItemKind sigItemKind = DataImage::ITEM_STORED_METHOD_SIG_READONLY;
@@ -2780,7 +2780,7 @@ void MethodDesc::Save(DataImage *image)
                     }
 
                     if (FixupSignatureContainingInternalTypes(image, 
-                        (PCCOR_SIGNATURE)pNewSMD->m_pSig, 
+                        (PCCOR_SIGNATURE) pNewSMD->m_pSig.GetValueMaybeNull(),
                         pNewSMD->m_cSig, 
                         true /*checkOnly if we will need to restore the signature without doing fixup*/))
                     {
@@ -2788,7 +2788,7 @@ void MethodDesc::Save(DataImage *image)
                     }
                 }
 
-                image->StoreInternedStructure((void *) pNewSMD->m_pSig,
+                image->StoreInternedStructure((void *) pNewSMD->m_pSig.GetValueMaybeNull(),
                                          pNewSMD->m_cSig,
                                          sigItemKind,
                                          1);
@@ -2809,9 +2809,9 @@ void MethodDesc::Save(DataImage *image)
     if (HasMethodInstantiation())
     {
         InstantiatedMethodDesc* pIMD = AsInstantiatedMethodDesc();
-        if (pIMD->IMD_IsSharedByGenericMethodInstantiations() && pIMD->m_pDictLayout != NULL)
+        if (pIMD->IMD_IsSharedByGenericMethodInstantiations() && !pIMD->m_pDictLayout.IsNull())
         {
-            pIMD->m_pDictLayout->Save(image);
+            pIMD->m_pDictLayout.GetValue()->Save(image);
         }
     }
     if (IsNDirect())
@@ -2887,9 +2887,10 @@ void MethodDesc::Save(DataImage *image)
     if (IsDynamicMethod())
     {
         DynamicMethodDesc *pDynMeth = AsDynamicMethodDesc();
-        if (pDynMeth->m_pszMethodName && !image->IsStored(pDynMeth->m_pszMethodName))
-            image->StoreStructure((void *) pDynMeth->m_pszMethodName,
-                                  (ULONG)(strlen(pDynMeth->m_pszMethodName) + 1),
+        if (!pDynMeth->m_pszMethodName.IsNull()
+            && !image->IsStored(pDynMeth->m_pszMethodName.GetValue()))
+            image->StoreStructure((void *) pDynMeth->m_pszMethodName.GetValue(),
+                                  (ULONG)(strlen(pDynMeth->m_pszMethodName.GetValue()) + 1),
                                   DataImage::ITEM_STORED_METHOD_NAME,
                                   1);
     }
@@ -3474,7 +3475,7 @@ MethodDesc::Fixup(
     if (IsDynamicMethod())
     {
         image->ZeroPointerField(this, offsetof(DynamicMethodDesc, m_pResolver));
-        image->FixupPointerField(this, offsetof(DynamicMethodDesc, m_pszMethodName));
+        image->FixupRelativePointerField(this, offsetof(DynamicMethodDesc, m_pszMethodName));
     }
 
     if (GetClassification() == mcInstantiated)
@@ -3490,8 +3491,8 @@ MethodDesc::Fixup(
         {
             if (pIMD->IMD_IsSharedByGenericMethodInstantiations())
             {
-                pIMD->m_pDictLayout->Fixup(image, TRUE);
-                image->FixupPointerField(this, offsetof(InstantiatedMethodDesc, m_pDictLayout));
+                pIMD->m_pDictLayout.GetValue()->Fixup(image, TRUE);
+                image->FixupRelativePointerField(this, offsetof(InstantiatedMethodDesc, m_pDictLayout));
             }
         }
 
@@ -3599,7 +3600,7 @@ MethodDesc::Fixup(
         if (!pNMD->MarshalingRequired())
         {
             // import thunk is only needed if the P/Invoke is inlinable
-            image->FixupPointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pImportThunkGlue));
+            image->FixupRelativePointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pImportThunkGlue));
             ((Precode*)pImportThunkGlue)->Fixup(image, this);
         }
         else
@@ -3612,8 +3613,8 @@ MethodDesc::Fixup(
 
         if (!IsQCall())
         {
-            image->FixupPointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pszLibName));
-            image->FixupPointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pszEntrypointName));
+            image->FixupRelativePointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pszLibName));
+            image->FixupRelativePointerField(this, offsetof(NDirectMethodDesc, ndirect.m_pszEntrypointName));
         }
         
         if (image->IsStored(pNMD->ndirect.m_pStubMD.GetValueMaybeNull()))
@@ -3624,7 +3625,7 @@ MethodDesc::Fixup(
 
     if (HasStoredSig())
     {
-        image->FixupPointerField(this, offsetof(StoredSigMethodDesc, m_pSig));
+        image->FixupRelativePointerField(this, offsetof(StoredSigMethodDesc, m_pSig));
 
         // The DynamicMethodDescs used for IL stubs may have a signature that refers to
         // runtime types using ELEMENT_TYPE_INTERNAL.  We need to fixup these types here.
@@ -5357,7 +5358,7 @@ StoredSigMethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
     // 'this' already done, see below.
-    DacEnumMemoryRegion(m_pSig, m_cSig);
+    DacEnumMemoryRegion(GetSigRVA(), m_cSig);
 }
 
 //*******************************************************************************
