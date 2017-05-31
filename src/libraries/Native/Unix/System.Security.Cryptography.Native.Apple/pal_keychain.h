@@ -61,6 +61,13 @@ pKeychainOut: Receives the SecKeychainRef for the named keychain.
 extern "C" int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath, SecKeychainRef* pKeychainOut);
 
 /*
+Set a keychain to never (automatically) lock.
+
+Returns the result of SecKeychainSetSettings to a never-auto-lock policy.
+*/
+extern "C" int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain);
+
+/*
 Enumerate the certificate objects within the given keychain.
 
 Returns 1 on success (including "no certs found"), 0 on failure, any other value for invalid state.

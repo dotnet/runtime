@@ -40,6 +40,9 @@ internal static partial class Interop
             out SafeKeychainHandle keychain);
 
         [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_SetKeychainNeverLock(SafeKeychainHandle keychain);
+
+        [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeychainEnumerateCerts(
             SafeKeychainHandle keychain,
             out SafeCFArrayHandle matches,
@@ -178,6 +181,11 @@ internal static partial class Interop
                 out keychain);
 
             SafeTemporaryKeychainHandle.TrackKeychain(keychain);
+
+            if (osStatus == 0)
+            {
+                osStatus = AppleCryptoNative_SetKeychainNeverLock(keychain);
+            }
 
             if (osStatus != 0)
             {
