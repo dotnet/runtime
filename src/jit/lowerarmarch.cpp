@@ -111,25 +111,34 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
 #endif
                 break;
 
+#ifdef _TARGET_ARM64_
             case GT_EQ:
             case GT_NE:
             case GT_LT:
             case GT_LE:
             case GT_GE:
             case GT_GT:
-#ifdef _TARGET_ARM64_
                 return emitter::emitIns_valid_imm_for_cmp(immVal, size);
                 break;
-#endif
             case GT_AND:
             case GT_OR:
             case GT_XOR:
-#ifdef _TARGET_ARM64_
                 return emitter::emitIns_valid_imm_for_alu(immVal, size);
-#elif defined(_TARGET_ARM_)
-                return emitter::emitIns_valid_imm_for_alu(immVal);
-#endif
                 break;
+#elif defined(_TARGET_ARM_)
+            case GT_EQ:
+            case GT_NE:
+            case GT_LT:
+            case GT_LE:
+            case GT_GE:
+            case GT_GT:
+            case GT_AND:
+            case GT_OR:
+            case GT_XOR:
+                return emitter::emitIns_valid_imm_for_alu(immVal);
+                break;
+#endif // _TARGET_ARM_
+
 #ifdef _TARGET_ARM64_
             case GT_STORE_LCL_VAR:
                 if (immVal == 0)
