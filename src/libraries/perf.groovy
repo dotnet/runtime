@@ -103,7 +103,7 @@ def osShortName = ['Windows 10': 'win10',
                     steps {
                         //We need to specify the max cpu count to be one as we do not want to be executing performance tests in parallel
                         shell("./build.sh -release")
-                        shell("curl \"http://benchviewtestfeed.azurewebsites.net/nuget/FindPackagesById()?id='Microsoft.BenchView.JSONFormat'\" | grep \"content type\" | sed \"$ s/.*src=\\\"\\([^\\\"]*\\)\\\".*/\\1/;tx;d;:x\" | xargs curl -o benchview.zip")
+                        shell("curl \"http://benchviewtestfeed.azurewebsites.net/nuget/FindPackagesById()?id='Microsoft.BenchView.JSONFormat'\" | grep \"content type\" | sed \"\$ s/.*src=\\\"\\([^\\\"]*\\)\\\".*/\\1/;tx;d;:x\" | xargs curl -o benchview.zip")
                         shell("unzip -q -o benchview.zip -d \"\${WORKSPACE}/Tools/Microsoft.BenchView.JSONFormat\"")
 
                         //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
