@@ -47,53 +47,53 @@ namespace System.Runtime.Serialization.Formatters.Tests
             CheckForAnyEquals(obj, clone);
         }
 
-        //[Fact]
-        //public void Serialize()
-        //{
-        //    IEnumerable<object[]> objs = SerializableObjects();
-        //    List<string> serializedHashes = new List<string>();
-        //    for (int i = 0; i < objs.Count(); i++)
-        //    {
-        //        var obj = objs.ElementAt(i)[0];
-        //        BinaryFormatter bf = new BinaryFormatter();
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            bf.Serialize(ms, obj);
-        //            string serializedHash = Convert.ToBase64String(ms.ToArray());
-        //            serializedHashes.Add(serializedHash);
-        //        }
-        //    }
+        [Fact]
+        public void Serialize()
+        {
+            IEnumerable<object[]> objs = SerializableObjects().Concat(EqualityComparers());
+            List<string> serializedHashes = new List<string>();
+            foreach (var obj in objs)
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    bf.Serialize(ms, obj[0]);
+                    string serializedHash = Convert.ToBase64String(ms.ToArray());
+                    serializedHashes.Add(serializedHash);
+                }
+            }
 
-        //    string path = @"C:\Users\vikto\Documents\src\corefx\src\System.Runtime.Serialization.Formatters\tests\BinaryFormatterTestData.cs";
-        //    string[] lines = File.ReadAllLines(path);
-        //    string[] corelines = serializedHashes.ToArray();
+            string path = @"D:\corefx\src\System.Runtime.Serialization.Formatters\tests\BinaryFormatterTestData.cs";
+            string[] lines = File.ReadAllLines(path);
 
-        //    List<string> newLines = new List<string>();
-        //    for (int i = 0, j = 0; i < lines.Length; i++)
-        //    {
-        //        if (!lines[i].Trim().StartsWith("yield") || j >= corelines.Length)
-        //        {
-        //            newLines.Add(lines[i]);
-        //            continue;
-        //        }
+            List<string> newLines = new List<string>();
+            int numOfHashes = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string line = lines[i];
+                if (!line.Trim().StartsWith("yield") || numOfHashes >= serializedHashes.Count)
+                {
+                    newLines.Add(line);
+                    continue;
+                }
 
-        //        string line = lines[i];
-        //        if (PlatformDetection.IsFullFramework)
-        //        {
-        //            line = Regex.Replace(line, ", \"AAEAAAD.+\"", ", \"" + corelines[j] + "\""); // netfx
-        //        }
-        //        else
-        //        {
-        //            line = Regex.Replace(line, "\"AAEAAAD.+\",", "\"" + corelines[j] + "\","); // netcoreapp
-        //        }
+                if (PlatformDetection.IsFullFramework)
+                {
+                    line = Regex.Replace(line, ", \"AAEAAAD.+\"(?!,)", ", \"" + serializedHashes[numOfHashes] + "\""); // netfx
+                }
+                else
+                {
+                    line = Regex.Replace(line, "\"AAEAAAD.+\",", "\"" + serializedHashes[numOfHashes] + "\","); // netcoreapp
+                }
 
-        //        newLines.Add(line);
+                newLines.Add(line);
+                numOfHashes++;
+            }
 
-        //        j++;
-        //    }
+            Assert.Equal(numOfHashes, serializedHashes.Count);
 
-        //    File.WriteAllLines(path, newLines);
-        //}
+            File.WriteAllLines(path, newLines);
+        }
 
 
         private static string SerializeObjectToHash(object original)
@@ -106,21 +106,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        private static object DeserializeObjectHash(object original, string base64Str)
+        private static object DeserializeObjectHash(string base64Str)
         {
             var binaryFormatter = new BinaryFormatter();
             byte[] serializedObj = Convert.FromBase64String(base64Str);
             using (var serializedStream = new MemoryStream(serializedObj))
             {
-                try
-                {
-                    return binaryFormatter.Deserialize(serializedStream);
-                }
-                catch
-                {
-                    Console.WriteLine($"Deserialization of type {original.GetType().FullName} failed");
-                    throw;
-                }
+                return binaryFormatter.Deserialize(serializedStream);
             }
         }
 
@@ -139,8 +131,28 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 // Currently for valuetuples
                 if (!string.IsNullOrWhiteSpace(tfmBase64Hash))
                 {
-                    CheckForAnyEquals(original, DeserializeObjectHash(original, tfmBase64Hash));
+                    CheckForAnyEquals(original, DeserializeObjectHash(tfmBase64Hash));
                 }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EqualityComparers))]
+        public void ValidateDeserializationOfEqualityComparers(object original, string[] base64SerializedObj)
+        {
+            if (base64SerializedObj == null || base64SerializedObj.Length < 2)
+            {
+                throw new InvalidOperationException($"Type {original} has no base64 hashes to deserialize and test equality against. " +
+                    $"Hash for object is: " + SerializeObjectToHash(original));
+            }
+
+            foreach (string base64Serialized in base64SerializedObj)
+            {
+                var obj = DeserializeObjectHash(base64Serialized);
+                var objType = obj.GetType();
+                Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
+                Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
+                Assert.Equal(original.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
             }
         }
 
