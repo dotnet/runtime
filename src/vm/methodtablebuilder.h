@@ -2734,7 +2734,7 @@ private:
         bmtMDMethod *       pImplMethod,
         DWORD               cSlots,
         DWORD *             rgSlots,
-        MethodDesc **       rgDeclMD);
+        RelativePointer<MethodDesc *> *       rgDeclMD);
 
     // --------------------------------------------------------------------------------------------
     // Places a methodImpl pair where the decl is declared by the type being built.
@@ -2743,7 +2743,7 @@ private:
         bmtMDMethod *    pDecl,
         bmtMDMethod *    pImpl,
         DWORD*           slots,
-        MethodDesc**     replaced,
+        RelativePointer<MethodDesc *> *     replaced,
         DWORD*           pSlotIndex);
 
     // --------------------------------------------------------------------------------------------
@@ -2753,7 +2753,7 @@ private:
         bmtRTMethod *     pDecl,
         bmtMDMethod *     pImpl,
         DWORD*            slots,
-        MethodDesc**      replaced,
+        RelativePointer<MethodDesc *> *      replaced,
         DWORD*            pSlotIndex);
 
     // --------------------------------------------------------------------------------------------
@@ -2763,7 +2763,7 @@ private:
         bmtRTMethod *     pDecl,
         bmtMDMethod *     pImpl,
         DWORD*            slots,
-        MethodDesc**      replaced,
+        RelativePointer<MethodDesc *> *      replaced,
         DWORD*            pSlotIndex);
 
     // --------------------------------------------------------------------------------------------

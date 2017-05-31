@@ -272,7 +272,7 @@ DynamicMethodDesc* DynamicMethodTable::GetDynamicMethod(BYTE *psig, DWORD sigSiz
     // the store sig part of the method desc
     pNewMD->SetStoredMethodSig((PCCOR_SIGNATURE)psig, sigSize);
     // the dynamic part of the method desc
-    pNewMD->m_pszMethodName = name;
+    pNewMD->m_pszMethodName.SetValueMaybeNull(name);
 
     pNewMD->m_dwExtendedFlags = mdPublic | mdStatic | DynamicMethodDesc::nomdLCGMethod;
 
@@ -884,16 +884,16 @@ void DynamicMethodDesc::Destroy(BOOL fDomainUnload)
     LoaderAllocator *pLoaderAllocator = GetLoaderAllocatorForCode();
 
     LOG((LF_BCL, LL_INFO1000, "Level3 - Destroying DynamicMethod {0x%p}\n", this));
-    if (m_pSig)
+    if (!m_pSig.IsNull())
     {
-        delete[] (BYTE*)m_pSig;
-        m_pSig = NULL;
+        delete[] (BYTE*)m_pSig.GetValue();
+        m_pSig.SetValueMaybeNull(NULL);
     }
     m_cSig = 0;
-    if (m_pszMethodName)
+    if (!m_pszMethodName.IsNull())
     {
-        delete[] m_pszMethodName;
-        m_pszMethodName = NULL;
+        delete[] m_pszMethodName.GetValue();
+        m_pszMethodName.SetValueMaybeNull(NULL);
     }
 
     GetLCGMethodResolver()->Destroy(fDomainUnload);
