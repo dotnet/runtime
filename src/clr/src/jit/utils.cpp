@@ -1985,6 +1985,59 @@ uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/)
 }
 #endif
 
+template <typename T>
+struct SignedMagic
+{
+    typedef T DivisorType;
+
+    T   magic;
+    int shift;
+};
+
+template <typename T>
+const SignedMagic<T>* TryGetSignedMagic(T divisor)
+{
+    return nullptr;
+}
+
+template <>
+const SignedMagic<int32_t>* TryGetSignedMagic(int32_t divisor)
+{
+    static const SignedMagic<int32_t> table[]{
+        {0x55555556, 0}, // 3
+        {},
+        {0x66666667, 1}, // 5
+        {0x2aaaaaab, 0}, // 6
+        {0x92492493, 2}, // 7
+        {},
+        {0x38e38e39, 1}, // 9
+        {0x66666667, 2}, // 10
+        {0x2e8ba2e9, 1}, // 11
+        {0x2aaaaaab, 1}, // 12
+    };
+
+    return TryGetMagic<3>(table, divisor);
+}
+
+template <>
+const SignedMagic<int64_t>* TryGetSignedMagic(int64_t divisor)
+{
+    static const SignedMagic<int64_t> table[]{
+        {0x5555555555555556, 0}, // 3
+        {},
+        {0x6666666666666667, 1}, // 5
+        {0x2aaaaaaaaaaaaaab, 0}, // 6
+        {0x4924924924924925, 1}, // 7
+        {},
+        {0x1c71c71c71c71c72, 0}, // 9
+        {0x6666666666666667, 2}, // 10
+        {0x2e8ba2e8ba2e8ba3, 1}, // 11
+        {0x2aaaaaaaaaaaaaab, 1}, // 12
+    };
+
+    return TryGetMagic<3>(table, divisor);
+}
+
 //------------------------------------------------------------------------
 // GetSignedMagic: Generates a magic number and shift amount for
 // the magic number division optimization.
@@ -2005,7 +2058,14 @@ uint64_t GetUnsigned64Magic(uint64_t d, bool* add /*out*/, int* shift /*out*/)
 template <typename T>
 T GetSignedMagic(T denom, int* shift /*out*/)
 {
-    // static SMAG smag;
+    const SignedMagic<T>* magic = TryGetSignedMagic(denom);
+
+    if (magic != nullptr)
+    {
+        *shift = magic->shift;
+        return magic->magic;
+    }
+
     const int bits         = sizeof(T) * 8;
     const int bits_minus_1 = bits - 1;
 
