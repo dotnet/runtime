@@ -286,10 +286,13 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CombinedInstallerStart>$(PackagesOutDir)dotnet-runtime-</CombinedInstallerStart>
-    <SharedHostInstallerStart>$(PackagesOutDir)dotnet-host-</SharedHostInstallerStart>
-    <HostFxrInstallerStart>$(PackagesOutDir)dotnet-hostfxr-</HostFxrInstallerStart>
-    <SharedFrameworkInstallerStart>$(PackagesOutDir)dotnet-runtime-</SharedFrameworkInstallerStart>
+    <DotnetHostString>dotnet-host-</DotnetHostString>
+    <DotnetHostFxrString>dotnet-hostfxr-</DotnetHostFxrString>
+    <DotnetRuntimeString>dotnet-runtime-</DotnetRuntimeString>
+    <CombinedInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</CombinedInstallerStart>
+    <SharedHostInstallerStart>$(PackagesOutDir)$(DotnetHostString)</SharedHostInstallerStart>
+    <HostFxrInstallerStart>$(PackagesOutDir)$(DotnetHostFxrString)</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
 
     <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
          and runtime ( earlier as dotnet-sharedframework-*)	-->
@@ -407,9 +410,9 @@
   <PropertyGroup>
     <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
     <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
-    <HostFxrDebPkgName>$([System.IO.Path]::GetFileNameWithoutExtension('$(HostFxrInstallerFile)'))</HostFxrDebPkgName>
+    <HostFxrDebPkgName>$(DotnetHostFxrString)$(HostResolverVersion)</HostFxrDebPkgName>
     <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
-    <SharedFxDebPkgName>$([System.IO.Path]::GetFileNameWithoutExtension('$(SharedFrameworkInstallerFile)'))</SharedFxDebPkgName>
+    <SharedFxDebPkgName>$(DotnetRuntimeString)$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
     <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
   </PropertyGroup>
 
