@@ -10,6 +10,7 @@
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BlockReflectionAttribute>false</BlockReflectionAttribute>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'net45'">
     <DefineConstants>$(DefineConstants);NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
