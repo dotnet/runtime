@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <installer-gui-script minSpecVersion="1">
     <title>{SharedFxBrandName} (x64)</title>
-    <license file="eula.rtf" mime-type="application/rtf" />
     <background file="dotnetbackground.png" mime-type="image/png"/>
     <options customize="never" require-scripts="false" />
     <welcome file="welcome.html" mime-type="text/html" />
+    <conclusion file="conclusion.html" mime-type="text/html" />
     <volume-check>
         <allowed-os-version>
             <os-version min="10.10" />
