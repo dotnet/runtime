@@ -748,7 +748,7 @@ public:
             if (color == join_struct.lock_color)
             {
 respin:
-                int spin_count = 4096 * g_SystemInfo.dwNumberOfProcessors;
+                int spin_count = 4096 * g_num_processors;
                 for (int j = 0; j < spin_count; j++)
                 {
                     if (color != join_struct.lock_color)
@@ -849,7 +849,7 @@ respin:
                 if (!join_struct.wait_done)
                 {
         respin:
-                    int spin_count = 2 * 4096 * g_SystemInfo.dwNumberOfProcessors;
+                    int spin_count = 2 * 4096 * g_num_processors;
                     for (int j = 0; j < spin_count; j++)
                     {
                         if (join_struct.wait_done)
@@ -1042,7 +1042,7 @@ class exclusive_sync
 public:
     void init()
     {
-        spin_count = 32 * (g_SystemInfo.dwNumberOfProcessors - 1);
+        spin_count = 32 * (g_num_processors - 1);
         rwp_object = 0;
         needs_checking = 0;
         for (int i = 0; i < max_pending_allocs; i++)
@@ -1498,7 +1498,7 @@ void WaitLongerNoInstru (int i)
     // if we're waiting for gc to finish, we should block immediately
     if (!g_TrapReturningThreads)
     {
-        if  (g_SystemInfo.dwNumberOfProcessors > 1)
+        if  (g_num_processors > 1)
         {
             YieldProcessor();           // indicate to the processor that we are spining
             if  (i & 0x01f)
@@ -1570,12 +1570,12 @@ retry:
         {
             if ((++i & 7) && !IsGCInProgress())
             {
-                if  (g_SystemInfo.dwNumberOfProcessors > 1)
+                if  (g_num_processors > 1)
                 {
 #ifndef MULTIPLE_HEAPS
-                    int spin_count = 1024 * g_SystemInfo.dwNumberOfProcessors;
+                    int spin_count = 1024 * g_num_processors;
 #else //!MULTIPLE_HEAPS
-                    int spin_count = 32 * g_SystemInfo.dwNumberOfProcessors;
+                    int spin_count = 32 * g_num_processors;
 #endif //!MULTIPLE_HEAPS
                     for (int j = 0; j < spin_count; j++)
                     {
@@ -1686,7 +1686,7 @@ void WaitLonger (int i
 #ifdef SYNCHRONIZATION_STATS
         (spin_lock->num_switch_thread_w)++;
 #endif //SYNCHRONIZATION_STATS
-        if  (g_SystemInfo.dwNumberOfProcessors > 1)
+        if  (g_num_processors > 1)
         {
             YieldProcessor();           // indicate to the processor that we are spining
             if  (i & 0x01f)
@@ -1731,12 +1731,12 @@ retry:
         {
             if ((++i & 7) && !gc_heap::gc_started)
             {
-                if  (g_SystemInfo.dwNumberOfProcessors > 1)
+                if  (g_num_processors > 1)
                 {
 #ifndef MULTIPLE_HEAPS
-                    int spin_count = 1024 * g_SystemInfo.dwNumberOfProcessors;
+                    int spin_count = 1024 * g_num_processors;
 #else //!MULTIPLE_HEAPS
-                    int spin_count = 32 * g_SystemInfo.dwNumberOfProcessors;
+                    int spin_count = 32 * g_num_processors;
 #endif //!MULTIPLE_HEAPS
                     for (int j = 0; j < spin_count; j++)
                     {
@@ -4391,9 +4391,9 @@ static size_t get_valid_segment_size (BOOL large_seg=FALSE)
     if (!large_seg)
 #endif // BIT64
     {
-        if (g_SystemInfo.dwNumberOfProcessors > 4)
+        if (g_num_processors > 4)
             initial_seg_size /= 2;
-        if (g_SystemInfo.dwNumberOfProcessors > 8)
+        if (g_num_processors > 8)
             initial_seg_size /= 2;
     }
 #endif //MULTIPLE_HEAPS
@@ -5324,7 +5324,7 @@ void gc_heap::gc_thread_function ()
         }
         else
         {
-            int spin_count = 32 * (g_SystemInfo.dwNumberOfProcessors - 1);
+            int spin_count = 32 * (g_num_processors - 1);
 
             // wait until RestartEE has progressed to a stage where we can restart user threads
             while (!gc_heap::internal_gc_done && !GCHeap::SafeToRestartManagedThreads())
@@ -6999,9 +6999,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     // it is impossible for alloc_size to overflow due bounds on each of 
     // its components.
     size_t alloc_size = sizeof (uint8_t)*(sizeof(card_table_info) + cs + bs + cb + wws + st + ms);
-    size_t alloc_size_aligned = Align (alloc_size, g_SystemInfo.dwAllocationGranularity-1);
-
-    uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size_aligned, 0, virtual_reserve_flags);
+    uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 
     if (!mem)
         return 0;
@@ -7015,7 +7013,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     if (!GCToOSInterface::VirtualCommit (mem, commit_size))
     {
         dprintf (2, ("Card table commit failed"));
-        GCToOSInterface::VirtualRelease (mem, alloc_size_aligned);
+        GCToOSInterface::VirtualRelease (mem, alloc_size);
         return 0;
     }
 
@@ -7025,7 +7023,7 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
     card_table_lowest_address (ct) = start;
     card_table_highest_address (ct) = end;
     card_table_brick_table (ct) = (short*)((uint8_t*)ct + cs);
-    card_table_size (ct) = alloc_size_aligned;
+    card_table_size (ct) = alloc_size;
     card_table_next (ct) = 0;
 
 #ifdef CARD_BUNDLE
@@ -7206,11 +7204,10 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         // it is impossible for alloc_size to overflow due bounds on each of 
         // its components.
         size_t alloc_size = sizeof (uint8_t)*(sizeof(card_table_info) + cs + bs + cb + wws + st + ms);
-        size_t alloc_size_aligned = Align (alloc_size, g_SystemInfo.dwAllocationGranularity-1);
         dprintf (GC_TABLE_LOG, ("card table: %Id; brick table: %Id; card bundle: %Id; sw ww table: %Id; seg table: %Id; mark array: %Id",
                                   cs, bs, cb, wws, st, ms));
 
-        uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size_aligned, 0, virtual_reserve_flags);
+        uint8_t* mem = (uint8_t*)GCToOSInterface::VirtualReserve (alloc_size, 0, virtual_reserve_flags);
 
         if (!mem)
         {
@@ -7407,7 +7404,7 @@ fail:
 #endif
 
             //delete (uint32_t*)((uint8_t*)ct - sizeof(card_table_info));
-            if (!GCToOSInterface::VirtualRelease (mem, alloc_size_aligned))
+            if (!GCToOSInterface::VirtualRelease (mem, alloc_size))
             {
                 dprintf (GC_TABLE_LOG, ("GCToOSInterface::VirtualRelease failed"));
                 assert (!"release failed");
@@ -10247,9 +10244,9 @@ retry:
     {
         while (gc_done_event_lock >= 0)
         {
-            if  (g_SystemInfo.dwNumberOfProcessors > 1)
+            if  (g_num_processors > 1)
             {
-                int spin_count = 32 * g_SystemInfo.dwNumberOfProcessors;
+                int spin_count = 32 * g_num_processors;
                 for (int j = 0; j < spin_count; j++)
                 {
                     if  (gc_done_event_lock < 0)
@@ -33437,6 +33434,8 @@ HRESULT GCHeap::Initialize ()
 
 
     g_gc_pFreeObjectMethodTable = GCToEEInterface::GetFreeObjectMethodTable();
+    g_num_processors = GCToOSInterface::GetTotalProcessorCount();
+    assert(g_num_processors != 0);
 
 //Initialize the static members.
 #ifdef TRACE_GC
@@ -33477,7 +33476,7 @@ HRESULT GCHeap::Initialize ()
 
     gc_heap::mem_one_percent = gc_heap::total_physical_mem / 100;
 #ifndef MULTIPLE_HEAPS
-    gc_heap::mem_one_percent /= g_SystemInfo.dwNumberOfProcessors;
+    gc_heap::mem_one_percent /= g_num_processors;
 #endif //!MULTIPLE_HEAPS
 
     // We should only use this if we are in the "many process" mode which really is only applicable
@@ -33489,7 +33488,7 @@ HRESULT GCHeap::Initialize ()
     int available_mem_th = 10;
     if (gc_heap::total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
     {
-        int adjusted_available_mem_th = 3 + (int)((float)47 / (float)(g_SystemInfo.dwNumberOfProcessors));
+        int adjusted_available_mem_th = 3 + (int)((float)47 / (float)(g_num_processors));
         available_mem_th = min (available_mem_th, adjusted_available_mem_th);
     }
 
