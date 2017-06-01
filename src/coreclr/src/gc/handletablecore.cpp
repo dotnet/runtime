@@ -516,14 +516,14 @@ BOOL SegmentInitialize(TableSegment *pSegment, HandleTable *pTable)
 
 #ifndef FEATURE_REDHAWK // todo: implement SafeInt
     // Prefast overflow sanity check the addition
-    if (!ClrSafeInt<uint32_t>::addition(dwCommit, g_SystemInfo.dwPageSize, dwCommit))
+    if (!ClrSafeInt<uint32_t>::addition(dwCommit, OS_PAGE_SIZE, dwCommit))
     {
         return FALSE;
     }
 #endif // !FEATURE_REDHAWK
 
     // Round down to the dwPageSize
-    dwCommit &= ~(g_SystemInfo.dwPageSize - 1);
+    dwCommit &= ~(OS_PAGE_SIZE - 1);
 
     // commit the header
     if (!GCToOSInterface::VirtualCommit(pSegment, dwCommit))
@@ -1443,7 +1443,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
                 void * pvCommit = pSegment->rgValue + (uCommitLine * HANDLE_HANDLES_PER_BLOCK);
 
                 // we should commit one more page of handles
-                uint32_t dwCommit = g_SystemInfo.dwPageSize;
+                uint32_t dwCommit = OS_PAGE_SIZE;
 
                 // commit the memory
                 if (!GCToOSInterface::VirtualCommit(pvCommit, dwCommit))
@@ -1808,7 +1808,7 @@ BOOL DoesSegmentNeedsToTrimExcessPages(TableSegment *pSegment)
     if (uEmptyLine < uDecommitLine)
     {
         // derive some useful info about the page size
-        uintptr_t dwPageRound = (uintptr_t)g_SystemInfo.dwPageSize - 1;
+        uintptr_t dwPageRound = (uintptr_t)OS_PAGE_SIZE - 1;
         uintptr_t dwPageMask  = ~dwPageRound;
 
         // compute the address corresponding to the empty line
@@ -1852,7 +1852,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
     if (uEmptyLine < uDecommitLine)
     {
         // derive some useful info about the page size
-        uintptr_t dwPageRound = (uintptr_t)g_SystemInfo.dwPageSize - 1;
+        uintptr_t dwPageRound = (uintptr_t)OS_PAGE_SIZE - 1;
         uintptr_t dwPageMask  = ~dwPageRound;
 
         // compute the address corresponding to the empty line
@@ -1874,7 +1874,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
             pSegment->bCommitLine = (uint8_t)((dwLo - (size_t)pSegment->rgValue) / HANDLE_BYTES_PER_BLOCK);
 
             // compute the address for the new decommit line
-            size_t dwDecommitAddr = dwLo - g_SystemInfo.dwPageSize;
+            size_t dwDecommitAddr = dwLo - OS_PAGE_SIZE;
 
             // assume a decommit line of zero until we know otheriwse
             uDecommitLine = 0;
