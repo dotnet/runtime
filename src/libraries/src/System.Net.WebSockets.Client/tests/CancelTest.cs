@@ -10,6 +10,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.WebSockets.Client.Tests
 {
+    [ActiveIssue(20132, TargetFrameworkMonikers.Uap)]
     public class CancelTest : ClientWebSocketTestBase
     {
         public CancelTest(ITestOutputHelper output) : base(output) { }
