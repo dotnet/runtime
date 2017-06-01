@@ -17,7 +17,7 @@
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.Foundation">
       <bal:WixStandardBootstrapperApplication
-        LicenseFile="..\..\osx\sharedframework\resources\en.lproj\eula.rtf"
+        LicenseFile="..\..\windows\sharedframework\dummyEula.rtf"
         ShowFilesInUse="yes"
         ShowVersion="yes"
         />
@@ -27,7 +27,7 @@
 
     <swid:Tag Regid="microsoft.com" InstallPath="[DOTNETHOME]" />
 
-    <Variable Name="DOTNETHOME" Type="string" Value="[ProgramFiles6432Folder]dotnet" bal:Overridable="no" />
+    <Variable Name="DOTNETHOME" Type="string" Value="[$(var.Program_Files)]dotnet" bal:Overridable="no" />
     <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitecture))" bal:Overridable="no" />
 
     <Chain DisableSystemRestore="yes" ParallelCache="yes">
