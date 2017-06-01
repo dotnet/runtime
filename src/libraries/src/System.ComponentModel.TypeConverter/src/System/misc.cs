@@ -55,7 +55,6 @@ namespace System.ComponentModel
     internal static class CompModSwitches
     {
         private static volatile BooleanSwitch commonDesignerServices;
-        private static volatile TraceSwitch eventLog;
                 
         public static BooleanSwitch CommonDesignerServices 
         {
@@ -67,19 +66,6 @@ namespace System.ComponentModel
                 }
                 return commonDesignerServices;
             }
-        }   
-        
-        public static TraceSwitch EventLog 
-        {
-            get 
-            {
-                if (eventLog == null) 
-                {
-                    eventLog = new TraceSwitch("EventLog", "Enable tracing for the EventLog component.");
-                }
-                return eventLog;
-            }
-        }
-                                                                                                                                                                               
+        }                                                                                                                                                                      
     }
 }

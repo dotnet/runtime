@@ -42,8 +42,6 @@ namespace System.ComponentModel
             _data = value ? _data | bit : _data & ~bit;
         }
 
-        public int Data => _data;
-
         public static int CreateMask() => CreateMask(0);
 
         public static int CreateMask(int previous)
