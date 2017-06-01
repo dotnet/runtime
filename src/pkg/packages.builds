@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(OSEnvironment)' != 'Windows_NT' or '$(Platform)' == 'arm64'" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NET.CoreRuntime.builds" Condition="'$(OSEnvironment)' != 'Windows_NT' or '$(Platform)' == 'arm64'" />
     <Project Include="$(MSBuildThisFileDirectory)\projects\*\*.builds" Exclude="@(ProjectExclusions)">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
