@@ -4378,12 +4378,12 @@ static size_t get_valid_segment_size (BOOL large_seg=FALSE)
     if (!large_seg)
     {
         initial_seg_size = INITIAL_ALLOC;
-        seg_size = GCConfig::GetSegmentSize();
+        seg_size = static_cast<size_t>(GCConfig::GetSegmentSize());
     }
     else
     {
         initial_seg_size = LHEAP_ALLOC;
-        seg_size = GCConfig::GetSegmentSize() / 2;
+        seg_size = static_cast<size_t>(GCConfig::GetSegmentSize()) / 2;
     }
 
 #ifdef MULTIPLE_HEAPS
@@ -9810,7 +9810,7 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
             return E_FAIL;
 
         // GCLogFileSize in MBs.
-        gc_log_file_size = GCConfig::GetLogFileSize();
+        gc_log_file_size = static_cast<size_t>(GCConfig::GetLogFileSize());
 
         if (gc_log_file_size <= 0 || gc_log_file_size > 500)
         {
@@ -35446,7 +35446,7 @@ size_t GCHeap::GetValidSegmentSize(bool large_seg)
 // Get the max gen0 heap size, making sure it conforms.
 size_t GCHeap::GetValidGen0MaxSize(size_t seg_size)
 {
-    size_t gen0size = GCConfig::GetGen0Size();
+    size_t gen0size = static_cast<size_t>(GCConfig::GetGen0Size());
 
     if ((gen0size == 0) || !g_theGCHeap->IsValidGen0MaxSize(gen0size))
     {
