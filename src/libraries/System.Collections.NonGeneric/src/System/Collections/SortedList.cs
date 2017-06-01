@@ -932,6 +932,7 @@ namespace System.Collections
             }
         }
 
+        [Serializable]
         private class KeyList : IList
         {
             private SortedList _sortedList;
@@ -1037,6 +1038,7 @@ namespace System.Collections
             }
         }
 
+        [Serializable]
         private class ValueList : IList
         {
             private SortedList _sortedList;
