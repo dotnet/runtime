@@ -96,7 +96,7 @@
         <HostMsi>$(SharedHostInstallerFile)</HostMsi>
         <HostFxrMsi>$(HostFxrInstallerFile)</HostFxrMsi>
         <SharedBundle>$(CombinedInstallerFile)</SharedBundle>
-        <SharedBrandName>$(ProductBrandPrefix) Runtime</SharedBrandName>
+        <SharedBrandName>$(SharedFrameworkBrandName)</SharedBrandName>
         <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
      </PropertyGroup>
 
