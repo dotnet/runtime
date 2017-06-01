@@ -15,6 +15,9 @@
   <PropertyGroup>
     <CoreClrPackageVersion>2.1.0-preview1-25327-01</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
+    <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
+    <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
+    <MicrosoftDiagnosticsTracingLibraryVersion>1.0.3-alpha-experimental</MicrosoftDiagnosticsTracingLibraryVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -78,8 +81,16 @@
       <Version>1.0.0-alpha-build0040</Version>
     </StaticDependency>
 
+    <XUnitPerformanceApiDependency Include="xunit.performance.api" />
+    <XUnitPerformanceApiDependency Include="xunit.performance.core" />
+    <XUnitPerformanceApiDependency Include="xunit.performance.execution" />
+    <XUnitPerformanceApiDependency Include="xunit.performance.metrics" />
+    <StaticDependency Include="@(XUnitPerformanceApiDependency)">
+      <Version>$(XUnitPerformanceApiVersion)</Version>
+    </StaticDependency>
+
     <StaticDependency Include="xunit.console.netcore">
-      <Version>1.0.2-prerelease-00177</Version>
+      <Version>$(XUnitConsoleNetCoreVersion)</Version>
     </StaticDependency>
 
     <DependencyBuildInfo Include="@(StaticDependency)">
