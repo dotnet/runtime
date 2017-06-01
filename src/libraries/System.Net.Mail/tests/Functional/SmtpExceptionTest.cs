@@ -86,6 +86,7 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19585 - System.Exception not serializable - NotImplemented", TargetFrameworkMonikers.UapAot)]
         public void TestConstructorThrowsNull()
         {
             Assert.Throws<ArgumentNullException>(() => new MySmtpException((SerializationInfo)null, new StreamingContext()));

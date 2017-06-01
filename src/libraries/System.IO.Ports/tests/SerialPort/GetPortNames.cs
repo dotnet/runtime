@@ -14,6 +14,7 @@ namespace System.IO.Ports.Tests
         #region Test Cases
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20588 - GetPortNames() has registry dependency.", TargetFrameworkMonikers.UapAot)]
         private void OpenEveryPortName()
         {
             string[] portNames = SerialPort.GetPortNames();
