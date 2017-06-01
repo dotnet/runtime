@@ -26,6 +26,7 @@ namespace System.Net.Mail.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/19909 - RemoteInvoke() returns null Process", TargetFrameworkMonikers.UapAot)]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>
