@@ -14,6 +14,9 @@
     <AppxIdentityName>Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion)</AppxIdentityName>
     <AppxDisplayName>Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion)</AppxDisplayName>
     
+    <BuildVersionAppX>$([System.Int32]::Parse($(BuildNumberMajor)))</BuildVersionAppX>
+    <RevisionVersionAppX>$([System.Int32]::Parse($(BuildNumberMinor)))</RevisionVersionAppX>
+
     <!-- path to contents of appx that will be zipped -->
     <AppxOutputPath>$(IntermediateOutputPath)$(AppxIdentityName)</AppxOutputPath>
     <OutputPath>$(IntermediateOutputPath)$(AppxIdentityName)</OutputPath>
@@ -61,7 +64,7 @@
           Inputs="$(AppxManifestTemplate)"
           Outputs="$(AppxManifest)">
     <WriteLinesToFile File="$(AppxManifest)"
-                      Lines="$([System.IO.File]::ReadAllText($(AppxManifestTemplate)).Replace('[AppxBuildArch]', $(Platform)).Replace('[AppxVersion]',$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)).Replace('[AppxIdentityName]',$(AppxIdentityName)).Replace('[AppxDisplayName]',$(AppxDisplayName)))"
+                      Lines="$([System.IO.File]::ReadAllText($(AppxManifestTemplate)).Replace('[AppxBuildArch]', $(Platform)).Replace('[AppxVersion]',$(MajorVersion).$(MinorVersion).$(BuildVersionAppX).$(RevisionVersionAppX)).Replace('[AppxIdentityName]',$(AppxIdentityName)).Replace('[AppxDisplayName]',$(AppxDisplayName)))"
                       Overwrite="true" />
     <ItemGroup>
       <FileWrites Include="$(AppxManifest)" />
