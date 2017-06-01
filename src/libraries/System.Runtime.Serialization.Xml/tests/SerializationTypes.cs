@@ -16,6 +16,7 @@ using System.Xml.Serialization;
 using System.IO;
 using System.Text;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace SerializationTypes
 {
@@ -3074,6 +3075,70 @@ public class TestableDerivedException : System.Exception
     public string TestProperty { get; set; }
 }
 
+namespace DirectRef
+{
+    public class TypeWithIndirectRef
+    {
+        public static implicit operator Task<object>(TypeWithIndirectRef v)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string Name { get; set; }
+    }
+}
+
+public class NookAppLocalState
+{
+    public int ArticleViewCount { get; set; }
+    public string CurrentlyReadingProductEAN { get; set; }
+    public PaymentType CurrentPaymentType { get; set; }
+    public bool IsFirstRun { get; set; }
+    public List<LocalReadingPosition> LocalReadingPositionState { get; set; }
+    public List<string> PreviousSearchQueries { get; set; }
+    public System.Drawing.Color TextColor;
+
+    [XmlIgnore]
+    public int IgnoreProperty;
+
+    public bool IsFirstRunDuplicate { get; set; }
+    // Nested Types
+    public enum PaymentType
+    {
+        Unconfigured,
+        Nook,
+        Microsoft
+    }
+}
+
+public class LocalReadingPosition
+{
+    public string Ean { get; set; }
+    public DateTime LastReadTime { get; set; }
+    public int PageCount { get; set; }
+    public string PageNumber { get; set; }
+    public string PlatformOffset { get; set; }
+}
+
+public class NativeDllWrapper
+{
+    internal struct MyStruct
+    {
+        internal int field1;
+        internal int field2;
+    }
+
+    [System.Runtime.InteropServices.DllImport("NativeDll.dll")]
+    internal static extern int StructInAndOutTest(MyStruct myStruct, out MyStruct outMyStruct);
+
+    public static int CallIntoNativeDll()
+    {
+        MyStruct myStruct = new MyStruct();
+        myStruct.field1 = 1;
+        myStruct.field2 = 2;
+        return myStruct.field1;
+    }
+}
 
 public class TypeWithXmlElementProperty
 {

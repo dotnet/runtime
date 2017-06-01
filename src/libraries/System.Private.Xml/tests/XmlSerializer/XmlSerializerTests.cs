@@ -4323,6 +4323,63 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Throws<InvalidOperationException>(() => { SerializeAndDeserialize(myGroup4, null, null, true); });
     }
 
+    [Fact]
+    public static void Xml_DefaultNamespaceChange_XmlAttributesTestAsRoot()
+    {
+        var value = new XmlSerializerAttributes();
+        var actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+        <AttributeTesting xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" XmlAttributeName=""2"" xmlns=""MycustomDefaultNamespace"">
+          <Word>String choice value</Word>
+          <XmlIncludeProperty xsi:type=""ItemChoiceType"">DecimalNumber</XmlIncludeProperty>
+          <XmlEnumProperty>
+            <ItemChoiceType>DecimalNumber</ItemChoiceType>
+            <ItemChoiceType>Number</ItemChoiceType>
+            <ItemChoiceType>Word</ItemChoiceType>
+            <ItemChoiceType>None</ItemChoiceType>
+          </XmlEnumProperty>&lt;xml&gt;Hello XML&lt;/xml&gt;<XmlNamespaceDeclarationsProperty>XmlNamespaceDeclarationsPropertyValue</XmlNamespaceDeclarationsProperty><XmlElementPropertyNode xmlns=""http://element"">1</XmlElementPropertyNode><CustomXmlArrayProperty xmlns=""http://mynamespace""><string>one</string><string>two</string><string>three</string></CustomXmlArrayProperty></AttributeTesting>",
+            () => { return new XmlSerializer(typeof(XmlSerializerAttributes), "MycustomDefaultNamespace"); });
+
+        Assert.StrictEqual(value.EnumType, actual.EnumType);
+        Assert.StrictEqual(value.MyChoice, actual.MyChoice);
+        Assert.Equal(value.XmlArrayProperty[0], actual.XmlArrayProperty[0]);
+        Assert.Equal(value.XmlArrayProperty[1], actual.XmlArrayProperty[1]);
+        Assert.Equal(value.XmlArrayProperty[2], actual.XmlArrayProperty[2]);
+        Assert.StrictEqual(value.XmlAttributeProperty, actual.XmlAttributeProperty);
+        Assert.StrictEqual(value.XmlElementProperty, actual.XmlElementProperty);
+        Assert.Equal(value.XmlEnumProperty, actual.XmlEnumProperty);
+        Assert.StrictEqual(value.XmlIncludeProperty, actual.XmlIncludeProperty);
+        Assert.StrictEqual(value.XmlNamespaceDeclarationsProperty, actual.XmlNamespaceDeclarationsProperty);
+        Assert.StrictEqual(value.XmlTextProperty, actual.XmlTextProperty);
+    }
+
+    [Fact]
+    public static void Xml_TypeWithIndirectReferencedAssembly()
+    {
+        // TypeWithIndirectRef class has a dependency on Task, which is in System.Threading.Tasks, an assembly that's indirectly referenced.
+        var value = new DirectRef.TypeWithIndirectRef() { Name = "Foo" };
+        var actual = SerializeAndDeserialize(value, @"<?xml version=""1.0""?>
+    <TypeWithIndirectRef xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+      <Name>Foo</Name>
+    </TypeWithIndirectRef>");
+        Assert.StrictEqual(value.Name, actual.Name);
+    }
+
+    [Fact]
+    public static void Xml_NookTypes()
+    {
+        NookAppLocalState value = new NookAppLocalState() { ArticleViewCount = 1, CurrentlyReadingProductEAN = "Current", CurrentPaymentType = NookAppLocalState.PaymentType.Microsoft, IsFirstRun = true, PreviousSearchQueries = new List<string>(new string[] { "one", "two" }), TextColor = System.Drawing.Color.FromArgb(3, 4, 5, 6) };
+        value.LocalReadingPositionState = new List<LocalReadingPosition>();
+        value.LocalReadingPositionState.Add(new LocalReadingPosition() { Ean = "Ean", LastReadTime = new DateTime(2013, 1, 2), PageCount = 1, PageNumber = "1", PlatformOffset = "offset" });
+
+        var deserializedValue = SerializeAndDeserialize<NookAppLocalState>(value, "<?xml version=\"1.0\"?>\r\n<NookAppLocalState xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\r\n  <TextColor>\r\n    <A>3</A>\r\n    <B>6</B>\r\n    <G>5</G>\r\n    <R>4</R>\r\n  </TextColor>\r\n  <ArticleViewCount>1</ArticleViewCount>\r\n  <CurrentlyReadingProductEAN>Current</CurrentlyReadingProductEAN>\r\n  <CurrentPaymentType>Microsoft</CurrentPaymentType>\r\n  <IsFirstRun>true</IsFirstRun>\r\n  <LocalReadingPositionState>\r\n    <LocalReadingPosition>\r\n      <Ean>Ean</Ean>\r\n      <LastReadTime>2013-01-02T00:00:00</LastReadTime>\r\n      <PageCount>1</PageCount>\r\n      <PageNumber>1</PageNumber>\r\n      <PlatformOffset>offset</PlatformOffset>\r\n    </LocalReadingPosition>\r\n  </LocalReadingPositionState>\r\n  <PreviousSearchQueries>\r\n    <string>one</string>\r\n    <string>two</string>\r\n  </PreviousSearchQueries>\r\n  <IsFirstRunDuplicate>false</IsFirstRunDuplicate>\r\n</NookAppLocalState>", null, true);
+
+        Assert.StrictEqual(deserializedValue.ArticleViewCount, value.ArticleViewCount);
+        Assert.StrictEqual(deserializedValue.CurrentlyReadingProductEAN, value.CurrentlyReadingProductEAN);
+        Assert.StrictEqual(deserializedValue.CurrentPaymentType, value.CurrentPaymentType);
+        Assert.StrictEqual(deserializedValue.IsFirstRun, value.IsFirstRun);
+    }
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {
