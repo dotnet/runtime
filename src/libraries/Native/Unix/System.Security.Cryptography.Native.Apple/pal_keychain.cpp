@@ -67,6 +67,15 @@ extern "C" int32_t AppleCryptoNative_SecKeychainOpen(const char* pszKeychainPath
     return SecKeychainOpen(pszKeychainPath, pKeychainOut);
 }
 
+extern "C" int32_t AppleCryptoNative_SetKeychainNeverLock(SecKeychainRef keychain)
+{
+    SecKeychainSettings settings = {
+        .version = SEC_KEYCHAIN_SETTINGS_VERS1, .useLockInterval = 0, .lockOnSleep = 0, .lockInterval = INT_MAX,
+    };
+
+    return SecKeychainSetSettings(keychain, &settings);
+}
+
 static int32_t
 EnumerateKeychain(SecKeychainRef keychain, CFStringRef matchType, CFArrayRef* pCertsOut, int32_t* pOSStatus)
 {
