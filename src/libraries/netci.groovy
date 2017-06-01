@@ -341,8 +341,8 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Set up triggers
                 if (isPR) {
                     targetGroupString = targetGroupString.replaceAll('_', ' ');
-                    // Set PR trigger only run netfx jobs automatically on every PR, the other legs are covered by the new portable pipeline legs
-                    if (targetGroup == 'netfx') {
+                    // Set PR trigger only run netfx jobs automatically on every PR, the other legs except OSX10.12 are covered by the new portable pipeline legs
+                    if (targetGroup == 'netfx' || osName == 'OSX10.12') {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${targetGroupString}${osName} ${configurationGroup} ${archGroup} Build and Test")
                     }
                     else {
