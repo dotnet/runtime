@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)uwp/build.proj" Condition="'$(OSGroup)' == 'Windows_NT' and '$(TargetArchitecture)' != 'arm64'"/>
     <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
     <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" />
   </ItemGroup>
