@@ -13,9 +13,15 @@ namespace System.Runtime.InteropServices
     public static class RuntimeEnvironmentTest
     {
         [Fact]
-        public static void RuntimeEnvironmentPosTest()
+        public static void RuntimeEnvironmentRuntimeDirectory()
         {
             Assert.True(Directory.Exists(RuntimeEnvironment.GetRuntimeDirectory()));
+        }
+
+        [Fact]
+        [ActiveIssue(20600, TargetFrameworkMonikers.UapAot)]
+        public static void RuntimeEnvironmentSysVersion()
+        {            
             Assert.True(!String.IsNullOrEmpty(RuntimeEnvironment.GetSystemVersion()));
         }
 
