@@ -337,16 +337,18 @@ get_virtual_method (RuntimeMethod *runtime_method, MonoObject *obj)
 {
 	MonoMethod *m = runtime_method->method;
 	MonoDomain *domain = runtime_method->domain;
+	RuntimeMethod *ret = NULL;
 	MonoError error;
 
-	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-		RuntimeMethod *ret = NULL;
 #ifndef DISABLE_REMOTING
-		if (mono_object_is_transparent_proxy (obj)) {
-			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_remoting_invoke (m), &error);
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-		} else
+	if (mono_object_is_transparent_proxy (obj)) {
+		ret = mono_interp_get_runtime_method (domain, mono_marshal_get_remoting_invoke (m), &error);
+		mono_error_assert_ok (&error);
+		return ret;
+	}
 #endif
+
+	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
 		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
 			ret = mono_interp_get_runtime_method (domain, mono_marshal_get_synchronized_wrapper (m), &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
