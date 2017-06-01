@@ -340,7 +340,7 @@ for testcase in ${tests[@]}; do
     echo "----------"
     echo "  Running $testname"
     echo "----------"
-    run_command $stabilityPrefix ./corerun PerfHarness.dll $test --perf:runid Perf --perf:collect $collectionflags || exit 1
+    run_command $stabilityPrefix ./corerun PerfHarness.dll $test --perf:runid Perf --perf:collect $collectionflags 1>"Perf-$filename.log" 2>&1 || exit 1
     if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
         run_command python3.5 "$BENCHVIEW_TOOLS_PATH/measurement.py" xunit "Perf-$filename.xml" --better desc $hasWarmupRun --append || {
             echo [ERROR] Failed to generate BenchView data;
@@ -349,6 +349,10 @@ for testcase in ${tests[@]}; do
     fi
 
     # Rename file to be archived by Jenkins.
+    mv -f "Perf-$filename.log" "$CORECLR_REPO/Perf-$filename-$perfCollection.log" || {
+        echo [ERROR] Failed to move "Perf-$filename.log" to "$CORECLR_REPO".
+        exit 1;
+    }
     mv -f "Perf-$filename.xml" "$CORECLR_REPO/Perf-$filename-$perfCollection.xml" || {
         echo [ERROR] Failed to move "Perf-$filename.xml" to "$CORECLR_REPO".
         exit 1;

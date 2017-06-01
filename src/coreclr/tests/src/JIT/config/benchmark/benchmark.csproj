@@ -8,19 +8,19 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="xunit.performance.api">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>$(XUnitPerformanceApiVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.core">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>$(XUnitPerformanceApiVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.execution">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>$(XUnitPerformanceApiVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.performance.metrics">
-      <Version>1.0.0-beta-build0003</Version>
+      <Version>$(XUnitPerformanceApiVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <Version>1.0.3-alpha-experimental</Version>
+      <Version>$(MicrosoftDiagnosticsTracingLibraryVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
       <Version>2.0.0-preview2-25302-03</Version>
@@ -95,7 +95,7 @@
       <Version>$(XunitPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.console.netcore">
-      <Version>1.0.2-prerelease-00177</Version>
+      <Version>$(XUnitConsoleNetCoreVersion)</Version>
     </PackageReference>
     <PackageReference Include="xunit.runner.utility">
       <Version>$(XunitPackageVersion)</Version>
@@ -110,5 +110,5 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <Target Name="Build"
-     DependsOnTargets="ResolveReferences" /> 
+     DependsOnTargets="ResolveReferences" />
 </Project>

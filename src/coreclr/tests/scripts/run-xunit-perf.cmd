@@ -6,7 +6,6 @@
 @if defined _echo echo on
 
 setlocal ENABLEDELAYEDEXPANSION
-setlocal
   set ERRORLEVEL=
   set BENCHVIEW_RUN_TYPE=local
   set CORECLR_REPO=%CD%
@@ -45,7 +44,6 @@ setlocal
   rem find and stage the tests
   set /A "LV_FAILURES=0"
   for /R %CORECLR_PERF% %%T in (*.%TEST_FILE_EXT%) do (
-    rem Skip known failures
     call :run_benchmark %%T || (
       set /A "LV_FAILURES+=1"
     )
@@ -73,12 +71,10 @@ setlocal
   set BENCHDIR=%~p1
 
   rem copy benchmark and any input files
-  call :run_cmd xcopy /s %~1 . >> %RUNLOG%  || exit /b 1
+  call :run_cmd xcopy /sy %~1 . >> %RUNLOG%  || exit /b 1
   if exist "%BENCHDIR%*.txt" (
-    call :run_cmd xcopy /s %BENCHDIR%*.txt . >> %RUNLOG%  || exit /b 1
+    call :run_cmd xcopy /sy %BENCHDIR%*.txt . >> %RUNLOG%  || exit /b 1
   )
-
-  set CORE_ROOT=%CORECLR_REPO%\sandbox
 
   rem setup additional environment variables
   if DEFINED TEST_ENV (
@@ -87,12 +83,25 @@ setlocal
     )
   )
 
-  set BENCHNAME_LOG_FILE_NAME=%BENCHNAME%.log
+  echo/
+  echo/  ----------
+  echo/  Running %BENCHNAME%
+  echo/  ----------
+
+  rem CORE_ROOT environment variable is used by some benchmarks such as Roslyn / CscBench.
+  set CORE_ROOT=%CORECLR_REPO%\sandbox
+
+  set LV_RUNID=Perf-%ETW_COLLECTION%
+  set BENCHNAME_LOG_FILE_NAME=%LV_RUNID%-%BENCHNAME%.log
+  set LV_CMD=
   if defined IS_SCENARIO_TEST (
-    call :run_cmd corerun.exe "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid Perf 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
+    set "LV_CMD=corerun.exe "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid "%LV_RUNID%""
   ) else (
-    call :run_cmd %STABILITY_PREFIX% corerun.exe PerfHarness.dll "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid Perf --perf:collect %COLLECTION_FLAGS% 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
+    set "LV_CMD=%STABILITY_PREFIX% corerun.exe PerfHarness.dll "%CORECLR_REPO%\sandbox\%BENCHNAME%.%TEST_FILE_EXT%" --perf:runid "%LV_RUNID%" --perf:collect %COLLECTION_FLAGS%"
   )
+
+  call :print_to_console $ !LV_CMD!
+  call :run_cmd !LV_CMD! 1>"%BENCHNAME_LOG_FILE_NAME%" 2>&1
 
   IF %ERRORLEVEL% NEQ 0 (
     call :print_error corerun.exe exited with %ERRORLEVEL% code.
@@ -103,14 +112,13 @@ setlocal
   rem optionally generate results for benchview
   if exist "%BENCHVIEW_PATH%" (
     call :generate_results_for_benchview || exit /b 1
-  ) 
+  )
 
   rem Save off the results to the root directory for recovery later in Jenkins
-  IF EXIST "Perf-*%BENCHNAME%.xml" (
-    call :run_cmd copy "Perf-*%BENCHNAME%.xml" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.xml" || exit /b 1
-  )
-  IF EXIST "Perf-*%BENCHNAME%.etl" (
-    call :run_cmd copy "Perf-*%BENCHNAME%.etl" "%CORECLR_REPO%\Perf-%BENCHNAME%-%ETW_COLLECTION%.etl" || exit /b 1
+  for %%e in (xml etl log) do (
+    IF EXIST ".\%LV_RUNID%-%BENCHNAME%.%%e" (
+      call :run_cmd xcopy /vy ".\%LV_RUNID%-%BENCHNAME%.%%e" .. || exit /b 1
+    )
   )
 
   exit /b 0
@@ -219,7 +227,7 @@ rem   Sets the test architecture.
 rem ****************************************************************************
   set TEST_ARCH=%TEST_ARCHITECTURE%
   exit /b 0
-  
+
 :verify_benchview_tools
 rem ****************************************************************************
 rem   Verifies that the path to the benchview tools is correct.
@@ -231,7 +239,7 @@ rem ****************************************************************************
     )
   )
   exit /b 0
-  
+
 :verify_core_overlay
 rem ****************************************************************************
 rem   Verify that the Core_Root folder exist.
@@ -243,7 +251,7 @@ rem ****************************************************************************
   )
   exit /b 0
 
-  :set_collection_config
+:set_collection_config
 rem ****************************************************************************
 rem   Set's the config based on the providers used for collection
 rem ****************************************************************************
@@ -254,7 +262,7 @@ rem ****************************************************************************
   )
   exit /b 0
 
-  
+
 :set_perf_run_log
 rem ****************************************************************************
 rem   Sets the script's output log file.
@@ -271,7 +279,7 @@ rem ****************************************************************************
 rem   Creates the sandbox folder used by the script to copy binaries locally,
 rem   and execute benchmarks.
 rem ****************************************************************************
-  if exist sandbox rd /s /q sandbox
+  if exist sandbox rmdir /s /q sandbox
   if exist sandbox call :print_error Failed to remove the sandbox folder& exit /b 1
   if not exist sandbox mkdir sandbox
   if not exist sandbox call :print_error Failed to create the sandbox folder& exit /b 1
@@ -293,7 +301,7 @@ rem ****************************************************************************
   set LV_MEASUREMENT_ARGS=%LV_MEASUREMENT_ARGS% --append
 
   for /f %%f in ('dir /b Perf-*%BENCHNAME%.xml 2^>nul') do (
-    call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% %%f 
+    call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% %%f
 
     IF !ERRORLEVEL! NEQ 0 (
       call :print_error Failed to generate BenchView measurement data.
@@ -322,7 +330,7 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
 
   call :run_cmd py.exe "%BENCHVIEW_PATH%\submission.py" measurement.json %LV_SUBMISSION_ARGS%
-  
+
   IF %ERRORLEVEL% NEQ 0 (
     call :print_error Creating BenchView submission data failed.
     exit /b 1
@@ -360,7 +368,7 @@ rem ****************************************************************************
   echo -collectionFlags This is used to specify what collectoin flags get passed to the performance
   echo harness that is doing the test running.  If this is not specified we only use stopwatch.
   echo Other flags are "default", which is the whatever the test being run specified, "CacheMisses",
-  echo "BranchMispredictions", and "InstructionsRetired".  
+  echo "BranchMispredictions", and "InstructionsRetired".
   exit /b %ERRORLEVEL%
 
 :print_error
@@ -368,19 +376,17 @@ rem ****************************************************************************
 rem   Function wrapper that unifies how errors are output by the script.
 rem   Functions output to the standard error.
 rem ****************************************************************************
-  echo [%DATE%][%TIME:~0,-3%][ERROR] %*   1>&2
+  call :print_to_console [ERROR] %*   1>&2
   exit /b %ERRORLEVEL%
 
 :print_to_console
 rem ****************************************************************************
-rem   Sends text to the console screen, no matter what (even when the script's
-rem   output is redirected). This can be useful to provide information on where
-rem   the script is executing.
+rem   Sends text to the console screen. This can be useful to provide
+rem   information on where the script is executing.
 rem ****************************************************************************
-  if defined _debug (
-    echo [%DATE%][%TIME:~0,-3%] %* >CON
-  )
-  echo [%DATE%][%TIME:~0,-3%] %*
+  echo/
+  echo/%USERNAME%@%COMPUTERNAME% "%CD%"
+  echo/[%DATE%][%TIME:~0,-3%] %*
   exit /b %ERRORLEVEL%
 
 :run_cmd
@@ -396,9 +402,3 @@ rem ****************************************************************************
   call :print_to_console $ %*
   call %*
   exit /b %ERRORLEVEL%
-
-:skip_failures
-rem ****************************************************************************
-rem   Skip known failures
-rem ****************************************************************************
-  exit /b 0
