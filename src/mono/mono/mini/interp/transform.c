@@ -2565,11 +2565,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 
 			MonoClass *field_klass = mono_class_from_mono_type (field->type);
 			mt = mint_type (&field_klass->byval_arg);
+#ifndef DISABLE_REMOTING
 			if (klass->marshalbyref) {
 				g_assert (!is_static);
 				ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDRMFLD_VT :  MINT_LDRMFLD);
 				ADD_CODE(&td, get_data_item_index (&td, field));
-			} else  {
+			} else
+#endif
+			{
 				if (is_static) {
 					ADD_CODE (&td, MINT_POP);
 					ADD_CODE (&td, 0);
@@ -2605,11 +2608,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			mono_class_init (klass);
 			mt = mint_type(field->type);
 
+#ifndef DISABLE_REMOTING
 			if (klass->marshalbyref) {
 				g_assert (!is_static);
 				ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_STRMFLD_VT : MINT_STRMFLD);
 				ADD_CODE(&td, get_data_item_index (&td, field));
-			} else  {
+			} else
+#endif
+			{
 				if (is_static) {
 					ADD_CODE (&td, MINT_POP);
 					ADD_CODE (&td, 1);
