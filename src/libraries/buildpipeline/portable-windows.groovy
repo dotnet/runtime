@@ -9,7 +9,9 @@ def submittedHelixJson = null
 
 simpleNode('Windows_NT','latest') {
     stage ('Checkout source') {
-        checkout scm
+        retry (10) {
+            checkout scm
+        }
     }
 
     def logFolder = getLogFolder()
