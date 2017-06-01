@@ -696,7 +696,9 @@ private:
 
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
+    RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
 #endif
+    bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
