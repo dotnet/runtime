@@ -7,12 +7,12 @@
 """
 
 import argparse
-import json
 import os
 from os import path
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 # Display the docstring if the user passes -h|--help
 argparse.ArgumentParser(description=__doc__).parse_args()
@@ -24,8 +24,8 @@ NUGET_SRC_DIR = path.join(REPO_ROOT, 'src', '.nuget')
 assert path.exists(NUGET_SRC_DIR), \
     "Expected %s to exist; please check whether REPO_ROOT is really %s" % (NUGET_SRC_DIR, REPO_ROOT)
 
-ORIGIN_FILE = path.join(SCRIPT_ROOT, 'project.json')
-TARGET_FILE = path.join(NUGET_SRC_DIR, 'optdata', 'project.json')
+ORIGIN_FILE = path.join(SCRIPT_ROOT, 'optdata.csproj')
+TARGET_FILE = path.join(NUGET_SRC_DIR, 'optdata', 'optdata.csproj')
 
 ARCH_LIST = ['x64', 'x86']
 TOOL_LIST = ['IBC', 'PGO']
@@ -40,9 +40,12 @@ def get_buildos():
 
 def get_optdata_version(tool):
     """Returns the version string specified in project.json for the given tool."""
-    package_name = 'optimization.%s.CoreCLR' % (tool)
-    with open(ORIGIN_FILE) as json_file:
-        return json.load(json_file)['dependencies'][package_name]
+    element_name = {
+        'IBC': 'IbcDataPackageVersion',
+        'PGO': 'PgoDataPackageVersion',
+    }[tool]
+    root = ET.parse(ORIGIN_FILE)
+    return root.findtext('./PropertyGroup/{}'.format(element_name))
 
 def get_optdata_dir(tool, arch):
     """Returns an absolute path to the directory that should contain optdata given a tool,arch"""

@@ -236,21 +236,6 @@ REM === Restore optimization profile data
 REM ===
 REM =========================================================================================
 
-REM Parse the package version out of project.json so that we can pass it on to CMake
-where /q python || (
-    echo %__MsgPrefix%Error: Python not found on PATH, please make sure that it is installed.
-    exit /b 1
-)
-set OptDataProjectJsonPath=%__ProjectDir%\src\.nuget\optdata\project.json
-if EXIST "%OptDataProjectJsonPath%" (
-    for /f "tokens=*" %%s in ('python "%__ProjectDir%\extract-from-json.py" -rf "%OptDataProjectJsonPath%" dependencies optimization.PGO.CoreCLR') do @(
-        set __PgoOptDataVersion=%%s
-    )
-    for /f "tokens=*" %%s in ('python "%__ProjectDir%\extract-from-json.py" -rf "%OptDataProjectJsonPath%" dependencies optimization.IBC.CoreCLR') do @(
-        set __IbcOptDataVersion=%%s
-    )
-)
-
 if %__RestoreOptData% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
     @call %__ProjectDir%\run.cmd sync -optdata
@@ -258,6 +243,20 @@ if %__RestoreOptData% EQU 1 (
         echo %__MsgPrefix%Error: Failed to restore the optimization data package.
         exit /b 1
     )
+)
+
+REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
+set DotNetCli=%__ProjectDir%\Tools\dotnetcli\dotnet.exe
+if not exist "%DotNetCli%" (
+    echo Assertion failed: dotnet.exe not found at path "%DotNetCli%"
+    exit /b 1
+)
+set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
+for /f "tokens=*" %%s in ('%DotNetCli% msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo') do @(
+    set __PgoOptDataVersion=%%s
+)
+for /f "tokens=*" %%s in ('%DotNetCli% msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo') do @(
+    set __IbcOptDataVersion=%%s
 )
 
 REM =========================================================================================

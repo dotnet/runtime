@@ -20,6 +20,8 @@ function(add_pgo TargetName)
         "${CLR_CMAKE_PACKAGES_DIR}/${CLR_CMAKE_OPTDATA_PACKAGEWITHRID}/${CLR_CMAKE_OPTDATA_VERSION}/data/${ProfileFileName}"
         ProfilePath
     )
+    # NuGet packages are restored to lowercase paths
+    string(TOLOWER "${ProfilePath}" ProfilePath)
 
     if(CLR_CMAKE_PGO_INSTRUMENT)
         if(WIN32)
@@ -40,7 +42,7 @@ function(add_pgo TargetName)
             else(WIN32)
                 if(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
                     if(HAVE_LTO)
-                        target_compile_options(${TargetName} PRIVATE -flto -fprofile-instr-use=${ProfilePath})
+                        target_compile_options(${TargetName} PRIVATE -flto -fprofile-instr-use=${ProfilePath} -Wno-profile-instr-out-of-date)
                         set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS " -flto -fuse-ld=gold -fprofile-instr-use=${ProfilePath}")
                     endif(HAVE_LTO)
                 endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
