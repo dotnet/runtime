@@ -36,7 +36,7 @@ Ready? Set? Let's go!</String>
   <String Id="ModifyCloseButton">&amp;Close</String>
   <String Id="SuccessRepairHeader">Repair Successfully Completed</String>
   <String Id="SuccessUninstallHeader">Uninstall Successfully Completed</String>
-  <String Id="SuccessInstallHeader">Installation Successfully Completed</String>
+  <String Id="SuccessInstallHeader">Installation was successful</String>
   <String Id="SuccessHeader">Setup Successful</String>
   <String Id="SuccessLaunchButton">&amp;Launch</String>
   <String Id="SuccessRestartText">You must restart your computer before you can use the software.</String>
@@ -56,4 +56,17 @@ Ready? Set? Let's go!</String>
   <String Id="FilesInUseDontCloseRadioButton">&amp;Do not close applications. A reboot will be required.</String>
   <String Id="FilesInUseOkButton">&amp;OK</String>
   <String Id="FilesInUseCancelButton">&amp;Cancel</String>
+  <String Id="WelcomeHeaderMessage">.NET Core Runtime</String>
+  <String Id="WelcomeDescription">.NET Core is a development platform that you can use to build command-line applications, microservices and modern websites. It is open source, cross-platform, and supported by Microsoft. We hope you enjoy it!</String>
+  <String Id="LearnMoreTitle">Learn more about .NET Core</String>
+  <String Id="SuccessInstallLocation">The following was installed at [DOTNETHOME]</String>
+  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
+  <String Id="ResourcesHeader">Resources</String>
+  <String Id="DocumentationLink">&lt;A HREF=&quot;https://aka.ms/dotnet-docs&quot;&gt;Documentation&lt;/A&gt;</String>
+  <String Id="RelaseNotesLink">&lt;A HREF=&quot;https://aka.ms/20-p2-rel-notes&quot;&gt;Release Notes&lt;/A&gt;</String>
+  <String Id="TutorialLink">&lt;A HREF=&quot;https://aka.ms/dotnet-tutorials&quot;&gt;Tutorials&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF=&quot;https://aka.ms/dotnet-cli-telemetry&quot;&gt;.NET Core Telemetry&lt;/A&gt;</String>
+  <String Id="PrivacyStatementLink">&lt;A HREF=&quot;https://aka.ms/dev-privacy&quot;&gt;Privacy Statement&lt;/A&gt;</String>
+  <String Id="MITLicenseLink">&lt;A HREF=&quot;https://aka.ms/dotnet-license&quot;&gt;MIT License&lt;/A&gt;</String>
+  
 </WixLocalization>

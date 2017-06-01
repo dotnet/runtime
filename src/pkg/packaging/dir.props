@@ -23,10 +23,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ProductBrandPrefix>Microsoft .NET Core $(ProductionVersion)</ProductBrandPrefix>
-    <ProductBrandPrefix Condition="'$(ReleaseBrandSuffix)'!=''">Microsoft .NET Core $(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandPrefix>
-    <SharedHostBrandName>$(ProductBrandPrefix) Host</SharedHostBrandName>
-    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver</HostFxrBrandName>
-    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime</SharedFrameworkBrandName>
+    <ProductBrandPrefix>Microsoft .NET Core</ProductBrandPrefix>
+    <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
+    <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
+    <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
+    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
+    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
   </PropertyGroup>
 </Project>
