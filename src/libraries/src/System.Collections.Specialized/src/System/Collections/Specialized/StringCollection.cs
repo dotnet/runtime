@@ -11,7 +11,7 @@ namespace System.Collections.Specialized
     [Serializable]
     public class StringCollection : IList
     {
-        private readonly ArrayList _data = new ArrayList();
+        private readonly ArrayList data = new ArrayList(); // Do not rename (binary serialization)
 
         /// <devdoc>
         /// <para>Represents the entry at the specified index of the <see cref='System.Collections.Specialized.StringCollection'/>.</para>
@@ -20,11 +20,11 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return ((string)_data[index]);
+                return ((string)data[index]);
             }
             set
             {
-                _data[index] = value;
+                data[index] = value;
             }
         }
 
@@ -36,7 +36,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return _data.Count;
+                return data.Count;
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public int Add(string value)
         {
-            return _data.Add(value);
+            return data.Add(value);
         }
 
         /// <devdoc>
@@ -75,7 +75,7 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            _data.AddRange(value);
+            data.AddRange(value);
         }
 
         /// <devdoc>
@@ -84,7 +84,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void Clear()
         {
-            _data.Clear();
+            data.Clear();
         }
 
         /// <devdoc>
@@ -94,7 +94,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public bool Contains(string value)
         {
-            return _data.Contains(value);
+            return data.Contains(value);
         }
 
         /// <devdoc>
@@ -103,7 +103,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void CopyTo(string[] array, int index)
         {
-            _data.CopyTo(array, index);
+            data.CopyTo(array, index);
         }
 
         /// <devdoc>
@@ -121,7 +121,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public int IndexOf(string value)
         {
-            return _data.IndexOf(value);
+            return data.IndexOf(value);
         }
 
         /// <devdoc>
@@ -130,7 +130,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void Insert(int index, string value)
         {
-            _data.Insert(index, value);
+            data.Insert(index, value);
         }
 
         /// <devdoc>
@@ -163,7 +163,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void Remove(string value)
         {
-            _data.Remove(value);
+            data.Remove(value);
         }
 
         /// <devdoc>
@@ -171,7 +171,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void RemoveAt(int index)
         {
-            _data.RemoveAt(index);
+            data.RemoveAt(index);
         }
 
         /// <devdoc>
@@ -181,7 +181,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                return _data.SyncRoot;
+                return data.SyncRoot;
             }
         }
 
@@ -225,12 +225,12 @@ namespace System.Collections.Specialized
 
         void ICollection.CopyTo(Array array, int index)
         {
-            _data.CopyTo(array, index);
+            data.CopyTo(array, index);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _data.GetEnumerator();
+            return data.GetEnumerator();
         }
     }
 

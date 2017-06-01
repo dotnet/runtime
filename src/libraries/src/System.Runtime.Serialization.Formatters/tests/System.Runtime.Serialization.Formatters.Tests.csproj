@@ -10,7 +10,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="BinaryFormatterTestData.cs" />
     <Compile Include="BinaryFormatterTests.cs" />
+    <Compile Include="EqualityExtensions.cs" />
     <Compile Include="OptionalFieldAttributeTests.cs" />
     <Compile Include="FormatterConverterTests.cs" />
     <Compile Include="FormatterServicesTests.cs" />
