@@ -44,15 +44,13 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj"/>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <TargetGroup>uapaot</TargetGroup>
-    </ProjectReference>
-    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
-      <TargetGroup>uapaot</TargetGroup>
-    </ProjectReference>
+    </ProjectReference>  
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
