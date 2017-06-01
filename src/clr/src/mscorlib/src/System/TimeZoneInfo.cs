@@ -1012,7 +1012,24 @@ namespace System
 
         void IDeserializationCallback.OnDeserialization(object sender)
         {
-            throw new PlatformNotSupportedException();
+            try
+            {
+                bool adjustmentRulesSupportDst;
+                ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out adjustmentRulesSupportDst);
+
+                if (adjustmentRulesSupportDst != _supportsDaylightSavingTime)
+                {
+                    throw new SerializationException(SR.Format(SR.Serialization_CorruptField, "SupportsDaylightSavingTime"));
+                }
+            }
+            catch (ArgumentException e)
+            {
+                throw new SerializationException(SR.Serialization_InvalidData, e);
+            }
+            catch (InvalidTimeZoneException e)
+            {
+                throw new SerializationException(SR.Serialization_InvalidData, e);
+            }
         }
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
