@@ -266,6 +266,10 @@ typedef enum {
 	CallType_OneWay = 3
 } MonoCallType;
 
+/* MonoSafeHandle is in class-internals.h. */
+/* Safely access System.Net.Sockets.SafeSocketHandle from native code */
+TYPED_HANDLE_DECL (MonoSafeHandle);
+
 /* This corresponds to System.Type */
 struct _MonoReflectionType {
 	MonoObject object;
