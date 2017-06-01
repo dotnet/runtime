@@ -362,7 +362,7 @@ build_cross_arch_component()
 isMSBuildOnNETCoreSupported()
 {
     # This needs to be updated alongwith corresponding changes to netci.groovy.
-    __isMSBuildOnNETCoreSupported=0
+    __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
 
     if [ "$__HostArch" == "x64" ]; then
         if [ "$__HostOS" == "Linux" ]; then
@@ -397,8 +397,6 @@ isMSBuildOnNETCoreSupported()
                 "alpine.3.4.3-x64")
                     __isMSBuildOnNETCoreSupported=1
                     ;;
-                *)
-                __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
             esac
         elif [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
