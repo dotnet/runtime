@@ -710,6 +710,18 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     return (st == 0);
 }
 
+// Gets the total number of processors on the machine, not taking
+// into account current process affinity.
+// Return:
+//  Number of processors on the machine
+uint32_t GCToOSInterface::GetTotalProcessorCount()
+{
+    // Calculated in GCToOSInterface::Initialize using
+    // sysconf(_SC_NPROCESSORS_ONLN)
+    return g_logicalCpuCount;
+}
+
+
 // Initialize the critical section
 void CLRCriticalSection::Initialize()
 {
