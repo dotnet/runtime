@@ -10,6 +10,7 @@ namespace System.Threading.Tests
     public class EtwTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20592", TargetFrameworkMonikers.UapAot)]
         public void TestEtw()
         {
             using (var listener = new TestEventListener("System.Threading.SynchronizationEventSource", EventLevel.Verbose))
