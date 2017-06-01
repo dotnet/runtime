@@ -107,9 +107,6 @@
     <Compile Include="PortedCommon\IOServices.cs" />
     <Compile Include="PortedCommon\PathInfo.cs" />
     <Compile Include="PortedCommon\ReparsePointUtilities.cs" />
-    <Compile Include="PortedCommon\TemporaryDirectory.cs" />
-    <Compile Include="PortedCommon\TemporaryFile.cs" />
-    <Compile Include="PortedCommon\TemporaryFileSystemItem.cs" />
     <Compile Include="DirectoryInfo\EnumerableAPIs.cs" />
     <Compile Include="DirectoryInfo\GetDirectories.cs" />
     <Compile Include="DirectoryInfo\GetFiles.cs" />
