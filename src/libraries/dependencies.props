@@ -9,12 +9,12 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>8196c7b91bed48e2fc47fbdea50b4d75d147f7ce</CoreFxCurrentRef>
+    <CoreFxCurrentRef>1866e93876b2be2d63165de0cc54102e992326bc</CoreFxCurrentRef>
     <CoreClrCurrentRef>8488beaa77db7c9194226043d1616488e98eb9b3</CoreClrCurrentRef>
     <CoreSetupCurrentRef>8488beaa77db7c9194226043d1616488e98eb9b3</CoreSetupCurrentRef>
     <ExternalCurrentRef>5a0606fccb09fce4b47545ae9896139acca547f5</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>8196c7b91bed48e2fc47fbdea50b4d75d147f7ce</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>8196c7b91bed48e2fc47fbdea50b4d75d147f7ce</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>1866e93876b2be2d63165de0cc54102e992326bc</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>1866e93876b2be2d63165de0cc54102e992326bc</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>97059fa979a3c8fb8b9fba127c526f15e48c9dde</SniCurrentRef>
     <StandardCurrentRef>46f35127629b164ba18c7dc6bf80cf523fc4e35a</StandardCurrentRef>
   </PropertyGroup>
@@ -22,12 +22,12 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
-    <CoreFxExpectedPrerelease>preview1-25330-06</CoreFxExpectedPrerelease>
+    <CoreFxExpectedPrerelease>preview1-25401-02</CoreFxExpectedPrerelease>
     <CoreClrPackageVersion>2.1.0-preview1-25331-03</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25322-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25331-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25331-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25331-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25401-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25401-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25401-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.1.0-preview1-25331-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview1-25331-02</MicrosoftNETCoreAppPackageVersion>
