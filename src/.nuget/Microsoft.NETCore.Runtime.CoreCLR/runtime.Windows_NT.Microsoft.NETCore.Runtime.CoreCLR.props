@@ -2,8 +2,8 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
-    <LongNamePlatform>$(PackagePlatform)</LongNamePlatform>
-    <LongNamePlatform Condition="'$(LongNamePlatform)'=='x64'">amd64</LongNamePlatform>
+    <LongNamePlatform>$(Platform)</LongNamePlatform>
+    <LongNamePlatform Condition="'$(Platform)'=='x64'">amd64</LongNamePlatform>
     <CrossTargetPlatform>$(CrossTargetComponentFolder)</CrossTargetPlatform>
     <CrossTargetPlatform Condition="'$(CrossTargetPlatform)'=='x64'">amd64</CrossTargetPlatform>
     <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).0$(BuildNumberMinor)</LongNameSuffix>
