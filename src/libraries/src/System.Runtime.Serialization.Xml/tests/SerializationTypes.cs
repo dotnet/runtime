@@ -5185,3 +5185,47 @@ public class Manager : EmployeeC
     [DataMember]
     public EmployeeC[] emps;
 }
+
+[Serializable]
+public class MyArgumentException : Exception, ISerializable
+{
+    private string _paramName;
+
+    public MyArgumentException() : base() { }
+
+    public MyArgumentException(string message) : base(message)
+    {
+    }
+
+    public MyArgumentException(string message, string paramName) : base(message)
+    {
+        _paramName = paramName;
+    }
+
+    protected MyArgumentException(SerializationInfo info, StreamingContext context) : base(info, context) {
+        _paramName = info.GetString("ParamName");
+    }
+
+    public string ParamName
+    {
+        get
+        {
+            return _paramName;
+        }
+        internal set
+        {
+            _paramName = value;
+        }
+    }
+
+    public override void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        if (info == null)
+        {
+            throw new ArgumentNullException("info");
+        }
+
+        base.GetObjectData(info, context);
+        info.AddValue("ParamName", _paramName, typeof(string));
+    }
+}
