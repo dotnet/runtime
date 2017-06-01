@@ -22,6 +22,7 @@ namespace System.Diagnostics.Tests
         /// the events you want.
         /// </summary>
         [Fact]
+        [ActiveIssue(20579,TargetFrameworkMonikers.UapAot)]
         public void TestSpecificEvents()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -103,6 +104,7 @@ namespace System.Diagnostics.Tests
         /// Test that things work properly for Linux newline conventions. 
         /// </summary>
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot,"This is linux specific test")]
         public void LinuxNewLineConventions()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -159,6 +161,7 @@ namespace System.Diagnostics.Tests
         /// Tests what happens when you wildcard the source name (empty string)
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestWildCardSourceName()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -220,6 +223,7 @@ namespace System.Diagnostics.Tests
         /// Tests what happens when you wildcard event name (but not the source name) 
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestWildCardEventName()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -276,6 +280,7 @@ namespace System.Diagnostics.Tests
         /// ignored.  
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestNulls()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -354,6 +359,7 @@ namespace System.Diagnostics.Tests
         /// of the payload object.  
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestNoImplicitTransforms()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -384,6 +390,7 @@ namespace System.Diagnostics.Tests
         /// Tests what happens when wacky characters are used in property specs.  
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestBadProperties()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -443,6 +450,7 @@ namespace System.Diagnostics.Tests
         /// Tests the feature to send the messages as EventSource Activities.  
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestActivities()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
@@ -513,6 +521,7 @@ namespace System.Diagnostics.Tests
         /// Tests that keywords that define shortcuts work.    
         /// </summary>
         [Fact]
+        [ActiveIssue(20579, TargetFrameworkMonikers.UapAot)]
         public void TestShortcutKeywords()
         {
             using (var eventSourceListener = new TestDiagnosticSourceEventListener())
