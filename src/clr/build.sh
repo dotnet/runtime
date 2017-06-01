@@ -141,6 +141,16 @@ restore_optdata()
             echo "Failed to restore the optimization data package."
             exit 1
         fi
+
+        # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
+        local DotNetCli="$__ProjectRoot/Tools/dotnetcli/dotnet"
+        if [ ! -f $DotNetCli ]; then
+            echo "Assertion failed: dotnet CLI not found at '$DotNetCli'"
+            exit 1
+        fi
+        local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
+        __PgoOptDataVersion=$($DotNetCli msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo | sed 's/^\s*//')
+        __IbcOptDataVersion=$($DotNetCli msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion /nologo | sed 's/^\s*//')
     fi
 }
 
@@ -895,13 +905,6 @@ if [ $__CrossBuild == 1 ]; then
     if ! [[ -n "$ROOTFS_DIR" ]]; then
         export ROOTFS_DIR="$__ProjectRoot/cross/rootfs/$__BuildArch"
     fi
-fi
-
-# Parse the optdata package version from its project.json file
-optDataProjectJsonPath="$__ProjectRoot/src/.nuget/optdata/project.json"
-if [ -f $optDataProjectJsonPath ]; then
-    __PgoOptDataVersion=$("$__ProjectRoot/extract-from-json.py" -rf $optDataProjectJsonPath dependencies optimization.PGO.CoreCLR)
-    __IbcOptDataVersion=$("$__ProjectRoot/extract-from-json.py" -rf $optDataProjectJsonPath dependencies optimization.IBC.CoreCLR)
 fi
 
 # init the target distro name
