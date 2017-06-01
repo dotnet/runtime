@@ -35,6 +35,7 @@
 
   <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages">
     <Message Text="Building Targeting Pack" Importance="High" />
+    <Error  Text="BuildOS has not been specified. Please do that then run build again."  Condition="'$(BuildOS)' == 'AnyOS'" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.depproj" />
   </Target>
 
