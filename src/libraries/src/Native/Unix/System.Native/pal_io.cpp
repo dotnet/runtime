@@ -264,7 +264,7 @@ extern "C" int32_t SystemNative_Close(intptr_t fd)
 extern "C" intptr_t SystemNative_Dup(intptr_t oldfd)
 {
     int result;
-    while (CheckInterrupted(result = dup(ToFileDescriptor(oldfd))));
+    while (CheckInterrupted(result = fcntl(ToFileDescriptor(oldfd), F_DUPFD_CLOEXEC, 0)));
     return result;
 }
 
