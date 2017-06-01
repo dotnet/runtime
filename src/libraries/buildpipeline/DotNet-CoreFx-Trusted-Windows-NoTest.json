@@ -15,7 +15,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-path $(build.SourcesDirectory)\\corefx",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }\n\nif (Test-Path $path){\n    # in case corefx is still alive\n    .\\diag_tools\\handle.exe -accepteula $path\n }",
+        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    Stop-Process -processname msbuild\n    Stop-Process -processname vbcscompiler\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }\n",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
