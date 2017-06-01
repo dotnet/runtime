@@ -94,6 +94,7 @@ typedef struct _RuntimeMethod
 	MonoType *rtype;
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
+	MonoDomain *domain;
 } RuntimeMethod;
 
 struct _MonoInvocation {
@@ -114,7 +115,6 @@ struct _MonoInvocation {
 };
 
 typedef struct {
-	MonoDomain *domain;
 	MonoDomain *original_domain;
 	MonoInvocation *base_frame;
 	MonoInvocation *current_frame;

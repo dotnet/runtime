@@ -284,6 +284,7 @@ mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoErro
 
 	rtm = mono_domain_alloc0 (domain, sizeof (RuntimeMethod));
 	rtm->method = method;
+	rtm->domain = domain;
 	rtm->param_count = sig->param_count;
 	rtm->hasthis = sig->hasthis;
 	rtm->rtype = mini_get_underlying_type (sig->ret);
@@ -332,9 +333,10 @@ interp_pop_lmf (MonoLMFExt *ext)
 }
 
 static inline RuntimeMethod*
-get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObject *obj)
+get_virtual_method (RuntimeMethod *runtime_method, MonoObject *obj)
 {
 	MonoMethod *m = runtime_method->method;
+	MonoDomain *domain = runtime_method->domain;
 	MonoError error;
 
 	if ((m->flags & METHOD_ATTRIBUTE_FINAL) || !(m->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
@@ -583,7 +585,7 @@ fill_in_trace (MonoException *exception, MonoInvocation *frame)
 {
 	MonoError error;
 	char *stack_trace = dump_frame (frame);
-	MonoDomain *domain = mono_domain_get();
+	MonoDomain *domain = frame->runtime_method->domain;
 	(exception)->stack_trace = mono_string_new_checked (domain, stack_trace, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	(exception)->trace_ips = get_trace_ips (domain, frame);
@@ -1010,8 +1012,6 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	interp_pop_lmf (&ext);
 
 	context->managed_code = 1;
-	/* domain can only be changed by native code */
-	context->domain = mono_domain_get ();
 
 	if (*mono_thread_interruption_request_flag ()) {
 		MonoException *exc = mono_thread_interruption_checkpoint ();
@@ -1372,7 +1372,6 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 
 	if (setjmp(env)) {
 		if (context != &context_struct) {
-			context->domain = mono_domain_get ();
 			context->current_frame = old_frame;
 			context->managed_code = 0;
 		} else
@@ -1393,7 +1392,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	else
 		old_frame = context->current_frame;
 
-	context->domain = mono_domain_get ();
+	MonoDomain *domain = mono_domain_get ();
 
 	switch (sig->ret->type) {
 	case MONO_TYPE_VOID:
@@ -1406,7 +1405,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		isobject = 1;
 		break;
 	case MONO_TYPE_VALUETYPE:
-		retval = mono_object_new_checked (context->domain, klass, error);
+		retval = mono_object_new_checked (domain, klass, error);
 		ret = mono_object_unbox (retval);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
@@ -1415,7 +1414,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_IS_REFERENCE (sig->ret)) {
-			retval = mono_object_new_checked (context->domain, klass, error);
+			retval = mono_object_new_checked (domain, klass, error);
 			ret = mono_object_unbox (retval);
 			if (!sig->ret->data.klass->enumtype)
 				result.data.vt = ret;
@@ -1427,11 +1426,11 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		break;
 
 	case MONO_TYPE_PTR:
-		retval = mono_object_new_checked (context->domain, mono_defaults.int_class, error);
+		retval = mono_object_new_checked (domain, mono_defaults.int_class, error);
 		ret = mono_object_unbox (retval);
 		break;
 	default:
-		retval = mono_object_new_checked (context->domain, klass, error);
+		retval = mono_object_new_checked (domain, klass, error);
 		ret = mono_object_unbox (retval);
 		break;
 	}
@@ -1505,8 +1504,8 @@ handle_enum:
 
 	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
 		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
-	INIT_FRAME (&frame,context->current_frame,args,&result,mono_get_root_domain (),method,error);
 
+	INIT_FRAME (&frame,context->current_frame,args,&result,domain,method,error);
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
@@ -1577,7 +1576,6 @@ interp_entry (InterpEntryData *data)
 	} else {
 		old_frame = context->current_frame;
 	}
-	context->domain = mono_domain_get ();
 
 	args = alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
 	if (sig->hasthis)
@@ -1995,13 +1993,12 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	gpointer addr;
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoMethod *wrapper;
-	RuntimeMethod *rmethod;
+	RuntimeMethod *rmethod = mono_interp_get_runtime_method (mono_domain_get (), method, error);
 
 	/* HACK: method_ptr of delegate should point to a runtime method*/
 	if (method->wrapper_type && method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
-		return mono_interp_get_runtime_method (mono_domain_get (), method, error);
+		return rmethod;
 
-	rmethod = mono_interp_get_runtime_method (mono_domain_get (), method, error);
 	if (rmethod->jit_entry)
 		return rmethod->jit_entry;
 	wrapper = mini_get_interp_in_wrapper (sig);
@@ -2356,12 +2353,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 #ifndef DISABLE_REMOTING
 			/* `this' can be NULL for string:.ctor */
 			if (csignature->hasthis && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
+				child_frame.runtime_method = mono_interp_get_runtime_method (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			} else
 #endif
 			if (child_frame.runtime_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_native_wrapper (child_frame.runtime_method->method, FALSE, FALSE), &error);
+				child_frame.runtime_method = mono_interp_get_runtime_method (rtm->domain, mono_marshal_get_native_wrapper (child_frame.runtime_method->method, FALSE, FALSE), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 
@@ -2469,7 +2466,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 #ifndef DISABLE_REMOTING
 			/* `this' can be NULL for string:.ctor */
 			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->method->klass->valuetype && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
+				child_frame.runtime_method = mono_interp_get_runtime_method (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 #endif
@@ -2518,7 +2515,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 
 #ifndef DISABLE_REMOTING
 			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->method->klass->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
-				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
+				child_frame.runtime_method = mono_interp_get_runtime_method (rtm->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 #endif
@@ -2789,7 +2786,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			this_arg = sp->data.p;
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
-			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
+			child_frame.runtime_method = get_virtual_method (child_frame.runtime_method, this_arg);
 
 			MonoClass *this_class = this_arg->vtable->klass;
 			if (this_class->valuetype && child_frame.runtime_method->method->klass->valuetype) {
@@ -2844,7 +2841,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			this_arg = sp->data.p;
 			if (!this_arg)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
-			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
+			child_frame.runtime_method = get_virtual_method (child_frame.runtime_method, this_arg);
 
 			MonoClass *this_class = this_arg->vtable->klass;
 			if (this_class->valuetype && child_frame.runtime_method->method->klass->valuetype) {
@@ -3615,7 +3612,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			if (newobj_class->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
 				child_frame.stack_args = sp;
-				o = ves_array_create (&child_frame, context->domain, newobj_class, csig, sp);
+				o = ves_array_create (&child_frame, rtm->domain, newobj_class, csig, sp);
 				if (child_frame.ex)
 					THROW_EX (child_frame.ex, ip);
 				goto array_constructed;
@@ -3643,7 +3640,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 			} else {
 				if (newobj_class != mono_defaults.string_class) {
 					context->managed_code = 0;
-					o = mono_object_new_checked (context->domain, newobj_class, &error);
+					o = mono_object_new_checked (rtm->domain, newobj_class, &error);
 					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 					context->managed_code = 1;
 					if (*mono_thread_interruption_request_flag ())
@@ -3923,14 +3920,14 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_LDSFLDA) {
 			MonoClassField *field = rtm->data_items[*(guint16 *)(ip + 1)];
-			sp->data.p = mono_class_static_field_address (context->domain, field);
+			sp->data.p = mono_class_static_field_address (rtm->domain, field);
 			ip += 2;
 			++sp;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (context->domain, field);
+			gpointer addr = mono_class_static_field_address (rtm->domain, field);
 			stackval_from_data (field->type, sp, addr, FALSE);
 			ip += 2;
 			++sp;
@@ -3938,7 +3935,7 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (context->domain, field);
+			gpointer addr = mono_class_static_field_address (rtm->domain, field);
 			int size = READ32 (ip + 2);
 			ip += 4;
 
@@ -3950,7 +3947,7 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_STSFLD) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (context->domain, field);
+			gpointer addr = mono_class_static_field_address (rtm->domain, field);
 			ip += 2;
 			--sp;
 			stackval_to_data (field->type, sp, addr, FALSE);
@@ -3958,7 +3955,7 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_STSFLD_VT) {
 			MonoClassField *field = rtm->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (context->domain, field);
+			gpointer addr = mono_class_static_field_address (rtm->domain, field);
 			int size = READ32 (ip + 2);
 			ip += 4;
 
@@ -4036,20 +4033,20 @@ array_constructed:
 
 			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
 				int size = mono_class_value_size (c, NULL);
-				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, sp [-1 - offset].data.p, &error);
+				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, sp [-1 - offset].data.p, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				size = (size + 7) & ~7;
 				vt_sp -= size;
 			} else {
 				stackval_to_data (&c->byval_arg, &sp [-1 - offset], (char *) &sp [-1 - offset], FALSE);
-				sp [-1 - offset].data.p = mono_value_box_checked (context->domain, c, &sp [-1 - offset], &error);
+				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, &sp [-1 - offset], &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWARR)
-			sp [-1].data.p = (MonoObject*) mono_array_new_checked (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
+			sp [-1].data.p = (MonoObject*) mono_array_new_checked (rtm->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
 			if (!mono_error_ok (&error)) {
 				THROW_EX (mono_error_convert_to_exception (&error), ip);
 			}
@@ -4555,7 +4552,7 @@ array_constructed:
 			++sp;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_MONO_NEWOBJ)
-			sp->data.p = mono_object_new_checked (context->domain, rtm->data_items [*(guint16 *)(ip + 1)], &error);
+			sp->data.p = mono_object_new_checked (rtm->domain, rtm->data_items [*(guint16 *)(ip + 1)], &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			ip += 2;
 			sp++;
@@ -4588,8 +4585,8 @@ array_constructed:
 			MonoDomain *tls_domain = (MonoDomain *) ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
 			gpointer tls_jit = ((gpointer (*)()) mono_tls_get_tls_getter (TLS_KEY_DOMAIN, FALSE)) ();
 
-			if (tls_domain != context->domain || !tls_jit)
-				context->original_domain = mono_jit_thread_attach (context->domain);
+			if (tls_domain != rtm->domain || !tls_jit)
+				context->original_domain = mono_jit_thread_attach (rtm->domain);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_MONO_JIT_DETACH)
@@ -4760,7 +4757,7 @@ array_constructed:
 			if (!sp->data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip - 2);
 				
-			sp->data.p = get_virtual_method (context->domain, m, sp->data.p);
+			sp->data.p = get_virtual_method (m, sp->data.p);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -5189,6 +5186,7 @@ ves_exec_method (MonoInvocation *frame)
 {
 	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 	ThreadContext context_struct;
+	MonoDomain *domain = frame->runtime_method->domain;
 	MonoError error;
 	jmp_buf env;
 
@@ -5200,7 +5198,6 @@ ves_exec_method (MonoInvocation *frame)
 	}
 	if (context == NULL) {
 		context = &context_struct;
-		context_struct.domain = mono_domain_get ();
 		context_struct.base_frame = frame;
 		context_struct.current_frame = NULL;
 		context_struct.env_frame = frame;
@@ -5211,7 +5208,7 @@ ves_exec_method (MonoInvocation *frame)
 	}
 	frame->ip = NULL;
 	frame->parent = context->current_frame;
-	frame->runtime_method = mono_interp_get_runtime_method (context->domain, frame->method, &error);
+	frame->runtime_method = mono_interp_get_runtime_method (domain, frame->method, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	context->managed_code = 1;
 	ves_exec_method_with_context (frame, context, NULL, NULL, -1);
