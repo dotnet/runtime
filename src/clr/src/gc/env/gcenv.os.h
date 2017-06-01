@@ -158,6 +158,15 @@ public:
     //  flags     - flags to control special settings like write watching
     // Return:
     //  Starting virtual address of the reserved range
+    // Notes:
+    //  Previous uses of this API aligned the `size` parameter to the platform
+    //  allocation granularity. This is not required by POSIX or Windows. Windows will
+    //  round the size up to the nearest page boundary. POSIX does not specify what is done,
+    //  but Linux probably also rounds up. If an implementation of GCToOSInterface needs to
+    //  align to the allocation granularity, it will do so in its implementation.
+    //
+    //  Windows guarantees that the returned mapping will be aligned to the allocation
+    //  granularity.
     static void* VirtualReserve(size_t size, size_t alignment, uint32_t flags);
 
     // Release virtual memory range previously reserved using VirtualReserve
@@ -357,6 +366,12 @@ public:
     // Return:
     //  Time stamp in milliseconds
     static uint32_t GetLowPrecisionTimeStamp();
+
+    // Gets the total number of processors on the machine, not taking
+    // into account current process affinity.
+    // Return:
+    //  Number of processors on the machine
+    static uint32_t GetTotalProcessorCount();
 };
 
 #endif // __GCENV_OS_H__
