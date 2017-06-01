@@ -4056,14 +4056,14 @@ CorUnix::InternalCreatePipe(
 
     /* enable close-on-exec for both pipes; if one gets passed to CreateProcess
        it will be "uncloseonexeced" in order to be inherited */
-    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,1))
+    if(-1 == fcntl(readWritePipeDes[0],F_SETFD,FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
         palError = ERROR_INTERNAL_ERROR;
         goto InternalCreatePipeExit;
     }
-    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,1))
+    if(-1 == fcntl(readWritePipeDes[1],F_SETFD,FD_CLOEXEC))
     {
         ASSERT("can't set close-on-exec flag; fcntl() failed. errno is %d "
              "(%s)\n", errno, strerror(errno));
@@ -4564,7 +4564,7 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
-    new_fd = dup(fileno(stream));
+    new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));
