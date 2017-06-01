@@ -45,6 +45,7 @@ public static class MountHelper
             symLinkProcess.StartInfo.FileName = "/bin/ln";
             symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", targetPath, linkPath);
         }
+        symLinkProcess.StartInfo.UseShellExecute = false;
         symLinkProcess.StartInfo.RedirectStandardOutput = true;
         symLinkProcess.Start();
 

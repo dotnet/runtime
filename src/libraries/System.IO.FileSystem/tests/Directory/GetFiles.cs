@@ -21,27 +21,26 @@ namespace System.IO.Tests
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void EnumerateWithSymLinkToFile()
         {
-            using (var containingFolder = new TemporaryDirectory())
-            {
-                string linkPath;
+            DirectoryInfo containingFolder = Directory.CreateDirectory(GetTestFilePath());
 
-                // Test a symlink to a file that does and then doesn't exist
-                using (var targetFile = new TemporaryFile())
-                {
-                    linkPath = Path.Combine(containingFolder.Path, Path.GetRandomFileName());
-                    Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetFile.Path, isDirectory: false));
+            // Test a symlink to a file that does and then doesn't exist
+            FileInfo targetFile = new FileInfo(GetTestFilePath());
+            targetFile.Create().Dispose();
 
-                    Assert.True(File.Exists(linkPath));
-                    Assert.Equal(1, GetEntries(containingFolder.Path).Count());
-                }
+            string linkPath = Path.Combine(containingFolder.FullName, Path.GetRandomFileName());
+            Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetFile.FullName, isDirectory: false));
 
-                // The symlink still exists even though the target file is gone.
-                Assert.Equal(1, GetEntries(containingFolder.Path).Count());
+            Assert.True(File.Exists(linkPath));
+            Assert.Equal(1, GetEntries(containingFolder.FullName).Count());
 
-                // The symlink is gone
-                File.Delete(linkPath);
-                Assert.Equal(0, GetEntries(containingFolder.Path).Count());
-            }
+            targetFile.Delete();
+
+            // The symlink still exists even though the target file is gone.
+            Assert.Equal(1, GetEntries(containingFolder.FullName).Count());
+
+            // The symlink is gone
+            File.Delete(linkPath);
+            Assert.Equal(0, GetEntries(containingFolder.FullName).Count());
         }
     }
 

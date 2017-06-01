@@ -359,14 +359,11 @@ namespace System.IO.Tests
         public void WindowsExtendedSyntaxWhiteSpace()
         {
             var paths = IOInputs.GetSimpleWhiteSpace();
-            using (TemporaryDirectory directory = new TemporaryDirectory())
+            foreach (var path in paths)
             {
-                foreach (var path in paths)
-                {
-                    string extendedPath = Path.Combine(IOInputs.ExtendedPrefix + directory.Path, path);
-                    Directory.CreateDirectory(extendedPath);
-                    Assert.True(Directory.Exists(extendedPath), extendedPath);
-                }
+                string extendedPath = Path.Combine(IOInputs.ExtendedPrefix + TestDirectory, path);
+                Directory.CreateDirectory(extendedPath);
+                Assert.True(Directory.Exists(extendedPath), extendedPath);
             }
         }
 
@@ -416,13 +413,10 @@ namespace System.IO.Tests
         public void PathWithReservedDeviceNameAsExtendedPath()
         {
             var paths = IOInputs.GetReservedDeviceNames();
-            using (TemporaryDirectory directory = new TemporaryDirectory())
+            Assert.All(paths, (path) =>
             {
-                Assert.All(paths, (path) =>
-                {
-                    Assert.True(Create(IOInputs.ExtendedPrefix + Path.Combine(directory.Path, path)).Exists, path);
-                });
-            }
+                Assert.True(Create(IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, path)).Exists, path);
+            });
         }
 
         [Fact]

@@ -21,31 +21,31 @@ namespace System.IO.Tests
         [ConditionalFact(nameof(CanCreateSymbolicLinks))]
         public void EnumerateWithSymLinkToDirectory()
         {
-            using (var containingFolder = new TemporaryDirectory())
+            DirectoryInfo containingFolder = Directory.CreateDirectory(GetTestFilePath());
+
+            // Test a symlink to a directory that does and then doesn't exist
+            DirectoryInfo targetDir = Directory.CreateDirectory(GetTestFilePath());
             {
-                // Test a symlink to a directory that does and then doesn't exist
-                using (var targetDir = new TemporaryDirectory())
-                {
-                    // Create a symlink to a folder that exists
-                    string linkPath = Path.Combine(containingFolder.Path, Path.GetRandomFileName());
-                    Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetDir.Path, isDirectory: true));
+                // Create a symlink to a folder that exists
+                string linkPath = Path.Combine(containingFolder.FullName, Path.GetRandomFileName());
+                Assert.True(MountHelper.CreateSymbolicLink(linkPath, targetDir.FullName, isDirectory: true));
 
-                    Assert.True(Directory.Exists(linkPath));
-                    Assert.Equal(1, GetEntries(containingFolder.Path).Count());
-                }
+                Assert.True(Directory.Exists(linkPath));
+                Assert.Equal(1, GetEntries(containingFolder.FullName).Count());
+            }
+            targetDir.Delete(recursive: true);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    Assert.Equal(1, GetEntries(containingFolder.Path).Count());
-                    Assert.Equal(0, Directory.GetFiles(containingFolder.Path).Count());
-                }
-                else
-                {
-                    // The target file is gone and the symlink still exists; since it can't be resolved,
-                    // on Unix it's treated as a file rather than as a directory.
-                    Assert.Equal(0, GetEntries(containingFolder.Path).Count());
-                    Assert.Equal(1, Directory.GetFiles(containingFolder.Path).Count());
-                }
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Equal(1, GetEntries(containingFolder.FullName).Count());
+                Assert.Equal(0, Directory.GetFiles(containingFolder.FullName).Count());
+            }
+            else
+            {
+                // The target file is gone and the symlink still exists; since it can't be resolved,
+                // on Unix it's treated as a file rather than as a directory.
+                Assert.Equal(0, GetEntries(containingFolder.FullName).Count());
+                Assert.Equal(1, Directory.GetFiles(containingFolder.FullName).Count());
             }
         }
     }
