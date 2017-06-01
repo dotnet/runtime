@@ -1345,7 +1345,7 @@ public:
 
     void RemorphStkArg(unsigned argNum, GenTreePtr node, GenTreePtr parent, unsigned numSlots, unsigned alignment);
 
-    void SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots);
+    void SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots, bool isReMorph);
 
     void EvalToTmp(unsigned argNum, unsigned tmpNum, GenTreePtr newNode);
 

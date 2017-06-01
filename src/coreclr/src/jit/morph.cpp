@@ -1367,7 +1367,7 @@ void fgArgInfo::RemorphStkArg(
     nextSlotNum += numSlots;
 }
 
-void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
+void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots, bool isReMorph)
 {
     fgArgTabEntryPtr curArgTabEntry = nullptr;
     assert(argNum < argCount);
@@ -1383,9 +1383,18 @@ void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
     assert(numRegs > 0);
     assert(numSlots > 0);
 
-    curArgTabEntry->isSplit  = true;
-    curArgTabEntry->numRegs  = numRegs;
-    curArgTabEntry->numSlots = numSlots;
+    if (isReMorph)
+    {
+        assert(curArgTabEntry->isSplit == true);
+        assert(curArgTabEntry->numRegs == numRegs);
+        assert(curArgTabEntry->numSlots == numSlots);
+    }
+    else
+    {
+        curArgTabEntry->isSplit  = true;
+        curArgTabEntry->numRegs  = numRegs;
+        curArgTabEntry->numSlots = numSlots;
+    }
 
     nextSlotNum += numSlots;
 }
@@ -4109,7 +4118,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             assert(varTypeIsStruct(argx));
                             unsigned numRegsPartial = size - (fltArgRegNum - MAX_FLOAT_REG_ARG);
                             assert((unsigned char)numRegsPartial == numRegsPartial);
-                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
+                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
                             fltArgRegNum = MAX_FLOAT_REG_ARG;
                         }
 #endif // _TARGET_ARM_
@@ -4138,11 +4147,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             NYI_ARM("Struct split between integer registers and stack");
 #endif // !LEGACY_BACKEND
                             // This indicates a partial enregistration of a struct type
-                            assert((isStructArg) || argx->OperIsCopyBlkOp() ||
-                                   (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
+                            assert((isStructArg) || argx->OperIsFieldList() ||
+                                   argx->OperIsCopyBlkOp() || (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
                             unsigned numRegsPartial = size - (intArgRegNum - MAX_REG_ARG);
                             assert((unsigned char)numRegsPartial == numRegsPartial);
-                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
+                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
                             intArgRegNum = MAX_REG_ARG;
                             fgPtrArgCntCur += size - numRegsPartial;
                         }
