@@ -466,6 +466,46 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
     }
 
+    [Serializable]
+    internal class GenericTypeWithArg<T>
+    {
+        public T Test;
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+
+            var p = (GenericTypeWithArg<T>)obj;
+            return Test.Equals(p.Test);
+        }
+
+        public override int GetHashCode()
+        {
+            return Test == null ? 0 : Test.GetHashCode();
+        }
+    }
+
+    [Serializable]
+    internal class SomeType
+    {
+        public int SomeField;
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+                return false;
+
+            var p = (SomeType)obj;
+            return SomeField.Equals(p.SomeField);
+        }
+
+        public override int GetHashCode()
+        {
+            return SomeField;
+        }
+    }
+
     internal static class EqualityHelpers
     {
         public static bool ArraysAreEqual<T>(T[] array1, T[] array2)
