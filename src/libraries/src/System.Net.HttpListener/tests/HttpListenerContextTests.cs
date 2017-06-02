@@ -46,7 +46,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(SubProtocol_TestData))]
         public async Task AcceptWebSocketAsync_ValidSubProtocol_Success(string[] clientProtocols, string serverProtocol)
         {
@@ -56,7 +56,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AcceptWebSocketAsync_ValidWebSocket_SetsUpHeadersInResponse()
         {
             HttpListenerContext context = await GetWebSocketContext(new string[] { "SubProtocol", "SubProtocol2" });
@@ -81,7 +81,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AcceptWebSocketAsync_ValidWebSocket_SetsUpContextProperties()
         {
             Socket.Options.SetRequestHeader("origin", "Browser");
@@ -100,7 +100,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AcceptWebSocketAsync_AuthorizationInHeaders_ThrowsNotImplementedException()
         {
             Socket.Options.SetRequestHeader("Authorization", "Basic " + Convert.ToBase64String(Encoding.ASCII.GetBytes("user:password")));
@@ -120,7 +120,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AcceptWebSocketAsync_UnsupportedProtocol_ThrowsWebSocketException()
         {
             HttpListenerContext context = await GetWebSocketContext(new string[] { "MyProtocol" });
@@ -128,7 +128,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AcceptWebSocketAsync_NoClientSubProtocol_ThrowsWebSocketException()
         {
             HttpListenerContext context = await GetWebSocketContext();
@@ -136,7 +136,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("Connection: ")]
         [InlineData("Connection: Connection\r\nUpgrade: ")]
         [InlineData("Connection: Test1\r\nUpgrade: Test2")]
@@ -157,7 +157,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("")]
         [InlineData(" ")]
         [InlineData("random(text")]
@@ -186,7 +186,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("!")]
         [InlineData("#")]
         [InlineData("YouDontKnowMe")]
@@ -197,7 +197,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AcceptWebSocketAsync_InvalidKeepAlive_ThrowsWebSocketException()
         {
             HttpListenerContext context = await GetWebSocketContext();
@@ -207,7 +207,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(255)]
@@ -219,7 +219,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalFact(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]   
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]   
         public async Task AcceptWebSocketAsync_NullArrayInArraySegment_ThrowsArgumentNullException()
         {
             HttpListenerContext context = await GetWebSocketContext();
@@ -229,7 +229,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(-1)]
         [InlineData(11)]
         public async Task AcceptWebSocketAsync_InvalidOffsetInArraySegment_ThrowsArgumentNullException(int offset)
@@ -241,7 +241,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(0, -1)]
         [InlineData(0, 11)]
         [InlineData(10, 1)]
