@@ -159,26 +159,26 @@ namespace System.Diagnostics
             Assembly a = t.GetTypeInfo().Assembly;
             Assert.Equal(typeof(RemoteExecutorTestBase).GetTypeInfo().Assembly, a);
 
-            using (var remoteExecutionService = new AppServiceConnection())
+            using (AppServiceConnection remoteExecutionService = new AppServiceConnection())
             {
                 // Here, we use the app service name defined in the app service provider's Package.appxmanifest file in the <Extension> section.
                 remoteExecutionService.AppServiceName = "com.microsoft.corefxuaptests";
                 remoteExecutionService.PackageFamilyName = Package.Current.Id.FamilyName;
 
-                var status = remoteExecutionService.OpenAsync().GetAwaiter().GetResult();
+                AppServiceConnectionStatus status = remoteExecutionService.OpenAsync().GetAwaiter().GetResult();
                 if (status != AppServiceConnectionStatus.Success)
                 {
                     throw new IOException($"RemoteInvoke cannot open the remote service. Open Service Status: {status}");
                 }
 
-                var message = new ValueSet();
+                ValueSet message = new ValueSet();
 
                 message.Add("AssemblyName", a.FullName);
                 message.Add("TypeName", t.FullName);
                 message.Add("MethodName", method.Name);
 
                 int i = 0;
-                foreach (var arg in args)
+                foreach (string arg in args)
                 {
                     message.Add("Arg" + i, arg);
                     i++;
