@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -767,9 +768,11 @@ namespace System.Threading.Threads.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Thread.Sleep(TimeSpan.FromMilliseconds((double)int.MaxValue + 1)));
 
             Thread.Sleep(0);
-            var startTime = DateTime.UtcNow;
+
+            var stopwatch = Stopwatch.StartNew();
             Thread.Sleep(500);
-            Assert.InRange((DateTime.UtcNow - startTime).TotalMilliseconds, 100, int.MaxValue);
+            stopwatch.Stop();
+            Assert.InRange((int)stopwatch.ElapsedMilliseconds, 100, int.MaxValue);
         }
 
         [Fact]
