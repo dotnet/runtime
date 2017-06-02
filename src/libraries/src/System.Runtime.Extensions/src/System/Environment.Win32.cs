@@ -327,6 +327,7 @@ namespace System
         {
             get
             {
+#if !uap
                 // Use GetUserNameExW, as GetUserNameW isn't available on all platforms, e.g. Win7
                 var domainName = new StringBuilder(1024);
                 uint domainNameLen = (uint)domainName.Capacity;
@@ -341,6 +342,9 @@ namespace System
                 }
 
                 return string.Empty;
+#else
+                return "Windows User";
+#endif
             }
         }
 
@@ -348,6 +352,7 @@ namespace System
         {
             get
             {
+#if !uap
                 var domainName = new StringBuilder(1024);
                 uint domainNameLen = (uint)domainName.Capacity;
                 if (Interop.Secur32.GetUserNameExW(Interop.Secur32.NameSamCompatible, domainName, ref domainNameLen) == 1)
@@ -370,6 +375,9 @@ namespace System
                 }
 
                 return domainName.ToString();
+#else
+                return "Windows Domain";
+#endif
             }
         }
 
