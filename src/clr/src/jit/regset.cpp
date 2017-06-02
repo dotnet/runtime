@@ -3323,7 +3323,8 @@ void Compiler::tmpPreAllocateTemps(var_types type, unsigned count)
 #ifdef _TARGET_ARM_
         if (type == TYP_DOUBLE)
         {
-            // Adjust tmpSize in case it needs alignment
+            // Adjust tmpSize to accommodate possible alignment padding.
+            // Note that at this point the offsets aren't yet finalized, so we don't yet know if it will be required.
             tmpSize += TARGET_POINTER_SIZE;
         }
 #endif // _TARGET_ARM_
