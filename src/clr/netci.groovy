@@ -1470,8 +1470,6 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         else if (isGcReliabilityFramework(scenario)) {
                             buildCommands += "tests\\runtest.cmd ${runtestArguments} GenerateLayoutOnly"
                             buildCommands += "tests\\scripts\\run-gc-reliability-framework.cmd ${arch} ${configuration}"
-                            Utilities.addArchival(newJob, "stdout.txt")
-                            Utilities.addArchival(newJob, "Logs/**")
                         }
                         else if (architecture == 'x64' || architecture == 'x86') {
                             buildCommands += "tests\\runtest.cmd ${runtestArguments}"
@@ -2496,13 +2494,6 @@ combinedScenarios.each { scenario ->
                                 }
                             }
                         }
-                    }
-
-                    if (isGcReliabilityFramework(scenario))
-                    {
-                        // Both of these are emitted by the RF
-                        Utilities.addArchival(newJob, "stdout.txt")
-                        Utilities.addArchival(newJob, "Logs/**")
                     }
 
                     if (scenario == 'coverage') {
