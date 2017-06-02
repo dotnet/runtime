@@ -1340,7 +1340,7 @@ public:
                                unsigned alignment FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool isStruct));
 
 #ifdef DEBUG
-    void             RemorphReset();
+    void RemorphReset();
 #endif
     fgArgTabEntryPtr RemorphRegArg(
         unsigned argNum, GenTreePtr node, GenTreePtr parent, regNumber regNum, unsigned numRegs, unsigned alignment);

@@ -2831,7 +2831,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             fgPtrArgCntCur -= callStkLevel;
         }
         assert(call->fgArgInfo != nullptr);
-#ifndef DEBUG
+#ifdef DEBUG
         call->fgArgInfo->RemorphReset();
 #endif
 
@@ -4131,7 +4131,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifndef DEBUG
                             if (!reMorphing)
 #endif
-                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
+                            {
+                                call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
+                            }
                             fltArgRegNum = MAX_FLOAT_REG_ARG;
                         }
 #endif // _TARGET_ARM_
@@ -4167,7 +4169,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifndef DEBUG
                             if (!reMorphing)
 #endif
-                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
+                            {
+                                call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
+                            }
                             intArgRegNum = MAX_REG_ARG;
                             fgPtrArgCntCur += size - numRegsPartial;
                         }
