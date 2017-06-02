@@ -434,6 +434,11 @@ namespace CorUnix
         return palErr;
     }
 
+    void CPalSynchronizationManager::YieldThread()
+    {
+        sched_yield();
+    }
+
     PAL_ERROR CPalSynchronizationManager::ThreadNativeWait(
         ThreadNativeWaitData * ptnwdNativeWaitData,
         DWORD dwTimeout,
