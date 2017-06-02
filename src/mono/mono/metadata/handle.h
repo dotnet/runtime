@@ -506,7 +506,6 @@ mono_context_get_handle (void);
 void
 mono_context_set_handle (MonoAppContextHandle new_context);
 
-
 G_END_DECLS
 
 #endif /* __MONO_HANDLE_H__ */
