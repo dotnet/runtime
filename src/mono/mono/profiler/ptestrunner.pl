@@ -20,20 +20,20 @@ append_path ("DYLD_LIBRARY_PATH", $minibuilddir . "/.libs");
 append_path ("PATH", $profbuilddir);
 
 # first a basic test
-$report = run_test ("test-alloc.exe");
+$report = run_test ("test-alloc.exe", "report,legacy,calls,alloc");
 check_report_basics ($report);
 check_report_calls ($report, "T:Main (string[])" => 1);
 check_report_allocation ($report, "System.Object" => 1000000);
 report_errors ();
 # test additional named threads and method calls
-$report = run_test ("test-busy.exe");
+$report = run_test ("test-busy.exe", "report,legacy,calls,alloc");
 check_report_basics ($report);
 check_report_calls ($report, "T:Main (string[])" => 1);
 check_report_threads ($report, "BusyHelper");
 check_report_calls ($report, "T:test ()" => 10, "T:test3 ()" => 10, "T:test2 ()" => 1);
 report_errors ();
 # test with the sampling profiler
-$report = run_test ("test-busy.exe", "report,sample");
+$report = run_test ("test-busy.exe", "report,legacy,sample");
 check_report_basics ($report);
 check_report_threads ($report, "BusyHelper");
 # at least 40% of the samples should hit each of the two busy methods
@@ -41,20 +41,20 @@ check_report_threads ($report, "BusyHelper");
 #check_report_samples ($report, "T:test ()" => 40, "T:test3 ()" => 40);
 report_errors ();
 # test lock events
-$report = run_test ("test-monitor.exe");
+$report = run_test ("test-monitor.exe", "report,legacy,calls,alloc");
 check_report_basics ($report);
 check_report_calls ($report, "T:Main (string[])" => 1);
 # we hope for at least some contention, this is not entirely reliable
 check_report_locks ($report, 1, 1);
 report_errors ();
 # test exceptions
-$report = run_test ("test-excleave.exe");
+$report = run_test ("test-excleave.exe", "report,legacy,calls");
 check_report_basics ($report);
 check_report_calls ($report, "T:Main (string[])" => 1, "T:throw_ex ()" => 1000);
 check_report_exceptions ($report, 1000, 1000, 1000);
 report_errors ();
 # test heapshot
-$report = run_test_sgen ("test-heapshot.exe", "report,heapshot");
+$report = run_test_sgen ("test-heapshot.exe", "report,heapshot,legacy");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
 	check_report_heapshot ($report, 0, {"T" => 5000});
@@ -62,7 +62,7 @@ if ($report ne "missing binary") {
 	report_errors ();
 }
 # test heapshot traces
-$report = run_test_sgen ("test-heapshot.exe", "heapshot,output=-traces.mlpd", "--traces traces.mlpd");
+$report = run_test_sgen ("test-heapshot.exe", "heapshot,output=-traces.mlpd,legacy", "--traces traces.mlpd");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
 	check_report_heapshot ($report, 0, {"T" => 5000});
@@ -76,7 +76,7 @@ if ($report ne "missing binary") {
 	report_errors ();
 }
 # test traces
-$report = run_test ("test-traces.exe", "output=-traces.mlpd", "--traces traces.mlpd");
+$report = run_test ("test-traces.exe", "legacy,calls,alloc,output=-traces.mlpd", "--traces traces.mlpd");
 check_report_basics ($report);
 check_call_traces ($report,
 	"T:level3 (int)" => [2020, "T:Main (string[])"],
@@ -92,7 +92,7 @@ check_alloc_traces ($report,
 );
 report_errors ();
 # test traces without enter/leave events
-$report = run_test ("test-traces.exe", "nocalls,output=-traces.mlpd", "--traces traces.mlpd");
+$report = run_test ("test-traces.exe", "legacy,alloc,output=-traces.mlpd", "--traces traces.mlpd");
 check_report_basics ($report);
 # this has been broken recently
 check_exception_traces ($report,
