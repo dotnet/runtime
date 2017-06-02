@@ -53,9 +53,15 @@ else()
     )
 endif(WIN32)
 
+if(CRL_CMAKE_WARNINGS_ARE_ERRORS)
+    set(PYTHON_WARNING_FLAGS -Wall -Werror)
+else()
+    set(PYTHON_WARNING_FLAGS -Wall)
+endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
+
 add_custom_command(
   COMMENT "Generating Eventing Files"
-  COMMAND ${PYTHON} -B -Wall -Werror ${GenEventFilesScript} ${GenEventArgs} --man "${VM_DIR}/ClrEtwAll.man" --exc "${VM_DIR}/ClrEtwAllMeta.lst" --dummy "${GENERATED_INCLUDE_DIR}/etmdummy.h"
+  COMMAND ${PYTHON} -B ${PYTHON_WARNING_FLAGS} ${GenEventFilesScript} ${GenEventArgs} --man "${VM_DIR}/ClrEtwAll.man" --exc "${VM_DIR}/ClrEtwAllMeta.lst" --dummy "${GENERATED_INCLUDE_DIR}/etmdummy.h"
   OUTPUT ${ScriptGeneratedEventFiles}
   DEPENDS ${GenEventFilesScript} "${VM_DIR}/ClrEtwAll.man" "${VM_DIR}/ClrEtwAllMeta.lst" "${CLR_DIR}/src/scripts/genXplatEventing.py"
 )

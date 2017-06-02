@@ -19,7 +19,7 @@ fi
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [stripsymbols] [cmakeargs] [bindir]"
+    echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [stripsymbols] [ignorewarnings] [cmakeargs] [bindir]"
     echo "BuildArch can be: x64, x86, arm, armel, arm64"
     echo "BuildType can be: debug, checked, release"
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
@@ -47,6 +47,7 @@ usage()
 	echo "-Rebuild: passes /t:rebuild to the build projects."
     echo "stripSymbols - Optional argument to strip native symbols during the build."
     echo "skipgenerateversion - disable version generation even if MSBuild is supported."
+    echo "ignorewarnings - do not treat warnings as errors"
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
     echo "buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
@@ -183,11 +184,17 @@ generate_event_logging_sources()
 
     mkdir -p "$__GeneratedIntermediateEventProvider"
     mkdir -p "$__GeneratedIntermediateEventPipe"
+
+    __PythonWarningFlags="-Wall"
+    if [[ $__IgnoreWarnings == 0 ]]; then
+        __PythonWarningFlags="$__PythonWarningFlags -Werror"
+    fi
+
     
     if [[ $__SkipCoreCLR == 0 || $__ConfigureOnly == 1 ]]; then
         echo "Laying out dynamically generated files consumed by the build system "
         echo "Laying out dynamically generated Event Logging Test files"
-        $PYTHON -B -Wall -Werror "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --testdir "$__GeneratedIntermediateEventProvider/tests"
+        $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genXplatEventing.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --testdir "$__GeneratedIntermediateEventProvider/tests"
 
         if  [[ $? != 0 ]]; then
             exit
@@ -196,7 +203,7 @@ generate_event_logging_sources()
         case $__BuildOS in
             Linux)
                 echo "Laying out dynamically generated EventPipe Implementation"
-                $PYTHON -B -Wall -Werror "$__ProjectRoot/src/scripts/genEventPipe.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventPipe" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst"
+                $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genEventPipe.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventPipe" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst"
                 if  [[ $? != 0 ]]; then
                     exit
                 fi
@@ -209,7 +216,7 @@ generate_event_logging_sources()
         case $__BuildOS in
             Linux)
                 echo "Laying out dynamically generated Event Logging Implementation of Lttng"
-                $PYTHON -B -Wall -Werror "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventProvider"
+                $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genXplatLttng.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__GeneratedIntermediateEventProvider"
                 if  [[ $? != 0 ]]; then
                     exit
                 fi
@@ -220,7 +227,7 @@ generate_event_logging_sources()
     fi
 
     echo "Cleaning the temp folder of dynamically generated Event Logging files"
-    $PYTHON -B -Wall -Werror -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediate/eventprovider\",\"$__GeneratedIntermediateEventProvider\")"
+    $PYTHON -B $__PythonWarningFlags -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediate/eventprovider\",\"$__GeneratedIntermediateEventProvider\")"
     if  [[ $? != 0 ]]; then
         exit
     fi
@@ -228,7 +235,7 @@ generate_event_logging_sources()
     rm -rf "$__GeneratedIntermediateEventProvider"
 
     echo "Cleaning the temp folder of dynamically generated EventPipe files"
-    $PYTHON -B -Wall -Werror -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediate/eventpipe\",\"$__GeneratedIntermediateEventPipe\")"
+    $PYTHON -B $__PythonWarningFlags -c "import sys;sys.path.insert(0,\"$__ProjectRoot/src/scripts\"); from Utilities import *;UpdateDirectory(\"$__GeneratedIntermediate/eventpipe\",\"$__GeneratedIntermediateEventPipe\")"
     if  [[ $? != 0 ]]; then
         exit
     fi
@@ -595,6 +602,7 @@ esac
 __BuildType=Debug
 __CodeCoverage=
 __IncludeTests=Include_Tests
+__IgnoreWarnings=0
 
 # Set the various build properties here so that CMake and MSBuild can pick them up
 __ProjectDir="$__ProjectRoot"
@@ -780,6 +788,11 @@ while :; do
 
         skipnuget)
             __SkipNuget=1
+            ;;
+
+        ignorewarnings)
+            __IgnoreWarnings=1
+            __cmakeargs="$__cmakeargs -DCLR_CMAKE_WARNINGS_ARE_ERRORS=OFF"
             ;;
 
         cmakeargs)
