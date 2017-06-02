@@ -5,15 +5,16 @@ We strongly recommend every implementation to support [Hierarchical Request-Id](
 * `Request-Id` uniquely identifies every HTTP request involved in operation processing and MUST be generated for every incoming and outgoing request
 * `Correlation-Context` has `Id` property serving as single unique identifier of the whole operation and implementation MUST generate one if it is missing.
 
+It is important to log `Request-Id` received from the upstream service along with the incoming request. It ensures that parent-child relationships between requests are retained and the whole tree of the requests could be restored. 
+Therefore implementations MUST provide access to the 'parent' Request-Id for logging system.
+
 [Root Request Id](HierarchicalRequestId.md#root-request-id-generation) requirements and generation considerations must be used for flat Request-Id
 
-## Correlation Id
-Many applications and tracing systems use single correlation id to identify whole operation through all services and client applications.
-
+## Correlation Id (Trace Id)
+Many applications and tracing systems use single correlation/trace id to identify whole operation through all services and client applications.
 In case of heterogeneous environment (where some services generate hierarchical Request-Ids and others generate flat Ids) having single identifier, common for all requests, helps to make telemetry query simple and efficient.
 
-Implementations MUST use `Id` property in `Correlation-Context` if they need propagate correlation id across the cluster.
-Implementation it MUST ensure `Id` is present in `Correlation-Context` or [generate](#correlation-id-generation) new one and add to the `Correlation-Context`.
+If implementation generates flat Request-Id, it MUST ensure `Id` is present in `Correlation-Context` or [generate](#correlation-id-generation) new one and add to the `Correlation-Context`.
 
 ### Correlation Id generation
 If implementation needs to add `Id` property to `Correlation-Context`:
