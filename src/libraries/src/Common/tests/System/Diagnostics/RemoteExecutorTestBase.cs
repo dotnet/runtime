@@ -16,7 +16,7 @@ namespace System.Diagnostics
         /// <summary>The name of the test console app.</summary>
         protected static readonly string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
         /// <summary>The name, without an extension, of the host used to host the test console app.</summary>
-        private static readonly string HostRunnerExecutableName = IsFullFramework ? "xunit.console" : "dotnet";
+        private static readonly string HostRunnerExecutableName = IsFullFramework ? "xunit.console" : IsNetNative ? "xunit.console.netcore" : "dotnet";
         /// <summary>The name, with an extension, of the host host used to host the test console app.</summary>
         protected static readonly string HostRunnerName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? HostRunnerExecutableName + ".exe" : HostRunnerExecutableName;
         /// <summary>The absolute path to the host runner executable.</summary>
