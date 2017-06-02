@@ -3,6 +3,8 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <AssemblyKey>Open</AssemblyKey>
+    <AssemblyKey>MSFT</AssemblyKey>
+    <!-- disable package until https://github.com/dotnet/corefx/issues/18090 is addressed -->
+    <ShouldCreatePackage>false</ShouldCreatePackage>
   </PropertyGroup>
 </Project>
