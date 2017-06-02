@@ -24,9 +24,9 @@ namespace System.Runtime.InteropServices
         public static string GetRuntimeDirectory()
         {
             string runtimeDirectory = typeof(object).Assembly.Location;
-            if(string.IsNullOrEmpty(runtimeDirectory) || !Path.IsPathRooted(runtimeDirectory))
-            { 
-                return Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory) + Path.DirectorySeparatorChar;
+            if (!Path.IsPathRooted(runtimeDirectory))
+            {
+                runtimeDirectory = AppDomain.CurrentDomain.BaseDirectory;
             }
             return Path.GetDirectoryName(runtimeDirectory) + Path.DirectorySeparatorChar;
         }
