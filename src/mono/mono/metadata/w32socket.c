@@ -2850,14 +2850,14 @@ mono_network_cleanup (void)
 }
 
 void
-icall_cancel_blocking_socket_operation (MonoThread *thread)
+icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoError *error)
 {
-	MonoInternalThread *internal;
+	error_init (error);
+	MonoInternalThreadHandle internal = MONO_HANDLE_NEW_GET (MonoInternalThread, thread, internal_thread);
+	g_assert (!MONO_HANDLE_IS_NULL (internal));
 
-	internal = thread->internal_thread;
-	g_assert (internal);
-
-	mono_thread_info_abort_socket_syscall_for_close (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
+	guint64 tid = mono_internal_thread_handle_ptr (internal)->tid;
+	mono_thread_info_abort_socket_syscall_for_close (MONO_UINT_TO_NATIVE_THREAD_ID (tid));
 }
 
 #endif /* #ifndef DISABLE_SOCKETS */

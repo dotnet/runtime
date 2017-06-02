@@ -284,7 +284,7 @@ ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHan
 						       gint flags, gint32 *werror, gboolean blocking, MonoError *error);
 
 void
-icall_cancel_blocking_socket_operation (MonoThread *thread);
+icall_cancel_blocking_socket_operation (MonoThreadObjectHandle thread, MonoError *error);
 
 gboolean
 ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto, MonoError *error);
