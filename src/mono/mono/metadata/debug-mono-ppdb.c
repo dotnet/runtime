@@ -61,9 +61,6 @@ typedef struct {
 	guint64 referenced_tables;
 } PdbStreamHeader;
 
-static const char*
-lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent_type, guint8* guid);
-
 static gboolean
 get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *out_timestamp)
 {
@@ -606,27 +603,6 @@ mono_ppdb_lookup_locals (MonoDebugMethodInfo *minfo)
 			lindex ++;
 
 			//printf ("\t %s %d\n", mono_metadata_string_heap (image, locals_cols [MONO_LOCALVARIABLE_NAME]), locals_cols [MONO_LOCALVARIABLE_INDEX]);
-		}
-	}
-
-	/*
-	 * Read scope information for hoisted variables, if it exists.
-	 * Its stored in the CustomDebugInformation table.
-	 */
-	guint8 hoisted_scopes_guid [16] = { 0x1E, 0xA6, 0xA9, 0x6D,  0xC7, 0xF8, 0x74, 0x48,   0xBE, 0x62, 0x68, 0xBC, 0x56, 0x30, 0xDF, 0x71 };
-	char const *blob = lookup_custom_debug_information (image, method->token, MONO_HASCUSTOMDEBUGINFO_METHODDEF, hoisted_scopes_guid);
-	if (blob) {
-		const char *ptr = blob;
-		int size = mono_metadata_decode_blob_size (ptr, &ptr);
-		g_assert (size % 4 == 0);
-		size /= 4;
-		res->num_hoisted = size;
-		res->hoisted = g_new0 (MonoHoistedLocalScope, res->num_hoisted);
-		for (int hindex = 0; hindex < size; ++hindex) {
-			res->hoisted [hindex].start_offset = read16 (ptr);
-			ptr += 4;
-			res->hoisted [hindex].end_offset = res->hoisted [hindex].start_offset + read16 (ptr);
-			ptr += 4;
 		}
 	}
 

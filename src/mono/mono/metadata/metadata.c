@@ -4743,38 +4743,6 @@ mono_metadata_localscope_from_methoddef (MonoImage *meta, guint32 index)
 	return loc.result + 1;
 }
 
-/*
- * mono_metadata_customdebuginfo_from_index:
- * @meta: metadata context
- * @index: hascustomdebuginfo coded index
- * 
- * Returns: the 1-based index into the CustomDebugInformation table of the first
- * scope which belongs to the metadata object described by @index.
- * Returns 0 if no such row is found.
- */
-guint32
-mono_metadata_customdebuginfo_from_index (MonoImage *meta, guint32 index)
-{
-	MonoTableInfo *tdef = &meta->tables [MONO_TABLE_CUSTOMDEBUGINFORMATION];
-	locator_t loc;
-
-	if (!tdef->base)
-		return 0;
-
-	loc.idx = index;
-	loc.col_idx = MONO_CUSTOMDEBUGINFORMATION_PARENT;
-	loc.t = tdef;
-
-	if (!mono_binary_search (&loc, tdef->base, tdef->rows, tdef->row_size, table_locator))
-		return 0;
-
-	/* Find the first entry by searching backwards */
-	while ((loc.result > 0) && (mono_metadata_decode_row_col (tdef, loc.result - 1, MONO_CUSTOMDEBUGINFORMATION_PARENT) == index))
-		loc.result --;
-
-	return loc.result + 1;
-}
-
 #ifdef DEBUG
 static void
 mono_backtrace (int limit)

@@ -28,10 +28,6 @@ typedef struct {
 	MonoDebugCodeBlock *block;
 } MonoDebugLocalVar;
 
-typedef struct {
-	int start_offset, end_offset;
-} MonoHoistedLocalScope;
-
 /*
  * Information about local variables retrieved from a symbol file.
  */
@@ -40,8 +36,6 @@ struct _MonoDebugLocalsInfo {
 	MonoDebugLocalVar *locals;
 	int num_blocks;
 	MonoDebugCodeBlock *code_blocks;
-	int num_hoisted;
-	MonoHoistedLocalScope *hoisted;
 };
 
 /*
