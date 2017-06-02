@@ -1513,7 +1513,8 @@ enum CORINFO_CALL_KIND
     CORINFO_VIRTUALCALL_VTABLE
 };
 
-
+// Indicates that the CORINFO_VIRTUALCALL_VTABLE lookup needn't do a chunk indirection
+#define CORINFO_VIRTUALCALL_NO_CHUNK 0xFFFFFFFF
 
 enum CORINFO_THIS_TRANSFORM
 {

@@ -3589,8 +3589,11 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
                                                   &vtabOffsAfterIndirection);
 
     // Get the appropriate vtable chunk
-    // result = [REG_CALL_IND_SCRATCH + vtabOffsOfIndirection]
-    result = Ind(Offset(result, vtabOffsOfIndirection));
+    if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
+    {
+        // result = [REG_CALL_IND_SCRATCH + vtabOffsOfIndirection]
+        result = Ind(Offset(result, vtabOffsOfIndirection));
+    }
 
     // Load the function address
     // result = [reg+vtabOffs]

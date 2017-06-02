@@ -18863,14 +18863,17 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                     compiler->info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection,
                                                                       &vtabOffsAfterIndirection);
 
-                    /* Get the appropriate vtable chunk */
-
                     /* The register no longer holds a live pointer value */
                     gcInfo.gcMarkRegSetNpt(vptrMask);
 
-                    // MOV vptrReg, [REG_CALL_IND_SCRATCH + vtabOffsOfIndirection]
-                    getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, vptrReg, vptrReg,
-                                               vtabOffsOfIndirection);
+                    /* Get the appropriate vtable chunk */
+
+                    if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
+                    {
+                        // MOV vptrReg, [REG_CALL_IND_SCRATCH + vtabOffsOfIndirection]
+                        getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, vptrReg, vptrReg,
+                                                   vtabOffsOfIndirection);
+                    }
 
                     /* Call through the appropriate vtable slot */
 
