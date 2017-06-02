@@ -31,7 +31,7 @@ namespace System.Xml.Tests
         public new void Init(object objParam)
         {
             // Get parameter info
-            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApi\");
+            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
 
             xsltArg1 = new XsltArgumentList();
 
