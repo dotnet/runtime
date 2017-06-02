@@ -127,6 +127,33 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Tests overflow in Id generation when parentId has a single (root) node
+        /// </summary>
+        [Fact]
+        public void ActivityIdNonHierarchicalOverflow()
+        {
+            // find out Activity Id length on this platform in this AppDomain
+            Activity testActivity = new Activity("activity")
+                .Start();
+            var expectedIdLength = testActivity.Id.Length;
+            testActivity.Stop();
+
+            // check that if parentId '|aaa...a' 1024 bytes long is set with single node (no dots or underscores in the Id)
+            // it causes overflow during Id generation, and new root Id is generated for the new Activity
+            var parentId = '|' + new string('a', 1022) + '.';
+
+            var activity = new Activity("activity")
+                .SetParentId(parentId)
+                .Start();
+
+            Assert.Equal(parentId, activity.ParentId);
+
+            // With probability 1/MaxLong, Activity.Id length may be expectedIdLength + 1
+            Assert.InRange(activity.Id.Length, expectedIdLength, expectedIdLength + 1);
+            Assert.False(activity.Id.Contains('#'));
+        }
+
+        /// <summary>
         /// Tests activity start and stop 
         /// Checks Activity.Current correctness, Id generation
         /// </summary>
