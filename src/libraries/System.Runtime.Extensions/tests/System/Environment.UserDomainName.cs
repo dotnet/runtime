@@ -8,7 +8,7 @@ namespace System.Tests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
         public void UserDomainNameIsHardCodedOnUap()
         {
-            Assert.Equal("Windows Domain", Environment.UserName);
+            Assert.Equal("Windows Domain", Environment.UserDomainName);
         }
 
         [Fact]
@@ -16,7 +16,7 @@ namespace System.Tests
         public void UserDomainNameIsCorrectOnNonUap()
         {
             // Highly unlikely anyone is using domain with this name
-            Assert.NotEqual("Windows Domain", Environment.UserName);
+            Assert.NotEqual("Windows Domain", Environment.UserDomainName);
         }
     }
 }
