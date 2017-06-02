@@ -569,6 +569,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             catch (NullReferenceException) { }
             catch (SerializationException) { }
             catch (TargetInvocationException) { }
+            catch (ArgumentException) { }
+            catch (FileLoadException) { }
         }
 
         [Fact]
