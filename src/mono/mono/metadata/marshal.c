@@ -4027,12 +4027,6 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 	gboolean void_ret = FALSE;
 	gboolean string_ctor = method && method->string_ctor;
 
-	/* to make it work with our special string constructors */
-	if (!string_dummy) {
-		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, "dummy marshal string");
-		string_dummy = mono_string_new_wrapper ("dummy");
-	}
-
 	if (virtual_) {
 		g_assert (sig->hasthis);
 		g_assert (method->flags & METHOD_ATTRIBUTE_VIRTUAL);
@@ -4040,6 +4034,12 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 	if (sig->hasthis) {
 		if (string_ctor) {
+			/* to make it work with our special string constructors */
+			if (!string_dummy) {
+				MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, "dummy marshal string");
+				string_dummy = mono_string_new_wrapper ("dummy");
+			}
+
 			if (mono_gc_is_moving ()) {
 				mono_mb_emit_ptr (mb, &string_dummy);
 				mono_mb_emit_byte (mb, CEE_LDIND_REF);
