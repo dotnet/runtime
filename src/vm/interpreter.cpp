@@ -2626,8 +2626,10 @@ EvalLoop:
             {
                 assert(m_curStackHt > 0);
                 m_curStackHt--;
-#ifdef _DEBUG
+#if defined(_DEBUG) || defined(_AMD64_)
                 CorInfoType cit = OpStackTypeGet(m_curStackHt).ToCorInfoType();
+#endif // _DEBUG || _AMD64_
+#ifdef _DEBUG
                 assert(cit == CORINFO_TYPE_INT || cit == CORINFO_TYPE_UINT || cit == CORINFO_TYPE_NATIVEINT);
 #endif // _DEBUG
 #if defined(_AMD64_)
