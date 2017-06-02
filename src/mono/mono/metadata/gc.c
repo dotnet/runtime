@@ -416,10 +416,6 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	gboolean ret;
 	gint64 start;
 
-#if defined(__native_client__)
-	return FALSE;
-#endif
-
 	if (mono_thread_internal_current () == gc_thread)
 		/* We are called from inside a finalizer, not much we can do here */
 		return FALSE;

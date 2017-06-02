@@ -32,7 +32,7 @@ typedef signed   @GSIZE@ gssize;
 #define G_HAVE_ISO_VARARGS
 #endif
 
-#if defined (__native_client__) || defined (HOST_WATCHOS)
+#if defined (HOST_WATCHOS)
 #undef G_BREAKPOINT
 #define G_BREAKPOINT()
 #endif

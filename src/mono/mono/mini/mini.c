@@ -2152,18 +2152,11 @@ mono_postprocess_patches (MonoCompile *cfg)
 		}
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table;
-#if defined(__native_client__) && defined(__native_client_codegen__)
-			/* This memory will leak.  */
-			/* TODO: can we free this when  */
-			/* making the final jump table? */
-			table = g_malloc0 (sizeof(gpointer) * patch_info->data.table->table_size);
-#else
 			if (cfg->method->dynamic) {
 				table = (void **)mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
 				table = (void **)mono_domain_code_reserve (cfg->domain, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
-#endif
 
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
 				/* Might be NULL if the switch is eliminated */
@@ -2385,9 +2378,6 @@ mono_codegen (MonoCompile *cfg)
 	} else {
 		mono_domain_code_commit (code_domain, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
-#if defined(__native_client_codegen__) && defined(__native_client__)
-	cfg->native_code = code_dest;
-#endif
 	mono_profiler_code_buffer_new (cfg->native_code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method);
 	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
@@ -2869,12 +2859,8 @@ mono_create_gc_safepoint (MonoCompile *cfg, MonoBasicBlock *bblock)
 	if (cfg->verbose_level > 1)
 		printf ("ADDING SAFE POINT TO BB %d\n", bblock->block_num);
 
-#if defined(__native_client_codegen__)
-	NEW_AOTCONST (cfg, poll_addr, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, (gpointer)&__nacl_thread_suspension_needed);
-#else
 	g_assert (mono_threads_is_coop_enabled ());
 	NEW_AOTCONST (cfg, poll_addr, MONO_PATCH_INFO_GC_SAFE_POINT_FLAG, (gpointer)&mono_polling_required);
-#endif
 
 	MONO_INST_NEW (cfg, ins, OP_GC_SAFE_POINT);
 	ins->sreg1 = poll_addr->dreg;
@@ -2919,19 +2905,13 @@ mono_insert_safepoints (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb;
 
-#if !defined(__native_client_codegen__)
 	if (!mono_threads_is_coop_enabled ())
 		return;
-#endif
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
 		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
-#if defined(__native_client__) || defined(__native_client_codegen__)
-		gpointer poll_func = &mono_nacl_gc;
-#else
 		g_assert (mono_threads_is_coop_enabled ());
 		gpointer poll_func = &mono_threads_state_poll;
-#endif
 
 		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER && info->d.icall.func == poll_func) {
 			if (cfg->verbose_level > 1)
@@ -3207,13 +3187,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		cfg->gen_seq_points = FALSE;
 		cfg->gen_sdb_seq_points = FALSE;
 	}
-	/* coop / nacl requires loop detection to happen */
-#if defined(__native_client_codegen__)
-	cfg->opt |= MONO_OPT_LOOP;
-#else
+	/* coop requires loop detection to happen */
 	if (mono_threads_is_coop_enabled ())
 		cfg->opt |= MONO_OPT_LOOP;
-#endif
 	cfg->explicit_null_checks = debug_options.explicit_null_checks || (flags & JIT_FLAG_EXPLICIT_NULL_CHECKS);
 	cfg->soft_breakpoints = debug_options.soft_breakpoints;
 	cfg->check_pinvoke_callconv = debug_options.check_pinvoke_callconv;

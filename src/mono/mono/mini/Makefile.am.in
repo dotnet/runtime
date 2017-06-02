@@ -509,10 +509,6 @@ test_sources = 			\
 	MemoryIntrinsics.il	\
 	mixed.cs
 
-if NACL_CODEGEN
-test_sources += nacl.cs
-endif
-
 regtests_UNIVERSAL = \
 	basic.exe \
 	basic-float.exe \
@@ -528,10 +524,6 @@ regtests_UNIVERSAL = \
 	basic-simd.exe \
 	unaligned.exe	\
 	basic-vectors.exe
-
-if NACL_CODEGEN
-regtests_UNIVERSAL += nacl.exe
-endif
 
 regtests_DISABLED = 
 
@@ -678,11 +670,7 @@ generics-variant-types.dll: generics-variant-types.il
 MemoryIntrinsics.dll: MemoryIntrinsics.il
 	$(ILASM) -dll -output=$@ $<
 
-if NACL_CODEGEN
-GENMDESC_OPTS=--nacl
-else !NACL_CODEGEN
 GENMDESC_OPTS=
-endif !NACL_CODEGEN
 
 # we don't always use the perl impl because it's an additional
 # build dependency for the poor windows users
@@ -691,11 +679,7 @@ endif !NACL_CODEGEN
 if CROSS_COMPILING
 GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
 else !CROSS_COMPILING
-if NACL_CODEGEN
-GENMDESC_PRG=perl $(srcdir)/genmdesc.pl $(arch_define) $(srcdir) $(GENMDESC_OPTS)
-else
 GENMDESC_PRG=./genmdesc $(GENMDESC_OPTS)
-endif
 endif !CROSS_COMPILING
 
 cpu-x86.h: cpu-x86.md genmdesc$(EXEEXT)

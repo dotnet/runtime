@@ -121,10 +121,6 @@ opt_names [] = {
 
 #endif
 
-#ifdef __native_client__
-extern char *nacl_mono_path;
-#endif
-
 #define DEFAULT_OPTIMIZATIONS (	\
 	MONO_OPT_PEEPHOLE |	\
 	MONO_OPT_CFOLD |	\
@@ -1603,9 +1599,6 @@ mono_main (int argc, char* argv[])
 #ifdef HOST_WIN32
 	int mixed_mode = FALSE;
 #endif
-#ifdef __native_client__
-	gboolean nacl_null_checks_off = FALSE;
-#endif
 
 #ifdef MOONLIGHT
 #ifndef HOST_WIN32
@@ -1937,13 +1930,6 @@ mono_main (int argc, char* argv[])
 #else
 			fprintf (stderr, "Mono Warning: --interp= not enabled in this runtime.\n");
 #endif
-
-#ifdef __native_client__
-		} else if (strcmp (argv [i], "--nacl-mono-path") == 0){
-			nacl_mono_path = g_strdup(argv[++i]);
-		} else if (strcmp (argv [i], "--nacl-null-checks-off") == 0){
-			nacl_null_checks_off = TRUE;
-#endif
 		} else if (strncmp (argv [i], "--assembly-loader=", strlen("--assembly-loader=")) == 0) {
 			gchar *arg = argv [i] + strlen ("--assembly-loader=");
 			if (strcmp (arg, "strict") == 0)
@@ -1967,13 +1953,6 @@ mono_main (int argc, char* argv[])
 			return 1;
 		}
 	}
-
-#ifdef __native_client_codegen__
-	if (!nacl_null_checks_off) {
-		MonoDebugOptions *opt = mini_get_debug_options ();
-		opt->explicit_null_checks = TRUE;
-	}
-#endif
 
 #if defined(DISABLE_HW_TRAPS) || defined(MONO_ARCH_DISABLE_HW_TRAPS)
 	// Signal handlers not available

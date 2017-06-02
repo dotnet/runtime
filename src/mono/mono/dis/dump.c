@@ -21,11 +21,6 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/utils/mono-compiler.h"
 
-#if defined(__native_client__) && defined(__GLIBC__)
-volatile int __nacl_thread_suspension_needed = 0;
-void __nacl_suspend_thread_if_needed() {}
-#endif
-
 void
 dump_table_assembly (MonoImage *m)
 {

@@ -129,7 +129,7 @@ mono_gc_base_init (void)
 	 * we used to do this only when running on valgrind,
 	 * but it happens also in other setups.
 	 */
-#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK) && !defined(__native_client__)
+#if defined(HAVE_PTHREAD_GETATTR_NP) && defined(HAVE_PTHREAD_ATTR_GETSTACK)
 	{
 		size_t size;
 		void *sstart;
@@ -164,8 +164,6 @@ mono_gc_base_init (void)
 
 		GC_stackbottom = (char*)ss.ss_sp;
 	}
-#elif defined(__native_client__)
-	/* Do nothing, GC_stackbottom is set correctly in libgc */
 #else
 	{
 		int dummy;

@@ -39,8 +39,6 @@ mono_threads_suspend_search_alternative_signal (void)
 #endif
 }
 
-#ifndef __native_client__
-
 static int suspend_signal_num = -1;
 static int restart_signal_num = -1;
 static int abort_signal_num = -1;
@@ -273,34 +271,5 @@ mono_threads_suspend_get_abort_signal (void)
 	g_assert (abort_signal_num != -1);
 	return abort_signal_num;
 }
-
-#else
-
-void
-mono_threads_suspend_init_signals (void)
-{
-	g_assert_not_reached ();
-}
-
-gint
-mono_threads_suspend_get_suspend_signal (void)
-{
-	return -1;
-}
-
-gint
-mono_threads_suspend_get_restart_signal (void)
-{
-	return -1;
-}
-
-gint
-mono_threads_suspend_get_abort_signal (void)
-{
-	return -1;
-}
-
-#endif /* __native_client__ */
-
 
 #endif /* defined(USE_POSIX_BACKEND) */

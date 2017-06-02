@@ -1310,10 +1310,6 @@ mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value
 	((MonoThreadInfo*)info)->tls [key] = value;
 }
 
-#if defined(__native_client__)
-void nacl_shutdown_gc_thread(void);
-#endif
-
 /*
  * mono_thread_info_exit:
  *
@@ -1323,10 +1319,6 @@ void nacl_shutdown_gc_thread(void);
 void
 mono_thread_info_exit (gsize exit_code)
 {
-#if defined(__native_client__)
-	nacl_shutdown_gc_thread();
-#endif
-
 	mono_thread_info_detach ();
 
 	mono_threads_platform_exit (0);

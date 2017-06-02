@@ -44,10 +44,6 @@ typedef struct __darwin_xmm_reg MonoContextSimdReg;
 #endif
 #endif
 
-#if defined(__native_client__)
-#undef MONO_SIGNAL_USE_UCONTEXT_T
-#endif
-
 #ifdef __HAIKU__
 /* sigcontext surrogate */
 struct sigcontext {
@@ -213,7 +209,7 @@ typedef struct {
 
 #include <mono/arch/amd64/amd64-codegen.h>
 
-#if !defined( HOST_WIN32 ) && !defined(__native_client__) && !defined(__native_client_codegen__)
+#if !defined( HOST_WIN32 )
 
 #if defined(HAVE_SIGACTION) || defined(__APPLE__)  // the __APPLE__ check is required for the tvos simulator, which has ucontext_t but not sigaction
 #define MONO_SIGNAL_USE_UCONTEXT_T 1
@@ -243,30 +239,6 @@ typedef struct {
 extern void mono_context_get_current (void *);
 #define MONO_CONTEXT_GET_CURRENT(ctx) do { mono_context_get_current((void*)&(ctx)); } while (0)
 
-#elif defined(__native_client__)
-#define MONO_CONTEXT_GET_CURRENT(ctx)	\
-	__asm__ __volatile__(	\
-		"movq $0x0,  %%nacl:0x00(%%r15, %0, 1)\n"	\
-		"movq %%rcx, %%nacl:0x08(%%r15, %0, 1)\n"	\
-		"movq %%rdx, %%nacl:0x10(%%r15, %0, 1)\n"	\
-		"movq %%rbx, %%nacl:0x18(%%r15, %0, 1)\n"	\
-		"movq %%rsp, %%nacl:0x20(%%r15, %0, 1)\n"	\
-		"movq %%rbp, %%nacl:0x28(%%r15, %0, 1)\n"	\
-		"movq %%rsi, %%nacl:0x30(%%r15, %0, 1)\n"	\
-		"movq %%rdi, %%nacl:0x38(%%r15, %0, 1)\n"	\
-		"movq %%r8,  %%nacl:0x40(%%r15, %0, 1)\n"	\
-		"movq %%r9,  %%nacl:0x48(%%r15, %0, 1)\n"	\
-		"movq %%r10, %%nacl:0x50(%%r15, %0, 1)\n"	\
-		"movq %%r11, %%nacl:0x58(%%r15, %0, 1)\n"	\
-		"movq %%r12, %%nacl:0x60(%%r15, %0, 1)\n"	\
-		"movq %%r13, %%nacl:0x68(%%r15, %0, 1)\n"	\
-		"movq %%r14, %%nacl:0x70(%%r15, %0, 1)\n"	\
-		"movq %%r15, %%nacl:0x78(%%r15, %0, 1)\n"	\
-		"leaq (%%rip), %%rdx\n"	\
-		"movq %%rdx, %%nacl:0x80(%%r15, %0, 1)\n"	\
-		: 	\
-		: "a" ((int64_t)&(ctx))	\
-		: "rdx", "memory")
 #else
 
 #define MONO_CONTEXT_GET_CURRENT_GREGS(ctx) \

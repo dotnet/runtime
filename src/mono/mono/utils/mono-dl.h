@@ -12,9 +12,9 @@
 #define MONO_SOLIB_EXT ".dll"
 #elif defined(__ppc__) && defined(TARGET_MACH)
 #define MONO_SOLIB_EXT ".dylib"
-#elif defined(TARGET_MACH) && defined(TARGET_X86) && !defined(__native_client_codegen__)
+#elif defined(TARGET_MACH) && defined(TARGET_X86)
 #define MONO_SOLIB_EXT ".dylib"
-#elif defined(TARGET_MACH) && defined(TARGET_AMD64) && !defined(__native_client_codegen__)
+#elif defined(TARGET_MACH) && defined(TARGET_AMD64)
 #define MONO_SOLIB_EXT ".dylib"
 #else
 #define MONO_SOLIB_EXT ".so"

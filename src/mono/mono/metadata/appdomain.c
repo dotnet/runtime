@@ -2266,10 +2266,6 @@ ves_icall_System_AppDomain_InternalUnload (gint32 domain_id, MonoError *error)
 	if (g_hasenv ("MONO_NO_UNLOAD"))
 		return;
 
-#ifdef __native_client__
-	return;
-#endif
-
 	MonoException *exc = NULL;
 	mono_domain_try_unload (domain, (MonoObject**)&exc);
 	if (exc)

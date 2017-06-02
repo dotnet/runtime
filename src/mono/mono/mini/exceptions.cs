@@ -1462,7 +1462,6 @@ class Tests
 		return 0;
 	}
 	
-	[Category ("NaClDisable")]
 	public static int test_0_div_zero () {
 		int d = 1;
 		int q = 0;
@@ -1633,7 +1632,6 @@ class Tests
 		return 0;
 	}
 
-	[Category ("NaClDisable")]
 	public static int test_0_long_div_zero () {
 		long d = 1;
 		long q = 0;

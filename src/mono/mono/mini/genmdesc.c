@@ -12,11 +12,6 @@
 #include <string.h>
 #include <mono/metadata/opcodes.h>
 
-#if defined(__native_client__) || defined(__native_client_codegen__)
-volatile int __nacl_thread_suspension_needed = 0;
-void __nacl_suspend_thread_if_needed() {}
-#endif
-
 #define MINI_OP(a,b,dest,src1,src2) b,
 #define MINI_OP3(a,b,dest,src1,src2,src3) b,
 /* keep in sync with the enum in mini.h */

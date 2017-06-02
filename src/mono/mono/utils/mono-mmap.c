@@ -331,20 +331,6 @@ mono_file_unmap (void *addr, void *handle)
  * \p length must be a multiple of the page size.
  * \returns \c 0 on success.
  */
-#if defined(__native_client__)
-int
-mono_mprotect (void *addr, size_t length, int flags)
-{
-	int prot = prot_from_flags (flags);
-	void *new_addr;
-
-	if (flags & MONO_MMAP_DISCARD) memset (addr, 0, length);
-
-	new_addr = mmap(addr, length, prot, MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS, -1, 0);
-	if (new_addr == addr) return 0;
-        return -1;
-}
-#else
 int
 mono_mprotect (void *addr, size_t length, int flags)
 {
@@ -367,7 +353,6 @@ mono_mprotect (void *addr, size_t length, int flags)
 	}
 	return mprotect (addr, length, prot);
 }
-#endif // __native_client__
 
 #else
 

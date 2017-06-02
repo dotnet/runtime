@@ -264,17 +264,8 @@ case "$host" in
 		with_sgen_default_concurrent=yes
 		;;
 	*-*-nacl*)
-		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
-		if test "x$disable_munmap" != "xyes"; then
-			CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
-		fi
-		libmono_cflags="-D_REENTRANT"
-		libdl=
-		libgc_threads=pthreads
-		use_sigposix=yes
-		ikvm_native=no
-		AC_DEFINE(DISABLE_SOCKETS,1,[Disable sockets support])
-		AC_DEFINE(DISABLE_ATTACH, 1, [Disable agent attach support])
+		echo "nacl no longer supported."
+		exit 1
 		;;
 	*-*-hpux*)
 		CPPFLAGS="$CPPFLAGS -DGC_HPUX_THREADS -D_HPUX_SOURCE -D_XOPEN_SOURCE_EXTENDED -D_REENTRANT"
@@ -742,10 +733,6 @@ if test "x$enable_libraries" = "xno"; then
 fi
 
 AM_CONDITIONAL(DISABLE_LIBRARIES, test x$enable_libraries = xno)
-
-case $host in
-*nacl* ) with_shared_mono=yes;;
-esac
 
 if test "x$host_win32" = "xyes"; then
    # Boehm GC requires the runtime to be in its own dll
@@ -1370,8 +1357,6 @@ AC_TRY_COMPILE([
 	AC_MSG_RESULT(no)
 	AC_DEFINE_UNQUOTED(MONO_ZERO_LEN_ARRAY, 1, [Length of zero length arrays])
 ])
-
-AC_CHECK_HEADERS(nacl/nacl_dyncode.h)
 
 dnl ***********************************
 dnl *** Checks for signals
@@ -2220,13 +2205,11 @@ if test x$host_win32 = xno; then
 	dnl **********************************
 	dnl *** epoll			   ***
 	dnl **********************************
-	if test "x$ac_cv_header_nacl_nacl_dyncode_h" = "xno"; then
-		AC_CHECK_HEADERS(sys/epoll.h)
-		haveepoll=no
-		AC_CHECK_FUNCS(epoll_ctl, [haveepoll=yes], )
-		if test "x$haveepoll" = "xyes" -a "x$ac_cv_header_sys_epoll_h" = "xyes"; then
-			AC_DEFINE(HAVE_EPOLL, 1, [epoll supported])
-		fi
+	AC_CHECK_HEADERS(sys/epoll.h)
+	haveepoll=no
+	AC_CHECK_FUNCS(epoll_ctl, [haveepoll=yes], )
+	if test "x$haveepoll" = "xyes" -a "x$ac_cv_header_sys_epoll_h" = "xyes"; then
+		AC_DEFINE(HAVE_EPOLL, 1, [epoll supported])
 	fi
 
 	havekqueue=no
@@ -2859,40 +2842,6 @@ fi
 AM_CONDITIONAL(ENABLE_DTRACE, [test x$enable_dtrace = xyes])
 AM_CONDITIONAL(DTRACE_G_REQUIRED, [test x$dtrace_g = xyes])
 
-dnl **************
-dnl ***  NaCl  ***
-dnl **************
-
-AC_ARG_ENABLE(nacl_codegen, [  --enable-nacl-codegen      Enable Native Client code generation], enable_nacl_codegen=$enableval, enable_nacl_codegen=no)
-AC_ARG_ENABLE(nacl_gc, [  --enable-nacl-gc           Enable Native Client garbage collection], enable_nacl_gc=$enableval, enable_nacl_gc=no)
-
-AM_CONDITIONAL(NACL_CODEGEN, test x$enable_nacl_codegen != xno)
-
-dnl
-dnl Hack to use system mono for operations in build/install not allowed in NaCl.
-dnl
-nacl_self_host=""
-if test "x$ac_cv_header_nacl_nacl_dyncode_h" = "xyes"; then
-   nacl_self_host="nacl_self_host"
-fi
-AC_SUBST(nacl_self_host)
-
-if test "x$enable_nacl_codegen" = "xyes"; then
-   MONO_NACL_ALIGN_MASK_OFF=1
-   AC_DEFINE(TARGET_NACL, 1, [...])
-   AC_DEFINE(__native_client_codegen__, 1, [...])
-fi
-if test "x$enable_nacl_gc" = "xyes"; then
-   if test "x$TARGET" = "xAMD64" -o "x$TARGET" = "xX86"; then
-      INSTRUMENT_CFLAG="-finstrument-for-thread-suspension"
-   else
-      # Not yet implemented
-      INSTRUMENT_CFLAG=""
-   fi
-   CPPFLAGS="$CPPFLAGS $INSTRUMENT_CFLAG -D__native_client_gc__"
-fi
-AC_SUBST(MONO_NACL_ALIGN_MASK_OFF)
-
 dnl **************************
 dnl *** AOT cross offsets  ***
 dnl **************************
@@ -3155,12 +3104,6 @@ case "$host" in
 		  mingw*)
 			;;
 		esac
-		case "$host" in
-			x86_64-*-nacl*)
-				AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
-				sizeof_register=8
-				;;
-		esac
 		;;
 	sparc*-*-*)
 		if test "x$ac_cv_sizeof_void_p" = "x8"; then
@@ -3241,13 +3184,6 @@ case "$host" in
 		ACCESS_UNALIGNED="no"
 		CPPFLAGS="$CPPFLAGS -D__ARM_EABI__"
 		;;
-# TODO: make proper support for NaCl host.
-#        arm*-*nacl)
-#		TARGET=ARM;
-#		arch_target=arm;
-#		ACCESS_UNALIGNED="no"
-#		AOT_SUPPORTED="no"
-#		;;
 	aarch64-*)
 		# https://lkml.org/lkml/2012/7/15/133
 		TARGET=ARM64
@@ -3307,38 +3243,6 @@ if test "x$host" != "x$target"; then
 		# uses this define
 		sizeof_register=8
 		target_byte_order=G_BIG_ENDIAN
-		;;
-   x86_64-*-nacl)
-		TARGET=AMD64
-		arch_target=amd64
-		AC_DEFINE(TARGET_AMD64, 1, [...])
-		AC_DEFINE(__mono_ilp32__, 1, [64 bit mode with 4 byte longs and pointers])
-		sizeof_register=8
-		;;
-# TODO: make proper support for NaCl target.
-#   arm*-*nacl)
-#		TARGET=ARM
-#		arch_target=arm
-#		AC_DEFINE(TARGET_ARM, 1, [...])
-#		ACCESS_UNALIGNED="no"
-#		sizeof_register=4
-#               CPPFLAGS="$CPPFLAGS \
-#                    -D__ARM_EABI__ \
-#                    -D__arm__ \
-#                    -D__portable_native_client__ \
-#                    -Dtimezone=_timezone \
-#                    -DDISABLE_SOCKETS \
-#                    -DDISABLE_ATTACH \
-#                    -DUSE_NEWLIB"
-		# Can't use tls, since it depends on the runtime detection of tls offsets
-		# in mono-compiler.h
-#		with_tls=pthread
-#		;;
-   i686-*-nacl)
-		TARGET=X86
-		arch_target=x86
-		AC_DEFINE(TARGET_X86, 1, [...])
-		sizeof_register=4
 		;;
    arm*-linux-*)
 		TARGET=ARM;

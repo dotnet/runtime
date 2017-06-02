@@ -2283,16 +2283,6 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	 * non-lazily, since we can't handle out-of-date errors later.
 	 * The cached class info also depends on the exact assemblies.
 	 */
-#if defined(__native_client__)
-	/* TODO: Don't 'load_image' on mscorlib due to a */
-	/* recursive loading problem.  This should be    */
-	/* removed if mscorlib is loaded from disk.      */
-	if (strncmp(assembly->aname.name, "mscorlib", 8)) {
-		do_load_image = TRUE;
-	} else {
-		do_load_image = FALSE;
-	}
-#endif
 	if (do_load_image) {
 		for (i = 0; i < amodule->image_table_len; ++i) {
 			MonoError error;
@@ -2353,9 +2343,7 @@ mono_aot_init (void)
 	mono_os_mutex_init_recursive (&aot_page_mutex);
 	aot_modules = g_hash_table_new (NULL, NULL);
 
-#ifndef __native_client__
 	mono_install_assembly_load_hook (load_aot_module, NULL);
-#endif
 	mono_counters_register ("Async JIT info size", MONO_COUNTER_INT|MONO_COUNTER_JIT, &async_jit_info_size);
 
 	char *lastaot = g_getenv ("MONO_LASTAOT");

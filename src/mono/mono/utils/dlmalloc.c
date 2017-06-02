@@ -484,13 +484,6 @@ DEFAULT_MMAP_THRESHOLD       default: 256K
 #endif  /* HAVE_MORECORE */
 #endif  /* DARWIN */
 
-#if defined(__native_client__)
-#undef HAVE_MMAP
-#undef HAVE_MREMAP
-#define HAVE_MMAP 0
-#define HAVE_MREMAP 0
-#endif
-
 #ifndef LACKS_SYS_TYPES_H
 #include <sys/types.h>  /* For size_t */
 #endif  /* LACKS_SYS_TYPES_H */

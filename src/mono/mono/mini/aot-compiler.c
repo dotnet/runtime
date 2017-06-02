@@ -78,7 +78,7 @@
 #define TARGET_WIN32_MSVC
 #endif
 
-#if defined(__linux__) || defined(__native_client_codegen__)
+#if defined(__linux__)
 #define RODATA_SECT ".rodata"
 #elif defined(TARGET_MACH)
 #define RODATA_SECT ".section __TEXT, __const"
@@ -953,10 +953,8 @@ emit_code_bytes (MonoAotCompile *acfg, const guint8* buf, int size)
 #ifdef TARGET_X86
 #ifdef TARGET_WIN32
 #define AOT_TARGET_STR "X86 (WIN32)"
-#elif defined(__native_client_codegen__)
-#define AOT_TARGET_STR "X86 (native client codegen)"
 #else
-#define AOT_TARGET_STR "X86 (!native client codegen)"
+#define AOT_TARGET_STR "X86"
 #endif
 #endif
 
@@ -10361,19 +10359,13 @@ compile_asm (MonoAotCompile *acfg)
 #define AS_OPTIONS "-a64 -mppc64"
 #elif defined(sparc) && SIZEOF_VOID_P == 8
 #define AS_OPTIONS "-xarch=v9"
-#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
+#elif defined(TARGET_X86) && defined(TARGET_MACH)
 #define AS_OPTIONS "-arch i386"
 #else
 #define AS_OPTIONS ""
 #endif
 
-#ifdef __native_client_codegen__
-#if defined(TARGET_AMD64)
-#define AS_NAME "nacl64-as"
-#else
-#define AS_NAME "nacl-as"
-#endif
-#elif defined(TARGET_OSX)
+#if defined(TARGET_OSX)
 #define AS_NAME "clang"
 #elif defined(TARGET_WIN32_MSVC)
 #define AS_NAME "clang.exe"
@@ -10402,7 +10394,7 @@ compile_asm (MonoAotCompile *acfg)
 #elif defined(TARGET_WIN32) && !defined(TARGET_ANDROID)
 #define LD_NAME "gcc"
 #define LD_OPTIONS "-shared"
-#elif defined(TARGET_X86) && defined(TARGET_MACH) && !defined(__native_client_codegen__)
+#elif defined(TARGET_X86) && defined(TARGET_MACH)
 #define LD_NAME "clang"
 #define LD_OPTIONS "-m32 -dynamiclib"
 #elif defined(TARGET_ARM) && !defined(TARGET_ANDROID)

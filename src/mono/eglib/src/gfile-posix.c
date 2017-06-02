@@ -154,15 +154,6 @@ g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error)
 gchar *
 g_get_current_dir (void)
 {
-#ifdef __native_client__
-	char *buffer;
-	if ((buffer = g_getenv("NACL_PWD"))) {
-		buffer = g_strdup(buffer);
-	} else {
-		buffer = g_strdup(".");
-	}
-	return buffer;
-#else
 	int s = 32;
 	char *buffer = NULL, *r;
 	gboolean fail;
@@ -181,5 +172,4 @@ g_get_current_dir (void)
 	 * so we return the buffer here since it has a pointer to the valid string
 	 */
 	return buffer;
-#endif
 }

@@ -109,7 +109,7 @@ and reduce the number of casts drastically.
 /* If this is defined, use the signals backed on Mach. Debug only as signals can't be made usable on OSX. */
 // #define USE_SIGNALS_ON_MACH
 
-#if defined (_POSIX_VERSION) || defined (__native_client__)
+#if defined (_POSIX_VERSION)
 #if defined (__MACH__) && !defined (USE_SIGNALS_ON_MACH)
 #define USE_MACH_BACKEND
 #else
@@ -119,7 +119,7 @@ and reduce the number of casts drastically.
 #define USE_WINDOWS_BACKEND
 #else
 #error "no backend support for current platform"
-#endif /* defined (_POSIX_VERSION) || defined (__native_client__) */
+#endif /* defined (_POSIX_VERSION) */
 
 enum {
 	STATE_STARTING				= 0x00,

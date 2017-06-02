@@ -2,11 +2,7 @@
  * \file
  */
 
-#if defined(__native_client__) && defined(__x86_64__)
-typedef guint64 regmask_t;
-#else
 typedef size_t regmask_t;
-#endif
 
 enum {
 	MONO_REG_INT,

@@ -203,7 +203,6 @@ common_sources = \
 	mono-route.c		\
 	mono-route.h		\
 	monitor.h		\
-	nacl-stub.c		\
 	normalization-tables.h	\
 	number-formatter.h	\
 	number-ms.c		\

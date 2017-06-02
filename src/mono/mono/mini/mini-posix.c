@@ -75,7 +75,7 @@
 #include <mach/clock.h>
 #endif
 
-#if defined(__native_client__) || defined(HOST_WATCHOS)
+#if defined(HOST_WATCHOS)
 
 void
 mono_runtime_setup_stat_profiler (void)
@@ -840,16 +840,7 @@ mono_runtime_setup_stat_profiler (void)
 
 #endif
 
-#endif /* defined(__native_client__) || defined(HOST_WATCHOS) */
-
-#if defined(__native_client__)
-
-void
-mono_gdb_render_native_backtraces (pid_t crashed_pid)
-{
-}
-
-#else
+#endif /* defined(HOST_WATCHOS) */
 
 static gboolean
 native_stack_with_gdb (pid_t crashed_pid, const char **argv, FILE *commands, char* commands_filename)
@@ -945,8 +936,6 @@ exec:
 	fprintf (stderr, "mono_gdb_render_native_backtraces not supported on this platform\n");
 #endif // HAVE_EXECV
 }
-
-#endif /* defined(__native_client__) */
 
 #if !defined (__MACH__)
 

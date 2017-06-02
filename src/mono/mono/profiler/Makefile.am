@@ -50,9 +50,7 @@ endif
 
 # FIXME fix the profiler tests to work with coop.
 if !ENABLE_COOP
-if !NACL_CODEGEN
 check_targets = testlog
-endif
 endif
 
 endif

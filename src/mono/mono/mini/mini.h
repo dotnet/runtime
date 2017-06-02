@@ -49,11 +49,6 @@
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
 
-#ifdef __native_client_codegen__
-#include <nacl/nacl_dyncode.h>
-#endif
-
-
 /*
  * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
  * can be linked into both mono and mono-sgen.
@@ -1679,11 +1674,6 @@ typedef struct {
 	MonoInst *stack_inbalance_var;
 
 	unsigned char   *cil_start;
-#ifdef __native_client_codegen__
-	/* this alloc is not aligned, native_code */
-	/* is the 32-byte aligned version of this */
-	unsigned char   *native_code_alloc;
-#endif
 	unsigned char   *native_code;
 	guint            code_size;
 	guint            code_len;
@@ -2499,12 +2489,6 @@ void      mono_liveness_handle_exception_clauses (MonoCompile *cfg);
 
 /* Native Client functions */
 gpointer mono_realloc_native_code(MonoCompile *cfg);
-
-#if defined(__native_client__) || defined(__native_client_codegen__)
-extern volatile int __nacl_thread_suspension_needed;
-void __nacl_suspend_thread_if_needed(void);
-void mono_nacl_gc(void);
-#endif
 
 extern MonoDebugOptions debug_options;
 

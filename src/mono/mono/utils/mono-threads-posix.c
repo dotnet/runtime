@@ -30,7 +30,7 @@
 extern int tkill (pid_t tid, int signal);
 #endif
 
-#if defined(_POSIX_VERSION) || defined(__native_client__)
+#if defined(_POSIX_VERSION)
 
 #include <pthread.h>
 
@@ -150,9 +150,6 @@ mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 		errno = old_errno;
 	}
 	return result;
-#elif defined(__native_client__)
-	/* Workaround pthread_kill abort() in NaCl glibc. */
-	return 0;
 #elif !defined(HAVE_PTHREAD_KILL)
 	g_error ("pthread_kill() is not supported by this platform");
 #else
@@ -234,7 +231,7 @@ mono_native_thread_join (MonoNativeThreadId tid)
 	return !pthread_join (tid, &res);
 }
 
-#endif /* defined(_POSIX_VERSION) || defined(__native_client__) */
+#endif /* defined(_POSIX_VERSION) */
 
 #if defined(USE_POSIX_BACKEND)
 

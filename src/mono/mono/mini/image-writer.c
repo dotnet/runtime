@@ -55,7 +55,7 @@
  * TARGET_ASM_GAS == GNU assembler
  */
 #if !defined(TARGET_ASM_APPLE) && !defined(TARGET_ASM_GAS)
-#if defined(TARGET_MACH) && !defined(__native_client_codegen__)
+#if defined(TARGET_MACH)
 #define TARGET_ASM_APPLE
 #else
 #define TARGET_ASM_GAS
@@ -329,11 +329,6 @@ bin_writer_emit_ensure_buffer (BinSection *section, int size)
 		while (new_size <= new_offset)
 			new_size *= 2;
 		data = (guint8 *)g_malloc0 (new_size);
-#ifdef __native_client_codegen__
-		/* for Native Client, fill empty space with HLT instruction */
-		/* instead of 00.                                           */
-		memset(data, 0xf4, new_size);
-#endif		
 		memcpy (data, section->data, section->data_len);
 		g_free (section->data);
 		section->data = data;

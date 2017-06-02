@@ -1,2 +1,0 @@
-Building NaCl Mono with glibc (newlib support is eliminated but should still be buildable with small effort) is complex.  Instructions live here for the adventurous: https://docs.google.com/a/google.com/document/d/1Jd_4M7mlmxF8daVbepAy_8RKYcRbhifXanRYyBKkVa4/pub
-
