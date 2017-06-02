@@ -430,6 +430,12 @@ TYPED_HANDLE_DECL (MonoObject);
 TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoAppContext);
 
+/* Unfortunately MonoThreadHandle is already a typedef used for something unrelated.  So
+ * the coop handle for MonoThread* is MonoThreadObjectHandle.
+ */
+typedef MonoThread MonoThreadObject;
+TYPED_HANDLE_DECL (MonoThreadObject);
+
 #define NULL_HANDLE_STRING MONO_HANDLE_CAST(MonoString, NULL_HANDLE)
 
 /*
