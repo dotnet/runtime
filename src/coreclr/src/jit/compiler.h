@@ -6759,6 +6759,7 @@ public:
     static fgWalkPreFn CountSharedStaticHelper;
     static bool IsSharedStaticHelper(GenTreePtr tree);
     static bool IsTreeAlwaysHoistable(GenTreePtr tree);
+    static bool IsGcSafePoint(GenTreePtr tree);
 
     static CORINFO_FIELD_HANDLE eeFindJitDataOffs(unsigned jitDataOffs);
     // returns true/false if 'field' is a Jit Data offset
