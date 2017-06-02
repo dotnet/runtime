@@ -73,8 +73,9 @@ FCIMPL2(Object*, DependentHandle::nGetPrimaryAndSecondary, OBJECTHANDLE handle, 
 
     OBJECTREF primary = ObjectFromHandle(handle);
 
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
     // Secondary is tracked only if primary is non-null
-    *outSecondary = (primary != NULL) ? OBJECTREFToObject(GetDependentHandleSecondary(handle)) : NULL;
+    *outSecondary = (primary != NULL) ? mgr->GetDependentHandleSecondary(handle) : NULL;
 
     return OBJECTREFToObject(primary);
 }
@@ -86,8 +87,8 @@ FCIMPL2(VOID, DependentHandle::nSetPrimary, OBJECTHANDLE handle, Object *_primar
 
     _ASSERTE(handle != NULL);
 
-    OBJECTREF primary(_primary);
-    StoreObjectInHandle(handle, primary);
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    mgr->StoreObjectInHandle(handle, _primary);
 }
 FCIMPLEND
 
@@ -97,7 +98,7 @@ FCIMPL2(VOID, DependentHandle::nSetSecondary, OBJECTHANDLE handle, Object *_seco
 
     _ASSERTE(handle != NULL);
 
-    OBJECTREF secondary(_secondary);
-    SetDependentHandleSecondary(handle, secondary);
+    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+    mgr->SetDependentHandleSecondary(handle, _secondary);
 }
 FCIMPLEND

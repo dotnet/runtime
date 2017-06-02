@@ -23,6 +23,10 @@ public:
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
 
+    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget);
+
+    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context);
+
     virtual ~GCHandleStore();
 
     HandleTableBucket _underlyingBucket;
@@ -58,6 +62,10 @@ public:
     virtual void StoreObjectInHandle(OBJECTHANDLE handle, Object* object);
 
     virtual bool StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object);
+
+    virtual void SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object);
+
+    virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle);
 
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
 };
