@@ -23,7 +23,12 @@ namespace System.Runtime.InteropServices
         }
         public static string GetRuntimeDirectory()
         {
-            return Path.GetDirectoryName(typeof(object).Assembly.Location) + Path.DirectorySeparatorChar;
+            string runtimeDirectory = typeof(object).Assembly.Location;
+            if (!Path.IsPathRooted(runtimeDirectory))
+            {
+                runtimeDirectory = AppDomain.CurrentDomain.BaseDirectory;
+            }
+            return Path.GetDirectoryName(runtimeDirectory) + Path.DirectorySeparatorChar;
         }
         public static System.IntPtr GetRuntimeInterfaceAsIntPtr(Guid clsid, Guid riid)
         {

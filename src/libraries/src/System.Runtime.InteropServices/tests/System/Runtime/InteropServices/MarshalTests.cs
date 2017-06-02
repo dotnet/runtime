@@ -417,11 +417,11 @@ namespace System.Runtime.InteropServices
             Marshal.FreeCoTaskMem(ptr);                          
         }
         
-        [Fact]
+        [Fact]        
         public static void BindToMoniker()
         {
             String monikerName = null;
-            if(PlatformDetection.IsWindows)
+            if(PlatformDetection.IsWindows && !PlatformDetection.IsNetNative)
             {
                 if (PlatformDetection.IsNotWindowsNanoServer)
                 {
@@ -434,10 +434,10 @@ namespace System.Runtime.InteropServices
             }        
         }
 
-        [Fact]
+        [Fact]        
         public static void ChangeWrapperHandleStrength() 
         {
-            if(PlatformDetection.IsWindows)
+            if(PlatformDetection.IsWindows && !PlatformDetection.IsNetNative)
             {
                 Assert.Throws<ArgumentNullException>(() => Marshal.ChangeWrapperHandleStrength(null, true));
             }  
