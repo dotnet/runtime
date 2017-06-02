@@ -297,8 +297,8 @@ namespace System.Threading
                     s_lastProcessorCountRefreshTicks = now;
                 }
 
-                Debug.Assert(procCount > 0 && procCount <= 64,
-                    "Processor count not within the expected range (1 - 64).");
+                Debug.Assert(procCount > 0,
+                    "Processor count should be greater than 0.");
 
                 return procCount;
             }
