@@ -113,7 +113,7 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
 
 #### Motivation for triage rules
 
-1. Each issue has exactly one **area-&#42;** label
+1. Each issue has exactly one **area-\*** label
     * Motivation: Issues with multiple areas have loose responbility (everyone blames the other side) and issues are double counted in reports.
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
     * Motivation: Observation is that contributors are less likely to grab assigned issues, no matter what the repo rules say.
@@ -125,3 +125,13 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
     * Don't be afraid to be wrong when deciding 'bug' vs. 'test bug' (flip a coin if you must). The most useful values for tracking are 'api-&#42;' vs. 'enhancement', 'question', and 'documentation'.
 1. Don't be afraid to say no, or close issues - just explain why and be polite
 1. Don't be afraid to be wrong - just be flexible when new information appears
+
+#### PR rules
+
+1. Each PR has exactly one **area-\*** label
+    * Movitation: Area owners will get email notification about new issue in their area.
+1. PR has **Assignee** set to author of the PR, if it is non-CoreFX engineer, then area owners are co-assignees
+    * Motivation: Area owners are responsible to do code reviews for PRs from external contributors. CoreFX engineers know how to get code reviews from others.
+1. Any other labels on PRs are superfluous and not needed (exceptions: **blocked**, **NO MERGE**)
+    * Motivation: All the important info (*issue type* label, api approval label, OS label, etc.) is already captured on the associated issue.
+1. Push PRs forward, don't let them go stale (response every 5+ days, ideally no PRs older than 2 weeks)
