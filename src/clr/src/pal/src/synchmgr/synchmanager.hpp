@@ -824,6 +824,8 @@ namespace CorUnix
             ThreadWakeupReason *ptwrWakeupReason,
             DWORD *pdwSignaledObject);
 
+        virtual void YieldThread();
+
         virtual PAL_ERROR AbandonObjectsOwnedByThread(
             CPalThread *pthrCurrent,
             CPalThread *pthrTarget);
