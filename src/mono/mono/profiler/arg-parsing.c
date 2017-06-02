@@ -6,6 +6,22 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_SCHED_GETAFFINITY
+#  ifndef GLIBC_HAS_CPU_COUNT
+static int
+CPU_COUNT(cpu_set_t *set)
+{
+	int i, count = 0;
+
+	for (int i = 0; i < CPU_SETSIZE; i++)
+		if (CPU_ISSET(i, set))
+			count++;
+	return count;
+}
+#  endif
+#endif
+
+
 #include "mono-profiler-log.h"
 
 typedef struct {
