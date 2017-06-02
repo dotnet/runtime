@@ -45,7 +45,9 @@ set(SOURCES
 
 
 if(WIN32)
-    list(APPEND SOURCES ../../common/pal.windows.cpp)
+    list(APPEND SOURCES 
+        ../../common/pal.windows.cpp
+        ../../common/longfile.windows.cpp)
 else()
     list(APPEND SOURCES ../../common/pal.unix.cpp)
 endif()
@@ -65,3 +67,4 @@ if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
     target_link_libraries(hostpolicy shell32.lib)
 endif()
 
+install_library_and_symbols (hostpolicy)

@@ -5,11 +5,6 @@
 #
 
 # This is a VERY basic script for Create/Delete operations on repos and packages
-# 
-# Environment Dependencies:
-#   $REPO_SERVER
-#   $REPO_USER
-#   $REPO_PASS
 
 cmd=$5
 urls=urls.txt
@@ -73,7 +68,8 @@ function AddPackage
     fi
     packageUrl=$(grep "sourceUrl" $packageFile  | head -n 1 | awk '{print $2}')
     echo "Adding package to $server [$packageUrl]"
-    curl -i -k "$baseurl/v1/packages" --data @$packageFile -H "Content-Type: application/json"
+    #Workaround no curl on image
+    wget  --header "Content-Type: application/json" --post-file $packageFile --no-check-certificate "$baseurl/v1/packages"
     BailIf $?
     echo ""
 }
@@ -169,18 +165,18 @@ if [[ "$1" == "-listrepos" ]]; then
   echo "Fetching repo list from $server..."
   curl -k "$baseurl/v1/repositories" | sed 's/,/,\n/g' | sed 's/^"/\t"/g'
   echo ""
-elif [[ "$1" == "-listpkgs" ]]; then
+elif [[ "$5" == "-listpkgs" ]]; then
   echo "Fetching package list from $server"
   ListPackages $6
-elif [[ "$1" == "-addrepo" ]]; then
+elif [[ "$5" == "-addrepo" ]]; then
   AddRepo $6
-elif [[ "$1" == "-addpkg" ]]; then
+elif [[ "$5" == "-addpkg" ]]; then
   AddPackage $6
-elif [[ "$1" == "-addpkgs" ]]; then
+elif [[ "$5" == "-addpkgs" ]]; then
   AddPackages $6
-elif [[ "$1" == "-delrepo" ]]; then
+elif [[ "$5" == "-delrepo" ]]; then
   DeleteRepo $6
-elif [[ "$1" == "-delpkg" ]]; then
+elif [[ "$5" == "-delpkg" ]]; then
   DeletePackage $6
 else
   echo "USAGE: ./repotool.sh [username] [password] [repository id] [server] -OPTION"

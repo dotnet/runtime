@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Execute(fExpectedToFail:true)
                 .ExitCode;
 
-            if (CurrentPlatform.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 exitCode.Should().Be(-2147450731);
             }
@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Execute(fExpectedToFail:true)
                 .ExitCode;
 
-            if (CurrentPlatform.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 exitCode.Should().Be(-2147450748);
             }

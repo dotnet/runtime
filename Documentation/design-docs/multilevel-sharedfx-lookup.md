@@ -80,14 +80,7 @@ At last, the coreclr is loaded into memory and called to run the application.
 
 ## Proposed changes
 
-Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well. Suggested folders are the user location and the global .NET location. The user and global folders may vary depending on the running operational system. They are defined as follows:
-
-User location:
-
-	Windows 32-bit: %SystemDrive%\Users\username\.dotnet\x86
-	Windows 64-bit: %SystemDrive%\Users\username\.dotnet\x64
-	Unix 32-bit: /home/username/.dotnet/x86
-	Unix 64-bit: /home/username/.dotnet/x64
+Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well, namely the global .NET location. The  global folders may vary depending on the running operational system. They are defined as follows:
 
 Global .NET location:
 
@@ -102,15 +95,13 @@ It’s being proposed that, if the specified version is defined through the conf
 
 - For productions:
 
-	1.	In relation to the user location: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
-	2.	In relation to the executable directory: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
-	3.	In relation to the global location: search for the most appropriate version by rolling forward. If it cannot be found, then we were not able to locate any compatible version.
+	1.	In relation to the executable directory: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
+	2.	In relation to the global location: search for the most appropriate version by rolling forward. If it cannot be found, then we were not able to locate any compatible version.
 
 - For pre-releases:
 	
-	1.	In relation to the user location: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
-	2.	In relation to the executable directory: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
-	3.	In relation to the global location: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, then we were not able to locate any compatible version.
+	1.	In relation to the executable directory: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
+	2.	In relation to the global location: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, then we were not able to locate any compatible version.
 
 In the case that the desired version is defined through an argument, the multi-level lookup will happen as well but it will only consider the exact specified version (it will not roll forward).
 
@@ -132,6 +123,5 @@ By following similar logic, it will be possible to implement future changes in t
 
 The search would be conducted as follows:
 
-1.	In relation to the user location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
-2.	In relation to the executable directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
-3.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message must be returned.
+1.	In relation to the executable directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
+2.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message must be returned.

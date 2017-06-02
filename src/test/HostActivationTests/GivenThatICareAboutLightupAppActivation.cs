@@ -63,11 +63,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
             dotnet.Exec("exec", "--additional-deps", libDepsJson, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .Should()
                 .Fail()
                 .And
-                .HaveStdErrContaining("Error: assembly specified in the dependencies manifest was not found -- package: \'LightupLib\', version: \'1.0.0\', path: \'LightupLib.dll\'");
+                .HaveStdErrContaining(
+                    "Error:" + Environment.NewLine +
+                    "  An assembly specified in the application dependencies manifest (LightupLib.deps.json) was not found:" + Environment.NewLine +
+                    "    package: \'LightupLib\', version: \'1.0.0\'" + Environment.NewLine +
+                    "    path: \'LightupLib.dll\'");
         }
 
         // Attempt to run the app with lightup deps.json specified and lightup library present in the expected 
