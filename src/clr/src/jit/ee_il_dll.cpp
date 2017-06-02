@@ -126,6 +126,8 @@ void jitShutdown()
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessDetach();
 #endif
+
+    g_jitInitialized = false;
 }
 
 #ifndef FEATURE_MERGE_JIT_AND_ENGINE
@@ -345,9 +347,7 @@ void CILJit::ProcessShutdownWork(ICorStaticInfo* statInfo)
         // Continue, by shutting down this JIT as well.
     }
 
-#ifdef FEATURE_MERGE_JIT_AND_ENGINE
     jitShutdown();
-#endif
 
     Compiler::ProcessShutdownWork(statInfo);
 }
