@@ -29,7 +29,7 @@ namespace System.Xml.Tests
         public new void Init(object objParam)
         {
             // Get parameter info
-            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
+            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
             xsltArg1 = new XsltArgumentList();
 
             MyObject obj1 = new MyObject(1, _output);
@@ -246,9 +246,9 @@ namespace System.Xml.Tests
             string _strXmlFile = ((object[])args)[2].ToString();
 
             if (_strXslFile.Substring(0, 5) != "http:")
-                _strXslFile = _strPath + _strXslFile;
+                _strXslFile = Path.Combine(_strPath, _strXslFile);
             if (_strXmlFile.Substring(0, 5) != "http:")
-                _strXmlFile = _strPath + _strXmlFile;
+                _strXmlFile = Path.Combine(_strPath, _strXmlFile);
 
             XmlReader xrData = XmlReader.Create(_strXmlFile);
             XPathDocument xd = new XPathDocument(xrData, XmlSpace.Preserve);

@@ -549,8 +549,16 @@ namespace System.Tests
             // File with host
             yield return new object[] { "file://path1/path2", "/path2", "", "" };
             yield return new object[] { "file:///path1/path2", "/path1/path2", "", "" };
-            yield return new object[] { @"file:///path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            yield return new object[] { @"file:///path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+            if (s_isWindowsSystem)
+            {
+                yield return new object[] { @"file:///path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                yield return new object[] { @"file:///path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+            }
+            else // Unix paths preserve backslash
+            {
+                yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file:///path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+            }
             // Implicit file with empty path
             yield return new object[] { "C:/", "C:/", "", "" };
             yield return new object[] { "C|/", "C:/", "", "" };

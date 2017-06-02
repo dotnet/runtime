@@ -29,7 +29,7 @@ namespace System.Xml.Tests
         public new void Init(object objParam)
         {
             xsltSameInstance = new XslCompiledTransform();
-            _strPath = Path.Combine(@"TestFiles\", FilePathUtil.GetTestDataPath(), @"XsltApiV2\");
+            _strPath = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApiV2");
             return;
         }
     }
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
 
         public void Load(string _strXslFile, string _strXmlFile)
         {
-            _xrData = XmlReader.Create(_strPath + _strXmlFile);
+            _xrData = XmlReader.Create(Path.Combine(_strPath, _strXmlFile));
             _xd = new XPathDocument(_xrData, XmlSpace.Preserve);
             _xrData.Dispose();
 
@@ -56,7 +56,7 @@ namespace System.Xml.Tests
 #pragma warning disable 0618
             xrs.ProhibitDtd = false;
 #pragma warning restore 0618
-            XmlReader xrTemp = XmlReader.Create(_strPath + _strXslFile, xrs);
+            XmlReader xrTemp = XmlReader.Create(Path.Combine(_strPath, _strXslFile), xrs);
             xsltSameInstance.Load(xrTemp);
         }
 
@@ -362,7 +362,7 @@ namespace System.Xml.Tests
 
         public void Load(string _strXslFile, string _strXmlFile)
         {
-            _xrData = XmlReader.Create(_strPath + _strXmlFile);
+            _xrData = XmlReader.Create(Path.Combine(_strPath, _strXmlFile));
             _xd = new XPathDocument(_xrData, XmlSpace.Preserve);
             _xrData.Dispose();
 
@@ -370,7 +370,7 @@ namespace System.Xml.Tests
 #pragma warning disable 0618
             xrs.ProhibitDtd = false;
 #pragma warning restore 0618
-            XmlReader xrTemp = XmlReader.Create(_strPath + _strXslFile, xrs);
+            XmlReader xrTemp = XmlReader.Create(Path.Combine(_strPath, _strXslFile), xrs);
             xsltSameInstance.Load(xrTemp);
         }
 
