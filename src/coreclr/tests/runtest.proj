@@ -365,47 +365,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(BuildTestsAgainstPackages)'=='true' " />
   </Target>
 
-  <!-- All the test projects need to add dependency to currently built runtime as they require that to run. 
-       In addition the version number of built runtime can change so all project.json needs to be dynamically generated.
-       Instead the following task creates a project.json with dependencies like  Microsoft.netcore.runtime.coreclr ..etc.
-        -->
-  <Target Name="CreateTestRuntimeJsonFile">
-    <ItemGroup>
-      <CoreclrPackage Include="$(CORE_ROOT)\.nuget\**\Microsoft.NETCore.Runtime.CoreCLR.*.nupkg"/>
-    </ItemGroup>
-    <PropertyGroup>
-      <CoreclrPackageFileName>%(CoreclrPackage.Filename)</CoreclrPackageFileName>
-      <!-- Get package version number from nuget package filename at core_root -->
-      <CoreClrPackageVersion Condition="'$(BuildTestsAgainstPackages)'!='true'">$([System.String]::Copy('$(CoreclrPackageFileName)').Replace('Microsoft.NETCore.Runtime.CoreCLR.',''))</CoreClrPackageVersion>
-      <TestRuntimeJsonContents>
-        <![CDATA[
-{
-  "dependencies": {
-    "Microsoft.NETCore.Runtime.CoreCLR": "$(CoreClrPackageVersion)",
-    "Microsoft.NETCore.TestHost": "1.0.0-rc3-24117-00"
-  },
-  "frameworks": {
-    "dnxcore50": {}
-  },
-  "runtimes": {
-    "$(TestNugetRuntimeId)":{}
-  }
-}
-
-        ]]>
-      </TestRuntimeJsonContents>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(TestRuntimeProjectJsonDir)" Condition="!Exists('$(TestRuntimeProjectJsonDir)')" />
-
-    <!-- Write the file -->
-    <WriteLinesToFile
-      File="$(TestRuntimeProjectJson)"
-      Lines="$(TestRuntimeJsonContents)"
-      Overwrite="true" />
-
-  </Target>
-
   <Target Name="RunPerfTests" Condition="'$(Performance)'=='true'">  
     <Message Text="Executing steps for perf tests" Importance="High"/>  
     
@@ -422,11 +381,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
 
   <Target Name="Build">
-
-    <!-- generate project.json for runtime dependency -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestRuntimeJsonFile"
-             Condition=" '$(BuildWrappers)'=='true' " />
 
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="src\Common\test_dependencies\test_dependencies.csproj"
