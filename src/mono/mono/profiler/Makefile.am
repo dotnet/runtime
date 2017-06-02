@@ -79,10 +79,10 @@ libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
 libmono_profiler_iomap_static_la_SOURCES = mono-profiler-iomap.c
 libmono_profiler_iomap_static_la_LDFLAGS = -static
 
-libmono_profiler_log_la_SOURCES = mono-profiler-log.c
+libmono_profiler_log_la_SOURCES = mono-profiler-log.c arg-parsing.c
 libmono_profiler_log_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(Z_LIBS)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_log_static_la_SOURCES = mono-profiler-log.c
+libmono_profiler_log_static_la_SOURCES = mono-profiler-log.c arg-parsing.c
 libmono_profiler_log_static_la_LDFLAGS = -static
 
 if HAVE_VTUNE

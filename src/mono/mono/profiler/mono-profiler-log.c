@@ -17,7 +17,6 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
-#include <mono/metadata/profiler.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-alloc.h>
@@ -85,22 +84,20 @@ CPU_COUNT(cpu_set_t *set)
 static volatile gint32 runtime_inited;
 static volatile gint32 in_shutdown;
 
-static gboolean no_counters;
 static int nocalls = 0;
 static int notraces = 0;
 static int use_zip = 0;
 static int do_report = 0;
 static int do_heap_shot = 0;
-static int max_call_depth = 100;
+static int max_call_depth = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
-static int sample_freq = 0;
 static int do_mono_sample = 0;
 static int do_debug = 0;
 static int do_coverage = 0;
-static gboolean only_coverage;
+static gboolean no_counters = FALSE;
+static gboolean only_coverage = FALSE;
 static gboolean debug_coverage = FALSE;
-static MonoProfileSamplingMode sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 static int max_allocated_sample_hits;
 
 // Statistics for internal profiler data structures.
@@ -1540,9 +1537,6 @@ gc_resize (MonoProfiler *profiler, int64_t new_size)
 	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
 }
 
-// If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
-#define MAX_FRAMES 32
-
 typedef struct {
 	int count;
 	MonoMethod* methods [MAX_FRAMES];
@@ -2732,91 +2726,6 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 	}
 }
 
-static int
-mono_cpu_count (void)
-{
-#ifdef PLATFORM_ANDROID
-	/* Android tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API.
-	 * Instead we use /sys entries to query the actual hardware CPU count.
-	 */
-	int count = 0;
-	char buffer[8] = {'\0'};
-	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
-	/* Format of the /sys entry is a cpulist of indexes which in the case
-	 * of present is always of the form "0-(n-1)" when there is more than
-	 * 1 core, n being the number of CPU cores in the system. Otherwise
-	 * the value is simply 0
-	 */
-	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
-		count = strtol (((char*)buffer) + 2, NULL, 10);
-	if (present != -1)
-		close (present);
-	if (count > 0)
-		return count + 1;
-#endif
-
-#if defined(HOST_ARM) || defined (HOST_ARM64)
-
-	/* ARM platforms tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API. */
-
-#ifdef _SC_NPROCESSORS_CONF
-	{
-		int count = sysconf (_SC_NPROCESSORS_CONF);
-		if (count > 0)
-			return count;
-	}
-#endif
-
-#else
-
-#ifdef HAVE_SCHED_GETAFFINITY
-	{
-		cpu_set_t set;
-		if (sched_getaffinity (getpid (), sizeof (set), &set) == 0)
-			return CPU_COUNT (&set);
-	}
-#endif
-#ifdef _SC_NPROCESSORS_ONLN
-	{
-		int count = sysconf (_SC_NPROCESSORS_ONLN);
-		if (count > 0)
-			return count;
-	}
-#endif
-
-#endif /* defined(HOST_ARM) || defined (HOST_ARM64) */
-
-#ifdef USE_SYSCTL
-	{
-		int count;
-		int mib [2];
-		size_t len = sizeof (int);
-		mib [0] = CTL_HW;
-		mib [1] = HW_NCPU;
-		if (sysctl (mib, 2, &count, &len, NULL, 0) == 0)
-			return count;
-	}
-#endif
-#ifdef HOST_WIN32
-	{
-		SYSTEM_INFO info;
-		GetSystemInfo (&info);
-		return info.dwNumberOfProcessors;
-	}
-#endif
-
-	static gboolean warned;
-
-	if (!warned) {
-		g_warning ("Don't know how to determine CPU count on this platform; assuming 1");
-		warned = TRUE;
-	}
-
-	return 1;
-}
-
 typedef struct MonoCounterAgent {
 	MonoCounter *counter;
 	// MonoCounterAgent specific data :
@@ -3838,6 +3747,32 @@ init_suppressed_assemblies (void)
 }
 
 static void
+parse_cov_filter_file (GPtrArray *filters, const char *file)
+{
+	FILE *filter_file;
+	char *line, *content;
+
+	if (filters == NULL)
+		filters = g_ptr_array_new ();
+
+	filter_file = fopen (file, "r");
+	if (filter_file == NULL) {
+		fprintf (stderr, "Unable to open %s\n", file);
+		return;
+	}
+
+	/* Don't need to free content as it is referred to by the lines stored in @filters */
+	content = get_file_content (filter_file);
+	if (content == NULL)
+		fprintf (stderr, "WARNING: %s is greater than 128kb - ignoring\n", file);
+
+	while ((line = get_next_line (content, &content)))
+		g_ptr_array_add (filters, g_strchug (g_strchomp (line)));
+
+	fclose (filter_file);
+}
+
+static void
 coverage_init (MonoProfiler *prof)
 {
 	g_assert (!coverage_initialized && "Why are we initializing coverage twice?");
@@ -4638,139 +4573,6 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	return prof;
 }
 
-static void
-usage (int do_exit)
-{
-	printf ("Log profiler version %d.%d (format: %d)\n", LOG_VERSION_MAJOR, LOG_VERSION_MINOR, LOG_DATA_VERSION);
-	printf ("Usage: mono --profile=log[:OPTION1[,OPTION2...]] program.exe\n");
-	printf ("Options:\n");
-	printf ("\thelp                 show this usage info\n");
-	printf ("\t[no]alloc            enable/disable recording allocation info\n");
-	printf ("\t[no]calls            enable/disable recording enter/leave method events\n");
-	printf ("\theapshot[=MODE]      record heap shot info (by default at each major collection)\n");
-	printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
-	printf ("\tcounters             sample counters every 1s\n");
-	printf ("\tsample[=TYPE]        use statistical sampling mode (by default cycles/100)\n");
-	printf ("\t                     TYPE: cycles,instr,cacherefs,cachemiss,branches,branchmiss\n");
-	printf ("\t                     TYPE can be followed by /FREQUENCY\n");
-	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
-	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
-	printf ("\toutput=FILENAME      write the data to file FILENAME (-FILENAME to overwrite)\n");
-	printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM\n");
-	printf ("\t                     %%t is subtituted with date and time, %%p with the pid\n");
-	printf ("\treport               create a report instead of writing the raw data to a file\n");
-	printf ("\tzip                  compress the output data\n");
-	printf ("\tport=PORTNUM         use PORTNUM for the listening command server\n");
-	printf ("\tcoverage             enable collection of code coverage data\n");
-	printf ("\tcovfilter=ASSEMBLY   add an assembly to the code coverage filters\n");
-	printf ("\t                     add a + to include the assembly or a - to exclude it\n");
-	printf ("\t                     filter=-mscorlib\n");
-	printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered\n");
-	if (do_exit)
-		exit (1);
-}
-
-static const char*
-match_option (const char* p, const char *opt, char **rval)
-{
-	int len = strlen (opt);
-	if (strncmp (p, opt, len) == 0) {
-		if (rval) {
-			if (p [len] == '=' && p [len + 1]) {
-				const char *opt = p + len + 1;
-				const char *end = strchr (opt, ',');
-				char *val;
-				int l;
-				if (end == NULL) {
-					l = strlen (opt);
-				} else {
-					l = end - opt;
-				}
-				val = (char *) g_malloc (l + 1);
-				memcpy (val, opt, l);
-				val [l] = 0;
-				*rval = val;
-				return opt + l;
-			}
-			if (p [len] == 0 || p [len] == ',') {
-				*rval = NULL;
-				return p + len + (p [len] == ',');
-			}
-			usage (1);
-		} else {
-			if (p [len] == 0)
-				return p + len;
-			if (p [len] == ',')
-				return p + len + 1;
-		}
-	}
-	return p;
-}
-
-static void
-set_sample_freq (char *val)
-{
-	do_mono_sample = 1;
-	sample_freq = 100;
-
-	if (!val)
-		return;
-
-	char *p = val;
-
-	// Is it only the frequency (new option style)?
-	if (isdigit (*p))
-		goto parse;
-
-	// Skip the sample type for backwards compatibility.
-	while (isalpha (*p))
-		p++;
-
-	// Skip the forward slash only if we got a sample type.
-	if (p != val && *p == '/') {
-		p++;
-
-		char *end;
-
-	parse:
-		sample_freq = strtoul (p, &end, 10);
-
-		if (p == end)
-			usage (1);
-
-		p = end;
-	}
-
-	if (*p)
-		usage (1);
-
-	g_free (val);
-}
-
-static void
-set_hsmode (char* val, int allow_empty)
-{
-	char *end;
-	unsigned int count;
-	if (allow_empty && !val)
-		return;
-	if (strcmp (val, "ondemand") == 0) {
-		hs_mode_ondemand = 1;
-		g_free (val);
-		return;
-	}
-	count = strtoul (val, &end, 10);
-	if (val == end)
-		usage (1);
-	if (strcmp (end, "ms") == 0)
-		hs_mode_ms = count;
-	else if (strcmp (end, "gc") == 0)
-		hs_mode_gc = count;
-	else
-		usage (1);
-	g_free (val);
-}
-
 /*
  * declaration to silence the compiler: this is the entry point that
  * mono will load from the shared library and call.
@@ -4791,217 +4593,52 @@ mono_profiler_startup_log (const char *desc)
 	mono_profiler_startup (desc);
 }
 
+static ProfilerConfig config;
+
 void
 mono_profiler_startup (const char *desc)
 {
-	MonoProfiler *prof;
 	GPtrArray *filters = NULL;
-	char *filename = NULL;
-	const char *p;
-	const char *opt;
-	int calls_enabled = 0;
-	int allocs_enabled = 0;
-	int events = MONO_PROFILE_GC|MONO_PROFILE_ALLOCATIONS|
-		MONO_PROFILE_GC_MOVES|MONO_PROFILE_CLASS_EVENTS|MONO_PROFILE_THREADS|
-		MONO_PROFILE_ENTER_LEAVE|MONO_PROFILE_JIT_COMPILATION|MONO_PROFILE_EXCEPTIONS|
-		MONO_PROFILE_MONITOR_EVENTS|MONO_PROFILE_MODULE_EVENTS|MONO_PROFILE_GC_ROOTS|
-		MONO_PROFILE_INS_COVERAGE|MONO_PROFILE_APPDOMAIN_EVENTS|MONO_PROFILE_CONTEXT_EVENTS|
-		MONO_PROFILE_ASSEMBLY_EVENTS|MONO_PROFILE_GC_FINALIZATION;
+	MonoProfiler *prof;
 
-	max_allocated_sample_hits = mono_cpu_count () * 1000;
+	if (desc [3] == ':')
+		proflog_parse_args (&config, desc + 4);
+	else
+		proflog_parse_args (&config, "");
+	//XXX maybe later cleanup to use config directly
+	nocalls = !(config.effective_mask & EnterLeaveEvents);
+	no_counters = !(config.effective_mask & CounterEvents);
+	do_report = config.do_report;
+	do_debug = config.do_debug;
+	do_heap_shot = (config.effective_mask & HeapShotFeature);
+	hs_mode_ondemand = config.hs_mode_ondemand;
+	hs_mode_ms = config.hs_mode_ms;
+	hs_mode_gc = config.hs_mode_gc;
+	do_mono_sample = (config.effective_mask & SamplingFeature);
+	use_zip = config.use_zip;
+	command_port = config.command_port;
+	num_frames = config.num_frames;
+	notraces = config.notraces;
+	max_allocated_sample_hits = config.max_allocated_sample_hits;
+	max_call_depth = config.max_call_depth;
+	do_coverage = (config.effective_mask & CodeCoverageFeature);
+	debug_coverage = config.debug_coverage;
+	only_coverage = config.only_coverage;
 
-	p = desc;
-	if (strncmp (p, "log", 3))
-		usage (1);
-	p += 3;
-	if (*p == ':')
-		p++;
-	for (; *p; p = opt) {
-		char *val;
-		if (*p == ',') {
-			opt = p + 1;
-			continue;
+	if (config.cov_filter_files) {
+		filters = g_ptr_array_new ();
+		int i;
+		for (i = 0; i < config.cov_filter_files->len; ++i) {
+			const char *name = config.cov_filter_files->pdata [i];
+			parse_cov_filter_file (filters, name);
 		}
-		if ((opt = match_option (p, "help", NULL)) != p) {
-			usage (0);
-			continue;
-		}
-		if ((opt = match_option (p, "calls", NULL)) != p) {
-			calls_enabled = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "nocalls", NULL)) != p) {
-			events &= ~MONO_PROFILE_ENTER_LEAVE;
-			nocalls = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "alloc", NULL)) != p) {
-			allocs_enabled = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "noalloc", NULL)) != p) {
-			events &= ~MONO_PROFILE_ALLOCATIONS;
-			events &= ~MONO_PROFILE_GC_MOVES;
-			continue;
-		}
-		if ((opt = match_option (p, "nocounters", NULL)) != p) {
-			no_counters = TRUE;
-			continue;
-		}
-		if ((opt = match_option (p, "time", &val)) != p) {
-			// For backwards compatibility.
-			if (strcmp (val, "fast") && strcmp (val, "null"))
-				usage (1);
-			g_free (val);
-			continue;
-		}
-		if ((opt = match_option (p, "report", NULL)) != p) {
-			do_report = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "debug", NULL)) != p) {
-			do_debug = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "sampling-real", NULL)) != p) {
-			sampling_mode = MONO_PROFILER_STAT_MODE_REAL;
-			continue;
-		}
-		if ((opt = match_option (p, "sampling-process", NULL)) != p) {
-			sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
-			continue;
-		}
-		if ((opt = match_option (p, "heapshot", &val)) != p) {
-			events &= ~MONO_PROFILE_ALLOCATIONS;
-			events &= ~MONO_PROFILE_GC_MOVES;
-			events &= ~MONO_PROFILE_ENTER_LEAVE;
-			nocalls = 1;
-			do_heap_shot = 1;
-			set_hsmode (val, 1);
-			continue;
-		}
-		if ((opt = match_option (p, "sample", &val)) != p) {
-			events &= ~MONO_PROFILE_ALLOCATIONS;
-			events &= ~MONO_PROFILE_GC_MOVES;
-			events &= ~MONO_PROFILE_ENTER_LEAVE;
-			nocalls = 1;
-			set_sample_freq (val);
-			continue;
-		}
-		if ((opt = match_option (p, "zip", NULL)) != p) {
-			use_zip = 1;
-			continue;
-		}
-		if ((opt = match_option (p, "output", &val)) != p) {
-			filename = val;
-			continue;
-		}
-		if ((opt = match_option (p, "port", &val)) != p) {
-			char *end;
-			command_port = strtoul (val, &end, 10);
-			g_free (val);
-			continue;
-		}
-		if ((opt = match_option (p, "maxframes", &val)) != p) {
-			char *end;
-			num_frames = strtoul (val, &end, 10);
-			if (num_frames > MAX_FRAMES)
-				num_frames = MAX_FRAMES;
-			g_free (val);
-			notraces = num_frames == 0;
-			continue;
-		}
-		if ((opt = match_option (p, "maxsamples", &val)) != p) {
-			char *end;
-			max_allocated_sample_hits = strtoul (val, &end, 10);
-			if (!max_allocated_sample_hits)
-				max_allocated_sample_hits = G_MAXINT32;
-			g_free (val);
-			continue;
-		}
-		if ((opt = match_option (p, "calldepth", &val)) != p) {
-			char *end;
-			max_call_depth = strtoul (val, &end, 10);
-			g_free (val);
-			continue;
-		}
-		if ((opt = match_option (p, "counters", NULL)) != p) {
-			// For backwards compatibility.
-			continue;
-		}
-		if ((opt = match_option (p, "coverage", NULL)) != p) {
-			do_coverage = 1;
-			events |= MONO_PROFILE_ENTER_LEAVE;
-			debug_coverage = g_hasenv ("MONO_PROFILER_DEBUG_COVERAGE");
-			continue;
-		}
-		if ((opt = match_option (p, "onlycoverage", NULL)) != p) {
-			only_coverage = TRUE;
-			continue;
-		}
-		if ((opt = match_option (p, "covfilter-file", &val)) != p) {
-			FILE *filter_file;
-			char *line, *content;
-
-			if (filters == NULL)
-				filters = g_ptr_array_new ();
-
-			filter_file = fopen (val, "r");
-			if (filter_file == NULL) {
-				fprintf (stderr, "Unable to open %s\n", val);
-				exit (0);
-			}
-
-			/* Don't need to free content as it is referred to by the lines stored in @filters */
-			content = get_file_content (filter_file);
-			if (content == NULL)
-				fprintf (stderr, "WARNING: %s is greater than 128kb - ignoring\n", val);
-
-			while ((line = get_next_line (content, &content)))
-				g_ptr_array_add (filters, g_strchug (g_strchomp (line)));
-
-			fclose (filter_file);
-			continue;
-		}
-		if ((opt = match_option (p, "covfilter", &val)) != p) {
-			if (filters == NULL)
-				filters = g_ptr_array_new ();
-
-			g_ptr_array_add (filters, val);
-			continue;
-		}
-		if (opt == p) {
-			usage (0);
-			exit (0);
-		}
-	}
-
-	if (calls_enabled) {
-		events |= MONO_PROFILE_ENTER_LEAVE;
-		nocalls = 0;
-	}
-
-	if (allocs_enabled) {
-		events |= MONO_PROFILE_ALLOCATIONS;
-		events |= MONO_PROFILE_GC_MOVES;
-	}
-
-	// Only activate the bare minimum events the profiler needs to function.
-	if (only_coverage) {
-		if (!do_coverage) {
-			fprintf (stderr, "The onlycoverage option is only valid when paired with the coverage option\n");
-			exit (1);
-		}
-
-		no_counters = TRUE;
-		events = MONO_PROFILE_GC | MONO_PROFILE_THREADS | MONO_PROFILE_ENTER_LEAVE | MONO_PROFILE_INS_COVERAGE;
 	}
 
 	init_time ();
 
 	PROF_TLS_INIT ();
 
-	prof = create_profiler (desc, filename, filters);
+	prof = create_profiler (desc, config.output_filename, filters);
 	if (!prof) {
 		PROF_TLS_FREE ();
 		return;
@@ -5011,34 +4648,106 @@ mono_profiler_startup (const char *desc)
 
 	init_thread (prof, TRUE);
 
-	mono_profiler_install (prof, log_shutdown);
-	mono_profiler_install_gc (gc_event, gc_resize);
-	mono_profiler_install_allocation (gc_alloc);
-	mono_profiler_install_gc_moves (gc_moves);
-	mono_profiler_install_gc_roots (gc_handle, gc_roots);
-	mono_profiler_install_gc_finalize (finalize_begin, finalize_object_begin, finalize_object_end, finalize_end);
-	mono_profiler_install_appdomain (NULL, domain_loaded, domain_unloaded, NULL);
-	mono_profiler_install_appdomain_name (domain_name);
-	mono_profiler_install_context (context_loaded, context_unloaded);
-	mono_profiler_install_class (NULL, class_loaded, class_unloaded, NULL);
-	mono_profiler_install_module (NULL, image_loaded, image_unloaded, NULL);
-	mono_profiler_install_assembly (NULL, assembly_loaded, assembly_unloaded, NULL);
-	mono_profiler_install_thread (thread_start, thread_end);
-	mono_profiler_install_thread_name (thread_name);
-	mono_profiler_install_enter_leave (method_enter, method_leave);
-	mono_profiler_install_jit_end (method_jitted);
-	mono_profiler_install_code_buffer_new (code_buffer_new);
-	mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
-	mono_profiler_install_monitor (monitor_event);
-	mono_profiler_install_runtime_initialized (runtime_initialized);
-	if (do_coverage)
-		mono_profiler_install_coverage_filter (coverage_filter);
+	//This two events are required for the profiler to work
+	int events = MONO_PROFILE_THREADS | MONO_PROFILE_GC;
 
-	if (do_mono_sample && sample_freq) {
+	//Required callbacks
+	mono_profiler_install (prof, log_shutdown);
+	mono_profiler_install_runtime_initialized (runtime_initialized);
+
+	mono_profiler_install_gc (gc_event, gc_resize);
+	mono_profiler_install_thread (thread_start, thread_end);
+
+	//It's questionable whether we actually want this to be mandatory, maybe put it behind the actual event?
+	mono_profiler_install_thread_name (thread_name);
+
+
+	if (config.effective_mask & DomainEvents) {
+		events |= MONO_PROFILE_APPDOMAIN_EVENTS;
+		mono_profiler_install_appdomain (NULL, domain_loaded, domain_unloaded, NULL);
+		mono_profiler_install_appdomain_name (domain_name);
+	}
+
+	if (config.effective_mask & AssemblyEvents) {
+		events |= MONO_PROFILE_ASSEMBLY_EVENTS;
+		mono_profiler_install_assembly (NULL, assembly_loaded, assembly_unloaded, NULL);
+	}
+
+	if (config.effective_mask & ModuleEvents) {
+		events |= MONO_PROFILE_MODULE_EVENTS;
+		mono_profiler_install_module (NULL, image_loaded, image_unloaded, NULL);
+	}
+
+	if (config.effective_mask & ClassEvents) {
+		events |= MONO_PROFILE_CLASS_EVENTS;
+		mono_profiler_install_class (NULL, class_loaded, class_unloaded, NULL);
+	}
+
+	if (config.effective_mask & JitCompilationEvents) {
+		events |= MONO_PROFILE_JIT_COMPILATION;
+		mono_profiler_install_jit_end (method_jitted);
+		mono_profiler_install_code_buffer_new (code_buffer_new);
+	}
+
+	if (config.effective_mask & ExceptionEvents) {
+		events |= MONO_PROFILE_EXCEPTIONS;
+		mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
+	}
+
+	if (config.effective_mask & AllocationEvents) {
+		events |= MONO_PROFILE_ALLOCATIONS;
+		mono_profiler_install_allocation (gc_alloc);
+	}
+
+	//GCEvents is mandatory
+	//ThreadEvents is mandatory
+
+	if (config.effective_mask & EnterLeaveEvents) {
+		events |= MONO_PROFILE_ENTER_LEAVE;
+		mono_profiler_install_enter_leave (method_enter, method_leave);
+	}
+
+	if (config.effective_mask & InsCoverageEvents) {
+		events |= MONO_PROFILE_INS_COVERAGE;
+		mono_profiler_install_coverage_filter (coverage_filter);
+	}
+
+	//XXX should we check for SamplingFeature instead??
+	if (config.effective_mask & SamplingEvents) {
 		events |= MONO_PROFILE_STATISTICAL;
-		mono_profiler_set_statistical_mode (sampling_mode, sample_freq);
+		mono_profiler_set_statistical_mode (config.sampling_mode, config.sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
 	}
+
+	if (config.effective_mask & MonitorEvents) {
+		events |= MONO_PROFILE_MONITOR_EVENTS;
+		mono_profiler_install_monitor (monitor_event);
+	}
+
+	if (config.effective_mask & GCMoveEvents) {
+		events |= MONO_PROFILE_GC_MOVES;
+		mono_profiler_install_gc_moves (gc_moves);
+	}
+
+	if (config.effective_mask & (GCRootEvents | GCHandleEvents)) {
+		events |= MONO_PROFILE_GC_ROOTS;
+		mono_profiler_install_gc_roots (
+			config.effective_mask & (GCHandleEvents) ? gc_handle : NULL,
+			(config.effective_mask & GCRootEvents) ? gc_roots : NULL);
+	}
+
+	if (config.effective_mask & ContextEvents) {
+		events |= MONO_PROFILE_CONTEXT_EVENTS;
+		mono_profiler_install_context (context_loaded, context_unloaded);
+	}
+
+	if (config.effective_mask & FinalizationEvents) {
+		events |= MONO_PROFILE_GC_FINALIZATION;
+		mono_profiler_install_gc_finalize (finalize_begin, finalize_object_begin, finalize_object_end, finalize_end);	
+	}
+
+	//CounterEvents is a pseudo event controled by the no_counters global var
+	//GCHandleEvents is handled together with GCRootEvents
 
 	mono_profiler_set_events ((MonoProfileFlags)events);
 }

@@ -1,6 +1,9 @@
 #ifndef __MONO_PROFLOG_H__
 #define __MONO_PROFLOG_H__
 
+#include <glib.h>
+#include <mono/metadata/profiler.h>
+
 #define BUF_ID 0x4D504C01
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 1
@@ -152,5 +155,109 @@ enum {
 	SAMPLE_BRANCH_MISSES,
 	SAMPLE_LAST
 };
+
+
+// If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
+#define MAX_FRAMES 32
+
+typedef enum {
+	DomainEvents = 1 << 0,
+	AssemblyEvents = 1 << 1,
+	ModuleEvents = 1 << 2,
+	ClassEvents = 1 << 3,
+	JitCompilationEvents = 1 << 4,
+	ExceptionEvents = 1 << 5,
+	AllocationEvents = 1 << 6,
+	GCEvents = 1 << 7,
+	ThreadEvents = 1 << 8,
+	EnterLeaveEvents = 1 << 9, //Fixme better name?
+	InsCoverageEvents = 1 << 10,
+	SamplingEvents = 1 << 11,
+	MonitorEvents = 1 << 12,
+	GCMoveEvents = 1 << 13,
+	GCRootEvents = 1 << 14,
+	ContextEvents = 1 << 15,
+	FinalizationEvents = 1 << 16,
+	CounterEvents = 1 << 17,
+	GCHandleEvents = 1 << 18,
+
+	//This flags control subsystems
+	/* This will enable code coverage generation */
+	CodeCoverageFeature = 1 << 19,
+	/* This enables sampling to be generated */
+	SamplingFeature = 1 << 20,
+	/* This enable heap dumping during GCs and filter GCRoots and GCHandle events outside of the dumped collections */
+	HeapShotFeature = 1 << 21,
+
+	//This flags are the common aliases we want ppl to use
+	TypeLoadingAlias = DomainEvents | AssemblyEvents | ModuleEvents | ClassEvents,
+	CodeCoverageAlias = GCEvents | ThreadEvents | EnterLeaveEvents | InsCoverageEvents | CodeCoverageFeature,
+	PerfSamplingAlias = TypeLoadingAlias | ThreadEvents | SamplingEvents | SamplingFeature,
+	GCAllocationAlias = TypeLoadingAlias | ThreadEvents | GCEvents | AllocationEvents,
+	HeapShotAlias = TypeLoadingAlias | ThreadEvents | GCEvents | GCRootEvents | HeapShotFeature,
+	LegacyAlias = TypeLoadingAlias | GCEvents | ThreadEvents | JitCompilationEvents | ExceptionEvents | MonitorEvents | GCRootEvents | ContextEvents | FinalizationEvents | CounterEvents,
+} ProfilerEvents;
+
+typedef struct {
+	//Events explicitly enabled
+	int enable_mask;
+	//Events explicitly disabled
+	int disable_mask;
+
+	//Actual mask the profiler should use
+	int effective_mask;
+
+	//Emit a report at the end of execution
+	gboolean do_report;
+
+	//Enable profiler internal debugging
+	gboolean do_debug;
+
+	//Enable code coverage specific debugging
+	gboolean debug_coverage;
+
+	//Where to compress the output file
+	gboolean use_zip;
+
+	//If true, don't generate stacktraces
+	gboolean notraces;
+
+	//If true, emit coverage but don't emit enter/exit events - this happens cuz they share an event
+	gboolean only_coverage;
+
+	//If true, heapshots are generated on demand only
+	gboolean hs_mode_ondemand;
+
+	//HeapShort frequency in milliseconds
+	unsigned int hs_mode_ms;
+
+	//HeapShort frequency in number of collections
+	unsigned int hs_mode_gc;
+
+	//Sample frequency in Hertz
+	int sample_freq;
+
+	//Maximum number of frames to collect
+	int num_frames;
+
+	//Max depth to record enter/leave events
+	int max_call_depth;
+
+	//Name of the generated mlpd file
+	const char *output_filename;
+
+	//Filter files used by the code coverage mode
+	GPtrArray *cov_filter_files;
+
+	//Port to listen for profiling commands
+	int command_port;
+
+	//Max size of the sample hit buffer, we'll drop frames if it's reached
+	int max_allocated_sample_hits;
+
+	MonoProfileSamplingMode sampling_mode;
+} ProfilerConfig;
+
+void proflog_parse_args (ProfilerConfig *config, const char *desc);
 
 #endif /* __MONO_PROFLOG_H__ */
