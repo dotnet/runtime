@@ -51,13 +51,5 @@
     <TestPath Condition="'$(TestPath)'==''">$(TestWorkingDir)$(OSPlatformConfig)\$(MSBuildProjectName)/</TestPath>
   </PropertyGroup>
 
-  <!-- Setup the output location for the project.json generated for the local CoreCLR build. -->
-  <PropertyGroup>
-    <TestRuntimeProjectJsonDir>$(BaseOutputPath)\test_runtime</TestRuntimeProjectJsonDir>
-    <TestRuntimeProjectJson>$(TestRuntimeProjectJsonDir)\project.json</TestRuntimeProjectJson>
-    <TestRuntimeProjectLockJson>$(TestRuntimeProjectJsonDir)\project.lock.json</TestRuntimeProjectLockJson>
-  </PropertyGroup>
-
-
 </Project>
 
