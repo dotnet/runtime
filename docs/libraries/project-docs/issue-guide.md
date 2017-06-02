@@ -132,8 +132,11 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
     * Movitation: Area owners will get email notification about new issue in their area.
 1. PR has **Assignee** set to author of the PR, if it is non-CoreFX engineer, then area owners are co-assignees
     * Motivation: Area owners are responsible to do code reviews for PRs from external contributors. CoreFX engineers know how to get code reviews from others.
+1. Set milestone according to the branch (master = 2.1, release/2.0.0 = 2.0, release/1.0.0 = 1.0.x, release/1.1.0 = 1.1.x)
+    * Motivation: Easier to track where which fix ended and if it needs to be ported into another branch
 1. Any other labels on PRs are superfluous and not needed (exceptions: **blocked**, **NO MERGE**)
     * Motivation: All the important info (*issue type* label, api approval label, OS label, etc.) is already captured on the associated issue.
 1. Push PRs forward, don't let them go stale (response every 5+ days, ideally no PRs older than 2 weeks)
 1. Stuck or long-term blocked PRs (e.g. due to missing API approval, etc.) should be closed and reopened once they are unstuck
     * Motivation: Keep only active PRs. WIP (work-in-progress) PRs should be rare and should not become stale (2+ weeks old). If a PR is stale and there is not immediate path forward, consider closing the PR until it is unblocked/unstuck.
+1. PR should be linked to related issue, use [auto-closing](https://help.github.com/articles/closing-issues-via-commit-messages/) (add "Fixes #12345" into your PR description)
