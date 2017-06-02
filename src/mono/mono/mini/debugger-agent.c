@@ -275,7 +275,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 45
+#define MINOR_VERSION 46
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -9056,6 +9056,14 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 					buffer_add_int (buf, locals->code_blocks [i].start_offset - last_start);
 					buffer_add_int (buf, locals->code_blocks [i].end_offset - locals->code_blocks [i].start_offset);
 					last_start = locals->code_blocks [i].start_offset;
+				}
+				if (CHECK_PROTOCOL_VERSION (2, 46)) {
+					/* Scopes for hoisted locals */
+					buffer_add_int (buf, locals->num_hoisted);
+					for (i = 0; i < locals->num_hoisted; ++i) {
+						buffer_add_int (buf, locals->code_blocks [i].start_offset);
+						buffer_add_int (buf, locals->code_blocks [i].end_offset);
+					}
 				}
 			}
 

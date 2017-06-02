@@ -950,5 +950,8 @@ mono_loader_set_strict_strong_names (gboolean enabled);
 gboolean
 mono_loader_get_strict_strong_names (void);
 
+guint32
+mono_metadata_customdebuginfo_from_index (MonoImage *meta, guint32 index);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 
