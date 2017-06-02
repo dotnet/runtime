@@ -4147,8 +4147,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             NYI_ARM("Struct split between integer registers and stack");
 #endif // !LEGACY_BACKEND
                             // This indicates a partial enregistration of a struct type
-                            assert((isStructArg) || argx->OperIsFieldList() ||
-                                   argx->OperIsCopyBlkOp() || (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
+                            assert((isStructArg) || argx->OperIsFieldList() || argx->OperIsCopyBlkOp() ||
+                                   (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
                             unsigned numRegsPartial = size - (intArgRegNum - MAX_REG_ARG);
                             assert((unsigned char)numRegsPartial == numRegsPartial);
                             call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
