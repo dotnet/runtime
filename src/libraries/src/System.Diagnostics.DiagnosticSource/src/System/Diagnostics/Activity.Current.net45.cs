@@ -34,7 +34,7 @@ namespace System.Diagnostics
             }
         }
 
-        #region private
+#region private
 
         [Serializable] // DO NOT remove
         private partial class KeyValueListNode
