@@ -45,7 +45,7 @@ namespace System.Threading.Tasks
     /// and may be used from multiple threads concurrently.
     /// </para>
     /// </remarks>
-    /// <typeparam name="TResult">The type of the result value assocatied with this <see
+    /// <typeparam name="TResult">The type of the result value associated with this <see
     /// cref="TaskCompletionSource{TResult}"/>.</typeparam>
     public class TaskCompletionSource<TResult>
     {
