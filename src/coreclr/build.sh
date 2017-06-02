@@ -808,7 +808,7 @@ while :; do
             fi
             ;;
         buildstandalonegc)
-            __cmakeargs="-DFEATURE_STANDALONE_GC=1"
+            __cmakeargs="-DFEATURE_STANDALONE_GC=1 -DFEATURE_STANDALONE_GC_ONLY=1"
             ;;
         msbuildonunsupportedplatform)
             __msbuildonunsupportedplatform=1

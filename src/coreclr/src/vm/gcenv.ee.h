@@ -9,6 +9,9 @@
 
 #ifdef FEATURE_STANDALONE_GC
 
+namespace standalone
+{
+
 class GCToEEInterface : public IGCToCLR {
 public:
     GCToEEInterface() = default;
@@ -49,7 +52,13 @@ public:
     bool ForceFullGCToBeBlocking();
     bool EagerFinalized(Object* obj);
     MethodTable* GetFreeObjectMethodTable();
+    bool GetBooleanConfigValue(const char* key, bool* value);
+    bool GetIntConfigValue(const char* key, int64_t* value);
+    bool GetStringConfigValue(const char* key, const char** value);
+    void FreeStringConfigValue(const char* value);
 };
+
+} // namespace standalone
 
 #endif // FEATURE_STANDALONE_GC
 

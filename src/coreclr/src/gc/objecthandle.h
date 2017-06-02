@@ -87,7 +87,7 @@ bool Ref_Initialize();
 void Ref_Shutdown();
 HandleTableBucket* Ref_CreateHandleTableBucket(void* context);
 bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket, void* context);
-BOOL Ref_HandleAsyncPinHandles();
+BOOL Ref_HandleAsyncPinHandles(async_pin_enum_fn callback, void* context);
 void Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket *pTarget);
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket);
 void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket);

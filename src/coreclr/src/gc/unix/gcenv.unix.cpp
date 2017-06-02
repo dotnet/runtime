@@ -32,10 +32,6 @@ static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
 #include "gcenv.base.h"
 #include "gcenv.os.h"
 
-#ifndef FEATURE_STANDALONE_GC
- #error "A GC-private implementation of GCToOSInterface should only be used with FEATURE_STANDALONE_GC"
-#endif // FEATURE_STANDALONE_GC
-
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
 #else
@@ -713,6 +709,18 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
 
     return (st == 0);
 }
+
+// Gets the total number of processors on the machine, not taking
+// into account current process affinity.
+// Return:
+//  Number of processors on the machine
+uint32_t GCToOSInterface::GetTotalProcessorCount()
+{
+    // Calculated in GCToOSInterface::Initialize using
+    // sysconf(_SC_NPROCESSORS_ONLN)
+    return g_logicalCpuCount;
+}
+
 
 // Initialize the critical section
 void CLRCriticalSection::Initialize()
