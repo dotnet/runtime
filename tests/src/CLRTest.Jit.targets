@@ -24,10 +24,10 @@ WARNING:   When setting properties based on their current state (for example:
           Returns="$(JitDisasmBashScript)">
     <PropertyGroup>
       <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' == 'true')">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(_CLRTestToRunFileFullPath.Replace("/","\\"))).Replace("\\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
+      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
       <JitDisasmOut Condition="'$(RunningOnUnix)' == 'true'">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(BaseOutputPathWithConfig.Replace("/","\\"))dasm\$(BuildProjectRelativeDir.Replace("/","\\"))).Replace("\\","/"))</JitDisasmOut>
-      <JitDisasmOut Condition="'$(RunningOnUnix)' != 'true'">$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)))</JitDisasmOut>
+      <JitDisasmOut Condition="'$(RunningOnUnix)' != 'true'">$([MSBuild]::MakeRelative($(OutputPath), $(BaseOutputPathWithConfig)dasm\$(BuildProjectRelativeDir)).Replace("\","/"))</JitDisasmOut>
       <JitDisasmBashScript>
 <![CDATA[
 # JitDisasm Script
@@ -77,7 +77,7 @@ if defined RunningJitDisasm (
       Returns="$(IlasmRoundTripBashScript)">
     <PropertyGroup>
       <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' == 'true')">$([MSBuild]::MakeRelative($(OutputPath.Replace("/","\\")), $(_CLRTestToRunFileFullPath.Replace("/","\\"))).Replace("\\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
+      <InputAssemblyName Condition="('$(CLRTestKind)' == 'RunOnly') and ('$(RunningOnUnix)' != 'true')">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
       <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).exe</InputAssemblyName>
       <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
       <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
