@@ -92,7 +92,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task GetContext_InvalidRequest_DoesNotGetContext()
         {
             // These tests take upwards of 20s if this uses [Theory].

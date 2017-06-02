@@ -60,7 +60,7 @@ namespace System.Net.Tests
     public class HttpListenerResponseTests : HttpListenerResponseTestBase
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CopyFrom_AllValues_ReturnsClone()
         {
             using (HttpListenerResponse response1 = await GetResponse())
@@ -98,7 +98,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CopyFrom_NullTemplateResponse_ThrowsNullReferenceException()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -108,7 +108,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(null, 123)]
         [InlineData("", 123)]
         [InlineData(" \r \t \n", 123)]
@@ -141,7 +141,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Redirect_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -156,8 +156,8 @@ namespace System.Net.Tests
         }
         
         // The managed implementation should also dispose the OutputStream after calling Abort.
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(19975, TestPlatforms.AnyUnix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Abort_Invoke_ForciblyTerminatesConnection()
         {
             Client.Send(Factory.GetContent("1.1", "POST", null, "Give me a context, please", null, headerOnly: false));
@@ -193,7 +193,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Close_Invoke_ClosesConnection()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -219,7 +219,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Dispose_Invoke_ClosesConnection()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -245,7 +245,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_EmptyResponseEntity_Success(bool willBlock)
@@ -271,8 +271,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_AllContentLengthAlreadySent_DoesNotSendEntity(bool willBlock)
@@ -292,7 +292,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_NotChunkedSentHeaders_SendsEntityWithoutModifyingContentLength(bool willBlock)
@@ -324,7 +324,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_ChunkedNotSentHeaders_ModifiesContentLength(bool willBlock)
@@ -355,7 +355,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_ChunkedSentHeaders_DoesNotModifyContentLength(bool willBlock)
@@ -386,7 +386,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CloseResponseEntity_AlreadyDisposed_ThrowsObjectDisposedException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -396,7 +396,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CloseResponseEntity_NullResponseEntity_ThrowsArgumentNullException()
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -405,8 +405,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_SendMoreThanContentLength_ThrowsInvalidOperationException(bool willBlock)
@@ -452,7 +452,7 @@ namespace System.Net.Tests
         }
         
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task CloseResponseEntity_SendToClosedConnection_DoesNotThrow(bool willBlock)
