@@ -585,6 +585,10 @@ if(FEATURE_STANDALONE_GC)
   endif(CLR_CMAKE_PLATFORM_UNIX)
 endif(FEATURE_STANDALONE_GC)
 
+if(FEATURE_STANDALONE_GC_ONLY)
+  add_definitions(-DFEATURE_STANDALONE_GC_ONLY)
+endif(FEATURE_STANDALONE_GC_ONLY)
+
 if (CLR_CMAKE_PLATFORM_UNIX)
   include_directories("src/pal/inc")
   include_directories("src/pal/inc/rt")

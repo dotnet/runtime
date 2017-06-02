@@ -286,6 +286,26 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     return false;
 }
 
+bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
+{
+    return false;
+}
+
+bool GCToEEInterface::GetIntConfigValue(const char* key, int64_t* value)
+{
+    return false;
+}
+
+bool GCToEEInterface::GetStringConfigValue(const char* key, const char** value)
+{
+    return false;
+}
+
+void GCToEEInterface::FreeStringConfigValue(const char *value)
+{
+
+}
+
 MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 {
     return g_pFreeObjectMethodTable;
@@ -302,48 +322,3 @@ bool IsGCThread()
     return false;
 }
 
-void SwitchToWriteWatchBarrier()
-{
-}
-
-void SwitchToNonWriteWatchBarrier()
-{
-}
-
-void LogSpewAlways(const char * /*fmt*/, ...)
-{
-}
-
-uint32_t CLRConfig::GetConfigValue(ConfigDWORDInfo eType)
-{
-    switch (eType)
-    {
-    case UNSUPPORTED_BGCSpinCount:
-        return 140;
-
-    case UNSUPPORTED_BGCSpin:
-        return 2;
-
-    case UNSUPPORTED_GCLogEnabled:
-    case UNSUPPORTED_GCLogFile:
-    case UNSUPPORTED_GCLogFileSize:
-    case EXTERNAL_GCStressStart:
-    case INTERNAL_GCStressStartAtJit:
-    case INTERNAL_DbgDACSkipVerifyDlls:
-        return 0;
-
-    case Config_COUNT:
-    default:
-#ifdef _MSC_VER
-#pragma warning(suppress:4127) // Constant conditional expression in ASSERT below
-#endif
-        ASSERT(!"Unknown config value type");
-        return 0;
-    }
-}
-
-HRESULT CLRConfig::GetConfigValue(ConfigStringInfo /*eType*/, TCHAR * * outVal)
-{
-    *outVal = NULL;
-    return 0;
-}

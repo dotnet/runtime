@@ -478,8 +478,8 @@ void InitializeStartupFlags()
         g_IGCconcurrent = 0;
 
 
-    InitializeHeapType((flags & STARTUP_SERVER_GC) != 0);
     g_heap_type = (flags & STARTUP_SERVER_GC) == 0 ? GC_HEAP_WKS : GC_HEAP_SVR;
+    g_IGCHoardVM = (flags & STARTUP_HOARD_GC_VM) == 0 ? 0 : 1;
 }
 #endif // CROSSGEN_COMPILE
 
@@ -2440,6 +2440,101 @@ BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
 // Initialize the Garbage Collector
 //
 
+// Prototype for the function that initialzes the garbage collector.
+// Should only be called once: here, during EE startup.
+// Returns true if the initialization was successful, false otherwise.
+//
+// When using a standalone GC, this function is loaded dynamically using
+// GetProcAddress.
+extern "C" bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleManager** gcHandleManager, GcDacVars* gcDacVars);
+
+#ifdef FEATURE_STANDALONE_GC
+
+void LoadGarbageCollector()
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    TCHAR *standaloneGc = nullptr;
+    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCStandaloneLocation, &standaloneGc);
+    HMODULE hMod;
+    if (!standaloneGc)
+    {
+#ifdef FEATURE_STANDALONE_GC_ONLY
+        // if the user has set GCUseStandalone but has not given us a standalone location,
+        // try and load the initialization symbol from the current module.
+        hMod = GetModuleInst();
+#else
+        ThrowHR(E_FAIL);
+#endif // FEATURE_STANDALONE_GC_ONLY
+    }
+    else
+    {
+        hMod = CLRLoadLibrary(standaloneGc);
+    }
+
+    if (!hMod)
+    {
+        ThrowHR(E_FAIL);
+    }
+
+    InitializeGarbageCollectorFunction igcf = (InitializeGarbageCollectorFunction)GetProcAddress(hMod, INITIALIZE_GC_FUNCTION_NAME);
+    if (!igcf)
+    {
+        ThrowHR(E_FAIL);
+    }
+
+    // at this point we are committing to using the standalone GC
+    // given to us.
+    IGCToCLR* gcToClr = new (nothrow) standalone::GCToEEInterface();
+    if (!gcToClr)
+    {
+        ThrowOutOfMemory();
+    }
+
+    IGCHandleManager *pGcHandleManager;
+    IGCHeap *pGCHeap;
+    if (!igcf(gcToClr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars))
+    {
+        ThrowOutOfMemory();
+    }
+
+    assert(pGCHeap != nullptr);
+    assert(pGcHandleManager != nullptr);
+    g_pGCHeap = pGCHeap;
+    g_pGCHandleManager = pGcHandleManager;
+    g_gcDacGlobals = &g_gc_dac_vars;
+}
+
+#endif // FEATURE_STANDALONE_GC
+
+void LoadStaticGarbageCollector()
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    IGCHandleManager *pGcHandleManager;
+    IGCHeap *pGCHeap;
+
+    if (!InitializeGarbageCollector(nullptr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars)) 
+    {
+        ThrowOutOfMemory();
+    }
+
+    assert(pGCHeap != nullptr);
+    assert(pGcHandleManager != nullptr);
+    g_pGCHeap = pGCHeap;
+    g_pGCHandleManager = pGcHandleManager;
+    g_gcDacGlobals = &g_gc_dac_vars;
+}
+
+
 void InitializeGarbageCollector()
 {
     CONTRACTL{
@@ -2463,25 +2558,19 @@ void InitializeGarbageCollector()
     g_pFreeObjectMethodTable->SetComponentSize(1);
 
 #ifdef FEATURE_STANDALONE_GC
-    IGCToCLR* gcToClr = new (nothrow) GCToEEInterface();
-    if (!gcToClr)
-        ThrowOutOfMemory();
-#else
-    IGCToCLR* gcToClr = nullptr;
-#endif
-
-    IGCHandleManager *pGcHandleManager;
-
-    IGCHeap *pGCHeap;
-    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleManager, &g_gc_dac_vars)) 
+    if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_GCUseStandalone)
+#ifdef FEATURE_STANDALONE_GC_ONLY
+        || true
+#endif // FEATURE_STANDALONE_GC_ONLY
+        )
     {
-        ThrowOutOfMemory();
+        LoadGarbageCollector();
     }
-
-    assert(pGCHeap != nullptr);
-    g_pGCHeap = pGCHeap;
-    g_pGCHandleManager = pGcHandleManager;
-    g_gcDacGlobals = &g_gc_dac_vars;
+    else
+#endif // FEATURE_STANDALONE_GC
+    {
+        LoadStaticGarbageCollector();
+    }
 
     // Apparently the Windows linker removes global variables if they are never
     // read from, which is a problem for g_gcDacGlobals since it's expected that

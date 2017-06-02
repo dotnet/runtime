@@ -234,46 +234,6 @@ const int policy_compact = 1;
 const int policy_expand  = 2;
 
 #ifdef TRACE_GC
-
-
-extern int     print_level;
-extern BOOL    trace_gc;
-extern int    gc_trace_fac;
-
-
-class hlet
-{
-    static hlet* bindings;
-    int prev_val;
-    int* pval;
-    hlet* prev_let;
-public:
-    hlet (int& place, int value)
-    {
-        prev_val = place;
-        pval = &place;
-        place = value;
-        prev_let = bindings;
-        bindings = this;
-    }
-    ~hlet ()
-    {
-        *pval = prev_val;
-        bindings = prev_let;
-    }
-};
-
-
-#define let(p,v) hlet __x = hlet (p, v);
-
-#else //TRACE_GC
-
-#define gc_count    -1
-#define let(s,v)
-
-#endif //TRACE_GC
-
-#ifdef TRACE_GC
 #define SEG_REUSE_LOG_0 7
 #define SEG_REUSE_LOG_1 (SEG_REUSE_LOG_0 + 1)
 #define DT_LOG_0 (SEG_REUSE_LOG_1 + 1)
@@ -299,15 +259,12 @@ void GCLog (const char *fmt, ... );
 //#define dprintf(l,x) {if ((l==GTC_LOG) || (l <= 1)) {GCLog x;}}
 //#define dprintf(l,x) {if (trace_gc && ((l <= print_level) || (l==GTC_LOG))) {GCLog x;}}
 //#define dprintf(l,x) {if (l==GTC_LOG) {printf ("\n");printf x ; fflush(stdout);}}
-#else //SIMPLE_DPRINTF
+#else
 
-// The GCTrace output goes to stdout by default but can get sent to the stress log or the logfile if the
-// reg key GCTraceFacility is set.  THe stress log can only take a format string and 4 numbers or
-// string literals.
-#define dprintf(l,x) {if (trace_gc && (l<=print_level)) { \
-      if ( !gc_trace_fac) {printf ("\n");printf x ; fflush(stdout);} \
-      else if ( gc_trace_fac == 2) {LogSpewAlways x;LogSpewAlways ("\n");} \
-      else if ( gc_trace_fac == 1) {STRESS_LOG_VA(x);}}}
+// Nobody used the logging mechanism that used to be here. If we find ourselves
+// wanting to inspect GC logs on unmodified builds, we can use this define here
+// to do so.
+#define dprintf(l, x)
 
 #endif //SIMPLE_DPRINTF
 
@@ -602,7 +559,7 @@ struct GCStatistics
     : public StatisticsBase
 {
     // initialized to the contents of COMPlus_GcMixLog, or NULL, if not present
-    static TCHAR* logFileName;
+    static char* logFileName;
     static FILE*  logFile;
 
     // number of times we executed a background GC, a foreground GC, or a
