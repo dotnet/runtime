@@ -1486,16 +1486,25 @@
     "System.DirectoryServices": {
       "InboxOn": {
         "net45": "4.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
       }
     },
     "System.DirectoryServices.AccountManagement": {
       "InboxOn": {
         "net45": "4.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
       }
     },
     "System.DirectoryServices.Protocols": {
       "InboxOn": {
         "net45": "4.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.5.0"
       }
     },
     "System.Drawing": {
