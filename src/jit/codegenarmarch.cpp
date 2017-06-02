@@ -2230,46 +2230,48 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         {
             var_types extendType = TYP_UNKNOWN;
 
-            // If we need to treat a signed type as unsigned
-            if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
+            if (genTypeSize(srcType) < genTypeSize(dstType))
             {
-                extendType  = genUnsignedType(srcType);
-                movSize     = emitTypeSize(extendType);
-                movRequired = true;
-            }
-            else
-            {
-                if (genTypeSize(srcType) < genTypeSize(dstType))
+                // If we need to treat a signed type as unsigned
+                if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
                 {
+                    extendType = genUnsignedType(srcType);
+                }
+                else
                     extendType = srcType;
 #ifdef _TARGET_ARM_
-                    movSize = emitTypeSize(srcType);
+                movSize = emitTypeSize(extendType);
 #endif // _TARGET_ARM_
-                    if (srcType == TYP_UINT)
-                    {
-#ifdef _TARGET_ARM64_
-                        // If we are casting from a smaller type to
-                        // a larger type, then we need to make sure the
-                        // higher 4 bytes are zero to gaurentee the correct value.
-                        // Therefore using a mov with EA_4BYTE in place of EA_8BYTE
-                        // will zero the upper bits
-                        movSize = EA_4BYTE;
-#endif // _TARGET_ARM64_
-                        movRequired = true;
-                    }
-                }
-                else // (genTypeSize(srcType) > genTypeSize(dstType))
+                if (extendType == TYP_UINT)
                 {
+#ifdef _TARGET_ARM64_
+                    // If we are casting from a smaller type to
+                    // a larger type, then we need to make sure the
+                    // higher 4 bytes are zero to gaurentee the correct value.
+                    // Therefore using a mov with EA_4BYTE in place of EA_8BYTE
+                    // will zero the upper bits
+                    movSize = EA_4BYTE;
+#endif // _TARGET_ARM64_
+                    movRequired = true;
+                }
+            }
+            else // (genTypeSize(srcType) > genTypeSize(dstType))
+            {
+                // If we need to treat a signed type as unsigned
+                if ((treeNode->gtFlags & GTF_UNSIGNED) != 0)
+                {
+                    extendType = genUnsignedType(dstType);
+                }
+                else
                     extendType = dstType;
 #if defined(_TARGET_ARM_)
-                    movSize = emitTypeSize(dstType);
+                movSize = emitTypeSize(extendType);
 #elif defined(_TARGET_ARM64_)
-                    if (dstType == TYP_INT)
-                    {
-                        movSize = EA_8BYTE; // a sxtw instruction requires EA_8BYTE
-                    }
-#endif // _TARGET_*
+                if (extendType == TYP_INT)
+                {
+                    movSize = EA_8BYTE; // a sxtw instruction requires EA_8BYTE
                 }
+#endif // _TARGET_*
             }
 
             ins = ins_Move_Extend(extendType, castOp->InReg());
