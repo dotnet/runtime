@@ -4335,8 +4335,12 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		}
 	}
 
-	if (!mono_runtime_class_init_full (vtable, error))
-		return NULL;
+	if (!(method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
+		  method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||
+		  method->wrapper_type == MONO_WRAPPER_XDOMAIN_INVOKE)) {
+		if (!mono_runtime_class_init_full (vtable, error))
+			return NULL;
+	}
 	return code;
 }
 
