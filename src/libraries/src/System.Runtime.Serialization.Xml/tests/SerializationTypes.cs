@@ -3120,26 +3120,6 @@ public class LocalReadingPosition
     public string PlatformOffset { get; set; }
 }
 
-public class NativeDllWrapper
-{
-    internal struct MyStruct
-    {
-        internal int field1;
-        internal int field2;
-    }
-
-    [System.Runtime.InteropServices.DllImport("NativeDll.dll")]
-    internal static extern int StructInAndOutTest(MyStruct myStruct, out MyStruct outMyStruct);
-
-    public static int CallIntoNativeDll()
-    {
-        MyStruct myStruct = new MyStruct();
-        myStruct.field1 = 1;
-        myStruct.field2 = 2;
-        return myStruct.field1;
-    }
-}
-
 public class TypeWithXmlElementProperty
 {
     [XmlAnyElement]
