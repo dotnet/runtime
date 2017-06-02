@@ -3,15 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.DirectoryServices.AccountManagement.csproj">
-      <SupportedFramework>netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>netcoreapp2.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.DirectoryServices.AccountManagement.csproj" />
-    <InboxOnTargetFramework Include="MonoAndroid10" />
-    <InboxOnTargetFramework Include="MonoTouch10" />
-    <InboxOnTargetFramework Include="xamarinios10" />
-    <InboxOnTargetFramework Include="xamarinmac20" />
-    <InboxOnTargetFramework Include="xamarintvos10" />
-    <InboxOnTargetFramework Include="xamarinwatchos10" />
+    <InboxOnTargetFramework Include="net45">
+      <AsFrameworkReference>true</AsFrameworkReference>
+    </InboxOnTargetFramework>
+    <File Include="$(PlaceHolderFile)">
+      <TargetPath>runtimes/win/lib/net45</TargetPath>
+    </File>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
