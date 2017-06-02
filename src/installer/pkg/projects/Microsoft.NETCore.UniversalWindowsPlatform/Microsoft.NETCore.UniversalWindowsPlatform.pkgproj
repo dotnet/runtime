@@ -3,7 +3,7 @@
   <Import Project="dir.props" />
 
   <PropertyGroup>
-    <Version>5.4.0</Version>
+    <Version>$(UWPCoreRuntimeSdkVersion)</Version>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -61,6 +61,7 @@
     
     <GenerateFileVersionProps Files="@(UapRuntimeFiles)"
                               PackageId="$(Id)"
+                              PackageVersion="$(Version)"
                               PlatformManifestFile="$(PlatformManifestFile)"
                               PropsFile="$(PropsFile)"
                               PreferredPackages="$(Id);@(RuntimeDependency)" />

@@ -42,6 +42,14 @@ struct probe_config_t
     {
     }
 
+    bool is_lookup() const
+    {
+        return (probe_deps_json == nullptr) &&
+            !only_runtime_assets &&
+            !only_serviceable_assets &&
+            !probe_publish_dir;
+    }
+
     static probe_config_t svc_ni(const pal::string_t& dir)
     {
         return probe_config_t(dir, nullptr, true, true, false);
@@ -76,8 +84,7 @@ struct arguments_t
     pal::string_t core_servicing;
     std::vector<pal::string_t> probe_paths;
     pal::string_t managed_application;
-    pal::string_t local_shared_store;
-    pal::string_t global_shared_store;
+    std::vector<pal::string_t> global_shared_stores;
     pal::string_t dotnet_shared_store;
     std::vector<pal::string_t> env_shared_store;
     int app_argc;
@@ -99,9 +106,11 @@ struct arguments_t
             {
                 trace::verbose(_X("-- arguments_t: env shared store: '%s'"), shared.c_str());
             }
-            trace::verbose(_X("-- arguments_t: local shared store: '%s'"), local_shared_store.c_str());
             trace::verbose(_X("-- arguments_t: dotnet shared store: '%s'"), dotnet_shared_store.c_str());
-            trace::verbose(_X("-- arguments_t: global shared store: '%s'"), global_shared_store.c_str());
+            for (const auto& global_shared : global_shared_stores)
+            {
+                trace::verbose(_X("-- arguments_t: global shared store: '%s'"), global_shared.c_str());
+            }
         }
     }
 };

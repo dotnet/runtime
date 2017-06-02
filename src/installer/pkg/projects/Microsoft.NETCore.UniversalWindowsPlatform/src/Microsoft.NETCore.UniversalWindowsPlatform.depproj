@@ -8,12 +8,50 @@
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
     <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
     <PackageTargetFramework>uap10.1</PackageTargetFramework>
     <PrimaryPackage>Microsoft.Private.CoreFx.UAP</PrimaryPackage>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <RestorePackages>true</RestorePackages>
+    <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
+    <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
+    <AdditionalRestoreArgs>/p:HasRuntimePackages=false /p:IntermediateOutputPath=$(IntermediateOutputPath)</AdditionalRestoreArgs>
   </PropertyGroup>
+
   <ItemGroup>
-    <None Include="project.json" />
+    <PackageReference Include="Microsoft.Net.Native.Compiler">
+      <Version>1.6.1</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Private.CoreFx.UAP">
+      <Version>$(CoreFxVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
+      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NETCore.Platforms">
+      <Version>$(PlatformPackageVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="NETStandard.Library">
+      <Version>$(NETStandardVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.ServiceModel.Duplex">
+      <Version>$(WcfVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.ServiceModel.Http">
+      <Version>$(WcfVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.ServiceModel.NetTcp">
+      <Version>$(WcfVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.ServiceModel.Primitives">
+      <Version>$(WcfVersion)</Version>
+    </PackageReference>
+    <PackageReference Include="System.ServiceModel.Security">
+      <Version>$(WcfVersion)</Version>
+    </PackageReference>
   </ItemGroup>
+
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
     <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
          Targets for an empty runtime.json to reduce conflicts from 1.x packages,
@@ -72,6 +110,15 @@
       <FilesToPackage Include="@(_filesByPackagePath->'%(SourcePath)')" />
     </ItemGroup>
 
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+      <!-- include all docs files -->
+      <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
+      
+      <FilesToPackage Include="@(_docFilesToPackage)">
+        <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+
     <!-- simple check to make sure we don't accidentally pull an old 
          package that should have been merged to the primary package -->
     <ItemGroup>
@@ -87,28 +134,38 @@
     </ItemGroup>
     <Error Text="Unexpected System package(s) @(_secondarySystemPackages)" Condition="'@(_secondarySystemPackages)' != ''" />
 
-    <Message Importance="low" Text="%(FilesToPackage.PackagePath) -> @(FilesToPackage)" />
+    <ItemGroup>
+      <!-- pick up any src our sources directory from packages contributing files -->
+      <_sourcePathCandidate Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\sources')" />
+      <_sourcePathCandidate Include="@(FilesToPackage->'$(PackagesDir)\%(NuGetPackageId)\%(NuGetPackageVersion)\src')" />
+      <_sourcePath Include="@(_sourcePathCandidate)" Condition="Exists('%(Identity)')" />
+    </ItemGroup>
+
+    <!-- on windows workaround max-path -->
+    <!-- this can be removed once we build on core MSBuild which supports long paths. -->
+    <ItemGroup Condition="'$(OsEnvironment)'=='Windows_NT'">
+      <!-- choose a shorter path name, excluding package version -->
+      <_shortSourcePath Include="@(_sourcePath->'$(ObjDir.Replace('/', '\'))src-%(NuGetPackageId)')">
+        <Original>%(_sourcePath.FullPath)</Original>
+      </_shortSourcePath>
+      <_sourcePath Remove="@(_sourcePath)" />
+      <_sourcePath Include="@(_shortSourcePath)" />
+    </ItemGroup>
+    <RemoveDir Condition="'@(_shortSourcePath)' != '' AND Exists('%(_shortSourcePath.Identity)')" Directories="%(_shortSourcePath.Identity)" />
+    <Exec Condition="'@(_shortSourcePath)' != ''" Command="mklink /J %(_shortSourcePath.Identity) %(_shortSourcePath.Original)" />
+
+    <ItemGroup>
+      <FilesToPackage Include="%(_sourcePath.Identity)\%2A%2A\%2A.%2A">
+        <TargetPath>src</TargetPath>
+        <IsSourceCodeFile>true</IsSourceCodeFile>
+      </FilesToPackage>
+    </ItemGroup>
   </Target>
 
   <Target Name="GetDependenciesToPackage" Condition="'@(DependenciesToPackage)' != ''" DependsOnTargets="ResolveNuGetPackages" Returns="@(_DependenciesToPackageWithVersion)">
-    <!-- hack because current nuget task doesn't return version for ReferencedNuGetPackages,
-         can be removed once we switch to msbuild-based nuget & use PackageReference-->
-    <ReadLinesFromFile File="$(ProjectJson)">
-      <Output TaskParameter="Lines" ItemName="ProjectJsonLines" />
-    </ReadLinesFromFile>
-
     <ItemGroup>
-      <PackageMatch Include="@(ProjectJsonLines)">
-        <PackageId>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\w[^:&quot;]*)'))</PackageId>
-        <PackageVersion>$([System.Text.RegularExpressions.Regex]::Match('%(Identity)', '(\d+\.\d+.\d+[^&quot;]*)'))</PackageVersion>
-      </PackageMatch>
-
-      <ReferencedPackage Include="@(PackageMatch -> '%(PackageId)')" Condition="'%(PackageMatch.PackageVersion)' != ''">
-        <Version>%(PackageMatch.PackageVersion)</Version>
-      </ReferencedPackage>
-      
       <!-- intersect ReferencedPackage with DependenciesToPackage -->
-      <_DependenciesToPackageWithVersion Include="@(ReferencedPackage)" Condition="'@(ReferencedPackage)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
+      <_DependenciesToPackageWithVersion Include="@(PackageReference)" Condition="'@(PackageReference)' == '@(DependenciesToPackage)' AND '%(Identity)' != ''">
         <TargetFramework>$(PackageTargetFramework)</TargetFramework>
       </_DependenciesToPackageWithVersion>
     </ItemGroup>

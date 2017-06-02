@@ -1,43 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="GenerateDebRepoUploadJsonFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+  <UsingTask TaskName="GenerateChecksums" AssemblyFile="$(LocalBuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.Local.dll" />
+
   <Target Name="GatherPublishToAzureBinaries">
-    <PropertyGroup>
-      <RelativeBlobPath>$(Channel)/Binaries/$(SharedFrameworkNugetVersion)</RelativeBlobPath>
-    </PropertyGroup>
     <ItemGroup>
       <PublishFile Include="@(CompressedFile)" />
       <PublishFile Include="@(RuntimePackageFile)" />
-      <PublishFile Condition="'$(PublishRidAgnosticPackages)' == 'true'" Include="@(IdentityPackageFile)" />
+      <PublishFile Include="@(UWPArtifactsToUpload)" />
+      <PublishFile Condition="'$(PublishRidAgnosticPackages)' == 'true'" Include="@(RidAgnosticPackageFile)" />
       <Project Include="publish.proj">
         <PublishTarget>UploadToAzure</PublishTarget>
-        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(PublishFile);$(OutputVersionBadge);RelativeBlobPath=$(RelativeBlobPath)</AdditionalProperties>
+        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(PublishFile);$(OutputVersionBadge);RelativeBlobPath=$(BinariesRelativePath)</AdditionalProperties>
       </Project>
     </ItemGroup>
   </Target>
 
   <Target Name="GatherPublishToAzureInstallers">
-    <PropertyGroup>
-      <RelativeBlobPath>$(Channel)/Installers/$(SharedFrameworkNugetVersion)</RelativeBlobPath>
-    </PropertyGroup>
     <ItemGroup>
       <Project Include="publish.proj">
         <PublishTarget>UploadToAzure</PublishTarget>
-        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(InstallerFile);RelativeBlobPath=$(RelativeBlobPath)</AdditionalProperties>
+        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(InstallerFile);RelativeBlobPath=$(InstallersRelativePath)</AdditionalProperties>
       </Project>
     </ItemGroup>
+  </Target>
+  
+  <Target Name="GatherPublishToAzureChecksums" DependsOnTargets="CreateChecksums" >
+    <ItemGroup>
+      <ChecksumItems Include="$(PackagesOutDir)**/*$(ChecksumExtension)" />
+      <Project Include="publish.proj">
+        <PublishTarget>UploadChecksumsToAzure</PublishTarget>
+        <AdditionalProperties>%(Project.AdditionalProperties);ItemsToPublish=@(ChecksumItems);RelativeBlobPath=$(ChecksumsRelativePath)</AdditionalProperties>
+      </Project>
+    </ItemGroup>
+  </Target>
+  
+  <Target Name="CreateChecksums">
+    <ItemGroup>
+      <ItemsToChecksum Include="@(CompressedFile)" />
+      <ItemsToChecksum Include="@(InstallerFile)" />
+      <ArtifactsForGeneratingChecksums Include="@(ItemsToChecksum)">
+        <DestinationPath>%(ItemsToChecksum.FullPath)$(ChecksumExtension)</DestinationPath>
+      </ArtifactsForGeneratingChecksums>
+    </ItemGroup>
+    <GenerateChecksums Items="@(ArtifactsForGeneratingChecksums)" />
   </Target>
 
   <Target Name="GenerateDebRepoFiles"
           Condition="('$(TargetsUbuntu)' == 'true' or '$(TargetsDebian)' == 'true') and '$(TargetArchitecture)' == 'x64'">
+          
     <ItemGroup>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-host-*$(SharedFrameworkNugetVersion).deb" >
-        <PackageName>dotnet-host</PackageName>
+      <RepoIds Include="DebianId_ubuntu1404-x64">
+        <Key>$(DebianId_ubuntu1404-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_debian8-x64">
+        <Key>$(DebianId_debian8-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1604-x64">
+        <Key>$(DebianId_ubuntu1604-x64)</Key>
+      </RepoIds>
+      <RepoIds Include="DebianId_ubuntu1610-x64">
+        <Key>$(DebianId_ubuntu1610-x64)</Key>
+      </RepoIds>
+    </ItemGroup>
+    <PropertyGroup>
+      <RidWithoutDots>$([System.String]::Copy($(DistroRid)).Replace('.', ''))</RidWithoutDots>
+      <DebRepoId Condition="$([System.String]::Copy(%(RepoIds.Identity)).EndsWith('$(RidWithoutDots)'))">%(RepoIds.Key)</DebRepoId>
+    </PropertyGroup>
+    <Error Condition="'$(DebRepoId)'=='' OR '$(DebRepoUser)'=='' OR '$(DebRepoPass)'=='' OR '$(DebRepoServer)'==''"
+           Text=" Missing parameters for debian publish." />
+           
+    <ItemGroup>
+      <DebInstallerFile Include="$(SharedHostInstallerFile)" >
+        <PackageName>$(SharedHostDebPkgName)</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-hostfxr-*$(SharedFrameworkNugetVersion).deb" >
-        <PackageName>dotnet-hostfxr</PackageName>
+      <DebInstallerFile Include="$(HostFxrInstallerFile)" >
+        <PackageName>$(HostFxrDebPkgName)</PackageName>
       </DebInstallerFile>
-      <DebInstallerFile Include="$(PackagesOutDir)dotnet-sharedframework-*$(SharedFrameworkNugetVersion).deb">
-        <PackageName>dotnet-sharedframework</PackageName>
+      <DebInstallerFile Include="$(SharedFrameworkInstallerFile)">
+        <PackageName>$(SharedFxDebPkgName)</PackageName>
       </DebInstallerFile>
 
       <DebInstallerFile>
@@ -49,20 +90,24 @@
                                    UploadJsonFilename="%(DebInstallerFile.UploadJsonFilename)"
                                    PackageName="%(DebInstallerFile.PackageName)"
                                    PackageVersion="$(SharedFrameworkNugetVersion)"
-                                   UploadUrl="$(ContainerName)/$(Channel)/Installers/$(SharedFrameworkNugetVersion)/%(DebInstallerFile.Identity)" />
+                                   UploadUrl="$(BaseUrl)$(ContainerName)/Runtime/$(SharedFrameworkNugetVersion)/%(DebInstallerFile.Filename)%(DebInstallerFile.Extension)" />
   </Target>
 
   <Target Name="CheckIfAllBuildsHavePublished">
     <GetAzureBlobList AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
-                      FilterBlobNames="$(Channel)/Binaries/$(SharedFrameworkNugetVersion)/">
+                      FilterBlobNames="Runtime/$(SharedFrameworkNugetVersion)/">
       <Output TaskParameter="BlobNames" ItemName="_BlobNames" />
     </GetAzureBlobList>
     <ItemGroup>
       <_FoundBlobNames Include="%(_BlobNames.FileName)%(_BlobNames.Extension)" Condition="'%(_BlobNames.Extension)' == '.svg'" />
       <_MissingBlobNames Include="@(PublishRid->'sharedfx_%(Identity)_$(ConfigurationGroup)_version_badge.svg')" 
-                          Exclude="@(_FoundBlobNames)" />
+                         Exclude="@(_FoundBlobNames)" />
     </ItemGroup>
+    <Error Text="Missing publish output from all legs of the build. Missing blobs are '@(_MissingBlobNames)'"
+           Condition="'@(_MissingBlobNames)' != ''" />
   </Target>
+
+  <Import Project="..\dir.targets" />
 </Project>

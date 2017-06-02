@@ -95,11 +95,38 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
                 if (ResolverUtils.TryResolvePackagePath(_fileSystem, library, directory, out packagePath))
                 {
-                    assemblies.AddRange(ResolverUtils.ResolveFromPackagePath(_fileSystem, library, packagePath));
-                    return true;
+                    IEnumerable<string> fullPathsFromPackage;
+                    if (TryResolveFromPackagePath(_fileSystem, library, packagePath, out fullPathsFromPackage))
+                    {
+                        assemblies.AddRange(fullPathsFromPackage);
+                        return true;
+                    }
                 }
             }
             return false;
+        }
+
+        private static bool TryResolveFromPackagePath(IFileSystem fileSystem, CompilationLibrary library, string basePath, out IEnumerable<string> results)
+        {
+            var paths = new List<string>();
+
+            foreach (var assembly in library.Assemblies)
+            {
+                string fullName;
+                if (!ResolverUtils.TryResolveAssemblyFile(fileSystem, basePath, assembly, out fullName))
+                {
+                    // if one of the files can't be found, skip this package path completely.
+                    // there are package paths that don't include all of the "ref" assemblies 
+                    // (ex. ones created by 'dotnet store')
+                    results = null;
+                    return false;
+                }
+
+                paths.Add(fullName);
+            }
+
+            results = paths;
+            return true;
         }
     }
 }

@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <Dependency Include="Microsoft.NETCore.DotNetAppHost">
-      <Version>$(AppHostFullVersion)</Version>
+      <Version>$(AppHostVersion)</Version>
     </Dependency>
   </ItemGroup>
      

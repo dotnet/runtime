@@ -90,4 +90,22 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="SignUwpFiles" DependsOnTargets="GetSignUwpFiles">
+    <CallTarget Targets="SignFiles" />
+  </Target>
+
+  <Target Name="GetSignUwpFiles">
+    <ItemGroup>
+      <FilesToSign Include="$(UWPOutputDir)*.dll">
+        <Authenticode>$(CertificateId)</Authenticode>
+      </FilesToSign>
+      <FilesToSign Include="$(UWPOutputDir)*.exe">
+        <Authenticode>$(CertificateId)</Authenticode>
+      </FilesToSign>
+      <FilesToSign Include="$(UWPOutputDir)*.appx">
+        <Authenticode>$(CertificateId)</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+  </Target>
+  
 </Project>

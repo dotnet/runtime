@@ -84,6 +84,8 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 directories.Add(sharedDirectory);
             }
 
+            var paths = new List<string>();
+
             foreach (var assembly in library.Assemblies)
             {
                 bool resolved = false;
@@ -93,7 +95,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                     string fullName;
                     if (ResolverUtils.TryResolveAssemblyFile(_fileSystem, directory, assemblyFile, out fullName))
                     {
-                        assemblies.Add(fullName);
+                        paths.Add(fullName);
                         resolved = true;
                         break;
                     }
@@ -101,17 +103,12 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 
                 if (!resolved)
                 {
-                    // throw in case when we are published app and nothing found
-                    // because we cannot rely on nuget package cache in this case
-                    if (isPublished)
-                    {
-                    throw new InvalidOperationException(
-                        $"Cannot find assembly file {assemblyFile} at '{string.Join(",", directories)}'");
-                }
                     return false;
-            }
+                }
             }
 
+            // only modify the assemblies parameter if we've resolved all files
+            assemblies?.AddRange(paths);
             return true;
         }
     }

@@ -1,10 +1,11 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.Deb.Tool
@@ -13,9 +14,12 @@ namespace Microsoft.DotNet.Deb.Tool
     {
         public static int Main(string[] args)
         {
+            string packageToolPath = Path.Combine(Path.GetDirectoryName(typeof(Program).GetTypeInfo().Assembly.Location), "tool", "package_tool");
+            EnsureExecutable(packageToolPath);
+
             var processInfo = new ProcessStartInfo()
             {
-                FileName = Path.Combine(Path.GetDirectoryName(typeof(Program).GetTypeInfo().Assembly.Location), "tool", "package_tool"),
+                FileName = packageToolPath,
                 Arguments = ArgumentEscaper.EscapeAndConcatenateArgArrayForProcessStart(args),
                 UseShellExecute = false
             };
@@ -32,5 +36,27 @@ namespace Microsoft.DotNet.Deb.Tool
 
             return process.ExitCode;
         }
+
+        private static void EnsureExecutable(string filePath)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return;
+            }
+            // Executable files are don't get the 'x' permission when restored from
+            // NuGet packages.
+            // See (https://github.com/NuGet/Home/issues/4424)
+            // On .NET Core 1.x, all extracted files had default permissions of 766.
+            // The default on .NET Core 2.x has changed to 666.
+            // We force the .NET Core 1.x default permissions, to ensure we can execute the files.
+            try
+            {
+                chmod(filePath, 0x1f6); // 0766
+            }
+            catch {} // if we can't set the permssion, just ignore it and try to run the file
+        }
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int chmod(string pathname, int mode);
     }
 }

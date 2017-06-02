@@ -4,6 +4,9 @@
 
   <PropertyGroup>
     <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
+
+    <!-- Package prebuilt binaries -->
+    <UsePrebuiltPortableBinariesForInstallers>false</UsePrebuiltPortableBinariesForInstallers>
     
     <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
     <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
@@ -13,28 +16,18 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <ProductMoniker>$(PackageTargetRid)-$(HostFullVersion)</ProductMoniker>
+    <CombinedCompressedFile>dotnet-runtime-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
+    <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
+    <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+    <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <CombinedCompressedFile>dotnet-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
-    <HostFxrCompressedFile>dotnet-hostfxr-$(ProductMoniker)$(CompressedFileExtension)</HostFxrCompressedFile>
-    <SharedFrameworkCompressedFile>dotnet-sharedframework-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
-    <SharedFrameworkSymbolsCompressedFile>dotnet-sharedframework-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <CombinedInstallerFile>dotnet-$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
-    <CombinedInstallerEngine>dotnet-$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
-    <SharedHostInstallerFile>dotnet-host-$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile>dotnet-hostfxr-$(ProductMoniker)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile>dotnet-sharedframework-$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
-    <SharedFrameworkEngine>dotnet-sharedframework-$(ProductMoniker)-engine.exe</SharedFrameworkEngine>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <SharedHostBrandName>'Microsoft .NET Core $(ProductionVersion) - Host'</SharedHostBrandName>
-    <HostFxrBrandName>'Microsoft .NET Core $(ProductionVersion) - Host FX Resolver'</HostFxrBrandName>
-    <SharedFrameworkBrandName>'Microsoft .NET Core $(ProductionVersion) - Runtime'</SharedFrameworkBrandName>
+    <ProductBrandPrefix>Microsoft .NET Core</ProductBrandPrefix>
+    <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
+    <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
+    <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
+    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
+    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
   </PropertyGroup>
 </Project>

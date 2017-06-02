@@ -51,7 +51,7 @@ bool pal::touch_file(const pal::string_t& path)
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* buf = ::getcwd(nullptr, PATH_MAX + 1);
+    pal::char_t* buf = ::getcwd(nullptr, 0);
     if (buf == nullptr)
     {
         if (errno == ENOENT)
@@ -66,9 +66,9 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-bool pal::load_library(const char_t* path, dll_t* dll)
+bool pal::load_library(const string_t* path, dll_t* dll)
 {
-    *dll = dlopen(path, RTLD_LAZY);
+    *dll = dlopen(path->c_str(), RTLD_LAZY);
     if (*dll == nullptr)
     {
         trace::error(_X("Failed to load %s, error: %s"), path, dlerror());
@@ -183,7 +183,7 @@ bool is_executable(const pal::string_t& file_path)
 }
 
 static
-bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
+bool locate_dotnet_on_path(std::vector<pal::string_t>* dotnet_exes)
 {
     pal::string_t path;
     if (!pal::getenv(_X("PATH"), &path))
@@ -204,12 +204,17 @@ bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
         append_path(&tok, _X("dotnet"));
         if (pal::realpath(&tok) && is_executable(tok))
         {
-            *dotnet_exe = tok;
-            return true;
+            dotnet_exes->push_back(tok);
         }
         tok.clear();
     }
-    return false;
+
+    if (dotnet_exes->empty())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 bool pal::get_local_dotnet_dir(pal::string_t* recv)
@@ -234,16 +239,21 @@ bool pal::get_local_dotnet_dir(pal::string_t* recv)
     return true;
 }
 
- bool pal::get_global_dotnet_dir(pal::string_t* recv)
+ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
-    recv->clear();
-    pal::string_t dotnet_exe;
-    if (!locate_dotnet_on_path(&dotnet_exe))
+    
+     std::vector<pal::string_t> dotnet_exes;
+    if (!locate_dotnet_on_path(&dotnet_exes))
     {
         return false;
     }
-    pal::string_t dir = get_directory(dotnet_exe);
-    recv->assign(dir);
+
+    for (pal::string_t path : dotnet_exes)
+    {
+        pal::string_t dir = get_directory(path);
+        recv->push_back(dir);
+    }
+
     return true;
 }
 
@@ -442,12 +452,32 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     mib[3] = -1;
     char buf[PATH_MAX];
     size_t cb = sizeof(buf);
-    if (sysctl(mib, 4, buf, &cb, NULL, 0) == 0)
+    int error_code = 0;
+    error_code = sysctl(mib, 4, buf, &cb, NULL, 0);
+    if (error_code == 0)
     {
         recv->assign(buf);
         return true;
     }
+    
     // ENOMEM
+    if (error_code == ENOMEM)
+    {
+        size_t len = sysctl(mib, 4, NULL, NULL, NULL, 0);
+        std::unique_ptr<char[]> buffer = new (std::nothrow) char[len];
+
+        if (buffer == NULL)
+        {
+            return false;
+        }
+
+        error_code = sysctl(mib, 4, buffer, &len, NULL, 0);
+        if (error_code == 0)
+        {
+            recv->assign(buffer);
+            return true;
+        }
+    }
     return false;
 }
 #else

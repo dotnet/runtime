@@ -22,7 +22,7 @@ arguments_t::arguments_t() :
  * Setup the shared store directories.
  *
  *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
- *  o $HOME/.dotnet/{x86|x64}/tfm or %USERPROFILE%\.dotnet\{x86|x64}\<tfm>
+ *  o $HOME/.dotnet/{x86|x64}/store/arch/tfm or %USERPROFILE%\.dotnet\{x86|x64}\store\<arch>\<tfm>
  *  o dotnet.exe relative shared store\<arch>\<tfm>
  *  o Global location
  *      Windows: C:\Program Files (x86) or
@@ -39,14 +39,6 @@ void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t
     // Environment variable DOTNET_SHARED_STORE
     (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), init.tfm);
 
-    // User profile based store
-    pal::string_t local_shared_store;
-    if (get_local_shared_store_dir(&local_shared_store))
-    {
-        append_path(&local_shared_store, init.tfm.c_str());
-        args->local_shared_store = local_shared_store;
-    }
-
     // "dotnet.exe" relative shared store folder
     if (init.host_mode == host_mode_t::muxer)
     {
@@ -57,11 +49,7 @@ void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t
     }
 
     // Global shared store dir
-    if (get_global_shared_store_dir(&args->global_shared_store))
-    {
-        append_path(&args->global_shared_store, get_arch());
-        append_path(&args->global_shared_store, init.tfm.c_str());
-    }
+    get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), init.tfm);
 }
 
 bool parse_arguments(
@@ -100,7 +88,7 @@ bool parse_arguments(
     {
         // coreconsole mode. Find the managed app in the same directory
         pal::string_t managed_app(own_dir);
-        managed_app.push_back(DIR_SEPARATOR);
+
         managed_app.append(get_executable(own_name));
         managed_app.append(_X(".dll"));
         args.managed_application = managed_app;
@@ -132,7 +120,11 @@ bool parse_arguments(
 
         args.deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
         args.deps_path.append(app_base);
-        args.deps_path.push_back(DIR_SEPARATOR);
+
+        if (!app_base.empty() && app_base.back() != DIR_SEPARATOR)
+        {
+            args.deps_path.push_back(DIR_SEPARATOR);
+        }
         args.deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
         args.deps_path.append(_X(".deps.json"));
     }

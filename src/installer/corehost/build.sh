@@ -34,9 +34,13 @@ init_rid_plat()
         fi
     fi
 
+    if [ "$(uname -s)" == "Darwin" ]; then
+        export __rid_plat=osx.10.12
+    fi
+
     if [ $__linkPortable == 1 ]; then
         if [ "$(uname -s)" == "Darwin" ]; then
-        export __rid_plat="osx"
+            export __rid_plat="osx"
         else
             export __rid_plat="linux"
         fi
@@ -57,6 +61,7 @@ usage()
     echo "  -portable                         Optional argument to build portable platform packages."
     echo "  --cross                           Optional argument to signify cross compilation,"
     echo "                                    and use ROOTFS_DIR environment variable to find rootfs."
+    echo "  --stripsymbols                    Optional argument to strip native symbols during the build"
 
     exit 1
 }
@@ -70,6 +75,7 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+RootRepo="$DIR/../.."
 
 __build_arch=
 __host_ver=
@@ -80,6 +86,8 @@ __CrossBuild=0
 __commit_hash=
 __portableBuildArgs=
 __configuration=Debug
+__linkPortable=0
+__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -118,17 +126,19 @@ while [ "$1" != "" ]; do
             ;;
         -portable)
             __portableBuildArgs="-DCLI_CMAKE_PORTABLE_BUILD=1"
+            __linkPortable=1
             ;;
         --cross)
             __CrossBuild=1
+            ;;
+        --stripsymbols)
+            __cmake_defines="${__cmake_defines} -DSTRIP_SYMBOLS=true"
             ;;
         *)
         echo "Unknown argument to build.sh $1"; usage; exit 1
     esac
     shift
 done
-
-__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 case $__build_arch in
     amd64|x64)
@@ -149,13 +159,16 @@ case $__build_arch in
 esac
 __cmake_defines="${__cmake_defines} ${__arch_define}"
 
+# Configure environment if we are doing a cross compile.
+if [ "$__CrossBuild" == 1 ]; then
+    if ! [[ -n $ROOTFS_DIR ]]; then
+        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
+    fi
+fi
+
 # __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
 __rid_plat=
-if [ "$(uname -s)" == "Darwin" ]; then
-    __rid_plat=osx.10.12
-else
-    init_rid_plat
-fi
+init_rid_plat
 
 if [ -z $__rid_plat ]; then
     echo "Unknown base rid (eg.: osx.10.12, ubuntu.14.04) being targeted"
@@ -169,6 +182,7 @@ fi
 
 __build_arch_lowcase=$(echo "$__build_arch" | tr '[:upper:]' '[:lower:]')
 __base_rid=$__rid_plat-$__build_arch_lowcase
+echo "Computed RID for native build is $__base_rid"
 export __CrossToolChainTargetRID=$__base_rid
 
 # Set up the environment to be used for building with clang.

@@ -3,28 +3,21 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <UsingTask TaskName="GetBuildArgsByFrameworks" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
-
-  <Target Name="Build">
-    
-    <MakeDir  Condition="!Exists('$(pOutDir)')" Directories="$(pOutDir)" /> 
-
-    <PropertyGroup>
-      <Args>/p:Configuration=$(ConfigurationGroup)</Args>
-    </PropertyGroup>
+  <Target Name="Build"
+          DependsOnTargets="GetLatestCommitHash">
+    <MakeDir Condition="!Exists('$(pOutDir)')" Directories="$(pOutDir)" />
 
     <ItemGroup>
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.PlatformAbstractions/Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel/Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
-    <GetBuildArgsByFrameworks
-      OSGroup="$(OSGroup)"
-      ProjectPaths="@(PackageProjects)">
-      <Output ItemName="buildCmdArgs" TaskParameter="BuildArgs" />
-    </GetBuildArgsByFrameworks>
+    <PropertyGroup>
+      <BuildArgs>/p:Configuration=$(ConfigurationGroup)</BuildArgs>
+      <BuildArgs Condition="'$(LatestCommit)' != ''">$(BuildArgs) /p:LatestCommit=$(LatestCommit)</BuildArgs>
+      <BuildArgs Condition="'$(BuiltByString)' != ''">$(BuildArgs) /p:BuiltByString="$(BuiltByString)"</BuildArgs>
+    </PropertyGroup>
 
-    <Exec Command="$(DotnetSdkToolCommand) build $(Args) %(buildCmdArgs.Identity)" 
-          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+    <Exec Command="$(DotnetToolCommand) build $(BuildArgs) %(PackageProjects.Identity)" />
   </Target>
 </Project>

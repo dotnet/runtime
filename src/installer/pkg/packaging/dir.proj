@@ -12,7 +12,9 @@
     </PackageTargets>
   </PropertyGroup>
 
-  <Target Name="Build" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="Build" DependsOnTargets="BuildInstallers;BuildCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="BuildInstallers" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="BuildCombinedInstallers" DependsOnTargets="GenerateCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
 
   <Target Name="InitPackage">
     <ItemGroup>
@@ -81,14 +83,16 @@
       <templateSvg>$(ProjectDir)resources/images/version_badge.svg</templateSvg>
     </PropertyGroup>
 
+    <MakeDir  Condition="!Exists('$(BaseOutputRootPath)')" Directories="$(BaseOutputRootPath)" />
+    
     <WriteLinesToFile
       File="$(OutputVersionBadge)"
-      Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(HostVersion)'))"
+      Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(ProductVersion)'))"
       Overwrite="true"
                       />
   </Target>
   
-  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" />
+  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'"/>
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <Target Name="GenerateZip"
@@ -117,12 +121,6 @@
 
   <Target Name="GenerateTarBall"
           Condition="'$(OSGroup)'!='Windows_NT'">
-    <ItemGroup>
-      <CombinedCompressedFileSet Include="$(CombinedPublishRoot)/**" />
-      <HostFxrCompressedFileSet Include="$(HostFxrPublishRoot)/**" />
-      <SharedFrameworkCompressedFileSet Include="$(SharedFrameworkPublishRoot)/**" />
-      <SharedFrameworkSymbolsCompressedFileSet Include="$(SharedFrameworkPublishSymbolsDir)/**" />
-    </ItemGroup>
 
     <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
          we use -C so that we get a relative folder structure which is compressed rather than the full path -->
@@ -147,21 +145,24 @@
   <Import Project="windows\package.targets" />
   <Import Project="osx\package.targets" />
   <Import Project="deb\package.targets" />
+  <Import Project="rpm\package.targets" />
 
   <PropertyGroup>
    <InstallerDependsOn>
      GenerateMsis;
-     GenerateBundles;
      GeneratePkgs;
      GenerateDebs;
+     GenerateRpms;
    </InstallerDependsOn>
   </PropertyGroup>
-  <Target Name="GenerateInstallers" DependsOnTargets="$(InstallerDependsOn)" />
+  <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
 
-  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage">
+  <Target Name="GenerateCombinedInstallers" DependsOnTargets="InitPackage;GenerateBundles" />
+
+  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
     <ItemGroup>
-      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-      <PackageProjects Condition="'$(OS)' == 'Windows'" Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
+      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
+      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -170,7 +171,7 @@
       <VersionSuffixArg>--version-suffix $(VersionSuffix)</VersionSuffixArg>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetSdkToolCommand) pack %(PackageProjects.Identity) --no-build --serviceable $(OutputArg) $(ConfigArg) $(VersionSuffixArg)"
+    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build $(OutputArg) $(ConfigArg) $(VersionSuffixArg)"
           Condition="'@(PackageProjects)' != ''" />
   </Target>
   

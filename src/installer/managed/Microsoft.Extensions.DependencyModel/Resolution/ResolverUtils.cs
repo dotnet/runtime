@@ -1,8 +1,6 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.Extensions.DependencyModel.Resolution
@@ -24,19 +22,6 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
                 return true;
             }
             return false;
-        }
-
-        internal static IEnumerable<string> ResolveFromPackagePath(IFileSystem fileSystem, CompilationLibrary library, string basePath)
-        {
-            foreach (var assembly in library.Assemblies)
-            {
-                string fullName;
-                if (!TryResolveAssemblyFile(fileSystem, basePath, assembly, out fullName))
-                {
-                    throw new InvalidOperationException($"Cannot find assembly file for package {library.Name} at '{fullName}'");
-                }
-                yield return fullName;
-            }
         }
 
         internal static bool TryResolveAssemblyFile(IFileSystem fileSystem, string basePath, string assemblyPath, out string fullName)
