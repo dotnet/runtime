@@ -57,6 +57,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Thread cultures is not honored in UWP.")]
         public void DefaultThreadCurrentCulture()
         {
             RemoteInvoke(() =>
@@ -76,6 +77,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Thread cultures is not honored in UWP.")]
         public void DefaultThreadCurrentUICulture()
         {
             RemoteInvoke(() =>

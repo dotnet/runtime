@@ -436,6 +436,13 @@ namespace System.Resources
 
             if (s_globalResourceContextBestFitCultureInfo != null && s_globalResourceContextBestFitCultureInfo.Name.Equals(ci.Name, StringComparison.OrdinalIgnoreCase))
             {
+                if (!ReferenceEquals(s_globalResourceContextBestFitCultureInfo, ci))
+                {
+                    // We have same culture name but different reference, we'll need to update s_globalResourceContextBestFitCultureInfo only as ci can 
+                    // be a customized subclassed culture which setting different values for NFI, DTFI...etc.
+                    s_globalResourceContextBestFitCultureInfo = ci;
+                }
+
                 // the default culture is already set. nothing more need to be done
                 return true;
             }
