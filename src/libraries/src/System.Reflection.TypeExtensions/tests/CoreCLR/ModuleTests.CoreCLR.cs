@@ -9,7 +9,6 @@ namespace System.Reflection.Tests
     public class ModuleTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3638 - HasMVID returns true but GetMVID violently disagrees.", TargetFrameworkMonikers.UapAot)]
         public void GetModuleVersionId_KnownAssembly_ReturnsExpected()
         {
             Module module = Assembly.Load(new AssemblyName("TinyAssembly")).ManifestModule;
