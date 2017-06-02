@@ -135,3 +135,5 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
 1. Any other labels on PRs are superfluous and not needed (exceptions: **blocked**, **NO MERGE**)
     * Motivation: All the important info (*issue type* label, api approval label, OS label, etc.) is already captured on the associated issue.
 1. Push PRs forward, don't let them go stale (response every 5+ days, ideally no PRs older than 2 weeks)
+1. Stuck or long-term blocked PRs (e.g. due to missing API approval, etc.) should be closed and reopened once they are unstuck
+    * Motivation: Keep only active PRs. WIP (work-in-progress) PRs should be rare and should not become stale (2+ weeks old). If a PR is stale and there is not immediate path forward, consider closing the PR until it is unblocked/unstuck.
