@@ -2862,6 +2862,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #20478", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_ReadOnlyDictionaryCausingDuplicateInvalidDataContract()
     {
         var dict = new Dictionary<string, int>();

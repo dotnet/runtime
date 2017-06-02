@@ -1695,7 +1695,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual<TypeWithCommonTypeProperties>(value, deserializedValue);
     }
 
-#if !uapaot
     [Fact]
     public static void DCS_TypeWithTypeProperty()
     {
@@ -1705,7 +1704,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(value.Name, deserializedValue.Name);
         Assert.StrictEqual(value.Type, deserializedValue.Type);
     }
-#endif
 
     [Fact]
     public static void DCS_TypeWithExplicitIEnumerableImplementation()
@@ -3151,12 +3149,6 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.emps.Count(), actual.emps.Count());
         Assert.Equal(value.emps[0].Name, actual.emps[0].Name);
         Assert.Equal(value.emps[1].Name, actual.emps[1].Name);
-    }
-
-    [Fact]
-    public static void DCS_NativeDll()
-    {
-        NativeDllWrapper.CallIntoNativeDll();
     }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
