@@ -39,6 +39,7 @@
     <Compile Include="ImmutableSetTest.cs" />
     <Compile Include="ImmutableSortedDictionaryBuilderTest.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.cs" />
+    <Compile Include="ImmutableSortedSetBuilderDebuggerProxyTest.cs" />
     <Compile Include="ImmutableSortedSetBuilderTest.cs" />
     <Compile Include="ImmutableSortedSetTest.cs" />
     <Compile Include="ImmutableStackTest.cs" />
@@ -123,6 +124,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
