@@ -32,7 +32,8 @@ namespace System.Net.Tests
             _helper.Dispose();
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -76,7 +77,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -122,7 +124,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true, "")]
         [InlineData(false, "")]
         [InlineData(true, "Non-Empty")]
@@ -166,7 +169,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_LargeLengthAsynchronous_Success(bool transferEncodingChunked)
@@ -205,7 +209,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_LargeLengthSynchronous_Success(bool transferEncodingChunked)
@@ -244,7 +249,8 @@ namespace System.Net.Tests
             }
         }
         
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_TooMuchAsynchronous_Success(bool transferEncodingChunked)
@@ -269,7 +275,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_TooMuchSynchronous_Success(bool transferEncodingChunked)
@@ -294,7 +301,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Read_NotEnoughThenCloseAsynchronous_Success(bool transferEncodingChunked)
@@ -482,7 +490,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task Read_FromClosedConnectionAsynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";
@@ -508,7 +517,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task Read_FromClosedConnectionSynchronously_ThrowsHttpListenerException()
         {
             const string Text = "Some-String";

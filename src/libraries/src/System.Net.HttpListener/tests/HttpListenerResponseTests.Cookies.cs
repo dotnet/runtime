@@ -11,7 +11,8 @@ namespace System.Net.Tests
 {
     public class HttpListenerResponseCookiesTests : HttpListenerResponseTestBase
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task Cookies_GetSet_ReturnsExpected()
         {
             HttpListenerResponse response = await GetResponse();
@@ -87,7 +88,8 @@ namespace System.Net.Tests
             };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [MemberData(nameof(Cookies_TestData))]
         public async Task Cookies_SetAndSend_ClientReceivesExpectedHeaders(CookieCollection cookies, int expectedBytes, string expectedSetCookie, string expectedSetCookie2)
         {
@@ -119,7 +121,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task Cookies_SetInHeader_ClientReceivesExpectedHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -133,7 +136,8 @@ namespace System.Net.Tests
             Assert.Contains($"\r\nSet-Cookie2: name2=value2\r\n", clientResponse);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task Cookies_SetCookie2InHeadersButNotInCookies_RemovesFromHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -152,7 +156,8 @@ namespace System.Net.Tests
             Assert.Contains($"\r\nSet-Cookie2: name3=value3; Port=\"200\"; Version=1\r\n", clientResponse);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task Cookies_SetCookieInHeadersButNotInCookies_RemovesFromHeaders()
         {
             HttpListenerResponse response = await GetResponse();
@@ -171,7 +176,8 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Set-Cookie2", clientResponse);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task AppendCookie_ValidCookie_AddsCookieToCollection()
         {
             HttpListenerResponse response = await GetResponse();
@@ -192,14 +198,16 @@ namespace System.Net.Tests
             Assert.Equal("value3", response.Cookies[0].Value);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task AppendCookie_NullCookie_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
             AssertExtensions.Throws<ArgumentNullException>("cookie", () => response.AppendCookie(null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task SetCookie_ValidCookie_AddsCookieToCollection()
         {
             HttpListenerResponse response = await GetResponse();
@@ -212,7 +220,8 @@ namespace System.Net.Tests
             Assert.Equal(new Cookie[] { cookie1, cookie2 }, response.Cookies.Cast<Cookie>());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task SetCookie_ValidCookie_ClonesCookie()
         {
             HttpListenerResponse response = await GetResponse();
@@ -224,14 +233,16 @@ namespace System.Net.Tests
             Assert.Equal("value", response.Cookies[0].Value);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task SetCookie_NullCookie_ThrowsArgumentNullException()
         {
             HttpListenerResponse response = await GetResponse();
             AssertExtensions.Throws<ArgumentNullException>("cookie", () => response.SetCookie(null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task SetCookie_CookieDoesntExist_ThrowsArgumentException()
         {
             HttpListenerResponse response = await GetResponse();

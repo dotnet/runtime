@@ -29,7 +29,8 @@ namespace System.Net.Tests
             Client?.Dispose();
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("Accept: Test", new string[] { "Test" })]
         [InlineData("Accept: Test, Test2,Test3 ,  Test4", new string[] { "Test", "Test2", "Test3 ", " Test4" })]
         [InlineData("Accept: Test", new string[] { "Test" })]
@@ -87,7 +88,8 @@ namespace System.Net.Tests
             yield return new object[] { "Unknown-Header: Test", Encoding.Default };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [MemberData(nameof(ContentEncoding_TestData))]
         public async Task ContentEncoding_GetProperty_ReturnsExpected(string header, Encoding expected)
         {
@@ -95,14 +97,16 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.ContentEncoding);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task ContentEncoding_NoBody_ReturnsDefault()
         {
             HttpListenerRequest request = await GetRequest("POST", "", new string[] { "Content-Length: 0", "Content-Type:application/json;charset=unicode" }, content: null);
             Assert.Equal(Encoding.Default, request.ContentEncoding);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("POST", "Content-Length: 9223372036854775807", 9223372036854775807, true)] // long.MaxValue
         [InlineData("POST", "Content-Length: 9223372036854775808", 0, false)] // long.MaxValue + 1
         [InlineData("POST", "Content-Length: 18446744073709551615 ", 0, false)] // ulong.MaxValue
@@ -122,7 +126,8 @@ namespace System.Net.Tests
             Assert.Equal(hasEntityBody, request.HasEntityBody);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(100)]
         [InlineData("-100")]
         [InlineData("")]
@@ -141,7 +146,8 @@ namespace System.Net.Tests
             Assert.True(request.HasEntityBody);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [ActiveIssue(20294, TargetFrameworkMonikers.Netcoreapp)]
         public async Task ContentLength_ManuallyRemovedFromHeaders_DoesNotAffect()
         {
@@ -154,7 +160,8 @@ namespace System.Net.Tests
             Assert.True(request.HasEntityBody);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task ContentLength_SetInHeadersAfterAccessingProperty_DoesNothing()
         {
             HttpListenerRequest request = await GetRequest("POST", null, new string[] { "Content-Length: 1" }, content: "\r\n");
@@ -168,7 +175,8 @@ namespace System.Net.Tests
             Assert.True(request.HasEntityBody);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("Referer: http://microsoft.com", "http://microsoft.com/")]
         [InlineData("referer: /relativePath", "/relativePath")]
         [InlineData("Referer: NoSuchSite", "NoSuchSite")]
@@ -181,7 +189,8 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.UrlReferrer?.ToString());
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("User-Agent: Test", "Test")]
         [InlineData("user-agent: Test", "Test")]
         [InlineData("User-Agent: ", "")]
@@ -192,14 +201,16 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.UserAgent);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task UserHostName_GetProperty_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
             Assert.Equal("localhost", request.UserHostName);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task EndPointProperties_GetProperty_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", "", null);
@@ -217,14 +228,16 @@ namespace System.Net.Tests
             Assert.Equal($"/{Factory.Path}/", request.RawUrl);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task ServiceName_GetNoSpn_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
             Assert.Null(request.ServiceName);
         }
         
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task RequestTraceIdentifier_GetWindows_ReturnsExpected()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -250,7 +263,8 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.IsWebSocketRequest);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("Accept-Language: Lang1,Lang2,Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
         [InlineData("Accept-Language: Lang1, Lang2, Lang3", new string[] { "Lang1", "Lang2", "Lang3" })]
         [InlineData("Accept-Language: Lang1,,Lang3", new string[] { "Lang1", "", "Lang3" })]
@@ -269,14 +283,16 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.UserLanguages);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task ClientCertificateError_GetNotInitialized_ThrowsInvalidOperationException()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
             Assert.Throws<InvalidOperationException>(() => request.ClientCertificateError);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task GetClientCertificate_NoCertificate_ReturnsNull()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -284,21 +300,24 @@ namespace System.Net.Tests
             Assert.Equal(0, request.ClientCertificateError);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task GetClientCertificateAsync_NoCertificate_ReturnsNull()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
             Assert.Null(request.GetClientCertificateAsync().Result);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task EndGetClientCertificate_NullAsyncResult_ThrowsArgumentException()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
             AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => request.EndGetClientCertificate(null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task EndGetClientCertificate_InvalidAsyncResult_ThrowsArgumentException()
         {
             HttpListenerRequest request1 = await GetRequest("POST", null, null);
@@ -312,7 +331,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task EndGetClientCertificate_AlreadyCalled_ThrowsInvalidOperationException()
         {
             HttpListenerRequest request = await GetRequest("POST", null, null);
@@ -322,7 +342,8 @@ namespace System.Net.Tests
             Assert.Throws<InvalidOperationException>(() => request.EndGetClientCertificate(beginGetClientCertificateResult));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task TransportContext_GetChannelBinding_ReturnsExpected()
         {
             // This might not work on other devices:
@@ -332,7 +353,8 @@ namespace System.Net.Tests
             Assert.Null(request.TransportContext.GetChannelBinding(ChannelBindingKind.Endpoint));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData(ChannelBindingKind.Unique)]
         public async Task TransportContext_GetChannelBindingInvalid_ThrowsNotSupportedException(ChannelBindingKind kind)
         {
@@ -426,7 +448,8 @@ namespace System.Net.Tests
             };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [MemberData(nameof(QueryString_TestData))]
         public async Task QueryString_GetProperty_ReturnsExpected(string query, NameValueCollection expected)
         {
@@ -441,7 +464,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("POST")]
         [InlineData("PATCH")]
         [InlineData("get")]
@@ -453,7 +477,8 @@ namespace System.Net.Tests
             Assert.Equal(request.HttpMethod, request.HttpMethod);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [InlineData("1.1", new string[] { "Proxy-Connection: random" }, true)]
         [InlineData("1.1", new string[] { "Proxy-Connection: close" }, false)]
         [InlineData("1.1", new string[] { "proxy-connection: CLOSE" }, false)]
@@ -588,7 +613,8 @@ namespace System.Net.Tests
             yield return new object[] { "Unknown-Header: Test", new CookieCollection() };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [MemberData(nameof(Cookies_TestData))]
         public async Task Cookies_GetProperty_ReturnsExpected(string cookieString, CookieCollection expected)
         {
@@ -611,7 +637,8 @@ namespace System.Net.Tests
             yield return new object[] { new string[] { "name:val?ue" }, new WebHeaderCollection() { { "name", "val?ue" } } };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         [MemberData(nameof(Headers_TestData))]
         public async Task Headers_Get_ReturnsExpected(string[] headers, WebHeaderCollection expected)
         {
