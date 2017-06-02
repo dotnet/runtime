@@ -13,7 +13,8 @@ namespace System.Net.Tests
 {
     public class HttpListenerTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void IgnoreWriteExceptions_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -22,7 +23,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.IgnoreWriteExceptions = false);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void Stop_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -31,7 +33,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.Stop());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void IsListening_NotStarted_ReturnsFalse()
         {
             using (var listener = new HttpListener())
@@ -40,7 +43,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void IsListening_Disposed_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -51,7 +55,8 @@ namespace System.Net.Tests
             Assert.False(listener.IsListening);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void IsListening_Aborted_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -62,7 +67,8 @@ namespace System.Net.Tests
             Assert.False(listener.IsListening);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void IsListening_Stopped_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -73,7 +79,8 @@ namespace System.Net.Tests
             Assert.False(listener.IsListening);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void Start_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -82,7 +89,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.Start());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void GetContext_Disposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -92,7 +100,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.BeginGetContext(null, null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void GetContext_NotStarted_ThrowsInvalidOperationException()
         {
             using (var listener = new HttpListener())
@@ -102,7 +111,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void GetContext_NoPrefixes_ThrowsInvalidOperationException()
         {
             using (var listener = new HttpListener())
@@ -113,7 +123,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void EndGetContext_NullAsyncResult_ThrowsArgumentNullException()
         {
             using (var listener = new HttpListener())
@@ -122,7 +133,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void EndGetContext_InvalidAsyncResult_ThrowsArgumentException()
         {
             using (var listener1 = new HttpListener())
@@ -137,7 +149,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public void EndGetContext_AlreadyCalled_ThrowsInvalidOperationException()
         {
             using (var listenerFactory = new HttpListenerFactory())

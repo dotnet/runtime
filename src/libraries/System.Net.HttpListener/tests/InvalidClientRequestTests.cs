@@ -91,7 +91,8 @@ namespace System.Net.Tests
             yield return new object[] { "PUT {path} HTTP/1.1", null, null, null, "Length Required" };
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task GetContext_InvalidRequest_DoesNotGetContext()
         {
             // These tests take upwards of 20s if this uses [Theory].

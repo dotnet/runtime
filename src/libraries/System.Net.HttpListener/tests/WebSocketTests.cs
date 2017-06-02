@@ -23,7 +23,8 @@ namespace System.Net.Tests
 
         public void Dispose() => _factory.Dispose();
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UWP")]
         public async Task AcceptWebSocketAsync_NullSubProtocol_Succeeds()
         {
             if (PlatformDetection.IsWindows7)
