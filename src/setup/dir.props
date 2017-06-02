@@ -4,15 +4,20 @@
 
   <Import Project="dependencies.props" />
 
+  <!-- Build as portable by default -->
+  <PropertyGroup>
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+  </PropertyGroup>
+
   <!-- Branch Info -->
   <PropertyGroup>
     <MajorVersion>2</MajorVersion>
-    <MinorVersion>0</MinorVersion>
+    <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <StabilizePackageVersion>false</StabilizePackageVersion>
-    <LockHostVersion>false</LockHostVersion>
-    <PreReleaseLabel>preview2</PreReleaseLabel>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <PreReleaseLabel>preview1</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
+    <ReleaseBrandSuffix>Preview 1</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <BranchName>master</BranchName>
   </PropertyGroup>
@@ -48,16 +53,15 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <BuildToolsTaskDir>$(ToolRuntimePath)</BuildToolsTaskDir>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net46/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <LocalBuildToolsTaskDir>$(LocalToolRuntimePath)</LocalBuildToolsTaskDir>
-    <LocalBuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
+    <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
-    <DotnetSdkPath Condition="'$(DotnetSdkPath)'==''">$(ToolsDir)dotnetclisdk/</DotnetSdkPath>
   </PropertyGroup>
 
-  <!-- Setting up Versioning -->
-  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
+  <!-- Import Build tools common props file where repo-independent properties are found -->
+  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
   <!-- Versioning --> 
   <PropertyGroup>
@@ -67,78 +71,81 @@
          by setting the non-official build minor version to 9 -->
     <BuildNumberMinor Condition="'$(BuildNumberMinor)' == '0'">9</BuildNumberMinor>
 
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
-
-    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)-$(VersionSuffix)</ProductVersion>
+    <ProductVersionSuffix Condition="'$(StabilizePackageVersion)' !='true'">-$(VersionSuffix)</ProductVersionSuffix>
+    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(ProductVersionSuffix)</ProductVersion>
     <ProductionVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductionVersion>
 
-    <SharedFrameworkNugetVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductionVersion)</SharedFrameworkNugetVersion>
-    <SharedFrameworkNugetVersion Condition="'$(StabilizePackageVersion)' == 'false'">$(ProductVersion)</SharedFrameworkNugetVersion>
+    <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
+
+    <UWPCoreRuntimeSdkVersion>5.4.0</UWPCoreRuntimeSdkVersion>
+    <UWPCoreRuntimeSdkFullVersion>$(UWPCoreRuntimeSdkVersion)$(ProductVersionSuffix)</UWPCoreRuntimeSdkFullVersion>
 
     <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
-    <HostVersion>$(SharedFrameworkNugetVersion)</HostVersion>
-    <AppHostVersion>$(SharedFrameworkNugetVersion)</AppHostVersion>
-    <NetCoreAppVersion>$(SharedFrameworkNugetVersion)</NetCoreAppVersion>
-    <HostResolverVersion>$(SharedFrameworkNugetVersion)</HostResolverVersion>
-    <HostPolicyVersion>$(SharedFrameworkNugetVersion)</HostPolicyVersion>
-    
-    <HostFullVersion>$(ProductVersion)</HostFullVersion>
-    <HostResolverFullVersion>$(ProductVersion)</HostResolverFullVersion>
-    <AppHostFullVersion>$(ProductVersion)</AppHostFullVersion>
-    <HostPolicyFullVersion>$(ProductVersion)</HostPolicyFullVersion>
-  </PropertyGroup>
 
-  <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
+    <!--
+      By default, we are always building the nuget packages for HostPolicy, HostFXR and
+      Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
+      
+      However, there are scenarios when some of these components will not change (e.g. during
+      servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
+      set the appropriate "UseShipped*" property below to true so that we will use the last shipped
+      version of the package. 
+    -->
+
+    <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
+    <UseShippedHostPackage>false</UseShippedHostPackage>
+    <HostVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductVersion)</HostVersion>
+    <HostVersion Condition="'$(UseShippedHostPackage)' == 'true'">2.0.0</HostVersion>
+
+    <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
+    <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
+    <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
+    
+    <!-- 
+        The FXR Resolver package version is only updated whenever there is a change in it. 
+        If there is ever a need to use a shipped version of the package, then set the property
+        below to true. 
+    -->
+    <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
+    <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
+    <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
+
+    <!-- 
+         Host Policy package version is only updated whenever there is a change in it.
+         If there is ever a need to use a shipped version of the package, then set the property
+         below to true. 
+    -->
+    <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
+    <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
+    <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
+  </PropertyGroup>
 
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup>
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
-    <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
+    <DotnetSourceList Include="$(OverridePackageSource)" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fwww.myget.org/F/nugetbuild/api/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
+    <DotnetSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json" />
   </ItemGroup>
 
-  <!-- list of directories to perform batch restore -->
+  <!-- list of projects to perform batch restore -->
   <ItemGroup>
-    <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\projects\**\project.json" />
-    <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\test\**\project.json" />
-    <_DnuExcludeProjectJsonFiles Include="$(MSBuildThisFileDirectory)Bin\**\project.json" />
-    
-    <_ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json" Exclude="@(_DnuExcludeProjectJsonFiles)" />
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)**\project.json.template" />
-    <ProjectJsonFiles Include="$(MSBuildThisFileDirectory)src\pkg\deps\project.json" />
-    <DnuRestoreDirs Include="@(_ProjectJsonFiles->'%(RootDir)%(Directory)')">
-      <AdditionalArgs>%(AdditionalArgs) --disable-parallel</AdditionalArgs>
-    </DnuRestoreDirs>
-    <DnuRestoreDirs Include="$(MSBuildThisFileDirectory)\tools-local\setuptools\independent\">
-      <AdditionalArgs>%(AdditionalArgs) --disable-parallel --infer-runtimes</AdditionalArgs>
-    </DnuRestoreDirs>
-    <DnuRestoreDirs Include="$(MSBuildThisFileDirectory)src/pkg/deps" />
-
+    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
+    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj">
+      <!-- Workaround https://github.com/NuGet/Home/issues/4337 -->
+      <ExtraRestoreArgs>/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
+    </SdkRestoreProjects>
   </ItemGroup>
-
   <PropertyGroup>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetCliPath)dotnet.exe</DotnetToolCommand>
-    <DotnetToolCommand Condition="'$(DotnetToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetCliPath)dotnet</DotnetToolCommand>
-    <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'!='Unix'">$(DotnetSdkPath)dotnet.exe</DotnetSdkToolCommand>
-    <DotnetSdkToolCommand Condition="'$(DotnetSdkToolCommand)'=='' and '$(OsEnvironment)'=='Unix'">$(DotnetSdkPath)dotnet</DotnetSdkToolCommand>
-    <OverrideToolHost Condition="'$(MSBuildRuntimeType)' == 'Core'">$(DotnetToolCommand)</OverrideToolHost>
-    <DnuRestoreSource>@(DnuSourceList -> '--source %(Identity)', ' ')</DnuRestoreSource>
-    <DnuRestorePrefix Condition="'$(OsEnvironment)' != 'Windows_NT'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1</DnuRestorePrefix>
-    <DnuRestoreCommand>$(DnuRestorePrefix) "$(DotnetToolCommand)"</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) restore</DnuRestoreCommand>
-    <DnuRestoreCommand>$(DnuRestoreCommand) --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</DnuRestoreCommand>
-    <DnuRestoreCommand Condition="'$(LockDependencies)' == 'true'">$(DnuRestoreCommand) --lock</DnuRestoreCommand>
-
-    <SdkRestoreCommand>$(DotnetSdkToolCommand) restore --packages "$(PackagesDir.TrimEnd('/\'.ToCharArray()))" $(DnuRestoreSource)</SdkRestoreCommand>
+    <DotnetRestorePrefix Condition="'$(RunningOnUnix)' == 'true'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 </DotnetRestorePrefix>
+    <DotnetRestoreCommand>$(DotnetRestorePrefix)$(DotnetRestoreCommand)</DotnetRestoreCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
@@ -222,7 +229,6 @@
 
   <PropertyGroup>
     <Framework>netcoreapp2.0</Framework>
-    <Framework Condition="'$(TargetArchitecture)' == 'arm64'">netcoreapp1.1</Framework>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'Windows_NT'">
@@ -262,6 +268,7 @@
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
 
     <CoreHostOutputDir>$(BaseOutputRootPath)corehost\</CoreHostOutputDir>
+    <UWPOutputDir>$(BaseOutputRootPath)uwp\</UWPOutputDir>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)/</PackagesBasePath>
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(PackagesBasePath)packages/</PackagesOutDir>
@@ -270,7 +277,7 @@
 
     <SharedFrameworkPublishDir>$(IntermediateOutputRootPath)sharedFrameworkPublish\</SharedFrameworkPublishDir>
     <SharedFrameworkPublishSymbolsDir>$(IntermediateOutputRootPath)sharedFrameworkPublish.symbols\</SharedFrameworkPublishSymbolsDir>
-    <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(HostVersion)</SharedFrameworkNameAndVersionRoot>
+    <SharedFrameworkNameAndVersionRoot>$(SharedFrameworkPublishDir)shared\$(SharedFrameworkName)\$(SharedFrameworkNugetVersion)</SharedFrameworkNameAndVersionRoot>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -279,13 +286,21 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <CompressedFileExtension Condition="'$(OSGroup)' == 'Windows_NT'">.zip</CompressedFileExtension>
-    <CompressedFileExtension Condition="'$(OSGroup)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
-    <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
-    <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
-    <InstallerExtension Condition="'$(OSGroup)' != 'Windows_NT' and '$(OSGroup)' != 'OSX'">.deb</InstallerExtension>
-    <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
+    <DotnetHostString>dotnet-host-</DotnetHostString>
+    <DotnetHostFxrString>dotnet-hostfxr-</DotnetHostFxrString>
+    <DotnetRuntimeString>dotnet-runtime-</DotnetRuntimeString>
+    <CombinedInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</CombinedInstallerStart>
+    <SharedHostInstallerStart>$(PackagesOutDir)$(DotnetHostString)</SharedHostInstallerStart>
+    <HostFxrInstallerStart>$(PackagesOutDir)$(DotnetHostFxrString)</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart>$(PackagesOutDir)$(DotnetRuntimeString)</SharedFrameworkInstallerStart>
+
+    <!-- OSX specific intermediate package suffix . OSX specific intermediate packages are suffixed with -internal to avoid name collision for bundle package (dotnet-runtime-*)
+         and runtime ( earlier as dotnet-sharedframework-*)	-->
+    <InstallerStartSuffix Condition="'$(OSGroup)' == 'OSX'">internal</InstallerStartSuffix>
+    <SharedHostInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(SharedHostInstallerStart)$(InstallerStartSuffix)-</SharedHostInstallerStart>
+    <HostFxrInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
+    <SharedFrameworkInstallerStart Condition="'$(OSGroup)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
+        
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
@@ -309,6 +324,8 @@
     <TargetsUnix>false</TargetsUnix>
     <TargetsUbuntu>false</TargetsUbuntu>
     <TargetsDebian>false</TargetsDebian>
+    <TargetsRhel>false</TargetsRhel>
+    <TargetsCentos>false</TargetsCentos>
   </PropertyGroup>
   <Choose>
     <When Condition="$(TargetRid.StartsWith('win'))">
@@ -336,6 +353,20 @@
         <TargetsUnix>true</TargetsUnix>
       </PropertyGroup>
     </When>
+    <When Condition="$(TargetRid.StartsWith('rhel'))">
+      <PropertyGroup>
+        <TargetsRhel>true</TargetsRhel>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
+        <When Condition="$(TargetRid.StartsWith('centos'))">
+      <PropertyGroup>
+        <TargetsCentos>true</TargetsCentos>
+        <TargetsLinux>true</TargetsLinux>
+        <TargetsUnix>true</TargetsUnix>
+      </PropertyGroup>
+    </When>
     <Otherwise>
       <PropertyGroup>
         <TargetsLinux>true</TargetsLinux>
@@ -343,6 +374,47 @@
       </PropertyGroup>
     </Otherwise>
   </Choose>
+
+  <PropertyGroup>
+    <CompressedFileExtension Condition="'$(OSGroup)' == 'Windows_NT'">.zip</CompressedFileExtension>
+    <CompressedFileExtension Condition="'$(OSGroup)' != 'Windows_NT'">.tar.gz</CompressedFileExtension>
+    <InstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.msi</InstallerExtension>
+    <InstallerExtension Condition="'$(OSGroup)' == 'OSX'">.pkg</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true'">.deb</InstallerExtension>
+    <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true'">.rpm</InstallerExtension>
+    <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
+    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
+  </PropertyGroup>
+
+  <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
+  <PropertyGroup Condition="'$(TargetRid)' != ''">
+    <PackageTargetRid>$(TargetRid)</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.0-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.1-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.3-x64'">rhel.7-x64</PackageTargetRid>
+    <PackageTargetRid Condition="'$(TargetRid)' == 'rhel.7.2-x64'">rhel.7-x64</PackageTargetRid>
+    <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
+    <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CombinedInstallerFile>$(CombinedInstallerStart)$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
+    <CombinedInstallerEngine>$(CombinedInstallerStart)$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
+    <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
+    <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+    <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <SharedHostDebPkgName>dotnet-host</SharedHostDebPkgName>
+    <SharedHostDebPkgName>$(SharedHostDebPkgName.ToLower())</SharedHostDebPkgName>
+    <HostFxrDebPkgName>$(DotnetHostFxrString)$(HostResolverVersion)</HostFxrDebPkgName>
+    <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
+    <SharedFxDebPkgName>$(DotnetRuntimeString)$(SharedFrameworkNugetVersion)</SharedFxDebPkgName>
+    <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
@@ -355,7 +427,6 @@
     <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
-
 
   <!-- Use Roslyn Compilers to build --> 
   <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 

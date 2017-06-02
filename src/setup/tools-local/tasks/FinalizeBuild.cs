@@ -31,9 +31,16 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string Channel { get; set; }
         [Required]
+        public string SharedFrameworkNugetVersion { get; set; }
+        [Required]
+        public string SharedHostNugetVersion { get; set; }
+        [Required]
+        public string UWPCoreRuntimeSdkFullVersion { get; set; }
+        [Required]
+        public string ProductVersion { get; set; }
+        [Required]
         public string Version { get; set; }
         [Required]
-        public ITaskItem [] PublishRids { get; set; }
         public string CommitHash { get; set; }
         public bool ForcePublish { get; set; }
 
@@ -87,18 +94,11 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 try
                 {
-                    CopyBlobs($"{Channel}/Binaries/{Version}", $"{Channel}/Binaries/Latest/");
+                    CopyBlobs($"Runtime/{ProductVersion}", $"Runtime/{Channel}/");
 
-                    CopyBlobs($"{Channel}/Installers/{Version}", $"{Channel}/Installers/Latest/");
-
-                    // Generate the Sharedfx Version text files
-                    List<string> versionFiles = PublishRids.Select(p => $"{p.ItemSpec}.version").ToList();
-
+                    // Generate the latest version text file
                     string sfxVersion = GetSharedFrameworkVersionFileContent();
-                    foreach(string version in versionFiles)
-                    {
-                        PublishStringToBlob(ContainerName, $"{Channel}/dnvm/latest.sharedfx.{version}", sfxVersion);
-                    }
+                    PublishStringToBlob(ContainerName, $"Runtime/{Channel}/latest.version", sfxVersion, "text/plain");
                 }
                 finally
                 {
@@ -110,12 +110,8 @@ namespace Microsoft.DotNet.Build.Tasks
 
         private string GetSharedFrameworkVersionFileContent()
         {
-            string returnString = string.Empty;
-            if(!string.IsNullOrWhiteSpace(CommitHash))
-            {
-                returnString += $"{CommitHash}{Environment.NewLine}";
-            }
-            returnString += $"{Version}{Environment.NewLine}";
+            string returnString = $"{CommitHash}{Environment.NewLine}";
+            returnString += $"{SharedFrameworkNugetVersion}{Environment.NewLine}";
             return returnString;
         }
 
@@ -126,7 +122,10 @@ namespace Microsoft.DotNet.Build.Tasks
             string[] blobs = GetBlobList(sourceFolder);
             foreach (string blob in blobs)
             {
-                string targetName = _versionRegex.Replace(Path.GetFileName(blob), "latest");
+                string targetName = Path.GetFileName(blob)
+                                        .Replace(SharedFrameworkNugetVersion, "latest")
+                                        .Replace(SharedHostNugetVersion, "latest")
+                                        .Replace(UWPCoreRuntimeSdkFullVersion, "latest");
                 string sourceBlob = blob.Replace($"/{ContainerName}/", "");
                 string destinationBlob = $"{destinationFolder}{targetName}";
                 Log.LogMessage($"Copying blob '{sourceBlob}' to '{destinationBlob}'");
@@ -191,7 +190,7 @@ namespace Microsoft.DotNet.Build.Tasks
                                             HostObject);
         }
 
-        public bool PublishStringToBlob(string container, string blob, string contents)
+        public bool PublishStringToBlob(string container, string blob, string contents, string contentType = null)
         {
             return PublishStringToAzureBlob.Execute(AccountName, 
                                                     AccountKey, 
@@ -199,6 +198,7 @@ namespace Microsoft.DotNet.Build.Tasks
                                                     container, 
                                                     blob, 
                                                     contents, 
+                                                    contentType,
                                                     BuildEngine, 
                                                     HostObject);
         }

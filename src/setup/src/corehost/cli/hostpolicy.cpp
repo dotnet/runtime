@@ -103,7 +103,7 @@ int run(const arguments_t& args)
     pal::pal_clrstring(resolver.get_fx_deps_file(), &fx_deps);
     pal::pal_clrstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file(), &deps);
 
-    pal::pal_clrstring(resolver.get_probe_directories(), &probe_directories);
+    pal::pal_clrstring(resolver.get_lookup_probe_directories(), &probe_directories);
 
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES

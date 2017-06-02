@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dependencies.props))\dependencies.props" />
+
+  <PropertyGroup>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <TargetFramework>uap10.1</TargetFramework>
+    <IntermediateOutputPath>$(RestoreOutputPath)</IntermediateOutputPath>
+  </PropertyGroup>
+</Project>

@@ -15,8 +15,6 @@ $__scriptpath/init-tools.sh
 
 __dotnet=$__toolsLocalPath/dotnetcli/dotnet
 
-cp -fR $__scriptpath/tools-override/* $__toolsLocalPath 
-
 # We do not want to run the first-time experience.
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 $__dotnet $__toolsLocalPath/run.exe $*

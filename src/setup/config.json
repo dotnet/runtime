@@ -4,7 +4,7 @@
       "description": "OS Group for result binaries.",
       "valueType": "property",
       "values": ["Windows_NT", "Linux", "OSX", "FreeBSD", "NetBSD"],
-      "defaultValue": "Windows_NT"
+      "defaultValue": "${OSName}"
      },
     "RestoreDuringBuild": {
       "description": "Enables/Disables the restoration of packages.",
@@ -30,11 +30,17 @@
       "values": [ "True", "False"],
       "defaultValue": "False"
     },
+    "CrossBuild": {
+      "description": "Indicates if this is a linux cross build.",
+      "valueType": "property",
+      "values": [ "True", "False"],
+      "defaultValue": "False"
+    },
     "DistroRid": {
       "description": "Specifies the distro rid for Unix OS.",
       "valueType": "property",
       "values": [],
-      "defaultValue": "${OSRid}"
+      "defaultValue": "${OSRid}-${CPUArch}"
     },
     "TargetArchitecture":{
       "description": "Build for the specified architecture (x64, x86 (supported only on Windows), arm, or arm64, default: x64)",
@@ -54,12 +60,24 @@
       "values": ["Release", "Debug"],
       "defaultValue": "Debug"
     },
+    "OfficialBuildId": {
+      "description": "Specifies the SeedDate and the revision of the build to generate the version of the libraries.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
     "MsBuildLogging": {
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
       "values": [],
       "defaultValue": "/flp:v=normal"
     },
+    "StripSymbols": {
+      "description": "Pass additional argument to native build to configure symbol stripping.",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue": false
+    },    
     "Project": {
       "description": "Project where the commands are going to be applied.",
       "valueType": "passThrough",
@@ -137,6 +155,12 @@
       "valueType": "property",
       "values": ["true", "false"],
       "defaultValue":false
+    },
+    "DisableCrossgen": {
+      "description": "Disable crossgen during the build",
+      "valueType": "property",
+      "values": ["true", "false"],
+      "defaultValue":false
     }
   },
   "commands": {
@@ -165,11 +189,17 @@
       }
     },
     "build":{
-      "alias":{
-        "binaries":{
+      "alias": {
+        "binaries": {
           "description": "Only builds binaries. It doesn't restore packages.",
-          "settings":{
+          "settings": {
             "RestoreDuringBuild": false
+          }
+        },
+        "src-builds": {
+          "description": "Only build src\\src.builds project",
+          "settings": {
+            "Project": "src\\src.builds"
           }
         },
         "GenerateVersion": {
@@ -179,46 +209,58 @@
             "GenerateVersionHeader": "default"
           }
         },
-        "debug":{
+        "debug": {
           "description": "Sets ConfigurationGroup=Debug or the value passed by the user.",
-          "settings":{
+          "settings": {
             "ConfigurationGroup": "Debug"
           }
         },
-        "release":{
+        "release": {
           "description": "Sets ConfigurationGroup=Release or the value passed by the user.",
-          "settings":{
+          "settings": {
             "ConfigurationGroup": "Release"
           }
         },
-        "verbose":{
+        "verbose": {
           "description": "Passes /flp:v=diag to the msbuild command or the value passed by the user.",
-          "settings":{
+          "settings": {
             "MsBuildLogging": "/flp:v=diag"
           }
         },
-        "cmakelog":{
+        "cmakelog": {
           "description": "Writes msbuild log to cmake.log",
-          "settings":{
+          "settings": {
             "MsBuildLogging": "/flp:v=diag;LogFile=msbuild-cmake.log"
           }
         },
-        "os":{
+        "os": {
           "description": "Sets OSGroup=AnyOS or the value passed by the user.",
-          "settings":{
+          "settings": {
             "OSGroup": "default"
           }
         },
-        "portable":{
+        "portable": {
           "description": "Make the build-native script generate binaries that are portable for the platform.",
           "settings": {
-            "PortableBuild":"true"
+            "PortableBuild": "true"
           }
-        },        
-        "skipTests":{
+        },
+        "skipTests": {
           "description": "Skips running tests",
-          "settings":{
+          "settings": {
             "SkipTests": "true"
+          }
+        },
+        "disableCrossgen": {
+          "description": "Disable crossgen during the build",
+          "settings": {
+            "DisableCrossgen": "true"
+          }
+        },
+        "strip-symbols": {
+          "description": "Strip native symbols.",
+          "settings": {
+            "StripSymbols": true
           }
         }
       },

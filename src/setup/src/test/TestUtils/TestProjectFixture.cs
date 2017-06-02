@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         private string _testProjectSourceDirectory;
         private string _testArtifactDirectory;
         private string _currentRid;
+        private string _framework;
 
         private RepoDirectoriesProvider _repoDirectoriesProvider;
 
@@ -38,7 +39,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string ExeExtension => _exeExtension;
         public string SharedLibraryExtension => _sharedLibraryExtension;
         public string SharedLibraryPrefix => _sharedLibraryPrefix;
-
+        public string Framework => _framework;
+        public RepoDirectoriesProvider RepoDirProvider  => _repoDirectoriesProvider;
         public TestProjectFixture(
             string testProjectName,
             RepoDirectoriesProvider repoDirectoriesProvider,
@@ -49,7 +51,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string testArtifactDirectory = null,
             string dotnetInstallPath = null,
             string currentRid = null,
-            string builtDotnetOutputPath = null)
+            string builtDotnetOutputPath = null,
+            string framework = "netcoreapp2.0")
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
@@ -73,7 +76,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _currentRid = currentRid ?? repoDirectoriesProvider.TargetRID;
 
             _builtDotnet = new DotNetCli(repoDirectoriesProvider.BuiltDotnet);
-
+            _framework = framework;
             InitializeTestProject(
                 _testProjectName,
                 _testProjectSourceDirectory,
@@ -96,6 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _currentRid = fixtureToCopy._currentRid;
             _builtDotnet = fixtureToCopy._builtDotnet;
             _sourceTestProject = fixtureToCopy._sourceTestProject;
+            _framework = fixtureToCopy._framework;
 
             _testProject = CopyTestProject(
                 fixtureToCopy.TestProject,
@@ -196,12 +200,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public TestProjectFixture BuildProject(
             DotNetCli dotnet = null,
             string runtime = null,
-            string framework = "netcoreapp2.0",
+            string framework = null,
             string outputDirectory = null)
         {
             dotnet = dotnet ?? _sdkDotnet;
             outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
             _testProject.OutputDirectory = outputDirectory;
+            framework = framework ?? _framework;
+            _framework = framework;
 
             var buildArgs = new List<string>();
             if (runtime != null)
@@ -235,15 +241,78 @@ namespace Microsoft.DotNet.CoreSetup.Test
             return this;
         }
 
+        public TestProjectFixture StoreProject(
+            DotNetCli dotnet = null,
+            string runtime = null,
+            string framework = null,
+            string manifest = null,
+            string outputDirectory = null)
+        {
+            dotnet = dotnet ?? _sdkDotnet;
+            outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
+            framework = framework ?? _framework;
+            _framework = framework;
+
+            var storeArgs = new List<string>();
+            storeArgs.Add("--runtime");
+            if (runtime != null)
+            {
+                storeArgs.Add(runtime);
+            }
+            else
+            {
+               storeArgs.Add(CurrentRid);
+            }
+
+            if (framework != null)
+            {
+                storeArgs.Add("--framework");
+                storeArgs.Add(framework);
+            }
+
+                storeArgs.Add("--manifest");
+            if (manifest != null)
+            {
+                storeArgs.Add(manifest);
+            }
+            else
+            {
+                 storeArgs.Add(_sourceTestProject.ProjectFile);
+            }
+
+            if (outputDirectory != null)
+            {
+                storeArgs.Add("-o");
+                storeArgs.Add(outputDirectory);
+            }
+
+            storeArgs.Add("--working-dir");
+            storeArgs.Add("store_workin_dir");
+
+            dotnet.Store(storeArgs.ToArray())
+                .WorkingDirectory(_testProject.ProjectDirectory)
+                .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .EnsureSuccessful();
+
+            _testProject.LoadOutputFiles();
+
+            return this;
+        }
+
         public TestProjectFixture PublishProject(
             DotNetCli dotnet = null,
             string runtime = null,
-            string framework = "netcoreapp2.0",
+            string framework = null,
             string outputDirectory = null)
         {
             dotnet = dotnet ?? _sdkDotnet;
             outputDirectory = outputDirectory ?? _testProject.OutputDirectory;
             _testProject.OutputDirectory = outputDirectory;
+            framework = framework ?? _framework;
+            _framework = framework;
 
             var publishArgs = new List<string>();
             if (runtime != null)

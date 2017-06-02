@@ -22,6 +22,9 @@ namespace Microsoft.DotNet.Build.Tasks
         public string PackageId { get; set; }
 
         [Required]
+        public string PackageVersion { get; set; }
+
+        [Required]
         public string PlatformManifestFile { get; set; }
 
         [Required]
@@ -105,6 +108,8 @@ namespace Microsoft.DotNet.Build.Tasks
             var propertyGroup = props.AddPropertyGroup();
             propertyGroup.AddProperty(PreferredPackagesProperty, PreferredPackages);
 
+            var versionPropertyName = $"_{PackageId.Replace(".", "_")}_Version";
+            propertyGroup.AddProperty(versionPropertyName, PackageVersion);
 
             props.Save(PropsFile);
 

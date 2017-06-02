@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Don't import props files above this folder since they don't work with the .NET Core SDK. -->
+  <!--<Import Project="..\dir.props" />-->
+
+  <PropertyGroup>
+    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))/</RepoRoot>
+    <VersionPrefix>2.1.0</VersionPrefix>
+    <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <IncludeSymbols>true</IncludeSymbols>
+    <Serviceable>true</Serviceable>
+    <PackageLicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</PackageLicenseUrl>
+    <PackageProjectUrl>https://dot.net</PackageProjectUrl>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>$(RepoRoot)tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>git://github.com/dotnet/core-setup</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+
+  <!-- Add required legal files to packages -->
+  <ItemGroup>
+    <Content Condition="Exists('$(PackageLicenseFile)')"
+             Include="$(PackageLicenseFile)">
+      <PackagePath />
+    </Content>
+    <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+             Include="$(PackageThirdPartyNoticesFile)">
+      <PackagePath />
+    </Content>
+  </ItemGroup>
+
+  <Import Condition="Exists('$(RepoRoot)Tools/versioning.props')" Project="$(RepoRoot)Tools/versioning.props" /> 
+</Project>

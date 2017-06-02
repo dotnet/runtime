@@ -211,13 +211,15 @@ namespace pal
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
     bool get_local_dotnet_dir(string_t* recv);
-    bool get_global_dotnet_dir(string_t* recv);
+    //On Linux, we determine global location by enumerating the location where dotnet is present on path, hence there could be multiple such locations
+    //On Windows there will be only one global location
+    bool get_global_dotnet_dirs(std::vector<pal::string_t>* recv);
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
     int xtoi(const char_t* input);
 
-    bool load_library(const char_t* path, dll_t* dll);
+    bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 }

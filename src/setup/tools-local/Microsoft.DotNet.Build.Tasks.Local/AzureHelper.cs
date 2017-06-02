@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.Build.Tasks.Utility
         public const string DateHeaderString = "x-ms-date";
         public const string VersionHeaderString = "x-ms-version";
         public const string AuthorizationHeaderString = "Authorization";
+        public const string CacheControlString = "x-ms-blob-cache-control";
+        public const string ContentTypeString = "x-ms-blob-content-type";
 
         public enum SasAccessType
         {

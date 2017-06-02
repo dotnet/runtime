@@ -126,7 +126,13 @@ void deps_resolver_t::get_dir_assemblies(
             }
 
             // Add entry for this asset
-            pal::string_t file_path = dir + DIR_SEPARATOR + file;
+            pal::string_t file_path = dir;
+            if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
+            {
+                file_path.push_back(DIR_SEPARATOR);
+            }
+            file_path.append(file);
+
             trace::verbose(_X("Adding %s to %s assembly set from %s"), file_name.c_str(), dir_name.c_str(), file_path.c_str());
             dir_assemblies->emplace(file_name, file_path);
         }
@@ -146,31 +152,32 @@ void deps_resolver_t::setup_shared_store_probes(
         }
     }
 
-    if (pal::directory_exists(args.local_shared_store))
-    {
-        // Shared Store probe: $HOME/.dotnet/store or %USERPROFILE%\.dotnet\store
-        m_probes.push_back(probe_config_t::lookup(args.local_shared_store));
-    }
-
     if (pal::directory_exists(args.dotnet_shared_store))
     {
         m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
     }
 
-    if (args.global_shared_store != args.dotnet_shared_store && pal::directory_exists(args.global_shared_store))
+    
+    for (const auto& global_shared : args.global_shared_stores)
     {
-        // Shared Store probe: /usr/share/dotnet/store or C:\Program Files (x86)\dotnet\store
-        m_probes.push_back(probe_config_t::lookup(args.global_shared_store));
+        if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
+        {
+            // Shared Store probe: DOTNET_SHARED_STORE
+            m_probes.push_back(probe_config_t::lookup(global_shared));
+        }
     }
 }
 
-pal::string_t deps_resolver_t::get_probe_directories()
+pal::string_t deps_resolver_t::get_lookup_probe_directories()
 {
     pal::string_t directories;
     for (const auto& pc : m_probes)
     {
-        directories.append(pc.probe_dir);
-        directories.push_back(PATH_SEPARATOR);
+        if (pc.is_lookup())
+        {
+            directories.append(pc.probe_dir);
+            directories.push_back(PATH_SEPARATOR);
+        }
     }
 
     return directories;
@@ -227,18 +234,6 @@ void deps_resolver_t::setup_probe_config(
 void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& probe_paths)
 {
     m_additional_probes.assign(probe_paths.begin(), probe_paths.end());
-
-    for (auto iter = m_additional_probes.begin(); iter != m_additional_probes.end(); )
-    {
-        if (pal::directory_exists(*iter))
-        {
-            ++iter;
-        }
-        else
-        {
-            iter = m_additional_probes.erase(iter);
-        }
-    }
 }
 
 /**
@@ -267,8 +262,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             continue;
         }
         pal::string_t probe_dir = config.probe_dir;
-       
-		if (config.probe_deps_json)
+
+        if (config.probe_deps_json)
         {
             // If the deps json has the package name and version, then someone has already done rid selection and
             // put the right asset in the dir. So checking just package name and version would suffice.
@@ -310,15 +305,19 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
 
 bool report_missing_assembly_in_manifest(const deps_entry_t& entry)
 {
+    trace::error(_X(
+        "Error:\n"
+        "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
+        "    package: '%s', version: '%s'\n"
+        "    path: '%s'"),
+        entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
     if (!entry.runtime_store_manifest_list.empty())
     {
-        trace::error(_X("Error: assembly specified in the dependencies manifest was not found probably due to missing runtime store associated with %s -- package: '%s', version: '%s', path: '%s'"), 
-                entry.runtime_store_manifest_list.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-    }
-    else
-    {
-        trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
-                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+        trace::error(_X(
+            "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
+            "    %s"),
+            entry.runtime_store_manifest_list.c_str());
     }
 
     return false;

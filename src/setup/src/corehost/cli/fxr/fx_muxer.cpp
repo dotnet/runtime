@@ -171,7 +171,7 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app)
     // First append directory.
     pal::string_t deps_file;
     deps_file.assign(get_directory(app));
-    deps_file.push_back(DIR_SEPARATOR);
+
 
     // Then the app name and the file extension
     pal::string_t app_name = get_filename(app);
@@ -222,8 +222,14 @@ pal::string_t get_deps_file(
 {
     if (config.get_portable())
     {
+        pal::string_t deps_file = fx_dir;
+        
+        if (!deps_file.empty() && deps_file.back() != DIR_SEPARATOR)
+        {
+            deps_file.push_back(DIR_SEPARATOR);
+        }
         // Portable app's hostpolicy is resolved from FX deps
-        return fx_dir + DIR_SEPARATOR + config.get_fx_name() + _X(".deps.json");
+        return deps_file + config.get_fx_name() + _X(".deps.json");
     }
     else
     {
@@ -327,7 +333,7 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     return false;
 }
 
-void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
+fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& version_list,
     const pal::string_t& fx_ver,
     const fx_ver_t& specified,
     const bool& patch_roll_fwd,
@@ -335,8 +341,7 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
 {
     trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
 
-    std::vector<pal::string_t> list;
-    pal::readdir(fx_dir, &list);
+
     fx_ver_t most_compatible = specified;
     if (!specified.is_prerelease())
     {
@@ -344,10 +349,10 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
         {
             trace::verbose(_X("'Roll forward on no candidate fx' enabled. Looking for the least production greater than or equal to [%s]"), fx_ver.c_str());
             fx_ver_t next_lowest(-1, -1, -1);
-            for (const auto& version : list)
+            for (const auto& ver : version_list)
             {
-                fx_ver_t ver(-1, -1, -1);
-                if (fx_ver_t::parse(version, &ver, true) && (ver >= specified))
+                
+                if (!ver.is_prerelease() && ver >= specified)
                 {
                     next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
                 }
@@ -365,12 +370,11 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
         if (patch_roll_fwd)
         {
             trace::verbose(_X("Applying patch roll forward from [%s]"), most_compatible.as_str().c_str());
-            for (const auto& version : list)
+            for (const auto& ver : version_list)
             {
-                trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-                fx_ver_t ver(-1, -1, -1);
+                trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-                if (fx_ver_t::parse(version, &ver, true) && // true -- only prod. prevents roll forward to prerelease.
+                if (!ver.is_prerelease() && //  only prod. prevents roll forward to prerelease.
                     ver.get_major() == most_compatible.get_major() &&
                     ver.get_minor() == most_compatible.get_minor())
                 {
@@ -382,13 +386,12 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
     }
     else
     {
-        for (const auto& version : list)
+        for (const auto& ver : version_list)
         {
-            trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-            fx_ver_t ver(-1, -1, -1);
+            trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-            if (fx_ver_t::parse(version, &ver, false) && // false -- implies both production and prerelease.
-                ver.is_prerelease() && // prevent roll forward to production.
+            //both production and prerelease.
+            if (ver.is_prerelease() && // prevent roll forward to production.
                 ver.get_major() == specified.get_major() &&
                 ver.get_minor() == specified.get_minor() &&
                 ver.get_patch() == specified.get_patch() &&
@@ -399,8 +402,8 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
             }
         }
     }
-    pal::string_t most_compatible_str = most_compatible.as_str();
-    append_path(&fx_dir, most_compatible_str.c_str());
+
+    return most_compatible;
 }
 
 pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
@@ -432,30 +435,27 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
 
     // Multi-level SharedFX lookup will look for the most appropriate version in several locations
     // by following the priority rank below:
-    //  User directory
     // .exe directory
     //  Global .NET directory
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
-    pal::string_t global_dir;
+    std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
-    if (multilevel_lookup)
-    {
-        if (pal::get_local_dotnet_dir(&local_dir))
-        {
-            hive_dir.push_back(local_dir);
-        }
-    }
     hive_dir.push_back(own_dir);
-    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
     {
-        hive_dir.push_back(global_dir);
+        for (pal::string_t dir : global_dirs)
+        {
+            hive_dir.push_back(dir);
+        }
     }
 
     bool patch_roll_fwd_enabled = config.get_patch_roll_fwd();
+    pal::string_t selected_fx_dir;
+    fx_ver_t selected_ver(-1, -1, -1);
 
     for (pal::string_t dir : hive_dir)
     {
@@ -486,22 +486,60 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
         {
             trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, roll_fwd_on_no_candidate_fx=%d, chose [%s]"),
                 specified_fx_version.c_str(), patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val, fx_ver.c_str());
+            
             append_path(&fx_dir, fx_ver.c_str());
+            if (pal::directory_exists(fx_dir))
+            {
+                trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
+                return fx_dir;
+            }
         }
         else
         {
-            resolve_roll_forward(fx_dir, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
-        }
+            std::vector<pal::string_t> list;
+            std::vector<fx_ver_t> version_list;
+            pal::readdir(fx_dir, &list);
 
-        if (pal::directory_exists(fx_dir))
-        {
-            trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
-            return fx_dir;
+            for (const auto& version : list)
+            {
+                fx_ver_t ver(-1, -1, -1);
+                if (fx_ver_t::parse(version, &ver, false))
+                {
+                    version_list.push_back(ver);
+                }
+            }
+
+            fx_ver_t resolved_ver = resolve_framework_version(version_list, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
+
+            pal::string_t resolved_ver_str = resolved_ver.as_str();
+            append_path(&fx_dir, resolved_ver_str.c_str());
+
+            if (pal::directory_exists(fx_dir))
+            {
+                //Continue to search for a better match if available
+                std::vector<fx_ver_t> version_list;
+                version_list.push_back(resolved_ver);
+                version_list.push_back(selected_ver);
+                resolved_ver = resolve_framework_version(version_list, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
+
+                if (resolved_ver != selected_ver)
+                {
+                    trace::verbose(_X("Changing Selected FX version from [%s] to [%s]"), selected_fx_dir.c_str(), fx_dir.c_str());
+                    selected_ver = resolved_ver;
+                    selected_fx_dir = fx_dir;
+                }
+            }
         }
     }
 
-    trace::error(_X("It was not possible to find any compatible framework version"));
-    return pal::string_t();
+    if (selected_fx_dir.empty())
+    {
+        trace::error(_X("It was not possible to find any compatible framework version"));
+        return pal::string_t();
+    }
+
+    trace::verbose(_X("Chose FX version [%s]"), selected_fx_dir.c_str());
+    return selected_fx_dir;
 }
 
 pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
@@ -557,7 +595,7 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     return retval;
 }
 
-pal::string_t resolve_sdk_version(pal::string_t sdk_path)
+pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_production)
 {
     trace::verbose(_X("--- Resolving SDK version from SDK dir [%s]"), sdk_path.c_str());
 
@@ -571,7 +609,7 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
         trace::verbose(_X("Considering version... [%s]"), version.c_str());
 
         fx_ver_t ver(-1, -1, -1);
-        if (fx_ver_t::parse(version, &ver, false))  // false -- implies both production and prerelease.
+        if (fx_ver_t::parse(version, &ver, parse_only_production))
         {
             max_ver = std::max(ver, max_ver);
         }
@@ -583,10 +621,10 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
     trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
     if (pal::directory_exists(sdk_path))
     {
-        retval = sdk_path;
+        trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
+        retval = max_ver_str;
     }
 
-    trace::verbose(_X("Resolved SDK dir is [%s]"), retval.c_str());
     return retval;
 }
 
@@ -601,6 +639,24 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
     }
 
     return resolve_sdk_dotnet_path(own_dir, cwd, cli_sdk);
+}
+
+bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version, bool parse_only_production)
+{
+    bool retval = false;
+    fx_ver_t ver(-1, -1, -1);
+    fx_ver_t new_ver(-1, -1, -1);
+
+    if (fx_ver_t::parse(new_version, &new_ver, parse_only_production))
+    {
+       if (!fx_ver_t::parse(*version, &ver, parse_only_production) || (new_ver > ver))
+       {
+           version->assign(new_version);
+           retval = true;
+       }
+    }
+
+    return retval;
 }
 
 bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk)
@@ -632,7 +688,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
-    pal::string_t global_dir;
+    std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
     if (multilevel_lookup)
@@ -648,50 +704,74 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         hive_dir.push_back(own_dir);
     }
 
-    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
     {
-        hive_dir.push_back(global_dir);
+        for (pal::string_t dir : global_dirs)
+        {
+            hive_dir.push_back(dir);
+        }
     }
 
-    pal::string_t retval;
+    pal::string_t cli_version;
+    pal::string_t sdk_path;
+    pal::string_t global_cli_version;
+
+    if (!global.empty())
+    {
+        global_cli_version = resolve_cli_version(global);
+    }
+
     for (pal::string_t dir : hive_dir)
     {
         trace::verbose(_X("Searching SDK directory in [%s]"), dir.c_str());
-        if (!global.empty())
-        {
-            pal::string_t cli_version = resolve_cli_version(global);
-            if (!cli_version.empty())
-            {
-                pal::string_t sdk_path = dir;
-                append_path(&sdk_path, _X("sdk"));
-                append_path(&sdk_path, cli_version.c_str());
+        pal::string_t current_sdk_path = dir;
+        append_path(&current_sdk_path, _X("sdk"));
 
-                if (pal::directory_exists(sdk_path))
-                {
-                    trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
-                    retval = sdk_path;
-                }
-                else
-                {
-                    trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), sdk_path.c_str());
-                }
+        if (global_cli_version.empty())
+        {
+            bool parse_only_production = false;  // false -- implies both production and prerelease.
+            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production);
+            if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
+            {
+                sdk_path = current_sdk_path;
             }
         }
-        if (retval.empty())
+        else
         {
-            pal::string_t sdk_path = dir;
-            append_path(&sdk_path, _X("sdk"));
-            retval = resolve_sdk_version(sdk_path);
-        }
-        if (!retval.empty())
-        {
-            cli_sdk->assign(retval);
-            trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
-            return true;
+            pal::string_t probing_sdk_path = current_sdk_path;
+            append_path(&probing_sdk_path, global_cli_version.c_str());
+
+            if (pal::directory_exists(probing_sdk_path))
+            {
+                trace::verbose(_X("CLI directory [%s] from global.json exists"), probing_sdk_path.c_str());
+                cli_version = global_cli_version;
+                sdk_path = current_sdk_path;
+                //  Use the first matching version
+                break;
+            }
+            else
+            {
+                trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), probing_sdk_path.c_str());
+            }
         }
     }
-    
-    trace::verbose(_X("It was not possible to find any SDK version"));
+
+    if (!cli_version.empty())
+    {
+        append_path(&sdk_path, cli_version.c_str());
+        cli_sdk->assign(sdk_path);
+        trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
+        return true;
+    }
+
+    if (global_cli_version.empty())
+    {
+        trace::verbose(_X("It was not possible to find any SDK version"));
+    }
+    else
+    {
+        trace::error(_X("The specified SDK version [%s] from global.json [%s] not found; install specified SDK version"), cli_version.c_str(), global.c_str());
+    }
     return false;
 }
 
@@ -751,12 +831,42 @@ int muxer_usage(bool is_sdk_present)
 }
 
 // Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
-void append_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths)
+void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths, const pal::string_t& tfm)
 {
-    pal::string_t real = path;
-    if (pal::realpath(&real))
+    pal::string_t probe_path = path;
+
+    if (pal::realpath(&probe_path) && pal::directory_exists(probe_path))
     {
-        realpaths->push_back(real);
+        realpaths->push_back(probe_path);
+    }
+    else
+    {
+        //Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
+        pal::string_t placeholder = _X("|arch|");
+        placeholder.push_back(DIR_SEPARATOR);
+        placeholder.append(_X("|tfm|"));
+        auto pos_placeholder = probe_path.find_last_of(placeholder);
+
+        if (pos_placeholder != pal::string_t::npos)
+        {
+            pal::string_t segment = get_arch();
+            segment.push_back(DIR_SEPARATOR);
+            segment.append(tfm);
+            probe_path.replace(pos_placeholder - placeholder.length() + 1, placeholder.length(), segment);
+
+            if (pal::directory_exists(probe_path))
+            {
+                realpaths->push_back(probe_path);
+            }
+            else
+            {
+                trace::verbose(_X("Ignoring host interpreted additional probing path %s as it does not exist."),probe_path.c_str());
+            }
+        }
+        else
+        {
+            trace::verbose(_X("Ignoring additional probing path %s as it does not exist."),probe_path.c_str());
+        }
     }
 }
 
@@ -911,11 +1021,11 @@ int fx_muxer_t::read_config_and_execute(
     std::vector<pal::string_t> probe_realpaths;
     for (const auto& path : spec_probe_paths)
     {
-        append_realpath(path, &probe_realpaths);
+        append_probe_realpath(path, &probe_realpaths, config.get_tfm());
     }
     for (const auto& path : config.get_probe_paths())
     {
-        append_realpath(path, &probe_realpaths);
+        append_probe_realpath(path, &probe_realpaths, config.get_tfm());
     }
 
     // 'Roll forward on no candidate fx' is disabled by default. It can be enabled through:
@@ -1011,6 +1121,11 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     //
 
     trace::verbose(_X("--- Executing in muxer mode..."));
+
+    if (argc <= 1)
+    {
+        return muxer_usage(!is_sdk_dir_present(own_dir));
+    }
 
     if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
     {

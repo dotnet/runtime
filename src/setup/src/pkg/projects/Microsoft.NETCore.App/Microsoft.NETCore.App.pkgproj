@@ -5,8 +5,11 @@
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
   <PropertyGroup>
-    <Version>$(NetCoreAppVersion)</Version>
-    <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(ProductionVersion)').ToString(2))</NETCoreAppFramework>
+    <Version>$(SharedFrameworkNugetVersion)</Version>
+
+    <!-- This corresponds to TFM we want the SharedFX to target and should be updated when needed. -->
+
+    <NETCoreAppFramework>netcoreapp2.0</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -19,9 +22,9 @@
          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
     <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
-  
-  
+
   <Import Project="netcoreapp1.0.props" />
+  <Import Project="netcoreapp1.1.props" />
 
   <!-- Identity / Reference package content -->
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
@@ -37,7 +40,7 @@
     </Dependency>
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
-       <Version>$(HostPolicyFullVersion)</Version>
+       <Version>$(HostPolicyVersion)</Version>
        <TargetFramework>.NETCoreApp2.0</TargetFramework>
     </Dependency>
 
@@ -51,6 +54,9 @@
       <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
     </File>
     <File Include="$(PlatformManifestFile)">
+      <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
+    </File>
+    <File Include="$(MSBuildProjectName).targets">
       <TargetPath>build/$(NETCoreAppFramework)</TargetPath>
     </File>
   </ItemGroup>
@@ -75,6 +81,7 @@
     
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="$(Id)"
+                              PackageVersion="$(Version)"
                               PlatformManifestFile="$(PlatformManifestFile)"
                               PropsFile="$(PropsFile)"
                               PreferredPackages="$(Id);@(RuntimeDependency)" />
