@@ -27,16 +27,18 @@ Module Name:
 
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
-#include "env/gcenv.ee.h"
 
-#ifdef FEATURE_STANDALONE_GC
+#ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"
 
 // GCStress does not currently work with Standalone GC
 #ifdef STRESS_HEAP
  #undef STRESS_HEAP
 #endif // STRESS_HEAP
-#endif // FEATURE_STANDALONE_GC
+#else
+#include "env/gcenv.ee.h"
+#endif // BUILD_AS_STANDALONE
+#include "gcconfig.h"
 
 /*
  * Promotion Function Prototypes
@@ -114,6 +116,7 @@ extern "C" uint8_t* g_gc_highest_address;
 extern "C" GCHeapType g_gc_heap_type;
 extern "C" uint32_t g_max_generation;
 extern "C" MethodTable* g_gc_pFreeObjectMethodTable;
+extern "C" uint32_t g_num_processors;
 
 ::IGCHandleManager*  CreateGCHandleManager();
 

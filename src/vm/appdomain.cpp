@@ -9084,18 +9084,16 @@ void AppDomain::HandleAsyncPinHandles()
     }
     CONTRACTL_END;
 
-    // TODO: Temporarily casting stuff here until Ref_RelocateAsyncPinHandles is moved to the interface.
-    HandleTableBucket *pBucket = (HandleTableBucket*)m_handleStore;
+    IGCHandleStore *pBucket = m_handleStore;
 
     // IO completion port picks IO job using FIFO.  Here is how we know which AsyncPinHandle can be freed.
     // 1. We mark all non-pending AsyncPinHandle with READYTOCLEAN.
     // 2. We queue a dump Overlapped to the IO completion as a marker.
     // 3. When the Overlapped is picked up by completion port, we wait until all previous IO jobs are processed.
     // 4. Then we can delete all AsyncPinHandle marked with READYTOCLEAN.
-    HandleTableBucket *pBucketInDefault = (HandleTableBucket*)SystemDomain::System()->DefaultDomain()->m_handleStore;
+    IGCHandleStore *pBucketInDefault = SystemDomain::System()->DefaultDomain()->m_handleStore;
 
-    // TODO: When this function is moved to the interface it will take void*s
-    Ref_RelocateAsyncPinHandles(pBucket, pBucketInDefault);
+    pBucket->RelocateAsyncPinnedHandles(pBucketInDefault);
 
     OverlappedDataObject::RequestCleanup();
 }

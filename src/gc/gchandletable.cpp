@@ -56,6 +56,18 @@ OBJECTHANDLE GCHandleStore::CreateDependentHandle(Object* primary, Object* secon
     return handle;
 }
 
+void GCHandleStore::RelocateAsyncPinnedHandles(IGCHandleStore* pTarget)
+{
+    // assumption - the IGCHandleStore is an instance of GCHandleStore
+    GCHandleStore* other = static_cast<GCHandleStore*>(pTarget);
+    ::Ref_RelocateAsyncPinHandles(&_underlyingBucket, &other->_underlyingBucket);
+}
+
+bool GCHandleStore::EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context)
+{
+    return !!::Ref_HandleAsyncPinHandles(callback, context);
+}
+
 GCHandleStore::~GCHandleStore()
 {
     ::Ref_DestroyHandleTableBucket(&_underlyingBucket);
@@ -145,6 +157,16 @@ void GCHandleManager::StoreObjectInHandle(OBJECTHANDLE handle, Object* object)
 bool GCHandleManager::StoreObjectInHandleIfNull(OBJECTHANDLE handle, Object* object)
 {
     return !!::HndFirstAssignHandle(handle, ObjectToOBJECTREF(object));
+}
+
+void GCHandleManager::SetDependentHandleSecondary(OBJECTHANDLE handle, Object* object)
+{
+    ::SetDependentHandleSecondary(handle, ObjectToOBJECTREF(object));
+}
+
+Object* GCHandleManager::GetDependentHandleSecondary(OBJECTHANDLE handle)
+{
+    return OBJECTREFToObject(::GetDependentHandleSecondary(handle));
 }
 
 Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject)
