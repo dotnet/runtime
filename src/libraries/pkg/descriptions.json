@@ -569,6 +569,32 @@
     ]
   },
   {
+    "Name": "System.DirectoryServices",
+    "Description": "Provides easy access to Active Directory Domain Services.",
+    "CommonTypes": [
+      "System.DirectoryServices.DirectoryEntry",
+      "System.DirectoryServices.DirectorySearcher",
+      "System.DirectoryServices.ActiveDirectory.ActiveDirectorySite",
+      "System.DirectoryServices.ActiveDirectory.ApplicationPartition",
+      "System.DirectoryServices.ActiveDirectory.DirectoryContext",
+      "System.DirectoryServices.ActiveDirectory.DirectoryServer",
+      "System.DirectoryServices.ActiveDirectory.Domain",
+      "System.DirectoryServices.ActiveDirectory.DomainController"
+    ]
+  },
+  {
+    "Name": "System.DirectoryServices.AccountManagement",
+    "Description": "Provides uniform access and manipulation of user, computer, and group security principals across the multiple principal stores: Active Directory Domain Services (AD DS), Active Directory Lightweight Directory Services (AD LDS), and Machine SAM (MSAM).",
+    "CommonTypes": [
+    ]
+  },
+  {
+    "Name": "System.DirectoryServices.Protocols",
+    "Description": "Provides the methods defined in the Lightweight Directory Access Protocol (LDAP) version 3 (V3) and Directory Services Markup Language (DSML) version 2.0 (V2) standards.",
+    "CommonTypes": [
+    ]
+  },
+  {
     "Name": "System.Drawing.Primitives",
     "Description": "Provides basic drawing primitive structures, that exposes the corresponding System.Drawing.dll types in .NET Core.",
     "CommonTypes": [
