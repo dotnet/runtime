@@ -23,8 +23,10 @@ if (CLR_CMAKE_PLATFORM_UNIX)
   # after hitting just about 20 errors.
   add_compile_options(-ferror-limit=4096)
 
-  # All warnings that are not explicitly disabled are reported as errors
-  add_compile_options(-Werror)
+  if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
+    # All warnings that are not explicitly disabled are reported as errors
+    add_compile_options(-Werror)
+  endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
 
   # Disabled warnings
   add_compile_options(-Wno-unused-private-field)
