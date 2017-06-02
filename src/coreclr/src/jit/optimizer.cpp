@@ -3289,7 +3289,7 @@ void Compiler::optUnrollLoops()
 
 /*****************************************************************************
  *
- *  Return non-zero if there is a code path from 'topBB' to 'botBB' that will
+ *  Return false if there is a code path from 'topBB' to 'botBB' that might
  *  not execute a method call.
  */
 
