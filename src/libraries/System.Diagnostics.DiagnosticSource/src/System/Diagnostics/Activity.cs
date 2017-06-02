@@ -45,11 +45,11 @@ namespace System.Diagnostics
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         /// <example>
-        /// Id looks like '|a000b421-5d183ab6-Server1.1.8e2d4c28_1.':<para />
-        ///  - '|a000b421-5d183ab6-Server1.' - Id of the first, top-most, Activity created<para />
-        ///  - '|a000b421-5d183ab6-Server1.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
-        ///  - '|a000b421-5d183ab6-Server1.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
-        /// 'a000b421-5d183ab6-Server1' is a <see cref="RootId"/> for the first Activity and all its children
+        /// Id looks like '|a000b421-5d183ab6.1.8e2d4c28_1.':<para />
+        ///  - '|a000b421-5d183ab6.' - Id of the first, top-most, Activity created<para />
+        ///  - '|a000b421-5d183ab6.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
+        ///  - '|a000b421-5d183ab6.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// 'a000b421-5d183ab6' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
         public string Id { get; private set; }
 
@@ -421,7 +421,7 @@ namespace System.Diagnostics
             }
 
             //ParentId is not valid Request-Id, let's generate proper one.
-            if (trimPosition == 0)
+            if (trimPosition == 1)
                 return GenerateRootId();
 
             //generate overflow suffix
@@ -433,8 +433,7 @@ namespace System.Diagnostics
         {
             // It is important that the part that changes frequently be first, because
             // many hash functions don't 'randomize' the tail of a string.   This makes
-            // sampling based on the hash produce poor samples.   Thus the 'machine part'
-            // of the ID is last.  
+            // sampling based on the hash produce poor samples.
             return  '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_uniqSuffix;
         }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
