@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace System.Collections.ObjectModel
 {
@@ -17,6 +18,7 @@ namespace System.Collections.ObjectModel
     [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=Neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, INotifyPropertyChanged
     {
         //------------------------------------------------------
@@ -238,9 +240,15 @@ namespace System.Collections.ObjectModel
             NotifyCollectionChangedEventHandler handler = CollectionChanged;
             if (handler != null)
             {
-                using (BlockReentrancy())
+                // Not calling BlockReentrancy() here to avoid the SimpleMonitor allocation.
+                _blockReentrancyCount++;
+                try
                 {
                     handler(this, e);
+                }
+                finally
+                {
+                    _blockReentrancyCount--;
                 }
             }
         }
@@ -260,8 +268,8 @@ namespace System.Collections.ObjectModel
         /// </remarks>
         protected IDisposable BlockReentrancy()
         {
-            _monitor.Enter();
-            return _monitor;
+            _blockReentrancyCount++;
+            return EnsureMonitorInitialized();
         }
 
         /// <summary> Check and assert for reentrant attempts to change this collection. </summary>
@@ -269,7 +277,7 @@ namespace System.Collections.ObjectModel
         /// while another collection change is still being notified to other listeners </exception>
         protected void CheckReentrancy()
         {
-            if (_monitor.Busy)
+            if (_blockReentrancyCount > 0)
             {
                 // we can allow changes if there's only one listener - the problem
                 // only arises if reentrant changes make the original event args
@@ -337,6 +345,25 @@ namespace System.Collections.ObjectModel
         {
             OnCollectionChanged(EventArgsCache.ResetCollectionChanged);
         }
+
+        private SimpleMonitor EnsureMonitorInitialized()
+        {
+            return _monitor ?? (_monitor = new SimpleMonitor(this));
+        }
+
+        [OnSerializing]
+        private void OnSerializing(StreamingContext context)
+        {
+            EnsureMonitorInitialized();
+            _monitor._busyCount = _blockReentrancyCount;
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            _blockReentrancyCount = _monitor._busyCount;
+            _monitor._collection = this;
+        }
         #endregion Private Methods
 
         //------------------------------------------------------
@@ -349,21 +376,24 @@ namespace System.Collections.ObjectModel
 
         // this class helps prevent reentrant calls
         [Serializable]
-        private class SimpleMonitor : IDisposable
+        [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=Neutral, PublicKeyToken=31bf3856ad364e35")]
+        private sealed class SimpleMonitor : IDisposable
         {
-            public void Enter()
+            internal int _busyCount; // Only used during (de)serialization to maintain compatibility with desktop.
+
+            [NonSerialized]
+            internal ObservableCollection<T> _collection;
+
+            public SimpleMonitor(ObservableCollection<T> collection)
             {
-                ++_busyCount;
+                Debug.Assert(collection != null);
+                _collection = collection;
             }
 
             public void Dispose()
             {
-                --_busyCount;
+                _collection._blockReentrancyCount--;
             }
-
-            public bool Busy { get { return _busyCount > 0; } }
-
-            int _busyCount;
         }
 
         #endregion Private Types
@@ -376,7 +406,10 @@ namespace System.Collections.ObjectModel
 
         #region Private Fields
 
-        private readonly SimpleMonitor _monitor = new SimpleMonitor();
+        private SimpleMonitor _monitor; // Lazily allocated only when a subclass calls BlockReentrancy() or during serialization.
+
+        [NonSerialized]
+        private int _blockReentrancyCount;
         #endregion Private Fields
     }
 
