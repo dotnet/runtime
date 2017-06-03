@@ -57,6 +57,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void InstanceExportsOfIncompatibleContractsAreDetected()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(IncompatibleRule)));
@@ -64,6 +65,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void PropertyExportsOfIncompatibleContractsAreDetected()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(IncompatibleRuleProperty)));
@@ -123,6 +125,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void MultipleImportAttributesAreDetected()
         {
             var c = new ContainerConfiguration()

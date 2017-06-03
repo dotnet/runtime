@@ -64,6 +64,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void MissingTopLevelExportMessageIsInformative()
         {
             var cc = CreateContainer();
@@ -72,6 +73,7 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void MissingTopLevelNamedExportMessageIsInformative()
         {
             var cc = CreateContainer();
