@@ -95,6 +95,8 @@ namespace System
         public static ReadOnlySpan<char> AsSpan(this string text) { throw null; }
         public static Span<T> AsSpan<T>(this T[] array) { throw null; }
         public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment) { throw null; }
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array) { throw null; }
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> arraySegment) { throw null; }
 
         public static void CopyTo<T>(this T[] array, Span<T> destination) { throw null; }
 

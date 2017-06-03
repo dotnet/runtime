@@ -280,6 +280,24 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a new readonly span over the entire target array.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this T[] array)
+        {
+            return new ReadOnlySpan<T>(array);
+        }
+
+        /// <summary>
+        /// Creates a new readonly span over the target array segment.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> arraySegment)
+        {
+            return new ReadOnlySpan<T>(arraySegment.Array, arraySegment.Offset, arraySegment.Count);
+        }
+
+        /// <summary>
         /// Copies the contents of the array into the span. If the source
         /// and destinations overlap, this method behaves as if the original values in
         /// a temporary location before the destination is overwritten.
