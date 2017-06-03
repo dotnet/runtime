@@ -2,7 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>ad83807c-8be5-4f27-85df-9793613233e1</ProjectGuid>
+    <ProjectGuid>{E60AFAE8-2EA7-471C-9E24-52A99453B26B}</ProjectGuid>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
