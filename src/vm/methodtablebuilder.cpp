@@ -5913,8 +5913,8 @@ MethodTableBuilder::InitMethodDesc(
             NDirectMethodDesc *pNewNMD = (NDirectMethodDesc*)pNewMD;
 
             // Allocate writeable data
-            pNewNMD->ndirect.m_pWriteableData = (NDirectWriteableData*)
-                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData)));
+            pNewNMD->ndirect.m_pWriteableData.SetValue((NDirectWriteableData*)
+                AllocateFromHighFrequencyHeap(S_SIZE_T(sizeof(NDirectWriteableData))));
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE 
             pNewNMD->ndirect.m_pImportThunkGlue.SetValue(Precode::Allocate(PRECODE_NDIRECT_IMPORT, pNewMD,

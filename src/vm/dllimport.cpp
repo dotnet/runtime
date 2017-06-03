@@ -2294,7 +2294,19 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
                     //pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
                     pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
                     pcsEmit->EmitADD();
+
+                    if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
+                    {
+                        pcsEmit->EmitDUP();
+                    }
+
                     pcsEmit->EmitLDIND_I();
+
+                    if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
+                    {
+                        pcsEmit->EmitADD();
+                    }
+
                     pcsEmit->EmitLDIND_I();
                 }
             }

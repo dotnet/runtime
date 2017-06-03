@@ -1573,6 +1573,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             value.stubLookup.runtimeLookup.indirections = (DWORD)pResult->stubLookup.runtimeLookup.indirections;
             value.stubLookup.runtimeLookup.testForNull  = (DWORD)pResult->stubLookup.runtimeLookup.testForNull;
             value.stubLookup.runtimeLookup.testForFixup = (DWORD)pResult->stubLookup.runtimeLookup.testForFixup;
+            value.stubLookup.runtimeLookup.indirectFirstOffset = (DWORD)pResult->stubLookup.runtimeLookup.indirectFirstOffset;
             for (int i                                    = 0; i < CORINFO_MAXINDIRECTIONS; i++)
                 value.stubLookup.runtimeLookup.offsets[i] = (DWORDLONG)pResult->stubLookup.runtimeLookup.offsets[i];
         }
@@ -1583,6 +1584,7 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             value.stubLookup.runtimeLookup.indirections = (DWORD)0;
             value.stubLookup.runtimeLookup.testForNull  = (DWORD)0;
             value.stubLookup.runtimeLookup.testForFixup = (DWORD)0;
+            value.stubLookup.runtimeLookup.indirectFirstOffset = (DWORD)0;
             for (int i                                    = 0; i < CORINFO_MAXINDIRECTIONS; i++)
                 value.stubLookup.runtimeLookup.offsets[i] = (DWORDLONG)0;
 
@@ -1761,6 +1763,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->stubLookup.runtimeLookup.indirections = (WORD)value.stubLookup.runtimeLookup.indirections;
         pResult->stubLookup.runtimeLookup.testForNull  = value.stubLookup.runtimeLookup.testForNull != 0;
         pResult->stubLookup.runtimeLookup.testForFixup = value.stubLookup.runtimeLookup.testForFixup != 0;
+        pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
         for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
     }
@@ -3218,6 +3221,7 @@ void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
         value.lookup.runtimeLookup.indirections = (DWORD)pResult->lookup.runtimeLookup.indirections;
         value.lookup.runtimeLookup.testForNull  = (DWORD)pResult->lookup.runtimeLookup.testForNull;
         value.lookup.runtimeLookup.testForFixup = (DWORD)pResult->lookup.runtimeLookup.testForFixup;
+        value.lookup.runtimeLookup.indirectFirstOffset = (DWORD)pResult->lookup.runtimeLookup.indirectFirstOffset;
         for (int i                                = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             value.lookup.runtimeLookup.offsets[i] = (DWORDLONG)pResult->lookup.runtimeLookup.offsets[i];
     }
@@ -3228,6 +3232,7 @@ void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
         value.lookup.runtimeLookup.indirections = (DWORD)0;
         value.lookup.runtimeLookup.testForNull  = (DWORD)0;
         value.lookup.runtimeLookup.testForFixup = (DWORD)0;
+        value.lookup.runtimeLookup.indirectFirstOffset = (DWORD)0;
         for (int i                                = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             value.lookup.runtimeLookup.offsets[i] = (DWORDLONG)0;
         // copy the constLookup view of the union
@@ -3305,6 +3310,7 @@ void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
         pResult->lookup.runtimeLookup.indirections = (WORD)value.lookup.runtimeLookup.indirections;
         pResult->lookup.runtimeLookup.testForNull  = value.lookup.runtimeLookup.testForNull != 0;
         pResult->lookup.runtimeLookup.testForFixup = value.lookup.runtimeLookup.testForFixup != 0;
+        pResult->lookup.runtimeLookup.indirectFirstOffset = value.lookup.runtimeLookup.indirectFirstOffset != 0;
         for (int i                                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->lookup.runtimeLookup.offsets[i] = (size_t)value.lookup.runtimeLookup.offsets[i];
     }
