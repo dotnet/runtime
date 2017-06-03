@@ -1817,6 +1817,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    [ActiveIssue("dotnet/corefx #19897", TargetFrameworkMonikers.UapAot)]
     public static void Xml_TypeWithTwoDimensionalArrayProperty1()
     {
         SimpleType[][] simpleType2D = GetObjectwith2DArrayOfSimpleType();
