@@ -2586,7 +2586,11 @@ public:
         };
 
         // The writeable part of the methoddesc.
-        PTR_NDirectWriteableData    m_pWriteableData;
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+        RelativePointer<PTR_NDirectWriteableData>    m_pWriteableData;
+#else
+        PlainPointer<PTR_NDirectWriteableData>    m_pWriteableData;
+#endif
 
 #ifdef HAS_NDIRECT_IMPORT_PRECODE
         RelativePointer<PTR_NDirectImportThunkGlue> m_pImportThunkGlue;
@@ -2808,11 +2812,11 @@ public:
         return (ndirect.m_wFlags & kStdCallWithRetBuf) != 0;
     }
 
-    NDirectWriteableData* GetWriteableData() const
+    PTR_NDirectWriteableData GetWriteableData() const
     {
-        LIMITED_METHOD_CONTRACT;
+        LIMITED_METHOD_DAC_CONTRACT;
 
-        return ndirect.m_pWriteableData;
+        return ReadPointer(this, &NDirectMethodDesc::ndirect, &decltype(NDirectMethodDesc::ndirect)::m_pWriteableData);
     }
 
     PTR_NDirectImportThunkGlue GetNDirectImportThunkGlue()
@@ -3217,7 +3221,7 @@ public:
         if (IMD_IsGenericMethodDefinition())
             return TRUE;
         else
-            return m_pPerInstInfo != NULL;
+            return !m_pPerInstInfo.IsNull();
     }
 
     // All varieties of InstantiatedMethodDesc's support this method.
@@ -3225,13 +3229,21 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return Instantiation(m_pPerInstInfo->GetInstantiation(), m_wNumGenericArgs);
+        return Instantiation(IMD_GetMethodDictionary()->GetInstantiation(), m_wNumGenericArgs);
     }
 
     PTR_Dictionary IMD_GetMethodDictionary()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pPerInstInfo;
+
+        return ReadPointerMaybeNull(this, &InstantiatedMethodDesc::m_pPerInstInfo);
+    }
+
+    PTR_Dictionary IMD_GetMethodDictionaryNonNull()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        return ReadPointer(this, &InstantiatedMethodDesc::m_pPerInstInfo);
     }
 
     BOOL IMD_IsGenericMethodDefinition()
@@ -3390,7 +3402,11 @@ public: // <TODO>make private: JITinterface.cpp accesses through this </TODO>
         //
         // For generic method definitions that are not the typical method definition (e.g. C<int>.m<U>)
         // this field is null; to obtain the instantiation use LoadMethodInstantiation
-    PTR_Dictionary m_pPerInstInfo;  //SHARED
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+    RelativePointer<PTR_Dictionary> m_pPerInstInfo;  //SHARED
+#else
+    PlainPointer<PTR_Dictionary> m_pPerInstInfo;  //SHARED
+#endif
 
 private:
     WORD          m_wFlags2;
