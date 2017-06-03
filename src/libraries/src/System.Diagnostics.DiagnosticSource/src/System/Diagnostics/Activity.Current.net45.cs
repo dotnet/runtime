@@ -7,6 +7,8 @@ using System.Security;
 
 namespace System.Diagnostics
 {
+    // this code is specific to .NET 4.5 and uses CallContext to store Activity.Current which requires Activity to be Serializable.
+    [Serializable] // DO NOT remove
     public partial class Activity
     {
         /// <summary>
@@ -33,7 +35,8 @@ namespace System.Diagnostics
         }
 
 #region private
-        
+
+        [Serializable] // DO NOT remove
         private partial class KeyValueListNode
         {
         }
