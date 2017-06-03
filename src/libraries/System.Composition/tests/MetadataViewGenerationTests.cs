@@ -78,6 +78,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void AConcreteTypeWithUnsupportedConstructorsCannotBeUsedAsAMetadataView()
         {
             var cc = new ContainerConfiguration()
@@ -102,6 +103,7 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void UnsupportedMetadataViewMessageIsInformative()
         {
             var cc = new ContainerConfiguration().WithParts(typeof(ImportsWithMetadataInterface), typeof(ExportsWithMetadata)).CreateContainer();
