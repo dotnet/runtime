@@ -30,6 +30,10 @@ template<typename PTR_TYPE>
 class RelativePointer
 {
 public:
+
+    static constexpr bool isRelative = true;
+    typedef PTR_TYPE type;
+
 #ifndef DACCESS_COMPILE
     RelativePointer()
     {
@@ -173,6 +177,10 @@ template<typename PTR_TYPE>
 class FixupPointer
 {
 public:
+
+    static constexpr bool isRelative = false;
+    typedef PTR_TYPE type;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -237,6 +245,10 @@ template<typename PTR_TYPE>
 class RelativeFixupPointer
 {
 public:
+
+    static constexpr bool isRelative = true;
+    typedef PTR_TYPE type;
+
     // Implicit copy/move is not allowed
     RelativeFixupPointer<PTR_TYPE>(const RelativeFixupPointer<PTR_TYPE> &) =delete;
     RelativeFixupPointer<PTR_TYPE>(RelativeFixupPointer<PTR_TYPE> &&) =delete;
@@ -384,7 +396,7 @@ private:
 // Fixup used for RelativePointer
 #define IMAGE_REL_BASED_RelativePointer IMAGE_REL_BASED_RELPTR
 
-#else // FEATURE_PREJIT
+#endif // FEATURE_PREJIT
 
 //----------------------------------------------------------------------------
 // PlainPointer is simple pointer wrapper to support compilation without indirections
@@ -393,6 +405,10 @@ template<typename PTR_TYPE>
 class PlainPointer
 {
 public:
+
+    static constexpr bool isRelative = false;
+    typedef PTR_TYPE type;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -499,11 +515,13 @@ private:
     TADDR m_ptr;
 };
 
+#ifndef FEATURE_PREJIT
+
 #define FixupPointer PlainPointer
 #define RelativePointer PlainPointer
 #define RelativeFixupPointer PlainPointer
 
-#endif // FEATURE_PREJIT
+#endif // !FEATURE_PREJIT
 
 //----------------------------------------------------------------------------
 // RelativePointer32 is pointer encoded as relative 32-bit offset. It is used
@@ -513,6 +531,10 @@ template<typename PTR_TYPE>
 class RelativePointer32
 {
 public:
+
+    static constexpr bool isRelative = true;
+    typedef PTR_TYPE type;
+
     // Returns whether the encoded pointer is NULL.
     BOOL IsNull() const
     {
@@ -580,5 +602,78 @@ public:
 private:
     INT32 m_delta;
 };
+
+template<bool isMaybeNull, typename T, typename PT>
+typename PT::type
+ReadPointer(const T *base, const PT T::* pPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    uintptr_t offset = (uintptr_t) &(base->*pPointerFieldMember) - (uintptr_t) base;
+
+    if (isMaybeNull)
+    {
+        return PT::GetValueMaybeNullAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+    else
+    {
+        return PT::GetValueAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+}
+
+template<typename T, typename PT>
+typename PT::type
+ReadPointerMaybeNull(const T *base, const PT T::* pPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<true>(base, pPointerFieldMember);
+}
+
+template<typename T, typename PT>
+typename PT::type
+ReadPointer(const T *base, const PT T::* pPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<false>(base, pPointerFieldMember);
+}
+
+template<bool isMaybeNull, typename T, typename C, typename PT>
+typename PT::type
+ReadPointer(const T *base, const C T::* pFirstPointerFieldMember, const PT C::* pSecondPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    const PT *ptr = &(base->*pFirstPointerFieldMember.*pSecondPointerFieldMember);
+    uintptr_t offset = (uintptr_t) ptr - (uintptr_t) base;
+
+    if (isMaybeNull)
+    {
+        return PT::GetValueMaybeNullAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+    else
+    {
+        return PT::GetValueAtPtr(dac_cast<TADDR>(base) + offset);
+    }
+}
+
+template<typename T, typename C, typename PT>
+typename PT::type
+ReadPointerMaybeNull(const T *base, const C T::* pFirstPointerFieldMember, const PT C::* pSecondPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<true>(base, pFirstPointerFieldMember, pSecondPointerFieldMember);
+}
+
+template<typename T, typename C, typename PT>
+typename PT::type
+ReadPointer(const T *base, const C T::* pFirstPointerFieldMember, const PT C::* pSecondPointerFieldMember)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return ReadPointer<false>(base, pFirstPointerFieldMember, pSecondPointerFieldMember);
+}
 
 #endif //_FIXUPPOINTER_H
