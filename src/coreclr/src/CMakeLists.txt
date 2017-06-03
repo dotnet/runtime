@@ -53,7 +53,7 @@ else()
     )
 endif(WIN32)
 
-if(CRL_CMAKE_WARNINGS_ARE_ERRORS)
+if(CLR_CMAKE_WARNINGS_ARE_ERRORS)
     set(PYTHON_WARNING_FLAGS -Wall -Werror)
 else()
     set(PYTHON_WARNING_FLAGS -Wall)
