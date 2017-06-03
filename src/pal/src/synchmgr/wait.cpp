@@ -702,7 +702,7 @@ DWORD CorUnix::InternalSleepEx (
     }
     else
     {
-        g_pSynchronizationManager->YieldThread();
+        sched_yield();
         dwRet = 0;
     }
 

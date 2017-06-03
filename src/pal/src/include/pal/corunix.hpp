@@ -1098,10 +1098,6 @@ namespace CorUnix
             ) = 0;
 
         virtual
-        void
-        YieldThread() = 0;
-
-        virtual
         PAL_ERROR
         AbandonObjectsOwnedByThread(
             CPalThread *pCallingThread,
