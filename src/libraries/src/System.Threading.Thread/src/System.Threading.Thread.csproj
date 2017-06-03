@@ -21,7 +21,6 @@
     <Compile Include="System\Threading\Thread.cs" />
     <Compile Include="System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="System\Threading\Thread.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="System\Threading\ThreadAbortException.cs" />
     <Compile Include="System\Threading\ThreadExceptionEventArgs.cs" />
   </ItemGroup>
   <ItemGroup>
