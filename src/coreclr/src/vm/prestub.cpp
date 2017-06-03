@@ -2383,6 +2383,9 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
     pResult->testForFixup = pResult->testForNull = false;
     pResult->signature = NULL;
+
+    pResult->indirectFirstOffset = 0;
+
     pResult->indirections = CORINFO_USEHELPER;
 
     DWORD numGenericArgs = 0;
@@ -2433,6 +2436,11 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
             pResult->indirections = 2;
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
 
+            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
+            {
+                pResult->indirectFirstOffset = 1;
+            }
+
             ULONG data;
             IfFailThrow(sigptr.GetData(&data));
             pResult->offsets[1] = sizeof(TypeHandle) * data;
@@ -2471,6 +2479,11 @@ void ProcessDynamicDictionaryLookup(TransitionBlock *           pTransitionBlock
 
             // Indirect through dictionary table pointer in InstantiatedMethodDesc
             pResult->offsets[0] = offsetof(InstantiatedMethodDesc, m_pPerInstInfo);
+
+            if (decltype(InstantiatedMethodDesc::m_pPerInstInfo)::isRelative)
+            {
+                pResult->indirectFirstOffset = 1;
+            }
 
             *pDictionaryIndexAndSlot |= dictionarySlot;
         }
