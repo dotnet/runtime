@@ -91,7 +91,7 @@
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Environment.Windows.cs" />
-    <Compile Include="System\Environment.Win32.cs" />
+    <Compile Include="System\Environment.Win32.cs"  Condition="'$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'uap'" />
     <Compile Include="System\Runtime\Versioning\VersioningHelper.Windows.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.Windows.cs" />
     <Compile Include="$(CommonPath)\System\IO\Win32Marshal.cs">
