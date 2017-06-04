@@ -21,13 +21,15 @@ namespace System.Net.Tests
 
         public void Dispose() => _factory.Dispose();
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public static void Supported_True()
         {
             Assert.True(HttpListener.IsSupported);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartStop_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -43,7 +45,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartCloseAbort_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -59,7 +62,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartAbortClose_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -75,7 +79,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StopNoStart_NoException()
         {
             HttpListener listener = new HttpListener();
@@ -83,21 +88,24 @@ namespace System.Net.Tests
             listener.Close();
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_CloseNoStart_NoException()
         {
             HttpListener listener = new HttpListener();
             listener.Close();
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_AbortNoStart_NoException()
         {
             HttpListener listener = new HttpListener();
             listener.Abort();
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void BasicTest_StartThrowsAbortCalledInFinally_AbortDoesntThrow()
         {
             HttpListener listener = new HttpListener();
@@ -118,10 +126,12 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19754)] // Recombine into UnknownHeaders_Success when fixed
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public Task UnknownHeaders_Success_Large() => UnknownHeaders_Success(1000);
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(100)]
         public async Task UnknownHeaders_Success(int numHeaders)
         {
