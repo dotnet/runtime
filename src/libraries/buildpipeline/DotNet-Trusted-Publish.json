@@ -4,6 +4,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Install Signing Plugin",
+      "timeoutInMinutes": 0,
+      "condition": "succeeded()",
+      "task": {
+        "id": "30666190-6959-11e5-9f96-f56098202fef",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "signType": "real",
+        "zipSources": "true",
+        "version": "",
+        "feedSource": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/MicroBuildToolset/nuget/v3/index.json"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Run script $(VS140COMNTOOLS)\\VsDevCmd.bat",
       "timeoutInMinutes": 0,
       "task": {
@@ -77,6 +96,27 @@
         "inlineScript": "param($account, $token, $container)\n.\\sync.cmd -ab -- /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Inject signed symbol catalogs",
+      "timeoutInMinutes": 0,
+      "condition": "succeeded()",
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -PipelineSrcDir $(Pipeline.SourcesDirectory)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $PipelineSrcDir)\n\n.\\build-managed.cmd -- /t:InjectSignedSymbolCatalogIntoSymbolPackages `\n/p:SymbolPackagesToPublishGlob=$PipelineSrcDir\\packages\\AzureTransfer\\$ConfigGroup\\$SymPkgGlob `\n/p:SymbolCatalogCertificateId=400",
+        "failOnStandardError": "true"
       }
     },
     {
@@ -221,6 +261,20 @@
         "retentionDays": "",
         "dropMetadataContainerName": "DropMetadata"
       }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Send Telemetry",
+      "timeoutInMinutes": 0,
+      "condition": "always()",
+      "task": {
+        "id": "521a94ea-9e68-468a-8167-6dcf361ea776",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {}
     }
   ],
   "options": [
