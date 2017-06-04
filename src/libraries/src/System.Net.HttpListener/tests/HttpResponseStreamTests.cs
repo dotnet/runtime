@@ -32,7 +32,8 @@ namespace System.Net.Tests
             _helper.Dispose();
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SimpleRequest_WriteAsynchronously_Succeeds(bool sendChunked)
@@ -70,7 +71,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SimpleRequest_WriteSynchronouslyNonEmpty_Succeeds(bool sendChunked)
@@ -108,7 +110,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteAsynchronouslyInParts_Succeeds()
         {
             const string expectedResponse = "hello from HttpListener";
@@ -137,7 +140,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteSynchronouslyInParts_Succeeds()
         {
             const string expectedResponse = "hello from HttpListener";
@@ -166,7 +170,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteAynchronouslyEmpty_Succeeds()
         {
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
@@ -189,7 +194,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task SimpleRequest_WriteSynchronouslyEmpty_Succeeds()
         {
             Task<HttpListenerContext> serverContextTask = _listener.GetContextAsync();
@@ -296,7 +302,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_TooMuch_ThrowsProtocolViolationException()
         {
             using (HttpClient client = new HttpClient())
@@ -324,7 +331,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_TooLittleAsynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -344,13 +352,14 @@ namespace System.Net.Tests
                     Assert.Throws<InvalidOperationException>(() => output.Close());
 
                     // Write the final byte and make sure we can close.
-                    await output.WriteAsync(new byte[1], 0, 1);
+                    await output.WriteAsync(new byte[1],0, 1);
                     output.Close();
                 }
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20201, TestPlatforms.AnyUnix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_TooLittleSynchronouslyAndClose_ThrowsInvalidOperationException()
         {
             using (HttpClient client = new HttpClient())
@@ -378,7 +387,8 @@ namespace System.Net.Tests
 
         [ActiveIssue(20246)] // CI hanging frequently
         [ActiveIssue(19534, TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Write_HeadersToClosedConnectionAsynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
@@ -417,7 +427,8 @@ namespace System.Net.Tests
 
         [ActiveIssue(20246)] // CI hanging frequently
         [ActiveIssue(19534, TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Write_HeadersToClosedConnectionSynchronously_ThrowsHttpListenerException(bool ignoreWriteExceptions)
@@ -456,7 +467,8 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19534, TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
@@ -496,7 +508,8 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19534, TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.

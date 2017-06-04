@@ -30,7 +30,8 @@ namespace System.Net.Tests
 
         public void Dispose() => _factory.Dispose();
 
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // Managed implementation connects successfully.
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // Managed implementation connects successfully.
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("Basic")]
         [InlineData("NTLM")]
         [InlineData("Negotiate")]
@@ -46,7 +47,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(AuthenticationSchemes.Basic)]
         [InlineData(AuthenticationSchemes.Basic | AuthenticationSchemes.None)]
         [InlineData(AuthenticationSchemes.Basic | AuthenticationSchemes.Anonymous)]
@@ -57,7 +59,8 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(BasicAuthenticationHeader_TestData))]
         public async Task BasicAuthentication_InvalidRequest_SendsStatusCodeClient(string header, HttpStatusCode statusCode)
         {
@@ -89,7 +92,8 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19967, TargetFrameworkMonikers.NetFramework)]
-        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [ActiveIssue(20098, TestPlatforms.Unix)]
+        [ConditionalTheory(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [ActiveIssue(20098, TestPlatforms.Unix)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("ExampleRealm")]
         [InlineData("  ExampleRealm  ")]
         [InlineData("")]
@@ -107,14 +111,16 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task TestAnonymousAuthentication()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Anonymous;
             await ValidateNullUser();
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task TestBasicAuthenticationWithDelegate()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.None;
@@ -124,7 +130,8 @@ namespace System.Net.Tests
             await ValidateValidUser();
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("somename:somepassword", "somename", "somepassword")]
         [InlineData("somename:", "somename", "")]
         [InlineData(":somepassword", "", "somepassword")]
@@ -136,7 +143,8 @@ namespace System.Net.Tests
             await ValidateValidUser(authString, expectedName, expectedPassword);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task TestAnonymousAuthenticationWithDelegate()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.None;
@@ -146,7 +154,8 @@ namespace System.Net.Tests
             await ValidateNullUser();
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [ActiveIssue(20604)]
         public async Task NtlmAuthentication_Conversation_ReturnsExpectedType2Message()
         {
@@ -169,7 +178,8 @@ namespace System.Net.Tests
             yield return new object[] { "abcd", HttpStatusCode.BadRequest };
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support NTLM")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [ActiveIssue(20604)]
         [MemberData(nameof(InvalidNtlmNegotiateAuthentication_TestData))]
         public async Task NtlmAuthentication_InvalidRequestHeaders_ReturnsExpectedStatusCode(string header, HttpStatusCode statusCode)
@@ -192,7 +202,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [ActiveIssue(20604)]
         public async Task NegotiateAuthentication_Conversation_ReturnsExpectedType2Message()
         {
@@ -207,7 +218,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementationAndNotUap))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
+        [ConditionalFact(nameof(Helpers) + "." + nameof(Helpers.IsWindowsImplementation))] // [PlatformSpecific(TestPlatforms.Windows, "Managed impl doesn't support Negotiate")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [ActiveIssue(20604)]
         [MemberData(nameof(InvalidNtlmNegotiateAuthentication_TestData))]
         public async Task NegotiateAuthentication_InvalidRequestHeaders_ReturnsExpectedStatusCode(string header, HttpStatusCode statusCode)
@@ -223,7 +235,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AuthenticationSchemeSelectorDelegate_ReturnsInvalidAuthenticationScheme_PerformsNoAuthentication()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
@@ -241,7 +254,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AuthenticationSchemeSelectorDelegate_ThrowsException_SendsInternalServerErrorToClient()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
@@ -253,7 +267,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void AuthenticationSchemeSelectorDelegate_ThrowsOutOfMemoryException_RethrowsException()
         {
             _listener.AuthenticationSchemes = AuthenticationSchemes.Basic;
@@ -266,7 +281,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void AuthenticationSchemeSelectorDelegate_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -275,7 +291,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.AuthenticationSchemeSelectorDelegate = null);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void AuthenticationSchemes_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -284,7 +301,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.AuthenticationSchemes = AuthenticationSchemes.Basic);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void ExtendedProtectionPolicy_SetNull_ThrowsArgumentNullException()
         {
             using (var listener = new HttpListener())
@@ -293,7 +311,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void ExtendedProtectionPolicy_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -302,7 +321,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.ExtendedProtectionPolicy = null);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void ExtendedProtectionPolicy_SetCustomChannelBinding_ThrowsObjectDisposedException()
         {
             using (var listener = new HttpListener())
@@ -312,7 +332,8 @@ namespace System.Net.Tests
             }
         }
         
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void UnsafeConnectionNtlmAuthentication_SetGet_ReturnsExpected()
         {
             using (var listener = new HttpListener())
@@ -330,7 +351,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void UnsafeConnectionNtlmAuthentication_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -339,7 +361,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.UnsafeConnectionNtlmAuthentication = false);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void ExtendedProtectionSelectorDelegate_SetNull_ThrowsArgumentNullException()
         {
             using (var listener = new HttpListener())
@@ -348,7 +371,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void ExtendedProtectionSelectorDelegate_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -357,7 +381,8 @@ namespace System.Net.Tests
             Assert.Throws<ObjectDisposedException>(() => listener.ExtendedProtectionSelectorDelegate = null);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Realm_SetWithoutBasicAuthenticationScheme_SendsNoChallengeToClient()
         {
             _listener.Realm = "ExampleRealm";
@@ -373,7 +398,8 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Realm_SetDisposed_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
