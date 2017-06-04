@@ -7,6 +7,8 @@
 #endif
 
 #ifdef HAVE_SCHED_GETAFFINITY
+#include <sched.h>
+
 #  ifndef GLIBC_HAS_CPU_COUNT
 static int
 CPU_COUNT(cpu_set_t *set)
