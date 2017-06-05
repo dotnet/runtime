@@ -266,6 +266,10 @@ typedef enum {
 	CallType_OneWay = 3
 } MonoCallType;
 
+/* MonoSafeHandle is in class-internals.h. */
+/* Safely access System.Net.Sockets.SafeSocketHandle from native code */
+TYPED_HANDLE_DECL (MonoSafeHandle);
+
 /* This corresponds to System.Type */
 struct _MonoReflectionType {
 	MonoObject object;
@@ -416,6 +420,12 @@ struct _MonoInternalThread {
 	 * DO NOT RENAME! DO NOT ADD FIELDS AFTER! */
 	gpointer last;
 };
+
+/* It's safe to access System.Threading.InternalThread from native code via a
+ * raw pointer because all instances should be pinned.  But for uniformity of
+ * icall wrapping, let's declare a MonoInternalThreadHandle anyway.
+ */
+TYPED_HANDLE_DECL (MonoInternalThread);
 
 struct _MonoThread {
 	MonoObject obj;
@@ -1437,6 +1447,15 @@ typedef struct {
 	MonoClassField *field;
 	MonoProperty *prop;
 } CattrNamedArg;
+
+/* All MonoInternalThread instances should be pinned, so it's safe to use the raw ptr.  However
+ * for uniformity, icall wrapping will make handles anyway.  So this is the method for getting the payload.
+ */
+static inline MonoInternalThread*
+mono_internal_thread_handle_ptr (MonoInternalThreadHandle h)
+{
+	return MONO_HANDLE_RAW (h); /* Safe */
+}
 
 gboolean          mono_image_create_pefile (MonoReflectionModuleBuilder *module, gpointer file, MonoError *error);
 guint32       mono_image_insert_string (MonoReflectionModuleBuilderHandle module, MonoStringHandle str, MonoError *error);

@@ -7585,6 +7585,9 @@ typedef enum {
 	/* Wrap the argument in an object handle, pass the handle to the icall,
 	   write the value out from the handle when the icall returns */
 	ICALL_HANDLES_WRAP_OBJ_INOUT,
+	/* Initialized an object handle to null, pass to the icalls,
+	   write the value out from the handle when the icall returns */
+	ICALL_HANDLES_WRAP_OBJ_OUT,
 	/* Wrap the argument (a valuetype reference) in a handle to pin its enclosing object,
 	   but pass the raw reference to the icall */
 	ICALL_HANDLES_WRAP_VALUETYPE_REF,
@@ -7606,7 +7609,12 @@ static IcallHandlesWrap
 signature_param_uses_handles (MonoMethodSignature *sig, int param)
 {
 	if (MONO_TYPE_IS_REFERENCE (sig->params [param])) {
-		return mono_signature_param_is_out (sig, param) ? ICALL_HANDLES_WRAP_OBJ_INOUT : ICALL_HANDLES_WRAP_OBJ;
+		if (mono_signature_param_is_out (sig, param))
+			return ICALL_HANDLES_WRAP_OBJ_OUT;
+		else if (mono_type_is_byref (sig->params [param]))
+			return ICALL_HANDLES_WRAP_OBJ_INOUT;
+		else
+			return ICALL_HANDLES_WRAP_OBJ;
 	} else if (mono_type_is_byref (sig->params [param]))
 		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
 	else
@@ -8091,8 +8099,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 				switch (w) {
 				case ICALL_HANDLES_WRAP_OBJ:
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
 					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type(csig->params[i]));
-					if (w == ICALL_HANDLES_WRAP_OBJ_INOUT)
+					if (w == ICALL_HANDLES_WRAP_OBJ_OUT || w == ICALL_HANDLES_WRAP_OBJ_INOUT)
 						save_handles_to_locals = TRUE;
 					break;
 				case ICALL_HANDLES_WRAP_NONE:
@@ -8129,6 +8138,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 						handles_locals [j].handle = -1;
 						break;
 					case ICALL_HANDLES_WRAP_OBJ_INOUT:
+					case ICALL_HANDLES_WRAP_OBJ_OUT:
 						handles_locals [j].handle = mono_mb_add_local (mb, sig->params [i]);
 						break;
 					default:
@@ -8176,8 +8186,17 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 					mono_mb_emit_icall (mb, mono_icall_handle_new);
 					break;
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
-					/* handleI = argI = mono_handle_new (NULL) */
-					mono_mb_emit_byte (mb, CEE_LDNULL);
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
+					/* if inout:
+					 *   handleI = argI = mono_handle_new (*argI_raw)
+					 * otherwise:
+					 *   handleI = argI = mono_handle_new (NULL)
+					 */
+					if (handles_locals[j].wrap == ICALL_HANDLES_WRAP_OBJ_INOUT) {
+						mono_mb_emit_ldarg (mb, j);
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+					} else
+						mono_mb_emit_byte (mb, CEE_LDNULL);
 					mono_mb_emit_icall (mb, mono_icall_handle_new);
 					/* tmp = argI */
 					mono_mb_emit_byte (mb, CEE_DUP);
@@ -8235,6 +8254,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 					case ICALL_HANDLES_WRAP_VALUETYPE_REF:
 						break;
 					case ICALL_HANDLES_WRAP_OBJ_INOUT:
+					case ICALL_HANDLES_WRAP_OBJ_OUT:
 						/* *argI_raw = MONO_HANDLE_RAW (handleI) */
 
 						/* argI_raw */
