@@ -175,7 +175,6 @@ WaitForSingleObject
 WaitForSingleObjectEx
 WideCharToMultiByte
 WriteFile
-YieldProcessor
 
 nativeStringResourceTable_mscorrc_debug
 _ZN25NativeExceptionHolderBase4PushEv
