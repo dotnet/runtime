@@ -87,7 +87,7 @@ Security Transparency      | [Details](#security-transparency)
 
 **Justification**. AppDomains require runtime support and are generally quite expensive. They are not implemented in .NET Core or .NET Native. We do not plan on adding this capability in future.
 
-**Replacement**. AppDomains were used for different features; for isolation we recommend processes and/or containers. For dynamic loading, we provide `AssemblyLoadContext`. Information (such as the name and base directory) is provided by APIs on other types, for instance `AppContext.BaseDirectory `. Some scenarios, such as getting the list of loaded are unsupported as they are inherently fragile.
+**Replacement**. AppDomains were used for different features; for isolation we recommend processes and/or containers. For dynamic loading, we provide `AssemblyLoadContext`. Information (such as the name and base directory) is provided by APIs on other types, for instance `AppContext.BaseDirectory`. Some scenarios, such as getting the list of loaded assemblies are unsupported as they are inherently fragile.
 
 To make code migration from .NET Framework easier, we have exposed some of the `AppDomain` API surface in .NET Core and .NET Native. Some of the APIs work fine (e.g. `UnhandledException`), some of them do nothing (e.g. `SetCachePath`) and some of them throw `PlatformNotSupportedException` (e.g. `CreateDomain`). See more details about particular API differences in [TODO](https://github.com/dotnet/corefx/issues/18405).
 
