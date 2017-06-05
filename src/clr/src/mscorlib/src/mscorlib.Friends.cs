@@ -13,3 +13,5 @@ using System.Runtime.CompilerServices;
 // Depends on WindowsRuntimeImportAttribute
 [assembly: InternalsVisibleTo("System.Runtime.WindowsRuntime.UI.Xaml, PublicKey=00000000000000000400000000000000", AllInternalsVisible = false)]
 
+// Cross framework serialization needs access to internals
+[assembly: InternalsVisibleTo("mscorlib, PublicKey=00000000000000000400000000000000", AllInternalsVisible=false)]

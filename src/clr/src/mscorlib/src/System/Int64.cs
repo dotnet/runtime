@@ -21,6 +21,7 @@ namespace System
 {
     [Serializable]
     [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Int64 : IComparable, IFormattable, IConvertible
             , IComparable<Int64>, IEquatable<Int64>
     {
