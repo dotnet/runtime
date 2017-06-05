@@ -339,7 +339,7 @@ namespace System.Reflection
             // ECMA-335 II.24.2.4:
             // This final byte holds the value 1 if and only if any UTF16 character within
             // the string has any bit set in its top byte, or its low byte is any of the following:
-            // 0x01–0x08, 0x0E–0x1F, 0x27, 0x2D, 0x7F.  Otherwise, it holds 0.
+            // 0x01-0x08, 0x0E-0x1F, 0x27, 0x2D, 0x7F.  Otherwise, it holds 0.
             // The 1 signifies Unicode characters that require handling beyond that normally provided for 8-bit encoding sets.
 
             foreach (char ch in str)

@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
                 if (value == 192 || value == 256)
                     throw new PlatformNotSupportedException(SR.Cryptography_Rijndael_BlockSize);
 
-                // Any other invalid block size will get the normal “invalid block size” exception.
+                // Any other invalid block size will get the normal "invalid block size" exception.
                 _impl.BlockSize = value;
             }
         }
