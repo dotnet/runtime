@@ -35,13 +35,16 @@
     <Compile Include="GitHub_11689.cs" />
   </ItemGroup>
   <PropertyGroup>
+    <!-- NOTE: tailcall stress should be reenabled under zapdisable when #11408 is fixed -->
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPlus_TailcallStress=1
+if "%COMPlus_ZapDisable%"=="" set COMPlus_TailcallStress=1
 ]]></CLRTestBatchPreCommands>
   <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
-export COMPlus_TailcallStress=1
+if [ -z $COMPlus_ZapDisable ]; then
+    export COMPlus_TailcallStress=1
+fi
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
