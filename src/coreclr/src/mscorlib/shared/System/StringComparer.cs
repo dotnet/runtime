@@ -10,6 +10,7 @@ using System.Diagnostics.Contracts;
 namespace System
 {
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
     {
         private static readonly CultureAwareComparer s_invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, false);
@@ -170,6 +171,7 @@ namespace System
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     internal sealed class CultureAwareComparer : StringComparer
     {
         private readonly CompareInfo _compareInfo;
@@ -223,6 +225,7 @@ namespace System
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     internal sealed class OrdinalComparer : StringComparer 
     {
         public override int Compare(string x, string y) => string.CompareOrdinal(x, y);
@@ -248,6 +251,7 @@ namespace System
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     internal sealed class OrdinalIgnoreCaseComparer : StringComparer
     {
         public override int Compare(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
