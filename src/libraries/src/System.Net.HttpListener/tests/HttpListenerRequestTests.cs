@@ -244,6 +244,7 @@ namespace System.Net.Tests
             Assert.NotEqual(Guid.Empty, request.RequestTraceIdentifier);
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("Connection: ", false)]
         [InlineData("Connection: Connection\r\nUpgrade: ", false)]
@@ -504,6 +505,7 @@ namespace System.Net.Tests
             Assert.Equal(expected, request.KeepAlive);
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData("1.0")]
         [InlineData("1.1")]
