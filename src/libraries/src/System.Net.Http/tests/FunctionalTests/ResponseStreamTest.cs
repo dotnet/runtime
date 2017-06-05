@@ -94,6 +94,18 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        public async Task GetStreamAsync_ReadZeroBytes_Success()
+        {
+            using (var client = new HttpClient())
+            using (Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer))
+            {
+                int bytesRead = await stream.ReadAsync(new byte[1], 0, 0);
+                Assert.Equal(0, bytesRead);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
         public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled()
         {
             var cts = new CancellationTokenSource();
