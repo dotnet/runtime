@@ -85,6 +85,7 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encodings_TestData))]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20715 - Sync up Encoding code between CoreRT and CoreCLR", TargetFrameworkMonikers.UapAot)]
         public void WebName(UnicodeEncoding encoding, string expected)
         {
             Assert.Equal(expected, encoding.WebName);

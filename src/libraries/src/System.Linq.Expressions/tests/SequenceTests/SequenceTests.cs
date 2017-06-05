@@ -841,6 +841,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20717 - fails on x64", TargetFrameworkMonikers.UapAot)]
         public static void UnaryPlus(bool useInterpreter)
         {
             ConstantExpression ce = Expression.Constant((UInt16)10);
