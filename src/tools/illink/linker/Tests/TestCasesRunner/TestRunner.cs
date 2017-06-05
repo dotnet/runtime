@@ -68,20 +68,17 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var extraSearchDir in metadataProvider.GetExtraLinkerSearchDirectories ())
 				builder.AddSearchDirectory (extraSearchDir);
 
-			builder.AddCoreLink (caseDefinedOptions.CoreLink);
+			builder.ProcessOptions (caseDefinedOptions);
 
-			// Running the blacklist step causes a ton of stuff to be preserved.  That's good for normal use cases, but for
-			// our test cases that pollutes the results
-			if (!string.IsNullOrEmpty (caseDefinedOptions.IncludeBlacklistStep))
-				builder.IncludeBlacklist (caseDefinedOptions.IncludeBlacklistStep);
-
-			// Internationalization assemblies pollute our test case results as well so disable them
-			if (!string.IsNullOrEmpty (caseDefinedOptions.Il8n))
-				builder.AddIl8n (caseDefinedOptions.Il8n);
+			AddAdditionalLinkOptions (builder, metadataProvider);
 
 			linker.Link (builder.ToArgs ());
 
 			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath);
+		}
+
+		protected virtual void AddAdditionalLinkOptions (LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)
+		{
 		}
 	}
 }
