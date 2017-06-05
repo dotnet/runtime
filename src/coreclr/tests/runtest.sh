@@ -1202,6 +1202,18 @@ else
     load_failing_tests
 fi
 
+# Other architectures are not supported yet.
+if [ "$ARCH" == "x64" ]
+then
+    scriptPath=$(dirname $0)
+    ${scriptPath}/setup-stress-dependencies.sh --outputDir=$coreOverlayDir
+else
+    if [ "$ARCH" != "arm64" ]
+    then
+        echo "Skip preparing for GC stress test. Dependent package is not supported on this architecture."
+    fi
+fi
+
 export __TestEnv=$testEnv
 
 cd "$testRootDir"

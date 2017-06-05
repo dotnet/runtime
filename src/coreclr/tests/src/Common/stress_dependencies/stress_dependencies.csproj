@@ -10,24 +10,15 @@
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>$(CoreFxPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Memory">
-      <Version>$(CoreFxPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>$(CoreFxPackageVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Permissions">
-      <Version>$(CoreFxPackageVersion)</Version>
+    <PackageReference Include="Microsoft.NETCore.CoreDisTools">
+      <Version>1.0.1-prerelease-*</Version>
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;netcoreapp1.1;portable-net45+win8</PackageTargetFallback>
-    <RuntimeIdentifiers>win-x64;win-x86;win7-x86;win7-x64;ubuntu.14.04-x64;ubuntu.16.04-x64;ubuntu.16.10-x64;osx.10.12-x64;osx-x64;centos.7-x64;rhel.7-x64;debian.8-x64;fedora.24-x64;linux-x64</RuntimeIdentifiers>
+    <PackageTargetFallback>$(PackageTargetFallback);dnxcore50</PackageTargetFallback>
+    <RuntimeIdentifiers>win7-x64;ubuntu.14.04-x64;osx.10.10-x64;win7-x86;ubuntu.14.04-x86;osx.10.10-x86</RuntimeIdentifiers>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <PrereleaseResolveNuGetPackages>false</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
