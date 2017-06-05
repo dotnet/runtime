@@ -364,6 +364,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static async Task ResponseHeaders_ContainsHeadersAfterOperation()
         {
@@ -387,6 +388,7 @@ namespace System.Net.Tests
             Assert.Equal("ArbitraryValue", wc.ResponseHeaders["ArbitraryHeader"]);
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(18680)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
@@ -399,6 +401,7 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [InlineData("http://localhost", true)]
@@ -417,6 +420,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static async Task RequestHeaders_SpecialHeaders_RequestSucceeds()
         {
@@ -440,6 +444,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public static async Task ConcurrentOperations_Throw()
         {
@@ -506,6 +511,7 @@ namespace System.Net.Tests
         protected abstract Task<Stream> OpenReadAsync(WebClient wc, string address);
         protected abstract Task<Stream> OpenWriteAsync(WebClient wc, string address);
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(null)]
         [InlineData("text/html; charset=utf-8")]
@@ -531,6 +537,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task DownloadData_Success()
         {
@@ -553,6 +560,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task DownloadData_LargeData_Success()
         {
@@ -572,6 +580,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task DownloadFile_Success()
         {
@@ -599,6 +608,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task OpenRead_Success()
         {
@@ -620,6 +630,7 @@ namespace System.Net.Tests
             });
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
@@ -633,6 +644,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
@@ -648,6 +660,7 @@ namespace System.Net.Tests
             Assert.True(!IsAsync || await uploadProgressInvoked.Task, "Expected upload progress callback to be invoked");
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
@@ -665,6 +678,7 @@ namespace System.Net.Tests
             return new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + rand.Next(0, 26))).ToArray());
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
@@ -684,6 +698,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
@@ -694,6 +709,7 @@ namespace System.Net.Tests
             Assert.Contains(ExpectedText, result);
         }
 
+        [ActiveIssue(20141, TargetFrameworkMonikers.UapAot)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [MemberData(nameof(EchoServers))]
