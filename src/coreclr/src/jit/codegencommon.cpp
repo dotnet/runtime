@@ -1993,7 +1993,7 @@ AGAIN:
         }
 #endif // LEGACY_BACKEND
 
-#ifdef _TARGET_ARM64_
+#if defined(_TARGET_ARM64_) || (defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
         if (cns == 0)
 #endif
         {
@@ -2013,8 +2013,8 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(_TARGET_ARM64_)
-                // TODO-ARM64-CQ: For now we don't try to create a scaled index on ARM64.
+#if SCALED_ADDR_MODES && !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+                // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
                     {
@@ -2075,8 +2075,8 @@ AGAIN:
 
         switch (op1->gtOper)
         {
-#ifndef _TARGET_ARM64_
-            // TODO-ARM64-CQ: For now we don't try to create a scaled index on ARM64.
+#if !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+            // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
             case GT_ADD:
 
                 if (op1->gtOverflow())
@@ -2137,7 +2137,7 @@ AGAIN:
                 break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARM64_
+#endif // !_TARGET_ARM64_ && !(_TARGET_ARM_ && !LEGACY_BACKEND)
 
             case GT_NOP:
 
@@ -2166,8 +2166,8 @@ AGAIN:
         noway_assert(op2);
         switch (op2->gtOper)
         {
-#ifndef _TARGET_ARM64_
-            // TODO-ARM64-CQ: For now we don't try to create a scaled index on ARM64.
+#if !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+            // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
             case GT_ADD:
 
                 if (op2->gtOverflow())
@@ -2224,7 +2224,7 @@ AGAIN:
                 break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !_TARGET_ARM64_
+#endif // !_TARGET_ARM64_ && !(_TARGET_ARM_ && !LEGACY_BACKEND)
 
             case GT_NOP:
 
@@ -2258,8 +2258,8 @@ AGAIN:
 
     noway_assert(op2);
 
-#ifndef _TARGET_ARM64_
-    // TODO-ARM64-CQ: For now we don't try to create a scaled index on ARM64.
+#if !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
+    // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
     switch (op2->gtOper)
     {
         case GT_ADD:
@@ -2319,7 +2319,7 @@ AGAIN:
         default:
             break;
     }
-#endif // !_TARGET_ARM64_
+#endif // !_TARGET_ARM64_ && !(_TARGET_ARM_ && !LEGACY_BACKEND)
 
 ADD_OP12:
 

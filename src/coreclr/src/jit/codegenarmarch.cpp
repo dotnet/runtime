@@ -2709,6 +2709,148 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
 }
 
+//------------------------------------------------------------------------
+// genScaledAdd: A helper for genLeaInstruction.
+//
+void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale)
+{
+    emitter* emit = getEmitter();
+#if defined(_TARGET_ARM_)
+    emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
+#elif defined(_TARGET_ARM64_)
+    emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_OPTS_LSL);
+#endif
+}
+
+//------------------------------------------------------------------------
+// genLeaInstruction: Produce code for a GT_LEA node.
+//
+// Arguments:
+//    lea - the node
+//
+void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
+{
+    genConsumeOperands(lea);
+    emitter* emit   = getEmitter();
+    emitAttr size   = emitTypeSize(lea);
+    unsigned offset = lea->gtOffset;
+
+    // In ARM we can only load addresses of the form:
+    //
+    // [Base + index*scale]
+    // [Base + Offset]
+    // [Literal] (PC-Relative)
+    //
+    // So for the case of a LEA node of the form [Base + Index*Scale + Offset] we will generate:
+    // destReg = baseReg + indexReg * scale;
+    // destReg = destReg + offset;
+    //
+    // TODO-ARM64-CQ: The purpose of the GT_LEA node is to directly reflect a single target architecture
+    //             addressing mode instruction.  Currently we're 'cheating' by producing one or more
+    //             instructions to generate the addressing mode so we need to modify lowering to
+    //             produce LEAs that are a 1:1 relationship to the ARM64 architecture.
+    if (lea->Base() && lea->Index())
+    {
+        GenTree* memBase = lea->Base();
+        GenTree* index   = lea->Index();
+        unsigned offset  = lea->gtOffset;
+
+        DWORD lsl;
+
+        assert(isPow2(lea->gtScale));
+        BitScanForward(&lsl, lea->gtScale);
+
+        assert(lsl <= 4);
+
+        if (offset != 0)
+        {
+            regNumber tmpReg = lea->GetSingleTempReg();
+
+            if (emitter::emitIns_valid_imm_for_add(offset))
+            {
+                if (lsl > 0)
+                {
+                    // Generate code to set tmpReg = base + index*scale
+                    genScaledAdd(size, tmpReg, memBase->gtRegNum, index->gtRegNum, lsl);
+                }
+                else // no scale
+                {
+                    // Generate code to set tmpReg = base + index
+                    emit->emitIns_R_R_R(INS_add, size, tmpReg, memBase->gtRegNum, index->gtRegNum);
+                }
+
+                // Then compute target reg from [tmpReg + offset]
+                emit->emitIns_R_R_I(INS_add, size, lea->gtRegNum, tmpReg, offset);
+            }
+            else // large offset
+            {
+                // First load/store tmpReg with the large offset constant
+                instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+                // Then add the base register
+                //      rd = rd + base
+                emit->emitIns_R_R_R(INS_add, size, tmpReg, tmpReg, memBase->gtRegNum);
+
+                noway_assert(tmpReg != index->gtRegNum);
+
+                // Then compute target reg from [tmpReg + index*scale]
+                genScaledAdd(size, lea->gtRegNum, tmpReg, index->gtRegNum, lsl);
+            }
+        }
+        else
+        {
+            if (lsl > 0)
+            {
+                // Then compute target reg from [base + index*scale]
+                genScaledAdd(size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum, lsl);
+            }
+            else
+            {
+                // Then compute target reg from [base + index]
+                emit->emitIns_R_R_R(INS_add, size, lea->gtRegNum, memBase->gtRegNum, index->gtRegNum);
+            }
+        }
+    }
+    else if (lea->Base())
+    {
+        GenTree* memBase = lea->Base();
+
+        if (emitter::emitIns_valid_imm_for_add(offset))
+        {
+            if (offset != 0)
+            {
+                // Then compute target reg from [memBase + offset]
+                emit->emitIns_R_R_I(INS_add, size, lea->gtRegNum, memBase->gtRegNum, offset);
+            }
+            else // offset is zero
+            {
+                emit->emitIns_R_R(INS_mov, size, lea->gtRegNum, memBase->gtRegNum);
+            }
+        }
+        else
+        {
+            // We require a tmpReg to hold the offset
+            regNumber tmpReg = lea->GetSingleTempReg();
+
+            // First load tmpReg with the large offset constant
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
+
+            // Then compute target reg from [memBase + tmpReg]
+            emit->emitIns_R_R_R(INS_add, size, lea->gtRegNum, memBase->gtRegNum, tmpReg);
+        }
+    }
+    else if (lea->Index())
+    {
+        // If we encounter a GT_LEA node without a base it means it came out
+        // when attempting to optimize an arbitrary arithmetic expression during lower.
+        // This is currently disabled in ARM64 since we need to adjust lower to account
+        // for the simpler instructions ARM64 supports.
+        // TODO-ARM64-CQ:  Fix this and let LEA optimize arithmetic trees too.
+        assert(!"We shouldn't see a baseless address computation during CodeGen for ARM64");
+    }
+
+    genProduceReg(lea);
+}
+
 #endif // _TARGET_ARMARCH_
 
 #endif // !LEGACY_BACKEND

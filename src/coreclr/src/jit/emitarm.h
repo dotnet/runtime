@@ -247,10 +247,11 @@ public:
 static bool emitIns_valid_imm_for_alu(int imm);
 static bool emitIns_valid_imm_for_mov(int imm);
 static bool emitIns_valid_imm_for_small_mov(regNumber reg, int imm, insFlags flags);
-static bool emitIns_valid_imm_for_add(int imm, insFlags flags);
+static bool emitIns_valid_imm_for_add(int imm, insFlags flags = INS_FLAGS_DONT_CARE);
 static bool emitIns_valid_imm_for_cmp(int imm, insFlags flags);
 static bool emitIns_valid_imm_for_add_sp(int imm);
 static bool emitIns_valid_imm_for_ldst_offset(int imm, emitAttr size);
+static bool emitIns_valid_imm_for_vldst_offset(int imm);
 
 void emitIns(instruction ins);
 
