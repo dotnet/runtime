@@ -235,6 +235,60 @@ void Compiler::lvaInitTypeRef()
 
     lvaInitArgs(&varDscInfo);
 
+#if FEATURE_FASTTAILCALL
+
+    //-------------------------------------------------------------------------
+    // Calculate the argument register usage.
+    //
+    // This will later be used for fastTailCall determination
+    //-------------------------------------------------------------------------
+
+    unsigned argRegCount      = 0;
+    unsigned floatingRegCount = 0;
+    size_t   stackSize        = 0;
+
+    auto incrementRegCount = [&floatingRegCount, &argRegCount](LclVarDsc* varDsc) {
+        if (varDsc->lvIsHfa())
+        {
+            floatingRegCount += varDsc->lvHfaSlots();
+        }
+        else
+        {
+            varDsc->IsFloatRegType() ? ++floatingRegCount : ++argRegCount;
+        }
+    };
+
+    unsigned   argNum;
+    LclVarDsc* curDsc;
+
+    for (curDsc = lvaTable, argNum = 0; argNum < varDscInfo.varNum; argNum++, curDsc++)
+    {
+        if (curDsc->lvIsRegArg)
+        {
+            incrementRegCount(curDsc);
+#if FEATURE_MULTIREG_ARGS
+            if (curDsc->lvOtherArgReg != REG_NA)
+            {
+                incrementRegCount(curDsc);
+            }
+#endif // FEATURE_MULTIREG_ARGS
+        }
+        else
+        {
+            stackSize += curDsc->lvArgStackSize();
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    // Save the register usage information and stack size.
+    //-------------------------------------------------------------------------
+
+    info.compArgRegCount      = argRegCount;
+    info.compFloatArgRegCount = floatingRegCount;
+    info.compArgStackSize     = stackSize;
+
+#endif // FEATURE_FASTTAILCALL
+
     //-------------------------------------------------------------------------
     // Finally the local variables
     //-------------------------------------------------------------------------
@@ -247,15 +301,16 @@ void Compiler::lvaInitTypeRef()
          i++, varNum++, varDsc++, localsSig = info.compCompHnd->getArgNext(localsSig))
     {
         CORINFO_CLASS_HANDLE typeHnd;
-        CorInfoTypeWithMod   corInfoType =
+        CorInfoTypeWithMod   corInfoTypeWithMod =
             info.compCompHnd->getArgType(&info.compMethodInfo->locals, localsSig, &typeHnd);
+        CorInfoType corInfoType = strip(corInfoTypeWithMod);
 
-        lvaInitVarDsc(varDsc, varNum, strip(corInfoType), typeHnd, localsSig, &info.compMethodInfo->locals);
+        lvaInitVarDsc(varDsc, varNum, corInfoType, typeHnd, localsSig, &info.compMethodInfo->locals);
 
-        varDsc->lvPinned  = ((corInfoType & CORINFO_TYPE_MOD_PINNED) != 0);
+        varDsc->lvPinned  = ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) != 0);
         varDsc->lvOnFrame = true; // The final home for this local variable might be our local stack frame
 
-        if (strip(corInfoType) == CORINFO_TYPE_CLASS)
+        if (corInfoType == CORINFO_TYPE_CLASS)
         {
             CORINFO_CLASS_HANDLE clsHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
             lvaSetClass(varNum, clsHnd);
@@ -1253,6 +1308,10 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
 #ifdef DEBUG
     varDsc->lvStkOffs = BAD_STK_OFFS;
 #endif
+
+#if FEATURE_MULTIREG_ARGS
+    varDsc->lvOtherArgReg = REG_NA;
+#endif // FEATURE_MULTIREG_ARGS
 }
 
 /*****************************************************************************
@@ -3449,6 +3508,48 @@ void LclVarDsc::lvaDisqualifyVar()
     this->lvDefStmt    = nullptr;
 }
 #endif // ASSERTION_PROP
+
+/**********************************************************************************
+* Get stack size of the varDsc.
+*/
+const size_t LclVarDsc::lvArgStackSize() const
+{
+    // Make sure this will have a stack size
+    assert(!this->lvIsRegArg);
+
+    size_t stackSize = 0;
+    if (varTypeIsStruct(this))
+    {
+#if defined(WINDOWS_AMD64_ABI)
+        // Structs are either passed by reference or can be passed by value using one pointer
+        stackSize = TARGET_POINTER_SIZE;
+#elif defined(_TARGET_ARM64_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        // lvSize performs a roundup.
+        stackSize = this->lvSize();
+
+#if defined(_TARGET_ARM64_)
+        if ((stackSize > TARGET_POINTER_SIZE * 2) && (!this->lvIsHfa()))
+        {
+            // If the size is greater than 16 bytes then it will
+            // be passed by reference.
+            stackSize = TARGET_POINTER_SIZE;
+        }
+#endif // defined(_TARGET_ARM64_)
+
+#else // !_TARGET_ARM64_ !WINDOWS_AMD64_ABI !FEATURE_UNIX_AMD64_STRUCT_PASSING
+
+        NYI("Unsupported target.");
+        unreached();
+
+#endif //  !_TARGET_ARM64_ !WINDOWS_AMD64_ABI !FEATURE_UNIX_AMD64_STRUCT_PASSING
+    }
+    else
+    {
+        stackSize = TARGET_POINTER_SIZE;
+    }
+
+    return stackSize;
+}
 
 #ifndef LEGACY_BACKEND
 /**********************************************************************************
