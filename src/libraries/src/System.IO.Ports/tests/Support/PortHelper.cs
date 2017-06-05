@@ -35,7 +35,7 @@ namespace Legacy.Support
                         returnSize = QueryDosDevice(null, mem, maxSize);
                         if (returnSize != 0)
                         {
-                            string allDevices = Marshal.PtrToStringAnsi(mem, returnSize);
+                            string allDevices = Marshal.PtrToStringUni(mem, returnSize);
                             retval = allDevices.Split('\0');
                             break;    // not really needed, but makes it more clear...
                         }
