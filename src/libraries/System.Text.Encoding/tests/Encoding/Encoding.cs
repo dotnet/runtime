@@ -46,6 +46,7 @@ namespace System.Text.Encodings.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework uses system ACP and not UTF8")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20715 - Sync up Encoding code between CoreRT and CoreCLR", TargetFrameworkMonikers.UapAot)]
         public static void DefaultEncodingBOMTest()
         {
             UTF8Encoding defaultEncoding = Encoding.Default as UTF8Encoding;
@@ -68,6 +69,7 @@ namespace System.Text.Encodings.Tests
 
         [Theory]
         [MemberData(nameof(Encoding_TestData))]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20715 - Sync up Encoding code between CoreRT and CoreCLR", TargetFrameworkMonikers.UapAot)]
         public static void NormalizationTest(int codepage, string name, string bodyName, string headerName, bool isBrowserDisplay, 
                                             bool isBrowserSave, bool isMailNewsDisplay, bool isMailNewsSave, int windowsCodePage)
         {
@@ -84,6 +86,7 @@ namespace System.Text.Encodings.Tests
 
         [Theory]
         [MemberData(nameof(Normalization_TestData))]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20715 - Sync up Encoding code between CoreRT and CoreCLR", TargetFrameworkMonikers.UapAot)]
         public static void NormalizationTest(int codepage, bool normalized, bool normalizedC, bool normalizedD, bool normalizedKC, bool normalizedKD)
         {
             Encoding encoding = Encoding.GetEncoding(codepage);
