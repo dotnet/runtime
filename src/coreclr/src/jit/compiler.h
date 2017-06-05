@@ -1339,15 +1339,13 @@ public:
                                unsigned   numSlots,
                                unsigned alignment FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(const bool isStruct));
 
-#ifdef DEBUG
-    void RemorphReset();
-#endif
+    void             RemorphReset();
     fgArgTabEntryPtr RemorphRegArg(
         unsigned argNum, GenTreePtr node, GenTreePtr parent, regNumber regNum, unsigned numRegs, unsigned alignment);
 
     void RemorphStkArg(unsigned argNum, GenTreePtr node, GenTreePtr parent, unsigned numSlots, unsigned alignment);
 
-    void SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots, bool isReMorph);
+    void SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots);
 
     void EvalToTmp(unsigned argNum, unsigned tmpNum, GenTreePtr newNode);
 
