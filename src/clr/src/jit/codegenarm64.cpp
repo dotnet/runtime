@@ -3409,10 +3409,12 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             dataReg = data->gtRegNum;
         }
 
+        assert((attr != EA_1BYTE) || !(tree->gtFlags & GTF_IND_UNALIGNED));
+
         if (tree->gtFlags & GTF_IND_VOLATILE)
         {
-            bool useStoreRelease = (dataReg >= REG_INT_FIRST) && (dataReg <= REG_ZR) && !addr->isContained() &&
-                                   ((attr == EA_1BYTE) || !(tree->gtFlags & GTF_IND_UNALIGNED));
+            bool useStoreRelease =
+                genIsValidIntReg(dataReg) && !addr->isContained() && !(tree->gtFlags & GTF_IND_UNALIGNED);
 
             if (useStoreRelease)
             {
