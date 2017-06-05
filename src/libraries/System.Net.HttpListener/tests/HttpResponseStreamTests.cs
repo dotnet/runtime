@@ -219,6 +219,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CanSeek_Get_ReturnsFalse()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -237,6 +238,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CanRead_Get_ReturnsFalse()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -251,6 +253,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task CanWrite_Get_ReturnsTrue()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -265,6 +268,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task Write_NullBuffer_ThrowsArgumentNullException()
         {
             using (HttpListenerResponse response = await _helper.GetResponse())
@@ -275,6 +279,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(-1)]
         [InlineData(3)]
@@ -288,6 +293,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(0, 3)]
         [InlineData(1, 2)]
@@ -548,6 +554,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -561,6 +568,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
@@ -576,6 +584,7 @@ namespace System.Net.Tests
             }
         }
 
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task EndWrite_CalledTwice_ThrowsInvalidOperationException()
         {
