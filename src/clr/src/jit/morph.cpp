@@ -1207,12 +1207,10 @@ fgArgTabEntryPtr fgArgInfo::AddStkArg(unsigned   argNum,
     return curArgTabEntry;
 }
 
-#ifdef DEBUG
 void fgArgInfo::RemorphReset()
 {
     nextSlotNum = INIT_ARG_STACK_SLOT;
 }
-#endif
 
 fgArgTabEntry* fgArgInfo::RemorphRegArg(
     unsigned argNum, GenTreePtr node, GenTreePtr parent, regNumber regNum, unsigned numRegs, unsigned alignment)
@@ -1368,12 +1366,10 @@ void fgArgInfo::RemorphStkArg(
     curArgTabEntry->node = node;
 #endif
 
-#ifdef DEBUG
     nextSlotNum += numSlots;
-#endif
 }
 
-void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots, bool isReMorph)
+void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
 {
     fgArgTabEntryPtr curArgTabEntry = nullptr;
     assert(argNum < argCount);
@@ -1389,22 +1385,19 @@ void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots, b
     assert(numRegs > 0);
     assert(numSlots > 0);
 
-    if (isReMorph)
+    if (argsComplete)
     {
         assert(curArgTabEntry->isSplit == true);
         assert(curArgTabEntry->numRegs == numRegs);
         assert(curArgTabEntry->numSlots == numSlots);
-#ifdef DEBUG
-        nextSlotNum += numSlots;
-#endif
     }
     else
     {
         curArgTabEntry->isSplit  = true;
         curArgTabEntry->numRegs  = numRegs;
         curArgTabEntry->numSlots = numSlots;
-        nextSlotNum += numSlots;
     }
+    nextSlotNum += numSlots;
 }
 
 void fgArgInfo::EvalToTmp(unsigned argNum, unsigned tmpNum, GenTreePtr newNode)
@@ -2831,9 +2824,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             fgPtrArgCntCur -= callStkLevel;
         }
         assert(call->fgArgInfo != nullptr);
-#ifdef DEBUG
         call->fgArgInfo->RemorphReset();
-#endif
 
         numArgs = call->fgArgInfo->ArgCount();
     }
@@ -4128,12 +4119,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                             assert(varTypeIsStruct(argx));
                             unsigned numRegsPartial = size - (fltArgRegNum - MAX_FLOAT_REG_ARG);
                             assert((unsigned char)numRegsPartial == numRegsPartial);
-#ifndef DEBUG
-                            if (!reMorphing)
-#endif
-                            {
-                                call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
-                            }
+                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
                             fltArgRegNum = MAX_FLOAT_REG_ARG;
                         }
 #endif // _TARGET_ARM_
@@ -4166,12 +4152,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                    (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
                             unsigned numRegsPartial = size - (intArgRegNum - MAX_REG_ARG);
                             assert((unsigned char)numRegsPartial == numRegsPartial);
-#ifndef DEBUG
-                            if (!reMorphing)
-#endif
-                            {
-                                call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial, reMorphing);
-                            }
+                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
                             intArgRegNum = MAX_REG_ARG;
                             fgPtrArgCntCur += size - numRegsPartial;
                         }
