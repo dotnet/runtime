@@ -219,9 +219,9 @@
             "AzureContainerSymbolPackageGlob": "symbolpkg\\*.nupkg"
           },
           "ReportingParameters": {
-            "SubType":  "Publish",
+            "TaskName":  "Publish",
             "Type": "build/publish/",
-            "PB_BuildType": "Release"
+            "ConfigurationGroup": "Release"
           }
         }
       ],
@@ -246,9 +246,9 @@
             "GitHubRepositoryName": "coreclr"
           },
           "ReportingParameters": {
-            "SubType": "Publish",
+            "TaskName": "Publish",
             "Type": "build/publish/",
-            "PB_BuildType": "Debug"
+            "ConfigurationGroup": "Debug"
           }
         }
       ],
@@ -273,7 +273,7 @@
           "ReportingParameters": {
             "TaskName": "Symbol Publish",
             "Type": "build/publish/",
-            "ConfigurationGroup": "Release - Publish Symbols"
+            "ConfigurationGroup": "Release"
           }
         }
       ],
@@ -298,9 +298,9 @@
             "GitHubRepositoryName": "coreclr"
           },
           "ReportingParameters": {
-            "SubType": "Publish",
+            "TaskName": "Publish",
             "Type": "build/publish/",
-            "PB_BuildType": "Checked"
+            "ConfigurationGroup": "Checked"
           }
         }
       ],
