@@ -722,6 +722,8 @@ public:
         return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
     }
 
+    const size_t lvArgStackSize() const;
+
     unsigned lvSlotNum; // original slot # (if remapped)
 
     typeInfo lvVerTypeInfo; // type info needed for verification
@@ -8285,7 +8287,14 @@ public:
         var_types compRetNativeType; // Normalized return type as per target arch ABI
         unsigned  compILargsCount;   // Number of arguments (incl. implicit but not hidden)
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
-        unsigned  compRetBuffArg;    // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
+
+#if FEATURE_FASTTAILCALL
+        unsigned compArgRegCount;      // Number of incoming integer argument registers used for incoming arguments
+        unsigned compFloatArgRegCount; // Number of incoming floating argument registers used for incoming arguments
+        size_t   compArgStackSize;     // Incoming argument stack size in bytes
+#endif                                 // FEATURE_FASTTAILCALL
+
+        unsigned compRetBuffArg; // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
         int compTypeCtxtArg; // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)
         unsigned       compThisArg; // position of implicit this pointer param (not to be confused with lvaArg0Var)
         unsigned       compILlocalsCount; // Number of vars : args + locals (incl. implicit but not hidden)
