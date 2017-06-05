@@ -437,5 +437,10 @@ namespace Mono.Linker.Steps {
 		{
 			return nav.GetAttribute (attribute, _ns);
 		}
+
+		public override string ToString ()
+		{
+			return "ResolveFromXmlStep: " + _xmlDocumentLocation;
+		}
 	}
 }

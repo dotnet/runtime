@@ -302,10 +302,13 @@ namespace Mono.Linker {
 				return;
 
 			KeyValuePair<object, object> pair = new KeyValuePair<object, object> (dependency_stack.Count > 0 ? dependency_stack.Peek () : null, o);
-			writer.WriteStartElement ("edge");
-			writer.WriteAttributeString ("b", TokenString (pair.Key));
-			writer.WriteAttributeString ("e", TokenString (pair.Value));
-			writer.WriteEndElement ();
+			if (pair.Key != pair.Value)
+			{
+				writer.WriteStartElement ("edge");
+				writer.WriteAttributeString ("b", TokenString (pair.Key));
+				writer.WriteAttributeString ("e", TokenString (pair.Value));
+				writer.WriteEndElement ();
+			}
 		}
 
 		public void Push (object o)
