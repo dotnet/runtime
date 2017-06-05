@@ -2040,7 +2040,7 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
     if (varTypeIsStruct(type))
     {
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 
