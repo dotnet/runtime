@@ -534,7 +534,12 @@ public:
 
 #ifdef _DEBUG
     inline bool AppDomainLeaks() const
-    {LIMITED_METHOD_DAC_CONTRACT;  return fAppDomainLeaks; }
+    {
+        // Workaround for CoreCLR bug #12075, until this configuration option is removed
+        // (CoreCLR Bug #12094)
+        LIMITED_METHOD_DAC_CONTRACT;
+        return false;
+    }
 #endif
 
     inline bool DeveloperInstallation() const
