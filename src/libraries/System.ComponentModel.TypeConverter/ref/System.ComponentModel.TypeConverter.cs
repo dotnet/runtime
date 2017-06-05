@@ -783,6 +783,7 @@ namespace System.Drawing
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
     }
 }
+
 namespace System.Security.Authentication.ExtendedProtection
 {
     public partial class ExtendedProtectionPolicyTypeConverter : System.ComponentModel.TypeConverter
