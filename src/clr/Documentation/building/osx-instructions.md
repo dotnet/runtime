@@ -6,7 +6,7 @@ This guide will walk you through building CoreCLR on OS X. We'll start by showin
 Environment
 ===========
 
-These instructions were validated on macOS 1-.12. Sierra. On older versions coreFX will fail to build properly becasue of SSL API changes.
+These instructions were validated on macOS 10.12. Sierra. On older versions coreFX will fail to build properly becasue of SSL API changes.
 
 If your machine has Command Line Tools for XCode 6.3 installed, you'll need to update them to the 6.3.1 version or higher in order to successfully build. There was an issue with the headers that shipped with version 6.3 that was subsequently fixed in 6.3.1.
 
