@@ -23,6 +23,7 @@ namespace System
     // * Wrapper for unsigned 32 bit integers.
     [Serializable]
     [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public struct UInt32 : IComparable, IFormattable, IConvertible
         , IComparable<UInt32>, IEquatable<UInt32>
     {

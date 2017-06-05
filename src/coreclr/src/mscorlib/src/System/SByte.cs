@@ -21,6 +21,7 @@ namespace System
     // A place holder class for signed bytes.
     [Serializable]
     [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct SByte : IComparable, IFormattable, IConvertible
         , IComparable<SByte>, IEquatable<SByte>
     {

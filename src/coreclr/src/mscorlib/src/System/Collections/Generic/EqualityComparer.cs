@@ -17,6 +17,7 @@ namespace System.Collections.Generic
 {
     [Serializable]
     [TypeDependencyAttribute("System.Collections.Generic.ObjectEqualityComparer`1")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     public abstract class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
         // To minimize generic instantiation overhead of creating the comparer per type, we keep the generic portion of the code as small
@@ -69,6 +70,7 @@ namespace System.Collections.Generic
     // The methods in this class look identical to the inherited methods, but the calls
     // to Equal bind to IEquatable<T>.Equals(T) instead of Object.Equals(Object)
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
     {
         [Pure]
@@ -137,6 +139,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
     {
         [Pure]
@@ -203,6 +206,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ObjectEqualityComparer<T> : EqualityComparer<T>
     {
         [Pure]
@@ -275,6 +279,7 @@ namespace System.Collections.Generic
     // keep the perofrmance not affected till we hit collision threshold and then we switch to the comparer which is using 
     // randomized string hashing GenericEqualityComparer<string>
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class NonRandomizedStringEqualityComparer : GenericEqualityComparer<string>
     {
         private static IEqualityComparer<string> s_nonRandomizedComparer;
@@ -302,6 +307,7 @@ namespace System.Collections.Generic
     // Performance of IndexOf on byte array is very important for some scenarios.
     // We will call the C runtime function memchr, which is optimized.
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ByteEqualityComparer : EqualityComparer<byte>
     {
         [Pure]
@@ -353,6 +359,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class EnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
@@ -416,6 +423,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class SByteEnumEqualityComparer<T> : EnumEqualityComparer<T> where T : struct
     {
         public SByteEnumEqualityComparer() { }
@@ -432,6 +440,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class ShortEnumEqualityComparer<T> : EnumEqualityComparer<T>, ISerializable where T : struct
     {
         public ShortEnumEqualityComparer() { }
@@ -448,6 +457,7 @@ namespace System.Collections.Generic
     }
 
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal sealed class LongEnumEqualityComparer<T> : EqualityComparer<T>, ISerializable where T : struct
     {
         [Pure]
