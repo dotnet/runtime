@@ -1319,9 +1319,7 @@ void fgArgInfo::RemorphStkArg(
         }
     }
 
-#ifdef DEBUG
     nextSlotNum = (unsigned)roundUp(nextSlotNum, alignment);
-#endif
 
     assert(curArgTabEntry->argNum == argNum);
     assert(curArgTabEntry->slotNum == nextSlotNum);
