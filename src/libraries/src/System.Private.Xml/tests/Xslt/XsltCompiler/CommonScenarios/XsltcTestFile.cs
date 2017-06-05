@@ -45,9 +45,9 @@ namespace System.Xml.Tests
         [InlineData("@infft14.txt", "fft14.dll", "no", "fft14", "fft14.pdb", "no", "fft14.txt")]
         //[Variation("15", Desc = "Test multiple config files with circular reference and case sensitive file names specified", Pri = 1, Params = new object[] { "@infft15.txt", "fft15.dll", "no", "fft15", "fft15.pdb", "no", "fft15.txt" })]
         //[InlineData("@infft15.txt", "fft15.dll", "no", "fft15", "fft15.pdb", "no", "fft15.txt")] //Skipping this, it tries to load System.dll
-        //[Variation("17", Desc = "Exercise comments(‘#’) within file", Pri = 1, Params = new object[] { "@infft17.txt", "fft17.dll", "yes", "fft17", "fft17.pdb", "no", "fft17.txt" })]
+        //[Variation("17", Desc = "Exercise comments(Â‘#Â’) within file", Pri = 1, Params = new object[] { "@infft17.txt", "fft17.dll", "yes", "fft17", "fft17.pdb", "no", "fft17.txt" })]
         //[InlineData("@infft17.txt", "fft17.dll", "yes", "fft17", "fft17.pdb", "no", "fft17.txt")] //Skipping this, it tries to load System.dll
-        //[Variation("18", Desc = "When loading from a file exercise commands and filenames with ‘#” in them", Pri = 1, Params = new object[] { "@infft18.txt", "fft18.dll", "yes", "AB#CD", "fft18.pdb", "no", "fft18.txt" })]
+        //[Variation("18", Desc = "When loading from a file exercise commands and filenames with Â‘#Â” in them", Pri = 1, Params = new object[] { "@infft18.txt", "fft18.dll", "yes", "AB#CD", "fft18.pdb", "no", "fft18.txt" })]
         //[InlineData("@infft18.txt", "fft18.dll", "yes", "AB#CD", "fft18.pdb", "no", "fft18.txt")] //Skipping this, it tries to load System.dll
         //[Variation("19", Desc = "Exercise wildcards with @", Pri = 1, Params = new object[] { "@*.txt", "fft19.dll", "no", "fft19", "fft19.pdb", "no", "fft19.txt", "EnglishOnly" })]
         [InlineData("@*.txt", "fft19.dll", "no", "fft19", "fft19.pdb", "no", "fft19.txt"/*, "EnglishOnly"*/)]

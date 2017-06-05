@@ -180,7 +180,7 @@ namespace System.Runtime.Serialization.Json
                 // Fetching the UtcOffset is expensive so we need to avoid it if possible. We can do a fast
                 // bounds check to decide if the more expensive bounds check is needed. The result from 
                 // TimeZoneInfo.Local.GetUtcOffset(value) is bounded to +/- 24 hours. If 
-                // (DateTime.MinValue + 24 hours) < value < (DateTime.MaxValue – 24 hours), then we don't need
+                // (DateTime.MinValue + 24 hours) < value < (DateTime.MaxValue - 24 hours), then we don't need
                 // to check using the real UtcOffset as it doesn't matter what the offset is, it can't cause
                 // an overflow/underflow condition.
                 

@@ -36,8 +36,8 @@ namespace System.Net
         //
         // When parsing ANSI (Latin 1) encoded path '/pa%C4th/', %C4 will be added to rawOctets and when
         // we reach 't', the content of rawOctets { 0xC4 } will be fed into the ANSI encoding. The resulting 
-        // string 'Ä' will be percent encoded into UTF-8 octets and appended to requestUriString. The final
-        // path will be '/pa%C3%84th/', where '%C3%84' is the UTF-8 percent encoded character 'Ä'.
+        // string 'Ã„' will be percent encoded into UTF-8 octets and appended to requestUriString. The final
+        // path will be '/pa%C3%84th/', where '%C3%84' is the UTF-8 percent encoded character 'Ã„'.
         private List<byte> _rawOctets;
         private string _rawPath;
 

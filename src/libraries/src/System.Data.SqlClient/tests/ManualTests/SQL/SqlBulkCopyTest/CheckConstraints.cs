@@ -22,7 +22,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     Helpers.Execute(dstCmd, "create table " + srctable + " (col1 int , col2 int, col3 text)");
                     Helpers.Execute(dstCmd, "insert into " + srctable + " values (33, 498, 'Michael')");
                     Helpers.Execute(dstCmd, "insert into " + srctable + " values (34, 499, 'Astrid')");
-                    Helpers.Execute(dstCmd, "insert into " + srctable + " values (65, 500, 'alles Käse')");
+                    Helpers.Execute(dstCmd, "insert into " + srctable + " values (65, 500, 'alles KÃ¤se')");
 
                     Helpers.Execute(dstCmd, "create table " + dstTable + " (col1 int primary key, col2 int CONSTRAINT CK_" + dstTable + " CHECK (col2 < 500), col3 text)");
 
