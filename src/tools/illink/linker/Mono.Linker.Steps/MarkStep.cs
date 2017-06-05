@@ -77,10 +77,15 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void InitializeAssembly (AssemblyDefinition assembly)
 		{
-			MarkAssembly (assembly);
+			Annotations.Push (assembly);
+			try {
+				MarkAssembly (assembly);
 
-			foreach (TypeDefinition type in assembly.MainModule.Types)
-				InitializeType (type);
+				foreach (TypeDefinition type in assembly.MainModule.Types)
+					InitializeType (type);
+			} finally {
+				Annotations.Pop ();
+			}
 		}
 
 		void InitializeType (TypeDefinition type)
@@ -152,9 +157,14 @@ namespace Mono.Linker.Steps {
 					}
 					if (!Annotations.IsMarked (type))
 						continue;
-					Annotations.Mark (exported);
-					if (_context.KeepTypeForwarderOnlyAssemblies) {
-						Annotations.Mark (assembly.MainModule);
+					Annotations.Push (type);
+					try {
+						Annotations.Mark (exported);
+						if (_context.KeepTypeForwarderOnlyAssemblies) {
+							Annotations.Mark (assembly.MainModule);
+						}
+					} finally {
+						Annotations.Pop ();
 					}
 				}
 			}
@@ -245,8 +255,13 @@ namespace Mono.Linker.Steps {
 			if (!provider.HasCustomAttributes)
 				return;
 
-			foreach (CustomAttribute ca in provider.CustomAttributes)
-				MarkCustomAttribute (ca);
+			Annotations.Push (provider);
+			try {
+				foreach (CustomAttribute ca in provider.CustomAttributes)
+					MarkCustomAttribute (ca);
+			} finally {
+				Annotations.Pop ();
+			}
 		}
 
 		void LazyMarkCustomAttributes (ICustomAttributeProvider provider)
