@@ -132,6 +132,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode)
             case GT_LE:
             case GT_GE:
             case GT_GT:
+            case GT_CMP:
             case GT_AND:
             case GT_OR:
             case GT_XOR:
