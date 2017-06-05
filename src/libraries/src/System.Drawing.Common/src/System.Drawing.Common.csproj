@@ -1,0 +1,248 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>System.Drawing</RootNamespace>
+    <ProjectGuid>{191B3618-FECD-4ABD-9D6B-5AC90DC33621}</ProjectGuid>
+    <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- TODO: RE-ENABLE THIS -->
+    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
+    <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
+    <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.Configuration.ConfigurationManager" />
+    <Reference Include="System.Diagnostics.Contracts" />
+    <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Diagnostics.StackTrace" />
+    <Reference Include="System.Diagnostics.Tools" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Drawing.Primitives" />
+    <Reference Include="System.IO.FileSystem" />
+    <Reference Include="System.Resources.ResourceManager" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.ComponentModel" />
+    <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.Security.Permissions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyRef.cs" />
+    <Compile Include="SRDescriptionAttribute.cs" />
+    <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
+    <Compile Include="System\Drawing\Advanced\AdjustableArrowCap.cs" />
+    <Compile Include="System\Drawing\Advanced\BitmapData.cs" />
+    <Compile Include="System\Drawing\Advanced\Blend.cs" />
+    <Compile Include="System\Drawing\Advanced\BrushType.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorAdjustType.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorBlend.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorChannelFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorMap.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorMapType.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorMatrix.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorMatrixFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorMode.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorPalette.cs" />
+    <Compile Include="System\Drawing\Advanced\ColorTranslator.cs" />
+    <Compile Include="System\Drawing\Advanced\CombineMode.cs" />
+    <Compile Include="System\Drawing\Advanced\CompositingMode.cs" />
+    <Compile Include="System\Drawing\Advanced\CompositingQuality.cs" />
+    <Compile Include="System\Drawing\Advanced\CoordinateSpace.cs" />
+    <Compile Include="System\Drawing\Advanced\CustomLineCap.cs" />
+    <Compile Include="System\Drawing\Advanced\CustomLineCapType.cs" />
+    <Compile Include="System\Drawing\Advanced\DashStyle.cs" />
+    <Compile Include="System\Drawing\Advanced\EmfPlusFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\EmfPlusRecordType.cs" />
+    <Compile Include="System\Drawing\Advanced\EmfType.cs" />
+    <Compile Include="System\Drawing\Advanced\Encoder.cs" />
+    <Compile Include="System\Drawing\Advanced\EncoderParameter.cs" />
+    <Compile Include="System\Drawing\Advanced\EncoderParameters.cs" />
+    <Compile Include="System\Drawing\Advanced\EncoderParameterValueType.cs" />
+    <Compile Include="System\Drawing\Advanced\EncoderValue.cs" />
+    <Compile Include="System\Drawing\Advanced\FillMode.cs" />
+    <Compile Include="System\Drawing\Advanced\FlushIntention.cs" />
+    <Compile Include="System\Drawing\Advanced\Font.cs" />
+    <Compile Include="System\Drawing\Advanced\FontCollection.cs" />
+    <Compile Include="System\Drawing\Advanced\FontFamily.cs" />
+    <Compile Include="System\Drawing\Advanced\FontStyle.cs" />
+    <Compile Include="System\Drawing\Advanced\FrameDimension.cs" />
+    <Compile Include="System\Drawing\Advanced\Gdiplus.cs" />
+    <Compile Include="System\Drawing\Advanced\GenericFontFamilies.cs" />
+    <Compile Include="System\Drawing\Advanced\GPPOINT.cs" />
+    <Compile Include="System\Drawing\Advanced\GPPOINTF.cs" />
+    <Compile Include="System\Drawing\Advanced\GPRECT.cs" />
+    <Compile Include="System\Drawing\Advanced\GPRECTF.cs" />
+    <Compile Include="System\Drawing\Advanced\GPStream.cs" />
+    <Compile Include="System\Drawing\Advanced\GraphicsContainer.cs" />
+    <Compile Include="System\Drawing\Advanced\GraphicsPath.cs" />
+    <Compile Include="System\Drawing\Advanced\GraphicsPathIterator.cs" />
+    <Compile Include="System\Drawing\Advanced\GraphicsState.cs" />
+    <Compile Include="System\Drawing\Advanced\HatchBrush.cs" />
+    <Compile Include="System\Drawing\Advanced\HatchStyle.cs" />
+    <Compile Include="System\Drawing\Advanced\HotkeyPrefix.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageAttributes.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageCodecFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageCodecInfo.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageCodecInfoPrivate.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageFormat.cs" />
+    <Compile Include="System\Drawing\Advanced\ImageLockMode.cs" />
+    <Compile Include="System\Drawing\Advanced\InstalledFontCollection.cs" />
+    <Compile Include="System\Drawing\Advanced\InterpolationMode.cs" />
+    <Compile Include="System\Drawing\Advanced\ISystemEventTracker.cs" />
+    <Compile Include="System\Drawing\Advanced\LinearGradientBrush.cs" />
+    <Compile Include="System\Drawing\Advanced\LinearGradientMode.cs" />
+    <Compile Include="System\Drawing\Advanced\LineCap.cs" />
+    <Compile Include="System\Drawing\Advanced\LineJoin.cs" />
+    <Compile Include="System\Drawing\Advanced\Matrix.cs" />
+    <Compile Include="System\Drawing\Advanced\MatrixOrder.cs" />
+    <Compile Include="System\Drawing\Advanced\Metafile.cs" />
+    <Compile Include="System\Drawing\Advanced\MetafileFrameUnit.cs" />
+    <Compile Include="System\Drawing\Advanced\MetafileHeader.cs" />
+    <Compile Include="System\Drawing\Advanced\MetafileHeaderEmf.cs" />
+    <Compile Include="System\Drawing\Advanced\MetafileHeaderWmf.cs" />
+    <Compile Include="System\Drawing\Advanced\MetafileType.cs" />
+    <Compile Include="System\Drawing\Advanced\METAHEADER.cs" />
+    <Compile Include="System\Drawing\Advanced\PaletteFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\PathData.cs" />
+    <Compile Include="System\Drawing\Advanced\PathGradientBrush.cs" />
+    <Compile Include="System\Drawing\Advanced\PathPointType.cs" />
+    <Compile Include="System\Drawing\Advanced\PenAlignment.cs" />
+    <Compile Include="System\Drawing\Advanced\PenType.cs" />
+    <Compile Include="System\Drawing\Advanced\PixelFormat.cs" />
+    <Compile Include="System\Drawing\Advanced\PixelOffsetMode.cs" />
+    <Compile Include="System\Drawing\Advanced\PlayRecordCallback.cs" />
+    <Compile Include="System\Drawing\Advanced\PrivateFontCollection.cs" />
+    <Compile Include="System\Drawing\Advanced\PropertyItem.cs" />
+    <Compile Include="System\Drawing\Advanced\QualityMode.cs" />
+    <Compile Include="System\Drawing\Advanced\RectangleFEx.cs" />
+    <Compile Include="System\Drawing\Advanced\RegionData.cs" />
+    <Compile Include="System\Drawing\Advanced\SafeCustomLineCapHandle.cs" />
+    <Compile Include="System\Drawing\Advanced\SmoothingMode.cs" />
+    <Compile Include="System\Drawing\Advanced\StringAlignment.cs" />
+    <Compile Include="System\Drawing\Advanced\StringDigitSubstitute.cs" />
+    <Compile Include="System\Drawing\Advanced\StringFormat.cs" />
+    <Compile Include="System\Drawing\Advanced\StringFormatFlags.cs" />
+    <Compile Include="System\Drawing\Advanced\StringTrimming.cs" />
+    <Compile Include="System\Drawing\Advanced\StringUnit.cs" />
+    <Compile Include="System\Drawing\Advanced\SystemColorTracker.cs" />
+    <Compile Include="System\Drawing\Advanced\TextRenderingHint.cs" />
+    <Compile Include="System\Drawing\Advanced\TextureBrush.cs" />
+    <Compile Include="System\Drawing\Advanced\Unit.cs" />
+    <Compile Include="System\Drawing\Advanced\WarpMode.cs" />
+    <Compile Include="System\Drawing\Advanced\WmfPlaceableFileHeader.cs" />
+    <Compile Include="System\Drawing\Advanced\WrapMode.cs" />
+    <Compile Include="System\Drawing\Bitmap.cs" />
+    <Compile Include="System\Drawing\BitmapSelector.cs" />
+    <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
+    <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
+    <Compile Include="System\Drawing\Brush.cs" />
+    <Compile Include="System\Drawing\Brushes.cs" />
+    <Compile Include="System\Drawing\BufferedGraphics.cs" />
+    <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
+    <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
+    <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
+    <Compile Include="System\Drawing\ContentAlignment.cs" />
+    <Compile Include="System\Drawing\CopyPixelOperation.cs" />
+    <Compile Include="System\Drawing\DashCap.cs" />
+    <Compile Include="System\Drawing\Design\CategoryNameCollection.cs" />
+    <Compile Include="System\Drawing\Graphics.cs" />
+    <Compile Include="System\Drawing\GraphicsContext.cs" />
+    <Compile Include="System\Drawing\Icon.cs" />
+    <Compile Include="System\Drawing\IDeviceContext.cs" />
+    <Compile Include="System\Drawing\Image.cs" />
+    <Compile Include="System\Drawing\ImageAnimator.cs" />
+    <Compile Include="System\Drawing\ImageInfo.cs" />
+    <Compile Include="System\Drawing\KnownColorTable.cs" />
+    <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
+    <Compile Include="System\Drawing\NativeMethods.cs" />
+    <Compile Include="System\Drawing\Pen.cs" />
+    <Compile Include="System\Drawing\Pens.cs" />
+    <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
+    <Compile Include="System\Drawing\Printing\Duplex.cs" />
+    <Compile Include="System\Drawing\Printing\InvalidPrinterException.cs" />
+    <Compile Include="System\Drawing\Printing\Margins.cs" />
+    <Compile Include="System\Drawing\Printing\ModeField.cs" />
+    <Compile Include="System\Drawing\Printing\PageSettings.cs" />
+    <Compile Include="System\Drawing\Printing\PaperKinds.cs" />
+    <Compile Include="System\Drawing\Printing\PaperSize.cs" />
+    <Compile Include="System\Drawing\Printing\PaperSource.cs" />
+    <Compile Include="System\Drawing\Printing\PaperSourceKind.cs" />
+    <Compile Include="System\Drawing\Printing\PreviewPageInfo.cs" />
+    <Compile Include="System\Drawing\Printing\PreviewPrintController.cs" />
+    <Compile Include="System\Drawing\Printing\PrintAction.cs" />
+    <Compile Include="System\Drawing\Printing\PrintController.cs" />
+    <Compile Include="System\Drawing\Printing\PrintDocument.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\Drawing\Printing\PrinterResolution.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterResolutionKind.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterSettings.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterUnit.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterUnitConvert.cs" />
+    <Compile Include="System\Drawing\Printing\PrintEvent.cs" />
+    <Compile Include="System\Drawing\Printing\PrintEventHandler.cs" />
+    <Compile Include="System\Drawing\Printing\PrintPageEvent.cs" />
+    <Compile Include="System\Drawing\Printing\PrintPageEventHandler.cs" />
+    <Compile Include="System\Drawing\Printing\PrintPreviewGraphics.cs" />
+    <Compile Include="System\Drawing\Printing\PrintRange.cs" />
+    <Compile Include="System\Drawing\Printing\QueryPageSettingsEventArgs.cs" />
+    <Compile Include="System\Drawing\Printing\QueryPageSettingsEventHandler.cs" />
+    <Compile Include="System\Drawing\Printing\TriState.cs" />
+    <Compile Include="System\Drawing\PropertyItemInternal.cs" />
+    <Compile Include="System\Drawing\Region.cs" />
+    <Compile Include="System\Drawing\RotateFlipType.cs" />
+    <Compile Include="System\Drawing\SolidBrush.cs" />
+    <Compile Include="System\Drawing\SystemBrushes.cs" />
+    <Compile Include="System\Drawing\SystemColors.cs" />
+    <Compile Include="System\Drawing\SystemFonts.cs" />
+    <Compile Include="System\Drawing\SystemIcons.cs" />
+    <Compile Include="System\Drawing\SystemPens.cs" />
+    <Compile Include="System\Drawing\ToolboxBitmapAttribute.cs" />
+    <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
+    <Compile Include="misc\ClientUtils.cs" />
+    <Compile Include="misc\CompModSwitches.cs" />
+    <Compile Include="misc\CoreSwitches.cs" />
+    <Compile Include="misc\DbgUtil.cs" />
+    <Compile Include="misc\DebugHandleTracker.cs" />
+    <Compile Include="misc\DpiHelper.cs" />
+    <Compile Include="misc\ExternDll.cs" />
+    <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
+    <Compile Include="misc\GDI\DeviceContext.cs" />
+    <Compile Include="misc\GDI\DeviceContextGraphicsMode.cs" />
+    <Compile Include="misc\GDI\DeviceContexts.cs" />
+    <Compile Include="misc\GDI\DeviceContextType.cs" />
+    <Compile Include="misc\GDI\GdiObjectType.cs" />
+    <Compile Include="misc\GDI\NativeMethods.cs" />
+    <Compile Include="misc\GDI\SafeNativeMethods.cs" />
+    <Compile Include="misc\GDI\UnsafeNativeMethods.cs" />
+    <Compile Include="misc\GDI\WindowsGraphics.cs" />
+    <Compile Include="misc\GDI\WindowsRegion.cs" />
+    <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
+    <Compile Include="misc\HandleCollector.cs" />
+    <Compile Include="misc\InvariantComparer.cs" />
+    <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="$(CommonPath)/System/Drawing/ColorConverterCommon.cs">
+      <Link>System\Drawing\ColorConverterCommon.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)/System/Drawing/ColorTable.cs">
+      <Link>System\Drawing\ColorTable.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp" />
+    <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
+    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
