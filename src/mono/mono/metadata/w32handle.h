@@ -53,7 +53,7 @@ typedef struct
 	void (*close)(gpointer handle, gpointer data);
 
 	/* mono_w32handle_signal_and_wait */
-	void (*signal)(gpointer signal);
+	void (*signal)(gpointer signal, gpointer data);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple,
 	 * with the handle locked (shared handles aren't locked.)

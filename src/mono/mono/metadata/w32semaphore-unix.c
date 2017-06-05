@@ -27,6 +27,24 @@ struct MonoW32HandleNamedSemaphore {
 	MonoW32HandleNamespace sharedns;
 };
 
+static void sem_handle_signal (gpointer handle, MonoW32HandleType type, MonoW32HandleSemaphore *sem_handle)
+{
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: signalling %s handle %p",
+		__func__, mono_w32handle_get_typename (type), handle);
+
+	/* No idea why max is signed, but thats the spec :-( */
+	if (sem_handle->val + 1 > (guint32)sem_handle->max) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d, max value would be exceeded",
+			__func__, mono_w32handle_get_typename (type), handle, sem_handle->val, 1, sem_handle->max);
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p val %d count %d max %d",
+			__func__, mono_w32handle_get_typename (type), handle, sem_handle->val, 1, sem_handle->max);
+
+		sem_handle->val += 1;
+		mono_w32handle_set_signal_state (handle, TRUE, TRUE);
+	}
+}
+
 static gboolean sem_handle_own (gpointer handle, MonoW32HandleType type, gboolean *abandoned)
 {
 	MonoW32HandleSemaphore *sem_handle;
@@ -50,9 +68,9 @@ static gboolean sem_handle_own (gpointer handle, MonoW32HandleType type, gboolea
 	return TRUE;
 }
 
-static void sema_signal(gpointer handle)
+static void sema_signal(gpointer handle, gpointer handle_specific)
 {
-	ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal(handle, 1, NULL);
+	sem_handle_signal (handle, MONO_W32HANDLE_SEM, (MonoW32HandleSemaphore*) handle_specific);
 }
 
 static gboolean sema_own (gpointer handle, gboolean *abandoned)
@@ -60,9 +78,9 @@ static gboolean sema_own (gpointer handle, gboolean *abandoned)
 	return sem_handle_own (handle, MONO_W32HANDLE_SEM, abandoned);
 }
 
-static void namedsema_signal (gpointer handle)
+static void namedsema_signal (gpointer handle, gpointer handle_specific)
 {
-	ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (handle, 1, NULL);
+	sem_handle_signal (handle, MONO_W32HANDLE_NAMEDSEM, (MonoW32HandleSemaphore*) handle_specific);
 }
 
 /* NB, always called with the shared handle lock held */

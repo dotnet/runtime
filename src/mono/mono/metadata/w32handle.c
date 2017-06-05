@@ -809,7 +809,7 @@ mono_w32handle_ops_signal (gpointer handle)
 	type = handle_data->type;
 
 	if (handle_ops[type] != NULL && handle_ops[type]->signal != NULL) {
-		handle_ops[type]->signal (handle);
+		handle_ops[type]->signal (handle, handle_data->specific);
 	}
 }
 

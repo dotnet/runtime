@@ -36,6 +36,19 @@ struct MonoW32HandleNamedEvent {
 	MonoW32HandleNamespace sharedns;
 };
 
+static void event_handle_signal (gpointer handle, MonoW32HandleType type, MonoW32HandleEvent *event_handle)
+{
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: signalling %s handle %p",
+		__func__, mono_w32handle_get_typename (type), handle);
+
+	if (!event_handle->manual) {
+		event_handle->set_count = 1;
+		mono_w32handle_set_signal_state (handle, TRUE, FALSE);
+	} else {
+		mono_w32handle_set_signal_state (handle, TRUE, TRUE);
+	}
+}
+
 static gboolean event_handle_own (gpointer handle, MonoW32HandleType type, gboolean *abandoned)
 {
 	MonoW32HandleEvent *event_handle;
@@ -64,9 +77,9 @@ static gboolean event_handle_own (gpointer handle, MonoW32HandleType type, gbool
 	return TRUE;
 }
 
-static void event_signal(gpointer handle)
+static void event_signal(gpointer handle, gpointer handle_specific)
 {
-	ves_icall_System_Threading_Events_SetEvent_internal (handle);
+	event_handle_signal (handle, MONO_W32HANDLE_EVENT, (MonoW32HandleEvent*) handle_specific);
 }
 
 static gboolean event_own (gpointer handle, gboolean *abandoned)
@@ -74,9 +87,9 @@ static gboolean event_own (gpointer handle, gboolean *abandoned)
 	return event_handle_own (handle, MONO_W32HANDLE_EVENT, abandoned);
 }
 
-static void namedevent_signal (gpointer handle)
+static void namedevent_signal (gpointer handle, gpointer handle_specific)
 {
-	ves_icall_System_Threading_Events_SetEvent_internal (handle);
+	event_handle_signal (handle, MONO_W32HANDLE_NAMEDEVENT, (MonoW32HandleEvent*) handle_specific);
 }
 
 /* NB, always called with the shared handle lock held */

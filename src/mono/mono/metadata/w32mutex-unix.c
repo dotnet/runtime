@@ -64,6 +64,38 @@ thread_disown_mutex (MonoInternalThread *internal, gpointer handle)
 	mono_w32handle_unref (handle);
 }
 
+static void
+mutex_handle_signal (gpointer handle, MonoW32HandleType type, MonoW32HandleMutex *mutex_handle)
+{
+	pthread_t tid;
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: signalling %s handle %p, tid: %p recursion: %d",
+		__func__, mono_w32handle_get_typename (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
+
+	tid = pthread_self ();
+
+	if (mutex_handle->abandoned) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: %s handle %p is abandoned",
+			__func__, mono_w32handle_get_typename (type), handle);
+	} else if (!pthread_equal (mutex_handle->tid, tid)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: we don't own %s handle %p (owned by %ld, me %ld)",
+			__func__, mono_w32handle_get_typename (type), handle, (long)mutex_handle->tid, (long)tid);
+	} else {
+		/* OK, we own this mutex */
+		mutex_handle->recursion--;
+
+		if (mutex_handle->recursion == 0) {
+			thread_disown_mutex (mono_thread_internal_current (), handle);
+
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: unlocking %s handle %p, tid: %p recusion : %d",
+				__func__, mono_w32handle_get_typename (type), handle, (gpointer) mutex_handle->tid, mutex_handle->recursion);
+
+			mutex_handle->tid = 0;
+			mono_w32handle_set_signal_state (handle, TRUE, FALSE);
+		}
+	}
+}
+
 static gboolean
 mutex_handle_own (gpointer handle, MonoW32HandleType type, gboolean *abandoned)
 {
@@ -123,9 +155,9 @@ mutex_handle_is_owned (gpointer handle, MonoW32HandleType type)
 	}
 }
 
-static void mutex_signal(gpointer handle)
+static void mutex_signal(gpointer handle, gpointer handle_specific)
 {
-	ves_icall_System_Threading_Mutex_ReleaseMutex_internal (handle);
+	mutex_handle_signal (handle, MONO_W32HANDLE_MUTEX, (MonoW32HandleMutex*) handle_specific);
 }
 
 static gboolean mutex_own (gpointer handle, gboolean *abandoned)
@@ -135,13 +167,12 @@ static gboolean mutex_own (gpointer handle, gboolean *abandoned)
 
 static gboolean mutex_is_owned (gpointer handle)
 {
-	
 	return mutex_handle_is_owned (handle, MONO_W32HANDLE_MUTEX);
 }
 
-static void namedmutex_signal (gpointer handle)
+static void namedmutex_signal (gpointer handle, gpointer handle_specific)
 {
-	ves_icall_System_Threading_Mutex_ReleaseMutex_internal (handle);
+	mutex_handle_signal (handle, MONO_W32HANDLE_NAMEDMUTEX, (MonoW32HandleMutex*) handle_specific);
 }
 
 /* NB, always called with the shared handle lock held */
