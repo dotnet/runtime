@@ -207,6 +207,11 @@ namespace System.Net.Http
 
         private async Task<int> ReadAsyncCore(byte[] buffer, int offset, int count, CancellationToken token)
         {
+            if (count == 0)
+            {
+                return 0;
+            }
+
             _state.PinReceiveBuffer(buffer);
             var ctr = token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
             _state.AsyncReadInProgress = true;
