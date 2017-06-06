@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Microsoft.Build.Framework;
+using Microsoft.DotNet.Build.CloudTestTasks;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
@@ -18,7 +19,7 @@ using System.Threading;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
-    public partial class FinalizeBuild : Utility.AzureConnectionStringBuildTask
+    public class FinalizeBuild : AzureConnectionStringBuildTask
     {
         [Required]
         public string SemaphoreBlob { get; set; }
@@ -181,7 +182,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
         public string[] GetBlobList(string path)
         {
-            return GetAzureBlobList.Execute(AccountName,
+            return ListAzureBlobs.Execute(AccountName,
                                             AccountKey,
                                             ConnectionString,
                                             ContainerName,
