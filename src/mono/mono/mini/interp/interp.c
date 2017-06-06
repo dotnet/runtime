@@ -2039,6 +2039,29 @@ do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, MonoInv
 	return sp;
 }
 
+static void
+do_debugger_tramp (void (*tramp) (void), MonoInvocation *frame)
+{
+	MonoLMFExt ext;
+	interp_push_lmf (&ext, frame);
+	tramp ();
+	interp_pop_lmf (&ext);
+}
+
+static void
+do_transform_method (MonoInvocation *frame, ThreadContext *context)
+{
+	MonoLMFExt ext;
+
+	/* Use the parent frame as the current frame is not complete yet */
+	interp_push_lmf (&ext, frame->parent);
+
+	frame->ex = mono_interp_transform_method (frame->runtime_method, context);
+	context->managed_code = 1;
+
+	interp_pop_lmf (&ext);
+}
+
 /*
  * These functions are the entry points into the interpreter from compiled code.
  * They are called by the interp_in wrappers. They have the following signature:
@@ -2353,16 +2376,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 		g_free (mn);
 #endif
 
-		MonoLMFExt ext;
-
-		/* Use the parent frame as the current frame is not complete yet */
-		interp_push_lmf (&ext, frame->parent);
-
-		frame->ex = mono_interp_transform_method (frame->runtime_method, context);
-		context->managed_code = 1;
-
-		interp_pop_lmf (&ext);
-
+		do_transform_method (frame, context);
 		if (frame->ex) {
 			rtm = NULL;
 			ip = NULL;
@@ -2410,18 +2424,10 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 		MINT_IN_CASE(MINT_NOP)
 			++ip;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_BREAK) {
+		MINT_IN_CASE(MINT_BREAK)
 			++ip;
-
-			MonoLMFExt ext;
-
-			interp_push_lmf (&ext, frame);
-
-			mono_debugger_agent_user_break ();
-
-			interp_pop_lmf (&ext);
+			do_debugger_tramp (mono_debugger_agent_user_break, frame);
 			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_LDNULL) 
 			sp->data.p = NULL;
 			++ip;
@@ -4606,7 +4612,6 @@ array_constructed:
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_INTR_LOC)
 			if (G_UNLIKELY (ss_enabled)) {
-				MonoLMFExt ext;
 				static void (*ss_tramp) (void);
 
 				if (!ss_tramp) {
@@ -4621,14 +4626,12 @@ array_constructed:
 				 */
 				frame->ip = ip + 1;
 
-				interp_push_lmf (&ext, frame);
 				/*
 				 * Use the same trampoline as the JIT. This ensures that
 				 * the debugger has the context for the last interpreter
 				 * native frame.
 				 */
-				ss_tramp ();
-				interp_pop_lmf (&ext);
+				do_debugger_tramp (ss_tramp, frame);
 
 				if (context->has_resume_state) {
 					if (frame == context->handler_frame)
@@ -4644,8 +4647,6 @@ array_constructed:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_BREAKPOINT) {
-			MonoLMFExt ext;
-
 			static void (*bp_tramp) (void);
 			if (!bp_tramp) {
 				void *tramp = mini_get_breakpoint_trampoline ();
@@ -4655,10 +4656,8 @@ array_constructed:
 
 			frame->ip = ip;
 
-			interp_push_lmf (&ext, frame);
 			/* Use the same trampoline as the JIT */
-			bp_tramp ();
-			interp_pop_lmf (&ext);
+			do_debugger_tramp (bp_tramp, frame);
 
 			if (context->has_resume_state) {
 				if (frame == context->handler_frame)
