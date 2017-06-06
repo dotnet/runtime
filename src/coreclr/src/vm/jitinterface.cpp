@@ -8743,6 +8743,14 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE method
     return result;
 }
 
+void CEEInfo::expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called with CoreRT.
+}
+
 /*********************************************************************/
 void CEEInfo::getFunctionEntryPoint(CORINFO_METHOD_HANDLE  ftnHnd,
                                     CORINFO_CONST_LOOKUP * pResult,
@@ -9591,21 +9599,6 @@ BOOL CEEInfo::isCompatibleDelegate(
     return result;
 }
 
-// Determines whether the delegate creation obeys security transparency rules
-BOOL CEEInfo::isDelegateCreationAllowed (
-        CORINFO_CLASS_HANDLE        delegateHnd,
-        CORINFO_METHOD_HANDLE       calleeHnd)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    return TRUE;
-}
-
 /*********************************************************************/
     // return the unmanaged target *if method has already been prelinked.*
 void* CEEInfo::getPInvokeUnmanagedTarget(CORINFO_METHOD_HANDLE method,
@@ -9860,29 +9853,6 @@ const void * CEEInfo::getInlinedCallFrameVptr(void **ppIndirection)
 #else
     result = (void*)0x43210;
 #endif
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
-}
-
-
-SIZE_T * CEEInfo::getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module)
-{
-    CONTRACTL {
-        SO_TOLERANT;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    SIZE_T * result = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    Module* pModule = GetModule(module);
-
-    result = pModule->GetAddrModuleID();
 
     EE_TO_JIT_TRANSITION_LEAF();
 
