@@ -34,19 +34,6 @@
   <ItemGroup>
     <Compile Include="GitHub_10780.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <!-- NOTE: tailcall stress should be reenabled under zapdisable when #11408 is fixed -->
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-if "%COMPlus_ZapDisable%"=="" set COMPlus_TailcallStress=1
-]]></CLRTestBatchPreCommands>
-  <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-if [ -z $COMPlus_ZapDisable ]; then
-    export COMPlus_TailcallStress=1
-fi
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
