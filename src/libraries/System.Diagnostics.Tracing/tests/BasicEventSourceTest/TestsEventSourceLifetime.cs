@@ -21,6 +21,7 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // non-Windows EventSources don't have lifetime
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ExerciseEventSource use private member reflection")]
         public void Test_EventSource_Lifetime()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
