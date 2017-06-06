@@ -189,17 +189,6 @@ BOOL WrapICorJitInfo::isCompatibleDelegate(
     return temp;
 }
 
-BOOL WrapICorJitInfo::isDelegateCreationAllowed(
-            CORINFO_CLASS_HANDLE        delegateHnd,
-            CORINFO_METHOD_HANDLE       calleeHnd)
-{
-    API_ENTER(isDelegateCreationAllowed);
-    BOOL temp = wrapHnd->isDelegateCreationAllowed(delegateHnd, calleeHnd);
-    API_LEAVE(isDelegateCreationAllowed);
-    return temp;
-}
-
-
 CorInfoInstantiationVerification WrapICorJitInfo::isInstantiationOfVerifiedGeneric(
             CORINFO_METHOD_HANDLE   method /* IN  */)
 {
@@ -1097,14 +1086,6 @@ LONG * WrapICorJitInfo::getAddrOfCaptureThreadGlobal(
     return temp;
 }
 
-SIZE_T*       WrapICorJitInfo::getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module)
-{
-    API_ENTER(getAddrModuleDomainID);
-    SIZE_T* result = wrapHnd->getAddrModuleDomainID(module);
-    API_LEAVE(getAddrModuleDomainID);
-    return result;
-}
-
 void* WrapICorJitInfo::getHelperFtn(
                 CorInfoHelpFunc         ftnNum,
                 void                  **ppIndirection)
@@ -1613,6 +1594,27 @@ DWORD WrapICorJitInfo::getExpectedTargetArchitecture()
     DWORD result = wrapHnd->getExpectedTargetArchitecture();
     API_LEAVE(getExpectedTargetArchitecture);
     return result;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::resolveVirtualMethod(
+    CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
+    CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
+    CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
+)
+{
+    API_ENTER(resolveVirtualMethod);
+    CORINFO_METHOD_HANDLE result = wrapHnd->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
+    API_LEAVE(resolveVirtualMethod);
+    return result;
+}
+
+void WrapICorJitInfo::expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    API_ENTER(expandRawHandleIntrinsic);
+    wrapHnd->expandRawHandleIntrinsic(pResolvedToken, pResult);
+    API_LEAVE(expandRawHandleIntrinsic);
 }
 
 /**********************************************************************************/
