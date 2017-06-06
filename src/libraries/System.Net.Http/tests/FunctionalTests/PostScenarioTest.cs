@@ -173,7 +173,21 @@ namespace System.Net.Http.Functional.Tests
             var credential = new NetworkCredential(UserName, Password);
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: true);
         }
-        
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory, MemberData(nameof(EchoServers))]
+        public async Task PostAsync_EmptyContent_ContentTypeHeaderNotSent(Uri serverUri)
+        {
+            using (var client = new HttpClient())
+            using (HttpResponseMessage response = await client.PostAsync(serverUri, null))
+            {
+                string responseContent = await response.Content.ReadAsStringAsync();
+                bool sentContentType = TestHelper.JsonMessageContainsKey(responseContent, "Content-Type");
+
+                Assert.False(sentContentType);
+            }
+        }
+
         private async Task PostHelper(
             Uri serverUri,
             string requestBody,

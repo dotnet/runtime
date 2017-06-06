@@ -702,16 +702,22 @@ namespace System.Net.Http
             {
                 var slist = new SafeCurlSListHandle();
 
-                // Add content request headers
+                bool suppressContentType;
                 if (_requestMessage.Content != null)
                 {
+                    // Add content request headers
                     AddRequestHeaders(_requestMessage.Content.Headers, slist);
+                    suppressContentType = _requestMessage.Content.Headers.ContentType == null;
+                }
+                else
+                {
+                    suppressContentType = true;
+                }
 
-                    if (_requestMessage.Content.Headers.ContentType == null)
-                    {
-                        // Remove the Content-Type header libcurl adds by default.
-                        ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoContentType));
-                    }
+                if (suppressContentType)
+                {
+                    // Remove the Content-Type header libcurl adds by default.
+                    ThrowOOMIfFalse(Interop.Http.SListAppend(slist, NoContentType));
                 }
 
                 // Add request headers
