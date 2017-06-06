@@ -19201,15 +19201,23 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                 {
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
-                    void* pAddr;
-                    addr = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-
-                    accessType = IAT_VALUE;
-
-                    if (!addr)
+                    if (call->gtEntryPoint.addr != NULL)
                     {
-                        accessType = IAT_PVALUE;
-                        addr       = pAddr;
+                        accessType = call->gtEntryPoint.accessType;
+                        addr       = call->gtEntryPoint.addr;
+                    }
+                    else
+                    {
+                        void* pAddr;
+
+                        accessType = IAT_VALUE;
+                        addr       = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+
+                        if (!addr)
+                        {
+                            accessType = IAT_PVALUE;
+                            addr       = pAddr;
+                        }
                     }
                 }
                 else
