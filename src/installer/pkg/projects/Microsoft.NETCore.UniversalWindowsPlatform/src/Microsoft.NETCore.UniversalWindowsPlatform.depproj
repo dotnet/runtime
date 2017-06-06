@@ -26,9 +26,6 @@
     <PackageReference Include="Microsoft.Private.CoreFx.UAP">
       <Version>$(CoreFxVersion)</Version>
     </PackageReference>
-    <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
-    </PackageReference>
     <PackageReference Include="Microsoft.NETCore.Platforms">
       <Version>$(PlatformPackageVersion)</Version>
     </PackageReference>
@@ -65,9 +62,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <Target Name="GetFilesToPackage" DependsOnTargets="ResolveNuGetPackages" Returns="@(FilesToPackage)">
-    <ItemGroup  Condition="'$(NuGetRuntimeIdentifier)' != ''">
-      <_runtimeCLR Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.FileName)' == 'coreclr' OR '%(ReferenceCopyLocalPaths.FileName)' == 'libcoreclr'" />
-    </ItemGroup>
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
       <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
