@@ -1828,6 +1828,217 @@ do_icall (ThreadContext *context, int op, stackval *sp, gpointer ptr)
 	return sp;
 }
 
+static stackval *
+do_jit_call (stackval *sp, unsigned char *vt_sp, ThreadContext *context, MonoInvocation *frame, RuntimeMethod *rmethod)
+{
+	MonoMethodSignature *sig;
+	MonoFtnDesc ftndesc;
+	guint8 res_buf [256];
+	MonoType *type;
+	MonoLMFExt ext;
+
+	//printf ("%s\n", mono_method_full_name (rmethod->method, 1));
+
+	/*
+	 * Call JITted code through a gsharedvt_out wrapper. These wrappers receive every argument
+	 * by ref and return a return value using an explicit return value argument.
+	 */
+	if (!rmethod->jit_wrapper) {
+		MonoMethod *method = rmethod->method;
+		MonoError error;
+
+		sig = mono_method_signature (method);
+		g_assert (sig);
+
+		MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
+		//printf ("J: %s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
+
+		gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, &error);
+		mono_error_assert_ok (&error);
+
+		gpointer addr = mono_jit_compile_method_jit_only (method, &error);
+		g_assert (addr);
+		mono_error_assert_ok (&error);
+
+		rmethod->jit_addr = addr;
+		rmethod->jit_sig = sig;
+		mono_memory_barrier ();
+		rmethod->jit_wrapper = jit_wrapper;
+
+	} else {
+		sig = rmethod->jit_sig;
+	}
+
+	sp -= sig->param_count;
+	if (sig->hasthis)
+		--sp;
+
+	ftndesc.addr = rmethod->jit_addr;
+	ftndesc.arg = NULL;
+
+	// FIXME: Optimize this
+
+	gpointer args [32];
+	int pindex = 0;
+	int stack_index = 0;
+	if (rmethod->hasthis) {
+		args [pindex ++] = sp [0].data.p;
+		stack_index ++;
+	}
+	type = rmethod->rtype;
+	if (type->type != MONO_TYPE_VOID) {
+		if (MONO_TYPE_ISSTRUCT (type))
+			args [pindex ++] = vt_sp;
+		else
+			args [pindex ++] = res_buf;
+	}
+	for (int i = 0; i < rmethod->param_count; ++i) {
+		MonoType *t = rmethod->param_types [i];
+		stackval *sval = &sp [stack_index + i];
+		if (sig->params [i]->byref) {
+			args [pindex ++] = sval->data.p;
+		} else if (MONO_TYPE_ISSTRUCT (t)) {
+			args [pindex ++] = sval->data.p;
+		} else if (MONO_TYPE_IS_REFERENCE (t)) {
+			args [pindex ++] = &sval->data.p;
+		} else {
+			switch (t->type) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+			case MONO_TYPE_VALUETYPE:
+				args [pindex ++] = &sval->data.i;
+				break;
+			case MONO_TYPE_PTR:
+			case MONO_TYPE_FNPTR:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U:
+			case MONO_TYPE_OBJECT:
+				args [pindex ++] = &sval->data.p;
+				break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_U8:
+				args [pindex ++] = &sval->data.l;
+				break;
+			default:
+				printf ("%s\n", mono_type_full_name (t));
+				g_assert_not_reached ();
+			}
+		}
+	}
+
+	interp_push_lmf (&ext, frame);
+
+	switch (pindex) {
+	case 0: {
+		void (*func)(gpointer) = rmethod->jit_wrapper;
+
+		func (&ftndesc);
+		break;
+	}
+	case 1: {
+		void (*func)(gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], &ftndesc);
+		break;
+	}
+	case 2: {
+		void (*func)(gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], &ftndesc);
+		break;
+	}
+	case 3: {
+		void (*func)(gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], args [2], &ftndesc);
+		break;
+	}
+	case 4: {
+		void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], &ftndesc);
+		break;
+	}
+	case 5: {
+		void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], &ftndesc);
+		break;
+	}
+	case 6: {
+		void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], &ftndesc);
+		break;
+	}
+	case 7: {
+		void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
+
+		func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], &ftndesc);
+		break;
+	}
+	default:
+		g_assert_not_reached ();
+		break;
+	}
+
+	interp_pop_lmf (&ext);
+
+	MonoType *rtype = rmethod->rtype;
+	switch (rtype->type) {
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+		sp->data.p = *(gpointer*)res_buf;
+		break;
+	case MONO_TYPE_I1:
+		sp->data.i = *(gint8*)res_buf;
+		break;
+	case MONO_TYPE_U1:
+		sp->data.i = *(guint8*)res_buf;
+		break;
+	case MONO_TYPE_I2:
+		sp->data.i = *(gint16*)res_buf;
+		break;
+	case MONO_TYPE_U2:
+		sp->data.i = *(guint16*)res_buf;
+		break;
+	case MONO_TYPE_I4:
+		sp->data.i = *(gint32*)res_buf;
+		break;
+	case MONO_TYPE_U4:
+		sp->data.i = *(guint32*)res_buf;
+		break;
+	case MONO_TYPE_VALUETYPE:
+		/* The result was written to vt_sp */
+		sp->data.p = vt_sp;
+		break;
+	case MONO_TYPE_GENERICINST:
+		if (MONO_TYPE_IS_REFERENCE (rtype)) {
+			sp->data.p = *(gpointer*)res_buf;
+		} else {
+			/* The result was written to vt_sp */
+			sp->data.p = vt_sp;
+		}
+		break;
+	default:
+		printf ("%s\n", mono_type_full_name (rtype));
+		g_assert_not_reached ();
+		break;
+	}
+
+	return sp;
+}
+
 /*
  * These functions are the entry points into the interpreter from compiled code.
  * They are called by the interp_in wrappers. They have the following signature:
@@ -2544,165 +2755,10 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 		}
 
 		MINT_IN_CASE(MINT_JIT_CALL) {
-			MonoMethodSignature *sig;
 			RuntimeMethod *rmethod = rtm->data_items [* (guint16 *)(ip + 1)];
-			MonoFtnDesc ftndesc;
-			guint8 res_buf [256];
-			MonoType *type;
-			MonoLMFExt ext;
-
-			//printf ("%s\n", mono_method_full_name (rmethod->method, 1));
-
-			/*
-			 * Call JITted code through a gsharedvt_out wrapper. These wrappers receive every argument
-			 * by ref and return a return value using an explicit return value argument.
-			 */
-			if (!rmethod->jit_wrapper) {
-				MonoMethod *method = rmethod->method;
-				MonoError error;
-
-				sig = mono_method_signature (method);
-				g_assert (sig);
-
-				MonoMethod *wrapper = mini_get_gsharedvt_out_sig_wrapper (sig);
-				//printf ("J: %s %s\n", mono_method_full_name (method, 1), mono_method_full_name (wrapper, 1));
-
-				gpointer jit_wrapper = mono_jit_compile_method_jit_only (wrapper, &error);
-				mono_error_assert_ok (&error);
-
-				gpointer addr = mono_jit_compile_method_jit_only (method, &error);
-				g_assert (addr);
-				mono_error_assert_ok (&error);
-
-				rmethod->jit_addr = addr;
-				rmethod->jit_sig = sig;
-				mono_memory_barrier ();
-				rmethod->jit_wrapper = jit_wrapper;
-
-			} else {
-				sig = rmethod->jit_sig;
-			}
-
 			frame->ip = ip;
 			ip += 2;
-			sp -= sig->param_count;
-			if (sig->hasthis)
-				--sp;
-
-			ftndesc.addr = rmethod->jit_addr;
-			ftndesc.arg = NULL;
-
-			// FIXME: Optimize this
-
-			gpointer args [32];
-			int pindex = 0;
-			int stack_index = 0;
-			if (rmethod->hasthis) {
-				args [pindex ++] = sp [0].data.p;
-				stack_index ++;
-			}
-			type = rmethod->rtype;
-			if (type->type != MONO_TYPE_VOID) {
-				if (MONO_TYPE_ISSTRUCT (type))
-					args [pindex ++] = vt_sp;
-				else
-					args [pindex ++] = res_buf;
-			}
-			for (int i = 0; i < rmethod->param_count; ++i) {
-				MonoType *t = rmethod->param_types [i];
-				stackval *sval = &sp [stack_index + i];
-				if (sig->params [i]->byref) {
-					args [pindex ++] = sval->data.p;
-				} else if (MONO_TYPE_ISSTRUCT (t)) {
-					args [pindex ++] = sval->data.p;
-				} else if (MONO_TYPE_IS_REFERENCE (t)) {
-					args [pindex ++] = &sval->data.p;
-				} else {
-					switch (t->type) {
-					case MONO_TYPE_I1:
-					case MONO_TYPE_U1:
-					case MONO_TYPE_I2:
-					case MONO_TYPE_U2:
-					case MONO_TYPE_I4:
-					case MONO_TYPE_U4:
-					case MONO_TYPE_VALUETYPE:
-						args [pindex ++] = &sval->data.i;
-						break;
-					case MONO_TYPE_PTR:
-					case MONO_TYPE_FNPTR:
-					case MONO_TYPE_I:
-					case MONO_TYPE_U:
-					case MONO_TYPE_OBJECT:
-						args [pindex ++] = &sval->data.p;
-						break;
-					case MONO_TYPE_I8:
-					case MONO_TYPE_U8:
-						args [pindex ++] = &sval->data.l;
-						break;
-					default:
-						printf ("%s\n", mono_type_full_name (t));
-						g_assert_not_reached ();
-					}
-				}
-			}
-
-			interp_push_lmf (&ext, frame);
-
-			switch (pindex) {
-			case 0: {
-				void (*func)(gpointer) = rmethod->jit_wrapper;
-
-				func (&ftndesc);
-				break;
-			}
-			case 1: {
-				void (*func)(gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], &ftndesc);
-				break;
-			}
-			case 2: {
-				void (*func)(gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], args [1], &ftndesc);
-				break;
-			}
-			case 3: {
-				void (*func)(gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], args [1], args [2], &ftndesc);
-				break;
-			}
-			case 4: {
-				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], args [1], args [2], args [3], &ftndesc);
-				break;
-			}
-			case 5: {
-				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], args [1], args [2], args [3], args [4], &ftndesc);
-				break;
-			}
-			case 6: {
-				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], args [1], args [2], args [3], args [4], args [5], &ftndesc);
-				break;
-			}
-			case 7: {
-				void (*func)(gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer, gpointer) = rmethod->jit_wrapper;
-
-				func (args [0], args [1], args [2], args [3], args [4], args [5], args [6], &ftndesc);
-				break;
-			}
-			default:
-				g_assert_not_reached ();
-				break;
-			}
-
-			interp_pop_lmf (&ext);
+			sp = do_jit_call (sp, vt_sp, context, frame, rmethod);
 
 			if (context->has_resume_state) {
 				/*
@@ -2716,56 +2772,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context, uns
 				else
 					goto exit_frame;
 			}
-
-			MonoType *rtype = rmethod->rtype;
-			switch (rtype->type) {
-			case MONO_TYPE_VOID:
-			case MONO_TYPE_OBJECT:
-			case MONO_TYPE_STRING:
-			case MONO_TYPE_CLASS:
-			case MONO_TYPE_ARRAY:
-			case MONO_TYPE_SZARRAY:
-			case MONO_TYPE_I:
-			case MONO_TYPE_U:
-				sp->data.p = *(gpointer*)res_buf;
-				break;
-			case MONO_TYPE_I1:
-				sp->data.i = *(gint8*)res_buf;
-				break;
-			case MONO_TYPE_U1:
-				sp->data.i = *(guint8*)res_buf;
-				break;
-			case MONO_TYPE_I2:
-				sp->data.i = *(gint16*)res_buf;
-				break;
-			case MONO_TYPE_U2:
-				sp->data.i = *(guint16*)res_buf;
-				break;
-			case MONO_TYPE_I4:
-				sp->data.i = *(gint32*)res_buf;
-				break;
-			case MONO_TYPE_U4:
-				sp->data.i = *(guint32*)res_buf;
-				break;
-			case MONO_TYPE_VALUETYPE:
-				/* The result was written to vt_sp */
-				sp->data.p = vt_sp;
-				break;
-			case MONO_TYPE_GENERICINST:
-				if (MONO_TYPE_IS_REFERENCE (rtype)) {
-					sp->data.p = *(gpointer*)res_buf;
-				} else {
-					/* The result was written to vt_sp */
-					sp->data.p = vt_sp;
-				}
-				break;
-			default:
-				printf ("%s\n", mono_type_full_name (rtype));
-				g_assert_not_reached ();
-				break;
-			}
-			if (rtype->type != MONO_TYPE_VOID)
+			if (rmethod->rtype->type != MONO_TYPE_VOID)
 				sp++;
+
 			MINT_IN_BREAK;
 		}
 
