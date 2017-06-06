@@ -1647,7 +1647,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTreePtr data = tree->gtOp1->gtEffectiveVal();
+    GenTreePtr data = tree->gtOp1;
     genConsumeRegs(data);
 
     regNumber dataReg = REG_NA;
@@ -1695,7 +1695,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTreePtr data = tree->gtOp1->gtEffectiveVal();
+    GenTreePtr data = tree->gtOp1;
 
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
