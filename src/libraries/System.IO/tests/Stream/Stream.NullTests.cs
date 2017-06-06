@@ -57,6 +57,7 @@ namespace System.IO.Tests
         }
         
         [Fact]
+        [ActiveIssue(20753, TargetFrameworkMonikers.UapAot)]
         public async static Task TestNullStream_CopyToAsyncValidation()
         {
             // Since Stream.Null previously inherited its CopyToAsync
