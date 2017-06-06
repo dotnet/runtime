@@ -69,6 +69,12 @@ void
 mono_btls_ssl_close (MonoBtlsSsl *ptr);
 
 int
+mono_btls_ssl_shutdown (MonoBtlsSsl *ptr);
+
+MONO_API void
+mono_btls_ssl_set_quiet_shutdown (MonoBtlsSsl *ptr, int mode);
+
+int
 mono_btls_ssl_get_error (MonoBtlsSsl *ptr, int ret_code);
 
 int

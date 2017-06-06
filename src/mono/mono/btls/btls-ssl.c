@@ -60,6 +60,18 @@ mono_btls_ssl_close (MonoBtlsSsl *ptr)
 	;
 }
 
+MONO_API int
+mono_btls_ssl_shutdown (MonoBtlsSsl *ptr)
+{
+    return SSL_shutdown (ptr->ssl);
+}
+
+MONO_API void
+mono_btls_ssl_set_quiet_shutdown (MonoBtlsSsl *ptr, int mode)
+{
+    SSL_set_quiet_shutdown (ptr->ssl, mode);
+}
+
 MONO_API void
 mono_btls_ssl_set_bio (MonoBtlsSsl *ptr, BIO *bio)
 {
