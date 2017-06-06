@@ -67,7 +67,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/build-packages.sh",
-        "arguments": "-BuildType=$(PB_BuildType) -BuildArch=$(Architecture)",
+        "arguments": "-BuildType=$(PB_BuildType) -BuildArch=$(Architecture) -- /p:OfficialBuildId=$(OfficialBuildId)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }

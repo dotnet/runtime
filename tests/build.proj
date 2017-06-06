@@ -51,7 +51,7 @@
   </Target>
 
   <Target Name="RestorePackage">
-    <Exec Command="$(DotnetRestoreCommand) $(RestoreProj)"
+    <Exec Command="$(DotnetRestoreCommand) $(RestoreProj) $(PackageVersionArg)"
           StandardOutputImportance="Low" />
   </Target>
 
