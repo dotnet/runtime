@@ -82,7 +82,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow Test")]
         [ConditionalFact(nameof(HasNullModem))]
         public void ErrorReceived_Close_Stress()
         {

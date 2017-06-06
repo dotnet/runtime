@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using Legacy.Support;
 using Xunit;
+using Xunit.NetCore.Extensions;
 using ThreadState = System.Threading.ThreadState;
 
 namespace System.IO.Ports.Tests
@@ -80,7 +81,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow test")]
         [ConditionalFact(nameof(HasNullModem))]
         public void Timeout()
         {
@@ -109,7 +109,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void SuccessiveReadTimeout()
         {
