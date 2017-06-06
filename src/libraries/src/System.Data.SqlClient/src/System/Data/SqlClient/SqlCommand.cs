@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
+using System.Data.Sql;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -22,6 +23,8 @@ namespace System.Data.SqlClient
         private int _commandTimeout = ADP.DefaultCommandTimeout;
         private UpdateRowSource _updatedRowSource = UpdateRowSource.Both;
         private bool _designTimeInvisible;
+
+        internal SqlDependency _sqlDep;
 
         private static readonly DiagnosticListener _diagnosticListener = new DiagnosticListener(SqlClientDiagnosticListenerExtensions.DiagnosticListenerName);
         private bool _parentOperationStarted = false;
@@ -182,6 +185,7 @@ namespace System.Data.SqlClient
         // _rowsAffected is cumulative for ExecuteNonQuery across all rpc batches
         internal int _rowsAffected = -1; // rows affected by the command
 
+        private SqlNotificationRequest _notification;
 
         // transaction support
         private SqlTransaction _transaction;
@@ -301,6 +305,27 @@ namespace System.Data.SqlClient
             set
             {
                 Connection = (SqlConnection)value;
+            }
+        }
+
+        private SqlInternalConnectionTds InternalTdsConnection
+        {
+            get
+            {
+                return (SqlInternalConnectionTds)_activeConnection.InnerConnection;
+            }
+        }
+
+        public SqlNotificationRequest Notification
+        {
+            get
+            {
+                return _notification;
+            }
+            set
+            {
+                _sqlDep = null;
+                _notification = value;
             }
         }
 
@@ -1104,6 +1129,8 @@ namespace System.Data.SqlClient
             // returns false for empty command text
             ValidateCommand(async, methodName);
 
+            CheckNotificationStateAndAutoEnlist(); // Only call after validate - requires non null connection!
+
             Task task = null;
 
             // only send over SQL Batch command if we are not a stored proc and have no parameters and not in batch RPC mode
@@ -1398,7 +1425,7 @@ namespace System.Data.SqlClient
         }
 
 
-        private SqlDataReader EndExecuteReader(IAsyncResult asyncResult)
+        internal SqlDataReader EndExecuteReader(IAsyncResult asyncResult)
         {
             Exception asyncException = ((Task)asyncResult).Exception;
             if (asyncException != null)
@@ -1448,7 +1475,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        private IAsyncResult BeginExecuteReader(CommandBehavior behavior, AsyncCallback callback, object stateObject)
+        internal IAsyncResult BeginExecuteReader(CommandBehavior behavior, AsyncCallback callback, object stateObject)
         {
             // Reset _pendingCancel upon entry into any Execute - used to synchronize state
             // between entry into Execute* API and the thread obtaining the stateObject.
@@ -1869,6 +1896,58 @@ namespace System.Data.SqlClient
             }
         }
 
+        // Check to see if notificactions auto enlistment is turned on. Enlist if so.
+        private void CheckNotificationStateAndAutoEnlist()
+        {
+            // Auto-enlist not supported in Core
+
+            // If we have a notification with a dependency, setup the notification options at this time.
+
+            // If user passes options, then we will always have option data at the time the SqlDependency
+            // ctor is called.  But, if we are using default queue, then we do not have this data until
+            // Start().  Due to this, we always delay setting options until execute.
+
+            // There is a variance in order between Start(), SqlDependency(), and Execute.  This is the 
+            // best way to solve that problem.
+            if (null != Notification)
+            {
+                if (_sqlDep != null)
+                {
+                    if (null == _sqlDep.Options)
+                    {
+                        // If null, SqlDependency was not created with options, so we need to obtain default options now.
+                        // GetDefaultOptions can and will throw under certain conditions.
+
+                        // In order to match to the appropriate start - we need 3 pieces of info:
+                        // 1) server 2) user identity (SQL Auth or Int Sec) 3) database
+
+                        SqlDependency.IdentityUserNamePair identityUserName = null;
+
+                        // Obtain identity from connection.
+                        SqlInternalConnectionTds internalConnection = _activeConnection.InnerConnection as SqlInternalConnectionTds;
+                        if (internalConnection.Identity != null)
+                        {
+                            identityUserName = new SqlDependency.IdentityUserNamePair(internalConnection.Identity, null);
+                        }
+                        else
+                        {
+                            identityUserName = new SqlDependency.IdentityUserNamePair(null, internalConnection.ConnectionOptions.UserID);
+                        }
+
+                        Notification.Options = SqlDependency.GetDefaultComposedOptions(_activeConnection.DataSource,
+                                                             InternalTdsConnection.ServerProvidedFailOverPartner,
+                                                             identityUserName, _activeConnection.Database);
+                    }
+
+                    // Set UserData on notifications, as well as adding to the appdomain dispatcher.  The value is
+                    // computed by an algorithm on the dependency - fixed and will always produce the same value
+                    // given identical commandtext + parameter values.
+                    Notification.UserData = _sqlDep.ComputeHashAndAddToDispatcher(this);
+                    // Maintain server list for SqlDependency.
+                    _sqlDep.AddToServerList(_activeConnection.DataSource);
+                }
+            }
+        }
 
         // Tds-specific logic for ExecuteNonQuery run handling
         private Task RunExecuteNonQueryTds(string methodName, bool async, int timeout, bool asyncWrite)
@@ -1928,9 +2007,10 @@ namespace System.Data.SqlClient
                 // no parameters are sent over
                 // no data reader is returned
                 // use this overload for "batch SQL" tds token type
-                Task executeTask = _stateObj.Parser.TdsExecuteSQLBatch(this.CommandText, timeout, _stateObj, sync: true);
+                Task executeTask = _stateObj.Parser.TdsExecuteSQLBatch(this.CommandText, timeout, this.Notification, _stateObj, sync: true);
                 Debug.Assert(executeTask == null, "Shouldn't get a task when doing sync writes");
 
+                NotifyDependency();
                 if (async)
                 {
                     _activeConnection.GetOpenTdsConnection(methodName).IncrementAsyncCount();
@@ -1986,6 +2066,9 @@ namespace System.Data.SqlClient
             // this function may throw for an invalid connection
             // returns false for empty command text
             ValidateCommand(async, method);
+
+            CheckNotificationStateAndAutoEnlist(); // Only call after validate - requires non null connection!
+
             SqlStatistics statistics = Statistics;
             if (null != statistics)
             {
@@ -2094,7 +2177,7 @@ namespace System.Data.SqlClient
                     // Send over SQL Batch command if we are not a stored proc and have no parameters
                     Debug.Assert(!IsUserPrepared, "CommandType.Text with no params should not be prepared!");
                     string text = GetCommandText(cmdBehavior) + GetResetOptionsString(cmdBehavior);
-                    writeTask = _stateObj.Parser.TdsExecuteSQLBatch(text, timeout, _stateObj, sync: !asyncWrite);
+                    writeTask = _stateObj.Parser.TdsExecuteSQLBatch(text, timeout, this.Notification, _stateObj, sync: !asyncWrite);
                 }
                 else if (System.Data.CommandType.Text == this.CommandType)
                 {
@@ -2138,7 +2221,7 @@ namespace System.Data.SqlClient
                     rpc.options = TdsEnums.RPC_NOMETADATA;
 
                     Debug.Assert(_rpcArrayOf1[0] == rpc);
-                    writeTask = _stateObj.Parser.TdsExecuteRPC(_rpcArrayOf1, timeout, inSchema, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
+                    writeTask = _stateObj.Parser.TdsExecuteRPC(_rpcArrayOf1, timeout, inSchema, this.Notification, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
                 }
                 else
                 {
@@ -2153,7 +2236,7 @@ namespace System.Data.SqlClient
                     // turn set options ON
                     if (null != optionSettings)
                     {
-                        Task executeTask = _stateObj.Parser.TdsExecuteSQLBatch(optionSettings, timeout, _stateObj, sync: true);
+                        Task executeTask = _stateObj.Parser.TdsExecuteSQLBatch(optionSettings, timeout, this.Notification, _stateObj, sync: true);
                         Debug.Assert(executeTask == null, "Shouldn't get a task when doing sync writes");
                         bool dataReady;
                         Debug.Assert(_stateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
@@ -2166,7 +2249,7 @@ namespace System.Data.SqlClient
 
                     // execute sp
                     Debug.Assert(_rpcArrayOf1[0] == rpc);
-                    writeTask = _stateObj.Parser.TdsExecuteRPC(_rpcArrayOf1, timeout, inSchema, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
+                    writeTask = _stateObj.Parser.TdsExecuteRPC(_rpcArrayOf1, timeout, inSchema, this.Notification, _stateObj, CommandType.StoredProcedure == CommandType, sync: !asyncWrite);
                 }
 
                 Debug.Assert(writeTask == null || async, "Returned task in sync mode");
@@ -2252,6 +2335,8 @@ namespace System.Data.SqlClient
         private void FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, string resetOptionsString)
         {
             // always wrap with a try { FinishExecuteReader(...) } finally { PutStateObject(); }
+
+            NotifyDependency();
 
             if (runBehavior == RunBehavior.UntilDone)
             {
@@ -3258,6 +3343,14 @@ namespace System.Data.SqlClient
             }
             catch (Exception)
             {
+            }
+        }
+
+        private void NotifyDependency()
+        {
+            if (_sqlDep != null)
+            {
+                _sqlDep.StartTimer(Notification);
             }
         }
 

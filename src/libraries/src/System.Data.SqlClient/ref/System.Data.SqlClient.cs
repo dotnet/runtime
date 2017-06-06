@@ -184,6 +184,17 @@ namespace Microsoft.SqlServer.Server
         public static Microsoft.SqlServer.Server.SqlMetaData InferFromValue(object value, string name) { throw null; }
     }
 }
+namespace System.Data.Sql
+{
+    public sealed partial class SqlNotificationRequest
+    {
+        public SqlNotificationRequest() { }
+        public SqlNotificationRequest(string userData, string options, int timeout) { }
+        public string Options { get { throw null; } set { } }
+        public int Timeout { get { throw null; } set { } }
+        public string UserData { get { throw null; } set { } }
+    }
+}
 namespace System.Data.SqlClient
 {
     public enum ApplicationIntent
@@ -331,6 +342,7 @@ namespace System.Data.SqlClient
         public System.Threading.Tasks.Task<System.Xml.XmlReader> ExecuteXmlReaderAsync() { throw null; }
         public System.Threading.Tasks.Task<System.Xml.XmlReader> ExecuteXmlReaderAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Prepare() { }
+        public System.Data.Sql.SqlNotificationRequest Notification { get { throw null; } set { } }
     }
     public sealed partial class SqlConnection : System.Data.Common.DbConnection, System.ICloneable
     {
@@ -425,6 +437,70 @@ namespace System.Data.SqlClient
         protected override void OnRowUpdated(System.Data.Common.RowUpdatedEventArgs value) { }
         protected override void OnRowUpdating(System.Data.Common.RowUpdatingEventArgs value) { }
         object System.ICloneable.Clone() { throw null; }
+    }
+    public sealed partial class SqlDependency
+    {
+        public SqlDependency() { }
+        public SqlDependency(SqlCommand command) { }
+        public SqlDependency(SqlCommand command, string options, int timeout) { }
+        public bool HasChanges { get { throw null; } }
+        public string Id { get { throw null; } }
+        public event OnChangeEventHandler OnChange { add { } remove { } }
+        public void AddCommandDependency(SqlCommand command) { }
+        public static bool Start(string connectionString) { throw null; }
+        public static bool Start(string connectionString, string queue) { throw null; }
+        public static bool Stop(string connectionString) { throw null; }
+        public static bool Stop(string connectionString, string queue) { throw null; }
+    }
+    public delegate void OnChangeEventHandler(object sender, SqlNotificationEventArgs e);
+    public partial class SqlNotificationEventArgs : System.EventArgs
+    {
+        public SqlNotificationEventArgs(SqlNotificationType type, SqlNotificationInfo info, SqlNotificationSource source) { }
+        public SqlNotificationType Type { get { throw null; } }
+        public SqlNotificationInfo Info { get { throw null; } }
+        public SqlNotificationSource Source { get { throw null; } }
+    }
+    public enum SqlNotificationInfo
+    {
+        Truncate = 0,
+        Insert = 1,
+        Update = 2,
+        Delete = 3,
+        Drop = 4,
+        Alter = 5,
+        Restart = 6,
+        Error = 7,
+        Query = 8,
+        Invalid = 9,
+        Options = 10,
+        Isolation = 11,
+        Expired = 12,
+        Resource = 13,
+        PreviousFire = 14,
+        TemplateLimit = 15,
+        Merge = 16,
+        Unknown = -1,
+        AlreadyChanged = -2
+    }
+    public enum SqlNotificationSource
+    {
+        Data = 0,
+        Timeout = 1,
+        Object = 2,
+        Database = 3,
+        System = 4,
+        Statement = 5,
+        Environment = 6,
+        Execution = 7,
+        Owner = 8,
+        Unknown = -1,
+        Client = -2
+    }
+    public enum SqlNotificationType
+    {
+        Change = 0,
+        Subscribe = 1,
+        Unknown = -1
     }
     public sealed partial class SqlRowUpdatedEventArgs : System.Data.Common.RowUpdatedEventArgs
     {

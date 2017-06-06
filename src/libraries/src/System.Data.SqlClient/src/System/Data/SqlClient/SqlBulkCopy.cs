@@ -486,7 +486,7 @@ namespace System.Data.SqlClient
         {
             string TDSCommand = CreateInitialQuery();
 
-            Task executeTask = _parser.TdsExecuteSQLBatch(TDSCommand, this.BulkCopyTimeout, _stateObj, sync: !_isAsyncBulkCopy, callerHasConnectionLock: true);
+            Task executeTask = _parser.TdsExecuteSQLBatch(TDSCommand, this.BulkCopyTimeout, null, _stateObj, sync: !_isAsyncBulkCopy, callerHasConnectionLock: true);
 
             if (executeTask == null)
             {
@@ -743,7 +743,7 @@ namespace System.Data.SqlClient
 
         private Task SubmitUpdateBulkCommand(string TDSCommand)
         {
-            Task executeTask = _parser.TdsExecuteSQLBatch(TDSCommand, this.BulkCopyTimeout, _stateObj, sync: !_isAsyncBulkCopy, callerHasConnectionLock: true);
+            Task executeTask = _parser.TdsExecuteSQLBatch(TDSCommand, this.BulkCopyTimeout, null, _stateObj, sync: !_isAsyncBulkCopy, callerHasConnectionLock: true);
 
             if (executeTask == null)
             {
