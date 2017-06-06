@@ -497,6 +497,9 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t ind
 gunichar2 *
 mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);
 
+gpointer
+mono_object_handle_pin_unbox (MonoObjectHandle boxed_valuetype_obj, uint32_t *gchandle_out);
+
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
 
