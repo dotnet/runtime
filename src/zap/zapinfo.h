@@ -326,7 +326,6 @@ public:
     DWORD getThreadTLSIndex(void **ppIndirection);
     const void * getInlinedCallFrameVptr(void **ppIndirection);
     LONG * getAddrOfCaptureThreadGlobal(void **ppIndirection);
-    SIZE_T* getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module);
 
     // get slow lazy string literal helper to use (CORINFO_HELP_STRCNS*). 
     // Returns CORINFO_HELP_UNDEF if lazy string literal helper cannot be used.
@@ -671,6 +670,10 @@ public:
         CORINFO_CONTEXT_HANDLE ownerType
         );
 
+    void expandRawHandleIntrinsic(
+        CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CORINFO_GENERICHANDLE_RESULT *  pResult);
+
     CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method,
                                      bool * pMustExpand = NULL);
     bool isInSIMDModule(CORINFO_CLASS_HANDLE classHnd);
@@ -687,9 +690,6 @@ public:
                               CORINFO_METHOD_HANDLE method,
                               CORINFO_CLASS_HANDLE delegateCls,
                               BOOL* pfIsOpenDelegate);
-
-    BOOL isDelegateCreationAllowed(CORINFO_CLASS_HANDLE        delegateHnd,
-                                   CORINFO_METHOD_HANDLE       calleeHnd);
 
     void getGSCookie(GSCookie * pCookieVal, 
                      GSCookie** ppCookieVal);

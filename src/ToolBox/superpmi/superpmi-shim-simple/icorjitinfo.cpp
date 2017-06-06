@@ -149,6 +149,13 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(CORINFO_METHOD_HAND
     return original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
 }
 
+void interceptor_ICJI::expandRawHandleIntrinsic(
+    CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+    CORINFO_GENERICHANDLE_RESULT *  pResult)
+{
+    return original_ICorJitInfo->expandRawHandleIntrinsic(pResolvedToken, pResult);
+}
+
 // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
 // getIntrinsicID() returns the intrinsic ID.
 CorInfoIntrinsics interceptor_ICJI::getIntrinsicID(CORINFO_METHOD_HANDLE method, bool* pMustExpand /* OUT */
@@ -196,12 +203,6 @@ BOOL interceptor_ICJI::isCompatibleDelegate(
     )
 {
     return original_ICorJitInfo->isCompatibleDelegate(objCls, methodParentCls, method, delegateCls, pfIsOpenDelegate);
-}
-
-// Determines whether the delegate creation obeys security transparency rules
-BOOL interceptor_ICJI::isDelegateCreationAllowed(CORINFO_CLASS_HANDLE delegateHnd, CORINFO_METHOD_HANDLE calleeHnd)
-{
-    return original_ICorJitInfo->isDelegateCreationAllowed(delegateHnd, calleeHnd);
 }
 
 // Indicates if the method is an instance of the generic
@@ -1012,11 +1013,6 @@ const void* interceptor_ICJI::getInlinedCallFrameVptr(void** ppIndirection)
 LONG* interceptor_ICJI::getAddrOfCaptureThreadGlobal(void** ppIndirection)
 {
     return original_ICorJitInfo->getAddrOfCaptureThreadGlobal(ppIndirection);
-}
-
-SIZE_T* interceptor_ICJI::getAddrModuleDomainID(CORINFO_MODULE_HANDLE module)
-{
-    return original_ICorJitInfo->getAddrModuleDomainID(module);
 }
 
 // return the native entry point to an EE helper (see CorInfoHelpFunc)
