@@ -245,6 +245,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.MultiByteToWideChar.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.UNICODE_STRING.cs">
+      <Link>Common\Interop\Interop.UNICODE_STRING.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs</Link>
     </Compile>

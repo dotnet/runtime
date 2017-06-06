@@ -940,8 +940,9 @@ namespace System.Diagnostics
         // Cache a single buffer for use in GetProcessInfos().
         private static long[] CachedBuffer;
 
-        static ProcessInfo[] GetProcessInfos(IntPtr dataPtr)
+        private static unsafe ProcessInfo[] GetProcessInfos(IntPtr dataPtr)
         {
+            // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
             Dictionary<int, ProcessInfo> processInfos = new Dictionary<int, ProcessInfo>(60);
 
@@ -950,9 +951,7 @@ namespace System.Diagnostics
             while (true)
             {
                 IntPtr currentPtr = (IntPtr)((long)dataPtr + totalOffset);
-                SystemProcessInformation pi = new SystemProcessInformation();
-
-                Marshal.PtrToStructure(currentPtr, pi);
+                ref SystemProcessInformation pi = ref *(SystemProcessInformation *)(currentPtr);
 
                 // get information for a process
                 ProcessInfo processInfo = new ProcessInfo();
@@ -972,7 +971,7 @@ namespace System.Diagnostics
                 processInfo.HandleCount = (int)pi.HandleCount;
 
 
-                if (pi.NamePtr == IntPtr.Zero)
+                if (pi.ImageName.Buffer == IntPtr.Zero)
                 {
                     if (processInfo.ProcessId == NtProcessManager.SystemProcessID)
                     {
@@ -990,7 +989,7 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.NamePtr, pi.NameLength / sizeof(char)));
+                    string processName = GetProcessShortName(Marshal.PtrToStringUni(pi.ImageName.Buffer, pi.ImageName.Length / sizeof(char)));
                     processInfo.ProcessName = processName;
                 }
 
@@ -1001,12 +1000,11 @@ namespace System.Diagnostics
                 int i = 0;
                 while (i < pi.NumberOfThreads)
                 {
-                    SystemThreadInformation ti = new SystemThreadInformation();
-                    Marshal.PtrToStructure(currentPtr, ti);
+                    ref SystemThreadInformation ti = ref *(SystemThreadInformation *)(currentPtr);
                     ThreadInfo threadInfo = new ThreadInfo();
 
-                    threadInfo._processId = (int)ti.UniqueProcess;
-                    threadInfo._threadId = (ulong)ti.UniqueThread;
+                    threadInfo._processId = (int)ti.ClientId.UniqueProcess;
+                    threadInfo._threadId = (ulong)ti.ClientId.UniqueThread;
                     threadInfo._basePriority = ti.BasePriority;
                     threadInfo._currentPriority = ti.Priority;
                     threadInfo._startAddress = ti.StartAddress;
@@ -1082,65 +1080,52 @@ namespace System.Diagnostics
 
         // native struct defined in ntexapi.h
         [StructLayout(LayoutKind.Sequential)]
-        internal class SystemProcessInformation
+        internal unsafe struct SystemProcessInformation
         {
             internal uint NextEntryOffset;
             internal uint NumberOfThreads;
-            private long _SpareLi1;
-            private long _SpareLi2;
-            private long _SpareLi3;
-            private long _CreateTime;
-            private long _UserTime;
-            private long _KernelTime;
-
-            internal ushort NameLength;   // UNICODE_STRING   
-            internal ushort MaximumNameLength;
-            internal IntPtr NamePtr;     // This will point into the data block returned by NtQuerySystemInformation
-
+            private fixed byte Reserved1[48];
+            internal Interop.UNICODE_STRING ImageName;
             internal int BasePriority;
             internal IntPtr UniqueProcessId;
-            internal IntPtr InheritedFromUniqueProcessId;
+            private UIntPtr Reserved2;
             internal uint HandleCount;
             internal uint SessionId;
-            internal UIntPtr PageDirectoryBase;
+            private UIntPtr Reserved3;
             internal UIntPtr PeakVirtualSize;  // SIZE_T
             internal UIntPtr VirtualSize;
-            internal uint PageFaultCount;
-
-            internal UIntPtr PeakWorkingSetSize;
-            internal UIntPtr WorkingSetSize;
-            internal UIntPtr QuotaPeakPagedPoolUsage;
-            internal UIntPtr QuotaPagedPoolUsage;
-            internal UIntPtr QuotaPeakNonPagedPoolUsage;
-            internal UIntPtr QuotaNonPagedPoolUsage;
-            internal UIntPtr PagefileUsage;
-            internal UIntPtr PeakPagefileUsage;
-            internal UIntPtr PrivatePageCount;
-
-            private long _ReadOperationCount;
-            private long _WriteOperationCount;
-            private long _OtherOperationCount;
-            private long _ReadTransferCount;
-            private long _WriteTransferCount;
-            private long _OtherTransferCount;
+            private uint Reserved4;
+            internal UIntPtr PeakWorkingSetSize;  // SIZE_T
+            internal UIntPtr WorkingSetSize;  // SIZE_T
+            private UIntPtr Reserved5;
+            internal UIntPtr QuotaPagedPoolUsage;  // SIZE_T
+            private UIntPtr Reserved6;
+            internal UIntPtr QuotaNonPagedPoolUsage;  // SIZE_T
+            internal UIntPtr PagefileUsage;  // SIZE_T
+            internal UIntPtr PeakPagefileUsage;  // SIZE_T
+            internal UIntPtr PrivatePageCount;  // SIZE_T
+            private fixed long Reserved7[6];
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal class SystemThreadInformation
+        internal unsafe struct SystemThreadInformation
         {
-            private long _KernelTime;
-            private long _UserTime;
-            private long _CreateTime;
-
-            private uint _WaitTime;
+            private fixed long Reserved1[3];
+            private uint Reserved2;
             internal IntPtr StartAddress;
-            internal IntPtr UniqueProcess;
-            internal IntPtr UniqueThread;
+            internal CLIENT_ID ClientId;
             internal int Priority;
             internal int BasePriority;
-            internal uint ContextSwitches;
+            private uint Reserved3;
             internal uint ThreadState;
             internal uint WaitReason;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct CLIENT_ID
+        {
+            internal IntPtr UniqueProcess;
+            internal IntPtr UniqueThread;
         }
     }
 
