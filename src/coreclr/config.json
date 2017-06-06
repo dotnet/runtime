@@ -30,6 +30,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "__BlobNamePrefix": {
+      "description": "Blob Prefix for Azure download.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": ""
+    },
     "MsBuildFileLogging": {
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
@@ -173,6 +179,12 @@
       "valueType": "property",
       "values": [],
       "defaultValue": ""
+    },
+    "OverwriteCoreClrPackageVersion": {
+      "description": "Sets the property specifying to overwrite CoreClr Package version using OfficialBuildId",
+      "valueType": "property",
+      "values": [ true, false ],
+      "defaultValue": true
     },
     "OfficialBuildId": {
       "description": "Official Build Id.",
@@ -529,6 +541,12 @@
           "description": "Container name to download from in Azure Blob storage.",
           "settings": {
             "__Container": "default"
+          }
+        },
+        "blobNamePrefix": {
+          "description": "Blob Prefix to download from in Azure container.",
+          "settings": {
+            "__BlobNamePrefix": "default"
           }
         },
         "runtimeId": {
