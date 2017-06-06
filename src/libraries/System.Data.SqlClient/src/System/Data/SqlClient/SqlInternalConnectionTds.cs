@@ -527,7 +527,7 @@ namespace System.Data.SqlClient
         {
             // Add brackets around database
             database = SqlConnection.FixupDatabaseTransactionName(database);
-            Task executeTask = _parser.TdsExecuteSQLBatch("use " + database, ConnectionOptions.ConnectTimeout, _parser._physicalStateObj, sync: true);
+            Task executeTask = _parser.TdsExecuteSQLBatch("use " + database, ConnectionOptions.ConnectTimeout, null, _parser._physicalStateObj, sync: true);
             Debug.Assert(executeTask == null, "Shouldn't get a task when doing sync writes");
             _parser.Run(RunBehavior.UntilDone, null, null, null, _parser._physicalStateObj);
         }

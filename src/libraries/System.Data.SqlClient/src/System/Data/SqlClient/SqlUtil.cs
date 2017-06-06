@@ -276,6 +276,10 @@ namespace System.Data.SqlClient
             return ADP.InvalidOperation(SR.GetString(SR.SQL_PendingBeginXXXExists));
         }
 
+        internal static ArgumentOutOfRangeException InvalidSqlDependencyTimeout(string param)
+        {
+            return ADP.ArgumentOutOfRange(SR.GetString(SR.SqlDependency_InvalidTimeout), param);
+        }
 
         internal static Exception NonXmlResult()
         {
@@ -411,6 +415,50 @@ namespace System.Data.SqlClient
         internal static Exception XmlReaderNotSupportOnColumnType(string columnName)
         {
             return ADP.InvalidCast(SR.GetString(SR.SQL_XmlReaderNotSupportOnColumnType, columnName));
+        }
+
+        //
+        // SQL.SqlDependency
+        //
+        internal static Exception SqlCommandHasExistingSqlNotificationRequest()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQLNotify_AlreadyHasCommand));
+        }
+
+        internal static Exception SqlDepDefaultOptionsButNoStart()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_DefaultOptionsButNoStart));
+        }
+
+        internal static Exception SqlDependencyDatabaseBrokerDisabled()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_DatabaseBrokerDisabled));
+        }
+
+        internal static Exception SqlDependencyEventNoDuplicate()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_EventNoDuplicate));
+        }
+
+        internal static Exception SqlDependencyDuplicateStart()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_DuplicateStart));
+        }
+
+        internal static Exception SqlDependencyIdMismatch()
+        {
+            // do not include the id because it may require SecurityPermission(Infrastructure) permission
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_IdMismatch));
+        }
+
+        internal static Exception SqlDependencyNoMatchingServerStart()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_NoMatchingServerStart));
+        }
+
+        internal static Exception SqlDependencyNoMatchingServerDatabaseStart()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SqlDependency_NoMatchingServerDatabaseStart));
         }
 
         //
@@ -801,6 +849,12 @@ namespace System.Data.SqlClient
             string errorMessageId = String.Format((IFormatProvider)null, "SNI_ERROR_{0}", sniError);
             return SR.GetResourceString(errorMessageId, errorMessageId);
         }
+
+        // Default values for SqlDependency and SqlNotificationRequest
+        internal const int SqlDependencyTimeoutDefault = 0;
+        internal const int SqlDependencyServerTimeout = 5 * 24 * 3600; // 5 days - used to compute default TTL of the dependency
+        internal const string SqlNotificationServiceDefault = "SqlQueryNotificationService";
+        internal const string SqlNotificationStoredProcedureDefault = "SqlQueryNotificationStoredProcedure";
     }
 
     sealed internal class SQLMessage
@@ -970,6 +1024,25 @@ namespace System.Data.SqlClient
         {
             Debug.Assert(input != null, "input string cannot be null");
             return input.Replace("'", "''");
+        }
+
+        /// <summary>
+        /// Escape a string as a TSQL literal, wrapping it around with single quotes.
+        /// Use this method to escape input strings to prevent SQL injection 
+        /// and to get correct behavior for embedded quotes.
+        /// </summary>
+        /// <param name="input">unescaped string</param>
+        /// <returns>escaped and quoted literal string</returns>
+        internal static string MakeStringLiteral(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+            {
+                return "''";
+            }
+            else
+            {
+                return "'" + EscapeStringAsLiteral(input) + "'";
+            }
         }
     }
 }//namespace

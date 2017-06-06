@@ -667,6 +667,33 @@
   <data name="SQL_EnumeratedRecordFieldCountChanged" xml:space="preserve">
     <value>Number of fields in record '{0}' does not match the number in the original record.</value>
   </data>
+  <data name="SQLNotify_AlreadyHasCommand" xml:space="preserve">
+    <value>This SqlCommand object is already associated with another SqlDependency object.</value>
+  </data>
+  <data name="SqlDependency_DatabaseBrokerDisabled" xml:space="preserve">
+    <value>The SQL Server Service Broker for the current database is not enabled, and as a result query notifications are not supported.  Please enable the Service Broker for this database if you wish to use notifications.</value>
+  </data>
+  <data name="SqlDependency_DefaultOptionsButNoStart" xml:space="preserve">
+    <value>When using SqlDependency without providing an options value, SqlDependency.Start() must be called prior to execution of a command added to the SqlDependency instance.</value>
+  </data>
+  <data name="SqlDependency_NoMatchingServerStart" xml:space="preserve">
+    <value>When using SqlDependency without providing an options value, SqlDependency.Start() must be called for each server that is being executed against.</value>
+  </data>
+  <data name="SqlDependency_NoMatchingServerDatabaseStart" xml:space="preserve">
+    <value>SqlDependency.Start has been called for the server the command is executing against more than once, but there is no matching server/user/database Start() call for current command.</value>
+  </data>
+  <data name="SqlDependency_EventNoDuplicate" xml:space="preserve">
+    <value>SqlDependency.OnChange does not support multiple event registrations for the same delegate.</value>
+  </data>
+  <data name="SqlDependency_IdMismatch" xml:space="preserve">
+    <value>No SqlDependency exists for the key.</value>
+  </data>
+  <data name="SqlDependency_InvalidTimeout" xml:space="preserve">
+    <value>Timeout specified is invalid. Timeout cannot be &lt; 0.</value>
+  </data>
+  <data name="SqlDependency_DuplicateStart" xml:space="preserve">
+    <value>SqlDependency does not support calling Start() with different connection strings having the same server, user, and database in the same app domain.</value>
+  </data>
   <data name="SqlMetaData_InvalidSqlDbTypeForConstructorFormat" xml:space="preserve">
     <value>The dbType {0} is invalid for this constructor.</value>
   </data>
