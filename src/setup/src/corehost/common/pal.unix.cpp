@@ -217,28 +217,6 @@ bool locate_dotnet_on_path(std::vector<pal::string_t>* dotnet_exes)
     return true;
 }
 
-bool pal::get_local_dotnet_dir(pal::string_t* recv)
-{
-    recv->clear();
-    pal::string_t dir;
-    if (!pal::getenv("HOME", &dir))
-    {
-        struct passwd* pw = getpwuid(getuid());
-        if (pw && pw->pw_dir)
-        {
-            dir.assign(pw->pw_dir);
-        }
-    }
-    if (dir.empty())
-    {
-        return false;
-    }
-    append_path(&dir, _X(".dotnet"));
-    append_path(&dir, get_arch());
-    recv->assign(dir);
-    return true;
-}
-
  bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
     

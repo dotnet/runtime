@@ -735,14 +735,6 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
     std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
-    if (multilevel_lookup)
-    {
-        if (pal::get_local_dotnet_dir(&local_dir))
-        {
-            hive_dir.push_back(local_dir);
-        }
-    }
-
     if (!own_dir.empty())
     {
         hive_dir.push_back(own_dir);
