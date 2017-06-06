@@ -36,7 +36,6 @@
           DependsOnTargets="$(TraversalBuildDependencies)" />
 
   <Target Name="BuildCustomTasks">
-      <MSBuild Projects="tools-local/Microsoft.DotNet.Build.Tasks.Local/Microsoft.DotNet.Build.Tasks.Local.builds" />
       <MSBuild Projects="tools-local/tasks/core-setup.tasks.builds" />
 
     <PropertyGroup>
@@ -44,15 +43,15 @@
       <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
     </PropertyGroup>
     
-      <ItemGroup>
-        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
-        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
-        <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
-      </ItemGroup>        
-      <Copy SourceFiles="@(CustomTaskDependencies)"
-            DestinationFolder="$(LocalBuildToolsTaskDir)"
-            OverwriteReadOnlyFiles="true"
-            SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
+      <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
+      <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
+    </ItemGroup>        
+    <Copy SourceFiles="@(CustomTaskDependencies)"
+          DestinationFolder="$(LocalBuildToolsTaskDir)"
+          OverwriteReadOnlyFiles="true"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="BatchRestorePackages" Condition="'$(RestoreDuringBuild)'=='true'">

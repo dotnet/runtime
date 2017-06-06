@@ -3,8 +3,8 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>netstandard1.5</NuGetTargetMonikerShort>
+    <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>netstandard1.3</NuGetTargetMonikerShort>
     <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'net45'">.NETFramework,Version=v4.5.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort Condition="'$(TargetGroup)' == 'net45'">net451</NuGetTargetMonikerShort>
     <CLSCompliant>false</CLSCompliant>
@@ -19,7 +19,7 @@
     <SkipSigning>true</SkipSigning>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.5_Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'netstandard1.3_Debug'" />
   <PropertyGroup Condition="'$(Configuration)' == 'net45_Debug'" />
   <ItemGroup>
     <Compile Include="*.cs" />
@@ -34,6 +34,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'net45'">
     <Compile Include="netstandard/FileUtilities.netstandard.cs" />
+
+    <Reference Include="$(BuildToolsTaskCoreDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
+    
     <PackageReference Include="Microsoft.Build">
       <Version>0.1.0-preview-00022</Version>
     </PackageReference>
@@ -60,6 +63,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net45'">
     <Compile Include="net45/FileUtilities.net45.cs" />
     <Compile Include="net45/ProcessSharedFrameworkDeps.net45.cs" />
+
+    <Reference Include="$(BuildToolsTaskDesktopDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
+
     <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5.1">
       <Version>1.0.1</Version>
     </PackageReference>
@@ -72,12 +78,6 @@
     <TargetingPackReference Include="Microsoft.Build" />
     <TargetingPackReference Include="Microsoft.Build.Framework" />
     <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.DotNet.Build.Tasks.Local\Microsoft.DotNet.Build.Tasks.Local.csproj">
-      <Project>{b507bed2-0a28-456a-99c6-ad7aa148e35f}</Project>
-      <Name>Microsoft.DotNet.Build.Tasks.Local</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
