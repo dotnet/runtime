@@ -330,8 +330,8 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
     <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
-    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)</VersionToRestore>
-    <DesiredPackageVersionArg>$(VersionToRestore)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</DesiredPackageVersionArg>
+    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
+    <DesiredPackageVersionArg>$(VersionToRestore)</DesiredPackageVersionArg>
   </PropertyGroup> 
 
   <Import Project="tests.targets" />

@@ -104,8 +104,8 @@
 
   <PropertyGroup Condition="'$(OverwriteCoreClrPackageVersion)' == 'true'">
     <VersionToRestore Condition="'$(StableVersion)' != ''">$(StableVersion)</VersionToRestore>
-    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)</VersionToRestore>
-    <PackageVersionArg>/p:CoreClrPackageVersion=$(VersionToRestore)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</PackageVersionArg>
+    <VersionToRestore Condition="'$(VersionToRestore)' == ''">$(PackageVersion)-$(PreReleaseLabel)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionToRestore>
+    <PackageVersionArg>/p:CoreClrPackageVersion=$(VersionToRestore)</PackageVersionArg>
   </PropertyGroup>
 
   <!-- Which tests shall we build? Default: Priority 0 tests.
