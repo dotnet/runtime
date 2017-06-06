@@ -7,6 +7,7 @@
     <ContainerName Condition="'$(__Container)' == '' and '$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
     <ContainerName Condition="'$(__Container)' != ''">$(__Container)</ContainerName>
     <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
+    <BlobNamePrefix>$(__BlobNamePrefix)</BlobNamePrefix>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' != 'true'">$(PackagesDir)AzureTransfer</DownloadDirectory>
     <DownloadDirectory Condition="'$(PublishTestNativeBins)' == 'true'">$(PackagesDir)TestNativeBins\$(RuntimeId)</DownloadDirectory>
   </PropertyGroup>
