@@ -49,6 +49,7 @@ public:
     static bool IsPreemptiveGCDisabled(Thread * pThread);
     static void EnablePreemptiveGC(Thread * pThread);
     static void DisablePreemptiveGC(Thread * pThread);
+    static bool TrapReturningThreads();
 
     static gc_alloc_context * GetAllocContext(Thread * pThread);
     static bool CatchAtSafePoint(Thread * pThread);
