@@ -14,6 +14,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentCulture()
         {
+            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
+                return;
+
             RemoteInvoke(() =>
             {
                 CultureInfo newCulture = new CultureInfo(CultureInfo.CurrentCulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
@@ -40,6 +43,9 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentUICulture()
         {
+            if (PlatformDetection.IsNetNative && !PlatformDetection.IsWinRT) // Tide us over until .Net Native ILC tests run are run inside an appcontainer.
+                return;
+
             RemoteInvoke(() =>
             {
                 CultureInfo newUICulture = new CultureInfo(CultureInfo.CurrentUICulture.Name.Equals("ja-JP", StringComparison.OrdinalIgnoreCase) ? "ar-SA" : "ja-JP");
