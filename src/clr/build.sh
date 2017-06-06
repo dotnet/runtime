@@ -58,12 +58,29 @@ usage()
 initHostDistroRid()
 {
     if [ "$__HostOS" == "Linux" ]; then
-        if [ ! -e /etc/os-release ]; then
-            echo "WARNING: Can not determine runtime id for current distro."
-            __HostDistroRid=""
-        else
+        __HostDistroRid=linux-$__HostArch
+        if [ -e /etc/os-release ]; then
             source /etc/os-release
-            __HostDistroRid="$ID.$VERSION_ID-$__HostArch"
+            OS_RELEASE_RID=$ID.$VERSION_ID-$__HostArch
+            # RHEL bumps their OS Version with minor releases, but we only put the "rhel.7-x64" RID in our
+            # tool runtime, since there's binary compatibility between minor versions.
+            if [[ $OS_RELEASE_RID == rhel.7*-x64 ]]; then
+                OS_RELEASE_RID=rhel.7-x64
+            fi
+
+            SUPPORTED_RIDS=("alpine.3.4.3-x64" "centos.7-x64" "debian.8-x64" "fedora.24-x64" "fedora.25-x64" "opensuse.42.1-x64" \
+                            "rhel.7-x64" "ubuntu.14.04-x64" "ubuntu.16.04-x64" "ubuntu.16.10-x64" )
+            for SUPPORTED_RID in "${SUPPORTED_RIDS[@]}"
+            do
+                if [ "$SUPPORTED_RID" == "$OS_RELEASE_RID" ] ; then
+                    __HostDistroRid=$OS_RELEASE_RID
+                    break
+                fi
+            done
+        fi
+
+        if [ "$__HostDistroRid" == "linux-$__HostArch" ]; then
+            echo "Unknown runtime id for current distro. Using Portable Linux."
         fi
     fi
 }
@@ -81,7 +98,18 @@ initTargetDistroRid()
             fi
         fi
     else
-        export __DistroRid="$__HostDistroRid"
+        if [ ! -e /etc/os-release ]; then
+            echo "WARNING: Can not determine runtime id for current distro."
+            export __DistroRid=""
+        else
+            source /etc/os-release
+            __DistroRid=$ID.$VERSION_ID-$__HostArch
+            # RHEL bumps their OS Version with minor releases, but we only put the "rhel.7-x64" RID in our
+            # tool runtime, since there's binary compatibility between minor versions.
+            if [[ $__DistroRid == rhel.7*-x64 ]]; then
+                __DistroRid=rhel.7-x64
+            fi
+        fi
     fi
 
     # Portable builds target the base RID
@@ -383,38 +411,7 @@ isMSBuildOnNETCoreSupported()
 
     if [ "$__HostArch" == "x64" ]; then
         if [ "$__HostOS" == "Linux" ]; then
-            case "$__HostDistroRid" in
-                "centos.7-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "debian.8-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "fedora.24-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "fedora.25-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "opensuse.42.1-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "rhel.7"*"-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.14.04-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.16.04-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.16.10-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "alpine.3.4.3-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-            esac
+            __isMSBuildOnNETCoreSupported=1
         elif [ "$__HostOS" == "OSX" ]; then
             __isMSBuildOnNETCoreSupported=1
         fi
