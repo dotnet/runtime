@@ -2798,6 +2798,9 @@ gboolean  mono_arch_is_breakpoint_event         (void *info, void *sigctx);
 void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *ji);
 void     mono_arch_skip_single_step             (MonoContext *ctx);
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code);
+#endif
+
+#ifdef MONO_ARCH_HAVE_INIT_LMF_EXT
 void     mono_arch_init_lmf_ext                 (MonoLMFExt *ext, gpointer prev_lmf);
 #endif
 
