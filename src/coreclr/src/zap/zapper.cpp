@@ -1377,6 +1377,13 @@ void Zapper::InitializeCompilerFlags(CORCOMPILE_VERSION_INFO * pVersionInfo)
     if (pVersionInfo->wCodegenFlags & CORCOMPILE_CODEGEN_PROF_INSTRUMENTING)
         m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_BBINSTR);
 
+    // Set CORJIT_FLAG_MIN_OPT only if COMPlus_JitMinOpts == 1
+    static ConfigDWORD g_jitMinOpts;
+    if (g_jitMinOpts.val_DontUse_(CLRConfig::UNSUPPORTED_JITMinOpts, 0) == 1)
+    {
+        m_pOpt->m_compilerFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT);
+    }
+
 #if defined(_TARGET_X86_)
 
     // @TODO: This is a copy of SetCpuInfo() in vm\codeman.cpp. Unify the implementaion
