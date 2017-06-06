@@ -190,6 +190,11 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
     pThread->DisablePreemptiveGC();
 }
 
+bool GCToEEInterface::TrapReturningThreads()
+{
+    return !!g_TrapReturningThreads;
+}
+
 gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     return pThread->GetAllocContext();

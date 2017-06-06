@@ -77,6 +77,10 @@ public:
     virtual
     void DisablePreemptiveGC(Thread * pThread) = 0;
 
+    // Returns whether or not a thread suspension is pending.
+    virtual
+    bool TrapReturningThreads() = 0;
+
     // Retrieves the alloc context associated with a given thread.
     virtual
     gc_alloc_context * GetAllocContext(Thread * pThread) = 0;
