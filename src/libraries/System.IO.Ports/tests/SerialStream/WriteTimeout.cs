@@ -7,6 +7,7 @@ using System.IO.PortsTests;
 using System.Threading;
 using Legacy.Support;
 using Xunit;
+using Xunit.NetCore.Extensions;
 using ThreadState = System.Threading.ThreadState;
 
 namespace System.IO.Ports.Tests
@@ -149,7 +150,7 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(WriteByte, int.MaxValue - 1);
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void WriteTimeout_750_Write_byte_int_int()
         {
@@ -158,7 +159,7 @@ namespace System.IO.Ports.Tests
             VerifyTimeout(Write_byte_int_int, 750);
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void WriteTimeout_750_WriteByte()
         {
@@ -167,7 +168,7 @@ namespace System.IO.Ports.Tests
             VerifyTimeout(WriteByte, 750);
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void SuccessiveWriteTimeoutNoData_Write_byte_int_int()
         {
@@ -238,7 +239,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void SuccessiveWriteTimeoutNoData_WriteByte()
         {

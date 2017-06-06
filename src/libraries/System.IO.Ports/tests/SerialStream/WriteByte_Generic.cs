@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
+using Xunit.NetCore.Extensions;
 using ThreadState = System.Threading.ThreadState;
 
 namespace System.IO.Ports.Tests
@@ -86,7 +87,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void SuccessiveReadTimeout()
         {
@@ -187,7 +188,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow Test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
         public void BytesToWriteSuccessive()
         {

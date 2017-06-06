@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using Legacy.Support;
 using Xunit;
+using Xunit.NetCore.Extensions;
 
 namespace System.IO.Ports.Tests
 {
@@ -80,7 +81,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Timeout()
         {
@@ -96,7 +97,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void SuccessiveReadTimeoutNoData()
         {

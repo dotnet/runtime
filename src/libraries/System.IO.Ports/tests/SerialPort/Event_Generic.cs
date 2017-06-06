@@ -21,7 +21,6 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [OuterLoop("Slow Test")]
         [ConditionalFact(nameof(HasNullModem))]
         public void EventHandlers_CalledSerially()
         {
@@ -219,7 +218,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow Test")]
         [ConditionalFact(nameof(HasNullModem))]
         public void Thread_In_PinChangedEvent()
         {
@@ -256,7 +254,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow Test")]
         [ConditionalFact(nameof(HasNullModem))]
         public void Thread_In_ReceivedEvent()
         {
@@ -296,7 +293,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow Test")]
         [ConditionalFact(nameof(HasNullModem))]
         public void Thread_In_ErrorEvent()
         {

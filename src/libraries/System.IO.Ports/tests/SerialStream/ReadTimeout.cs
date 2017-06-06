@@ -7,6 +7,7 @@ using System.IO.PortsTests;
 using System.Threading;
 using Legacy.Support;
 using Xunit;
+using Xunit.NetCore.Extensions;
 
 namespace System.IO.Ports.Tests
 {
@@ -114,7 +115,7 @@ namespace System.IO.Ports.Tests
             VerifyLongTimeout(ReadByte, int.MaxValue - 1);
         }
 
-        [OuterLoop("Slow Test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_750_Read_byte_int_int()
         {
@@ -122,7 +123,7 @@ namespace System.IO.Ports.Tests
             VerifyTimeout(Read_byte_int_int, 750);
         }
 
-        [OuterLoop("Slow Test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_750_ReadByte()
         {
@@ -130,7 +131,7 @@ namespace System.IO.Ports.Tests
             VerifyTimeout(ReadByte, 750);
         }
 
-        [OuterLoop("Slow test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void SuccessiveReadTimeoutNoData_Read_byte_int_int()
         {
@@ -157,6 +158,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasNullModem))]
         public void SuccessiveReadTimeoutSomeData_Read_byte_int_int()
         {
@@ -195,7 +197,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [OuterLoop("Slow Test")]
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void SuccessiveReadTimeoutNoData_ReadByte()
         {
@@ -252,6 +254,7 @@ namespace System.IO.Ports.Tests
         }
 
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_byte_int_int()
         {
@@ -260,6 +263,7 @@ namespace System.IO.Ports.Tests
             Verify0Timeout(Read_byte_int_int);
         }
 
+        [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)]  // Timing-sensitive
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadByte()
         {
