@@ -1496,7 +1496,7 @@ void WaitLongerNoInstru (int i)
     }
 
     // if we're waiting for gc to finish, we should block immediately
-    if (!g_TrapReturningThreads)
+    if (!GCToEEInterface::TrapReturningThreads())
     {
         if  (g_num_processors > 1)
         {
@@ -1516,7 +1516,7 @@ void WaitLongerNoInstru (int i)
     // is in a tight loop.  If the thread has high priority, the perf is going to be very BAD.
     if (pCurThread)
     {
-        if (bToggleGC || g_TrapReturningThreads)
+        if (bToggleGC || GCToEEInterface::TrapReturningThreads())
         {
 #ifdef _DEBUG
             // In debug builds, all enter_spin_lock operations go through this code.  If a GC has
@@ -1537,7 +1537,7 @@ void WaitLongerNoInstru (int i)
             }
         }
     }
-    else if (g_TrapReturningThreads)
+    else if (GCToEEInterface::TrapReturningThreads())
     {
         g_theGCHeap->WaitUntilGCComplete();
     }
