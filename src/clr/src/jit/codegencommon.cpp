@@ -10162,11 +10162,12 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 #endif // DEBUG
 
         assert(PSP_slot_CallerSP_offset < 0);
-        assert(compiler->lvaPSPSym != BAD_VAR_NUM);
-        assert(PSP_slot_CallerSP_offset == compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)); // same offset
-                                                                                                         // used in main
-                                                                                                         // function and
-                                                                                                         // funclet!
+        if (compiler->lvaPSPSym != BAD_VAR_NUM)
+        {
+            assert(PSP_slot_CallerSP_offset ==
+                   compiler->lvaGetCallerSPRelativeOffset(compiler->lvaPSPSym)); // same offset used in main
+                                                                                 // function and funclet!
+        }
     }
 }
 
