@@ -134,6 +134,12 @@ ALWAYS_INLINE void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
     g_theGCToCLR->DisablePreemptiveGC(pThread);
 }
 
+ALWAYS_INLINE bool GCToEEInterface::TrapReturningThreads()
+{
+    assert(g_theGCToCLR != nullptr);
+    return g_theGCToCLR->TrapReturningThreads();
+}
+
 ALWAYS_INLINE gc_alloc_context * GCToEEInterface::GetAllocContext(Thread * pThread)
 {
     assert(g_theGCToCLR != nullptr);

@@ -356,6 +356,12 @@ void GCToEEInterface::DisablePreemptiveGC(Thread * pThread)
     pThread->DisablePreemptiveGC();
 }
 
+bool GCToEEInterface::TrapReturningThreads()
+{
+    WRAPPER_NO_CONTRACT;
+    return !!g_TrapReturningThreads;
+}
+
 struct BackgroundThreadStubArgs
 {
     Thread* thread;
