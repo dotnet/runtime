@@ -118,18 +118,6 @@ def osShortName = ['Windows 10': 'win10',
                 }
             }
 
-            // Set the label.
-            if (os == 'Windows_NT') {
-                newJob.with {
-                    label('windows_clr_perf')
-                }
-            }
-            else {
-                newJob.with {
-                    label('linux_clr_perf')
-                }
-            }
-
             // Set up standard options.
             Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
             //Set timeout to non-default
