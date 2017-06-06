@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* f00b3f49-ddd2-49be-ba43-6e49ffa66959 */
-    0xf00b3f49,
-    0xddd2,
-    0x49be,
-    { 0xba, 0x43, 0x6e, 0x49, 0xff, 0xa6, 0x69, 0x59 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* e5708e9e-dd18-4287-8745-5d10ff2697cf */
+    0xe5708e9e,
+    0xdd18,
+    0x4287,
+    { 0x87, 0x45, 0x5d, 0x10, 0xff, 0x26, 0x97, 0xcf }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -960,6 +960,7 @@ enum CorInfoIntrinsics
     CORINFO_INTRINSIC_ByReference_Value,
     CORINFO_INTRINSIC_Span_GetItem,
     CORINFO_INTRINSIC_ReadOnlySpan_GetItem,
+    CORINFO_INTRINSIC_GetRawHandle,
 
     CORINFO_INTRINSIC_Count,
     CORINFO_INTRINSIC_Illegal = -1,         // Not a true intrinsic,
@@ -2075,6 +2076,15 @@ public:
             CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
             ) = 0;
 
+    // Given resolved token that corresponds to an intrinsic classified as
+    // a CORINFO_INTRINSIC_GetRawHandle intrinsic, fetch the handle associated
+    // with the token. If this is not possible at compile-time (because the current method's 
+    // code is shared and the token contains generic parameters) then indicate 
+    // how the handle should be looked up at runtime.
+    virtual void expandRawHandleIntrinsic(
+        CORINFO_RESOLVED_TOKEN *        pResolvedToken,
+        CORINFO_GENERICHANDLE_RESULT *  pResult) = 0;
+
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
     // getIntrinsicID() returns the intrinsic ID.
     // *pMustExpand tells whether or not JIT must expand the intrinsic.
@@ -2118,13 +2128,6 @@ public:
             CORINFO_CLASS_HANDLE        delegateCls,      /* exact type of the delegate */
             BOOL                        *pfIsOpenDelegate /* is the delegate open */
             ) = 0;
-
-    // Determines whether the delegate creation obeys security transparency rules
-    virtual BOOL isDelegateCreationAllowed (
-            CORINFO_CLASS_HANDLE        delegateHnd,
-            CORINFO_METHOD_HANDLE       calleeHnd
-            ) = 0;
-
 
     // Indicates if the method is an instance of the generic
     // method that passes (or has passed) verification
@@ -2845,8 +2848,6 @@ public:
     virtual LONG * getAddrOfCaptureThreadGlobal(
                     void                  **ppIndirection = NULL
                     ) = 0;
-
-    virtual SIZE_T*       getAddrModuleDomainID(CORINFO_MODULE_HANDLE   module) = 0;
 
     // return the native entry point to an EE helper (see CorInfoHelpFunc)
     virtual void* getHelperFtn (
