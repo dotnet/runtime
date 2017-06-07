@@ -47,15 +47,21 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    __isMSBuildOnNETCoreSupported=1
-    UNSUPPORTED_RIDS=("*-arm" "*-arm64" "*-x86" "debian.9-x64" "ubuntu.17.04-x64")
-    for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
-    do
-        if [[ "$__HostDistroRid" == $UNSUPPORTED_RID ]]; then
-            __isMSBuildOnNETCoreSupported=0
-            break
+    if [ "$__HostArch" == "x64" ]; then
+        if [ "$__HostOS" == "Linux" ]; then
+            __isMSBuildOnNETCoreSupported=1
+            UNSUPPORTED_RIDS=("debian.9-x64" "ubuntu.17.04-x64")
+            for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
+            do
+                if [ "$__HostDistroRid" == "$UNSUPPORTED_RID" ]; then
+                    __isMSBuildOnNETCoreSupported=0
+                    break
+                fi
+            done
+        elif [ "$__HostOS" == "OSX" ]; then
+            __isMSBuildOnNETCoreSupported=1
         fi
-    done
+    fi
 }
 
 build_Tests()
