@@ -357,7 +357,7 @@ namespace System.Collections.Generic
         {
             if (_siInfo == null)
             {
-                return; //Somebody had a dependency on this Dictionary and fixed us up before the ObjectManager got to it.
+                return; //Somebody had a dependency on this LinkedList and fixed us up before the ObjectManager got to it.
             }
 
             int realVersion = _siInfo.GetInt32(VersionName);
