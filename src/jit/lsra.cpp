@@ -4698,7 +4698,7 @@ void LinearScan::buildIntervals()
         {
             JITDUMP("\n\nSetting BB%02u as the predecessor for determining incoming variable registers of BB%02u\n",
                     block->bbNum, predBlock->bbNum);
-            assert(predBlock->bbNum <= bbNumMaxBeforeResolution); 
+            assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
             blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
         }
 
@@ -4750,7 +4750,7 @@ void LinearScan::buildIntervals()
                     {
                         Interval*    interval = getIntervalForLocalVar(varIndex);
                         RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
-                                                               allRegs(interval->registerType));
+                                                          allRegs(interval->registerType));
                     }
                 }
                 JITDUMP("Finished creating dummy definitions\n\n");
