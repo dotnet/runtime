@@ -41,7 +41,7 @@
     .locals init (valuetype [System.Data]System.Data.SqlTypes.SqlDecimal V_0)
     .try
     {
-		ldc.r8 5
+	ldstr "Exception 1"
     	newobj     instance void [mscorlib]System.OverflowException::.ctor(string)
     	throw
 			  pop
@@ -57,7 +57,7 @@
     IL_0021:  nop
     .try
     {
-		ldc.r8 5
+	ldstr "Exception 2"
     	newobj     instance void [mscorlib]System.OverflowException::.ctor(string)
     	throw
 			  pop
@@ -73,7 +73,7 @@
     IL_0033:  nop
     .try
     {
-		ldc.r8 5
+	ldstr "Exception 3"
     	newobj     instance void [mscorlib]System.OverflowException::.ctor(string)
     	throw
       IL_0044:  leave.s    IL_0049
@@ -88,7 +88,7 @@
     IL_0049:  nop
     .try
     {
-		ldc.r8 5
+	ldstr "Exception 4"
     	newobj     instance void [mscorlib]System.OverflowException::.ctor(string)
     	throw
 		pop
@@ -104,7 +104,7 @@
     IL_005f:  nop
     .try
     {
-		ldc.r8 5
+	ldstr "Exception 5"
     	newobj     instance void [mscorlib]System.OverflowException::.ctor(string)
     	throw
 		pop
@@ -120,7 +120,7 @@
     IL_0071:  nop
     .try
     {
-		ldc.r8 5
+	ldstr "Exception 6"
     	newobj     instance void [mscorlib]System.OverflowException::.ctor(string)
     	throw
 		pop
