@@ -242,7 +242,7 @@ REM === Restore optimization profile data
 REM ===
 REM =========================================================================================
 
-if %__RestoreOptData% EQU 1 (
+if %__RestoreOptData% EQU 1 if %__BuildTypeRelease% EQU 1 (
     echo %__MsgPrefix%Restoring the OptimizationData Package
     @call %__ProjectDir%\run.cmd sync -optdata
     if not !errorlevel! == 0 (
