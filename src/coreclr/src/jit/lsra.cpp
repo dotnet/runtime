@@ -2027,7 +2027,7 @@ void LinearScan::identifyCandidates()
     unsigned int floatVarCount        = 0;
     unsigned int thresholdFPRefCntWtd = 4 * BB_UNITY_WEIGHT;
     unsigned int maybeFPRefCntWtd     = 2 * BB_UNITY_WEIGHT;
-    VARSET_TP fpMaybeCandidateVars(VarSetOps::UninitVal());
+    VARSET_TP    fpMaybeCandidateVars(VarSetOps::UninitVal());
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     unsigned int largeVectorVarCount           = 0;
     unsigned int thresholdLargeVectorRefCntWtd = 4 * BB_UNITY_WEIGHT;
@@ -4697,15 +4697,15 @@ void LinearScan::buildIntervals()
         if (predBlock)
         {
             JITDUMP("\n\nSetting BB%02u as the predecessor for determining incoming variable registers of BB%02u\n",
-                block->bbNum, predBlock->bbNum);
-            assert(predBlock->bbNum <= bbNumMaxBeforeResolution);
+                    block->bbNum, predBlock->bbNum);
+            assert(predBlock->bbNum <= bbNumMaxBeforeResolution); 
             blockInfo[block->bbNum].predBBNum = predBlock->bbNum;
         }
 
         if (enregisterLocalVars)
         {
             VarSetOps::AssignNoCopy(compiler, currentLiveVars,
-                                VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveIn));
+                                    VarSetOps::Intersection(compiler, registerCandidateVars, block->bbLiveIn));
 
             if (block == compiler->fgFirstBB)
             {
@@ -4749,8 +4749,8 @@ void LinearScan::buildIntervals()
                     if (isCandidateVar(varDsc) && (predBlock != nullptr || !varDsc->lvIsParam))
                     {
                         Interval*    interval = getIntervalForLocalVar(varIndex);
-                        RefPosition* pos =
-                            newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr, allRegs(interval->registerType));
+                        RefPosition* pos      = newRefPosition(interval, currentLoc, RefTypeDummyDef, nullptr,
+                                                               allRegs(interval->registerType));
                     }
                 }
                 JITDUMP("Finished creating dummy definitions\n\n");
