@@ -9,6 +9,9 @@
 #include "config.h"
 
 #include "mini.h"
+#ifdef ENABLE_INTERPRETER
+#include "interp/interp.h"
+#endif
 #include "tasklets.h"
 #include <mono/metadata/abi-details.h>
 

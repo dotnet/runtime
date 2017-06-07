@@ -267,6 +267,15 @@ DECL_OFFSET(SeqPointInfo, ss_tramp_addr)
 DECL_OFFSET(SeqPointInfo, bp_addrs)
 #endif
 
+#ifdef ENABLE_INTERPRETER
+DECL_OFFSET(InterpMethodArguments, ilen)
+DECL_OFFSET(InterpMethodArguments, iargs)
+DECL_OFFSET(InterpMethodArguments, flen)
+DECL_OFFSET(InterpMethodArguments, fargs)
+DECL_OFFSET(InterpMethodArguments, retval)
+DECL_OFFSET(InterpMethodArguments, is_float_ret)
+#endif
+
 #endif //DISABLE_JIT_OFFSETS
 
 #endif //USED_CROSS_COMPILER_OFFSETS
