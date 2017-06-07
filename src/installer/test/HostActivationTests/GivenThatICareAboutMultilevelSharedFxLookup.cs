@@ -169,6 +169,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             {
                 return;
             }
+            else
+            {
+                // Currently no support for global locations on Linux; remaining test code below is preserved for now.
+                return;
+            }
 
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -415,6 +420,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             {
                 return;
             }
+            else
+            {
+                // Currently no support for global locations on Linux; remaining test code below is preserved for now.
+                return;
+            }
 
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -481,6 +491,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             {
                 return;
             }
+            else
+            {
+                // Currently no support for global locations on Linux; remaining test code below is preserved for now.
+                return;
+            }
 
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
@@ -529,7 +544,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             {
                 return;
             }
-            
+            else
+            {
+                // Currently no support for global locations on Linux; remaining test code below is preserved for now.
+                return;
+            }
+
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
@@ -595,7 +615,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             {
                 return;
             }
-            
+            else
+            {
+                // Currently no support for global locations on Linux; remaining test code below is preserved for now.
+                return;
+            }
+
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
                 .Copy();
 
