@@ -77,6 +77,9 @@
     <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
   </Target>
 
+  <!-- Dumpling.targets needs to install dumpling.py before running tests. -->
+  <Import Project="$(ToolsDir)Dumpling.targets" Condition="Exists('$(ToolsDir)Dumpling.targets') AND ('$(EnableDumpling)' == 'true' OR '$(EnableCloudTest)' == 'true')" />
+
   <Target Name="GetFilesToPackage"
           DependsOnTargets="FilterProjects"
           Returns="@(FilesToPackage)">
