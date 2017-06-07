@@ -6123,7 +6123,7 @@ GenTreePtr Compiler::fgMorphStackArgForVarArgs(unsigned lclNum, var_types varTyp
 
 GenTreePtr Compiler::fgMorphLocalVar(GenTreePtr tree, bool forceRemorph)
 {
-    noway_assert(tree->gtOper == GT_LCL_VAR);
+    assert(tree->gtOper == GT_LCL_VAR);
 
     unsigned   lclNum  = tree->gtLclVarCommon.gtLclNum;
     var_types  varType = lvaGetRealType(lclNum);
@@ -8547,7 +8547,7 @@ NO_TAIL_CALL:
 
 GenTreePtr Compiler::fgMorphConst(GenTreePtr tree)
 {
-    noway_assert(tree->OperKind() & GTK_CONST);
+    assert(tree->OperKind() & GTK_CONST);
 
     /* Clear any exception flags or other unnecessary flags
      * that may have been set before folding this node to a constant */
@@ -8604,7 +8604,7 @@ GenTreePtr Compiler::fgMorphConst(GenTreePtr tree)
 
 GenTreePtr Compiler::fgMorphLeaf(GenTreePtr tree)
 {
-    noway_assert(tree->OperKind() & GTK_LEAF);
+    assert(tree->OperKind() & GTK_LEAF);
 
     if (tree->gtOper == GT_LCL_VAR)
     {
@@ -10850,7 +10850,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
     // flow and gcc thinks that the function never returns
     {
         ALLOCA_CHECK();
-        noway_assert(tree->OperKind() & GTK_SMPOP);
+        assert(tree->OperKind() & GTK_SMPOP);
 
         /* The steps in this function are :
            o Perform required preorder processing
@@ -11344,7 +11344,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 // Note that gtFoldExpr may return a non-leaf even if successful
                 // e.g. for something like "expr / 1" - see also bug #290853
                 if (tree->OperIsLeaf() || (oldTree != tree))
-
                 {
                     return (oldTree != tree) ? fgMorphTree(tree) : fgMorphLeaf(tree);
                 }
@@ -11681,7 +11680,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
              *
              * NOTE: Don't reset the exception flags on nodes that may throw */
 
-            noway_assert(tree->gtOper != GT_CALL);
+            assert(tree->gtOper != GT_CALL);
 
             if ((tree->gtOper != GT_INTRINSIC) || !IsIntrinsicImplementedByUserCall(tree->gtIntrinsic.gtIntrinsicId))
             {
@@ -13572,7 +13571,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 break;
         }
 
-        noway_assert(oper == tree->gtOper);
+        assert(oper == tree->gtOper);
 
         // If we are in the Valuenum CSE phase then don't morph away anything as these
         // nodes may have CSE defs/uses in them.
@@ -14791,11 +14790,11 @@ GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
 
         if (typ == TYP_DOUBLE)
         {
-            noway_assert(CPX_R4_NEG + 1 == CPX_R8_NEG);
-            noway_assert(CPX_R4_ADD + 1 == CPX_R8_ADD);
-            noway_assert(CPX_R4_SUB + 1 == CPX_R8_SUB);
-            noway_assert(CPX_R4_MUL + 1 == CPX_R8_MUL);
-            noway_assert(CPX_R4_DIV + 1 == CPX_R8_DIV);
+            static_assert_no_msg(CPX_R4_NEG + 1 == CPX_R8_NEG);
+            static_assert_no_msg(CPX_R4_ADD + 1 == CPX_R8_ADD);
+            static_assert_no_msg(CPX_R4_SUB + 1 == CPX_R8_SUB);
+            static_assert_no_msg(CPX_R4_MUL + 1 == CPX_R8_MUL);
+            static_assert_no_msg(CPX_R4_DIV + 1 == CPX_R8_DIV);
 
             helper++;
         }
@@ -14803,12 +14802,12 @@ GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
         {
             noway_assert(tree->OperIsCompare());
 
-            noway_assert(CPX_R4_EQ + 1 == CPX_R8_EQ);
-            noway_assert(CPX_R4_NE + 1 == CPX_R8_NE);
-            noway_assert(CPX_R4_LT + 1 == CPX_R8_LT);
-            noway_assert(CPX_R4_LE + 1 == CPX_R8_LE);
-            noway_assert(CPX_R4_GE + 1 == CPX_R8_GE);
-            noway_assert(CPX_R4_GT + 1 == CPX_R8_GT);
+            static_assert_no_msg(CPX_R4_EQ + 1 == CPX_R8_EQ);
+            static_assert_no_msg(CPX_R4_NE + 1 == CPX_R8_NE);
+            static_assert_no_msg(CPX_R4_LT + 1 == CPX_R8_LT);
+            static_assert_no_msg(CPX_R4_LE + 1 == CPX_R8_LE);
+            static_assert_no_msg(CPX_R4_GE + 1 == CPX_R8_GE);
+            static_assert_no_msg(CPX_R4_GT + 1 == CPX_R8_GT);
         }
 
         tree = fgMorphIntoHelperCall(tree, helper, args);
@@ -14873,8 +14872,8 @@ GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
 
 GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
 {
-    noway_assert(tree);
-    noway_assert(tree->gtOper != GT_STMT);
+    assert(tree);
+    assert(tree->gtOper != GT_STMT);
 
 #ifdef DEBUG
     if (verbose)
@@ -14973,7 +14972,7 @@ GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
                     /* newTree is non-Null if we propagated an assertion */
                     newTree = optAssertionProp(apFull, tree, nullptr);
                 }
-                noway_assert(tree != nullptr);
+                assert(tree != nullptr);
             }
         }
         PREFAST_ASSUME(tree != nullptr);
@@ -15784,7 +15783,7 @@ void Compiler::fgMorphStmts(BasicBlock* block, bool* mult, bool* lnot, bool* loa
     GenTreePtr   prev = nullptr;
     for (; stmt != nullptr; prev = stmt->gtStmtExpr, stmt = stmt->gtNextStmt)
     {
-        noway_assert(stmt->gtOper == GT_STMT);
+        assert(stmt->gtOper == GT_STMT);
 
         if (fgRemoveRestOfBlock)
         {
@@ -16113,7 +16112,7 @@ void Compiler::fgMorphBlocks()
         {
             for (tree = block->bbTreeList; tree; tree = tree->gtNext)
             {
-                noway_assert(tree->gtOper == GT_STMT);
+                assert(tree->gtOper == GT_STMT);
                 GenTreePtr last = tree->gtStmt.gtStmtExpr;
 
                 if (last->gtOper == GT_ASG_ADD || last->gtOper == GT_ASG_SUB)
