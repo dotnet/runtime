@@ -4,6 +4,7 @@
 
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using Xunit;
 
 namespace System.Net.WebSockets.Tests
@@ -31,6 +32,16 @@ namespace System.Net.WebSockets.Tests
         public static object[][] UnrelatedErrorData =
             ErrorData.SelectMany(wse => NativeErrorData.Select(ne => new object[] { wse[0], ne[0], ne[2] })).ToArray();
 
+        [Fact]
+        public void ConstructorTests_Parameterless_Success()
+        {
+            int lastError = Marshal.GetLastWin32Error();
+            var wse = new WebSocketException();
+            Assert.Equal(wse.NativeErrorCode, lastError);
+            Assert.Equal(wse.ErrorCode, lastError);
+            Assert.NotEmpty(wse.Message);
+            Assert.Null(wse.InnerException);
+        }
 
         [Theory, MemberData(nameof(ErrorData))]
         public void ConstructorTests_WebSocketError_Success(WebSocketError error)
@@ -167,6 +178,13 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(WebSocketError.Success, wse.WebSocketErrorCode);
             Assert.Equal(Message, wse.Message);
             Assert.Same(inner, wse.InnerException);
+        }
+
+        [Fact]
+        public void GetObjectData_Success()
+        {
+            var wse = new WebSocketException();
+            wse.GetObjectData(new SerializationInfo(typeof(WebSocketException), new FormatterConverter()), new StreamingContext());
         }
     }
 }
