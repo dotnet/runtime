@@ -23,6 +23,8 @@ For Visual Studio 2017:
     * VC++ 2017 v141 Toolset (x86, x64)
     * Windows 8.1 SDK and UCRT SDK
     * VC++ 2015.3 v140 Toolset (x86, x64)
+  * .NET Core cross-platform development
+    * All Required Components
 * When doing an 'Individual Components' based install, the following are the minimum requirements:
   * C# and Visual Basic Roslyn Compilers
   * Static Analysis Tools
