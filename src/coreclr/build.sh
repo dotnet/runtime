@@ -135,6 +135,9 @@ restore_optdata()
 {
     # if msbuild is not supported, then set __SkipRestoreOptData to 1
     if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipRestoreOptData=1; fi
+    # we only need optdata on a Release build
+    if [[ "$__BuildType" != "Release" ]]; then __SkipRestoreOptData=1; fi
+
     if [ $__SkipRestoreOptData == 0 ]; then
         echo "Restoring the OptimizationData package"
         "$__ProjectRoot/run.sh" sync -optdata
