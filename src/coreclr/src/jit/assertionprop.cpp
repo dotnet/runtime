@@ -141,7 +141,7 @@ void Compiler::optAddCopies()
         // heavier-than-average uses of a parameter.
         // Initial value is all blocks.
 
-        BlockSet BLOCKSET_INIT_NOCOPY(paramImportantUseDom, BlockSetOps::MakeFull(this));
+        BlockSet paramImportantUseDom(BlockSetOps::MakeFull(this));
 
         // This will be threshold for determining heavier-than-average uses
         unsigned paramAvgWtdRefDiv2 = (varDsc->lvRefCntWtd + varDsc->lvRefCnt / 2) / (varDsc->lvRefCnt * 2);
@@ -181,8 +181,8 @@ void Compiler::optAddCopies()
 
             bool     importantUseInBlock = (varDsc->lvIsParam) && (block->getBBWeight(this) > paramAvgWtdRefDiv2);
             bool     isPreHeaderBlock    = ((block->bbFlags & BBF_LOOP_PREHEADER) != 0);
-            BlockSet BLOCKSET_INIT_NOCOPY(blockDom, BlockSetOps::UninitVal());
-            BlockSet BLOCKSET_INIT_NOCOPY(blockDomSub0, BlockSetOps::UninitVal());
+            BlockSet blockDom(BlockSetOps::UninitVal());
+            BlockSet blockDomSub0(BlockSetOps::UninitVal());
 
             if (block->bbIDom == nullptr && isPreHeaderBlock)
             {
