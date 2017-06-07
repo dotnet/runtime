@@ -137,16 +137,6 @@ namespace System.Linq.Expressions
             }
 
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
-
             ReadOnlyCollection<Expression> initializerList = initializers.ToReadOnly();
 
             Expression[] newList = null;
@@ -215,15 +205,6 @@ namespace System.Linq.Expressions
             }
 
             TypeUtils.ValidateType(type, nameof(type));
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
-            }
 
             ReadOnlyCollection<Expression> boundsList = bounds.ToReadOnly();
 

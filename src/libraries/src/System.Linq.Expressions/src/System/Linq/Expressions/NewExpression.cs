@@ -135,7 +135,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
             ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
-            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
+            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor), allowByRef: true, allowPointer: true);
             ValidateConstructor(constructor, nameof(constructor));
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
             ValidateArgumentTypes(constructor, ExpressionType.New, ref argList, nameof(constructor));
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(constructor, nameof(constructor));
             ContractUtils.RequiresNotNull(constructor.DeclaringType, nameof(constructor) + "." + nameof(constructor.DeclaringType));
-            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor));
+            TypeUtils.ValidateType(constructor.DeclaringType, nameof(constructor), allowByRef: true, allowPointer: true);
             ValidateConstructor(constructor, nameof(constructor));
             ReadOnlyCollection<MemberInfo> memberList = members.ToReadOnly();
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
