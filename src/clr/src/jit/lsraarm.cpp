@@ -750,6 +750,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_SETCC:
         case GT_MEMORYBARRIER:
         case GT_OBJ:
+        case GT_COPY:
             info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {

@@ -1187,10 +1187,10 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
 #endif // !defined(_TARGET_64BIT_)
     {
 
-#ifdef _TARGET_ARM64_
+#ifdef _TARGET_ARMARCH_
         // For vararg call, reg args should be all integer.
         // Insert a copy to move float value to integer register.
-        if (call->IsVarargs() && varTypeIsFloating(type))
+        if ((call->IsVarargs() || comp->opts.compUseSoftFP) && varTypeIsFloating(type))
         {
             var_types  intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
             GenTreePtr intArg  = comp->gtNewOperNode(GT_COPY, intType, arg);
