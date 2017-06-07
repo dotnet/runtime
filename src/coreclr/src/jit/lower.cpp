@@ -2034,10 +2034,20 @@ void Lowering::LowerCompare(GenTree* cmp)
         if (cmp->OperIs(GT_EQ, GT_NE))
         {
             //
-            // Transform (x EQ|NE y) into (((x.lo SUB y.lo) OR (x.hi SUB y.hi)) EQ|NE 0). If y is 0 then this can
+            // Transform (x EQ|NE y) into (((x.lo XOR y.lo) OR (x.hi XOR y.hi)) EQ|NE 0). If y is 0 then this can
             // be reduced to just ((x.lo OR x.hi) EQ|NE 0). The OR is expected to set the condition flags so we
             // don't need to generate a redundant compare against 0, we only generate a SETCC|JCC instruction.
             //
+            // XOR is used rather than SUB because it is commutative and thus allows swapping the operands when
+            // the first happens to be a constant. Usually only the second compare operand is a constant but it's
+            // still possible to have a constant on the left side. For example, when src1 is a uint->ulong cast
+            // then hiSrc1 would be 0.
+            //
+
+            if (loSrc1->OperIs(GT_CNS_INT))
+            {
+                std::swap(loSrc1, loSrc2);
+            }
 
             if (loSrc2->IsIntegralConst(0))
             {
@@ -2046,8 +2056,13 @@ void Lowering::LowerCompare(GenTree* cmp)
             }
             else
             {
-                loCmp = comp->gtNewOperNode(GT_SUB, TYP_INT, loSrc1, loSrc2);
+                loCmp = comp->gtNewOperNode(GT_XOR, TYP_INT, loSrc1, loSrc2);
                 BlockRange().InsertBefore(cmp, loCmp);
+            }
+
+            if (hiSrc1->OperIs(GT_CNS_INT))
+            {
+                std::swap(hiSrc1, hiSrc2);
             }
 
             if (hiSrc2->IsIntegralConst(0))
@@ -2057,7 +2072,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             }
             else
             {
-                hiCmp = comp->gtNewOperNode(GT_SUB, TYP_INT, hiSrc1, hiSrc2);
+                hiCmp = comp->gtNewOperNode(GT_XOR, TYP_INT, hiSrc1, hiSrc2);
                 BlockRange().InsertBefore(cmp, hiCmp);
             }
 
@@ -2085,12 +2100,42 @@ void Lowering::LowerCompare(GenTree* cmp)
             // like the one we get for LT|GE compares, this can be achieved by swapping the compare:
             //     (x LE|GT y) becomes (y GE|LT x)
             //
+            // Having to swap operands is problematic when the second operand is a constant. The constant
+            // moves to the first operand where it cannot be contained and thus needs a register. This can
+            // be avoided by changing the constant such that LE|GT becomes LT|GE:
+            //     (x LE|GT 41) becomes (x LT|GE 42)
+            //
 
             if (cmp->OperIs(GT_LE, GT_GT))
             {
-                std::swap(loSrc1, loSrc2);
-                std::swap(hiSrc1, hiSrc2);
-                condition = GenTree::SwapRelop(condition);
+                bool mustSwap = true;
+
+                if (loSrc2->OperIs(GT_CNS_INT) && hiSrc2->OperIs(GT_CNS_INT))
+                {
+                    uint32_t loValue  = static_cast<uint32_t>(loSrc2->AsIntCon()->IconValue());
+                    uint32_t hiValue  = static_cast<uint32_t>(hiSrc2->AsIntCon()->IconValue());
+                    uint64_t value    = static_cast<uint64_t>(loValue) | (static_cast<uint64_t>(hiValue) << 32);
+                    uint64_t maxValue = cmp->IsUnsigned() ? UINT64_MAX : INT64_MAX;
+
+                    if (value != maxValue)
+                    {
+                        value++;
+                        loValue = value & UINT32_MAX;
+                        hiValue = (value >> 32) & UINT32_MAX;
+                        loSrc2->AsIntCon()->SetIconValue(loValue);
+                        hiSrc2->AsIntCon()->SetIconValue(hiValue);
+
+                        condition = cmp->OperIs(GT_LE) ? GT_LT : GT_GE;
+                        mustSwap  = false;
+                    }
+                }
+
+                if (mustSwap)
+                {
+                    std::swap(loSrc1, loSrc2);
+                    std::swap(hiSrc1, hiSrc2);
+                    condition = GenTree::SwapRelop(condition);
+                }
             }
 
             assert((condition == GT_LT) || (condition == GT_GE));
@@ -2098,6 +2143,18 @@ void Lowering::LowerCompare(GenTree* cmp)
             if (loSrc2->IsIntegralConst(0))
             {
                 BlockRange().Remove(loSrc2);
+
+                // Very conservative dead code removal... but it helps.
+
+                if (loSrc1->OperIs(GT_CNS_INT, GT_LCL_VAR, GT_LCL_FLD))
+                {
+                    BlockRange().Remove(loSrc1);
+
+                    if (loSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                    {
+                        comp->lvaDecRefCnts(m_block, loSrc1);
+                    }
+                }
 
                 hiCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, hiSrc1, hiSrc2);
                 BlockRange().InsertBefore(cmp, hiCmp);
@@ -2107,6 +2164,20 @@ void Lowering::LowerCompare(GenTree* cmp)
                 loCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, loSrc1, loSrc2);
                 hiCmp = comp->gtNewOperNode(GT_SUB_HI, TYP_INT, hiSrc1, hiSrc2);
                 BlockRange().InsertBefore(cmp, loCmp, hiCmp);
+
+                //
+                // Try to move the first SUB_HI operands right in front of it, this allows using
+                // a single temporary register instead of 2 (one for CMP and one for SUB_HI). Do
+                // this only for locals as they won't change condition flags. Note that we could
+                // move constants (except 0 which generates XOR reg, reg) but it's extremly rare
+                // to have a constant as the first operand.
+                //
+
+                if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                {
+                    BlockRange().Remove(hiSrc1);
+                    BlockRange().InsertBefore(hiCmp, hiSrc1);
+                }
             }
         }
 
