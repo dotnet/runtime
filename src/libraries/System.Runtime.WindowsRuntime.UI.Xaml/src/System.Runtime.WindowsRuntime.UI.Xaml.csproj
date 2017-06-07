@@ -33,5 +33,8 @@
     <Reference Include="System.Runtime.WindowsRuntime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
