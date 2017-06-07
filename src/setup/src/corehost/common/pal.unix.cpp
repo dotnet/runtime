@@ -182,57 +182,10 @@ bool is_executable(const pal::string_t& file_path)
     return ((st.st_mode & S_IEXEC) != 0);
 }
 
-static
-bool locate_dotnet_on_path(std::vector<pal::string_t>* dotnet_exes)
-{
-    pal::string_t path;
-    if (!pal::getenv(_X("PATH"), &path))
-    {
-        return false;
-    }
-    
-    pal::string_t tok;
-    pal::stringstream_t ss(path);
-    while (std::getline(ss, tok, PATH_SEPARATOR))
-    {
-        size_t start_pos = tok.find_first_not_of(_X(" \t"));
-        if (start_pos == pal::string_t::npos)
-        {
-            continue;
-        }
-
-        append_path(&tok, _X("dotnet"));
-        if (pal::realpath(&tok) && is_executable(tok))
-        {
-            dotnet_exes->push_back(tok);
-        }
-        tok.clear();
-    }
-
-    if (dotnet_exes->empty())
-    {
-        return false;
-    }
-
-    return true;
-}
-
  bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
-    
-     std::vector<pal::string_t> dotnet_exes;
-    if (!locate_dotnet_on_path(&dotnet_exes))
-    {
-        return false;
-    }
-
-    for (pal::string_t path : dotnet_exes)
-    {
-        pal::string_t dir = get_directory(path);
-        recv->push_back(dir);
-    }
-
-    return true;
+    // No support for global directories in Unix.
+    return false;
 }
 
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
