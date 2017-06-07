@@ -2063,7 +2063,18 @@ lookup_start:
 
 #ifdef MONO_USE_AOT_COMPILER
 	if (opt & MONO_OPT_AOT) {
-		MonoDomain *domain = mono_domain_get ();
+		MonoDomain *domain = NULL;
+
+		if (mono_aot_mode == MONO_AOT_MODE_INTERP && method->wrapper_type == MONO_WRAPPER_UNKNOWN) {
+			WrapperInfo *info = mono_marshal_get_wrapper_info (method);
+			g_assert (info);
+			if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
+				/* AOT'd wrappers for interp must be owned by root domain */
+				domain = mono_get_root_domain ();
+		}
+
+		if (!domain)
+			domain = mono_domain_get ();
 
 		mono_class_init (method->klass);
 
