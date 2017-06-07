@@ -1340,8 +1340,8 @@ void LinearScan::setBlockSequence()
     // Reset the "visited" flag on each block.
     compiler->EnsureBasicBlockEpoch();
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
-    BlockSet BLOCKSET_INIT_NOCOPY(readySet, BlockSetOps::MakeEmpty(compiler));
-    BlockSet BLOCKSET_INIT_NOCOPY(predSet, BlockSetOps::MakeEmpty(compiler));
+    BlockSet readySet(BlockSetOps::MakeEmpty(compiler));
+    BlockSet predSet(BlockSetOps::MakeEmpty(compiler));
 
     assert(blockSequence == nullptr && bbSeqCount == 0);
     blockSequence            = new (compiler, CMK_LSRA) BasicBlock*[compiler->fgBBcount];
