@@ -1271,7 +1271,7 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(arg, paramName, index);
             var type = arg.Type;
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type, nameof(type));
+            TypeUtils.ValidateType(type, nameof(type), allowByRef: true, allowPointer: true);
             if (type == typeof(void)) throw Error.ArgumentTypeCannotBeVoid();
         }
     }

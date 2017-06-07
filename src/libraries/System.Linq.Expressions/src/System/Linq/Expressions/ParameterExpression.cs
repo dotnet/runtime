@@ -176,8 +176,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ParameterExpression"/> node with the specified name and type.</returns>
         public static ParameterExpression Parameter(Type type, string name)
         {
-            Validate(type);
-
+            Validate(type, allowByRef: true);
             bool byref = type.IsByRef;
             if (byref)
             {
@@ -195,29 +194,18 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ParameterExpression"/> node with the specified name and type.</returns>
         public static ParameterExpression Variable(Type type, string name)
         {
-            Validate(type);
-
-            if (type.IsByRef)
-            {
-                throw Error.TypeMustNotBeByRef(nameof(type));
-            }
-
+            Validate(type, allowByRef: false);
             return ParameterExpression.Make(type, name, isByRef: false);
         }
 
-        private static void Validate(Type type)
+        private static void Validate(Type type, bool allowByRef)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            TypeUtils.ValidateType(type, nameof(type));
+            TypeUtils.ValidateType(type, nameof(type), allowByRef, allowPointer: false);
 
             if (type == typeof(void))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));
-            }
-
-            if (type.IsPointer)
-            {
-                throw Error.TypeMustNotBePointer(nameof(type));
             }
         }
     }

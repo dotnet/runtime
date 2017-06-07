@@ -590,8 +590,8 @@ namespace System.Linq.Expressions
         {
             RequiresCanWrite(left, nameof(left));
             ExpressionUtils.RequiresCanRead(right, nameof(right));
-            TypeUtils.ValidateType(left.Type, nameof(left));
-            TypeUtils.ValidateType(right.Type, nameof(right));
+            TypeUtils.ValidateType(left.Type, nameof(left), allowByRef: true, allowPointer: true);
+            TypeUtils.ValidateType(right.Type, nameof(right), allowByRef: true, allowPointer: true);
             if (!TypeUtils.AreReferenceAssignable(left.Type, right.Type))
             {
                 throw Error.ExpressionTypeDoesNotMatchAssignment(right.Type, left.Type);

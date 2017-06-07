@@ -140,15 +140,6 @@ namespace System.Linq.Expressions
             if (variable == null)
             {
                 TypeUtils.ValidateType(type, nameof(type));
-                if (type.IsByRef)
-                {
-                    throw Error.TypeMustNotBeByRef(nameof(type));
-                }
-
-                if (type.IsPointer)
-                {
-                    throw Error.TypeMustNotBePointer(nameof(type));
-                }
             }
             else if (variable.IsByRef)
             {
