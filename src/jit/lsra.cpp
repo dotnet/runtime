@@ -8950,7 +8950,7 @@ void LinearScan::resolveRegisters()
                 }
                 if (indNode != nullptr)
                 {
-                    GenTreePtr addrNode = indNode->gtOp.gtOp1->gtEffectiveVal();
+                    GenTreePtr addrNode = indNode->gtOp.gtOp1;
                     if (addrNode->OperGet() != GT_ARR_ELEM)
                     {
                         addrNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
@@ -8960,7 +8960,7 @@ void LinearScan::resolveRegisters()
                 if (treeNode->OperGet() == GT_ARR_ELEM)
                 {
                     // TODO-Review: See WORKAROUND ALERT in buildRefPositionsForNode()
-                    GenTreePtr firstIndexTree = treeNode->gtArrElem.gtArrInds[0]->gtEffectiveVal();
+                    GenTreePtr firstIndexTree = treeNode->gtArrElem.gtArrInds[0];
                     assert(firstIndexTree != nullptr);
                     if (firstIndexTree->IsLocal() && (firstIndexTree->gtFlags & GTF_VAR_DEATH) == 0)
                     {

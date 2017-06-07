@@ -2452,7 +2452,7 @@ void CodeGen::genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], b
     jmpToTrueLabel[1] = true;
 
     // For integer comparisons just use genJumpKindForOper
-    if (!varTypeIsFloating(cmpTree->gtOp.gtOp1->gtEffectiveVal()))
+    if (!varTypeIsFloating(cmpTree->gtOp.gtOp1))
     {
         CompareKind compareKind = ((cmpTree->gtFlags & GTF_UNSIGNED) != 0) ? CK_UNSIGNED : CK_SIGNED;
         jmpKind[0]              = genJumpKindForOper(cmpTree->gtOper, compareKind);
@@ -2561,7 +2561,7 @@ void CodeGen::genJumpKindsForTree(GenTreePtr cmpTree, emitJumpKind jmpKind[2], b
 //
 void CodeGen::genCodeForJumpTrue(GenTreePtr tree)
 {
-    GenTree* cmp = tree->gtOp.gtOp1->gtEffectiveVal();
+    GenTree* cmp = tree->gtOp.gtOp1;
     assert(cmp->OperIsCompare());
     assert(compiler->compCurBB->bbJumpKind == BBJ_COND);
 
