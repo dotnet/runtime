@@ -3019,7 +3019,7 @@ int LinearScan::buildInternalRegisterDefsForNode(GenTree*     tree,
             defineNewInternalTemp(tree, FloatRegisterType, currentLoc, internalFPCands DEBUG_ARG(minRegCandidateCount));
     }
 
-    noway_assert(count < MaxInternalRegisters);
+    assert(count < MaxInternalRegisters);
     assert(count == (internalIntCount + internalFloatCount));
     return count;
 }
