@@ -94,12 +94,12 @@
   </Target>
 
   <Target Name="CheckIfAllBuildsHavePublished">
-    <GetAzureBlobList AccountName="$(AzureAccountName)"
+    <ListAzureBlobs AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
                       FilterBlobNames="Runtime/$(SharedFrameworkNugetVersion)/">
       <Output TaskParameter="BlobNames" ItemName="_BlobNames" />
-    </GetAzureBlobList>
+    </ListAzureBlobs>
     <ItemGroup>
       <_FoundBlobNames Include="%(_BlobNames.FileName)%(_BlobNames.Extension)" Condition="'%(_BlobNames.Extension)' == '.svg'" />
       <_MissingBlobNames Include="@(PublishRid->'sharedfx_%(Identity)_$(ConfigurationGroup)_version_badge.svg')" 
