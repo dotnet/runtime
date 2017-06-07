@@ -1054,7 +1054,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTreePtr  data = tree->gtOp1->gtEffectiveVal();
+    GenTreePtr  data = tree->gtOp1;
     instruction ins  = ins_Store(targetType);
     emitAttr    attr = emitTypeSize(targetType);
     if (data->isContainedIntOrIImmed())
@@ -1092,7 +1092,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     // Ensure that lclVar nodes are typed correctly.
     assert(!varDsc->lvNormalizeOnStore() || targetType == genActualType(varDsc->TypeGet()));
 
-    GenTreePtr data = tree->gtOp1->gtEffectiveVal();
+    GenTreePtr data = tree->gtOp1;
 
     // var = call, where call returns a multi-reg return value
     // case is handled separately.
@@ -1257,8 +1257,8 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
     // TODO-ARM-CQ: Check for the case where we can simply transfer the carry bit to a register
     //         (signed < or >= where targetReg != REG_NA)
 
-    GenTreePtr op1     = tree->gtOp1->gtEffectiveVal();
-    GenTreePtr op2     = tree->gtOp2->gtEffectiveVal();
+    GenTreePtr op1     = tree->gtOp1;
+    GenTreePtr op2     = tree->gtOp2;
     var_types  op1Type = op1->TypeGet();
     var_types  op2Type = op2->TypeGet();
 
@@ -1307,7 +1307,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     // this is nothing but a conditional call to CORINFO_HELP_STOP_FOR_GC
     // based on the contents of 'data'
 
-    GenTree* data = tree->gtOp1->gtEffectiveVal();
+    GenTree* data = tree->gtOp1;
     genConsumeIfReg(data);
     GenTreeIntCon cns = intForm(TYP_INT, 0);
     getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(TYP_INT), data, &cns);
