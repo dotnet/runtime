@@ -10,6 +10,7 @@ namespace System.IO.MemoryMappedFiles.Tests
     public class CrossProcessTests : RemoteExecutorTestBase
     {
         [Fact]
+        [ActiveIssue(19909, TargetFrameworkMonikers.Uap)] // Remote executor in Uap and Process.Start() in UapAot
         public void DataShared()
         {
             // Create a new file and load it into an MMF

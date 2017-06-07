@@ -46,6 +46,7 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="DisplayFormatAttributeTest.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

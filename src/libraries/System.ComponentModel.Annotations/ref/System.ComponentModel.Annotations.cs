@@ -122,6 +122,8 @@ namespace System.ComponentModel.DataAnnotations
         public string DataFormatString { get { throw null; } set { } }
         public bool HtmlEncode { get { throw null; } set { } }
         public string NullDisplayText { get { throw null; } set { } }
+        public Type NullDisplayTextResourceType { get { throw null; } set { } }
+        public string GetNullDisplayText() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(384), AllowMultiple = false, Inherited = true)]
     public sealed partial class EditableAttribute : System.Attribute
