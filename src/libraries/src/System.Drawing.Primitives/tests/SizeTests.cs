@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Drawing.PrimitivesTests
 {
-    public class SizeTests
+    public partial class SizeTests
     {
         [Fact]
         public void DefaultConstructorTest()
