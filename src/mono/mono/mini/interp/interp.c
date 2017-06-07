@@ -992,10 +992,14 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 
 	g_assert (!frame->runtime_method);
 	if (!mono_interp_enter_icall_trampoline) {
-		MonoTrampInfo *info;
-		mono_interp_enter_icall_trampoline = mono_arch_get_enter_icall_trampoline (&info);
-		// TODO:
-		// mono_tramp_info_register (info, NULL);
+		if (mono_aot_only) {
+			mono_interp_enter_icall_trampoline = mono_aot_get_trampoline ("enter_icall_trampoline");
+		} else {
+			MonoTrampInfo *info;
+			mono_interp_enter_icall_trampoline = mono_arch_get_enter_icall_trampoline (&info);
+			// TODO:
+			// mono_tramp_info_register (info, NULL);
+		}
 	}
 
 	InterpMethodArguments *margs = build_args_from_sig (sig, frame);
@@ -2270,9 +2274,10 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	 * rgctx register using a trampoline.
 	 */
 
-	// FIXME: AOT
-	g_assert (!mono_aot_only);
-	addr = mono_arch_get_static_rgctx_trampoline (ftndesc, jit_wrapper);
+	if (mono_aot_only)
+		addr = mono_aot_get_static_rgctx_trampoline (ftndesc, jit_wrapper);
+	else
+		addr = mono_arch_get_static_rgctx_trampoline (ftndesc, jit_wrapper);
 
 	mono_memory_barrier ();
 	rmethod->jit_entry = addr;

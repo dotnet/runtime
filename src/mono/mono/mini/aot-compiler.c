@@ -4427,7 +4427,13 @@ method_has_type_vars (MonoMethod *method)
 static
 gboolean mono_aot_mode_is_full (MonoAotOptions *opts)
 {
-	return opts->mode == MONO_AOT_MODE_FULL;
+	return opts->mode == MONO_AOT_MODE_FULL || opts->mode == MONO_AOT_MODE_INTERP;
+}
+
+static
+gboolean mono_aot_mode_is_interp (MonoAotOptions *opts)
+{
+	return opts->mode == MONO_AOT_MODE_INTERP;
 }
 
 static
@@ -6821,6 +6827,11 @@ emit_trampolines (MonoAotCompile *acfg)
 
 #endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */
 
+		if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
+			mono_arch_get_enter_icall_trampoline (&info);
+			emit_trampoline (acfg, acfg->got_offset, info);
+		}
+
 		/* Emit trampolines which are numerous */
 
 		/*
@@ -7161,6 +7172,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->mode = MONO_AOT_MODE_FULL;
 		} else if (str_begins_with (arg, "hybrid")) {
 			opts->mode = MONO_AOT_MODE_HYBRID;			
+		} else if (str_begins_with (arg, "interp")) {
+			opts->mode = MONO_AOT_MODE_INTERP;
 		} else if (str_begins_with (arg, "threads=")) {
 			opts->nthreads = atoi (arg + strlen ("threads="));
 		} else if (str_begins_with (arg, "static")) {
@@ -11517,7 +11530,7 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		}
 	}
 
-	{
+	if (!mono_aot_mode_is_interp (&acfg->aot_opts)) {
 		int method_index;
 
        for (method_index = 0; method_index < acfg->image->tables [MONO_TABLE_METHOD].rows; ++method_index) {
@@ -11580,9 +11593,12 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 	if (mono_aot_mode_is_full (&acfg->aot_opts) || mono_aot_mode_is_hybrid (&acfg->aot_opts))
 		mono_set_partial_sharing_supported (TRUE);
 
-	res = collect_methods (acfg);
-	if (!res)
-		return 1;
+	if (!mono_aot_mode_is_interp (&acfg->aot_opts)) {
+		res = collect_methods (acfg);
+
+		if (!res)
+			return 1;
+	}
 
 	{
 		GList *l;
@@ -11606,6 +11622,26 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, TRUE, acfg->aot_opts.static_link, acfg->aot_opts.llvm_only);
 	}
 #endif
+
+	if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
+		MonoMethod *wrapper;
+		MonoMethodSignature *sig;
+
+		/* object object:interp_in_static (object,intptr,intptr,intptr) */
+		sig = mono_create_icall_signature ("object object ptr ptr ptr");
+		wrapper = mini_get_interp_in_wrapper (sig);
+		add_method (acfg, wrapper);
+
+		/* int object:interp_in_static (intptr,int,intptr) */
+		sig = mono_create_icall_signature ("int32 ptr int32 ptr");
+		wrapper = mini_get_interp_in_wrapper (sig);
+		add_method (acfg, wrapper);
+
+		/* void object:interp_in_static (object,intptr,intptr,intptr) */
+		sig = mono_create_icall_signature ("void object ptr ptr ptr");
+		wrapper = mini_get_interp_in_wrapper (sig);
+		add_method (acfg, wrapper);
+	}
 
 	TV_GETTIME (atv);
 
