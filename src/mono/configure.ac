@@ -3534,6 +3534,11 @@ fi
 
 AM_CONDITIONAL(ENABLE_INTERPRETER, [test x$enable_interpreter = xyes])
 
+if test "x$enable_interpreter" = "xyes" || test "x$mono_feature_disable_jit" != "xyes"; then
+	AC_DEFINE(HAVE_ONLINE_VES, 1, [Some VES is available at runtime])
+fi
+
+AM_CONDITIONAL(HAVE_ONLINE_VES, [test x$enable_interpreter = xyes] || [test x$mono_feature_disable_jit != xyes])
 
 dnl 
 dnl Simple Generational checks (sgen)
