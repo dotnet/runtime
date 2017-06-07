@@ -245,7 +245,7 @@ mono_gc_is_critical_method (MonoMethod *method)
 	return sgen_is_critical_method (method);
 }
 
-#ifndef DISABLE_JIT
+#ifdef HAVE_ONLINE_VES
 
 static void
 emit_nursery_check (MonoMethodBuilder *mb, int *nursery_check_return_labels, gboolean is_concurrent)
@@ -317,7 +317,7 @@ mono_gc_get_specific_write_barrier (gboolean is_concurrent)
 	else
 		mb = mono_mb_new (mono_defaults.object_class, "wbarrier_noconc", MONO_WRAPPER_WRITE_BARRIER);
 
-#ifndef DISABLE_JIT
+#ifdef HAVE_ONLINE_VES
 #ifdef MANAGED_WBARRIER
 	emit_nursery_check (mb, nursery_check_labels, is_concurrent);
 	/*
@@ -1126,7 +1126,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_ALLOC);
 
-#ifndef DISABLE_JIT
+#ifdef HAVE_ONLINE_VES
 	if (slowpath) {
 		switch (atype) {
 		case ATYPE_NORMAL:
@@ -1461,7 +1461,7 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	info->d.alloc.gc_name = "sgen";
 	info->d.alloc.alloc_type = atype;
 
-#ifndef DISABLE_JIT
+#ifdef HAVE_ONLINE_VES
 	mb->init_locals = FALSE;
 #endif
 
