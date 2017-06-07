@@ -34,7 +34,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            Assert.Throws<PlatformNotSupportedException>(() => _process.MainWindowHandle);
+            Assert.Equal(IntPtr.Zero, _process.MainWindowHandle);
         }
 
         [Fact]

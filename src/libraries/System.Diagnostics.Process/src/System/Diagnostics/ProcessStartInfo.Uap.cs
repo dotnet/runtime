@@ -8,7 +8,7 @@ namespace System.Diagnostics
     {
         public string[] Verbs => Array.Empty<string>();
 
-        // Not available on WinRT as ShellExecuteEx isn't whitelisted. Note that using ShellExecuteEx
+        // Not available on Uap as ShellExecuteEx isn't whitelisted. Note that using ShellExecuteEx
         // also depends on being able to change the apartment state for a thread to STA (CLR is MTA).
         public bool UseShellExecute
         {
