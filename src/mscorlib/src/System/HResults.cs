@@ -71,7 +71,6 @@ namespace System
         internal const int COR_E_INVALIDOPERATION = unchecked((int)0x80131509);
         internal const int COR_E_INVALIDPROGRAM = unchecked((int)0x8013153a);
         internal const int COR_E_KEYNOTFOUND = unchecked((int)0x80131577);
-        internal const int COR_E_LOADING_REFERENCE_ASSEMBLY = unchecked((int)0x80131058);
         internal const int COR_E_MARSHALDIRECTIVE = unchecked((int)0x80131535);
         internal const int COR_E_MEMBERACCESS = unchecked((int)0x8013151A);
         internal const int COR_E_METHODACCESS = unchecked((int)0x80131510);

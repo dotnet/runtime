@@ -19,20 +19,6 @@ namespace System.Reflection
 {
     internal class RuntimeAssembly : Assembly
     {
-#if FEATURE_APPX
-        // The highest byte is the flags and the lowest 3 bytes are 
-        // the cached ctor token of [DynamicallyInvocableAttribute].
-        private enum ASSEMBLY_FLAGS : uint
-        {
-            ASSEMBLY_FLAGS_UNKNOWN = 0x00000000,
-            ASSEMBLY_FLAGS_INITIALIZED = 0x01000000,
-            ASSEMBLY_FLAGS_FRAMEWORK = 0x02000000,
-            ASSEMBLY_FLAGS_TOKEN_MASK = 0x00FFFFFF,
-        }
-#endif // FEATURE_APPX
-
-        private const uint COR_E_LOADING_REFERENCE_ASSEMBLY = 0x80131058U;
-
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
         #region private data members
@@ -41,28 +27,7 @@ namespace System.Reflection
         private object m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
         private IntPtr m_assembly;    // slack for ptr datum on unmanaged side
 
-#if FEATURE_APPX
-        private ASSEMBLY_FLAGS m_flags;
-#endif
         #endregion
-
-#if FEATURE_APPX
-        private ASSEMBLY_FLAGS Flags
-        {
-            get
-            {
-                if ((m_flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED) == 0)
-                {
-                    ASSEMBLY_FLAGS flags = ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_UNKNOWN
-                        | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK;
-
-                    m_flags = flags | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED;
-                }
-
-                return m_flags;
-            }
-        }
-#endif // FEATURE_APPX
 
         internal object SyncRoot
         {
@@ -398,14 +363,6 @@ namespace System.Reflection
                 pPrivHostBinder,
                 throwOnFileNotFound, ptrLoadContextBinder);
         }
-
-#if FEATURE_APPX
-        internal bool IsFrameworkAssembly()
-        {
-            ASSEMBLY_FLAGS flags = Flags;
-            return (flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK) != 0;
-        }
-#endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeAssembly nLoad(AssemblyName fileName,
