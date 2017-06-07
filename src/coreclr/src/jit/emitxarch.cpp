@@ -2738,7 +2738,7 @@ void emitter::emitInsMov(instruction ins, emitAttr attr, GenTree* node)
         case GT_STORE_LCL_VAR:
         {
             GenTreeLclVarCommon* varNode = node->AsLclVarCommon();
-            GenTree*             data    = varNode->gtOp.gtOp1->gtEffectiveVal();
+            GenTree*             data    = varNode->gtOp.gtOp1;
             codeGen->inst_set_SV_var(varNode);
             assert(varNode->gtRegNum == REG_NA); // stack store
 
