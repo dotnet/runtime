@@ -314,7 +314,7 @@ should_work_func (void *data_untyped)
 	WorkerData *data = (WorkerData*)data_untyped;
 	int current_worker = (int) (data - workers_data);
 
-	return started && current_worker < active_workers_num;
+	return started && current_worker < active_workers_num && state_is_working_or_enqueued (data->state);
 }
 
 static void
