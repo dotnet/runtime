@@ -1501,10 +1501,31 @@ void CodeGen::genRegCopy(GenTree* treeNode)
 
     if (varTypeIsFloating(treeNode) != varTypeIsFloating(op1))
     {
-        NYI_ARM("genRegCopy floating point");
 #ifdef _TARGET_ARM64_
         inst_RV_RV(INS_fmov, targetReg, genConsumeReg(op1), targetType);
-#endif // _TARGET_ARM64_
+#else  // !_TARGET_ARM64_
+        if (varTypeIsFloating(treeNode))
+        {
+            NYI_ARM("genRegCopy from 'int' to 'float'");
+        }
+        else
+        {
+            assert(varTypeIsFloating(op1));
+
+            if (op1->TypeGet() == TYP_FLOAT)
+            {
+                inst_RV_RV(INS_vmov_f2i, targetReg, genConsumeReg(op1), targetType);
+            }
+            else
+            {
+                // TODO-Arm-Bug: We cannot assume the second destination be the next of targetReg
+                // since LSRA doesn't know that register is used. So we cannot write code like:
+                //
+                // inst_RV_RV_RV(INS_vmov_d2i, targetReg, REG_NEXT(targetReg), genConsumeReg(op1), EA_8BYTE);
+                NYI_ARM("genRegCopy from 'double' to 'int'+'int'");
+            }
+        }
+#endif // !_TARGET_ARM64_
     }
     else
     {
