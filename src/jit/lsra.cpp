@@ -2616,12 +2616,11 @@ void LinearScan::checkLastUses(BasicBlock* block)
     // find which uses are lastUses
 
     // Work backwards starting with live out.
-    // 'temp' is updated to include any exposed use (including those in this
+    // 'computedLive' is updated to include any exposed use (including those in this
     // block that we've already seen).  When we encounter a use, if it's
     // not in that set, then it's a last use.
 
-    VARSET_TP temp(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
-    VarSetOps::IntersectionD(compiler, temp, registerCandidateVars);
+    VARSET_TP computedLive(VarSetOps::MakeCopy(compiler, block->bbLiveOut));
 
     bool foundDiff          = false;
     auto currentRefPosition = refPositions.rbegin();
@@ -2641,7 +2640,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
             assert(tree != nullptr || currentRefPosition->refType == RefTypeExpUse ||
                    currentRefPosition->refType == RefTypeDummyDef);
 
-            if (!VarSetOps::IsMember(compiler, temp, varIndex) && varNum != keepAliveVarNum)
+            if (!VarSetOps::IsMember(compiler, computedLive, varIndex) && varNum != keepAliveVarNum)
             {
                 // There was no exposed use, so this is a "last use" (and we mark it thus even if it's a def)
 
@@ -2664,7 +2663,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
                     JITDUMP("missing expected last use of V%02u @%u\n", compiler->lvaTrackedToVarNum[varIndex], loc);
                     foundDiff = true;
                 }
-                VarSetOps::AddElemD(compiler, temp, varIndex);
+                VarSetOps::AddElemD(compiler, computedLive, varIndex);
             }
             else if (currentRefPosition->lastUse)
             {
@@ -2679,7 +2678,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
             {
-                VarSetOps::RemoveElemD(compiler, temp, varIndex);
+                VarSetOps::RemoveElemD(compiler, computedLive, varIndex);
             }
         }
 
@@ -2687,34 +2686,31 @@ void LinearScan::checkLastUses(BasicBlock* block)
         ++currentRefPosition;
     }
 
-    VARSET_TP temp2(VarSetOps::MakeCopy(compiler, block->bbLiveIn));
-    VarSetOps::IntersectionD(compiler, temp2, registerCandidateVars);
-    VarSetOps::DiffD(compiler, temp2, temp);
-    VarSetOps::DiffD(compiler, temp, block->bbLiveIn);
+    VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
 
+    unsigned        liveInNotComputedLiveIndex = 0;
+    VarSetOps::Iter liveInNotComputedLiveIter(compiler, liveInNotComputedLive);
+    while (liveInNotComputedLiveIter.NextElem(&liveInNotComputedLiveIndex))
     {
-        VARSET_ITER_INIT(compiler, iter, temp, varIndex);
-        while (iter.NextElem(&varIndex))
+        unsigned varNum = compiler->lvaTrackedToVarNum[liveInNotComputedLiveIndex];
+        if (compiler->lvaTable[varNum].lvLRACandidate)
         {
-            unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
-            if (compiler->lvaTable[varNum].lvLRACandidate)
-            {
-                JITDUMP("BB%02u: V%02u is computed live, but not in LiveIn set.\n", block->bbNum, varNum);
-                foundDiff = true;
-            }
+            JITDUMP("BB%02u: V%02u is in LiveIn set, but not computed live.\n", block->bbNum, varNum);
+            foundDiff = true;
         }
     }
 
+    VarSetOps::DiffD(compiler, computedLive, block->bbLiveIn);
+    const VARSET_TP& computedLiveNotLiveIn(computedLive); // reuse the buffer.
+    unsigned         computedLiveNotLiveInIndex = 0;
+    VarSetOps::Iter  computedLiveNotLiveInIter(compiler, computedLiveNotLiveIn);
+    while (computedLiveNotLiveInIter.NextElem(&computedLiveNotLiveInIndex))
     {
-        VARSET_ITER_INIT(compiler, iter, temp2, varIndex);
-        while (iter.NextElem(&varIndex))
+        unsigned varNum = compiler->lvaTrackedToVarNum[computedLiveNotLiveInIndex];
+        if (compiler->lvaTable[varNum].lvLRACandidate)
         {
-            unsigned varNum = compiler->lvaTrackedToVarNum[varIndex];
-            if (compiler->lvaTable[varNum].lvLRACandidate)
-            {
-                JITDUMP("BB%02u: V%02u is in LiveIn set, but not computed live.\n", block->bbNum, varNum);
-                foundDiff = true;
-            }
+            JITDUMP("BB%02u: V%02u is computed live, but not in LiveIn set.\n", block->bbNum, varNum);
+            foundDiff = true;
         }
     }
 
