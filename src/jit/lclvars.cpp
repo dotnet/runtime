@@ -2390,7 +2390,7 @@ void Compiler::lvaSetClass(unsigned varNum, GenTreePtr tree, CORINFO_CLASS_HANDL
 
 void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool isExact)
 {
-    noway_assert(varNum < lvaCount);
+    assert(varNum < lvaCount);
 
     // If we are just importing, we cannot reliably track local ref types,
     // since the jit maps CORINFO_TYPE_VAR to TYP_REF.
@@ -2495,7 +2495,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTreePtr tree, CORINFO_CLASS_HA
 
 BYTE* Compiler::lvaGetGcLayout(unsigned varNum)
 {
-    noway_assert(varTypeIsStruct(lvaTable[varNum].lvType) && (lvaTable[varNum].lvExactSize >= TARGET_POINTER_SIZE));
+    assert(varTypeIsStruct(lvaTable[varNum].lvType) && (lvaTable[varNum].lvExactSize >= TARGET_POINTER_SIZE));
 
     return lvaTable[varNum].lvGcLayout;
 }
@@ -2511,7 +2511,7 @@ BYTE* Compiler::lvaGetGcLayout(unsigned varNum)
 
 unsigned Compiler::lvaLclSize(unsigned varNum)
 {
-    noway_assert(varNum < lvaCount);
+    assert(varNum < lvaCount);
 
     var_types varType = lvaTable[varNum].TypeGet();
 
@@ -2554,7 +2554,7 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
 //
 unsigned Compiler::lvaLclExactSize(unsigned varNum)
 {
-    noway_assert(varNum < lvaCount);
+    assert(varNum < lvaCount);
 
     var_types varType = lvaTable[varNum].TypeGet();
 
@@ -2756,7 +2756,7 @@ void Compiler::lvaDecRefCnts(BasicBlock* block, GenTreePtr tree)
 
             lclNum = info.compLvFrameListRoot;
 
-            noway_assert(lclNum <= lvaCount);
+            assert(lclNum <= lvaCount);
             varDsc = lvaTable + lclNum;
 
             /* Decrement the reference counts twice */
@@ -2775,7 +2775,7 @@ void Compiler::lvaDecRefCnts(BasicBlock* block, GenTreePtr tree)
 
         lclNum = tree->gtLclVarCommon.gtLclNum;
 
-        noway_assert(lclNum < lvaCount);
+        assert(lclNum < lvaCount);
         varDsc = lvaTable + lclNum;
 
         /* Decrement its lvRefCnt and lvRefCntWtd */
@@ -2815,7 +2815,7 @@ void Compiler::lvaIncRefCnts(GenTreePtr tree)
 
             lclNum = info.compLvFrameListRoot;
 
-            noway_assert(lclNum <= lvaCount);
+            assert(lclNum <= lvaCount);
             varDsc = lvaTable + lclNum;
 
             /* Increment the reference counts twice */
@@ -2835,7 +2835,7 @@ void Compiler::lvaIncRefCnts(GenTreePtr tree)
 
         lclNum = tree->gtLclVarCommon.gtLclNum;
 
-        noway_assert(lclNum < lvaCount);
+        assert(lclNum < lvaCount);
         varDsc = lvaTable + lclNum;
 
         /* Increment its lvRefCnt and lvRefCntWtd */
@@ -3596,7 +3596,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
             if (op2->gtOper == GT_LCL_VAR)
             {
                 unsigned lclNum = op2->gtLclVarCommon.gtLclNum;
-                noway_assert(lclNum < lvaCount);
+                assert(lclNum < lvaCount);
                 lvaTable[lclNum].setPrefReg(REG_ECX, this);
             }
         }
@@ -3612,7 +3612,7 @@ void Compiler::lvaMarkLclRefs(GenTreePtr tree)
 
     /* This must be a local variable reference */
 
-    noway_assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
+    assert((tree->gtOper == GT_LCL_VAR) || (tree->gtOper == GT_LCL_FLD));
     unsigned lclNum = tree->gtLclVarCommon.gtLclNum;
 
     noway_assert(lclNum < lvaCount);
