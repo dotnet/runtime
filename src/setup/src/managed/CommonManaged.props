@@ -5,7 +5,24 @@
 
   <PropertyGroup>
     <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))/</RepoRoot>
-    <VersionPrefix>2.0.2</VersionPrefix>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRoot)BranchInfo.props" />
+
+  <PropertyGroup>
+    <!-- Output directories -->
+    <BinDir Condition="'$(BinDir)'==''">$(RepoRoot)Bin/</BinDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
+
+    <!-- BuildVersion Properties -->
+    <TodayTimeStamp>$([System.DateTime]::Now.ToString(yyyyMMdd))</TodayTimeStamp>
+    <BuildVersionFile Condition="'$(BuildVersionFile)'==''">$(ObjDir)BuildVersion-$(TodayTimeStamp).props</BuildVersionFile>
+  </PropertyGroup>
+
+  <Import Project="$(BuildVersionFile)" />
+
+  <PropertyGroup>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -15,6 +32,21 @@
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(StabilizePackageVersion)' != 'true'">
+    <!-- Dev builds get a minor version, by default, of '0'.  Our tests restore packages with
+         a -* version, and include myget sources, so any package published the same day to myget
+         will conflict with the local build and override the local built package.  Prevent this
+         by setting the non-official build minor version to 9 -->
+    <BuildNumberMinor Condition="'$(BuildNumberMinor)' == '0'">9</BuildNumberMinor>
+    
+    <!-- 
+    Ensure VersionSuffix is always set (especially during 'dotnet restore')
+    to work around https://github.com/NuGet/Home/issues/4337
+     -->
+    <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
+    <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -45,5 +77,5 @@
     </Content>
   </ItemGroup>
 
-  <Import Condition="Exists('$(RepoRoot)Tools/versioning.props')" Project="$(RepoRoot)Tools/versioning.props" /> 
+  <Import Condition="Exists('$(RepoRoot)Tools/versioning.props')" Project="$(RepoRoot)Tools/versioning.props" />
 </Project>
