@@ -18,6 +18,12 @@ namespace System.Diagnostics.Tracing
 {
     /// <summary>
     /// Provides the ability to collect statistics through EventSource
+    /// 
+    /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/documentation/EventCounterTuturial.md
+    /// for a tutorial guide.  
+    /// 
+    /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
+    /// which shows tests, which are also useful in seeing actual use.  
     /// </summary>
     public class EventCounter
     {

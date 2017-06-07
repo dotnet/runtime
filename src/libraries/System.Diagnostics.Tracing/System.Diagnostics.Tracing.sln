@@ -1,7 +1,12 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.12
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{90DA2470-329A-4DD0-95B3-F00D42DD9137}"
+	ProjectSection(SolutionItems) = preProject
+		documentation\EventCounterTuturial.md = documentation\EventCounterTuturial.md
+	EndProjectSection
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Diagnostics.Tracing.Tests", "tests\System.Diagnostics.Tracing.Tests.csproj", "{7E0E1B11-FF70-461E-99F7-C0AF252C0C60}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EB880FDC-326D-42B3-A3FD-0CD3BA29A7F4} = {EB880FDC-326D-42B3-A3FD-0CD3BA29A7F4}
