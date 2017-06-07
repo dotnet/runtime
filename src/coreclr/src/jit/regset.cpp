@@ -3570,52 +3570,36 @@ bool genIsProperRegPair(regPairNo regPair)
 
 regNumber genRegArgNext(regNumber argReg)
 {
-    regNumber result = REG_NA;
+    assert(isValidIntArgReg(argReg) || isValidFloatArgReg(argReg));
 
-    if (isValidFloatArgReg(argReg))
+    switch (argReg)
     {
-        // We can iterate the floating point argument registers by using +1
-        result = REG_NEXT(argReg);
-    }
-    else
-    {
-        assert(isValidIntArgReg(argReg));
 
 #ifdef _TARGET_AMD64_
 #ifdef UNIX_AMD64_ABI
-        // Windows X64 ABI:
-        //     REG_EDI, REG_ESI, REG_ECX, REG_EDX, REG_R8, REG_R9
-        //
-        if (argReg == REG_ARG_1) // REG_ESI
-        {
-            result = REG_ARG_2; // REG_ECX
-        }
-        else if (argReg == REG_ARG_3) // REG_EDX
-        {
-            result = REG_ARG_4; // REG_R8
-        }
-#else  // Windows ABI
-        // Windows X64 ABI:
-        //     REG_ECX, REG_EDX, REG_R8, REG_R9
-        //
-        if (argReg == REG_ARG_1) // REG_EDX
-        {
-            result = REG_ARG_2; // REG_R8
-        }
-#endif // UNIX or Windows ABI
+
+        // Linux x64 ABI: REG_RDI, REG_RSI, REG_RDX, REG_RCX, REG_R8, REG_R9
+        case REG_ARG_0:       // REG_RDI
+            return REG_ARG_1; // REG_RSI
+        case REG_ARG_1:       // REG_RSI
+            return REG_ARG_2; // REG_RDX
+        case REG_ARG_2:       // REG_RDX
+            return REG_ARG_3; // REG_RCX
+        case REG_ARG_3:       // REG_RCX
+            return REG_ARG_4; // REG_R8
+
+#else // !UNIX_AMD64_ABI
+
+        // Windows x64 ABI: REG_RCX, REG_RDX, REG_R8, REG_R9
+        case REG_ARG_1:       // REG_RDX
+            return REG_ARG_2; // REG_R8
+
+#endif // !UNIX_AMD64_ABI
 #endif // _TARGET_AMD64_
 
-        // If we didn't set 'result' to valid register above
-        // then we will just iterate 'argReg' using REG_NEXT
-        //
-        if (result == REG_NA)
-        {
-            // Otherwise we just iterate the argument registers by using REG_NEXT
-            result = REG_NEXT(argReg);
-        }
+        default:
+            return REG_NEXT(argReg);
     }
-
-    return result;
 }
 
 /*****************************************************************************
