@@ -262,6 +262,8 @@ def generateEventPipeCmakeFile(etwmanifest, eventpipe_directory):
         topCmake.write('            "eventpipehelpers.cpp"\n')
         topCmake.write("""        )
 
+        add_dependencies(eventpipe GeneratedEventingFiles)
+
         # Install the static eventpipe library
         install(TARGETS eventpipe DESTINATION lib)
         """)
