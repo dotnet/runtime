@@ -804,8 +804,8 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 Compiler::AssertionDsc* Compiler::optGetAssertion(AssertionIndex assertIndex)
 {
     assert(NO_ASSERTION_INDEX == 0);
-    noway_assert(assertIndex != NO_ASSERTION_INDEX);
-    noway_assert(assertIndex <= optAssertionCount);
+    assert(assertIndex != NO_ASSERTION_INDEX);
+    assert(assertIndex <= optAssertionCount);
     AssertionDsc* assertion = &optAssertionTabPrivate[assertIndex - 1];
 #ifdef DEBUG
     optDebugCheckAssertion(assertion);
