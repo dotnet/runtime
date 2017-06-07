@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Microsoft.Win32.SafeHandles;
 
@@ -11,6 +12,13 @@ namespace System.Diagnostics
 {
     public partial class Process : IDisposable
     {
+        private bool _haveMainWindow;
+        private IntPtr _mainWindowHandle;
+        private string _mainWindowTitle;
+
+        private bool _haveResponding;
+        private bool _responding;
+
         private bool StartCore(ProcessStartInfo startInfo)
         {
             return startInfo.UseShellExecute
@@ -178,6 +186,145 @@ namespace System.Diagnostics
             }
 
             public int ErrorCode { get; private set; }
+        }
+
+        private string GetMainWindowTitle()
+        {
+            IntPtr handle = MainWindowHandle;
+            if (handle == IntPtr.Zero)
+                return string.Empty;
+
+            int length = Interop.User32.GetWindowTextLengthW(handle);
+
+            if (length == 0)
+            {
+#if DEBUG
+                // We never used to throw here, want to surface possible mistakes on our part
+                int error = Marshal.GetLastWin32Error();
+                Debug.Assert(error == 0, $"Failed GetWindowTextLengthW(): { new Win32Exception(error).Message }");
+#endif
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder(length);
+            length = Interop.User32.GetWindowTextW(handle, builder, builder.Capacity + 1);
+
+#if DEBUG
+            if (length == 0)
+            {
+                // We never used to throw here, want to surface possible mistakes on our part
+                int error = Marshal.GetLastWin32Error();
+                Debug.Assert(error == 0, $"Failed GetWindowTextW(): { new Win32Exception(error).Message }");
+            }
+#endif
+
+            builder.Length = length;
+            return builder.ToString();
+        }
+
+        public IntPtr MainWindowHandle
+        {
+            get
+            {
+                if (!_haveMainWindow)
+                {
+                    EnsureState(State.IsLocal | State.HaveId);
+                    _mainWindowHandle = ProcessManager.GetMainWindowHandle(_processId);
+
+                    _haveMainWindow = true;
+                }
+                return _mainWindowHandle;
+            }
+        }
+
+        private bool CloseMainWindowCore()
+        {
+            const int GWL_STYLE = -16; // Retrieves the window styles.
+            const int WS_DISABLED = 0x08000000; // WindowStyle disabled. A disabled window cannot receive input from the user.
+            const int WM_CLOSE = 0x0010; // WindowMessage close.
+
+            IntPtr mainWindowHandle = MainWindowHandle;
+            if (mainWindowHandle == (IntPtr)0)
+            {
+                return false;
+            }
+
+            int style = Interop.User32.GetWindowLong(mainWindowHandle, GWL_STYLE);
+            if ((style & WS_DISABLED) != 0)
+            {
+                return false;
+            }
+
+            Interop.User32.PostMessage(mainWindowHandle, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+            return true;
+        }
+
+        public string MainWindowTitle
+        {
+            get
+            {
+                if (_mainWindowTitle == null)
+                {
+                    _mainWindowTitle = GetMainWindowTitle();
+                }
+
+                return _mainWindowTitle;
+            }
+        }
+
+        private bool IsRespondingCore()
+        {
+            const int WM_NULL = 0x0000;
+            const int SMTO_ABORTIFHUNG = 0x0002;
+
+            IntPtr mainWindow = MainWindowHandle;
+            if (mainWindow == (IntPtr)0)
+            {
+                return true;
+            }
+
+            IntPtr result;
+            return Interop.User32.SendMessageTimeout(mainWindow, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result) != (IntPtr)0;
+        }
+
+        public bool Responding
+        {
+            get
+            {
+                if (!_haveResponding)
+                {
+                    _responding = IsRespondingCore();
+                    _haveResponding = true;
+                }
+
+                return _responding;
+            }
+        }
+
+        private bool WaitForInputIdleCore(int milliseconds)
+        {
+            const int WAIT_OBJECT_0 = 0x00000000;
+            const int WAIT_FAILED = unchecked((int)0xFFFFFFFF);
+            const int WAIT_TIMEOUT = 0x00000102;
+
+            bool idle;
+            using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.SYNCHRONIZE | Interop.Advapi32.ProcessOptions.PROCESS_QUERY_INFORMATION))
+            {
+                int ret = Interop.User32.WaitForInputIdle(handle, milliseconds);
+                switch (ret)
+                {
+                    case WAIT_OBJECT_0:
+                        idle = true;
+                        break;
+                    case WAIT_TIMEOUT:
+                        idle = false;
+                        break;
+                    case WAIT_FAILED:
+                    default:
+                        throw new InvalidOperationException(SR.InputIdleUnkownError);
+                }
+            }
+            return idle;
         }
     }
 }

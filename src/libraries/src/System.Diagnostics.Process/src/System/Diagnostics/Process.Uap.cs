@@ -12,5 +12,15 @@ namespace System.Diagnostics
                 ? throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported)
                 : StartWithCreateProcess(startInfo);
         }
+
+        public IntPtr MainWindowHandle => IntPtr.Zero;
+
+        private bool CloseMainWindowCore() => false;
+
+        public string MainWindowTitle => string.Empty;
+
+        public bool Responding => true;
+
+        private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
     }
 }

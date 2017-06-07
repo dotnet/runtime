@@ -961,7 +961,7 @@ namespace System.Diagnostics.Tests
         [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/20204")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "HWND not available")]
         public void StartInfo_NotepadWithContent(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".txt";
@@ -998,7 +998,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // Does not support UseShellExecute
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/20204")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "HWND not available")]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/20388")]
         public void StartInfo_TextFile_ShellExecute()
         {
