@@ -145,6 +145,8 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
+        assert(LIR::AsRange(block).CheckLIR(compiler));
+
         // Figure out which registers hold variables on entry to this block
 
         regSet.ClearMaskVars();
