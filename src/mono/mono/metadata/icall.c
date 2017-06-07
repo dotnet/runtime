@@ -1915,32 +1915,27 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 }
 
 ICALL_EXPORT void
-ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *obj, MonoObject *value)
+ves_icall_MonoField_SetValueInternal (MonoReflectionFieldHandle field, MonoObjectHandle obj, MonoObjectHandle value, MonoError  *error)
 {
-	MonoError error;
-	MonoClassField *cf = field->field;
-	MonoType *type;
-	gchar *v;
+	MonoClassField *cf = MONO_HANDLE_GETVAL (field, field);
 
-	if (field->klass->image->assembly->ref_only) {
-		mono_set_pending_exception (mono_get_exception_invalid_operation (
-					"It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods."));
+	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
+	if (field_klass->image->assembly->ref_only) {
+		mono_error_set_invalid_operation (error, "It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods.");
 		return;
 	}
 
 	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_field (cf, &error)) {
-		mono_error_set_pending_exception (&error);
+	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
 		return;
 	}
 
-	type = mono_field_get_type_checked (cf, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return;
-	}
+	MonoType *type = mono_field_get_type_checked (cf, error);
+	return_if_nok (error);
 
-	v = (gchar *) value;
+	gboolean isref = FALSE;
+	uint32_t value_gchandle = 0;
+	gchar *v = NULL;
 	if (!type->byref) {
 		switch (type->type) {
 		case MONO_TYPE_U1:
@@ -1959,8 +1954,9 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
-			if (v != NULL)
-				v += sizeof (MonoObject);
+			isref = FALSE;
+			if (!MONO_HANDLE_IS_NULL (value))
+				v = mono_object_handle_pin_unbox (value, &value_gchandle);
 			break;
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_OBJECT:
@@ -1968,6 +1964,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 			/* Do nothing */
+			isref = TRUE;
 			break;
 		case MONO_TYPE_GENERICINST: {
 			MonoGenericClass *gclass = type->data.generic_class;
@@ -1975,26 +1972,29 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 			if (mono_class_is_nullable (mono_class_from_mono_type (type))) {
 				MonoClass *nklass = mono_class_from_mono_type (type);
-				MonoObject *nullable;
 
 				/* 
 				 * Convert the boxed vtype into a Nullable structure.
 				 * This is complicated by the fact that Nullables have
 				 * a variable structure.
 				 */
-				nullable = mono_object_new_checked (mono_domain_get (), nklass, &error);
-				if (!mono_error_ok (&error)) {
-					mono_error_set_pending_exception (&error);
-					return;
-				}
+				MonoObjectHandle nullable = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (mono_domain_get (), nklass, error));
+				return_if_nok (error);
 
-				mono_nullable_init ((guint8 *)mono_object_unbox (nullable), value, nklass);
+				uint32_t nullable_gchandle = 0;
+				guint8 *nval = mono_object_handle_pin_unbox (nullable, &nullable_gchandle);
+				mono_nullable_init_from_handle (nval, value, nklass);
 
-				v = (gchar *)mono_object_unbox (nullable);
+				isref = FALSE;
+				value_gchandle = nullable_gchandle;
+				v = (gchar*)nval;
 			}
-			else 
-				if (gclass->container_class->valuetype && (v != NULL))
-					v += sizeof (MonoObject);
+			else {
+				isref = !gclass->container_class->valuetype;
+				if (!isref && !MONO_HANDLE_IS_NULL (value)) {
+					v = mono_object_handle_pin_unbox (value, &value_gchandle);
+				};
+			}
 			break;
 		}
 		default:
@@ -2004,22 +2004,35 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		}
 	}
 
+	/* either value is a reference type, or it's a value type and we pinned
+	 * it and v points to the payload. */
+	g_assert ((isref && v == NULL && value_gchandle == 0) ||
+		  (!isref && v != NULL && value_gchandle != 0) ||
+		  (!isref && v == NULL && value_gchandle == 0));
+
 	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable_full (mono_object_domain (field), cf->parent, &error);
-		if (!is_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return;
-		}
+		MonoVTable *vtable = mono_class_vtable_full (MONO_HANDLE_DOMAIN (field), cf->parent, error);
+		if (!is_ok (error))
+			goto leave;
+
 		if (!vtable->initialized) {
-			if (!mono_runtime_class_init_full (vtable, &error)) {
-				mono_error_set_pending_exception (&error);
-				return;
-			}
+			if (!mono_runtime_class_init_full (vtable, error))
+				goto leave;
 		}
-		mono_field_static_set_value (vtable, cf, v);
+		if (isref)
+			mono_field_static_set_value (vtable, cf, MONO_HANDLE_RAW (value)); /* FIXME make mono_field_static_set_value work with handles for value */
+		else
+			mono_field_static_set_value (vtable, cf, v);
 	} else {
-		mono_field_set_value (obj, cf, v);
+
+		if (isref)
+			MONO_HANDLE_SET_FIELD_REF (obj, cf, value);
+		else
+			mono_field_set_value (MONO_HANDLE_RAW (obj), cf, v); /* FIXME: make mono_field_set_value take a handle for obj */
 	}
+leave:
+	if (value_gchandle)
+		mono_gchandle_free (value_gchandle);
 }
 
 ICALL_EXPORT void
