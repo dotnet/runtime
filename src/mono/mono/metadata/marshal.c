@@ -4028,8 +4028,10 @@ emit_invoke_call (MonoMethodBuilder *mb, MonoMethod *method,
 
 	/* to make it work with our special string constructors */
 	if (!string_dummy) {
+		MonoError error;
 		MONO_GC_REGISTER_ROOT_SINGLE (string_dummy, MONO_ROOT_SOURCE_MARSHAL, "dummy marshal string");
-		string_dummy = mono_string_new_wrapper ("dummy");
+		string_dummy = mono_string_new_checked (mono_get_root_domain (), "dummy", &error);
+		mono_error_assert_ok (&error);
 	}
 
 	if (virtual_) {
