@@ -41,49 +41,21 @@ initTargetDistroRid()
 
 isMSBuildOnNETCoreSupported()
 {
-    # This needs to be updated alongwith corresponding changes to netci.groovy.
-    __isMSBuildOnNETCoreSupported=0
+    __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
 
-    if [ "$__HostArch" == "x64" ]; then
-        if [ "$__HostOS" == "Linux" ]; then
-            case "$__HostDistroRid" in
-                "centos.7-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "debian.8-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "fedora.23-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "fedora.24-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "opensuse.42.1-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "rhel.7"*"-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.14.04-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.16.04-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "ubuntu.16.10-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                "alpine.3.4.3-x64")
-                    __isMSBuildOnNETCoreSupported=1
-                    ;;
-                *)
-                __isMSBuildOnNETCoreSupported=$__msbuildonunsupportedplatform
-            esac
-        elif [ "$__HostOS" == "OSX" ]; then
-            __isMSBuildOnNETCoreSupported=1
-        fi
+    if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
+        return
     fi
+
+    __isMSBuildOnNETCoreSupported=1
+    UNSUPPORTED_RIDS=("*-arm" "*-arm64" "*-x86" "debian.9-x64" "ubuntu.17.04-x64")
+    for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
+    do
+        if [[ "$__HostDistroRid" == $UNSUPPORTED_RID ]]; then
+            __isMSBuildOnNETCoreSupported=0
+            break
+        fi
+    done
 }
 
 build_Tests()
