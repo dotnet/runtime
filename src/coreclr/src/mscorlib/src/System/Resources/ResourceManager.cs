@@ -881,16 +881,6 @@ namespace System.Resources
 
         // When running under AppX, the following rules apply for resource lookup:
         //
-        // Desktop
-        // -------
-        //
-        // 1) For Framework assemblies, we always use satellite assembly based lookup.
-        // 2) For non-FX assemblies, we use modern resource manager, with the premise being that app package
-        //    contains the PRI resources since such assemblies are expected to be application assemblies.
-        //
-        // CoreCLR
-        // -------
-        //
         // 1) For Framework assemblies, we always use satellite assembly based lookup.
         // 2) For non-FX assemblies:
         //    
@@ -901,7 +891,7 @@ namespace System.Resources
         //       contains the PRI resources.
         private bool ShouldUseSatelliteAssemblyResourceLookupUnderAppX(RuntimeAssembly resourcesAssembly)
         {
-            bool fUseSatelliteAssemblyResourceLookupUnderAppX = resourcesAssembly.IsFrameworkAssembly();
+            bool fUseSatelliteAssemblyResourceLookupUnderAppX = typeof(Object).Assembly == resourcesAssembly;
 
             if (!fUseSatelliteAssemblyResourceLookupUnderAppX)
             {
@@ -926,8 +916,8 @@ namespace System.Resources
 
             return fUseSatelliteAssemblyResourceLookupUnderAppX;
         }
-
 #endif // FEATURE_APPX
+
         // Only call SetAppXConfiguration from ResourceManager constructors, and nowhere else.
         // Throws MissingManifestResourceException and WinRT HResults
 
@@ -993,8 +983,6 @@ namespace System.Resources
 
                         if (!bUsingSatelliteAssembliesUnderAppX)
                         {
-                            // See AssemblyNative::IsFrameworkAssembly for details on which kinds of assemblies are considered Framework assemblies.
-                            // The Modern Resource Manager is not used for such assemblies - they continue to use satellite assemblies (i.e. .resources.dll files).
                             _bUsingModernResourceManagement = !ShouldUseSatelliteAssemblyResourceLookupUnderAppX(resourcesAssembly);
 
                             if (_bUsingModernResourceManagement)

@@ -1896,9 +1896,6 @@ class AssemblyBaseObject : public Object
     STRINGREF     m_fullname;              // Slot for storing assemblies fullname
     OBJECTREF     m_pSyncRoot;             // Pointer to loader allocator to keep collectible types alive, and to serve as the syncroot for assembly building in ref.emit
     DomainAssembly* m_pAssembly;           // Pointer to the Assembly Structure
-#ifdef FEATURE_APPX
-    UINT32        m_flags;
-#endif
 
   protected:
     AssemblyBaseObject() { LIMITED_METHOD_CONTRACT; }
