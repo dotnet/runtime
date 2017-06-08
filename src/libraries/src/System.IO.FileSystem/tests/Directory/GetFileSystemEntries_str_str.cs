@@ -205,9 +205,406 @@ namespace System.IO.Tests
             }
         }
 
+        [Theory,
+            // '[' should not matter, but is special to Unix matching APIs
+            InlineData(
+                "[foo]",
+                new string[] { @"f", @"o", @"o", @"foo", @"[foo]" },
+                new string[] { @"[foo]" }),
+            ]
+        public void PatternTests_UnixPatterns(string pattern, string[] sourceFiles, string[] expected)
+        {
+            string testDir = PrepareDirectory(sourceFiles);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20779, TestPlatforms.AnyUnix)]
+        [Theory,
+            // Question marks collapse (right) to periods
+            InlineData(
+                "f???.txt",
+                new string[] { @"f.txt", @"foo.txt", @"foob.txt", @"fooba.txt", @"foobar.txt" },
+                new string[] { @"f.txt", @"foo.txt", @"foob.txt" }),
+            // Question marks don't collapse to !periods
+            InlineData(
+                "???b??.txt",
+                new string[] { @"f.txt", @"foo.txt", @"foob.txt", @"fooba.txt", @"foobar.txt" },
+                new string[] { @"foob.txt", @"fooba.txt", @"foobar.txt" }),
+            // Question marks collapse (right) to end
+            InlineData(
+                "foo.t??",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo.t", @"foo.tx", @"foo.txt" }),
+            ]
+        public void PatternTests_DosQM(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Question marks always collapse right to periods or the end of the string if they are contiguous
+            string testDir = PrepareDirectory(sourceFiles);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20779, TestPlatforms.AnyUnix)]
+        [ActiveIssue(20780, TestPlatforms.AnyUnix)]
+        [Theory,
+            // Periods are optional if left of ? and end of match
+            InlineData(
+                "foo.???",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt" }),
+            // Periods are optional if left of ? and end of match
+            InlineData(
+                "foo.???.?.?.?",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt" }),
+            // Periods are optional if left of ? and end of match
+            InlineData(
+                "foo.?.??.???.?",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t" }),
+            // Periods are optional if left of ? and end of match
+            InlineData(
+                "foo.??.???.?",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx" }),
+            // Periods are optional if left of * and end of match, question marks collapse (right) to end
+            InlineData(
+                "foo.*??",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"foo.txxt" }),
+            // Periods are optional if left of * and end of match, question marks collapse (right) to end
+            InlineData(
+                "foo.*??*",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"foo.txxt" })
+                ]
+        public void PatternTests_DosDotQm(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Tests for collapsing question marks and DOS_DOT, ", which is what periods get changed to when they are followed by a '?' or '*'.
+            string testDir = PrepareDirectory(sourceFiles);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20780, TestPlatforms.AnyUnix)]
+        [Theory,
+            // Periods are optional if left of * and end of match
+            InlineData(
+                "foo.*",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"foo.txxt" }),
+            // Periods are optional if left of * and end of match
+            InlineData(
+                "foo.*.*.*.*",
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.t", @"foo.tx", @"foo.txt", @"foo.txxt" })
+            ]
+        public void PatternTests_DosDot(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Tests for DOS_DOT, ", which is what periods get changed to when they are followed by a '?' or '*'.
+            string testDir = PrepareDirectory(sourceFiles);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20780, TestPlatforms.AnyUnix)]
+        // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
+        [ConditionalTheory(nameof(UsingNewNormalization)),
+            // Periods are optional if left of * or ? and end of match
+            InlineData(
+                "foo.*",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"foo.txxt" }),
+            InlineData(
+                "foo.*.*",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"foo.txxt" }),
+            InlineData(
+                "foo.?",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t" }),
+            InlineData(
+                "foo.??",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx" }),
+            InlineData(
+                "foo.?.?",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t" }),
+            InlineData(
+                "foo.??.??",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx" }),
+            InlineData(
+                "foo.?.*",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t" }),
+            InlineData(
+                "foo.??.*",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo.txxt" },
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx" }),
+            ]
+        public void PatternTests_DosDotTrailingDot(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Tests for DOS_DOT, ", which is what periods get changed to when they are followed by a '?' or '*'.
+            // We don't want to eat trailing space/periods in this test
+            string testDir = PrepareDirectory(sourceFiles, useExtendedPaths: true);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20781, TestPlatforms.AnyUnix)]
+        [Theory,
+            InlineData(
+                "foo*.",
+                new string[] { @"foo", @"foobar", @"foo.bar" },
+                new string[] { @"foo", @"foobar" })
+                ]
+        public void PatternTests_DosStar(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Tests for DOS_STAR, which only occurs when the source pattern ends in *.
+            string testDir = PrepareDirectory(sourceFiles);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20781, TestPlatforms.AnyUnix)]
+        // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
+        [ConditionalTheory(nameof(UsingNewNormalization)),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo..", @"foo...", @"foo .", @"foo. . .", @"foo. t" },
+                new string[] { @"foo", @"foo .", @"foo.", @"foo..", @"foo...", @"foo. . ." }),
+            InlineData(
+                "foodies*.",
+                new string[] { @"foodies.", @"foodies. ", @"foodies.  " },
+                new string[] { @"foodies." }),
+            InlineData(
+                "foodies*.",
+                new string[] { @"foodies. ", @"foodies.  ", @"foodies.   " },
+                new string[] { }),
+            InlineData(
+                "foooooo*.",
+                new string[] { @"foooooo.", @"foooooo. ", @"foooooo.  " },
+                new string[] { @"foooooo." }),
+            InlineData(
+                "foooooo*.",
+                new string[] { @"foooooo. ", @"foooooo.  ", @"foooooo.   " },
+                new string[] { }),
+            InlineData(
+                "foodies*.",
+                new string[] { @"foodies.", @"foodies. ", @"foodies.  ", @"foodies.   ", @"foodies.    ", @"foodies.     " },
+                new string[] { @"foodies." }),
+            InlineData(
+                "foodies*.",
+                new string[] { @"foodies. ", @"foodies.  ", @"foodies.   ", @"foodies.    ", @"foodies.     " },
+                new string[] { }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo..", @"foo...", @"foo....", @"foo.....", @"foo......" },
+                new string[] { @"foo..", @"foo...", @"foo....", @"foo.....", @"foo......" }),
+            ]
+        public void PatternTests_DosStarSpace(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Tests for DOS_STAR, which only occurs when the source pattern ends in *. These are the subset of tests
+            // with trailing spaces that work as documented.
+
+            // We don't want to eat trailing space/periods in this test
+            string testDir = PrepareDirectory(sourceFiles, useExtendedPaths: true);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        [ActiveIssue(20781, TestPlatforms.AnyUnix)]
+        [OuterLoop("These are pretty corner, don't need to run all the time.")]
+        // Can't do these without extended path support on Windows, UsingNewNormalization filters appropriately
+        [ConditionalTheory(nameof(UsingNewNormalization)),
+            // "foo*." actually becomes "foo<" when passed to NT. It matches all characters up to, and including, the final period.
+            //
+            // There is a "bug" somewhere in the Windows stack where *some* files with trailing spaces after the final period will be returned when
+            // using "*." at the end of a string (which becomes "<"). According to the rules (and the actual pattern matcher used FsRtlIsNameInExpression)
+            // *nothing* should match after the final period.
+            //
+            // The results as passed to RtlIsNameInExpression (after changing *. to <) are in comments.
+            InlineData(
+                "foo*.",
+                new string[] { @"foo", @"foo.", @"foo.t", @"foo.tx", @"foo.txt", @"bar.txt", @"foo..", @"foo...", @"foo. ", @"foo.  ", @"foo .", @"foo. . .", @"foo. t" },
+                // Really should be: new string[] { @"foo", @"foo.", @"foo..", @"foo...", @"foo .", @"foo. . ." }), but is
+                new string[] { @"foo", @"foo .", @"foo.", @"foo..", @"foo...", @"foo. ", @"foo. . ." }),
+            InlineData(
+                "*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo..", @"foo. t" },
+                // Really should be: new string[] { @"foo.." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.." }),
+            InlineData(
+                "f*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo..", @"foo. t" },
+                // Really should be: new string[] { @"foo.." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.." }),
+            InlineData(
+                "fo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo..", @"foo. t" },
+                // Really should be: new string[] { @"foo.." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.." }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo." },
+                // Really should be: new string[] { @"foo." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo." }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo.", @"foo. ", @"foo.  ", @"foo.   ", @"foo.    " },
+                // Really should be: new string[] { @"foo." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo." }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo.", @"foo", @"foo. ", @"foo.  ", @"foo.   ", @"foo.    " },
+                // Really should be: new string[] { @"foo.", @"foo" }), but is
+                new string[] { @"foo.", @"foo", @"foo.  ", @"foo.   ", @"foo. " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo.", @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo" },
+                // Really should be: new string[] { @"foo.", @"foo" }), but is
+                new string[] { @"foo.", @"foo", @"foo.  ", @"foo.   ", @"foo. " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo.    ", @"foo", @"foo.", @"foo. ", @"foo.  ", @"foo.   " },
+                // Really should be: new string[] { @"foo.", @"foo" }), but is
+                new string[] { @"foo.", @"foo", @"foo.  ", @"foo.    ", @"foo. " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo.    ", @"foo", @"food", @"foo.", @"foo. ", @"foo.  ", @"foo.   " },
+                // Really should be: new string[] { @"foo.", @"foo", @"food" }), but is
+                new string[] { @"foo.", @"foo", @"foo.  ", @"foo.    ", @"foo. ", @"food" }),
+            InlineData(
+                "fo*.",
+                new string[] { @"foo.", @"foo. ", @"foo.  ", @"foo.   ", @"foo.    " },
+                // Really should be: new string[] { @"foo." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.", @"foo.    " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo. ", @"foo. .", @"foo. . ", @"foo. . .", @"foo. . . " },
+                // Really should be: new string[] { @"foo. .", @"foo. . ." }), but is
+                new string[] { @"foo. ", @"foo. .", @"foo. . ", @"foo. . ." }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo. ", @"foo. .", @"foo.. .", @"foo.... .", @"foo..... ." },
+                // Really should be: new string[] { @"foo. .", @"foo.. .", @"foo.... .", @"foo..... ." }), but is
+                new string[] { @"foo. ", @"foo. .", @"foo.. .", @"foo.... .", @"foo..... ." }),
+            InlineData(
+                "fo*.",
+                new string[] { @"foo. ", @"foo. .", @"foo. . ", @"foo. . .", @"foo. . . " },
+                // Really should be: new string[] { @"foo. .", @"foo. . ."}), but is
+                new string[] { @"foo. ", @"foo. .", @"foo. . ", @"foo. . .", @"foo. . . " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo.", @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     " },
+                // Really should be: new string[] { @"foo." }), but is
+                new string[] { @"foo.", @"foo. ", @"foo.  ", @"foo.   " }),
+            InlineData(
+                "food*.",
+                new string[] { @"food.", @"food. ", @"food.  ", @"food.   ", @"food.    ", @"food.     " },
+                // Really should be: new string[] { @"food." }), but is
+                new string[] { @"food.", @"food. ", @"food.  ", @"food.   " }),
+            InlineData(
+                "food*.",
+                new string[] { @"food.", @"food. ", @"food.  ", @"food.   ", @"food.    ", @"food.     ", @"foodi." },
+                // Really should be: new string[] { @"food.", @"foodi." }), but is
+                new string[] { @"food.", @"food. ", @"food.  ", @"food.   ", @"foodi." }),
+            InlineData(
+                "foodi*.",
+                new string[] { @"foodi.", @"foodi. ", @"foodi.  ", @"foodi.   ", @"foodi.    ", @"foodi.     " },
+                // Really should be: new string[] { @"foodi." }), but is
+                new string[] { @"foodi.", @"foodi. ", @"foodi.  ", @"foodi.   " }),
+            InlineData(
+                "foodie*.",
+                new string[] { @"foodie.", @"foodie. ", @"foodie.  ", @"foodie.   ", @"foodie.    ", @"foodie.     " },
+                // Really should be: new string[] { @"foodie." }), but is
+                new string[] { @"foodie.", @"foodie. ", @"foodie.  ", @"foodie.   " }),
+            InlineData(
+                "fooooo*.",
+                new string[] { @"foooooo.", @"foooooo. ", @"foooooo.  " },
+                // Really should be: new string[] { @"foooooo." }), but is
+                new string[] { @"foooooo.", @"foooooo. ", @"foooooo.  " }),
+            InlineData(
+                "fooooo*.",
+                new string[] { @"foooooo. ", @"foooooo.  ", @"foooooo.   " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"foooooo. ", @"foooooo.  ", @"foooooo.   " }),
+            InlineData(
+                "fo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     " }),
+            InlineData(
+                "fo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     ", @"foo.      ", @"foo.       " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     ", @"foo.      ", @"foo.       " }),
+            InlineData(
+                "fo*.",
+                new string[] { @"fo. ", @"fo.  ", @"fo.   ", @"fo.    ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     ", @"foo.      ", @"foo.       " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"fo. ", @"fo.  ", @"fo.   ", @"fo.    ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     ", @"foo.      ", @"foo.       " }),
+            InlineData(
+                "fo*.",
+                new string[] { @"fo. ", @"fo.  ", @"fo.   ", @"fo.    ", @"fo.     ", @"fo.      ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     ", @"foo.      ", @"foo.       " },
+                // Really should be: new string[] { }), but is
+                new string[] { @"fo. ", @"fo.  ", @"fo.   ", @"fo.    ", @"fo.     ", @"fo.      ", @"foo.  ", @"foo.   ", @"foo.    ", @"foo.     ", @"foo.      ", @"foo.       " }),
+            InlineData(
+                "foo*.",
+                new string[] { @"foo. ", @"foo.  ", @"foo..", @"foo. t", @"foo.   ", @"foo.    " },
+                // Really should be: new string[] { @"foo.." }), but is
+                new string[] { @"foo. ", @"foo.  ", @"foo.   ", @"foo.." }),
+            ]
+        public void PatternTests_DosStarOddSpace(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // Tests for DOS_STAR, which only occurs when the source pattern ends in *.
+            // These cases don't match documented behavior on Windows- matching *should* end at the final period.
+
+            // We don't want to eat trailing space/periods in this test
+            string testDir = PrepareDirectory(sourceFiles, useExtendedPaths: true);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
+
+        private string PrepareDirectory(string[] sourceFiles, bool useExtendedPaths = false)
+        {
+            string testDir = Directory.CreateDirectory(GetTestFilePath()).FullName;
+
+            foreach (string file in sourceFiles)
+                CreateItem(useExtendedPaths && PlatformDetection.IsWindows
+                    ? @"\\?\" + Path.Combine(testDir, file)
+                    : Path.Combine(testDir, file));
+
+            return testDir;
+        }
+
+        private void ValidatePatternMatch(string[] expected, string[] result)
+        {
+            Assert.Equal(expected.OrderBy(s => s), result.Select(Path.GetFileName).OrderBy(s => s));
+        }
+
         #endregion
 
         #region PlatformSpecific
+
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Theory,
+            InlineData(
+                @"foo\bar",
+                new string[] { @"foo", @"bar", @"foo\bar" },
+                new string[] { @"foo\bar" }),
+            ]
+        public void PatternTests_UnixEscape(string pattern, string[] sourceFiles, string[] expected)
+        {
+            // We shouldn't be allowing escaping in Unix filename searches
+            string testDir = PrepareDirectory(sourceFiles);
+            ValidatePatternMatch(expected, GetEntries(testDir, pattern));
+        }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path segment in search pattern throws PathTooLongException

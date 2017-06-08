@@ -20,6 +20,17 @@ namespace System.IO.Tests
             return Directory.GetFileSystemEntries(dirName);
         }
 
+        /// <summary>
+        /// Create a file at the given path or directory if GetEntries doesn't return files
+        /// </summary>
+        protected void CreateItem(string path)
+        {
+            if (TestFiles)
+                File.WriteAllText(path, path);
+            else
+                Directory.CreateDirectory(path);
+        }
+
         #endregion
 
         #region UniversalTests
