@@ -50,6 +50,7 @@ namespace System.Collections.Generic
     [DebuggerDisplay("Count = {Count}")]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // store lower 31 bits of hash code

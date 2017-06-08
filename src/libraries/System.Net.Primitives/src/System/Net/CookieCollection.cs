@@ -11,6 +11,7 @@ namespace System.Net
     //
     // A list of cookies maintained in Sorted order. Only one cookie with matching Name/Domain/Path
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public class CookieCollection : ICollection
     {
         internal enum Stamp
@@ -21,7 +22,7 @@ namespace System.Net
             SetToMaxUsed = 3,
         }
 
-        private readonly List<Cookie> m_list = new List<Cookie>();
+        private readonly ArrayList m_list = new ArrayList();
 
         private DateTime m_timeStamp = DateTime.MinValue; // Do not rename (binary serialization)
         private bool m_has_other_versions; // Do not rename (binary serialization)
@@ -38,7 +39,7 @@ namespace System.Net
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
-                return m_list[index];
+                return m_list[index] as Cookie;
             }
         }
 

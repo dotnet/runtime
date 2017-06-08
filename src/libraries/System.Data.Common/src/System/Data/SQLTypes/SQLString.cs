@@ -32,6 +32,7 @@ namespace System.Data.SqlTypes
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public struct SqlString : INullable, IComparable, IXmlSerializable
     {
         private string m_value; // Do not rename (binary serialization)

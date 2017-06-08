@@ -48,19 +48,6 @@ namespace System.Runtime.InteropServices
     {
     }
 
-    [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
-    public sealed class ComEventInterfaceAttribute : Attribute
-    {
-        public ComEventInterfaceAttribute(Type SourceInterface, Type EventProvider)
-        {
-            this.SourceInterface = SourceInterface;
-            this.EventProvider = EventProvider;
-        }
-
-        public Type SourceInterface { get; }
-        public Type EventProvider { get; }
-    }
-
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
     public sealed class ComRegisterFunctionAttribute : Attribute
     {

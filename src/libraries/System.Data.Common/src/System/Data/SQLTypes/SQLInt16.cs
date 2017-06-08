@@ -16,6 +16,7 @@ namespace System.Data.SqlTypes
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public struct SqlInt16 : INullable, IComparable, IXmlSerializable
     {
         private bool m_fNotNull; // false if null. Do not rename (binary serialization)

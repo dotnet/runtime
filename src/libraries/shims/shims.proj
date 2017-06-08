@@ -74,9 +74,22 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
+  <Target Name="SwitchItemNameForRuntimeBinplaceConfigs" AfterTargets="GetBinPlaceConfiguration">
+    <ItemGroup>
+      <BinPlaceDir Condition="'%(Identity)' == '%(BinPlaceDir.RuntimePath)'">
+        <ItemName>RuntimeBinplaceItem</ItemName>
+      </BinPlaceDir>
+      <PackageFileDir Condition="'%(Identity)' == '%(PackageFileDir.PackageFileRuntimePath)'">
+        <ItemName>RuntimeBinplaceItem</ItemName>
+      </PackageFileDir>
+    </ItemGroup>
+  </Target>
+
   <Target Name="GetBinPlaceItems">
     <ItemGroup>
       <BinPlaceItem Include="$(GenFacadesOutputPath)*.dll" />
+      <ExcludeRuntimeItems Include="@(GenFacadesContracts -> '$(GenFacadesOutputPath)%(Filename)%(Extension)')" Condition="'%(GenFacadesContracts.ExcludeFromRuntime)' == 'true'" />
+      <RuntimeBinplaceItem Include="@(BinPlaceItem)" Exclude="@(ExcludeRuntimeItems)" />
       <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>

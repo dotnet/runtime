@@ -11,6 +11,7 @@
     <Project Include="shims\shims.proj" />
     <Project Include="Native\native-binplace.proj" />
     <Project Include="src.builds" />
+    <Project Include="shims\manual\*.csproj" />
     <Project Include="shims\ApiCompat.proj" />
   </ItemGroup>
 

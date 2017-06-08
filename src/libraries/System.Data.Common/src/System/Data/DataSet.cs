@@ -27,6 +27,7 @@ namespace System.Data
     [Serializable]
     [XmlSchemaProvider(nameof(GetDataSetSchema))]
     [XmlRoot(nameof(DataSet))]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
         private const string KEY_XMLSCHEMA = "XmlSchema";

@@ -28,6 +28,7 @@ namespace System.Data
     [DefaultEvent(nameof(RowChanging))]
     [XmlSchemaProvider(nameof(GetDataTableSchema))]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class DataTable : MarshalByValueComponent, IListSource, ISupportInitializeNotification, ISerializable, IXmlSerializable
     {
         private DataSet _dataSet;
