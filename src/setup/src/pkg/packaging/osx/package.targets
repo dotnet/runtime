@@ -60,6 +60,7 @@
              Directories="$(ResourcePath)" />
     <ItemGroup>
       <ResourceFiles Include="$(OSXScriptRoot)sharedframework/resources\**\*" />
+      <ResourceFiles Include="$(OSXScriptRoot)resources/**/*" />
     </ItemGroup>
 
     <Copy Sourcefiles="@(ResourceFiles)"

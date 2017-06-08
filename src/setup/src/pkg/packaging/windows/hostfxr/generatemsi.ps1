@@ -68,7 +68,7 @@ function RunCandle
     .\candle.exe -nologo `
         -out "$WixObjRoot\" `
         -dHostFxrSrc="$HostFxrPublishRoot" `
-        -dMicrosoftEula="$PackagingRoot\osx\hostfxr\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\windows\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$HostFxrMSIVersion" `
         -dNugetVersion="$HostFxrNugetVersion" `
