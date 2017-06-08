@@ -448,14 +448,27 @@ namespace System.IO
             {
                 case SearchTarget.Files:
                     return new FileSystemEnumerable<FileInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        new FileInfo(path, null));
+                        {
+                            var info = new FileInfo(path, null);
+                            info.Refresh();
+                            return info;
+                        });
                 case SearchTarget.Directories:
                     return new FileSystemEnumerable<DirectoryInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
-                        new DirectoryInfo(path, null));
+                        {
+                            var info = new DirectoryInfo(path, null);
+                            info.Refresh();
+                            return info;
+                        });
                 default:
-                    return new FileSystemEnumerable<FileSystemInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) => isDir ?
-                        (FileSystemInfo)new DirectoryInfo(path, null) :
-                        (FileSystemInfo)new FileInfo(path, null));
+                    return new FileSystemEnumerable<FileSystemInfo>(fullPath, searchPattern, searchOption, searchTarget, (path, isDir) =>
+                        {
+                            var info = isDir ?
+                                (FileSystemInfo)new DirectoryInfo(path, null) :
+                                (FileSystemInfo)new FileInfo(path, null);
+                            info.Refresh();
+                            return info;
+                        });
             }
         }
 
