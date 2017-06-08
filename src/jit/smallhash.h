@@ -579,6 +579,21 @@ public:
         *value = m_buckets[index].m_value;
         return true;
     }
+
+    //------------------------------------------------------------------------
+    // HashTableBase::Contains: returns true if a key exists in the table and
+    //                          false otherwise.
+    //
+    // Arguments:
+    //    key   - The key to find from the table.
+    //
+    // Returns:
+    //    True if the key was found in the table; false otherwise.
+    bool Contains(const TKey& key) const
+    {
+        unsigned unused, index;
+        return TryGetBucket(TKeyInfo::GetHashCode(key), key, &unused, &index);
+    }
 };
 
 //------------------------------------------------------------------------
