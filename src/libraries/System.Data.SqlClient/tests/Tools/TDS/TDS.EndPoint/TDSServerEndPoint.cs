@@ -67,6 +67,12 @@ namespace Microsoft.SqlServer.TDS.EndPoint
         /// </summary>
         internal bool StopRequested { get; set; }
 
+
+        /// <summary>
+        /// Identifier to recognize the client of the Endpoint.
+        /// </summary>
+        public string EndpointName { get; set; }
+
         /// <summary>
         /// Initialization constructor
         /// </summary>
@@ -98,6 +104,8 @@ namespace Microsoft.SqlServer.TDS.EndPoint
             ListenerThread = new Thread(new ThreadStart(_RequestListener)) { IsBackground = true };
             ListenerThread.Name = "TDS Server EndPoint Listener";
             ListenerThread.Start();
+
+            Log($"{GetType().Name} {EndpointName} Listener Thread Started ");
         }
 
         /// <summary>
@@ -214,6 +222,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
             {
                 // Remove the existing connection from the list
                 Connections.Remove(sender as T);
+                Log($"{GetType().Name} {EndpointName} Connection Closed");
             }
         }
 
