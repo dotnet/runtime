@@ -9884,9 +9884,18 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         (resolveType == ResolveSharedCritical) ? REG_NA : getTempRegForResolution(fromBlock, toBlock, TYP_INT);
 #endif // !_TARGET_XARCH_
     regNumber tempRegFlt = REG_NA;
+#ifdef _TARGET_ARM_
+    // ARM32 requires double temp register in addition to interger and float temp registers.
+    regNumber tempRegDbl = REG_NA;
+#endif
     if ((compiler->compFloatingPointUsed) && (resolveType != ResolveSharedCritical))
     {
         tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+
+#ifdef _TARGET_ARM_
+        // ARM32 requires double temp register in addition to interger and float temp registers.
+        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE);
+#endif
     }
 
     regMaskTP targetRegsToDo      = RBM_NONE;
@@ -10041,7 +10050,15 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             {
                 regNumber tempReg = REG_NA;
                 bool      useSwap = false;
-                if (emitter::isFloatReg(targetReg))
+#ifdef _TARGET_ARM_
+                // ARM32 requires double temp register when TYP_DOUBLE
+                if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
+                {
+                    tempReg = tempRegDbl;
+                }
+                else
+#endif
+                    if (emitter::isFloatReg(targetReg))
                 {
                     tempReg = tempRegFlt;
                 }
