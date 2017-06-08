@@ -1331,10 +1331,9 @@ void CodeGen::genReturn(GenTreePtr treeNode)
                 // If it already has a home location, use that. Otherwise, we need a temp.
                 if (genIsRegCandidateLocal(op1) && compiler->lvaTable[op1->gtLclVarCommon.gtLclNum].lvOnFrame)
                 {
-                    // Store local variable to its home location, if necessary.
-                    if ((op1->gtFlags & GTF_REG_VAL) != 0)
+                    if (compiler->lvaTable[op1->gtLclVarCommon.gtLclNum].lvRegNum != REG_STK)
                     {
-                        op1->gtFlags &= ~GTF_REG_VAL;
+                        op1->gtFlags |= GTF_SPILL;
                         inst_TT_RV(ins_Store(op1->gtType,
                                              compiler->isSIMDTypeLocalAligned(op1->gtLclVarCommon.gtLclNum)),
                                    op1, op1->gtRegNum);
@@ -1551,6 +1550,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     GenTree* data = tree->gtOp1;
     genConsumeRegs(data);
     GenTreeIntCon cns = intForm(TYP_INT, 0);
+    cns.SetContained();
     getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(TYP_INT), data, &cns);
 
     BasicBlock* skipLabel = genCreateTempLabel();
@@ -3600,6 +3600,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
     // all of these nodes implicitly do an indirection on op1
     // so create a temporary node to feed into the pattern matching
     GenTreeIndir i = indirForm(type, addr);
+    i.SetContained();
     getEmitter()->emitInsBinary(ins, emitTypeSize(type), &i, data);
 
     if (treeNode->gtRegNum != REG_NA)
@@ -3940,6 +3941,7 @@ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 {
     GenTreeIndir i(GT_IND, type, base, nullptr);
     i.gtRegNum = REG_NA;
+    i.SetContained();
     // has to be nonnull (because contained nodes can't be the last in block)
     // but don't want it to be a valid pointer
     i.gtNext = (GenTree*)(-1);
@@ -4234,11 +4236,8 @@ void CodeGen::genCodeForLclAddr(GenTree* tree)
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
 
-    // Address of a local var.  This by itself should never be allocated a register.
-    // If it is worth storing the address in a register then it should be cse'ed into
-    // a temp and that would be allocated a register.
+    // Address of a local var.
     noway_assert(targetType == TYP_BYREF);
-    noway_assert(!tree->InReg());
 
     inst_RV_TT(INS_lea, targetReg, tree, 0, EA_BYREF);
     genProduceReg(tree);
@@ -4275,7 +4274,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->gtLclNum;
     assert(varNum < compiler->lvaCount);
 
-    getEmitter()->emitIns_R_S(ins_Move_Extend(targetType, tree->InReg()), size, targetReg, varNum, offs);
+    getEmitter()->emitIns_R_S(ins_Move_Extend(targetType, false), size, targetReg, varNum, offs);
 
     genProduceReg(tree);
 }
@@ -4295,18 +4294,11 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
 
     bool isRegCandidate = compiler->lvaTable[tree->gtLclNum].lvIsRegCandidate();
 
-    if (isRegCandidate && !(tree->gtFlags & GTF_VAR_DEATH))
-    {
-        assert(tree->InReg() || (tree->gtFlags & GTF_SPILLED));
-    }
-
     // If this is a register candidate that has been spilled, genConsumeReg() will
     // reload it at the point of use.  Otherwise, if it's not in a register, we load it here.
 
-    if (!tree->InReg() && !(tree->gtFlags & GTF_SPILLED))
+    if (!isRegCandidate && !(tree->gtFlags & GTF_SPILLED))
     {
-        assert(!isRegCandidate);
-
 #if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
         // Loading of TYP_SIMD12 (i.e. Vector3) variable
         if (tree->TypeGet() == TYP_SIMD12)
@@ -4334,7 +4326,6 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     var_types targetType = tree->TypeGet();
     noway_assert(targetType != TYP_STRUCT);
-    noway_assert(!tree->InReg());
     assert(!varTypeIsFloating(targetType) || (targetType == tree->gtOp1->TypeGet()));
 
 #ifdef FEATURE_SIMD
@@ -4432,6 +4423,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             {
                 op1->gtRegNum = REG_NA;
                 op1->ResetReuseRegVal();
+                op1->SetContained();
             }
 
             if (!op1->isUsedFromReg())
@@ -4985,8 +4977,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                                                                        .eightByteSizes[iterationNum]));
                 if (putArgRegNode->gtRegNum != argReg)
                 {
-                    inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), putArgRegNode->InReg()), argReg,
-                               putArgRegNode->gtRegNum);
+                    inst_RV_RV(ins_Move_Extend(putArgRegNode->TypeGet(), false), argReg, putArgRegNode->gtRegNum);
                 }
             }
         }
@@ -4997,7 +4988,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genConsumeReg(argNode);
             if (argNode->gtRegNum != argReg)
             {
-                inst_RV_RV(ins_Move_Extend(argNode->TypeGet(), argNode->InReg()), argReg, argNode->gtRegNum);
+                inst_RV_RV(ins_Move_Extend(argNode->TypeGet(), false), argReg, argNode->gtRegNum);
             }
         }
 
@@ -6445,7 +6436,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         {
             noway_assert(srcSize < EA_PTRSIZE);
 
-            ins = ins_Move_Extend(srcType, castOp->InReg());
+            ins = ins_Move_Extend(srcType, false);
 
             /*
                 Special case: ins_Move_Extend assumes the destination type is no bigger
@@ -6476,7 +6467,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         }
         else
         {
-            ins = ins_Move_Extend(dstType, castOp->InReg());
+            ins = ins_Move_Extend(dstType, false);
         }
     }
 
@@ -6619,26 +6610,6 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         if (srcType == dstType)
         {
             ins = INS_mov;
-        }
-        /* Is the value sitting in a non-byte-addressable register? */
-        else if (castOp->InReg() && (dstSize == EA_1BYTE) && !isByteReg(sourceReg))
-        {
-            if (isUnsignedDst)
-            {
-                // for unsigned values we can AND, so it need not be a byte register
-                ins = INS_AND;
-            }
-            else
-            {
-                // Move the value into a byte register
-                noway_assert(!"Signed byte convert from non-byte-addressable register");
-            }
-
-            /* Generate "mov targetReg, castOp->gtReg */
-            if (targetReg != sourceReg)
-            {
-                inst_RV_RV(INS_mov, targetReg, sourceReg, srcType, srcSize);
-            }
         }
 
         if (ins == INS_AND)
@@ -8575,9 +8546,6 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 
     if (op1->OperGet() == GT_LONG)
     {
-        // Definitions of register candidates will have been lowered to 2 int lclVars.
-        assert(!treeNode->InReg());
-
         GenTreePtr loVal = op1->gtGetOp1();
         GenTreePtr hiVal = op1->gtGetOp2();
 

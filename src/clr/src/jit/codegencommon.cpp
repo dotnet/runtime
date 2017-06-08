@@ -189,14 +189,18 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
 void CodeGenInterface::genMarkTreeInReg(GenTreePtr tree, regNumber reg)
 {
     tree->gtRegNum = reg;
-    tree->gtFlags |= GTF_REG_VAL;
+#ifdef LEGACY_BACKEND
+    tree->SetInReg();
+#endif // LEGACY_BACKEND
 }
 
 #if CPU_LONG_USES_REGPAIR
 void CodeGenInterface::genMarkTreeInRegPair(GenTreePtr tree, regPairNo regPair)
 {
     tree->gtRegPair = regPair;
-    tree->gtFlags |= GTF_REG_VAL;
+#ifdef LEGACY_BACKEND
+    tree->SetInReg();
+#endif // LEGACY_BACKEND
 }
 #endif
 
@@ -1972,7 +1976,7 @@ AGAIN:
 #ifdef LEGACY_BACKEND
         /* Can (and should) we use "add reg, icon" ? */
 
-        if ((op1->gtFlags & GTF_REG_VAL) && mode == 1 && !nogen)
+        if (op1->InReg() && mode == 1 && !nogen)
         {
             regNumber reg1 = op1->gtRegNum;
 
@@ -2051,14 +2055,16 @@ AGAIN:
         goto FOUND_AM;
     }
 
-    /* op2 is not a constant. So keep on trying.
-       Does op1 or op2 already sit in a register? */
+    // op2 is not a constant. So keep on trying.
+    CLANG_FORMAT_COMMENT_ANCHOR;
 
-    if (op1->gtFlags & GTF_REG_VAL)
+#ifdef LEGACY_BACKEND
+    // Does op1 or op2 already sit in a register?
+    if (op1->InReg())
     {
         /* op1 is sitting in a register */
     }
-    else if (op2->gtFlags & GTF_REG_VAL)
+    else if (op2->InReg())
     {
         /* op2 is sitting in a register. Keep the enregistered value as op1 */
 
@@ -2070,6 +2076,7 @@ AGAIN:
         rev = true;
     }
     else
+#endif // LEGACY_BACKEND
     {
         /* Neither op1 nor op2 are sitting in a register right now */
 
@@ -2253,13 +2260,14 @@ AGAIN:
         goto ADD_OP12;
     }
 
-    /* op1 is in a register.
-       Is op2 an addition or a scaled value? */
+#ifdef LEGACY_BACKEND
+    // op1 is in a register.
+    // Note that this case only occurs during codegen for LEGACY_BACKEND.
+
+    // Is op2 an addition or a scaled value?
 
     noway_assert(op2);
 
-#if !defined(_TARGET_ARM64_) && !(defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND))
-    // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
     switch (op2->gtOper)
     {
         case GT_ADD:
@@ -2319,7 +2327,7 @@ AGAIN:
         default:
             break;
     }
-#endif // !_TARGET_ARM64_ && !(_TARGET_ARM_ && !LEGACY_BACKEND)
+#endif // LEGACY_BACKEND
 
 ADD_OP12:
 

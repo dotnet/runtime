@@ -321,20 +321,20 @@ bool GCInfo::gcIsWriteBarrierAsgNode(GenTreePtr op)
  *  If the given tree value is sitting in a register, free it now.
  */
 
+#ifdef LEGACY_BACKEND
 void GCInfo::gcMarkRegPtrVal(GenTreePtr tree)
 {
     if (varTypeIsGC(tree->TypeGet()))
     {
-#ifdef LEGACY_BACKEND
         if (tree->gtOper == GT_LCL_VAR)
             compiler->codeGen->genMarkLclVar(tree);
-#endif // LEGACY_BACKEND
-        if (tree->gtFlags & GTF_REG_VAL)
+        if (tree->InReg())
         {
             gcMarkRegSetNpt(genRegMask(tree->gtRegNum));
         }
     }
 }
+#endif // LEGACY_BACKEND
 
 /*****************************************************************************/
 /*****************************************************************************
