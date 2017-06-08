@@ -105,8 +105,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public static IEnumerable<object[]> GetCoreTypeRecords()
         {
             // Define all core type records here
-            return SerializableEqualityComparers()
-                .Concat(SerializableObjects());
+            return SerializableEqualityComparers_MemberData()
+                .Concat(SerializableObjects_MemberData());
         }
 
         public static IEnumerable<string> GetCoreTypeBlobs(IEnumerable<object[]> records)
