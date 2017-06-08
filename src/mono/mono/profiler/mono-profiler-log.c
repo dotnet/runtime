@@ -4591,22 +4591,22 @@ mono_profiler_startup (const char *desc)
 	else
 		proflog_parse_args (&config, "");
 	//XXX maybe later cleanup to use config directly
-	nocalls = !(config.effective_mask & EnterLeaveEvents);
-	no_counters = !(config.effective_mask & CounterEvents);
+	nocalls = !(config.effective_mask & PROFLOG_CALL_EVENTS);
+	no_counters = !(config.effective_mask & PROFLOG_COUNTER_EVENTS);
 	do_report = config.do_report;
 	do_debug = config.do_debug;
-	do_heap_shot = (config.effective_mask & HeapShotFeature);
+	do_heap_shot = (config.effective_mask & PROFLOG_HEAPSHOT_FEATURE);
 	hs_mode_ondemand = config.hs_mode_ondemand;
 	hs_mode_ms = config.hs_mode_ms;
 	hs_mode_gc = config.hs_mode_gc;
-	do_mono_sample = (config.effective_mask & SamplingFeature);
+	do_mono_sample = (config.effective_mask & PROFLOG_SAMPLING_FEATURE);
 	use_zip = config.use_zip;
 	command_port = config.command_port;
 	num_frames = config.num_frames;
 	notraces = config.notraces;
 	max_allocated_sample_hits = config.max_allocated_sample_hits;
 	max_call_depth = config.max_call_depth;
-	do_coverage = (config.effective_mask & CodeCoverageFeature);
+	do_coverage = (config.effective_mask & PROFLOG_CODE_COV_FEATURE);
 	debug_coverage = config.debug_coverage;
 	only_coverage = config.only_coverage;
 
@@ -4647,92 +4647,92 @@ mono_profiler_startup (const char *desc)
 	mono_profiler_install_thread_name (thread_name);
 
 
-	if (config.effective_mask & DomainEvents) {
+	if (config.effective_mask & PROFLOG_DOMAIN_EVENTS) {
 		events |= MONO_PROFILE_APPDOMAIN_EVENTS;
 		mono_profiler_install_appdomain (NULL, domain_loaded, domain_unloaded, NULL);
 		mono_profiler_install_appdomain_name (domain_name);
 	}
 
-	if (config.effective_mask & AssemblyEvents) {
+	if (config.effective_mask & PROFLOG_ASSEMBLY_EVENTS) {
 		events |= MONO_PROFILE_ASSEMBLY_EVENTS;
 		mono_profiler_install_assembly (NULL, assembly_loaded, assembly_unloaded, NULL);
 	}
 
-	if (config.effective_mask & ModuleEvents) {
+	if (config.effective_mask & PROFLOG_MODULE_EVENTS) {
 		events |= MONO_PROFILE_MODULE_EVENTS;
 		mono_profiler_install_module (NULL, image_loaded, image_unloaded, NULL);
 	}
 
-	if (config.effective_mask & ClassEvents) {
+	if (config.effective_mask & PROFLOG_CLASS_EVENTS) {
 		events |= MONO_PROFILE_CLASS_EVENTS;
 		mono_profiler_install_class (NULL, class_loaded, class_unloaded, NULL);
 	}
 
-	if (config.effective_mask & JitCompilationEvents) {
+	if (config.effective_mask & PROFLOG_JIT_COMPILATION_EVENTS) {
 		events |= MONO_PROFILE_JIT_COMPILATION;
 		mono_profiler_install_jit_end (method_jitted);
 		mono_profiler_install_code_buffer_new (code_buffer_new);
 	}
 
-	if (config.effective_mask & ExceptionEvents) {
+	if (config.effective_mask & PROFLOG_EXCEPTION_EVENTS) {
 		events |= MONO_PROFILE_EXCEPTIONS;
 		mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
 	}
 
-	if (config.effective_mask & AllocationEvents) {
+	if (config.effective_mask & PROFLOG_ALLOCATION_EVENTS) {
 		events |= MONO_PROFILE_ALLOCATIONS;
 		mono_profiler_install_allocation (gc_alloc);
 	}
 
-	//GCEvents is mandatory
-	//ThreadEvents is mandatory
+	//PROFLOG_GC_EVENTS is mandatory
+	//PROFLOG_THREAD_EVENTS is mandatory
 
-	if (config.effective_mask & EnterLeaveEvents) {
+	if (config.effective_mask & PROFLOG_CALL_EVENTS) {
 		events |= MONO_PROFILE_ENTER_LEAVE;
 		mono_profiler_install_enter_leave (method_enter, method_leave);
 	}
 
-	if (config.effective_mask & InsCoverageEvents) {
+	if (config.effective_mask & PROFLOG_INS_COVERAGE_EVENTS) {
 		events |= MONO_PROFILE_INS_COVERAGE;
 		mono_profiler_install_coverage_filter (coverage_filter);
 	}
 
-	//XXX should we check for SamplingFeature instead??
-	if (config.effective_mask & SamplingEvents) {
+	//XXX should we check for PROFLOG_SAMPLING_FEATURE instead??
+	if (config.effective_mask & PROFLOG_SAMPLING_EVENTS) {
 		events |= MONO_PROFILE_STATISTICAL;
 		mono_profiler_set_statistical_mode (config.sampling_mode, config.sample_freq);
 		mono_profiler_install_statistical (mono_sample_hit);
 	}
 
-	if (config.effective_mask & MonitorEvents) {
+	if (config.effective_mask & PROFLOG_MONITOR_EVENTS) {
 		events |= MONO_PROFILE_MONITOR_EVENTS;
 		mono_profiler_install_monitor (monitor_event);
 	}
 
-	if (config.effective_mask & GCMoveEvents) {
+	if (config.effective_mask & PROFLOG_GC_MOVES_EVENTS) {
 		events |= MONO_PROFILE_GC_MOVES;
 		mono_profiler_install_gc_moves (gc_moves);
 	}
 
-	if (config.effective_mask & (GCRootEvents | GCHandleEvents)) {
+	if (config.effective_mask & (PROFLOG_GC_ROOT_EVENTS | PROFLOG_GC_HANDLE_EVENTS)) {
 		events |= MONO_PROFILE_GC_ROOTS;
 		mono_profiler_install_gc_roots (
-			config.effective_mask & (GCHandleEvents) ? gc_handle : NULL,
-			(config.effective_mask & GCRootEvents) ? gc_roots : NULL);
+			config.effective_mask & (PROFLOG_GC_HANDLE_EVENTS) ? gc_handle : NULL,
+			(config.effective_mask & PROFLOG_GC_ROOT_EVENTS) ? gc_roots : NULL);
 	}
 
-	if (config.effective_mask & ContextEvents) {
+	if (config.effective_mask & PROFLOG_CONTEXT_EVENTS) {
 		events |= MONO_PROFILE_CONTEXT_EVENTS;
 		mono_profiler_install_context (context_loaded, context_unloaded);
 	}
 
-	if (config.effective_mask & FinalizationEvents) {
+	if (config.effective_mask & PROFLOG_FINALIZATION_EVENTS) {
 		events |= MONO_PROFILE_GC_FINALIZATION;
 		mono_profiler_install_gc_finalize (finalize_begin, finalize_object_begin, finalize_object_end, finalize_end);	
 	}
 
-	//CounterEvents is a pseudo event controled by the no_counters global var
-	//GCHandleEvents is handled together with GCRootEvents
+	//PROFLOG_COUNTER_EVENTS is a pseudo event controled by the no_counters global var
+	//PROFLOG_GC_HANDLE_EVENTS is handled together with PROFLOG_GC_ROOT_EVENTS
 
 	mono_profiler_set_events ((MonoProfileFlags)events);
 }

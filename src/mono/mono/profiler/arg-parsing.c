@@ -23,41 +23,38 @@ CPU_COUNT(cpu_set_t *set)
 #  endif
 #endif
 
-
-#include "mono-profiler-log.h"
-
 typedef struct {
 	const char *event_name;
 	const int mask;
 } NameAndMask;
 
 static NameAndMask event_list[] = {
-	{ "domain", DomainEvents },
-	{ "assembly", AssemblyEvents },
-	{ "module", ModuleEvents },
-	{ "class", ClassEvents },
-	{ "jit", JitCompilationEvents },
-	{ "exception", ExceptionEvents },
-	{ "gcalloc", AllocationEvents },
-	{ "gc", GCEvents },
-	{ "thread", ThreadEvents },
-	{ "calls", EnterLeaveEvents }, //calls is the old name, we can just keep it
-	//{ "inscov", InsCoverageEvents }, //this is a profiler API event, but there's no actual event for us to emit here
-	//{ "sampling", SamplingEvents }, //it makes no sense to enable/disable this event by itself
-	{ "monitor", MonitorEvents },
-	{ "gcmove", GCMoveEvents },
-	{ "gcroot", GCRootEvents },
-	{ "context", ContextEvents },
-	{ "finalization", FinalizationEvents },
-	{ "counter", CounterEvents },
-	{ "gchandle", GCHandleEvents },
+	{ "domain", PROFLOG_DOMAIN_EVENTS },
+	{ "assembly", PROFLOG_ASSEMBLY_EVENTS },
+	{ "module", PROFLOG_MODULE_EVENTS },
+	{ "class", PROFLOG_CLASS_EVENTS },
+	{ "jit", PROFLOG_JIT_COMPILATION_EVENTS },
+	{ "exception", PROFLOG_EXCEPTION_EVENTS },
+	{ "gcalloc", PROFLOG_ALLOCATION_EVENTS },
+	{ "gc", PROFLOG_GC_EVENTS },
+	{ "thread", PROFLOG_THREAD_EVENTS },
+	{ "calls", PROFLOG_CALL_EVENTS },
+	//{ "inscov", PROFLOG_INS_COVERAGE_EVENTS }, //this is a profiler API event, but there's no actual event for us to emit here
+	//{ "sampling", PROFLOG_SAMPLING_EVENTS }, //it makes no sense to enable/disable this event by itself
+	{ "monitor", PROFLOG_MONITOR_EVENTS },
+	{ "gcmove", PROFLOG_GC_MOVES_EVENTS },
+	{ "gcroot", PROFLOG_GC_ROOT_EVENTS },
+	{ "context", PROFLOG_CONTEXT_EVENTS },
+	{ "finalization", PROFLOG_FINALIZATION_EVENTS },
+	{ "counter", PROFLOG_COUNTER_EVENTS },
+	{ "gchandle", PROFLOG_GC_HANDLE_EVENTS },
 
-	{ "typesystem", TypeLoadingAlias },
-	{ "coverage", CodeCoverageAlias },
-	//{ "sample", PerfSamplingAlias }, //takes args, explicitly handles
-	{ "alloc", GCAllocationAlias },
-	//{ "heapshot", HeapShotAlias }, //takes args, explicitly handled
-	{ "legacy", LegacyAlias },
+	{ "typesystem", PROFLOG_TYPELOADING_ALIAS },
+	{ "coverage", PROFLOG_CODECOV_ALIAS },
+	//{ "sample", PROFLOG_PERF_SAMPLING_ALIAS }, //takes args, explicitly handles
+	{ "alloc", PROFLOG_GC_ALLOC_ALIAS },
+	//{ "heapshot", PROFLOG_HEAPSHOT_ALIAS }, //takes args, explicitly handled
+	{ "legacy", PROFLOG_LEGACY_ALIAS },
 };
 
 static void usage (void);
@@ -104,10 +101,10 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	} else if (match_option (arg, "sampling-process", NULL)) {
 		config->sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
 	} else if (match_option (arg, "heapshot", &val)) {
-		config->enable_mask |= HeapShotAlias;
+		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 		set_hsmode (config, val);
 	} else if (match_option (arg, "sample", &val)) {
-		config->enable_mask |= PerfSamplingAlias;
+		config->enable_mask |= PROFLOG_PERF_SAMPLING_ALIAS;
 		set_sample_freq (config, val);
 	} else if (match_option (arg, "zip", NULL)) {
 		config->use_zip = TRUE;

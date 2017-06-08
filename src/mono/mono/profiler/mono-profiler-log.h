@@ -160,43 +160,47 @@ enum {
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
 #define MAX_FRAMES 32
 
-typedef enum {
-	DomainEvents = 1 << 0,
-	AssemblyEvents = 1 << 1,
-	ModuleEvents = 1 << 2,
-	ClassEvents = 1 << 3,
-	JitCompilationEvents = 1 << 4,
-	ExceptionEvents = 1 << 5,
-	AllocationEvents = 1 << 6,
-	GCEvents = 1 << 7,
-	ThreadEvents = 1 << 8,
-	EnterLeaveEvents = 1 << 9, //Fixme better name?
-	InsCoverageEvents = 1 << 10,
-	SamplingEvents = 1 << 11,
-	MonitorEvents = 1 << 12,
-	GCMoveEvents = 1 << 13,
-	GCRootEvents = 1 << 14,
-	ContextEvents = 1 << 15,
-	FinalizationEvents = 1 << 16,
-	CounterEvents = 1 << 17,
-	GCHandleEvents = 1 << 18,
+//The following flags control emitting individual events
+#define PROFLOG_DOMAIN_EVENTS (1 << 0)
+#define PROFLOG_ASSEMBLY_EVENTS	(1 << 1)
+#define PROFLOG_MODULE_EVENTS (1 << 2)
+#define PROFLOG_CLASS_EVENTS (1 << 3)
+#define PROFLOG_JIT_COMPILATION_EVENTS (1 << 4)
+#define PROFLOG_EXCEPTION_EVENTS (1 << 5)
+#define PROFLOG_ALLOCATION_EVENTS (1 << 6)
+#define PROFLOG_GC_EVENTS (1 << 7)
+#define PROFLOG_THREAD_EVENTS (1 << 8)
+//This generate enter/leave events
+#define PROFLOG_CALL_EVENTS (1 << 9)
+#define PROFLOG_INS_COVERAGE_EVENTS (1 << 10)
+#define PROFLOG_SAMPLING_EVENTS (1 << 11)
+#define PROFLOG_MONITOR_EVENTS (1 << 12)
+#define PROFLOG_GC_MOVES_EVENTS (1 << 13)
 
-	//This flags control subsystems
-	/* This will enable code coverage generation */
-	CodeCoverageFeature = 1 << 19,
-	/* This enables sampling to be generated */
-	SamplingFeature = 1 << 20,
-	/* This enable heap dumping during GCs and filter GCRoots and GCHandle events outside of the dumped collections */
-	HeapShotFeature = 1 << 21,
+#define PROFLOG_GC_ROOT_EVENTS (1 << 14)
+#define PROFLOG_CONTEXT_EVENTS (1 << 15)
+#define PROFLOG_FINALIZATION_EVENTS (1 << 16)
+#define PROFLOG_COUNTER_EVENTS (1 << 17)
+#define PROFLOG_GC_HANDLE_EVENTS (1 << 18)
 
-	//This flags are the common aliases we want ppl to use
-	TypeLoadingAlias = DomainEvents | AssemblyEvents | ModuleEvents | ClassEvents,
-	CodeCoverageAlias = GCEvents | ThreadEvents | EnterLeaveEvents | InsCoverageEvents | CodeCoverageFeature,
-	PerfSamplingAlias = TypeLoadingAlias | ThreadEvents | SamplingEvents | SamplingFeature,
-	GCAllocationAlias = TypeLoadingAlias | ThreadEvents | GCEvents | AllocationEvents,
-	HeapShotAlias = TypeLoadingAlias | ThreadEvents | GCEvents | GCRootEvents | HeapShotFeature,
-	LegacyAlias = TypeLoadingAlias | GCEvents | ThreadEvents | JitCompilationEvents | ExceptionEvents | MonitorEvents | GCRootEvents | ContextEvents | FinalizationEvents | CounterEvents,
-} ProfilerEvents;
+//The following flags control whole subsystems
+//Enables code coverage generation
+#define PROFLOG_CODE_COV_FEATURE (1 << 19)
+//This enables sampling to be generated
+#define PROFLOG_SAMPLING_FEATURE (1 << 20)
+//This enable heap dumping during GCs and filter GCRoots and GCHandle events outside of the dumped collections
+#define PROFLOG_HEAPSHOT_FEATURE (1 << 21)
+
+
+
+//The follow flags are the common aliases we want ppl to use
+#define PROFLOG_TYPELOADING_ALIAS (PROFLOG_DOMAIN_EVENTS | PROFLOG_ASSEMBLY_EVENTS | PROFLOG_MODULE_EVENTS | PROFLOG_CLASS_EVENTS)
+#define PROFLOG_CODECOV_ALIAS (PROFLOG_GC_EVENTS | PROFLOG_THREAD_EVENTS | PROFLOG_CALL_EVENTS | PROFLOG_INS_COVERAGE_EVENTS | PROFLOG_CODE_COV_FEATURE)
+#define PROFLOG_PERF_SAMPLING_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_SAMPLING_EVENTS | PROFLOG_SAMPLING_FEATURE)
+#define PROFLOG_GC_ALLOC_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_ALLOCATION_EVENTS)
+#define PROFLOG_HEAPSHOT_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_HEAPSHOT_FEATURE)
+#define PROFLOG_LEGACY_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_GC_EVENTS | PROFLOG_THREAD_EVENTS | PROFLOG_JIT_COMPILATION_EVENTS | PROFLOG_EXCEPTION_EVENTS | PROFLOG_MONITOR_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_CONTEXT_EVENTS | PROFLOG_FINALIZATION_EVENTS | PROFLOG_COUNTER_EVENTS)
+
 
 typedef struct {
 	//Events explicitly enabled
