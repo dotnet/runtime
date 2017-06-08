@@ -12,6 +12,7 @@ namespace System.Net.Tests
     public class HttpListenerPrefixCollectionTests
     {
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Prefixes_Get_ReturnsEmpty()
         {
             var listener = new HttpListener();
@@ -23,6 +24,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(0)]
         [InlineData(1)]
         public void CopyTo_StringArray_ReturnsExpected(int offset)
@@ -44,6 +46,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(0)]
         [InlineData(1)]
         public void CopyTo_Array_ReturnsExpected(int offset)
@@ -65,6 +68,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void CopyTo_DisposedListener_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -76,6 +80,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where HttpListenerPrefixCollection.CopyTo(null) throws an NRE.")]
         public void CopyTo_NullArray_ThrowsArgumentNullExceptionOnNetCore()
         {
@@ -85,6 +90,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where HttpListenerPrefixCollection.CopyTo(null) throws an NRE.")]
         public void CopyTo_NullArray_ThrowsNullReferenceExceptionOnNetFx()
         {
@@ -94,6 +100,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void CopyTo_MultidimensionalArray_ThrowsIndexOutOfRangeException()
         {
             var listener = new HttpListener();
@@ -122,6 +129,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void CopyTo_InvalidArrayType_ThrowsInvalidCastException()
         {
             var listener = new HttpListener();
@@ -135,6 +143,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void CopyTo_ArrayTooSmall_ThrowsArgumentOutOfRangeException()
         {
             var listener = new HttpListener();
@@ -144,6 +153,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(1)]
         [InlineData(2)]
         public void CopyTo_InvalidOffset_ThrowsArgumentOutOfRangeException(int offset)
@@ -155,6 +165,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IsSynchronized_Get_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -162,6 +173,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void IsReadOnly_Get_ReturnsFalse()
         {
             var listener = new HttpListener();
@@ -169,6 +181,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("http://*/")]
         [InlineData("http://+/")]
         [InlineData("http://localhost/")]
@@ -189,6 +202,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Add_AlreadyStarted_ReturnsExpected()
         {
             using (var factory = new HttpListenerFactory())
@@ -374,6 +388,7 @@ namespace System.Net.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Issue #19619
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixNotStarted_ThrowsHttpListenerExceptionOnStart(string uriPrefix)
         {
@@ -387,6 +402,7 @@ namespace System.Net.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Issue #19619
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixAlreadyStarted_ThrowsHttpListenerExceptionOnAdd(string uriPrefix)
         {
@@ -400,6 +416,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("")]
         [InlineData("http")]
         [InlineData("https")]
@@ -423,6 +440,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Add_NullPrefix_ThrowsArgumentNullException()
         {
             var listener = new HttpListener();
@@ -430,6 +448,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Add_LongHost_ThrowsArgumentOutOfRangeException()
         {
             var listener = new HttpListener();
@@ -445,6 +464,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Add_DisposedListener_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -456,6 +476,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("")]
         [InlineData("http://localhost:80/")]
         [InlineData("http://localhost:9200")]
@@ -469,6 +490,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Contains_NullPrefix_ThrowsArgumentNullException()
         {
             var listener = new HttpListener();
@@ -476,6 +498,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Remove_PrefixExistsNotStarted_ReturnsTrue()
         {
             var listener = new HttpListener();
@@ -487,6 +510,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Remove_PrefixExistsStarted_ReturnsTrue()
         {
             using (var factory = new HttpListenerFactory())
@@ -504,6 +528,7 @@ namespace System.Net.Tests
         }
 
         [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData("")]
         [InlineData("http://localhost:80/")]
         [InlineData("http://localhost:9200")]
@@ -517,6 +542,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Remove_DisposedListener_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -527,6 +553,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Remove_NullPrefix_ThrowsArgumentNullException()
         {
             var listener = new HttpListener();
@@ -534,6 +561,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Clear_NonEmpty_Success()
         {
             var listener = new HttpListener();
@@ -545,6 +573,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void Clear_DisposedListener_ThrowsObjectDisposedException()
         {
             var listener = new HttpListener();
@@ -555,6 +584,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void GetEnumeratorGeneric_ResetMultipleTimes_ReturnsExpected()
         {
             var listener = new HttpListener();
@@ -580,6 +610,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public void GetEnumeratorNonGeneric_ResetMultipleTimes_ReturnsExpected()
         {
             var listener = new HttpListener();
