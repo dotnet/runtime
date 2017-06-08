@@ -949,6 +949,7 @@ INTERP_DISABLED_TESTS = \
 	bug-327438.2.exe \
 	bug-335131.2.exe \
 	bug-415577.exe \
+	bug-45841-fpstack-exceptions.exe \
 	bug-461867.exe \
 	bug-461941.exe \
 	bug-46661.exe \
