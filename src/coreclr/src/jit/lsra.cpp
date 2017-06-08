@@ -7006,7 +7006,8 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 if (assignedInterval != nullptr)
                 {
 #ifdef _TARGET_ARM_
-                    if (assignedInterval->assignedReg == targetRegRecord || isSecondHalfReg(targetRegRecord, assignedInterval))
+                    if (assignedInterval->assignedReg == targetRegRecord ||
+                        isSecondHalfReg(targetRegRecord, assignedInterval))
 #else
                     if (assignedInterval->assignedReg == targetRegRecord)
 #endif
@@ -7028,6 +7029,13 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                     {
                         // This interval is no longer assigned to this register.
                         targetRegRecord->assignedInterval = nullptr;
+#ifdef _TARGET_ARM_
+                        if (assignedInterval->registerType == TYP_DOUBLE)
+                        {
+                            RegRecord* anotherHalfRegRec        = findAnotherHalfRegRec(targetRegRecord);
+                            anotherHalfRegRec->assignedInterval = nullptr;
+                        }
+#endif
                     }
                 }
                 assignPhysReg(targetRegRecord, interval);
