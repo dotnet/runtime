@@ -73,8 +73,13 @@ initTargetDistroRid()
     if [ $__CrossBuild == 1 ]; then
         if [ "$__BuildOS" == "Linux" ]; then
             if [ ! -e $ROOTFS_DIR/etc/os-release ]; then
-                echo "WARNING: Can not determine runtime id for current distro."
-                export __DistroRid=""
+                if [ -e $ROOTFS_DIR/android_platform ]; then
+                    source $ROOTFS_DIR/android_platform
+                    export __DistroRid="$RID"
+                else
+                    echo "WARNING: Can not determine runtime id for current distro."
+                    export __DistroRid=""
+                fi
             else
                 source $ROOTFS_DIR/etc/os-release
                 export __DistroRid="$ID.$VERSION_ID-$__BuildArch"
@@ -484,7 +489,8 @@ generate_NugetPackages()
     fi
 
     echo "Generating nuget packages for "$__BuildOS
-
+    echo "DistroRid is "$__DistroRid
+    echo "ROOTFS_DIR is "$ROOTFS_DIR
     # Build the packages
     $__ProjectRoot/run.sh build -Project=$__SourceDir/.nuget/packages.builds -MsBuildLog="/flp:Verbosity=normal;LogFile=$__LogsDir/Nuget_$__BuildOS__$__BuildArch__$__BuildType.log" -BuildTarget -__IntermediatesDir=$__IntermediatesDir -__RootBinDir=$__RootBinDir -BuildNugetPackage=false -UseSharedCompilation=false $__RunArgs $__UnprocessedBuildArgs
 
