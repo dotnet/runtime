@@ -33,30 +33,21 @@ namespace System.IO.Tests
 
         private static readonly Lazy<bool> s_canCreateSymbolicLinks = new Lazy<bool>(() =>
         {
-            try
-            {
-                // Verify file symlink creation
-                string path = Path.GetTempFileName();
-                string linkPath = path + ".link";
-                bool success = MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false);
-                try { File.Delete(path); } catch { }
-                try { File.Delete(linkPath); } catch { }
+            // Verify file symlink creation
+            string path = Path.GetTempFileName();
+            string linkPath = path + ".link";
+            bool success = MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false);
+            try { File.Delete(path); } catch { }
+            try { File.Delete(linkPath); } catch { }
 
-                // Verify directory symlink creation
-                path = Path.GetTempFileName();
-                linkPath = path + ".link";
-                success = success && MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true);
-                try { Directory.Delete(path); } catch { }
-                try { Directory.Delete(linkPath); } catch { }
+            // Verify directory symlink creation
+            path = Path.GetTempFileName();
+            linkPath = path + ".link";
+            success = success && MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true);
+            try { Directory.Delete(path); } catch { }
+            try { Directory.Delete(linkPath); } catch { }
 
-                return success;
-            }
-            catch
-            {
-                // Problems with Process.Start (used by CreateSymbolicLinks) on some platforms
-                // https://github.com/dotnet/corefx/issues/19909
-                return false;
-            }
+            return success;
         });
     }
 }

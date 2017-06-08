@@ -37,7 +37,6 @@ namespace System.Runtime.ExceptionServices.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Feature Corrupting Exceptions not present for Linux
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19909 - System.Diagnostics.Process broken on AoT", TargetFrameworkMonikers.UapAot)]
         public static void ProcessExit_Called()
         {
             using (Process p = RemoteInvoke(() => { CauseAVInNative(); return SuccessExitCode; }).Process)
