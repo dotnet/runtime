@@ -14,14 +14,17 @@ namespace Functions
         private const double tanDoubleDelta = 0.0004;
         private const double tanDoubleExpectedResult = 1.5574077243051505;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = TanDoubleIterations)]
         public static void TanDoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    TanDoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        TanDoubleTest();
+                    }
                 }
             }
         }

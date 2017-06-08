@@ -14,14 +14,17 @@ namespace Functions
         private const double ceilingDoubleDelta = 0.0004;
         private const double ceilingDoubleExpectedResult = 2500;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = CeilingDoubleIterations)]
         public static void CeilingDoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    CeilingDoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        CeilingDoubleTest();
+                    }
                 }
             }
         }
