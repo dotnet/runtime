@@ -27,6 +27,7 @@ namespace System.Net
     // how to parse a set-cookie format string, but not a cookie format string
     // (e.g. "Cookie: $Version=1; name=value; $Path=/foo; $Secure")
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public sealed class Cookie
     {
         // NOTE: these two constants must change together.

@@ -15,6 +15,7 @@ namespace System.Data.SqlTypes
     /// </summary>
     [Serializable]
     [XmlSchemaProvider("GetXsdType")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
     public struct SqlGuid : INullable, IComparable, IXmlSerializable
     {
         private static readonly int s_sizeOfGuid = 16;

@@ -7,35 +7,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
-using System.Text.RegularExpressions;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
     public partial class BinaryFormatterTests : RemoteExecutorTestBase
     {
-        public static IEnumerable<object[]> ValidateBasicObjectsRoundtrip_MemberData()
-        {
-            foreach (object[] obj in SerializableObjects())
-            {
-                foreach (FormatterAssemblyStyle assemblyFormat in new[] { FormatterAssemblyStyle.Full, FormatterAssemblyStyle.Simple })
-                {
-                    foreach (TypeFilterLevel filterLevel in new[] { TypeFilterLevel.Full, TypeFilterLevel.Low })
-                    {
-                        foreach (FormatterTypeStyle typeFormat in new[] { FormatterTypeStyle.TypesAlways, FormatterTypeStyle.TypesWhenNeeded, FormatterTypeStyle.XsdString })
-                        {
-                            yield return new object[] { obj[0], assemblyFormat, filterLevel, typeFormat };
-                        }
-                    }
-                }
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(ValidateBasicObjectsRoundtrip_MemberData))]
+        [MemberData(nameof(BasicObjectsRoundtrip))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] 
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
@@ -48,95 +29,31 @@ namespace System.Runtime.Serialization.Formatters.Tests
             CheckForAnyEquals(obj, clone);
         }
 
-        // Used for generating BinaryFormatterTestData.cs
+        // Used for updating blobs in BinaryFormatterTestData.cs
         //[Fact]
-        public void Serialize()
+        public void UpdateBlobs()
         {
-            IEnumerable<object[]> objs = SerializableObjects().Concat(EqualityComparers());
-            List<string> serializedHashes = new List<string>();
-            foreach (var obj in objs)
-            {
-                BinaryFormatter bf = new BinaryFormatter();
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    bf.Serialize(ms, obj[0]);
-                    string serializedHash = Convert.ToBase64String(ms.ToArray());
-                    serializedHashes.Add(serializedHash);
-                }
-            }
+            string testDataFilePath = GetTestDataFilePath();
+            IEnumerable<object[]> coreTypeRecords = GetCoreTypeRecords();
+            string[] coreTypeBlobs = GetCoreTypeBlobs(coreTypeRecords).ToArray();
 
-            string path = @"D:\corefx\src\System.Runtime.Serialization.Formatters\tests\BinaryFormatterTestData.cs";
-            string[] lines = File.ReadAllLines(path);
-
-            List<string> newLines = new List<string>();
-            int numOfHashes = 0;
-            for (int i = 0; i < lines.Length; i++)
-            {
-                string line = lines[i];
-                if (!line.Trim().StartsWith("yield") || numOfHashes >= serializedHashes.Count)
-                {
-                    newLines.Add(line);
-                    continue;
-                }
-
-                if (PlatformDetection.IsFullFramework)
-                {
-                    line = Regex.Replace(line, ", \"AAEAAAD.+\"(?!,)", ", \"" + serializedHashes[numOfHashes] + "\""); // netfx
-                }
-                else
-                {
-                    line = Regex.Replace(line, "\"AAEAAAD.+\",", "\"" + serializedHashes[numOfHashes] + "\","); // netcoreapp
-                }
-
-                newLines.Add(line);
-                numOfHashes++;
-            }
-
-            Assert.Equal(numOfHashes, serializedHashes.Count);
-
-            File.WriteAllLines(path, newLines);
-        }
-
-
-        private static string SerializeObjectToHash(object original)
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            using (MemoryStream ms = new MemoryStream())
-            {
-                bf.Serialize(ms, original);
-                return Convert.ToBase64String(ms.ToArray());
-            }
-        }
-
-        private static object DeserializeObjectHash(string base64Str)
-        {
-            var binaryFormatter = new BinaryFormatter();
-            byte[] serializedObj = Convert.FromBase64String(base64Str);
-            using (var serializedStream = new MemoryStream(serializedObj))
-            {
-                return binaryFormatter.Deserialize(serializedStream);
-            }
+            UpdateCoreTypeBlobs(testDataFilePath, coreTypeBlobs);
         }
 
         [Theory]
         [MemberData(nameof(SerializableObjects))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] 
-        public void ValidateTfmHashes(object original, string[] tfmBase64Hashes)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void ValidateAgainstBlobs(object obj, string[] blobs)
         {
-            if (tfmBase64Hashes == null || tfmBase64Hashes.Length < 2)
+            if (blobs == null || blobs.Length < 2)
             {
-                throw new InvalidOperationException($"Type {original} has no base64 hashes to deserialize and test equality against. " +
-                    $"Hash for object is: " + SerializeObjectToHash(original));
+                throw new InvalidOperationException($"Type {obj} has no blobs to deserialize and test equality against. " +
+                    $"Blob: " + SerializeObjectToBlob(obj));
             }
 
-            // Take(1) - serialized netfx objects are not supported
-            foreach (string tfmBase64Hash in tfmBase64Hashes.Take(1))
+            foreach (string blob in blobs.Take(1))
             {
-                // Currently for valuetuples
-                if (!string.IsNullOrWhiteSpace(tfmBase64Hash))
-                {
-                    CheckForAnyEquals(original, DeserializeObjectHash(tfmBase64Hash));
-                }
+                CheckForAnyEquals(obj, DeserializeBlobToObject(blob));
             }
         }
 
@@ -148,7 +65,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var obj = new SomeType() { SomeField = 7 };
             string serializedObj = @"AAEAAAD/////AQAAAAAAAAAMAgAAAHNTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249OS45OC43Ljk4NywgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj05ZDc3Y2M3YWQzOWI2OGViBQEAAAA2U3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5Gb3JtYXR0ZXJzLlRlc3RzLlNvbWVUeXBlAQAAAAlTb21lRmllbGQACAIAAAAHAAAACw==";
 
-            var deserialized = (SomeType)DeserializeObjectHash(serializedObj);
+            var deserialized = (SomeType)DeserializeBlobToObject(serializedObj);
             Assert.Equal(obj, deserialized);
         }
 
@@ -160,88 +77,27 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var obj = new GenericTypeWithArg<SomeType>() { Test = new SomeType() { SomeField = 9 } };
             string serializedObj = @"AAEAAAD/////AQAAAAAAAAAMAgAAAHNTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249OS45OC43Ljk4NywgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj05ZDc3Y2M3YWQzOWI2OGViBQEAAADxAVN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb24uRm9ybWF0dGVycy5UZXN0cy5HZW5lcmljVHlwZVdpdGhBcmdgMVtbU3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5Gb3JtYXR0ZXJzLlRlc3RzLlNvbWVUeXBlLCBTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249OS45OC43Ljk4NywgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj05ZDc3Y2M3YWQzOWI2OGViXV0BAAAABFRlc3QENlN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb24uRm9ybWF0dGVycy5UZXN0cy5Tb21lVHlwZQIAAAACAAAACQMAAAAFAwAAADZTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMuU29tZVR5cGUBAAAACVNvbWVGaWVsZAAIAgAAAAkAAAAL";
 
-            var deserialized = (GenericTypeWithArg<SomeType>)DeserializeObjectHash(serializedObj);
+            var deserialized = (GenericTypeWithArg<SomeType>)DeserializeBlobToObject(serializedObj);
             Assert.Equal(obj, deserialized);
         }
 
         [Theory]
-        [MemberData(nameof(EqualityComparers))]
-        public void ValidateDeserializationOfEqualityComparers(object original, string[] base64SerializedObj)
+        [MemberData(nameof(SerializableEqualityComparers))]
+        public void ValidateDeserializationOfEqualityComparers(object obj, string[] blobs)
         {
-            if (base64SerializedObj == null || base64SerializedObj.Length < 2)
+            if (blobs == null || blobs.Length < 2)
             {
-                throw new InvalidOperationException($"Type {original} has no base64 hashes to deserialize and test equality against. " +
-                    $"Hash for object is: " + SerializeObjectToHash(original));
+                throw new InvalidOperationException($"Type {obj} has no blobs to deserialize and test equality against. " +
+                    $"Blob: " + SerializeObjectToBlob(obj));
             }
 
-            foreach (string base64Serialized in base64SerializedObj)
+            foreach (string base64Serialized in blobs)
             {
-                var obj = DeserializeObjectHash(base64Serialized);
-                var objType = obj.GetType();
+                object deserializedInstance = DeserializeBlobToObject(base64Serialized);
+                Type objType = deserializedInstance.GetType();
                 Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
                 Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
-                Assert.Equal(original.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
-            }
-        }
-
-        private void CheckForAnyEquals(object original, object clone)
-        {
-            if (original != null && clone != null)
-            {
-                object result = null;
-                Type originalType = original.GetType();
-
-                // Check if custom equality extension method is available
-                MethodInfo customEqualityCheck = GetExtensionMethod(typeof(EqualityExtensions).Assembly, originalType);
-                if (customEqualityCheck != null)
-                {
-                    result = customEqualityCheck.Invoke(original, new object[] { original, clone });
-                }
-                else
-                {
-                    // Check if object.Equals(object) is overridden and if not check if there is a more concrete equality check implementation
-                    bool equalsNotOverridden = originalType.GetMethod("Equals", new Type[] { typeof(object) }).DeclaringType == typeof(object);
-                    if (equalsNotOverridden)
-                    {
-                        // If type doesn't override Equals(object) method then check if there is a more concrete implementation
-                        // e.g. if type implements IEquatable<T>.
-                        MethodInfo equalsMethod = originalType.GetMethod("Equals", new Type[] { originalType });
-                        if (equalsMethod.DeclaringType != typeof(object))
-                        {
-                            result = equalsMethod.Invoke(original, new object[] { clone });
-                        }
-                    }
-                }
-
-                if (result != null)
-                {
-                    Assert.True((bool)result, "Error during equality check of type " + originalType.FullName);
-                    return;
-                }
-            }
-
-            try
-            {
-                Assert.Equal(original, clone);
-            }
-            catch (Exception)
-            {
-                Console.WriteLine("Error during equality check of type " + original?.GetType()?.FullName);
-                throw;
-            }
-        }
-
-        private static MethodInfo GetExtensionMethod(Assembly assembly, Type extendedType)
-        {
-            if (extendedType.IsGenericType)
-            {
-                return typeof(EqualityExtensions).GetMethods()
-                    ?.SingleOrDefault(m => m.Name == "IsEqual" && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType.Name == extendedType.Name)
-                    ?.MakeGenericMethod(extendedType.GenericTypeArguments[0]);
-            }
-            else
-            {
-                return typeof(EqualityExtensions).GetMethod("IsEqual", new[] { extendedType, extendedType });
+                Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
             }
         }
 
@@ -281,13 +137,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        public static IEnumerable<object> SerializableExceptions()
-        {
-            var exception = new Exception("Exception message", new Exception("Inner exception message"));
-            yield return new object[] { new AggregateException("Aggregate exception message", exception) };
-            yield return new object[] { exception };
-        }
-
         [Theory]
         [MemberData(nameof(SerializableExceptions))]
         public void Roundtrip_Exceptions(Exception expected)
@@ -295,25 +144,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             BinaryFormatterHelpers.AssertRoundtrips(expected);
         }
 
-        public static IEnumerable<object[]> ValidateNonSerializableTypes_MemberData()
-        {
-            foreach (object obj in NonSerializableObjects())
-            {
-                foreach (FormatterAssemblyStyle assemblyFormat in new[] { FormatterAssemblyStyle.Full, FormatterAssemblyStyle.Simple })
-                {
-                    foreach (TypeFilterLevel filterLevel in new[] { TypeFilterLevel.Full, TypeFilterLevel.Low })
-                    {
-                        foreach (FormatterTypeStyle typeFormat in new[] { FormatterTypeStyle.TypesAlways, FormatterTypeStyle.TypesWhenNeeded, FormatterTypeStyle.XsdString })
-                        {
-                            yield return new object[] { obj, assemblyFormat, filterLevel, typeFormat };
-                        }
-                    }
-                }
-            }
-        }
-
         [Theory]
-        [MemberData(nameof(ValidateNonSerializableTypes_MemberData))]
+        [MemberData(nameof(NonSerializableTypes))]
         public void ValidateNonSerializableTypes(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
             var f = new BinaryFormatter()
@@ -522,31 +354,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(42, real);
         }
 
-        public static IEnumerable<object[]> Deserialize_FuzzInput_MemberData()
-        {
-            var rand = new Random(42);
-            foreach (object obj in SerializableObjects())
-            {
-                const int FuzzingsPerObject = 3;
-                for (int i = 0; i < FuzzingsPerObject; i++)
-                {
-                    yield return new object[] { obj, rand, i };
-                }
-            }
-        }
-
         [OuterLoop]
         [Theory]
-        [MemberData(nameof(Deserialize_FuzzInput_MemberData))]
-        public void Deserialize_FuzzInput(object obj, Random rand, int fuzzTrial)
+        [MemberData(nameof(FuzzInputs))]
+        public void Deserialize_FuzzInput(object obj, Random rand)
         {
             // Get the serialized data for the object
-            var f = new BinaryFormatter();
-            var s = new MemoryStream();
-            f.Serialize(s, obj);
+            byte[] data = SerializeObjectToRaw(obj);
 
             // Make some "random" changes to it
-            byte[] data = s.ToArray();
             for (int i = 1; i < rand.Next(1, 100); i++)
             {
                 data[rand.Next(data.Length)] = (byte)rand.Next(256);
@@ -555,7 +371,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Try to deserialize that.
             try
             {
-                f.Deserialize(new MemoryStream(data));
+                DeserializeRawToObject(data);
                 // Since there's no checksum, it's possible we changed data that didn't corrupt the instance
             }
             catch (ArgumentOutOfRangeException) { }
@@ -589,16 +405,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        public static IEnumerable<object[]> Roundtrip_CrossProcess_MemberData()
-        {
-            // Just a few objects to verify we can roundtrip out of process memory
-            yield return new object[] { "test" };
-            yield return new object[] { new List<int> { 1, 2, 3, 4, 5 } };
-            yield return new object[] { new Tree<int>(1, new Tree<int>(2, new Tree<int>(3, null, null), new Tree<int>(4, null, null)), new Tree<int>(5, null, null)) };
-        }
-
         [Theory]
-        [MemberData(nameof(Roundtrip_CrossProcess_MemberData))]
+        [MemberData(nameof(CrossProcessObjects))]
         public void Roundtrip_CrossProcess(object obj)
         {
             string outputPath = GetTestFilePath();
@@ -637,44 +445,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void Roundtrip_ArrayContainingArrayAtNonZeroLowerBound()
         {
             FormatterClone(Array.CreateInstance(typeof(uint[]), new[] { 5 }, new[] { 1 }));
-        }
-
-        private class DelegateBinder : SerializationBinder
-        {
-            public Func<string, string, Type> BindToTypeDelegate = null;
-            public override Type BindToType(string assemblyName, string typeName) => BindToTypeDelegate?.Invoke(assemblyName, typeName);
-        }
-
-        private static T FormatterClone<T>(
-            T obj,
-            ISerializationSurrogate surrogate = null,
-            FormatterAssemblyStyle assemblyFormat = FormatterAssemblyStyle.Full,
-            TypeFilterLevel filterLevel = TypeFilterLevel.Full,
-            FormatterTypeStyle typeFormat = FormatterTypeStyle.TypesAlways)
-        {
-            BinaryFormatter f;
-            if (surrogate == null)
-            {
-                f = new BinaryFormatter();
-            }
-            else
-            {
-                var c = new StreamingContext();
-                var s = new SurrogateSelector();
-                s.AddSurrogate(obj.GetType(), c, surrogate);
-                f = new BinaryFormatter(s, c);
-            }
-            f.AssemblyFormat = assemblyFormat;
-            f.FilterLevel = filterLevel;
-            f.TypeFormat = typeFormat;
-
-            using (var s = new MemoryStream())
-            {
-                f.Serialize(s, obj);
-                Assert.NotEqual(0, s.Position);
-                s.Position = 0;
-                return (T)(f.Deserialize(s));
-            }
         }
     }
 }

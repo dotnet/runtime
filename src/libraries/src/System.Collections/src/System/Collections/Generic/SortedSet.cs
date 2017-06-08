@@ -37,17 +37,18 @@ namespace System.Collections.Generic
     [DebuggerTypeProxy(typeof(ICollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class SortedSet<T> : ISet<T>, ICollection<T>, ICollection, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         #region Local variables/constants
 
-        private Node _root;
-        private IComparer<T> _comparer;
-        private int _count;
-        private int _version;
+        private Node root; // Do not rename (binary serialization)
+        private IComparer<T> comparer; // Do not rename (binary serialization)
+        private int count; // Do not rename (binary serialization)
+        private int version; // Do not rename (binary serialization)
         [NonSerialized]
-        private object _syncRoot;
-        private SerializationInfo _siInfo; // A temporary variable which we need during deserialization
+        private object _syncRoot; // Do not rename (binary serialization)
+        private SerializationInfo siInfo; // A temporary variable which we need during deserialization. Do not rename (binary serialization)
 
         private const string ComparerName = "Comparer";
         private const string CountName = "Count";
@@ -73,12 +74,12 @@ namespace System.Collections.Generic
 
         public SortedSet()
         {
-            _comparer = Comparer<T>.Default;
+            comparer = Comparer<T>.Default;
         }
 
         public SortedSet(IComparer<T> comparer)
         {
-            _comparer = comparer ?? Comparer<T>.Default;
+            this.comparer = comparer ?? Comparer<T>.Default;
         }
 
 
@@ -99,9 +100,9 @@ namespace System.Collections.Generic
             {
                 if (sortedSet.Count > 0)
                 {
-                    Debug.Assert(sortedSet._root != null);
-                    _count = sortedSet._count;
-                    _root = sortedSet._root.DeepClone(_count);
+                    Debug.Assert(sortedSet.root != null);
+                    this.count = sortedSet.count;
+                    root = sortedSet.root.DeepClone(this.count);
                 }
                 return;
             }
@@ -112,7 +113,7 @@ namespace System.Collections.Generic
             {
                 // If `comparer` is null, sets it to Comparer<T>.Default. We checked for this condition in the IComparer<T> constructor.
                 // Array.Sort handles null comparers, but we need this later when we use `comparer.Compare` directly.
-                comparer = _comparer;
+                comparer = this.comparer;
                 Array.Sort(elements, 0, count, comparer);
 
                 // Overwrite duplicates while shifting the distinct elements towards
@@ -127,14 +128,14 @@ namespace System.Collections.Generic
                 }
 
                 count = index;
-                _root = ConstructRootFromSortedArray(elements, 0, count - 1, null);
-                _count = count;
+                root = ConstructRootFromSortedArray(elements, 0, count - 1, null);
+                this.count = count;
             }
         }
 
         protected SortedSet(SerializationInfo info, StreamingContext context)
         {
-            _siInfo = info;
+            siInfo = info;
         }
 
         #endregion
@@ -158,7 +159,7 @@ namespace System.Collections.Generic
             T max = Max;
             foreach (T item in collection)
             {
-                if (!(_comparer.Compare(item, min) < 0 || _comparer.Compare(item, max) > 0) && Contains(item))
+                if (!(comparer.Compare(item, min) < 0 || comparer.Compare(item, max) > 0) && Contains(item))
                 {
                     Remove(item);
                 }
@@ -188,7 +189,7 @@ namespace System.Collections.Generic
         /// <returns><c>true</c> if the entire tree has been walked; otherwise, <c>false</c>.</returns>
         internal virtual bool InOrderTreeWalk(TreeWalkPredicate<T> action)
         {
-            if (_root == null)
+            if (root == null)
             {
                 return true;
             }
@@ -199,7 +200,7 @@ namespace System.Collections.Generic
             // want the stack to unnecessarily allocate arrays as it grows.
 
             var stack = new Stack<Node>(2 * (int)(Log2(Count + 1)));
-            Node current = _root;
+            Node current = root;
 
             while (current != null)
             {
@@ -236,13 +237,13 @@ namespace System.Collections.Generic
         /// <returns><c>true</c> if the entire tree has been walked; otherwise, <c>false</c>.</returns>
         internal virtual bool BreadthFirstTreeWalk(TreeWalkPredicate<T> action)
         {
-            if (_root == null)
+            if (root == null)
             {
                 return true;
             }
 
             var processQueue = new Queue<Node>();
-            processQueue.Enqueue(_root);
+            processQueue.Enqueue(root);
 
             Node current;
             while (processQueue.Count != 0)
@@ -275,11 +276,11 @@ namespace System.Collections.Generic
             get
             {
                 VersionCheck();
-                return _count;
+                return count;
             }
         }
 
-        public IComparer<T> Comparer => _comparer;
+        public IComparer<T> Comparer => comparer;
 
         bool ICollection<T>.IsReadOnly => false;
 
@@ -318,36 +319,36 @@ namespace System.Collections.Generic
 
         internal virtual bool AddIfNotPresent(T item)
         {
-            if (_root == null)
+            if (root == null)
             {
                 // The tree is empty and this is the first item.
-                _root = new Node(item, isRed: false);
-                _count = 1;
-                _version++;
+                root = new Node(item, isRed: false);
+                count = 1;
+                version++;
                 return true;
             }
 
             // Search for a node at bottom to insert the new node.
             // If we can guarantee the node we found is not a 4-node, it would be easy to do insertion.
             // We split 4-nodes along the search path.
-            Node current = _root;
+            Node current = root;
             Node parent = null;
             Node grandParent = null;
             Node greatGrandParent = null;
 
             // Even if we don't actually add to the set, we may be altering its structure (by doing rotations and such).
             // So update `_version` to disable any instances of Enumerator/TreeSubSet from working on it.
-            _version++;
+            version++;
 
             int order = 0;
             while (current != null)
             {
-                order = _comparer.Compare(item, current.Item);
+                order = comparer.Compare(item, current.Item);
                 if (order == 0)
                 {
                     // We could have changed root node to red during the search process.
                     // We need to set it to black before we return.
-                    _root.IsRed = false;
+                    root.IsRed = false;
                     return false;
                 }
 
@@ -387,8 +388,8 @@ namespace System.Collections.Generic
             }
 
             // Root node is always black
-            _root.IsRed = false;
-            ++_count;
+            root.IsRed = false;
+            ++count;
             return true;
         }
 
@@ -396,7 +397,7 @@ namespace System.Collections.Generic
 
         internal virtual bool DoRemove(T item)
         {
-            if (_root == null)
+            if (root == null)
             {
                 return false;
             }
@@ -411,9 +412,9 @@ namespace System.Collections.Generic
 
             // even if we don't actually remove from the set, we may be altering its structure (by doing rotations
             // and such). so update version to disable any enumerators/subsets working on it
-            _version++;
+            version++;
 
-            Node current = _root;
+            Node current = root;
             Node parent = null;
             Node grandParent = null;
             Node match = null;
@@ -517,7 +518,7 @@ namespace System.Collections.Generic
                 }
 
                 // we don't need to compare any more once we found the match
-                int order = foundMatch ? -1 : _comparer.Compare(item, current.Item);
+                int order = foundMatch ? -1 : comparer.Compare(item, current.Item);
                 if (order == 0)
                 {
                     // save the matching node
@@ -536,12 +537,12 @@ namespace System.Collections.Generic
             if (match != null)
             {
                 ReplaceNode(match, parentOfMatch, parent, grandParent);
-                --_count;
+                --count;
             }
 
-            if (_root != null)
+            if (root != null)
             {
-                _root.IsRed = false;
+                root.IsRed = false;
             }
 
             return foundMatch;
@@ -549,9 +550,9 @@ namespace System.Collections.Generic
 
         public virtual void Clear()
         {
-            _root = null;
-            _count = 0;
-            ++_version;
+            root = null;
+            count = 0;
+            ++version;
         }
 
 
@@ -723,7 +724,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                _root = newChild;
+                root = newChild;
             }
         }
 
@@ -767,10 +768,10 @@ namespace System.Collections.Generic
 
         internal virtual Node FindNode(T item)
         {
-            Node current = _root;
+            Node current = root;
             while (current != null)
             {
-                int order = _comparer.Compare(item, current.Item);
+                int order = comparer.Compare(item, current.Item);
                 if (order == 0)
                 {
                     return current;
@@ -787,11 +788,11 @@ namespace System.Collections.Generic
         // http://en.wikipedia.org/wiki/Binary_Tree#Methods_for_storing_binary_trees
         internal virtual int InternalIndexOf(T item)
         {
-            Node current = _root;
+            Node current = root;
             int count = 0;
             while (current != null)
             {
-                int order = _comparer.Compare(item, current.Item);
+                int order = comparer.Compare(item, current.Item);
                 if (order == 0)
                 {
                     return count;
@@ -808,16 +809,16 @@ namespace System.Collections.Generic
 
         internal Node FindRange(T from, T to, bool lowerBoundActive, bool upperBoundActive)
         {
-            Node current = _root;
+            Node current = root;
             while (current != null)
             {
-                if (lowerBoundActive && _comparer.Compare(from, current.Item) > 0)
+                if (lowerBoundActive && comparer.Compare(from, current.Item) > 0)
                 {
                     current = current.Right;
                 }
                 else
                 {
-                    if (upperBoundActive && _comparer.Compare(to, current.Item) < 0)
+                    if (upperBoundActive && comparer.Compare(to, current.Item) < 0)
                     {
                         current = current.Left;
                     }
@@ -831,7 +832,7 @@ namespace System.Collections.Generic
             return null;
         }
 
-        internal void UpdateVersion() => ++_version;
+        internal void UpdateVersion() => ++version;
 
         /// <summary>
         /// Testing counter that can track rotations.
@@ -930,12 +931,12 @@ namespace System.Collections.Generic
             if (t != null)
                 VersionCheck();
 
-            if (s != null && t == null && _count == 0)
+            if (s != null && t == null && count == 0)
             {
-                SortedSet<T> dummy = new SortedSet<T>(s, _comparer);
-                _root = dummy._root;
-                _count = dummy._count;
-                _version++;
+                SortedSet<T> dummy = new SortedSet<T>(s, comparer);
+                root = dummy.root;
+                count = dummy.count;
+                version++;
                 return;
             }
 
@@ -981,11 +982,11 @@ namespace System.Collections.Generic
                 // now merged has all c elements
 
                 // safe to gc the root, we  have all the elements
-                _root = null;
+                root = null;
 
-                _root = ConstructRootFromSortedArray(merged, 0, c - 1, null);
-                _count = c;
-                _version++;
+                root = ConstructRootFromSortedArray(merged, 0, c - 1, null);
+                count = c;
+                version++;
             }
             else
             {
@@ -1114,11 +1115,11 @@ namespace System.Collections.Generic
                 // now merged has all c elements
 
                 // safe to gc the root, we  have all the elements
-                _root = null;
+                root = null;
 
-                _root = ConstructRootFromSortedArray(merged, 0, c - 1, null);
-                _count = c;
-                _version++;
+                root = ConstructRootFromSortedArray(merged, 0, c - 1, null);
+                count = c;
+                version++;
             }
             else
             {
@@ -1152,7 +1153,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(other));
             }
 
-            if (_count == 0)
+            if (count == 0)
                 return;
 
             if (other == this)
@@ -1166,15 +1167,15 @@ namespace System.Collections.Generic
             if (asSorted != null && HasEqualComparer(asSorted))
             {
                 // outside range, no point doing anything
-                if (!(_comparer.Compare(asSorted.Max, Min) < 0 || _comparer.Compare(asSorted.Min, Max) > 0))
+                if (!(comparer.Compare(asSorted.Max, Min) < 0 || comparer.Compare(asSorted.Min, Max) > 0))
                 {
                     T min = Min;
                     T max = Max;
                     foreach (T item in other)
                     {
-                        if (_comparer.Compare(item, min) < 0)
+                        if (comparer.Compare(item, min) < 0)
                             continue;
-                        if (_comparer.Compare(item, max) > 0)
+                        if (comparer.Compare(item, max) > 0)
                             break;
                         Remove(item);
                     }
@@ -1245,7 +1246,7 @@ namespace System.Collections.Generic
             T previous = other[0];
             for (int i = 0; i < count; i++)
             {
-                while (i < count && i != 0 && _comparer.Compare(other[i], previous) == 0)
+                while (i < count && i != 0 && comparer.Compare(other[i], previous) == 0)
                     i++;
                 if (i >= count)
                     break;
@@ -1436,7 +1437,7 @@ namespace System.Collections.Generic
                 return false;
 
             SortedSet<T> asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted) && (_comparer.Compare(Min, asSorted.Max) > 0 || _comparer.Compare(Max, asSorted.Min) < 0))
+            if (asSorted != null && HasEqualComparer(asSorted) && (comparer.Compare(Min, asSorted.Max) > 0 || comparer.Compare(Max, asSorted.Min) < 0))
             {
                 return false;
             }
@@ -1581,12 +1582,12 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (_root == null)
+                if (root == null)
                 {
                     return default(T);
                 }
 
-                Node current = _root;
+                Node current = root;
                 while (current.Left != null)
                 {
                     current = current.Left;
@@ -1602,12 +1603,12 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (_root == null)
+                if (root == null)
                 {
                     return default(T);
                 }
 
-                Node current = _root;
+                Node current = root;
                 while (current.Right != null)
                 {
                     current = current.Right;
@@ -1658,11 +1659,11 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(info));
             }
 
-            info.AddValue(CountName, _count); // This is the length of the bucket array.
-            info.AddValue(ComparerName, _comparer, typeof(IComparer<T>));
-            info.AddValue(VersionName, _version);
+            info.AddValue(CountName, count); // This is the length of the bucket array.
+            info.AddValue(ComparerName, comparer, typeof(IComparer<T>));
+            info.AddValue(VersionName, version);
 
-            if (_root != null)
+            if (root != null)
             {
                 T[] items = new T[Count];
                 CopyTo(items, 0);
@@ -1677,22 +1678,22 @@ namespace System.Collections.Generic
 
         protected virtual void OnDeserialization(Object sender)
         {
-            if (_comparer != null)
+            if (comparer != null)
             {
                 return; // Somebody had a dependency on this class and fixed us up before the ObjectManager got to it.
             }
 
-            if (_siInfo == null)
+            if (siInfo == null)
             {
                 throw new SerializationException(SR.Serialization_InvalidOnDeser);
             }
 
-            _comparer = (IComparer<T>)_siInfo.GetValue(ComparerName, typeof(IComparer<T>));
-            int savedCount = _siInfo.GetInt32(CountName);
+            comparer = (IComparer<T>)siInfo.GetValue(ComparerName, typeof(IComparer<T>));
+            int savedCount = siInfo.GetInt32(CountName);
 
             if (savedCount != 0)
             {
-                T[] items = (T[])_siInfo.GetValue(ItemsName, typeof(T[]));
+                T[] items = (T[])siInfo.GetValue(ItemsName, typeof(T[]));
 
                 if (items == null)
                 {
@@ -1705,13 +1706,13 @@ namespace System.Collections.Generic
                 }
             }
 
-            _version = _siInfo.GetInt32(VersionName);
-            if (_count != savedCount)
+            version = siInfo.GetInt32(VersionName);
+            if (count != savedCount)
             {
                 throw new SerializationException(SR.Serialization_MismatchedCount);
             }
 
-            _siInfo = null;
+            siInfo = null;
         }
 
         #endregion
@@ -1867,7 +1868,7 @@ namespace System.Collections.Generic
                 _tree = set;
                 _tree.VersionCheck(); // make sure that the underlying subset has not been changed since
 
-                _version = _tree._version;
+                _version = _tree.version;
 
                 // 2lg(n + 1) is the maximum height
                 _stack = new Stack<Node>(2 * (int)Log2(set.Count + 1));
@@ -1881,7 +1882,7 @@ namespace System.Collections.Generic
             {
                 _tree = set;
                 _tree.VersionCheck(); // make sure that the underlying subset has not been changed since
-                _version = _tree._version;
+                _version = _tree.version;
 
                 // 2lg(n + 1) is the maximum height
                 _stack = new Stack<Node>(2 * (int)Log2(set.Count + 1));
@@ -1904,7 +1905,7 @@ namespace System.Collections.Generic
             private void Initialize()
             {
                 _current = null;
-                Node node = _tree._root;
+                Node node = _tree.root;
                 Node next = null, other = null;
                 while (node != null)
                 {
@@ -1931,7 +1932,7 @@ namespace System.Collections.Generic
                 // Make sure that the underlying subset has not been changed since
                 _tree.VersionCheck();
 
-                if (_version != _tree._version)
+                if (_version != _tree.version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
@@ -1997,7 +1998,7 @@ namespace System.Collections.Generic
 
             internal void Reset()
             {
-                if (_version != _tree._version)
+                if (_version != _tree.version)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
