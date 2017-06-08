@@ -6,7 +6,7 @@ namespace System.ServiceModel.Channels
 {
     using System;
     using System.Runtime;
-    using System.ServiceModel; // for QuotaExceededException
+    using Microsoft.ServiceModel; // for QuotaExceededException
     //using System.ServiceModel.Channels;
     //using System.ServiceModel.Diagnostics.Application;
 
