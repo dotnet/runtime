@@ -517,6 +517,21 @@ namespace System.IO
                         }
                         searchPattern = searchPattern.Substring(lastSlash + 1);
                     }
+
+                    // Typically we shouldn't see either of these cases, an upfront check is much faster
+                    foreach (char c in searchPattern)
+                    {
+                        if (c == '\\' || c == '[')
+                        {
+                            // We need to escape any escape characters in the search pattern
+                            searchPattern = searchPattern.Replace(@"\", @"\\");
+
+                            // And then escape '[' to prevent it being picked up as a wildcard
+                            searchPattern = searchPattern.Replace(@"[", @"\[");
+                            break;
+                        }
+                    }
+
                     string fullPath = Path.GetFullPath(userPath);
 
                     // Store everything for the enumerator
@@ -651,6 +666,7 @@ namespace System.IO
                 {
                     searchPattern += "*";
                 }
+
                 return searchPattern;
             }
 
