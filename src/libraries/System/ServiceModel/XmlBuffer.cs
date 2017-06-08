@@ -1,6 +1,7 @@
-//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 
 /*
  *  Some parts of the code have been disabled for testing purposes.
@@ -8,14 +9,14 @@
  */
 
 #define BINARY
-namespace System.ServiceModel { 
+namespace Microsoft.ServiceModel {
+    using System;
     using System.Collections.Generic;
-    using System.Runtime;
-    using System.ServiceModel.Channels;
     using System.Xml;
     using System.IO; // added to use buffered stream
-                     //using System.ServiceModel;
-
+    using System.Runtime;
+    using System.ServiceModel.Channels;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
 
     class XmlBuffer
@@ -23,7 +24,7 @@ namespace System.ServiceModel {
         List<Section> sections;
         byte[] buffer;
         int offset;
-        BufferedOutputStream stream; //BufferedStream - Original: BufferedOutputStream
+        BufferedStream stream; //BufferedStream - Original: BufferedOutputStream
         BufferState bufferState;
         XmlDictionaryWriter writer;
         XmlDictionaryReaderQuotas quotas;
@@ -72,13 +73,8 @@ namespace System.ServiceModel {
 
             int initialBufferSize = Math.Min(512, maxBufferSize);
 
+            stream = new BufferedStream(new MemoryStream(), initialBufferSize);
            
-            stream = new BufferManagerOutputStream(SR.XmlBufferQuotaExceeded, initialBufferSize, maxBufferSize,
-                InternalBufferManager.Create(0, int.MaxValue));
-                     
-
-            //stream = new BufferedStream(, maxBufferSize); // replacing code above
-
             sections = new List<Section>(1);
         }
 
@@ -86,10 +82,6 @@ namespace System.ServiceModel {
         {
             get
             {
-#if disabled
-
-                Fx.Assert(bufferState == BufferState.Reading, "Buffer size shuold only be retrieved during Reading state");
-#endif
                 return buffer.Length;
             }
         }
@@ -106,17 +98,9 @@ namespace System.ServiceModel {
             bufferState = BufferState.Writing;
             this.quotas = new XmlDictionaryReaderQuotas();
             quotas.CopyTo(this.quotas);
-            //if (this.writer == null)
-            //{
-
-            //this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream, XD.Dictionary, null, true);
-            this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream); // this code replaces above
-
-            //}
-            //else
-            //{
-            //    //((IXmlBinaryWriterInitializer)this.writer).SetOutput(stream, XD.Dictionary, null, true);
-            //}
+            
+            this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, false);
+                       
             return this.writer;
         }
 
@@ -124,8 +108,9 @@ namespace System.ServiceModel {
         {
             if (bufferState != BufferState.Writing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidStateException());
-            this.writer.Close();
+            this.writer.Close(); 
             bufferState = BufferState.Created;
+
             int size = (int)stream.Length - offset;
             sections.Add(new Section(offset, size, this.quotas));
             offset += size;
@@ -136,14 +121,14 @@ namespace System.ServiceModel {
             if (bufferState != BufferState.Created)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidStateException());
             bufferState = BufferState.Reading;
-            //int bufferSize = 0;
-            //buffer = stream.ToArray(out bufferSize); NOT SUPPORTED
             
+            //buffer = stream.ToArray(out bufferSize); NOT SUPPORTED
+
             //Implementation to do the same that the line above
-            MemoryStream ms = new MemoryStream();
-            stream.CopyTo(ms);
-            buffer = ms.ToArray();
-            //-----
+            buffer = new byte[stream.Length];
+            stream.Position = 0;
+            stream.Read(buffer, 0, buffer.Length);
+           
             writer = null;
             stream = null;
         }
@@ -152,21 +137,19 @@ namespace System.ServiceModel {
         {
             return new InvalidOperationException(SR.GetString(SR.XmlBufferInInvalidState));
         }
-
-
+              
 
         public XmlDictionaryReader GetReader(int sectionIndex)
         {
             if (bufferState != BufferState.Reading)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidStateException());
             Section section = sections[sectionIndex];
-            XmlDictionaryReader reader = null;// XmlDictionaryReader.CreateBinaryReader(buffer, section.Offset, section.Size, XD.Dictionary, section.Quotas, null, null);
+            XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(buffer, section.Offset, section.Size, null, section.Quotas, null, null);
+            
             reader.MoveToContent();
             return reader;
         }
-
-
-
+        
         public void WriteTo(int sectionIndex, XmlWriter writer)
         {
             if (bufferState != BufferState.Reading)

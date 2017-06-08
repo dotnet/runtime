@@ -1,8 +1,8 @@
-//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-namespace System.ServiceModel.Syndication
+namespace Microsoft.ServiceModel.Syndication
 {
     using System;
     using System.Collections.Generic;
@@ -14,6 +14,8 @@ namespace System.ServiceModel.Syndication
     using System.Xml.Serialization;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using Microsoft.ServiceModel;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor

@@ -1,8 +1,9 @@
-//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 #pragma warning disable 1634, 1691
-namespace System.ServiceModel.Syndication
+namespace Microsoft.ServiceModel.Syndication
 {
     using System;
     using System.Collections.Generic;
@@ -10,13 +11,13 @@ namespace System.ServiceModel.Syndication
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Runtime;
-    //using System.ServiceModel.Diagnostics;
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
-    using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
+    using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
