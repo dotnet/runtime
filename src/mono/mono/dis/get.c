@@ -25,6 +25,9 @@
 
 extern gboolean substitute_with_mscorlib_p;
 
+static char *
+get_token_comment (const char *prefix, guint32 token);
+
 static MonoGenericContainer *
 get_memberref_container (MonoImage *m, guint32 mrp_token, MonoGenericContainer *container);
 
@@ -59,7 +62,7 @@ get_typedef (MonoImage *m, int idx)
         /* Check if this is a nested type */
         token = MONO_TOKEN_TYPE_DEF | (idx);
         token = mono_metadata_nested_in_typedef (m, token);
-	tstring = show_tokens ? g_strdup_printf ("/*%08x*/", token) : NULL;
+	tstring = get_token_comment (NULL, token);
         if (token) {
                 char *outer;
                 
@@ -258,11 +261,12 @@ get_typespec (MonoImage *m, guint32 idx, gboolean is_def, MonoGenericContainer *
 
 	if (show_tokens) {
 		int token = mono_metadata_make_token (MONO_TABLE_TYPESPEC, idx);
-		result = g_strdup_printf ("%s/*%08x*/", res->str, token);
-	} else
+		result = get_token_comment (res->str, token);
+		g_string_free (res, TRUE);
+	} else {
 		result = res->str;
-
-	g_string_free (res, FALSE);
+		g_string_free (res, FALSE);
+	}
 
 	return result;
 }
@@ -316,7 +320,7 @@ get_typeref (MonoImage *m, int idx)
 
 	if (show_tokens) {
 		int token = mono_metadata_make_token (MONO_TABLE_TYPEREF, idx);
-		char *temp = g_strdup_printf ("%s/*%08x*/", ret, token);
+		char *temp = get_token_comment (ret, token);
 		g_free (ret);
 		ret = temp;
 	}
@@ -1294,7 +1298,7 @@ get_type (MonoImage *m, const char *ptr, char **result, gboolean is_def, MonoGen
 		}
 
 		if (show_tokens) {
-			*result = g_strdup_printf ("%s/*%08x*/", temp, token);
+			*result = get_token_comment (temp, token);
 			g_free (temp);
 		} else
 			*result = temp;
@@ -1770,6 +1774,25 @@ get_fieldref_signature (MonoImage *m, int idx, MonoGenericContainer *container)
 }
 
 /**
+ * get_token_comment:
+ *
+ * If show_tokens is TRUE, return "prefix""token(table)".
+ * If show_tokens is FALSE, return "prefix" or NULL if prefix is NULL.
+ * Caller is responsible for freeing.
+ */
+char *
+get_token_comment (const char *prefix, guint32 token)
+{
+	if (!show_tokens)
+		return prefix ? g_strdup_printf ("%s", prefix) : NULL;
+	gint32 tableidx = mono_metadata_token_table (token);
+	if ((tableidx < 0) || (tableidx > MONO_TABLE_LAST))
+		return g_strdup_printf ("%s/*%08x*/", prefix ? prefix : "", token);
+	else
+		return g_strdup_printf ("%s/*%08x(%s)*/", prefix ? prefix : "", token, mono_meta_table_name (tableidx));
+}
+
+/**
  * get_field:
  * @m: metadata context
  * @token: a FIELD_DEF token
@@ -1783,7 +1806,7 @@ get_field (MonoImage *m, guint32 token, MonoGenericContainer *container)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 cols [MONO_FIELD_SIZE];
-	char *sig, *res, *type, *estype, *esname;
+	char *sig, *res, *type, *estype, *esname, *token_comment;
 	guint32 type_idx;
 
 	/*
@@ -1812,16 +1835,20 @@ get_field (MonoImage *m, guint32 token, MonoGenericContainer *container)
 	type = get_typedef (m, type_idx);
 	estype = get_escaped_name (type);
 	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
-	res = g_strdup_printf ("%s %s%s%s",
+	token_comment = get_token_comment (NULL, token);
+	res = g_strdup_printf ("%s %s%s%s%s",
 			sig, 
 			estype ? estype : "",
 			estype ? "::" : "",
-			esname);
+			esname,
+			token_comment ? token_comment : ""
+		);
 
 	g_free (type);
 	g_free (sig);
 	g_free (estype);
 	g_free (esname);
+	g_free (token_comment);
 
 	return res;
 }
@@ -1909,12 +1936,11 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 			container = mono_method_get_generic_container (((MonoMethodInflated *) mh)->declaring);
 		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_type (m, &mh->klass->byval_arg, TRUE);
-		if (show_tokens)
-			name = g_strdup_printf ("%s/*%08x*/%s%s", sig ? sig : "", token, sig ? "::" : "", esname);
-		else
-			name = g_strdup_printf ("%s%s%s", sig ? sig : "", sig ? "::" : "", esname);
+		char *token_comment = get_token_comment (NULL, token);
+		name = g_strdup_printf ("%s%s%s%s", sig ? sig : "", token_comment ? token_comment : "", sig ? "::" : "", esname);
 		g_free (sig);
 		g_free (esname);
+		g_free (token_comment);
 	} else {
 		name = NULL;
 		mono_error_cleanup (&error);
@@ -1979,7 +2005,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 	}
 	
 	if (show_tokens) {
-		char *retval = g_strdup_printf ("%s /* %08x */", sig, token);
+		char *retval = get_token_comment (sig, token);
 		g_free (sig);
 		return retval;
 	} else
