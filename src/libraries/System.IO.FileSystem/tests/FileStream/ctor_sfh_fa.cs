@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
@@ -17,17 +15,33 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void InvalidHandleThrows()
+        public void InvalidHandle_Throws()
         {
-            AssertExtensions.Throws<ArgumentException>("handle", () => CreateFileStream(new SafeFileHandle(new IntPtr(-1), true), FileAccess.Read));
+            using (var handle = new SafeFileHandle(new IntPtr(-1), ownsHandle: false))
+            {
+                AssertExtensions.Throws<ArgumentException>("handle", () => CreateFileStream(handle, FileAccess.Read));
+            }
         }
 
         [Fact]
-        public void InvalidAccessThrows()
+        public void InvalidAccess_Throws()
         {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create))
+            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(fs.SafeFileHandle, ~FileAccess.Read));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => CreateFileStream(handle, ~FileAccess.Read));
+            }
+        }
+
+        [ActiveIssue(20797, TargetFrameworkMonikers.NetFramework)] // This fails on desktop
+        [Fact]
+        public void InvalidAccess_DoesNotCloseHandle()
+        {
+            using (var handle = new SafeFileHandle(new IntPtr(1), ownsHandle: false))
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => CreateFileStream(handle, ~FileAccess.Read));
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                Assert.False(handle.IsClosed);
             }
         }
 
@@ -69,7 +83,6 @@ namespace System.IO.Tests
                 }
             }
         }
-
 
         [Fact]
         public void FileAccessReadWrite()
