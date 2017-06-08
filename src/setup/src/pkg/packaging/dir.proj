@@ -32,8 +32,13 @@
     <Copy SourceFiles="$(ProjectDir)resources/ThirdPartyNotices.txt"
           DestinationFiles="$(SharedHostPublishRoot)ThirdPartyNotices.txt" />
 
-    <Copy SourceFiles="$(ProjectDir)resources/LICENSE.txt"
-          DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt" />
+    <Copy SourceFiles="$(ProjectDir)resources/LICENSE-MIT.txt"
+          DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
+          Condition="'$(TargetsUnix)' == 'true'"/>
+
+    <Copy SourceFiles="$(ProjectDir)resources/LICENSE-MSFT.txt"
+          DestinationFiles="$(SharedHostPublishRoot)LICENSE.txt"
+          Condition="'$(TargetsUnix)' != 'true'"/>
 
     <!-- copy host fxr -->
     <ItemGroup>
