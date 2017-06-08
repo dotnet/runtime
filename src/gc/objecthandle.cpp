@@ -427,7 +427,6 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     {
         NOTHROW;
         GC_NOTRIGGER;
-        if (GetThreadNULLOk()) { MODE_COOPERATIVE; } 
     }
     CONTRACTL_END;
 #endif // FEATURE_REDHAWK

@@ -764,7 +764,7 @@ respin:
                     dprintf (JOIN_LOG, ("join%d(%d): Join() hard wait on reset event %d, join_lock is now %d", 
                         flavor, join_id, color, (int32_t)(join_struct.join_lock)));
 
-                    //Thread* current_thread = GetThread();
+                    //Thread* current_thread = GCToEEInterface::GetThread();
                     //BOOL cooperative_mode = gc_heap::enable_preemptive (current_thread);
                     uint32_t dwJoinWait = join_struct.joined_event[color].Wait(INFINITE, FALSE);
                     //gc_heap::disable_preemptive (current_thread, cooperative_mode);
@@ -1284,7 +1284,7 @@ try_again_no_inc:
         assert (foreground_allowed.IsValid());
         assert (foreground_complete.IsValid());
 
-        current_thread = GetThread();
+        current_thread = GCToEEInterface::GetThread();
         cooperative_mode = gc_heap::enable_preemptive (current_thread);
 
         foreground_allowed.Wait(INFINITE, FALSE);
@@ -1486,7 +1486,7 @@ inline bool can_use_write_watch_for_card_table()
 void WaitLongerNoInstru (int i)
 {
     // every 8th attempt:
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GCToEEInterface::GetThread();
     bool bToggleGC = false;
     if (pCurThread)
     {
@@ -1546,7 +1546,7 @@ void WaitLongerNoInstru (int i)
 inline
 static void safe_switch_to_thread()
 {
-    Thread* current_thread = GetThread();
+    Thread* current_thread = GCToEEInterface::GetThread();
     BOOL cooperative_mode = gc_heap::enable_preemptive(current_thread);
 
     GCToOSInterface::YieldThread(0);
@@ -1621,7 +1621,7 @@ static void enter_spin_lock(GCSpinLock *pSpinLock)
 {
     enter_spin_lock_noinstru(&pSpinLock->lock);
     assert (pSpinLock->holding_thread == (Thread*)-1);
-    pSpinLock->holding_thread = GetThread();
+    pSpinLock->holding_thread = GCToEEInterface::GetThread();
 }
 
 inline
@@ -1629,7 +1629,7 @@ static BOOL try_enter_spin_lock(GCSpinLock *pSpinLock)
 {
     BOOL ret = try_enter_spin_lock_noinstru(&pSpinLock->lock);
     if (ret)
-        pSpinLock->holding_thread = GetThread();
+        pSpinLock->holding_thread = GCToEEInterface::GetThread();
     return ret;
 }
 
@@ -1637,7 +1637,7 @@ inline
 static void leave_spin_lock(GCSpinLock *pSpinLock)
 {
     BOOL gc_thread_p = IsGCSpecialThread();
-//    _ASSERTE((pSpinLock->holding_thread == GetThread()) || gc_thread_p || pSpinLock->released_by_gc_p);
+//    _ASSERTE((pSpinLock->holding_thread == GCToEEInterface::GetThread()) || gc_thread_p || pSpinLock->released_by_gc_p);
     pSpinLock->released_by_gc_p = gc_thread_p;
     pSpinLock->holding_thread = (Thread*) -1;
     if (pSpinLock->lock != -1)
@@ -1645,10 +1645,10 @@ static void leave_spin_lock(GCSpinLock *pSpinLock)
 }
 
 #define ASSERT_HOLDING_SPIN_LOCK(pSpinLock) \
-    _ASSERTE((pSpinLock)->holding_thread == GetThread());
+    _ASSERTE((pSpinLock)->holding_thread == GCToEEInterface::GetThread());
 
 #define ASSERT_NOT_HOLDING_SPIN_LOCK(pSpinLock) \
-    _ASSERTE((pSpinLock)->holding_thread != GetThread());
+    _ASSERTE((pSpinLock)->holding_thread != GCToEEInterface::GetThread());
 
 #else //_DEBUG
 
@@ -1665,7 +1665,7 @@ void WaitLonger (int i
 #endif //SYNCHRONIZATION_STATS
 
     // every 8th attempt:
-    Thread *pCurThread = GetThread();
+    Thread *pCurThread = GCToEEInterface::GetThread();
     bool bToggleGC = false;
     if (pCurThread)
     {
@@ -1749,7 +1749,7 @@ retry:
 #ifdef SYNCHRONIZATION_STATS
                         (spin_lock->num_switch_thread)++;
 #endif //SYNCHRONIZATION_STATS
-                        Thread* current_thread = GetThread();
+                        Thread* current_thread = GCToEEInterface::GetThread();
                         BOOL cooperative_mode = gc_heap::enable_preemptive (current_thread);
 
                         GCToOSInterface::YieldThread(0);
@@ -9549,7 +9549,7 @@ const size_t ww_reset_quantum = 128*1024*1024;
 inline
 void gc_heap::switch_one_quantum()
 {
-    Thread* current_thread = GetThread();
+    Thread* current_thread = GCToEEInterface::GetThread();
     enable_preemptive (current_thread);
     GCToOSInterface::Sleep (1);
     disable_preemptive (current_thread, TRUE);
@@ -10184,7 +10184,7 @@ gc_heap* gc_heap::make_gc_heap (
 uint32_t
 gc_heap::wait_for_gc_done(int32_t timeOut)
 {
-    Thread* current_thread = GetThread();
+    Thread* current_thread = GCToEEInterface::GetThread();
     BOOL cooperative_mode = enable_preemptive (current_thread);
 
     uint32_t dwWaitResult = NOERROR;
@@ -12277,7 +12277,7 @@ BOOL gc_heap::allocate_small (int gen_number,
         background_soh_alloc_count++;
         if ((background_soh_alloc_count % bgc_alloc_spin_count) == 0)
         {
-            Thread* current_thread = GetThread();
+            Thread* current_thread = GCToEEInterface::GetThread();
             add_saved_spinlock_info (me_release, mt_alloc_small);
             dprintf (SPINLOCK_LOG, ("[%d]spin Lmsl", heap_number));
             leave_spin_lock (&more_space_lock);
@@ -12806,7 +12806,7 @@ BOOL gc_heap::allocate_large (int gen_number,
             {
                 if (!bgc_alloc_spin_loh)
                 {
-                    Thread* current_thread = GetThread();
+                    Thread* current_thread = GCToEEInterface::GetThread();
                     add_saved_spinlock_info (me_release, mt_alloc_large);
                     dprintf (SPINLOCK_LOG, ("[%d]spin Lmsl loh", heap_number));
                     leave_spin_lock (&more_space_lock);
@@ -15563,7 +15563,7 @@ void gc_heap::gc1()
         )
     {
 #ifdef BACKGROUND_GC
-        Thread* current_thread = GetThread();
+        Thread* current_thread = GCToEEInterface::GetThread();
         BOOL cooperative_mode = TRUE;
 
         if (settings.concurrent)
@@ -25059,7 +25059,7 @@ void gc_heap::recover_bgc_settings()
 
 void gc_heap::allow_fgc()
 {
-    assert (bgc_thread == GetThread());
+    assert (bgc_thread == GCToEEInterface::GetThread());
 
     if (GCToEEInterface::IsPreemptiveGCDisabled(bgc_thread) && GCToEEInterface::CatchAtSafePoint(bgc_thread))
     {
@@ -25505,7 +25505,7 @@ void gc_heap::background_mark_phase ()
     sc.concurrent = FALSE;
 
     THREAD_FROM_HEAP;
-    Thread* current_thread = GetThread();
+    Thread* current_thread = GCToEEInterface::GetThread();
     BOOL cooperative_mode = TRUE;
 #ifndef MULTIPLE_HEAPS
     const int thread = heap_number;
@@ -26823,7 +26823,7 @@ uint32_t gc_heap::bgc_thread_function()
 
     BOOL do_exit = FALSE;
 
-    Thread* current_thread = GetThread();
+    Thread* current_thread = GCToEEInterface::GetThread();
     BOOL cooperative_mode = TRUE;
     bgc_thread_id.SetToCurrentThread();
     dprintf (1, ("bgc_thread_id is set to %x", (uint32_t)GCToOSInterface::GetCurrentThreadIdForLogging()));
@@ -31173,7 +31173,7 @@ void gc_heap::background_ephemeral_sweep()
 
 void gc_heap::background_sweep()
 {
-    Thread* current_thread  = GetThread();
+    Thread* current_thread  = GCToEEInterface::GetThread();
     generation* gen         = generation_of (max_generation);
     dynamic_data* dd        = dynamic_data_of (max_generation);
     // For SOH segments we go backwards.
@@ -33921,7 +33921,7 @@ bool GCHeap::StressHeap(gc_alloc_context * context)
         return FALSE;
 
 #ifdef _DEBUG
-    if (g_pConfig->FastGCStressLevel() && !GetThread()->StressHeapIsEnabled()) {
+    if (g_pConfig->FastGCStressLevel() && !GCToEEInterface::GetThread()->StressHeapIsEnabled()) {
         return FALSE;
     }
 
@@ -34911,7 +34911,7 @@ GCHeap::GarbageCollectGeneration (unsigned int gen, gc_reason reason)
 #else
     gc_heap* hpt = 0;
 #endif //MULTIPLE_HEAPS
-    Thread* current_thread = GetThread();
+    Thread* current_thread = GCToEEInterface::GetThread();
     BOOL cooperative_mode = TRUE;
     dynamic_data* dd = hpt->dynamic_data_of (gen);
     size_t localCount = dd_collection_count (dd);
@@ -35230,7 +35230,7 @@ int GCHeap::GetNumberOfHeaps ()
 int GCHeap::GetHomeHeapNumber ()
 {
 #ifdef MULTIPLE_HEAPS
-    Thread *pThread = GetThread();
+    Thread *pThread = GCToEEInterface::GetThread();
     for (int i = 0; i < gc_heap::n_heaps; i++)
     {
         if (pThread)
@@ -35687,8 +35687,8 @@ inline
 void CFinalize::EnterFinalizeLock()
 {
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
-             GetThread() == 0 ||
-             GCToEEInterface::IsPreemptiveGCDisabled(GetThread()));
+             GCToEEInterface::GetThread() == 0 ||
+             GCToEEInterface::IsPreemptiveGCDisabled(GCToEEInterface::GetThread()));
 
 retry:
     if (Interlocked::Exchange (&lock, 0) >= 0)
@@ -35714,8 +35714,8 @@ inline
 void CFinalize::LeaveFinalizeLock()
 {
     _ASSERTE(dbgOnly_IsSpecialEEThread() ||
-             GetThread() == 0 ||
-             GCToEEInterface::IsPreemptiveGCDisabled(GetThread()));
+             GCToEEInterface::GetThread() == 0 ||
+             GCToEEInterface::IsPreemptiveGCDisabled(GCToEEInterface::GetThread()));
 
 #ifdef _DEBUG
     lockowner_threadid.Clear();
