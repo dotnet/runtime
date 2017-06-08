@@ -171,7 +171,7 @@
       <VersionSuffixArg>--version-suffix $(VersionSuffix)</VersionSuffixArg>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build $(OutputArg) $(ConfigArg) $(VersionSuffixArg)"
+    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build $(OutputArg) $(ConfigArg) $(VersionSuffixArg) /p:BaseOutputPath=$(IntermediateOutputForPackaging)"
           Condition="'@(PackageProjects)' != ''" />
   </Target>
   

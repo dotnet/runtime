@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <CoreHostLockedDir>$(CoreHostOutputDir)locked\</CoreHostLockedDir>
-    <IntermediateOutputForPackaging>$(IntermediateOutputRootPath)forPackaging</IntermediateOutputForPackaging>
+    <IntermediateOutputForPackaging>$(IntermediateOutputRootPath)sign/forPackaging/</IntermediateOutputForPackaging>
   </PropertyGroup>
 
   <PropertyGroup>
