@@ -65,7 +65,7 @@ endif ()
 
 # enable control-flow-guard support for native components
 add_compile_options(/guard:cf) 
-set(__LinkArgs "${__LinkArgs} /guard:cf")
+set(__LinkArgs "${__LinkArgs} /GUARD:CF")
 
 # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
