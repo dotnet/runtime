@@ -264,7 +264,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
 
         default:
         {
-            JITDUMP("Illegal TYP_LONG node %s in Decomposition.", GenTree::NodeName(tree->OperGet()));
+            JITDUMP("Illegal TYP_LONG node %s in Decomposition.", GenTree::OpName(tree->OperGet()));
             assert(!"Illegal TYP_LONG node in Decomposition.");
             break;
         }

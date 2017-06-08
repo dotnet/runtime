@@ -1937,7 +1937,7 @@ public:
             lst                  = dsc->csdTreeList;
             GenTreePtr firstTree = lst->tslTree;
             printf("In %s, CSE (oper = %s, type = %s) has differing VNs: ", info.compFullName,
-                   GenTree::NodeName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
+                   GenTree::OpName(firstTree->OperGet()), varTypeName(firstTree->TypeGet()));
             while (lst != NULL)
             {
                 if (IS_CSE_INDEX(lst->tslTree->gtCSEnum))
