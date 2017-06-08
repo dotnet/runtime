@@ -2205,6 +2205,12 @@ void LinearScan::identifyCandidates()
                 {
                     varDsc->lvLRACandidate = 0;
                 }
+#ifdef ARM_SOFTFP
+                if (varDsc->lvIsParam && varDsc->lvIsRegArg)
+                {
+                    type = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
+                }
+#endif // ARM_SOFTFP
                 break;
 #endif // CPU_HAS_FP_SUPPORT
 
@@ -4377,7 +4383,7 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 #ifndef _TARGET_AMD64_
                         && !compiler->info.compIsVarArgs
 #endif
-                        );
+                        && !compiler->opts.compUseSoftFP);
 
         if (argDsc->lvIsHfaRegArg())
         {
@@ -10327,7 +10333,16 @@ void TreeNodeInfo::Initialize(LinearScan* lsra, GenTree* node, LsraLocation loca
     // TODO-Cleanup: get rid of those NOPs.
     if (node->gtRegNum == REG_NA || node->gtOper == GT_NOP)
     {
-        dstCandidates = lsra->allRegs(node->TypeGet());
+#ifdef ARM_SOFTFP
+        if (node->OperGet() == GT_PUTARG_REG)
+        {
+            dstCandidates = lsra->allRegs(TYP_INT);
+        }
+        else
+#endif
+        {
+            dstCandidates = lsra->allRegs(node->TypeGet());
+        }
     }
     else
     {
