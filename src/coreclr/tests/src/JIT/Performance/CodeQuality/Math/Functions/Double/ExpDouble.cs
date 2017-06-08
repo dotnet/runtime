@@ -14,14 +14,17 @@ namespace Functions
         private const double expDoubleDelta = 0.0004;
         private const double expDoubleExpectedResult = 5877.1812477590884;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = ExpDoubleIterations)]
         public static void ExpDoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    ExpDoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        ExpDoubleTest();
+                    }
                 }
             }
         }

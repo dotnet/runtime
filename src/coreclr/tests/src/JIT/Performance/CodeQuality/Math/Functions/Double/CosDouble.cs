@@ -14,14 +14,17 @@ namespace Functions
         private const double cosDoubleDelta = 0.0006283185307180;
         private const double cosDoubleExpectedResult = -1.0000000005924159;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = CosDoubleIterations)]
         public static void CosDoubleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    CosDoubleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        CosDoubleTest();
+                    }
                 }
             }
         }
