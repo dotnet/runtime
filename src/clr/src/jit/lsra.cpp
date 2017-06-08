@@ -3578,7 +3578,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             GenTree*         node    = kvp.Key();
             LocationInfoList defList = kvp.Value();
 
-            JITDUMP("%sN%03u. %s -> (", first ? "" : "; ", node->gtSeqNum, GenTree::NodeName(node->OperGet()));
+            JITDUMP("%sN%03u. %s -> (", first ? "" : "; ", node->gtSeqNum, GenTree::OpName(node->OperGet()));
             for (LocationInfoListNode *def = defList.Begin(), *end = defList.End(); def != end; def = def->Next())
             {
                 JITDUMP("%s%d.N%03u", def == defList.Begin() ? "" : ", ", def->loc, def->treeNode->gtSeqNum);
@@ -10937,7 +10937,7 @@ void LinearScan::lsraDispNode(GenTreePtr tree, LsraTupleDumpMode mode, bool hasD
     else if (tree->OperIsAssignment())
     {
         assert(!tree->gtHasReg());
-        printf("  asg%s  ", GenTree::NodeName(tree->OperGet()));
+        printf("  asg%s  ", GenTree::OpName(tree->OperGet()));
     }
     else
     {
