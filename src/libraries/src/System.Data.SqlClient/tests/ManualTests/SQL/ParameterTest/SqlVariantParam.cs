@@ -14,7 +14,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class SqlVariantParam
     {
-        // Katmai connection string (Katmai or later is required).
         private static string s_connStr;
 
         /// <summary>
@@ -123,83 +122,85 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     connBulk.Open();
 
-                    // Drop and re-create target bulk copy table.
-                    xsql(connBulk, "if exists(select 1 from sys.tables where name='{0}') begin drop table {0} end", bulkCopyTableName);
-                    xsql(connBulk, "create table {0} (f1 sql_variant)", bulkCopyTableName);
-
-                    // Perform bulk copy to target.
-                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connBulk))
+                    ExecuteSQL(connBulk, "create table {0} (f1 sql_variant)", bulkCopyTableName);
+                    try
                     {
-                        bulkCopy.BulkCopyTimeout = 60;
-                        bulkCopy.BatchSize = 1;
-                        bulkCopy.DestinationTableName = bulkCopyTableName;
-                        bulkCopy.WriteToServer(dr);
-                    }
-
-                    // Verify target.
-                    using (SqlCommand cmd = connBulk.CreateCommand())
-                    {
-                        cmd.CommandText = string.Format("select f1, sql_variant_property(f1,'BaseType') as BaseType from {0}", bulkCopyTableName);
-                        using (SqlDataReader drVerify = cmd.ExecuteReader())
+                        // Perform bulk copy to target.
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connBulk))
                         {
-                            VerifyReader("SendVariantBulkCopy[SqlDataReader]", drVerify, expectedTypeName, expectedBaseTypeName);
+                            bulkCopy.BulkCopyTimeout = 60;
+                            bulkCopy.BatchSize = 1;
+                            bulkCopy.DestinationTableName = bulkCopyTableName;
+                            bulkCopy.WriteToServer(dr);
+                        }
+
+                        // Verify target.
+                        using (SqlCommand cmd = connBulk.CreateCommand())
+                        {
+                            cmd.CommandText = string.Format("select f1, sql_variant_property(f1,'BaseType') as BaseType from {0}", bulkCopyTableName);
+                            using (SqlDataReader drVerify = cmd.ExecuteReader())
+                            {
+                                VerifyReader("SendVariantBulkCopy[SqlDataReader]", drVerify, expectedTypeName, expectedBaseTypeName);
+                            }
+                        }
+
+                        // Truncate target table for next pass.
+                        ExecuteSQL(connBulk, "truncate table {0}", bulkCopyTableName);
+
+                        // Send using DataTable as source.
+                        DataTable t = new DataTable();
+                        t.Columns.Add("f1", typeof(object));
+                        t.Rows.Add(new object[] { paramValue });
+
+                        // Perform bulk copy to target.
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connBulk))
+                        {
+                            bulkCopy.BulkCopyTimeout = 60;
+                            bulkCopy.BatchSize = 1;
+                            bulkCopy.DestinationTableName = bulkCopyTableName;
+                            bulkCopy.WriteToServer(t, DataRowState.Added);
+                        }
+
+                        // Verify target.
+                        using (SqlCommand cmd = connBulk.CreateCommand())
+                        {
+                            cmd.CommandText = string.Format("select f1, sql_variant_property(f1,'BaseType') as BaseType from {0}", bulkCopyTableName);
+                            using (SqlDataReader drVerify = cmd.ExecuteReader())
+                            {
+                                VerifyReader("SendVariantBulkCopy[DataTable]", drVerify, expectedTypeName, expectedBaseTypeName);
+                            }
+                        }
+
+                        // Truncate target table for next pass.
+                        ExecuteSQL(connBulk, "truncate table {0}", bulkCopyTableName);
+
+                        // Send using DataRow as source.
+                        DataRow[] rowToSend = t.Select();
+
+                        // Perform bulk copy to target.
+                        using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connBulk))
+                        {
+                            bulkCopy.BulkCopyTimeout = 60;
+                            bulkCopy.BatchSize = 1;
+                            bulkCopy.DestinationTableName = bulkCopyTableName;
+                            bulkCopy.WriteToServer(rowToSend);
+                        }
+
+                        // Verify target.
+                        using (SqlCommand cmd = connBulk.CreateCommand())
+                        {
+                            cmd.CommandText = string.Format("select f1, sql_variant_property(f1,'BaseType') as BaseType from {0}", bulkCopyTableName);
+                            using (SqlDataReader drVerify = cmd.ExecuteReader())
+                            {
+                                VerifyReader("SendVariantBulkCopy[DataRow]", drVerify, expectedTypeName, expectedBaseTypeName);
+                            }
                         }
                     }
-
-                    // Truncate target table for next pass.
-                    xsql(connBulk, "truncate table {0}", bulkCopyTableName);
-
-                    // Send using DataTable as source.
-                    DataTable t = new DataTable();
-                    t.Columns.Add("f1", typeof(object));
-                    t.Rows.Add(new object[] { paramValue });
-
-                    // Perform bulk copy to target.
-                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connBulk))
+                    finally
                     {
-                        bulkCopy.BulkCopyTimeout = 60;
-                        bulkCopy.BatchSize = 1;
-                        bulkCopy.DestinationTableName = bulkCopyTableName;
-                        bulkCopy.WriteToServer(t, DataRowState.Added);
+                        // Cleanup target table.
+                        ExecuteSQL(connBulk, "drop table {0}", bulkCopyTableName);
                     }
-
-                    // Verify target.
-                    using (SqlCommand cmd = connBulk.CreateCommand())
-                    {
-                        cmd.CommandText = string.Format("select f1, sql_variant_property(f1,'BaseType') as BaseType from {0}", bulkCopyTableName);
-                        using (SqlDataReader drVerify = cmd.ExecuteReader())
-                        {
-                            VerifyReader("SendVariantBulkCopy[DataTable]", drVerify, expectedTypeName, expectedBaseTypeName);
-                        }
-                    }
-
-                    // Truncate target table for next pass.
-                    xsql(connBulk, "truncate table {0}", bulkCopyTableName);
-
-                    // Send using DataRow as source.
-                    DataRow[] rowToSend = t.Select();
-
-                    // Perform bulk copy to target.
-                    using (SqlBulkCopy bulkCopy = new SqlBulkCopy(connBulk))
-                    {
-                        bulkCopy.BulkCopyTimeout = 60;
-                        bulkCopy.BatchSize = 1;
-                        bulkCopy.DestinationTableName = bulkCopyTableName;
-                        bulkCopy.WriteToServer(rowToSend);
-                    }
-
-                    // Verify target.
-                    using (SqlCommand cmd = connBulk.CreateCommand())
-                    {
-                        cmd.CommandText = string.Format("select f1, sql_variant_property(f1,'BaseType') as BaseType from {0}", bulkCopyTableName);
-                        using (SqlDataReader drVerify = cmd.ExecuteReader())
-                        {
-                            VerifyReader("SendVariantBulkCopy[DataRow]", drVerify, expectedTypeName, expectedBaseTypeName);
-                        }
-                    }
-
-                    // Cleanup target table.
-                    xsql(connBulk, "if exists(select 1 from sys.tables where name='{0}') begin drop table {0} end", bulkCopyTableName);
                 }
             }
         }
@@ -214,73 +215,49 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 connTvp.Open();
 
-                // Drop and re-create tvp type.
-                xsql(connTvp, "if exists(select 1 from sys.types where name='{0}') begin drop type {0} end", tvpTypeName);
-                xsql(connTvp, "create type {0} as table (f1 sql_variant)", tvpTypeName);
-
-                // Send TVP using SqlMetaData.
-                SqlMetaData[] metadata = new SqlMetaData[1];
-                metadata[0] = new SqlMetaData("f1", SqlDbType.Variant);
-                SqlDataRecord[] record = new SqlDataRecord[1];
-                record[0] = new SqlDataRecord(metadata);
-                record[0].SetValue(0, paramValue);
-
-                using (SqlCommand cmd = connTvp.CreateCommand())
+                ExecuteSQL(connTvp, "create type {0} as table (f1 sql_variant)", tvpTypeName);
+                try
                 {
-                    cmd.CommandText = "select f1, sql_variant_property(f1,'BaseType') as BaseType from @tvpParam";
-                    SqlParameter p = cmd.Parameters.AddWithValue("@tvpParam", record);
-                    p.SqlDbType = SqlDbType.Structured;
-                    p.TypeName = string.Format("dbo.{0}", tvpTypeName);
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        VerifyReader("SendVariantTvp[SqlMetaData]", dr, expectedTypeName, expectedBaseTypeName);
-                    }
-                }
+                    // Send TVP using SqlMetaData.
+                    SqlMetaData[] metadata = new SqlMetaData[1];
+                    metadata[0] = new SqlMetaData("f1", SqlDbType.Variant);
+                    SqlDataRecord[] record = new SqlDataRecord[1];
+                    record[0] = new SqlDataRecord(metadata);
+                    record[0].SetValue(0, paramValue);
 
-                // Send TVP using DataSet.
-                // DEVNOTE: TVPs do not support sql_variant inside DataTable, by design according to tvp spec:
-                // 4.3	DbDataReader
-                // The only difference or special case for DataTable is that we will not support:
-                // 1)	UDT?s
-                // 2)	Variant
-
-                /*
-                DataTable t = new DataTable();
-                t.Columns.Add("f1", typeof(object));
-                t.Rows.Add(new object[] { paramValue });
-                t.AcceptChanges();
-
-                using (SqlCommand cmd = connTvp.CreateCommand())
-                {
-                    cmd.CommandText = "select f1, sql_variant_property(@p1,'BaseType') as BaseType from @tvpParam";
-                    SqlParameter p = cmd.Parameters.AddWithValue("@tvpParam", t);
-                    p.SqlDbType = SqlDbType.Structured;
-                    p.TypeName = @"dbo.tvpVariant";
-                    using (SqlDataReader dr = cmd.ExecuteReader())
-                    {
-                        VerifyReader("SendVariantTvp[DataTable]", dr, expectedTypeName, expectedBaseTypeName);
-                    }
-                }
-                */
-
-                // Send TVP using SqlDataReader.
-                using (SqlDataReader dr = GetReaderForVariant(paramValue, false))
-                {
                     using (SqlCommand cmd = connTvp.CreateCommand())
                     {
                         cmd.CommandText = "select f1, sql_variant_property(f1,'BaseType') as BaseType from @tvpParam";
-                        SqlParameter p = cmd.Parameters.AddWithValue("@tvpParam", dr);
+                        SqlParameter p = cmd.Parameters.AddWithValue("@tvpParam", record);
                         p.SqlDbType = SqlDbType.Structured;
                         p.TypeName = string.Format("dbo.{0}", tvpTypeName);
-                        using (SqlDataReader dr2 = cmd.ExecuteReader())
+                        using (SqlDataReader dr = cmd.ExecuteReader())
                         {
-                            VerifyReader("SendVariantTvp[SqlDataReader]", dr2, expectedTypeName, expectedBaseTypeName);
+                            VerifyReader("SendVariantTvp[SqlMetaData]", dr, expectedTypeName, expectedBaseTypeName);
+                        }
+                    }
+
+                    // Send TVP using SqlDataReader.
+                    using (SqlDataReader dr = GetReaderForVariant(paramValue, false))
+                    {
+                        using (SqlCommand cmd = connTvp.CreateCommand())
+                        {
+                            cmd.CommandText = "select f1, sql_variant_property(f1,'BaseType') as BaseType from @tvpParam";
+                            SqlParameter p = cmd.Parameters.AddWithValue("@tvpParam", dr);
+                            p.SqlDbType = SqlDbType.Structured;
+                            p.TypeName = string.Format("dbo.{0}", tvpTypeName);
+                            using (SqlDataReader dr2 = cmd.ExecuteReader())
+                            {
+                                VerifyReader("SendVariantTvp[SqlDataReader]", dr2, expectedTypeName, expectedBaseTypeName);
+                            }
                         }
                     }
                 }
-
-                // Cleanup tvp type.
-                xsql(connTvp, "if exists(select 1 from sys.types where name='{0}') begin drop type {0} end", tvpTypeName);
+                finally
+                {
+                    // Cleanup tvp type.
+                    ExecuteSQL(connTvp, "drop type {0}", tvpTypeName);
+                }
             }
         }
         /// <summary>
@@ -289,7 +266,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <param name="conn"></param>
         /// <param name="formatSql">Format string using {0} to designate where to place objectName</param>
         /// <param name="objectName">Variable object name for t-sql</param>
-        private static void xsql(SqlConnection conn, string formatSql, string objectName)
+        private static void ExecuteSQL(SqlConnection conn, string formatSql, string objectName)
         {
             using (SqlCommand cmd = conn.CreateCommand())
             {
@@ -300,7 +277,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <summary>
         /// Simple helper to execute t-sql.
         /// </summary>
-        private static void xsql(SqlConnection conn, string sql)
+        private static void ExecuteSQL(SqlConnection conn, string sql)
         {
             using (SqlCommand cmd = conn.CreateCommand())
             {
