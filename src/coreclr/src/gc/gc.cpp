@@ -18,6 +18,7 @@
 //
 
 #include "gcpriv.h"
+#include "softwarewritewatch.h"
 
 #define USE_INTROSORT
 
@@ -2149,6 +2150,19 @@ uint8_t* align_lower_page (uint8_t* add)
 {
     return (uint8_t*)align_lower_page ((size_t)add);
 }
+
+inline
+size_t align_write_watch_lower_page (size_t add)
+{
+    return (add & ~(WRITE_WATCH_UNIT_SIZE - 1));
+}
+
+inline
+uint8_t* align_write_watch_lower_page (uint8_t* add)
+{
+    return (uint8_t*)align_lower_page ((size_t)add);
+}
+
 
 inline
 BOOL power_of_two_p (size_t integer)
@@ -26151,7 +26165,7 @@ void gc_heap::revisit_written_page (uint8_t* page,
     }
     else
     {
-        if (((last_page + OS_PAGE_SIZE) == page)
+        if (((last_page + WRITE_WATCH_UNIT_SIZE) == page)
             || (start_address <= last_object))
         {
             o = last_object;
@@ -26166,9 +26180,9 @@ void gc_heap::revisit_written_page (uint8_t* page,
 
     dprintf (3,("page %Ix start: %Ix, %Ix[ ",
                (size_t)page, (size_t)o,
-               (size_t)(min (high_address, page + OS_PAGE_SIZE))));
+               (size_t)(min (high_address, page + WRITE_WATCH_UNIT_SIZE))));
 
-    while (o < (min (high_address, page + OS_PAGE_SIZE)))
+    while (o < (min (high_address, page + WRITE_WATCH_UNIT_SIZE)))
     {
         size_t s;
 
@@ -26223,7 +26237,7 @@ void gc_heap::revisit_written_page (uint8_t* page,
             {
                 dprintf (3, ("going through %Ix", (size_t)o));
                 go_through_object (method_table(o), o, s, poo, start_address, use_start, (o + s),
-                                    if ((uint8_t*)poo >= min (high_address, page + OS_PAGE_SIZE))
+                                    if ((uint8_t*)poo >= min (high_address, page + WRITE_WATCH_UNIT_SIZE))
                                     {
                                         no_more_loop_p = TRUE;
                                         goto end_limit;
@@ -26240,7 +26254,7 @@ void gc_heap::revisit_written_page (uint8_t* page,
                 large_objects_p &&
 #endif // !FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
                 ((CObjectHeader*)o)->IsFree() &&
-                (next_o > min (high_address, page + OS_PAGE_SIZE)))
+                (next_o > min (high_address, page + WRITE_WATCH_UNIT_SIZE)))
             {
                 // We need to not skip the object here because of this corner scenario:
                 // A large object was being allocated during BGC mark so we first made it 
@@ -26277,7 +26291,7 @@ end_limit:
 #ifdef MULTIPLE_HEAPS
     if (concurrent_p)
     {
-        assert (last_object < (min (high_address, page + OS_PAGE_SIZE)));
+        assert (last_object < (min (high_address, page + WRITE_WATCH_UNIT_SIZE)));
     }
     else
 #endif //MULTIPLE_HEAPS
@@ -26286,7 +26300,7 @@ end_limit:
     }
 
     dprintf (3,("Last object: %Ix", (size_t)last_object));
-    last_page = align_lower_page (o);
+    last_page = align_write_watch_lower_page (o);
 }
 
 // When reset_only_p is TRUE, we should only reset pages that are in range
@@ -26467,7 +26481,7 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
                     }
 
                     if (bcount >= array_size){
-                        base_address = background_written_addresses [array_size-1] + OS_PAGE_SIZE;
+                        base_address = background_written_addresses [array_size-1] + WRITE_WATCH_UNIT_SIZE;
                         bcount = array_size;
                     }
                 }
