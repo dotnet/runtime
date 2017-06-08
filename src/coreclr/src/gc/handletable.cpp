@@ -1293,7 +1293,6 @@ BOOL  Ref_HandleAsyncPinHandles(async_pin_enum_fn asyncPinCallback, void* contex
     {
         NOTHROW;
         GC_NOTRIGGER;
-        if (GetThread()) {MODE_COOPERATIVE;} else {DISABLED(MODE_COOPERATIVE);}
     }
     CONTRACTL_END;
 
