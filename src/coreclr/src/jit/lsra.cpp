@@ -7005,15 +7005,21 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 // Is there another interval currently assigned to this register?  If so unassign it.
                 if (assignedInterval != nullptr)
                 {
+#ifdef _TARGET_ARM_
+                    if (assignedInterval->assignedReg == targetRegRecord || isSecondHalfReg(targetRegRecord, assignedInterval))
+#else
                     if (assignedInterval->assignedReg == targetRegRecord)
+#endif
                     {
+                        regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
+
                         // If the interval is active, it will be set to active when we reach its new
                         // register assignment (which we must not yet have done, or it wouldn't still be
                         // assigned to this register).
                         assignedInterval->isActive = false;
-                        unassignPhysReg(targetRegRecord, nullptr);
+                        unassignPhysReg(assignedInterval->assignedReg, nullptr);
                         if (allocationPass && assignedInterval->isLocalVar &&
-                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] == targetReg)
+                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] == assignedRegNum)
                         {
                             inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
                         }
