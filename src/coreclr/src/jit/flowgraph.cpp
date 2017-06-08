@@ -886,8 +886,8 @@ void Compiler::fgRemoveReturnBlock(BasicBlock* block)
 
 flowList* Compiler::fgGetPredForBlock(BasicBlock* block, BasicBlock* blockPred)
 {
-    noway_assert(block);
-    noway_assert(blockPred);
+    assert(block);
+    assert(blockPred);
     assert(!fgCheapPredsValid);
 
     flowList* pred;
