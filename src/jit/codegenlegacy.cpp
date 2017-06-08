@@ -156,7 +156,7 @@ void CodeGenInterface::genBashLclVar(GenTreePtr tree, unsigned varNum, LclVarDsc
     tree->gtVNPair = vnp; // Preserve the ValueNumPair, as SetOper will clear it.
 
     tree->gtFlags |= livenessFlags;
-    tree->gtFlags |= GTF_REG_VAL;
+    tree->SetInReg();
     tree->gtRegNum          = varDsc->lvRegNum;
     tree->gtRegVar.gtRegNum = varDsc->lvRegNum;
     tree->gtRegVar.SetLclNum(varNum);
@@ -632,7 +632,7 @@ void CodeGen::genComputeReg(
     /* Generate the value, hopefully into the right register */
 
     genCodeForTree(tree, needReg);
-    noway_assert(tree->gtFlags & GTF_REG_VAL);
+    noway_assert(tree->InReg());
 
     // There is a workaround in genCodeForTreeLng() that changes the type of the
     // tree of a GT_MUL with 64 bit result to TYP_INT from TYP_LONG, then calls
@@ -784,7 +784,7 @@ void CodeGen::genRecoverReg(GenTreePtr tree, regMaskTP needReg, RegSet::KeepReg 
     {
         /* We need the tree in another register. So move it there */
 
-        noway_assert(tree->gtFlags & GTF_REG_VAL);
+        noway_assert(tree->InReg());
         regNumber oldReg = tree->gtRegNum;
 
         /* Pick an acceptable register */
@@ -1042,7 +1042,7 @@ void CodeGen::genComputeRegPair(
 
     genCodeForTreeLng(tree, regMask, avoidReg);
 
-    noway_assert(tree->gtFlags & GTF_REG_VAL);
+    noway_assert(tree->InReg());
 
     regPair = tree->gtRegPair;
     tmpMask = genRegPairMask(regPair);
@@ -1347,7 +1347,7 @@ bool CodeGen::genMakeIndAddrMode(GenTreePtr      addr,
         mul                  = lea->gtScale;
         cns                  = lea->gtOffset;
 
-        if (rv1 != NULL && rv2 == NULL && cns == 0 && (rv1->gtFlags & GTF_REG_VAL) != 0)
+        if (rv1 != NULL && rv2 == NULL && cns == 0 && rv1->InReg())
         {
             scaledIndex = NULL;
             goto YES;
@@ -1360,7 +1360,7 @@ bool CodeGen::genMakeIndAddrMode(GenTreePtr      addr,
 
         /* Is the complete address already sitting in a register? */
 
-        if ((addr->gtFlags & GTF_REG_VAL) || (addr->gtOper == GT_LCL_VAR && genMarkLclVar(addr)))
+        if ((addr->InReg()) || (addr->gtOper == GT_LCL_VAR && genMarkLclVar(addr)))
         {
             genUpdateLife(addr);
 
@@ -1414,7 +1414,7 @@ bool CodeGen::genMakeIndAddrMode(GenTreePtr      addr,
 
     /* Has the address already been computed? */
 
-    if (addr->gtFlags & GTF_REG_VAL)
+    if (addr->InReg())
     {
         if (forLea)
             return true;
@@ -1531,11 +1531,11 @@ bool CodeGen::genMakeIndAddrMode(GenTreePtr      addr,
         }
     }
 
-    if (rv1->gtFlags & GTF_REG_VAL)
+    if (rv1->InReg())
     {
         /* op1 already in register - how about op2? */
 
-        if (rv2->gtFlags & GTF_REG_VAL)
+        if (rv2->InReg())
         {
             /* Great - both operands are in registers already. Just update
                the liveness and we are done. */
@@ -1567,7 +1567,7 @@ bool CodeGen::genMakeIndAddrMode(GenTreePtr      addr,
 
         goto GEN_RV2;
     }
-    else if (rv2->gtFlags & GTF_REG_VAL)
+    else if (rv2->InReg())
     {
         /* rv2 is in a register, but rv1 isn't */
 
@@ -1679,7 +1679,7 @@ bool CodeGen::genMakeIndAddrMode(GenTreePtr      addr,
         /* Here, we need to get rv2 in a register. We have either already
            materialized rv1 into a register, or it was already in a one */
 
-        noway_assert(rv1->gtFlags & GTF_REG_VAL);
+        noway_assert(rv1->InReg());
         noway_assert(rev || regSet.rsIsTreeInReg(rv1->gtRegNum, rv1));
 
         /* Generate the second operand as well */
@@ -1730,9 +1730,9 @@ DONE_REGS:
 
     /* We must verify that 'rv1' and 'rv2' are both sitting in registers */
 
-    if (rv1 && !(rv1->gtFlags & GTF_REG_VAL))
+    if (rv1 && !(rv1->InReg()))
         return false;
-    if (rv2 && !(rv2->gtFlags & GTF_REG_VAL))
+    if (rv2 && !(rv2->InReg()))
         return false;
 
 YES:
@@ -1742,7 +1742,7 @@ YES:
     // needs to know that it has to call rsFreeReg(reg1) twice. We can't do
     // that currently as we return a single mask in useMaskPtr.
 
-    if ((keepReg == RegSet::KEEP_REG) && oper && rv1 && rv2 && (rv1->gtFlags & rv2->gtFlags & GTF_REG_VAL))
+    if ((keepReg == RegSet::KEEP_REG) && oper && rv1 && rv2 && rv1->InReg() && rv2->InReg())
     {
         if (rv1->gtRegNum == rv2->gtRegNum)
         {
@@ -1755,7 +1755,7 @@ YES:
 
     if (rv1)
     {
-        noway_assert(rv1->gtFlags & GTF_REG_VAL);
+        noway_assert(rv1->InReg());
 
         if (keepReg == RegSet::KEEP_REG)
         {
@@ -1771,7 +1771,7 @@ YES:
 
     if (rv2)
     {
-        noway_assert(rv2->gtFlags & GTF_REG_VAL);
+        noway_assert(rv2->InReg());
 
         if (keepReg == RegSet::KEEP_REG)
             regSet.rsMarkRegUsed(rv2, oper);
@@ -1792,7 +1792,7 @@ YES:
         if (rv1->gtFlags & GTF_SPILLED)
             regSet.rsUnspillReg(rv1, 0, RegSet::KEEP_REG);
 
-        noway_assert(rv1->gtFlags & GTF_REG_VAL);
+        noway_assert(rv1->InReg());
         useMask |= genRegMask(rv1->gtRegNum);
     }
 
@@ -1812,7 +1812,7 @@ YES:
             else
                 regSet.rsUnspillReg(rv2, 0, RegSet::KEEP_REG);
         }
-        noway_assert(rv2->gtFlags & GTF_REG_VAL);
+        noway_assert(rv2->InReg());
         useMask |= genRegMask(rv2->gtRegNum);
     }
 
@@ -1862,7 +1862,7 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
         // lengths, but the index expression *can* be native int (64-bits)
         arrRef = arrLenExact->ArrRef();
         genCodeForTree(arrRef, RBM_ALLINT);
-        noway_assert(arrRef->gtFlags & GTF_REG_VAL);
+        noway_assert(arrRef->InReg());
         regSet.rsMarkRegUsed(arrRef);
         noway_assert(regSet.rsMaskUsed & genRegMask(arrRef->gtRegNum));
 #endif
@@ -1873,7 +1873,7 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     else if (arrLen->OperGet() == GT_IND && arrLen->gtOp.gtOp1->IsAddWithI32Const(&arrRef, &lenOffset))
     {
         genCodeForTree(arrRef, RBM_ALLINT);
-        noway_assert(arrRef->gtFlags & GTF_REG_VAL);
+        noway_assert(arrRef->InReg());
         regSet.rsMarkRegUsed(arrRef);
         noway_assert(regSet.rsMaskUsed & genRegMask(arrRef->gtRegNum));
     }
@@ -1888,7 +1888,7 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
             genCodeForTree(arrLen, RBM_ALLINT);
             regSet.rsMarkRegUsed(arrLen);
 
-            noway_assert(arrLen->gtFlags & GTF_REG_VAL);
+            noway_assert(arrLen->InReg());
             noway_assert(regSet.rsMaskUsed & genRegMask(arrLen->gtRegNum));
         }
     }
@@ -1915,7 +1915,7 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
             regSet.rsUnspillReg(index, indRegMask, RegSet::KEEP_REG);
 
         /* Make sure we have the values we expect */
-        noway_assert(index->gtFlags & GTF_REG_VAL);
+        noway_assert(index->InReg());
         noway_assert(regSet.rsMaskUsed & genRegMask(index->gtRegNum));
 
         noway_assert(index->TypeGet() == TYP_I_IMPL ||
@@ -2285,7 +2285,7 @@ regMaskTP CodeGen::genMakeAddressable(
 
     /* Is the value simply sitting in a register? */
 
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
         genUpdateLife(tree);
 
@@ -2390,7 +2390,7 @@ EVAL_TREE:
 
 GOT_VAL:
 
-    noway_assert(tree->gtFlags & GTF_REG_VAL);
+    noway_assert(tree->InReg());
 
     if (isRegPairType(tree->gtType))
     {
@@ -2436,7 +2436,7 @@ void CodeGen::genComputeAddressable(GenTreePtr      tree,
 
     regNumber reg;
 
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
         reg = tree->gtRegNum;
 
@@ -2499,7 +2499,7 @@ regMaskTP CodeGen::genMakeAddressable2(GenTreePtr      tree,
     {
         genCodeForTree(tree, needReg);
 
-        noway_assert(tree->gtFlags & GTF_REG_VAL);
+        noway_assert(tree->InReg());
 
         if (isRegPairType(tree->gtType))
         {
@@ -2567,7 +2567,7 @@ regMaskTP CodeGen::genRestoreAddrMode(GenTreePtr addr, GenTreePtr tree, bool loc
 
             /* The value should now be sitting in a register */
 
-            noway_assert(tree->gtFlags & GTF_REG_VAL);
+            noway_assert(tree->InReg());
             regMask = genRegMask(tree->gtRegNum);
 
             /* Mark the register as used for the address */
@@ -2584,7 +2584,7 @@ regMaskTP CodeGen::genRestoreAddrMode(GenTreePtr addr, GenTreePtr tree, bool loc
 
     /* Is this sub-tree sitting in a register? */
 
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
         regMask = genRegMask(tree->gtRegNum);
 
@@ -2674,7 +2674,7 @@ regMaskTP CodeGen::genRestAddressable(GenTreePtr tree, regMaskTP addrReg, regMas
 
     /* We have a complex address mode with some of its sub-operands spilled */
 
-    noway_assert((tree->gtFlags & GTF_REG_VAL) == 0);
+    noway_assert((tree->InReg()) == 0);
     noway_assert((tree->gtFlags & GTF_SPILLED_OPER) != 0);
 
     /*
@@ -2965,7 +2965,7 @@ AGAIN:
         {
             regMaskTP addrReg = genMakeAddressable(tree, RBM_ALLINT, RegSet::KEEP_REG, true, false);
 
-            if (tree->gtFlags & GTF_REG_VAL)
+            if (tree->InReg())
             {
                 gcInfo.gcMarkRegPtrVal(tree);
                 genDoneAddressable(tree, addrReg, RegSet::KEEP_REG);
@@ -3011,7 +3011,7 @@ AGAIN:
         {
             /* Generate the expression and throw it away */
             genCodeForTree(tree, RBM_ALL(tree->TypeGet()));
-            if (tree->gtFlags & GTF_REG_VAL)
+            if (tree->InReg())
             {
                 gcInfo.gcMarkRegPtrVal(tree);
             }
@@ -3083,7 +3083,7 @@ AGAIN:
 
 regMaskTP CodeGen::WriteBarrier(GenTreePtr tgt, GenTreePtr assignVal, regMaskTP tgtAddrReg)
 {
-    noway_assert(assignVal->gtFlags & GTF_REG_VAL);
+    noway_assert(assignVal->InReg());
 
     GCInfo::WriteBarrierForm wbf = gcInfo.gcIsWriteBarrierCandidate(tgt, assignVal);
     if (wbf == GCInfo::WBF_NoBarrier)
@@ -3600,7 +3600,7 @@ void CodeGen::genCondJumpLng(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* 
             regMaskTP tmpMask = regSet.rsRegMaskCanGrab();
             insFlags  flags   = useIncToSetFlags ? INS_FLAGS_DONT_CARE : INS_FLAGS_SET;
 
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
             {
                 regPairNo regPair = op1->gtRegPair;
                 regNumber rLo     = genRegPairLo(regPair);
@@ -3634,7 +3634,7 @@ void CodeGen::genCondJumpLng(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* 
                     inst_RV_TT(ins, rTmp, op1, 4, EA_4BYTE, flags);
                 }
             }
-            else // op1 is not GTF_REG_VAL
+            else // op1 is not in a register.
             {
                 rTmp = regSet.rsGrabReg(tmpMask);
 
@@ -3680,14 +3680,14 @@ void CodeGen::genCondJumpLng(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* 
 
             /* Comparing a register against 0 is easier */
 
-            if (!ival && (op1->gtFlags & GTF_REG_VAL) && (rTmp = genRegPairHi(op1->gtRegPair)) != REG_STK)
+            if (!ival && (op1->InReg()) && (rTmp = genRegPairHi(op1->gtRegPair)) != REG_STK)
             {
                 /* Generate 'test rTmp, rTmp' */
                 instGen_Compare_Reg_To_Zero(emitTypeSize(op1->TypeGet()), rTmp); // set flags
             }
             else
             {
-                if (!(op1->gtFlags & GTF_REG_VAL) && (op1->gtOper == GT_CNS_LNG))
+                if (!(op1->InReg()) && (op1->gtOper == GT_CNS_LNG))
                 {
                     /* Special case: comparison of two constants */
                     // Needed as gtFoldExpr() doesn't fold longs
@@ -3730,14 +3730,14 @@ void CodeGen::genCondJumpLng(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* 
 
             /* Comparing a register against 0 is easier */
 
-            if (!ival && (op1->gtFlags & GTF_REG_VAL) && (rTmp = genRegPairLo(op1->gtRegPair)) != REG_STK)
+            if (!ival && (op1->InReg()) && (rTmp = genRegPairLo(op1->gtRegPair)) != REG_STK)
             {
                 /* Generate 'test rTmp, rTmp' */
                 instGen_Compare_Reg_To_Zero(emitTypeSize(op1->TypeGet()), rTmp); // set flags
             }
             else
             {
-                if (!(op1->gtFlags & GTF_REG_VAL) && (op1->gtOper == GT_CNS_LNG))
+                if (!(op1->InReg()) && (op1->gtOper == GT_CNS_LNG))
                 {
                     /* Special case: comparison of two constants */
                     // Needed as gtFoldExpr() doesn't fold longs
@@ -3776,13 +3776,13 @@ void CodeGen::genCondJumpLng(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* 
         /* Generate the first operand into a register pair */
 
         genComputeRegPair(op1, REG_PAIR_NONE, op2->gtRsvdRegs, RegSet::KEEP_REG, false);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
 
 #if CPU_LOAD_STORE_ARCH
         /* Generate the second operand into a register pair */
         // Fix 388442 ARM JitStress WP7
         genComputeRegPair(op2, REG_PAIR_NONE, genRegPairMask(op1->gtRegPair), RegSet::KEEP_REG, false);
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
         regSet.rsLockUsedReg(genRegPairMask(op2->gtRegPair));
 #else
         /* Make the second operand addressable */
@@ -3792,7 +3792,7 @@ void CodeGen::genCondJumpLng(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock* 
         /* Make sure the first operand hasn't been spilled */
 
         genRecoverRegPair(op1, REG_PAIR_NONE, RegSet::KEEP_REG);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
 
         regPairNo regPair = op1->gtRegPair;
 
@@ -4002,7 +4002,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
                             addrReg1 = genMakeAddressable(an1, RBM_NONE, RegSet::KEEP_REG, true);
                         }
 #if CPU_LOAD_STORE_ARCH
-                        if ((an1->gtFlags & GTF_REG_VAL) == 0)
+                        if ((an1->InReg()) == 0)
                         {
                             genComputeAddressable(an1, addrReg1, RegSet::KEEP_REG, RBM_NONE, RegSet::KEEP_REG);
                             if (arm_Valid_Imm_For_Alu(iVal))
@@ -4023,7 +4023,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
                         {
 #ifdef _TARGET_XARCH_
                             // Check to see if we can use a smaller immediate.
-                            if ((an1->gtFlags & GTF_REG_VAL) && ((iVal & 0x0000FFFF) == iVal))
+                            if ((an1->InReg()) && ((iVal & 0x0000FFFF) == iVal))
                             {
                                 var_types testType =
                                     (var_types)(((iVal & 0x000000FF) == iVal) ? TYP_UBYTE : TYP_USHORT);
@@ -4220,7 +4220,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
 
             unsigned flags = (op1->gtFlags & GTF_ZSF_SET);
 
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
             {
                 if (genFlagsAreReg(op1->gtRegNum))
                 {
@@ -4238,7 +4238,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
 
             /* Is the value in a register? */
 
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
             {
                 regNumber reg = op1->gtRegNum;
 
@@ -4336,7 +4336,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
 
         // Needed if Importer doesn't call gtFoldExpr()
 
-        if (!(op1->gtFlags & GTF_REG_VAL) && (op1->IsCnsIntOrI()))
+        if (!(op1->InReg()) && (op1->IsCnsIntOrI()))
         {
             // noway_assert(compiler->opts.MinOpts() || compiler->opts.compDbgCode);
 
@@ -4344,7 +4344,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
             genComputeReg(op1, RBM_NONE, RegSet::ANY_REG, RegSet::KEEP_REG);
 
             noway_assert(addrReg1 == RBM_NONE);
-            noway_assert(op1->gtFlags & GTF_REG_VAL);
+            noway_assert(op1->InReg());
 
             addrReg1 = genRegMask(op1->gtRegNum);
         }
@@ -4386,7 +4386,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
 
     /* Are we comparing against a register? */
 
-    if (op2->gtFlags & GTF_REG_VAL)
+    if (op2->InReg())
     {
         /* Make the comparands addressable and mark as used */
 
@@ -4439,12 +4439,12 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
         // op2 is un-generated
         assert(addrReg2 == 0);
 
-        if ((op1->gtFlags & GTF_REG_VAL) == 0)
+        if ((op1->InReg()) == 0)
         {
             regNumber reg1 = regSet.rsPickReg();
 
             noway_assert(varTypeIsSmall(op1->TypeGet()));
-            instruction ins = ins_Move_Extend(op1->TypeGet(), (op1->gtFlags & GTF_REG_VAL) != 0);
+            instruction ins = ins_Move_Extend(op1->TypeGet(), (op1->InReg()) != 0);
 
             // regSet.rsPickReg can cause one of the trees within this address mode to get spilled
             // so we need to make sure it is still valid.  Note that at this point, reg1 is
@@ -4496,7 +4496,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
     // Compute the first comparand into some register, regNeed here is simply a hint because RegSet::ANY_REG is used.
     //
     genComputeReg(op1, regNeed, RegSet::ANY_REG, RegSet::FREE_REG);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     op1Reg = op1->gtRegNum;
 
@@ -4543,7 +4543,7 @@ emitJumpKind CodeGen::genCondSetFlags(GenTreePtr cond)
 
         op1->gtRegNum = newReg;
     }
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
     op1Reg = op1->gtRegNum;
 
     genUpdateLife(op1);
@@ -4560,7 +4560,7 @@ DONE_OP1:
 
     assert(((addrReg1 | addrReg2) & regSet.rsMaskUsed) == (addrReg1 | addrReg2));
     assert(((addrReg1 & addrReg2) & regSet.rsMaskMult) == (addrReg1 & addrReg2));
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     // Setup regNeed with either RBM_ALLINT or the RBM_BYTE_REGS subset
     // when byteCmp is true we will perform a byte sized cmp instruction
@@ -4587,7 +4587,7 @@ DONE_OP1:
     assert(addrReg1 != 0);
     genRecoverReg(op1, regNeed, RegSet::KEEP_REG);
 
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
     noway_assert(!byteCmp || isByteReg(op1->gtRegNum));
 
     addrReg1 = genRegMask(op1->gtRegNum);
@@ -4596,7 +4596,7 @@ DONE_OP1:
     /* Make sure that op2 is addressable. If we are going to do a
        byte-comparison, we need it to be in a byte register. */
 
-    if (byteCmp && (op2->gtFlags & GTF_REG_VAL))
+    if (byteCmp && (op2->InReg()))
     {
         genRecoverReg(op2, regNeed, RegSet::KEEP_REG);
         addrReg2 = genRegMask(op2->gtRegNum);
@@ -4804,7 +4804,7 @@ void CodeGen::genStressRegs(GenTreePtr tree)
 
     // If genCodeForTree() effectively gets called a second time on the same tree
 
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
         noway_assert(varTypeIsIntegralOrI(tree->TypeGet()));
         trashRegs &= ~genRegMask(tree->gtRegNum);
@@ -4814,9 +4814,9 @@ void CodeGen::genStressRegs(GenTreePtr tree)
     {
         GenTreePtr op1 = tree->gtOp.gtOp1;
         GenTreePtr op2 = tree->gtOp.gtOp2;
-        if (op1 && (op1->gtFlags & GTF_REG_VAL))
+        if (op1 && (op1->InReg()))
             trashRegs &= ~genRegMask(op1->gtRegNum);
-        if (op2 && (op2->gtFlags & GTF_REG_VAL))
+        if (op2 && (op2->InReg()))
             trashRegs &= ~genRegMask(op2->gtRegNum);
     }
 
@@ -5013,7 +5013,7 @@ void CodeGen::genCodeForTreeLeaf(GenTreePtr tree, regMaskTP destReg, regMaskTP b
 
             if (size < EA_4BYTE)
             {
-                instruction ins = ins_Move_Extend(tree->TypeGet(), (tree->gtFlags & GTF_REG_VAL) != 0);
+                instruction ins = ins_Move_Extend(tree->TypeGet(), tree->InReg());
                 inst_RV_TT(ins, reg, tree, 0);
 
                 /* We've now "promoted" the tree-node to TYP_INT */
@@ -5805,7 +5805,7 @@ void CodeGen::genCodeForQmark(GenTreePtr tree, regMaskTP destReg, regMaskTP best
 
         /* The type is VOID, so we shouldn't have computed a value */
 
-        noway_assert(!(elseNode->gtFlags & GTF_REG_VAL));
+        noway_assert(!(elseNode->InReg()));
 
         /* Save the current liveness, register status, and GC pointers               */
         /* This is the liveness information upon exit of the then part of the qmark  */
@@ -5876,7 +5876,7 @@ void CodeGen::genCodeForQmark(GenTreePtr tree, regMaskTP destReg, regMaskTP best
 
             /* The type is VOID, so we shouldn't have computed a value */
 
-            noway_assert(!(thenNode->gtFlags & GTF_REG_VAL));
+            noway_assert(!(thenNode->InReg()));
 
             unspillLiveness(&exitLiveness);
 
@@ -5909,7 +5909,7 @@ void CodeGen::genCodeForQmark(GenTreePtr tree, regMaskTP destReg, regMaskTP best
 
         /* Compute the elseNode into any free register */
         genComputeReg(elseNode, needReg, RegSet::ANY_REG, RegSet::FREE_REG, true);
-        noway_assert(elseNode->gtFlags & GTF_REG_VAL);
+        noway_assert(elseNode->InReg());
         noway_assert(elseNode->gtRegNum != REG_NA);
 
         /* Record the chosen register */
@@ -5980,7 +5980,7 @@ void CodeGen::genCodeForQmark(GenTreePtr tree, regMaskTP destReg, regMaskTP best
         /* This must place a value into the chosen register */
         genComputeReg(thenNode, regs, RegSet::EXACT_REG, RegSet::FREE_REG, true);
 
-        noway_assert(thenNode->gtFlags & GTF_REG_VAL);
+        noway_assert(thenNode->InReg());
         noway_assert(thenNode->gtRegNum == reg);
 
         unspillLiveness(&exitLiveness);
@@ -6129,7 +6129,7 @@ bool CodeGen::genCodeForQmarkWithCMOV(GenTreePtr tree, regMaskTP destReg, regMas
     else
     {
         genComputeReg(alwaysNode, needReg, RegSet::ANY_REG, RegSet::FREE_REG, true);
-        noway_assert(alwaysNode->gtFlags & GTF_REG_VAL);
+        noway_assert(alwaysNode->InReg());
         noway_assert(alwaysNode->gtRegNum != REG_NA);
 
         // Record the chosen register
@@ -6207,13 +6207,13 @@ void CodeGen::genCodeForMultEAX(GenTreePtr tree)
     /* Generate the op1 into op1Mask and hold on to it. freeOnly=true */
 
     genComputeReg(op1, op1Mask, RegSet::ANY_REG, RegSet::KEEP_REG, true);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     // If op2 is a constant we need to load  the constant into a register
     if (op2->OperKind() & GTK_CONST)
     {
         genCodeForTree(op2, RBM_EDX); // since EDX is going to be spilled anyway
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
         regSet.rsMarkRegUsed(op2);
         addrReg = genRegMask(op2->gtRegNum);
     }
@@ -6227,7 +6227,7 @@ void CodeGen::genCodeForMultEAX(GenTreePtr tree)
     /* Make sure the first operand is still in a register */
     // op1 *must* go into EAX.
     genRecoverReg(op1, RBM_EAX, RegSet::KEEP_REG);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     reg = op1->gtRegNum;
 
@@ -6337,16 +6337,16 @@ void CodeGen::genCodeForMult64(GenTreePtr tree, regMaskTP destReg, regMaskTP bes
     /* Generate the first operand into some register */
 
     genComputeReg(op1, RBM_ALLINT, RegSet::ANY_REG, RegSet::KEEP_REG);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     /* Generate the second operand into some register */
 
     genComputeReg(op2, RBM_ALLINT, RegSet::ANY_REG, RegSet::KEEP_REG);
-    noway_assert(op2->gtFlags & GTF_REG_VAL);
+    noway_assert(op2->InReg());
 
     /* Make sure the first operand is still in a register */
     genRecoverReg(op1, 0, RegSet::KEEP_REG);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     /* Free up the operands */
     genUpdateLife(tree);
@@ -6486,7 +6486,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
         if (op2->gtIntCon.gtIconVal == 3 || op2->gtIntCon.gtIconVal == 5 || op2->gtIntCon.gtIconVal == 9)
         {
             regNumber regSrc;
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
             {
                 regSrc = op1->gtRegNum;
             }
@@ -6551,7 +6551,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
 
                 /* Is the value now computed in some register? */
 
-                if (tree->gtFlags & GTF_REG_VAL)
+                if (tree->InReg())
                 {
                     genCodeForTree_REG_VAR1(tree);
                     return;
@@ -6564,13 +6564,13 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
                 // However, if we're in a context where we want to evaluate "tree" into a specific
                 // register different from the reg we'd use in this optimization, then it doesn't
                 // make sense to do the "add", since we'd also have to do a "mov."
-                if (op1->gtFlags & GTF_REG_VAL)
+                if (op1->InReg())
                 {
                     reg = op1->gtRegNum;
 
                     if ((genRegMask(reg) & regSet.rsRegMaskFree()) && (genRegMask(reg) & needReg))
                     {
-                        if (op2->gtFlags & GTF_REG_VAL)
+                        if (op2->InReg())
                         {
                             /* Simply add op2 to the register */
 
@@ -6592,13 +6592,13 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
                     }
                 }
 
-                if (op2->gtFlags & GTF_REG_VAL)
+                if (op2->InReg())
                 {
                     reg = op2->gtRegNum;
 
                     if ((genRegMask(reg) & regSet.rsRegMaskFree()) && (genRegMask(reg) & needReg))
                     {
-                        if (op1->gtFlags & GTF_REG_VAL)
+                        if (op1->InReg())
                         {
                             /* Simply add op1 to the register */
 
@@ -6733,7 +6733,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
             op1 = genCodeForCommaTree(op1);
             genComputeReg(op1, needReg, RegSet::ANY_REG, RegSet::FREE_REG, true);
 
-            noway_assert(op1->gtFlags & GTF_REG_VAL);
+            noway_assert(op1->InReg());
 
             regNumber op1Reg = op1->gtRegNum;
 
@@ -6771,7 +6771,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
 
                 op1->gtRegNum = newReg;
             }
-            noway_assert(op1->gtFlags & GTF_REG_VAL);
+            noway_assert(op1->InReg());
             genUpdateLife(op1);
 
             /* Mark the register as 'used' */
@@ -6876,7 +6876,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
     op1 = genCodeForCommaTree(op1);
     genComputeReg(op1, needReg, RegSet::ANY_REG, RegSet::FREE_REG, true);
 
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     regNumber op1Reg = op1->gtRegNum;
 
@@ -6928,7 +6928,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
 
         op1->gtRegNum = newReg;
     }
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
     op1Reg = op1->gtRegNum;
 
     genUpdateLife(op1);
@@ -6953,7 +6953,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
 #else  // !CPU_LOAD_STORE_ARCH
     /* Is op1 spilled and op2 in a register? */
 
-    if ((op1->gtFlags & GTF_SPILLED) && (op2->gtFlags & GTF_REG_VAL) && (ins != INS_sub))
+    if ((op1->gtFlags & GTF_SPILLED) && (op2->InReg()) && (ins != INS_sub))
     {
         noway_assert(ins == INS_add || ins == INS_MUL || ins == INS_AND || ins == INS_OR || ins == INS_XOR);
 
@@ -6987,7 +6987,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
 
                 /* op2 couldn't have spilled as it was not sitting in
                    RBM_BYTE_REGS, and regSet.rsGrabReg() will only spill its args */
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 regSet.rsUnlockReg(regMask);
                 regSet.rsMarkRegFree(regMask);
@@ -7034,7 +7034,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogOp(GenTreePtr tree, regMaskTP destReg,
     /* Make sure the first operand is still in a register */
     regSet.rsLockUsedReg(addrReg);
     genRecoverReg(op1, 0, RegSet::KEEP_REG);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
     regSet.rsUnlockUsedReg(addrReg);
 
     reg = op1->gtRegNum;
@@ -7331,7 +7331,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogAsgOp(GenTreePtr tree, regMaskTP destR
                     {
                         /* Add/subtract the new value into/from the target */
 
-                        if (op1->gtFlags & GTF_REG_VAL)
+                        if (op1->InReg())
                         {
                             reg = op1->gtRegNum;
                             goto INCDEC_REG;
@@ -7410,7 +7410,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogAsgOp(GenTreePtr tree, regMaskTP destR
 
             // Fix 383833 X86 ILGEN
             regNumber reg2;
-            if ((op2->gtFlags & GTF_REG_VAL) != 0)
+            if (op2->InReg())
             {
                 reg2 = op2->gtRegNum;
             }
@@ -7432,7 +7432,7 @@ void CodeGen::genCodeForTreeSmpBinArithLogAsgOp(GenTreePtr tree, regMaskTP destR
                 if ((op2->OperIsIndir() || (op2->gtOper == GT_CLS_VAR)) && varTypeIsSmall(op2->TypeGet()))
                 {
                     genCodeForTree(op2, 0);
-                    assert((op2->gtFlags & GTF_REG_VAL) != 0);
+                    assert(op2->InReg());
                 }
 
                 inst_RV_TT(ins, reg, op2, 0, EA_4BYTE, flags);
@@ -7704,7 +7704,7 @@ void CodeGen::genCodeForUnsignedMod(GenTreePtr tree, regMaskTP destReg, regMaskT
         /* Generate the operand into some register */
 
         genCompIntoFreeReg(op1, needReg, RegSet::FREE_REG);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
 
         reg = op1->gtRegNum;
 
@@ -7749,7 +7749,7 @@ void CodeGen::genCodeForSignedMod(GenTreePtr tree, regMaskTP destReg, regMaskTP 
         /* Generate the operand into some register */
 
         genCompIntoFreeReg(op1, needReg, RegSet::FREE_REG);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
 
         reg = op1->gtRegNum;
 
@@ -7821,7 +7821,7 @@ void CodeGen::genCodeForUnsignedDiv(GenTreePtr tree, regMaskTP destReg, regMaskT
         /* Generate the operand into some register */
 
         genCompIntoFreeReg(op1, needReg, RegSet::FREE_REG);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
 
         reg = op1->gtRegNum;
 
@@ -7873,7 +7873,7 @@ void CodeGen::genCodeForSignedDiv(GenTreePtr tree, regMaskTP destReg, regMaskTP 
         /* Generate the operand into some register */
 
         genCompIntoFreeReg(op1, needReg, RegSet::FREE_REG);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
 
         reg = op1->gtRegNum;
 
@@ -8020,7 +8020,7 @@ void CodeGen::genCodeForGeneralDivide(GenTreePtr tree, regMaskTP destReg, regMas
 
     if (op2->gtOper == GT_LCL_VAR || op2->gtOper == GT_LCL_FLD)
     {
-        if ((op2->gtFlags & GTF_REG_VAL) == 0)
+        if (!op2->InReg())
             addrReg = genMakeRvalueAddressable(op2, destReg, RegSet::KEEP_REG, false);
         else
             addrReg = 0;
@@ -8029,7 +8029,7 @@ void CodeGen::genCodeForGeneralDivide(GenTreePtr tree, regMaskTP destReg, regMas
     {
         genComputeReg(op2, destReg, RegSet::ANY_REG, RegSet::KEEP_REG);
 
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
         addrReg = genRegMask(op2->gtRegNum);
     }
 
@@ -8048,7 +8048,7 @@ void CodeGen::genCodeForGeneralDivide(GenTreePtr tree, regMaskTP destReg, regMas
         genComputeReg(op1, RBM_EAX, RegSet::EXACT_REG, RegSet::KEEP_REG, true);
     }
 
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
     noway_assert(op1->gtRegNum == REG_EAX);
 
     /* We can now safely (we think) grab EDX */
@@ -8142,7 +8142,7 @@ void CodeGen::genCodeForGeneralDivide(GenTreePtr tree, regMaskTP destReg, regMas
 
     genComputeReg(op2, destReg, RegSet::ANY_REG, RegSet::KEEP_REG);
 
-    noway_assert(op2->gtFlags & GTF_REG_VAL);
+    noway_assert(op2->InReg());
     addrReg = genRegMask(op2->gtRegNum);
 
     if (gotOp1)
@@ -8155,7 +8155,7 @@ void CodeGen::genCodeForGeneralDivide(GenTreePtr tree, regMaskTP destReg, regMas
         /* Compute op1 into any register and hold on to it */
         genComputeReg(op1, RBM_ALLINT, RegSet::ANY_REG, RegSet::KEEP_REG, true);
     }
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     reg = regSet.rsPickReg(needReg, bestReg);
 
@@ -8233,7 +8233,7 @@ void CodeGen::genCodeForAsgShift(GenTreePtr tree, regMaskTP destReg, regMaskTP b
 
         /* Are we shifting a register left by 1 bit? */
 
-        if ((oper == GT_ASG_LSH) && (op2->gtIntCon.gtIconVal == 1) && (op1->gtFlags & GTF_REG_VAL))
+        if ((oper == GT_ASG_LSH) && (op2->gtIntCon.gtIconVal == 1) && op1->InReg())
         {
             /* The target lives in a register */
 
@@ -8246,7 +8246,7 @@ void CodeGen::genCodeForAsgShift(GenTreePtr tree, regMaskTP destReg, regMaskTP b
         else
         {
 #if CPU_LOAD_STORE_ARCH
-            if ((op1->gtFlags & GTF_REG_VAL) == 0)
+            if (!op1->InReg())
             {
                 regSet.rsLockUsedReg(addrReg);
 
@@ -8278,7 +8278,7 @@ void CodeGen::genCodeForAsgShift(GenTreePtr tree, regMaskTP destReg, regMaskTP b
 
         /* If the target is a register, it has a new value */
 
-        if (op1->gtFlags & GTF_REG_VAL)
+        if (op1->InReg())
             regTracker.rsTrackRegTrash(op1->gtRegNum);
 
         genDoneAddressable(op1, addrReg, RegSet::KEEP_REG);
@@ -8356,7 +8356,7 @@ void CodeGen::genCodeForAsgShift(GenTreePtr tree, regMaskTP destReg, regMaskTP b
         inst_TT_CL(ins, op1);
 #else
         /* Perform the shift */
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
         op2Regs = genRegMask(op2->gtRegNum);
 
         regSet.rsLockUsedReg(addrReg | op2Regs);
@@ -8368,7 +8368,7 @@ void CodeGen::genCodeForAsgShift(GenTreePtr tree, regMaskTP destReg, regMaskTP b
 
         /* If the value is in a register, it's now trash */
 
-        if (op1->gtFlags & GTF_REG_VAL)
+        if (op1->InReg())
             regTracker.rsTrackRegTrash(op1->gtRegNum);
 
         /* Release the op2 [RBM_SHIFT] operand */
@@ -8422,7 +8422,7 @@ void CodeGen::genCodeForShift(GenTreePtr tree, regMaskTP destReg, regMaskTP best
 
         genCompIntoFreeReg(op1, needReg, RegSet::KEEP_REG);
 
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
         reg = op1->gtRegNum;
 
         /* Are we shifting left by 1 bit? (or 2 bits for fast code) */
@@ -8507,7 +8507,7 @@ void CodeGen::genCodeForShift(GenTreePtr tree, regMaskTP destReg, regMaskTP best
             genComputeReg(op2, op2RegMask, RegSet::EXACT_REG, RegSet::KEEP_REG, false);
         }
 
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
 #ifdef _TARGET_XARCH_
         noway_assert(genRegMask(op2->gtRegNum) == op2RegMask);
 #endif
@@ -8520,7 +8520,7 @@ void CodeGen::genCodeForShift(GenTreePtr tree, regMaskTP destReg, regMaskTP best
             regSet.rsUnlockUsedReg(op2RegMask);
         }
 
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
         reg = op1->gtRegNum;
 
 #ifdef _TARGET_ARM_
@@ -8533,7 +8533,7 @@ void CodeGen::genCodeForShift(GenTreePtr tree, regMaskTP destReg, regMaskTP best
         genReleaseReg(op2);
     }
 
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
     noway_assert(reg == op1->gtRegNum);
 
     /* The register is now trashed */
@@ -8837,8 +8837,8 @@ void CodeGen::genCodeForCopyObj(GenTreePtr tree, regMaskTP destReg)
         regTemp    = regSet.rsGrabReg(RBM_ALLINT);
         helperUsed = false;
     }
-    assert(dstObj->gtFlags & GTF_REG_VAL);
-    assert(srcObj->gtFlags & GTF_REG_VAL);
+    assert(dstObj->InReg());
+    assert(srcObj->InReg());
 
     regDst = dstObj->gtRegNum;
     regSrc = srcObj->gtRegNum;
@@ -9335,10 +9335,10 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
             genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
 
-            noway_assert((destPtr->gtFlags & GTF_REG_VAL) && // Dest
+            noway_assert((destPtr->InReg()) && // Dest
                          (destPtr->gtRegNum == REG_EDI));
 
-            noway_assert((srcPtrOrVal->gtFlags & GTF_REG_VAL) && // Val/Src
+            noway_assert((srcPtrOrVal->InReg()) && // Val/Src
                          (genRegMask(srcPtrOrVal->gtRegNum) == regs));
 
             if (sizeIsConst)
@@ -9347,7 +9347,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             }
             else
             {
-                noway_assert((sizeNode->gtFlags & GTF_REG_VAL) && // Size
+                noway_assert((sizeNode->InReg()) && // Size
                              (sizeNode->gtRegNum == REG_ECX));
             }
 
@@ -9422,10 +9422,10 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             if (tree->gtFlags & GTF_REVERSE_OPS)
             {
                 genComputeReg(srcOp, (needReg & ~dstOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                assert(srcOp->gtFlags & GTF_REG_VAL);
+                assert(srcOp->InReg());
 
                 genComputeReg(dstOp, needReg, RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                assert(dstOp->gtFlags & GTF_REG_VAL);
+                assert(dstOp->InReg());
                 regDst = dstOp->gtRegNum;
 
                 genRecoverReg(srcOp, needReg, RegSet::KEEP_REG);
@@ -9434,17 +9434,17 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             else
             {
                 genComputeReg(dstOp, (needReg & ~srcOp->gtRsvdRegs), RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                assert(dstOp->gtFlags & GTF_REG_VAL);
+                assert(dstOp->InReg());
 
                 genComputeReg(srcOp, needReg, RegSet::ANY_REG, RegSet::KEEP_REG, useLoop);
-                assert(srcOp->gtFlags & GTF_REG_VAL);
+                assert(srcOp->InReg());
                 regSrc = srcOp->gtRegNum;
 
                 genRecoverReg(dstOp, needReg, RegSet::KEEP_REG);
                 regDst = dstOp->gtRegNum;
             }
-            assert(dstOp->gtFlags & GTF_REG_VAL);
-            assert(srcOp->gtFlags & GTF_REG_VAL);
+            assert(dstOp->InReg());
+            assert(srcOp->InReg());
 
             regDst                = dstOp->gtRegNum;
             regSrc                = srcOp->gtRegNum;
@@ -9630,10 +9630,10 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
             genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
 
-            noway_assert((destPtr->gtFlags & GTF_REG_VAL) && // Dest
+            noway_assert((destPtr->InReg()) && // Dest
                          (destPtr->gtRegNum == REG_ARG_0));
 
-            noway_assert((srcPtrOrVal->gtFlags & GTF_REG_VAL) && // Val/Src
+            noway_assert((srcPtrOrVal->InReg()) && // Val/Src
                          (srcPtrOrVal->gtRegNum == REG_ARG_1));
 
             if (sizeIsConst)
@@ -9642,7 +9642,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             }
             else
             {
-                noway_assert((sizeNode->gtFlags & GTF_REG_VAL) && // Size
+                noway_assert((sizeNode->InReg()) && // Size
                              (sizeNode->gtRegNum == REG_ARG_2));
             }
 
@@ -9761,7 +9761,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
                 inst_TT(INS_NEG, op1, 0, 0, emitTypeSize(treeType));
             }
 #else // not  _TARGET_XARCH_
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
             {
                 inst_TT_IV(INS_NEG, op1, 0, 0, emitTypeSize(treeType), flags);
             }
@@ -9776,7 +9776,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
                 inst_TT_RV(ins_Store(op1Type), op1, reg, 0, emitTypeSize(op1Type));
             }
 #endif
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
                 regTracker.rsTrackRegTrash(op1->gtRegNum);
             genDoneAddressable(op1, addrReg, RegSet::KEEP_REG);
 
@@ -9820,7 +9820,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
             /* Generate the operand into some register */
 
             genCompIntoFreeReg(op1, needReg, RegSet::FREE_REG);
-            noway_assert(op1->gtFlags & GTF_REG_VAL);
+            noway_assert(op1->InReg());
 
             reg = op1->gtRegNum;
 
@@ -9950,7 +9950,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
             else // endfilter
             {
                 genComputeReg(op1, RBM_INTRET, RegSet::EXACT_REG, RegSet::FREE_REG);
-                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                noway_assert(op1->InReg());
                 noway_assert(op1->gtRegNum == REG_INTRET);
                 /* The return value has now been computed */
                 reg = op1->gtRegNum;
@@ -10027,7 +10027,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
 
                     /* The result must now be in the return register */
 
-                    noway_assert(op1->gtFlags & GTF_REG_VAL);
+                    noway_assert(op1->InReg());
                     noway_assert(op1->gtRegNum == REG_INTRET);
                 }
 
@@ -10081,7 +10081,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
                 genCodeForTree(op2, needReg);
                 genUpdateLife(op2);
 
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 regSet.rsMarkRegUsed(op2);
 
@@ -10126,7 +10126,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
                 /* Generate the second operand, i.e. the 'real' value */
 
                 genCodeForTree(op2, needReg);
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 /* The result of 'op2' is also the final result */
 
@@ -10142,7 +10142,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
 
         case GT_BOX:
             genCodeForTree(op1, needReg);
-            noway_assert(op1->gtFlags & GTF_REG_VAL);
+            noway_assert(op1->InReg());
 
             /* The result of 'op1' is also the final result */
 
@@ -10305,7 +10305,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
 
                 // Must evaluate location into a register
                 genCodeForTree(location, needReg, RBM_NONE);
-                assert(location->gtFlags & GTF_REG_VAL);
+                assert(location->InReg());
                 regSet.rsMarkRegUsed(location);
                 regSet.rsLockUsedReg(genRegMask(location->gtRegNum));
                 genRecoverReg(value, RBM_NONE, RegSet::KEEP_REG);
@@ -10351,7 +10351,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
                 {
                     // Must evalute location into a register.
                     genCodeForTree(location, needReg, RBM_NONE);
-                    assert(location->gtFlags && GTF_REG_VAL);
+                    assert(location->InReg());
                     regSet.rsMarkRegUsed(location);
 
                     // xadd destroys this argument, so force it into a scratch register
@@ -10654,7 +10654,7 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
 
             /* Load the lower half of the value into some register */
 
-            if (op1->gtFlags & GTF_REG_VAL)
+            if (op1->InReg())
             {
                 /* Can we simply use the low part of the value? */
                 reg = genRegPairLo(op1->gtRegPair);
@@ -10681,7 +10681,7 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
             noway_assert(genStillAddressable(op1));
 
         REG_OK:
-            if (((op1->gtFlags & GTF_REG_VAL) == 0) || (reg != genRegPairLo(op1->gtRegPair)))
+            if (!op1->InReg() || (reg != genRegPairLo(op1->gtRegPair)))
             {
                 /* Generate "mov reg, [addr-mode]" */
                 inst_RV_TT(ins_Load(TYP_INT), reg, op1);
@@ -10691,7 +10691,7 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
 
             if (tree->gtOverflow())
             {
-                regNumber hiReg = (op1->gtFlags & GTF_REG_VAL) ? genRegPairHi(op1->gtRegPair) : REG_NA;
+                regNumber hiReg = (op1->InReg()) ? genRegPairHi(op1->gtRegPair) : REG_NA;
 
                 emitJumpKind jmpNotEqual = genJumpKindForOper(GT_NE, CK_SIGNED);
                 emitJumpKind jmpLTS      = genJumpKindForOper(GT_LT, CK_SIGNED);
@@ -11100,7 +11100,7 @@ void CodeGen::genCodeForTreeSmpOp_GT_ADDR(GenTreePtr tree, regMaskTP destReg, re
 
     // The Lea instruction above better not have tried to put the
     // 'value' pointed to by 'op1' in a register, LEA will not work.
-    noway_assert(!(op1->gtFlags & GTF_REG_VAL));
+    noway_assert(!(op1->InReg()));
 
     genDoneAddressable(op1, addrReg, RegSet::FREE_REG);
     // gcInfo.gcMarkRegSetNpt(genRegMask(reg));
@@ -11412,7 +11412,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
                 compiler->compRegSetCheckLevel--;
             noway_assert(compiler->compRegSetCheckLevel >= 0);
 #endif
-            noway_assert(op2->gtFlags & GTF_REG_VAL);
+            noway_assert(op2->InReg());
 
             /* Make sure the value ends up in the right place ... */
 
@@ -11638,7 +11638,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
 
                 genComputeReg(op2, needReg & ~addrReg, RegSet::ANY_REG, RegSet::KEEP_REG);
                 addrReg = genKeepAddressable(op1, addrReg, genRegMask(op2->gtRegNum));
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
                 inst_TT_RV(ins, op1, op2->gtRegNum);
                 genReleaseReg(op2);
             }
@@ -11654,7 +11654,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
                 // Only if the constant can't be encoded in a small instruction,
                 // look for another register to copy the value from. (Assumes
                 // target is a small register.)
-                if ((op1->gtFlags & GTF_REG_VAL) && !isRegPairType(tree->gtType) &&
+                if ((op1->InReg()) && !isRegPairType(tree->gtType) &&
                     arm_Valid_Imm_For_Small_Mov(op1->gtRegNum, ival, INS_FLAGS_DONT_CARE))
                 {
                     copyIconFromReg = false;
@@ -11787,7 +11787,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
                     genComputeReg(op2, needReg, mustReg, RegSet::KEEP_REG);
                 }
 
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 /* Make the target addressable */
 
@@ -11803,7 +11803,7 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
                     needReg = regSet.rsNarrowHint(RBM_BYTE_REGS, needReg);
 
                 genRecoverReg(op2, needReg, RegSet::KEEP_REG);
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 /* Lock the RHS temporarily (lock only already used) */
 
@@ -11922,11 +11922,11 @@ void CodeGen::genCodeForTreeSmpOpAsg(GenTreePtr tree)
 
                 /* Generate the RHS into a register */
                 genComputeReg(op2, needReg, mustReg, RegSet::KEEP_REG);
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 /* Make sure the target is still addressable */
                 addrReg = genKeepAddressable(op1, addrReg, genRegMask(op2->gtRegNum));
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 /* Does the write barrier helper do the assignment? */
 
@@ -12013,7 +12013,7 @@ void CodeGen::genCodeForTreeSmpOpAsg_DONE_ASSG(GenTreePtr tree, regMaskTP addrRe
 
     /* Have we just assigned a value that is in a register? */
 
-    if ((op2->gtFlags & GTF_REG_VAL) && tree->gtOper == GT_ASG)
+    if (op2->InReg() && tree->gtOper == GT_ASG)
     {
         regTracker.rsTrackRegAssign(op1, op2);
     }
@@ -12028,11 +12028,11 @@ void CodeGen::genCodeForTreeSmpOpAsg_DONE_ASSG(GenTreePtr tree, regMaskTP addrRe
     {
         noway_assert(tree->gtOper == GT_ASG_ADD || tree->gtOper == GT_ASG_SUB);
 
-        /* If GTF_REG_VAL is not set, and it is a small type, then
+        /* If it is not in a register and it is a small type, then
            we must have loaded it up from memory, done the increment,
            checked for overflow, and then stored it back to memory */
 
-        bool ovfCheckDone = (genTypeSize(op1->TypeGet()) < sizeof(int)) && !(op1->gtFlags & GTF_REG_VAL);
+        bool ovfCheckDone = (genTypeSize(op1->TypeGet()) < sizeof(int)) && !(op1->InReg());
 
         if (!ovfCheckDone)
         {
@@ -12119,7 +12119,7 @@ void CodeGen::genCodeForTreeSpecialOp(GenTreePtr tree, regMaskTP destReg, regMas
             if (!isAddr)
             {
                 genCodeForTree(location, RBM_NONE, RBM_NONE);
-                assert(location->gtFlags && GTF_REG_VAL);
+                assert(location->InReg());
                 addrReg = genRegMask(location->gtRegNum);
                 regSet.rsMarkRegUsed(location);
             }
@@ -12327,7 +12327,7 @@ void CodeGen::genCodeForTree(GenTreePtr tree, regMaskTP destReg, regMaskTP bestR
 
     /* Is the value already in a register? */
 
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
         genCodeForTree_REG_VAR1(tree);
         return;
@@ -13153,7 +13153,7 @@ void CodeGen::genCodeForBBlist()
  *
  *  Generate code for a long operation.
  *  needReg is a recommendation of which registers to use for the tree.
- *  For partially enregistered longs, the tree will be marked as GTF_REG_VAL
+ *  For partially enregistered longs, the tree will be marked as in a register
  *    without loading the stack part into a register. Note that only leaf
  *    nodes (or if gtEffectiveVal() == leaf node) may be marked as partially
  *    enregistered so that we can know the memory location of the other half.
@@ -13182,7 +13182,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
     oper = tree->OperGet();
     kind = tree->OperKind();
 
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
     REG_VAR_LONG:
         regPair = tree->gtRegPair;
@@ -13391,7 +13391,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                     if (genMarkLclVar(op1))
                     {
-                        noway_assert(op1->gtFlags & GTF_REG_VAL);
+                        noway_assert(op1->InReg());
                         regPair = op1->gtRegPair;
                         regLo   = genRegPairLo(regPair);
                         regHi   = genRegPairHi(regPair);
@@ -13437,7 +13437,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                         if (regHi != REG_STK)
                         {
                             genComputeRegPair(op2, regPair, avoidReg, RegSet::KEEP_REG);
-                            noway_assert(op2->gtFlags & GTF_REG_VAL);
+                            noway_assert(op2->InReg());
                             noway_assert(op2->gtRegPair == regPair);
                         }
                         else
@@ -13448,7 +13448,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                             genComputeRegPair(op2, REG_PAIR_NONE, avoidReg, RegSet::KEEP_REG);
 
-                            noway_assert(op2->gtFlags & GTF_REG_VAL);
+                            noway_assert(op2->InReg());
 
                             curPair = op2->gtRegPair;
                             curLo   = genRegPairLo(curPair);
@@ -13548,7 +13548,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                     /* Make sure everything is still addressable */
 
                     genRecoverReg(smallOpr, 0, RegSet::KEEP_REG);
-                    noway_assert(smallOpr->gtFlags & GTF_REG_VAL);
+                    noway_assert(smallOpr->InReg());
                     regHi   = smallOpr->gtRegNum;
                     addrReg = genKeepAddressable(op1, addrReg, genRegMask(regHi));
 
@@ -13592,7 +13592,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                     /* Generate the RHS into a register pair */
 
                     genComputeRegPair(op2, REG_PAIR_NONE, avoidReg | op1->gtUsedRegs, RegSet::KEEP_REG);
-                    noway_assert(op2->gtFlags & GTF_REG_VAL);
+                    noway_assert(op2->InReg());
 
                     /* Make the target addressable */
                     op1     = genCodeForCommaTree(op1);
@@ -13616,7 +13616,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                 /* Lock 'op2' and make sure 'op1' is still addressable */
 
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
                 regPair = op2->gtRegPair;
 
                 addrReg = genKeepAddressable(op1, addrReg, genRegPairMask(regPair));
@@ -13641,7 +13641,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                     regTracker.rsTrashLclLong(op1->gtLclVarCommon.gtLclNum);
 
-                    if ((op2->gtFlags & GTF_REG_VAL) &&
+                    if ((op2->InReg()) &&
                         /* constant has precedence over local */
                         //                    rsRegValues[op2->gtRegNum].rvdKind != RV_INT_CNS &&
                         tree->gtOper == GT_ASG)
@@ -13659,7 +13659,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                         {
                             /* For partially enregistered longs, we might have
                                stomped on op2's hiReg */
-                            if (!(op1->gtFlags & GTF_REG_VAL) || regNo != genRegPairLo(op1->gtRegPair))
+                            if (!(op1->InReg()) || regNo != genRegPairLo(op1->gtRegPair))
                             {
                                 regTracker.rsTrackRegLclVarLng(regNo, op1->gtLclVarCommon.gtLclNum, false);
                             }
@@ -13763,7 +13763,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                                 genCodeForTree(op1, needReg & ~op2->gtRsvdRegs);
 
-                                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                                noway_assert(op1->InReg());
                                 regHi = op1->gtRegNum;
                                 regSet.rsMarkRegUsed(op1);
 
@@ -13771,7 +13771,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                                 genCodeForTree(op2, needReg & ~genRegMask(regHi));
 
-                                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                                noway_assert(op2->InReg());
                                 regLo = op2->gtRegNum;
 
                                 /* Make sure regHi is still around. Also, force
@@ -13810,7 +13810,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                         genCompIntoFreeRegPair(op2, avoidReg, RegSet::KEEP_REG);
 
-                        noway_assert(op2->gtFlags & GTF_REG_VAL);
+                        noway_assert(op2->InReg());
                         regPair = op2->gtRegPair;
                         regHi   = genRegPairHi(regPair);
 
@@ -13871,7 +13871,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                                 genCodeForTree(op1, needReg & ~op2->gtRsvdRegs);
 
-                                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                                noway_assert(op1->InReg());
                                 regLo = op1->gtRegNum;
                                 regSet.rsMarkRegUsed(op1);
 
@@ -13879,7 +13879,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                                 genCodeForTree(op2, needReg & ~genRegMask(regLo));
 
-                                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                                noway_assert(op2->InReg());
                                 regHi = op2->gtRegNum;
 
                                 /* Make sure regLo is still around. Also, force
@@ -13902,7 +13902,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                         // First, generate the first operand into some register
 
                         genCompIntoFreeRegPair(op1, avoidReg | op2->gtRsvdRegs, RegSet::KEEP_REG);
-                        noway_assert(op1->gtFlags & GTF_REG_VAL);
+                        noway_assert(op1->InReg());
 
                         /* Make the second operand addressable */
 
@@ -13942,7 +13942,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                 {
                     genCompIntoFreeRegPair(op1, avoidReg | op2->gtRsvdRegs, RegSet::KEEP_REG);
                 }
-                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                noway_assert(op1->InReg());
                 regMaskTP op1Mask;
                 regPair = op1->gtRegPair;
                 op1Mask = genRegPairMask(regPair);
@@ -14093,11 +14093,11 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 #if defined(_TARGET_X86_)
                 // imul on x86 requires EDX:EAX
                 genComputeReg(tree, (RBM_EAX | RBM_EDX), RegSet::EXACT_REG, RegSet::FREE_REG);
-                noway_assert(tree->gtFlags & GTF_REG_VAL);
+                noway_assert(tree->InReg());
                 noway_assert(tree->gtRegNum == REG_EAX); // Also REG_EDX is setup with hi 32-bits
 #elif defined(_TARGET_ARM_)
                 genComputeReg(tree, needReg, RegSet::ANY_REG, RegSet::FREE_REG);
-                noway_assert(tree->gtFlags & GTF_REG_VAL);
+                noway_assert(tree->InReg());
 #else
                 assert(!"Unsupported target for 64-bit multiply codegen");
 #endif
@@ -14140,7 +14140,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                     /* Compute the left operand into a free register pair */
 
                     genCompIntoFreeRegPair(op1, avoidReg | op2->gtRsvdRegs, RegSet::FREE_REG);
-                    noway_assert(op1->gtFlags & GTF_REG_VAL);
+                    noway_assert(op1->InReg());
 
                     regPair = op1->gtRegPair;
                     regLo   = genRegPairLo(regPair);
@@ -14352,7 +14352,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                     /* Compute the left operand into REG_LNGARG_0 */
 
                     genComputeRegPair(op1, REG_LNGARG_0, avoidReg, RegSet::KEEP_REG, false);
-                    noway_assert(op1->gtFlags & GTF_REG_VAL);
+                    noway_assert(op1->InReg());
 
                     /* Lock op1 so that it doesn't get trashed */
 
@@ -14371,7 +14371,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                     /* Compute the left operand into REG_LNGARG_0 */
 
                     genComputeRegPair(op1, REG_LNGARG_0, avoidReg, RegSet::KEEP_REG, false);
-                    noway_assert(op1->gtFlags & GTF_REG_VAL);
+                    noway_assert(op1->InReg());
 
                     /* Compute the shift count into RBM_SHIFT */
 
@@ -14434,7 +14434,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
             DONE_SHF:
 
-                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                noway_assert(op1->InReg());
                 regPair = op1->gtRegPair;
                 goto DONE;
 
@@ -14444,7 +14444,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                 /* Generate the operand into some register pair */
 
                 genCompIntoFreeRegPair(op1, avoidReg, RegSet::FREE_REG);
-                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                noway_assert(op1->InReg());
 
                 regPair = op1->gtRegPair;
 
@@ -14671,7 +14671,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                             }
 
                             genComputeReg(op1, loRegMask, RegSet::ANY_REG, RegSet::KEEP_REG);
-                            noway_assert(op1->gtFlags & GTF_REG_VAL);
+                            noway_assert(op1->InReg());
 
                             regLo     = op1->gtRegNum;
                             loRegMask = genRegMask(regLo);
@@ -14749,7 +14749,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 #ifdef _TARGET_XARCH_
                         USE_SAR_FOR_CAST:
 #endif
-                            noway_assert(op1->gtFlags & GTF_REG_VAL);
+                            noway_assert(op1->InReg());
 
                             regLo     = op1->gtRegNum;
                             loRegMask = genRegMask(regLo);
@@ -14843,7 +14843,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                         // Do we need to set the sign-flag, or can we checked if it is set?
                         // and not do this "test" if so.
 
-                        if (op1->gtFlags & GTF_REG_VAL)
+                        if (op1->InReg())
                         {
                             regNumber hiReg = genRegPairHi(op1->gtRegPair);
                             noway_assert(hiReg != REG_STK);
@@ -14896,7 +14896,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
 
                 genEvalIntoFreeRegPair(op1, REG_LNGRET, avoidReg);
 
-                noway_assert(op1->gtFlags & GTF_REG_VAL);
+                noway_assert(op1->InReg());
                 noway_assert(op1->gtRegPair == REG_LNGRET);
 
 #else
@@ -14927,7 +14927,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                     genCodeForTreeLng(op2, needReg, avoidReg);
                     genUpdateLife(op2);
 
-                    noway_assert(op2->gtFlags & GTF_REG_VAL);
+                    noway_assert(op2->InReg());
 
                     regSet.rsMarkRegPairUsed(op2);
 
@@ -15088,14 +15088,14 @@ regPairNo CodeGen::genCodeForLongModInt(GenTreePtr tree, regMaskTP needReg)
         {
             genComputeReg(op2, needReg, RegSet::ANY_REG, RegSet::KEEP_REG);
 
-            noway_assert(op2->gtFlags & GTF_REG_VAL);
+            noway_assert(op2->InReg());
             addrReg = genRegMask(op2->gtRegNum);
         }
 
         /* Compute the first operand into EAX:EDX */
 
         genComputeRegPair(op1, REG_PAIR_TMP, RBM_NONE, RegSet::KEEP_REG, true);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
         noway_assert(op1->gtRegPair == REG_PAIR_TMP);
 
         /* And recover the second argument while locking the first one */
@@ -15107,7 +15107,7 @@ regPairNo CodeGen::genCodeForLongModInt(GenTreePtr tree, regMaskTP needReg)
         /* Compute the first operand into EAX:EDX */
 
         genComputeRegPair(op1, REG_PAIR_EAXEDX, RBM_NONE, RegSet::KEEP_REG, true);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
         noway_assert(op1->gtRegPair == REG_PAIR_TMP);
 
         /* Compute the second operand into a scratch register, other
@@ -15125,7 +15125,7 @@ regPairNo CodeGen::genCodeForLongModInt(GenTreePtr tree, regMaskTP needReg)
         {
             genComputeReg(op2, needReg, RegSet::ANY_REG, RegSet::KEEP_REG);
 
-            noway_assert(op2->gtFlags & GTF_REG_VAL);
+            noway_assert(op2->InReg());
             addrReg = genRegMask(op2->gtRegNum);
         }
 
@@ -15518,7 +15518,7 @@ void CodeGen::genCodeForSwitch(GenTreePtr tree)
 
     /* Get hold of the register the value is in */
 
-    noway_assert(oper->gtFlags & GTF_REG_VAL);
+    noway_assert(oper->InReg());
     reg = oper->gtRegNum;
 
 #if FEATURE_STACK_FP_X87
@@ -16251,7 +16251,7 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                     }
 
                     genCodeForTree(arg->gtObj.gtOp1, 0);
-                    noway_assert(arg->gtObj.gtOp1->gtFlags & GTF_REG_VAL);
+                    noway_assert(arg->gtObj.gtOp1->InReg());
                     regNumber reg = arg->gtObj.gtOp1->gtRegNum;
                     // Get the number of DWORDS to copy to the stack
                     opsz = roundUp(compiler->info.compCompHnd->getClassSize(arg->gtObj.gtClass), sizeof(void*));
@@ -16562,8 +16562,8 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                     {
                         // The arg is passed in the outgoing argument area of the stack frame
                         //
-                        assert(curr->gtOper != GT_ASG);      // GTF_LATE_ARG should be set if this is the case
-                        assert(curr->gtFlags & GTF_REG_VAL); // should be enregistered after genCodeForTree(curr, 0)
+                        assert(curr->gtOper != GT_ASG); // GTF_LATE_ARG should be set if this is the case
+                        assert(curr->InReg());          // should be enregistered after genCodeForTree(curr, 0)
 
                         if (type == TYP_LONG)
                         {
@@ -16638,8 +16638,8 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                 {
                     // The arg is passed in the outgoing argument area of the stack frame
 
-                    assert(curr->gtOper != GT_ASG);      // GTF_LATE_ARG should be set if this is the case
-                    assert(curr->gtFlags & GTF_REG_VAL); // should be enregistered after genCodeForTree(curr, 0)
+                    assert(curr->gtOper != GT_ASG); // GTF_LATE_ARG should be set if this is the case
+                    assert(curr->InReg());          // should be enregistered after genCodeForTree(curr, 0)
                     inst_SA_RV(ins_Store(type), argOffset, curr->gtRegNum, type);
 
                     if ((genRegMask(curr->gtRegNum) & regSet.rsMaskUsed) == 0)
@@ -16794,7 +16794,7 @@ size_t CodeGen::genPushArgList(GenTreeCall* call)
                     if (promotedStructLocalVarDesc == NULL)
                     {
                         genComputeReg(arg->gtObj.gtOp1, 0, RegSet::ANY_REG, RegSet::KEEP_REG);
-                        noway_assert(arg->gtObj.gtOp1->gtFlags & GTF_REG_VAL);
+                        noway_assert(arg->gtObj.gtOp1->InReg());
                         regSrc = arg->gtObj.gtOp1->gtRegNum;
                     }
 
@@ -17633,7 +17633,7 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
                     // If it's not a promoted struct variable, set "regSrc" to the address
                     // of the struct local.
                     genComputeReg(arg->gtObj.gtOp1, regNeedMask, RegSet::EXACT_REG, RegSet::KEEP_REG);
-                    noway_assert(arg->gtObj.gtOp1->gtFlags & GTF_REG_VAL);
+                    noway_assert(arg->gtObj.gtOp1->InReg());
                     regSrc = arg->gtObj.gtOp1->gtRegNum;
                     // Remove this register from the set of registers that we pick from, unless slots equals 1
                     if (slots > 1)
@@ -17870,7 +17870,7 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
             if (regNum != REG_STK && promotedStructLocalVarDesc == NULL) // If promoted, we already declared the regs
                                                                          // used.
             {
-                arg->gtFlags |= GTF_REG_VAL;
+                arg->SetInReg();
                 for (unsigned i = 1; i < firstStackSlot; i++)
                 {
                     arg->gtRegNum = (regNumber)(regNum + i);
@@ -17895,7 +17895,7 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
             {
                 // The arg is passed in the outgoing argument area of the stack frame
                 genCompIntoFreeRegPair(curr, RBM_NONE, RegSet::FREE_REG);
-                assert(curr->gtFlags & GTF_REG_VAL); // should be enregistered after genCompIntoFreeRegPair(curr, 0)
+                assert(curr->InReg()); // should be enregistered after genCompIntoFreeRegPair(curr, 0)
 
                 inst_SA_RV(ins_Store(TYP_INT), argOffset + 0, genRegPairLo(curr->gtRegPair), TYP_INT);
                 inst_SA_RV(ins_Store(TYP_INT), argOffset + 4, genRegPairHi(curr->gtRegPair), TYP_INT);
@@ -17915,7 +17915,7 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
             // The arg is passed in the outgoing argument area of the stack frame
             //
             genCodeForTree(curr, 0);
-            assert(curr->gtFlags & GTF_REG_VAL); // should be enregistered after genCodeForTree(curr, 0)
+            assert(curr->InReg()); // should be enregistered after genCodeForTree(curr, 0)
 
             inst_SA_RV(ins_Store(curr->gtType), argOffset, curr->gtRegNum, curr->gtType);
 
@@ -18038,7 +18038,7 @@ void CodeGen::PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntryPtr curArgTa
     if (regNum == REG_STK)
     {
         genComputeReg(mkRefAnyTree->gtOp.gtOp1, regNeedMask, RegSet::EXACT_REG, RegSet::FREE_REG);
-        noway_assert(mkRefAnyTree->gtOp.gtOp1->gtFlags & GTF_REG_VAL);
+        noway_assert(mkRefAnyTree->gtOp.gtOp1->InReg());
         regNumber tmpReg1 = mkRefAnyTree->gtOp.gtOp1->gtRegNum;
         inst_SA_RV(ins_Store(TYP_I_IMPL), argOffset, tmpReg1, TYP_I_IMPL);
         regTracker.rsTrackRegTrash(tmpReg1);
@@ -18057,7 +18057,7 @@ void CodeGen::PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntryPtr curArgTa
     if (regNum2 == REG_STK)
     {
         genComputeReg(mkRefAnyTree->gtOp.gtOp2, regNeedMask, RegSet::EXACT_REG, RegSet::FREE_REG);
-        noway_assert(mkRefAnyTree->gtOp.gtOp2->gtFlags & GTF_REG_VAL);
+        noway_assert(mkRefAnyTree->gtOp.gtOp2->InReg());
         regNumber tmpReg2 = mkRefAnyTree->gtOp.gtOp2->gtRegNum;
         inst_SA_RV(ins_Store(TYP_I_IMPL), argOffset, tmpReg2, TYP_I_IMPL);
         regTracker.rsTrackRegTrash(tmpReg2);
@@ -18126,7 +18126,7 @@ regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreeCall* call)
         regArgTab[regIndex].node = argTree;
         if ((argTree != NULL) && (argTree->gtType != TYP_STRUCT)) // We won't spill the struct
         {
-            assert(argTree->gtFlags & GTF_REG_VAL);
+            assert(argTree->InReg());
             if (isRegPairType(argTree->gtType))
             {
                 regPairNo regPair = argTree->gtRegPair;
@@ -18717,7 +18717,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         // Now dereference [REG_VIRTUAL_STUB_PARAM] and put it in a new temp register 'indReg'
                         //
                         indReg = regSet.rsGrabReg(RBM_ALLINT & ~RBM_VIRTUAL_STUB_PARAM);
-                        assert(call->gtCallAddr->gtFlags & GTF_REG_VAL);
+                        assert(call->gtCallAddr->InReg());
                         getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indReg, REG_VIRTUAL_STUB_PARAM, 0);
                         regTracker.rsTrackRegTrash(indReg);
 
@@ -18972,7 +18972,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                     {
                         noway_assert(genStillAddressable(call->gtCallAddr));
 
-                        if (call->gtCallAddr->gtFlags & GTF_REG_VAL)
+                        if (call->gtCallAddr->InReg())
                             indCallReg = call->gtCallAddr->gtRegNum;
 
                         nArgSize = (call->gtFlags & GTF_CALL_POP_ARGS) ? 0 : (int)argSize;
@@ -20285,7 +20285,7 @@ regNumber CodeGen::genLclHeap(GenTreePtr size)
 
     // Compute the size of the block to allocate
     genCompIntoFreeReg(size, 0, RegSet::KEEP_REG);
-    noway_assert(size->gtFlags & GTF_REG_VAL);
+    noway_assert(size->InReg());
     regCnt = size->gtRegNum;
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -20456,7 +20456,7 @@ regNumber CodeGen::genLclHeap(GenTreePtr size)
 
         genRecoverReg(size, RBM_ALLINT,
                       RegSet::KEEP_REG); // not purely the 'size' tree anymore; though it is derived from 'size'
-        noway_assert(size->gtFlags & GTF_REG_VAL);
+        noway_assert(size->InReg());
         regCnt = size->gtRegNum;
         inst_RV_RV(INS_cmp, REG_SPBASE, regCnt, TYP_I_IMPL);
         emitJumpKind jmpGEU = genJumpKindForOper(GT_GE, CK_UNSIGNED);
@@ -20539,7 +20539,7 @@ bool CodeGen::genRegTrashable(regNumber reg, GenTreePtr tree)
         regValTree = tree->gtOp.gtOp2;
         assert(tree->gtOp.gtOp1->IsCnsIntOrI());
     }
-    assert(regValTree->gtFlags & GTF_REG_VAL);
+    assert(regValTree->InReg());
 
     /* At this point, the only way that the register will remain live
      * is if it is itself a register variable that isn't dying.
