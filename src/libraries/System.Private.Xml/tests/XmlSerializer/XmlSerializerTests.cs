@@ -1817,7 +1817,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    [ActiveIssue("dotnet/corefx #19897", TargetFrameworkMonikers.UapAot)]
+    [ActiveIssue("dotnet/corefx #19897", TargetFrameworkMonikers.Uap)]
     public static void Xml_TypeWithTwoDimensionalArrayProperty1()
     {
         SimpleType[][] simpleType2D = GetObjectwith2DArrayOfSimpleType();
@@ -3280,7 +3280,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.value, ((DerivedClass)actual).value);
     }
 
-#if !uapaot
+#if !uap
     [Fact]
     public static void Xml_DefaultValueAttributeSetToNaNTest()
     {
