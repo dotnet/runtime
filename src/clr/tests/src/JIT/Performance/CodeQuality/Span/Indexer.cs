@@ -267,7 +267,7 @@ namespace Span
             {
                 Span<byte> s = new Span<byte>(a);
                 byte result = 0;
-                int inner = Math.Max(1, (innerIterationCount / 10));
+                int inner = Math.Max(1, innerIterationCount);
                 for (int i = 0; i < inner ; ++i)
                 {
                     result = TestIndexer4(s, 10);
