@@ -43,6 +43,7 @@ void Lowering::MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode)
 {
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
+    childNode->SetContained();
 
     int srcCount = childNode->gtLsraInfo.srcCount;
     assert(srcCount >= 0);
@@ -1038,20 +1039,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     }
-
-    if (arg->InReg())
-    {
-        putArg->SetInReg();
-    }
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-    else if (info->isStruct)
-    {
-        if (info->structDesc.passedInRegisters)
-        {
-            putArg->SetInReg();
-        }
-    }
-#endif
 
     JITDUMP("new node is : ");
     DISPNODE(putArg);

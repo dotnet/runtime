@@ -399,7 +399,7 @@ void CodeGen::genFloatAssign(GenTree* tree)
                 //
                 genCodeForTreeFloat(op2, &pref);
 
-                noway_assert(op2->gtFlags & GTF_REG_VAL);
+                noway_assert(op2->InReg());
 
                 // Make sure the value ends up in the right place ...
                 // For example if op2 is a call that returns a result
@@ -464,7 +464,7 @@ void CodeGen::genFloatAssign(GenTree* tree)
             //
             addrReg = genMakeAddressable(op1, needRegOp1, RegSet::KEEP_REG, true);
 
-            noway_assert(op2->gtFlags & GTF_REG_VAL);
+            noway_assert(op2->InReg());
             noway_assert(op2->IsRegVar());
 
             op2reg = op2->gtRegVar.gtRegNum;
@@ -492,7 +492,7 @@ void CodeGen::genFloatAssign(GenTree* tree)
         addrReg = genMakeAddressable(op1, needRegOp1, RegSet::KEEP_REG, true);
 
         genRecoverReg(op2, RBM_ALLFLOAT, RegSet::KEEP_REG);
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
         regSet.SetUsedRegFloat(op2, false);
     }
     else
@@ -506,7 +506,7 @@ void CodeGen::genFloatAssign(GenTree* tree)
         // Generate the RHS into any floating point register
         genCodeForTreeFloat(op2);
     }
-    noway_assert(op2->gtFlags & GTF_REG_VAL);
+    noway_assert(op2->InReg());
 
     op2reg = op2->gtRegNum;
 
@@ -655,7 +655,7 @@ void CodeGen::genFloatLeaf(GenTree* tree, RegSet::RegisterPreference* pref)
             __fallthrough;
 
         case GT_REG_VAR:
-            noway_assert(tree->gtFlags & GTF_REG_VAL);
+            noway_assert(tree->InReg());
             reg = tree->gtRegVar.gtRegNum;
             break;
 
@@ -831,7 +831,7 @@ regNumber CodeGen::genAssignArithFloat(
             inst_RV_TT(ins_MathOp(oper, dst->gtType), dstreg, src, 0, EmitSize(dst));
         }
 
-        dst->gtFlags &= ~GTF_REG_VAL; // ???
+        dst->SetInReg(false); // ???
 
         inst_TT_RV(ins_FloatStore(dst->gtType), dst, dstreg, 0, EmitSize(dst));
 
@@ -884,7 +884,7 @@ void CodeGen::genFloatArith(GenTreePtr tree, RegSet::RegisterPreference* tgtPref
         // Fix 388445 ARM JitStress WP7
         regSet.rsLockUsedReg(op1Mask);
         genRecoverReg(op2, RBM_ALLFLOAT, RegSet::KEEP_REG);
-        noway_assert(op2->gtFlags & GTF_REG_VAL);
+        noway_assert(op2->InReg());
         regSet.rsUnlockUsedReg(op1Mask);
 
         regSet.SetUsedRegFloat(op1, false);
@@ -911,7 +911,7 @@ void CodeGen::genFloatArith(GenTreePtr tree, RegSet::RegisterPreference* tgtPref
         // Fix 388445 ARM JitStress WP7
         regSet.rsLockUsedReg(op2Mask);
         genRecoverReg(op1, RBM_ALLFLOAT, RegSet::KEEP_REG);
-        noway_assert(op1->gtFlags & GTF_REG_VAL);
+        noway_assert(op1->InReg());
         regSet.rsUnlockUsedReg(op2Mask);
 
         regSet.SetUsedRegFloat(op2, false);
@@ -920,8 +920,8 @@ void CodeGen::genFloatArith(GenTreePtr tree, RegSet::RegisterPreference* tgtPref
 
     tgtReg = regSet.PickRegFloat(type, tgtPref, true);
 
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
-    noway_assert(op2->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
+    noway_assert(op2->InReg());
 
     inst_RV_RV_RV(ins_MathOp(oper, type), tgtReg, op1->gtRegNum, op2->gtRegNum, emitActualTypeSize(type));
 
@@ -1033,7 +1033,7 @@ void CodeGen::genComputeAddressableFloat(GenTreePtr      tree,
     genDoneAddressableFloat(tree, addrRegInt, addrRegFlt, keptReg);
 
     regNumber reg;
-    if (tree->gtFlags & GTF_REG_VAL)
+    if (tree->InReg())
     {
         reg = tree->gtRegNum;
         if (freeOnly && !(genRegMaskFloat(reg, tree->TypeGet()) & regSet.RegFreeFloat()))
@@ -1499,7 +1499,7 @@ void CodeGen::genCondJumpFloat(GenTreePtr cond, BasicBlock* jumpTrue, BasicBlock
     regSet.SetUsedRegFloat(op2, true);
 
     genRecoverReg(op1, RBM_ALLFLOAT, RegSet::KEEP_REG);
-    noway_assert(op1->gtFlags & GTF_REG_VAL);
+    noway_assert(op1->InReg());
 
     // cmp here
     getEmitter()->emitIns_R_R(INS_vcmp, EmitSize(op1), op1->gtRegNum, op2->gtRegNum);
