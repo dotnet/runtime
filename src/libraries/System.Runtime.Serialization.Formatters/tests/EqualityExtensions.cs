@@ -100,12 +100,22 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static bool IsEqual(this Comparer @this, Comparer other)
         {
-            CompareInfo GetCompareInfoName(Comparer comparer) => 
-                comparer.GetType().GetField("_compareInfo", Reflection.BindingFlags.Instance | Reflection.BindingFlags.NonPublic).GetValue(comparer) as CompareInfo;
+            if(@this == null || other == null)
+            {
+                return false;
+            }
 
-            return @this != null &&
-                other != null &&
-                Object.Equals(GetCompareInfoName(@this), GetCompareInfoName(other));
+            // The compareInfos are internal and get reflection blocked on .NET Native, so use
+            // GetObjectData to get them
+            SerializationInfo thisInfo = new SerializationInfo(typeof(Comparer), new FormatterConverter());
+            @this.GetObjectData(thisInfo, new StreamingContext());
+            CompareInfo thisCompareInfo = (CompareInfo)thisInfo.GetValue("CompareInfo", typeof(CompareInfo));
+
+            SerializationInfo otherInfo = new SerializationInfo(typeof(Comparer), new FormatterConverter());
+            other.GetObjectData(otherInfo, new StreamingContext());
+            CompareInfo otherCompareInfo = (CompareInfo)otherInfo.GetValue("CompareInfo", typeof(CompareInfo));
+            
+            return Object.Equals(thisCompareInfo, otherCompareInfo);
         }
 
 
