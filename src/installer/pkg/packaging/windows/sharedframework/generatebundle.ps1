@@ -37,7 +37,7 @@ function RunCandleForBundle
     $SharedFrameworkComponentVersion = $SharedFrameworkNugetVersion.Replace('-', '_');
 
     .\candle.exe -nologo `
-        -dMicrosoftEula="$PackagingRoot\osx\sharedframework\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\windows\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$DotnetMSIVersion" `
         -dDisplayVersion="$DotnetCLIVersion" `
