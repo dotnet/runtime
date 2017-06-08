@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+#if !uap
 using System.Xml.Xsl.IlGen;
+#endif
 using System.Xml.Xsl.Qil;
 
 namespace System.Xml.Xsl.Runtime
@@ -33,6 +35,7 @@ namespace System.Xml.Xsl.Runtime
         private string[] _globalNames;
         private EarlyBoundInfo[] _earlyBound;
 
+#if !uap
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -67,6 +70,7 @@ namespace System.Xml.Xsl.Runtime
             _earlyBound = copy._earlyBound;
 #endif
         }
+#endif
 
         /// <summary>
         /// Deserialize XmlQueryStaticData object from a byte array.

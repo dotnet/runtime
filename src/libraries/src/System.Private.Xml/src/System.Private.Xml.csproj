@@ -7,7 +7,7 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -16,8 +16,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\IO\StringBuilderCache.cs">
       <Link>System\StringBuilderCache.cs</Link>
@@ -499,6 +497,11 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\src\System.Threading.Tasks.Extensions.csproj" />
     <Reference Include="System.Collections" />
@@ -515,9 +518,6 @@
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
     <Reference Include="System.Reflection.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
@@ -528,7 +528,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="System\Xml\Xsl\IlGen\GenerateHelper.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\IteratorDescriptor.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\OptimizerPatterns.cs" />
@@ -542,6 +542,10 @@
     <Compile Include="System\Xml\Xsl\IlGen\XmlILTrace.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\XmlIlTypeHelper.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\XmlIlVisitor.cs" />
+    <Compile Include="System\Xml\Xsl\XmlIlGenerator.cs" />
+    <Compile Include="System\Xml\Xsl\XmlILCommand.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="System\Xml\Xsl\ISourceLineInfo.cs" />
     <Compile Include="System\Xml\Xsl\ListBase.cs" />
     <Compile Include="System\Xml\Xsl\Pair.cs" />
@@ -617,8 +621,6 @@
     <Compile Include="System\Xml\Xsl\Runtime\XsltFunctions.cs" />
     <Compile Include="System\Xml\Xsl\Runtime\XsltLibrary.cs" />
     <Compile Include="System\Xml\Xsl\SourceLineInfo.cs" />
-    <Compile Include="System\Xml\Xsl\XmlILCommand.cs" />
-    <Compile Include="System\Xml\Xsl\XmlIlGenerator.cs" />
     <Compile Include="System\Xml\Xsl\XmlNodeKindFlags.cs" />
     <Compile Include="System\Xml\Xsl\XmlQualifiedNameTest.cs" />
     <Compile Include="System\Xml\Xsl\XmlQueryCardinality.cs" />
