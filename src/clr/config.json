@@ -51,7 +51,7 @@
     "FilterToOSGroup": {
       "description": "Specifies the OSGroup.",
       "valueType": "property",
-      "values": [ "Windows_NT", "Linux", "Unix", "OSX" ],
+      "values": [ "Windows_NT", "Linux", "Unix", "OSX", "Android" ],
       "defaultValue": "${OSName}"
     },
     "RestoreNETCorePlatforms": {
@@ -93,7 +93,7 @@
     "__BuildOS": {
       "description": "Specifies the OS to publish packages.",
       "valueType": "property",
-      "values": [ "Linux", "OSX", "FreeBSD", "OpenBSD", "NetBSD", "SunOS", "Windows_NT" ],
+      "values": [ "Linux", "OSX", "FreeBSD", "OpenBSD", "NetBSD", "SunOS", "Windows_NT", "Android" ],
       "defaultValue": "${OSName}"
     },
     "__DistroRid": {
@@ -357,7 +357,7 @@
     "RuntimeId": {
       "description": "Specifies the OS to build Core_Root for",
       "valueType": "property",
-      "values": [ "debian.8-x64", "fedora.24-x64", "fedora.25-x64", "opensuse.42.1-x64", "osx.10.12-x64", "rhel.7-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "ubuntu.16.10-x64" ],
+      "values": [ "debian.8-x64", "fedora.24-x64", "fedora.25-x64", "opensuse.42.1-x64", "osx.10.12-x64", "rhel.7-x64", "ubuntu.14.04-x64", "ubuntu.16.04-x64", "ubuntu.16.10-x64", "android.21-arm64" ],
       "defaultValue": "${__RuntimeId}"
     },
     "BatchRestorePackages": {

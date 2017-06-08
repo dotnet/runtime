@@ -23,7 +23,7 @@
 
     <RuntimeOS Condition="'$(RuntimeOS)' == ''">$(OSRid)</RuntimeOS>
 
-    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Linux</SupportedPackageOSGroups>
+    <SupportedPackageOSGroups Condition="'$(SupportedPackageOSGroups)' == ''">Windows_NT;OSX;Android;Linux</SupportedPackageOSGroups>
     <SupportedPackageOSGroups>;$(SupportedPackageOSGroups);</SupportedPackageOSGroups>
 
     <!-- Identify OS family based upon the RuntimeOS, which could be distro specific (e.g. osx.10.12) or 
@@ -38,6 +38,7 @@
   <!-- derive an OS Group based on the OS Family -->
   <PropertyGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'osx'">OSX</_derivedPackageTargetOSGroup>
+    <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'android'">Android</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(_runtimeOSFamily)' == 'win'">Windows_NT</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == '' and '$(__BuildOS)' != ''">$(__BuildOS)</_derivedPackageTargetOSGroup>
     <_derivedPackageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == ''">Linux</_derivedPackageTargetOSGroup>
@@ -48,9 +49,10 @@
   <!-- _packageTargetOSGroup is used to control the runtime package imports, don't import runtime package targets for 
        an unsupported OS Group -->
   <PropertyGroup Condition="'$(PackageTargetRuntime)' != '' and '$(_isSupportedOSGroup)' == 'true'">
+    <!-- Android will use Linux package definitions -->
     <_packageTargetOSGroup>$(_derivedPackageTargetOSGroup)</_packageTargetOSGroup>
+    <_packageTargetOSGroup Condition="'$(_derivedPackageTargetOSGroup)' == 'Android'">Linux</_packageTargetOSGroup>
   </PropertyGroup>
-
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <OutputPath>$(PackageOutputPath)</OutputPath>
@@ -81,6 +83,13 @@
         <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'android'">
+      <PropertyGroup>
+        <PackageRID>android.21-$(ArchGroup)</PackageRID>
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <PackageRID Condition="'$(PortableBuild)' == '1'">android-$(ArchGroup)</PackageRID>
+      </PropertyGroup>
+    </When>
     <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
       <PropertyGroup>
         <PackageRID>rhel.7-$(ArchGroup)</PackageRID>
@@ -104,6 +113,13 @@
       <PropertyGroup>
         <LibraryFileExtension>.dylib</LibraryFileExtension>
         <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="'$(_runtimeOSFamily)' == 'android'">
+      <PropertyGroup>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <!--symbols included in .so, like Linux, but can be generated externally and if so, uses .debug ext-->
+        <SymbolFileExtension>.debug</SymbolFileExtension>
       </PropertyGroup>
     </When>
     <Otherwise>
