@@ -776,6 +776,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     conn.Open();
                     DropTable(conn, bulkCopyTableName);
+                    DropTable(conn, bulkCopySrcTableName);
                 }
             }
 
