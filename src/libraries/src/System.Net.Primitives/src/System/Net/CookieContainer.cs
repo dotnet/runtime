@@ -982,18 +982,19 @@ namespace System.Net
         }
     }
 
+    [Serializable]
     internal struct PathList
     {
         // Usage of PathList depends on it being shallowly immutable;
         // adding any mutable fields to it would result in breaks.
-        private readonly SortedList<string, CookieCollection> _list;
+        private readonly SortedList<string, CookieCollection> m_list; // Do not rename (binary serialization)
 
         public static PathList Create() => new PathList(new SortedList<string, CookieCollection>(PathListComparer.StaticInstance));
 
         private PathList(SortedList<string, CookieCollection> list)
         {
             Debug.Assert(list != null, $"{nameof(list)} must not be null.");
-            _list = list;
+            m_list = list;
         }
 
         public int Count
@@ -1002,7 +1003,7 @@ namespace System.Net
             {
                 lock (SyncRoot)
                 {
-                    return _list.Count;
+                    return m_list.Count;
                 }
             }
         }
@@ -1012,7 +1013,7 @@ namespace System.Net
             int count = 0;
             lock (SyncRoot)
             {
-                foreach (KeyValuePair<string, CookieCollection> pair in _list)
+                foreach (KeyValuePair<string, CookieCollection> pair in m_list)
                 {
                     CookieCollection cc = pair.Value;
                     count += cc.Count;
@@ -1028,7 +1029,7 @@ namespace System.Net
                 lock (SyncRoot)
                 {
                     CookieCollection value;
-                    _list.TryGetValue(s, out value);
+                    m_list.TryGetValue(s, out value);
                     return value;
                 }
             }
@@ -1037,7 +1038,7 @@ namespace System.Net
                 lock (SyncRoot)
                 {
                     Debug.Assert(value != null);
-                    _list[s] = value;
+                    m_list[s] = value;
                 }
             }
         }
@@ -1046,7 +1047,7 @@ namespace System.Net
         {
             lock (SyncRoot)
             {
-                return _list.GetEnumerator();
+                return m_list.GetEnumerator();
             }
         }
 
@@ -1054,11 +1055,12 @@ namespace System.Net
         {
             get
             {
-                Debug.Assert(_list != null, $"{nameof(PathList)} should never be default initialized and only ever created with {nameof(Create)}.");
-                return _list;
+                Debug.Assert(m_list != null, $"{nameof(PathList)} should never be default initialized and only ever created with {nameof(Create)}.");
+                return m_list;
             }
         }
 
+        [Serializable]
         private sealed class PathListComparer : IComparer<string>
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();

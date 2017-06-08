@@ -10,7 +10,7 @@ using System.Text;
 
 namespace System.Net
 {
-    internal enum CookieVariant
+    public enum CookieVariant
     {
         Unknown,
         Plain,
