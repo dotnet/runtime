@@ -22,7 +22,7 @@ internal partial class Interop
             IntPtr lpEnvironment,
             [MarshalAs(UnmanagedType.LPTStr)] string lpCurrentDirectory,
             STARTUPINFO lpStartupInfo,
-            PROCESS_INFORMATION lpProcessInformation
+            [Out] PROCESS_INFORMATION lpProcessInformation
         );
 
         [StructLayout(LayoutKind.Sequential)]
