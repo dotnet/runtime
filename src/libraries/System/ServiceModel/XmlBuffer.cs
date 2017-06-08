@@ -8,7 +8,8 @@
  */
 
 #define BINARY
-namespace System.ServiceModel { 
+namespace Microsoft.ServiceModel {
+    using System;
     using System.Collections.Generic;
     using System.Runtime;
     using System.ServiceModel.Channels;

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace System.ServiceModel.Syndication
+namespace Microsoft.ServiceModel.Syndication
 {
     using System;
     using System.Collections.Generic;
@@ -14,6 +14,7 @@ namespace System.ServiceModel.Syndication
     using System.Xml.Serialization;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using Microsoft.ServiceModel;
 
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor

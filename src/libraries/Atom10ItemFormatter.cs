@@ -7,7 +7,7 @@
  * 
  * */
 
-namespace System.ServiceModel.Syndication
+namespace Microsoft.ServiceModel.Syndication
 {
     using System;
     using System.Collections.Generic;

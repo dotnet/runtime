@@ -2,8 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace System.ServiceModel
+namespace Microsoft.ServiceModel
 {
+    using System;
     internal class SR
     {
         internal static object XmlBufferQuotaExceeded;

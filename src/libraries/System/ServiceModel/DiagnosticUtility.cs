@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.ServiceModel.Diagnostics;
 
-namespace System.ServiceModel
+namespace Microsoft.ServiceModel
 {
     internal static class DiagnosticUtility
     {

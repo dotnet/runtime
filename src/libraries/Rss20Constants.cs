@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace System.ServiceModel.Syndication
+namespace Microsoft.ServiceModel.Syndication
 {
     static class Rss20Constants
     {
