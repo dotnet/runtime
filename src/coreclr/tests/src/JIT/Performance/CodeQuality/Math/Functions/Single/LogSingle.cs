@@ -14,14 +14,17 @@ namespace Functions
         private const float logSingleDelta = 0.0004f;
         private const float logSingleExpectedResult = -1529.14014f;
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = LogSingleIterations)]
         public static void LogSingleBenchmark()
         {
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
                 {
-                    LogSingleTest();
+                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
+                    {
+                        LogSingleTest();
+                    }
                 }
             }
         }
