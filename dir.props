@@ -24,42 +24,13 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
-  <!-- Common repo directories -->
-  <PropertyGroup>
-    <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
-    <SourceDir>$(ProjectDir)src/</SourceDir>
-
-    <!-- Output directories -->
-    <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)Bin/</BinDir>
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
-    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
-
-    <!-- Input Directories -->
-    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
-    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
-    <LocalToolRuntimePath Condition="'$(LocalToolRuntimePath)' == ''">$(ToolRuntimePath)local/</LocalToolRuntimePath>
-    <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <BuildToolsTaskDir>$(ToolRuntimePath)</BuildToolsTaskDir>
-    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net46/</BuildToolsTaskDir>
-    <LocalBuildToolsTaskDir>$(LocalToolRuntimePath)</LocalBuildToolsTaskDir>
-    <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
-    <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
-  </PropertyGroup>
-
+  <Import Project="$(MSBuildThisFileDirectory)RepoDirectories.props" />
+  
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
   <!-- Versioning -->
   <PropertyGroup>
-    <!-- Dev builds get a minor version, by default, of '0'.  Our tests restore packages with
-         a -* version, and include myget sources, so any package published the same day to myget
-         will conflict with the local build and override the local built package.  Prevent this
-         by setting the non-official build minor version to 9 -->
-    <BuildNumberMinor Condition="'$(BuildNumberMinor)' == '0'">9</BuildNumberMinor>
-
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
     <VersionSuffix Condition="'$(StabilizePackageVersion)' =='true'"></VersionSuffix>
