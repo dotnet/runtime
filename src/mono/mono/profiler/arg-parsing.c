@@ -160,7 +160,6 @@ load_args_from_env_or_default (ProfilerConfig *config)
 	config->sample_freq = 100;
 	config->max_call_depth = 100;
 	config->num_frames = MAX_FRAMES;
-	config->debug_coverage |= g_hasenv ("MONO_PROFILER_DEBUG_COVERAGE");
 }
 
 
