@@ -2048,7 +2048,7 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
     if (varTypeIsStruct(type))
     {
 
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_) || (!defined(LEGACY_BACKEND) && defined(_TARGET_ARM_))
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 
@@ -2112,7 +2112,7 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
 #endif // FEATURE_MULTIREG_ARGS
         }
 
-#else // not (_TARGET_AMD64_ or _TARGET_ARM64_)
+#else // not (_TARGET_AMD64_ or _TARGET_ARM64_ or (!LEGACY_BACKEND and _TARGET_ARM_))
 
         // other targets, we pass the struct by value
         assert(varTypeIsStruct(type));
@@ -2123,7 +2123,7 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
         // gtNewObjNode will set the GTF_EXCEPT flag if this is not a local stack object.
         arg = gtNewObjNode(lvaGetStruct(tmpVarNum), addrNode);
 
-#endif // not (_TARGET_AMD64_ or _TARGET_ARM64_)
+#endif // not (_TARGET_AMD64_ or _TARGET_ARM64_ or (!LEGACY_BACKEND and _TARGET_ARM_))
 
     } // (varTypeIsStruct(type))
 
