@@ -183,6 +183,7 @@ namespace System.Numerics.Tests
 
         private BigInteger DoBinaryOperatorSN(BigInteger num1, BigInteger num2, string op, out BigInteger num3)
         {
+            num3 = 0;
             switch (op)
             {
                 case "bMin":
