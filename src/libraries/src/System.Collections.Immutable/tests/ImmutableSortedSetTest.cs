@@ -77,6 +77,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        [ActiveIssue("Sporadic failure, needs a port of https://github.com/dotnet/coreclr/pull/4340", TargetFrameworkMonikers.NetFramework)]
         public void EmptyTest()
         {
             this.EmptyTestHelper(Empty<int>(), 5, null);
