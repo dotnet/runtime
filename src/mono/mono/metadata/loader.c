@@ -1887,7 +1887,7 @@ mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass 
 {
 	error_init (error);
 
-	*cil_method = mono_get_method_from_token (image, token, NULL, context, NULL, error);
+	*cil_method = mono_get_method_checked (image, token, NULL, context, error);
 	if (!*cil_method)
 		return NULL;
 
