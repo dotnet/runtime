@@ -1573,8 +1573,11 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
             AliasSet::NodeInfo operandInfo(compiler, operand);
             if (operandInfo.IsLclVarRead())
             {
-                int count = 0;
-                if (unconsumedLclVarReads.TryRemove(operandInfo.LclNum(), &count) && count > 1)
+                int count;
+                const bool removed = unconsumedLclVarReads.TryRemove(operandInfo.LclNum(), &count);
+                assert(removed);
+
+                if (count > 1)
                 {
                     unconsumedLclVarReads.AddOrUpdate(operandInfo.LclNum(), count - 1);
                 }
@@ -1582,20 +1585,15 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         }
 
         AliasSet::NodeInfo nodeInfo(compiler, node);
-
-        bool unused;
-        if (nodeInfo.IsLclVarRead() && !unusedDefs.TryGetValue(node, &unused))
+        if (nodeInfo.IsLclVarRead() && !unusedDefs.Contains(node))
         {
             int count = 0;
             unconsumedLclVarReads.TryGetValue(nodeInfo.LclNum(), &count);
             unconsumedLclVarReads.AddOrUpdate(nodeInfo.LclNum(), count + 1);
         }
 
-        if (nodeInfo.IsLclVarWrite())
-        {
-            int unused;
-            assert(!unconsumedLclVarReads.TryGetValue(nodeInfo.LclNum(), &unused));
-        }
+        // If this node is a lclVar write, it must be to a lclVar that does not have an outstanding read.
+        assert(!nodeInfo.IsLclVarWrite() || !unconsumedLclVarReads.Contains(nodeInfo.LclNum()));
     }
 
     return true;
