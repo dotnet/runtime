@@ -100,6 +100,7 @@ namespace System.Numerics.Tests
             List<byte> bytes1 = new List<byte>(num1.ToByteArray());
             List<byte> bytes2 = new List<byte>(num2.ToByteArray());
 
+            num3 = 0;
             switch (op)
             {
                 case "bMin":
