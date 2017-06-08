@@ -48,6 +48,7 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
     {
         GenTree* op1 = tree->gtGetOp1();
         noway_assert(op1->OperGet() == GT_LONG);
+        op1->SetContained();
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         info->srcCount = 2;
@@ -317,6 +318,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             if (varTypeIsLong(castOpType))
             {
                 noway_assert(castOp->OperGet() == GT_LONG);
+                castOp->SetContained();
                 info->srcCount = 2;
             }
 

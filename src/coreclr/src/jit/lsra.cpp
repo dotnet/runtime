@@ -5736,7 +5736,6 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             {
                 assert(intervalToUnassign->isConstant);
                 refPosition->treeNode->SetReuseRegVal();
-                refPosition->treeNode->SetInReg();
             }
             // If we considered this "unassigned" because this interval's lifetime ends before
             // the next ref, remember it.
@@ -8035,12 +8034,9 @@ void LinearScan::allocateRegisters()
 //   - RegRecord->assignedInterval points to the interval which currently occupies
 //     the register
 //   - For each lclVar node:
-//     - gtRegNum/gtRegPair is set to the currently allocated register(s)
-//     - GTF_REG_VAL is set if it is a use, and is in a register
-//     - GTF_SPILLED is set on a use if it must be reloaded prior to use (GTF_REG_VAL
-//       must not be set)
-//     - GTF_SPILL is set if it must be spilled after use (GTF_REG_VAL may or may not
-//       be set)
+//     - gtRegNum/gtRegPair is set to the currently allocated register(s).
+//     - GTF_SPILLED is set on a use if it must be reloaded prior to use.
+//     - GTF_SPILL is set if it must be spilled after use.
 //
 // A copyReg is an ugly case where the variable must be in a specific (fixed) register,
 // but it currently resides elsewhere.  The register allocator must track the use of the
@@ -8095,6 +8091,10 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
+        if (treeNode != nullptr)
+        {
+            treeNode->SetContained();
+        }
 
         return;
     }
@@ -8133,9 +8133,9 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
     bool reload     = currentRefPosition->reload;
     bool spillAfter = currentRefPosition->spillAfter;
 
-    // In the reload case we simply do not set GTF_REG_VAL, and it gets
-    // referenced from the variable's home location.
-    // This is also true for a pure def which is spilled.
+    // In the reload case we either:
+    // - Set the register to REG_STK if it will be referenced only from the home location, or
+    // - Set the register to the assigned register and set GTF_SPILLED if it must be loaded into a register.
     if (reload)
     {
         assert(currentRefPosition->refType != RefTypeDef);
@@ -8166,6 +8166,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
                     interval->physReg  = REG_NA;
                     treeNode->gtRegNum = REG_NA;
                     treeNode->gtFlags &= ~GTF_SPILLED;
+                    treeNode->SetContained();
                 }
                 else
                 {
@@ -8257,13 +8258,6 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
             assert(interval->isSpilled);
             interval->physReg = REG_NA;
             varDsc->lvRegNum  = REG_STK;
-        }
-
-        // This value is in a register, UNLESS we already saw this treeNode
-        // and marked it for reload
-        if (treeNode != nullptr && !(treeNode->gtFlags & GTF_SPILLED))
-        {
-            treeNode->gtFlags |= GTF_REG_VAL;
         }
     }
 
@@ -8471,12 +8465,11 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     LIR::Range& blockRange = LIR::AsRange(block);
 
-    // First, insert the save as an embedded statement before the call.
+    // First, insert the save before the call.
 
-    GenTreePtr saveLcl              = compiler->gtNewLclvNode(lclVarInterval->varNum, LargeVectorType);
-    saveLcl->gtLsraInfo.isLsraAdded = true;
-    saveLcl->gtRegNum               = lclVarReg;
-    saveLcl->gtFlags |= GTF_REG_VAL;
+    GenTreePtr saveLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, LargeVectorType);
+    saveLcl->gtLsraInfo.isLsraAdded   = true;
+    saveLcl->gtRegNum                 = lclVarReg;
     saveLcl->gtLsraInfo.isLocalDefUse = false;
 
     GenTreeSIMD* simdNode =
@@ -8493,10 +8486,9 @@ void LinearScan::insertUpperVectorSaveAndReload(GenTreePtr tree, RefPosition* re
 
     // Now insert the restore after the call.
 
-    GenTreePtr restoreLcl              = compiler->gtNewLclvNode(lclVarInterval->varNum, LargeVectorType);
-    restoreLcl->gtLsraInfo.isLsraAdded = true;
-    restoreLcl->gtRegNum               = lclVarReg;
-    restoreLcl->gtFlags |= GTF_REG_VAL;
+    GenTreePtr restoreLcl                = compiler->gtNewLclvNode(lclVarInterval->varNum, LargeVectorType);
+    restoreLcl->gtLsraInfo.isLsraAdded   = true;
+    restoreLcl->gtRegNum                 = lclVarReg;
     restoreLcl->gtLsraInfo.isLocalDefUse = false;
 
     simdNode = new (compiler, GT_SIMD)
@@ -9310,7 +9302,6 @@ void LinearScan::insertMove(
     else if (toReg == REG_STK)
     {
         src->gtFlags |= GTF_SPILL;
-        src->SetInReg();
         src->gtRegNum = fromReg;
     }
     else
@@ -9322,8 +9313,7 @@ void LinearScan::insertMove(
         // This is the new home of the lclVar - indicate that by clearing the GTF_VAR_DEATH flag.
         // Note that if src is itself a lastUse, this will have no effect.
         dst->gtFlags &= ~(GTF_VAR_DEATH);
-        src->gtRegNum = fromReg;
-        src->SetInReg();
+        src->gtRegNum                 = fromReg;
         dst->gtRegNum                 = toReg;
         src->gtLsraInfo.isLocalDefUse = false;
         dst->gtLsraInfo.isLsraAdded   = true;
@@ -9382,14 +9372,12 @@ void LinearScan::insertSwap(
     GenTreePtr lcl1                = compiler->gtNewLclvNode(lclNum1, varDsc1->TypeGet());
     lcl1->gtLsraInfo.isLsraAdded   = true;
     lcl1->gtLsraInfo.isLocalDefUse = false;
-    lcl1->SetInReg();
-    lcl1->gtRegNum = reg1;
+    lcl1->gtRegNum                 = reg1;
 
     GenTreePtr lcl2                = compiler->gtNewLclvNode(lclNum2, varDsc2->TypeGet());
     lcl2->gtLsraInfo.isLsraAdded   = true;
     lcl2->gtLsraInfo.isLocalDefUse = false;
-    lcl2->SetInReg();
-    lcl2->gtRegNum = reg2;
+    lcl2->gtRegNum                 = reg2;
 
     GenTreePtr swap                = compiler->gtNewOperNode(GT_SWAP, TYP_VOID, lcl1, lcl2);
     swap->gtLsraInfo.isLsraAdded   = true;
