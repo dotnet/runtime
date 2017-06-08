@@ -10,8 +10,8 @@ namespace System.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Xml;
     using System.Xml.Schema;
-    using System.ServiceModel.Channels;
-    using System.ServiceModel.Diagnostics;
+    //using System.ServiceModel.Channels;
+    //using System.ServiceModel.Diagnostics;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;

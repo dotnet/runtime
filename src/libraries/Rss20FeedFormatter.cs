@@ -10,7 +10,7 @@ namespace System.ServiceModel.Syndication
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Runtime;
-    using System.ServiceModel.Diagnostics;
+    //using System.ServiceModel.Diagnostics;
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;

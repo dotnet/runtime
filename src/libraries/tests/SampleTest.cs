@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Xunit;
+using Microsoft.ServiceModel.Syndication;
 
 namespace Microsoft.ServiceModel.Syndication.Tests
 {
@@ -10,6 +11,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void PassingTest()
         {
+        
         }
 
         [Fact]

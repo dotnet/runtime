@@ -14,17 +14,13 @@ namespace System.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
-    using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
     using System.Diagnostics.CodeAnalysis;
     using System.Xml.Schema;
-    using System.Collections;
-    //using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
+    using System.ServiceModel;
     using System.ServiceModel.Channels;
     using System.Runtime.CompilerServices;
-    //Added for portability
-    //using Microsoft.ServiceModel.Channels;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Atom10Constants.FeedTag, Namespace = Atom10Constants.Atom10Namespace)]
