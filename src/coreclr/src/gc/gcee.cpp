@@ -467,7 +467,7 @@ void gc_heap::fire_etw_allocation_event (size_t allocation_amount, int gen_numbe
 
     EX_TRY
     {
-        TypeHandle th = GetThread()->GetTHAllocContextObj();
+        TypeHandle th = GCToEEInterface::GetThread()->GetTHAllocContextObj();
 
         if (th != 0)
         {
@@ -533,7 +533,7 @@ uint32_t gc_heap::user_thread_wait (GCEvent *event, BOOL no_mode_change, int tim
     
     if (!no_mode_change)
     {
-        pCurThread = GetThread();
+        pCurThread = GCToEEInterface::GetThread();
         mode = pCurThread ? GCToEEInterface::IsPreemptiveGCDisabled(pCurThread) : false;
         if (mode)
         {
