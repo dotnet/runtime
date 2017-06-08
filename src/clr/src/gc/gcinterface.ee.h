@@ -77,6 +77,11 @@ public:
     virtual
     void DisablePreemptiveGC(Thread * pThread) = 0;
 
+    // Gets the Thread instance for the current thread, or null if no thread
+    // instance is associated with this thread.
+    virtual
+    Thread* GetThread() = 0;
+
     // Returns whether or not a thread suspension is pending.
     virtual
     bool TrapReturningThreads() = 0;
