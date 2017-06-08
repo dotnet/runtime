@@ -4485,6 +4485,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	if (filename && *filename == '-') {
 		force_delete = 1;
 		filename++;
+		printf ("WARNING: the output:-FILENAME option is deprecated, the profiler now always overrides the output file\n");
 	}
 	if (!filename) {
 		if (do_report)
@@ -4714,6 +4715,7 @@ mono_profiler_startup (const char *desc)
 		mono_profiler_install_gc_moves (gc_moves);
 	}
 
+	// TODO split those in two profiler events
 	if (config.effective_mask & (PROFLOG_GC_ROOT_EVENTS | PROFLOG_GC_HANDLE_EVENTS)) {
 		events |= MONO_PROFILE_GC_ROOTS;
 		mono_profiler_install_gc_roots (

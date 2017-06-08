@@ -248,6 +248,11 @@ set_hsmode (ProfilerConfig *config, const char* val)
 		usage ();
 }
 
+/*
+Sampling frequency allows for one undocumented, hidden and ignored argument. The sampling kind.
+Back in the day when this was done using perf, we could specify one of: cycles,instr,cacherefs,cachemiss,branches,branchmiss
+With us moving ot userland sampling, those options are now meaningless.
+*/
 static void
 set_sample_freq (ProfilerConfig *config, const char *val)
 {
@@ -297,19 +302,18 @@ usage (void)
 	printf ("\t[no]alloc            enable/disable recording allocation info\n");
 	printf ("\t[no]calls            enable/disable recording enter/leave method events\n");
 	printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events\n");
-	printf ("\tsample[=TYPE]        enable/disable statistical sampling of threads (by default cycles/100)\n");
-	printf ("\t                     TYPE: cycles,instr,cacherefs,cachemiss,branches,branchmiss\n");
+	printf ("\tsample[=frequency]   enable/disable statistical sampling of threads (frequency in Hz, 100 by default)\n");
 	printf ("\t                     TYPE can be followed by /FREQUENCY\n");
-	printf ("\t[heapshot[=MODE]     record heap shot info (by default at each major collection)\n");
+	printf ("\theapshot[=MODE]      record heap shot info (by default at each major collection)\n");
 	printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
 	printf ("\t[no]coverage         enable collection of code coverage data\n");
 	printf ("\tcovfilter=ASSEMBLY   add an assembly to the code coverage filters\n");
 	printf ("\t                     add a + to include the assembly or a - to exclude it\n");
-	printf ("\t                     filter=-mscorlib\n");
+	printf ("\t                     covfilter=-mscorlib\n");
 	printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered\n");
 	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
-	printf ("\toutput=FILENAME      write the data to file FILENAME (-FILENAME to overwrite)\n");
+	printf ("\toutput=FILENAME      write the data to file FILENAME (The file is always overwriten)\n");
 	printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM\n");
 	printf ("\t                     %%t is subtituted with date and time, %%p with the pid\n");
 	printf ("\treport               create a report instead of writing the raw data to a file\n");
