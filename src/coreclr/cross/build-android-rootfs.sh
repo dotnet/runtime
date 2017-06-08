@@ -15,6 +15,7 @@ usage()
     echo.
     echo "By default, the NDK will be downloaded into the cross/android-rootfs/android-ndk-$__NDK_Version directory. If you already have an NDK installation,"
     echo "you can set the NDK_DIR environment variable to have this script use that installation of the NDK."
+    echo "By default, this script will generate a file, android_platform, in the root of the ROOTFS_DIR directory that contains the RID for the supported and tested Android build: android.21-arm64. This file is to replace '/etc/os-release', which is not available for Android."
     exit 1
 }
 
@@ -136,7 +137,10 @@ dpkg -x $__Android_Cross_Dir/deb/libunwind_1.2.20170304_$__AndroidArch.deb $__An
 
 cp -R $__Android_Cross_Dir/tmp/$__AndroidArch/data/data/com.termux/files/usr/* $__ToolchainDir/sysroot/usr/
 
+# Generate platform file for build.sh script to assign to __DistroRid
+echo "Generating platform file..."
 
+echo "RID=android.21-arm64" > $__ToolchainDir/sysroot/android_platform
 echo Now run:
 echo CONFIG_DIR=\`realpath cross/android/$__BuildArch\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross $__BuildArch skipgenerateversion skipnuget cmakeargs -DENABLE_LLDBPLUGIN=0
 
