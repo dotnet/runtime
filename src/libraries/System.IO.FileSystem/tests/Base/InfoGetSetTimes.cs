@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -46,16 +48,24 @@ namespace System.IO.Tests
         [Fact]
         public void TimesStillSetAfterDelete()
         {
-            DateTime beforeTime = DateTime.UtcNow.AddSeconds(-1);
             T item = GetExistingItem();
 
             // Refresh to fill state
             item.Refresh();
-            DateTime afterTime = DateTime.UtcNow.AddSeconds(1);
 
-            // Deleting doesn't change any info state
+            // Get our initial times
+            var times = new Dictionary<TimeFunction, DateTime>();
+            foreach (var timeFunction in TimeFunctions())
+            {
+                times.Add(timeFunction, timeFunction.Getter(item));
+            }
+
+            // Deleting shouldn't change any info state
             item.Delete();
-            ValidateSetTimes(item, beforeTime, afterTime);
+            Assert.All(times, time =>
+            {
+                Assert.Equal(time.Value, time.Key.Getter(item));
+            });
         }
     }
 }
