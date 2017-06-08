@@ -1806,7 +1806,7 @@ get_field (MonoImage *m, guint32 token, MonoGenericContainer *container)
 {
 	int idx = mono_metadata_token_index (token);
 	guint32 cols [MONO_FIELD_SIZE];
-	char *sig, *res, *type, *estype, *esname;
+	char *sig, *res, *type, *estype, *esname, *token_comment;
 	guint32 type_idx;
 
 	/*
@@ -1835,16 +1835,20 @@ get_field (MonoImage *m, guint32 token, MonoGenericContainer *container)
 	type = get_typedef (m, type_idx);
 	estype = get_escaped_name (type);
 	esname = get_escaped_name (mono_metadata_string_heap (m, cols [MONO_FIELD_NAME]));
-	res = g_strdup_printf ("%s %s%s%s",
+	token_comment = get_token_comment (NULL, token);
+	res = g_strdup_printf ("%s %s%s%s%s",
 			sig, 
 			estype ? estype : "",
 			estype ? "::" : "",
-			esname);
+			esname,
+			token_comment ? token_comment : ""
+		);
 
 	g_free (type);
 	g_free (sig);
 	g_free (estype);
 	g_free (esname);
+	g_free (token_comment);
 
 	return res;
 }
