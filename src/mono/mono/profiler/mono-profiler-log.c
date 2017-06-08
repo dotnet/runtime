@@ -3737,9 +3737,6 @@ parse_cov_filter_file (GPtrArray *filters, const char *file)
 	FILE *filter_file;
 	char *line, *content;
 
-	if (filters == NULL)
-		filters = g_ptr_array_new ();
-
 	filter_file = fopen (file, "r");
 	if (filter_file == NULL) {
 		fprintf (stderr, "Unable to open %s\n", file);
@@ -4587,10 +4584,8 @@ mono_profiler_startup (const char *desc)
 	GPtrArray *filters = NULL;
 	MonoProfiler *prof;
 
-	if (desc [3] == ':')
-		proflog_parse_args (&config, desc + 4);
-	else
-		proflog_parse_args (&config, "");
+	proflog_parse_args (&config, desc [3] == ':' ? desc + 4 : "");
+
 	//XXX maybe later cleanup to use config directly
 	nocalls = !(config.effective_mask & PROFLOG_CALL_EVENTS);
 	no_counters = !(config.effective_mask & PROFLOG_COUNTER_EVENTS);

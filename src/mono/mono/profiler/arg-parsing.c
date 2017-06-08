@@ -217,6 +217,8 @@ proflog_parse_args (ProfilerConfig *config, const char *desc)
 		parse_arg (buffer, config);
 	}
 
+	g_free (buffer);
+
 	//Compure config effective mask
 	config->effective_mask = config->enable_mask & ~config->disable_mask;
 }
