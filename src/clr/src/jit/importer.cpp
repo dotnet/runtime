@@ -12261,7 +12261,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1->gtFlags |= GTF_IND_VOLATILE;
                 }
 
-                if (prefixFlags & PREFIX_UNALIGNED)
+                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
                 {
                     assert(op1->OperGet() == GT_IND);
                     op1->gtFlags |= GTF_IND_UNALIGNED;
@@ -12358,7 +12358,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1->gtFlags |= GTF_IND_VOLATILE;
                 }
 
-                if (prefixFlags & PREFIX_UNALIGNED)
+                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
                 {
                     assert(op1->OperGet() == GT_IND);
                     op1->gtFlags |= GTF_IND_UNALIGNED;
@@ -13388,7 +13388,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
                     }
 
-                    if (prefixFlags & PREFIX_UNALIGNED)
+                    if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
                     {
                         if (!usesHelper)
                         {
@@ -13631,7 +13631,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
                         op1->gtFlags |= GTF_IND_VOLATILE;
                     }
-                    if (prefixFlags & PREFIX_UNALIGNED)
+                    if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
                     {
                         assert((op1->OperGet() == GT_FIELD) || (op1->OperGet() == GT_IND));
                         op1->gtFlags |= GTF_IND_UNALIGNED;
