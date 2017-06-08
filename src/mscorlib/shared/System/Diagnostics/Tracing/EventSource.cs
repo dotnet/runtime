@@ -1134,17 +1134,7 @@ namespace System.Diagnostics.Tracing
             /// Address where the one argument lives (if this points to managed memory you must ensure the
             /// managed object is pinned.
             /// </summary>
-#if PROJECTN // Workaround for DevDiv #445798 
-            public unsafe IntPtr DataPointer
-            {
-                [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-                get { return (IntPtr)(void*)m_Ptr; }
-                [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-                set { m_Ptr = unchecked((ulong)(void*)value); }
-            }
-#else
             public unsafe IntPtr DataPointer { get { return (IntPtr)(void*)m_Ptr; } set { m_Ptr = unchecked((ulong)(void*)value); } }
-#endif
 
             /// <summary>
             /// Size of the argument referenced by DataPointer
