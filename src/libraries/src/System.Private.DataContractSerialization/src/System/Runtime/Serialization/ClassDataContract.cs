@@ -1030,7 +1030,7 @@ namespace System.Runtime.Serialization
                         DataMember memberContract = new DataMember(member);
                         if (property != null)
                         {
-                            MethodInfo getMethod = property.GetMethod;
+                            MethodInfo getMethod = property.GetGetMethod();
                             if (getMethod == null || IsMethodOverriding(getMethod) || getMethod.GetParameters().Length > 0)
                                 continue;
 
