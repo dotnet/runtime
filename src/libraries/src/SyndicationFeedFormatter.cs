@@ -11,7 +11,7 @@ namespace System.ServiceModel.Syndication
     using System.Globalization;
     using System.Runtime;
     using System.Runtime.Serialization;
-    using System.ServiceModel.Diagnostics;
+    //using System.ServiceModel.Diagnostics;
     using System.Xml;
     //using DiagnosticUtility = System.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;

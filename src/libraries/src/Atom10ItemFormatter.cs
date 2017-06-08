@@ -19,6 +19,7 @@ namespace System.ServiceModel.Syndication
     using System.Diagnostics.CodeAnalysis;
     using System.Xml.Schema;
     using System.Runtime.CompilerServices;
+    using System.ServiceModel.Channels;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Atom10Constants.EntryTag, Namespace = Atom10Constants.Atom10Namespace)]
