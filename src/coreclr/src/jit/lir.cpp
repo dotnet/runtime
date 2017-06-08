@@ -1573,7 +1573,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
             AliasSet::NodeInfo operandInfo(compiler, operand);
             if (operandInfo.IsLclVarRead())
             {
-                int count;
+                int        count;
                 const bool removed = unconsumedLclVarReads.TryRemove(operandInfo.LclNum(), &count);
                 assert(removed);
 
