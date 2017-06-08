@@ -697,7 +697,7 @@ namespace System.Data.SqlClient.Tests
             {
 
                 Console.WriteLine(string.Format("Test: {0} Enabled Listeners", methodName));
-                using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine(), enableLog:enableServerLogging))
+                using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine(), enableLog:enableServerLogging, methodName: methodName))
                 {
                     Console.WriteLine(string.Format("Test: {0} Started Server", methodName));
                     sqlOperation(server.ConnectionString);
@@ -886,7 +886,7 @@ namespace System.Data.SqlClient.Tests
             using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
             {
                 Console.WriteLine(string.Format("Test: {0} Enabled Listeners", methodName));
-                using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine()))
+                using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine(), methodName: methodName))
                 {
                     Console.WriteLine(string.Format("Test: {0} Started Server", methodName));
 

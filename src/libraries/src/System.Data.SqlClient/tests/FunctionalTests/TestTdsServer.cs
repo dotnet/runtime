@@ -6,6 +6,7 @@
 using Microsoft.SqlServer.TDS.EndPoint;
 using Microsoft.SqlServer.TDS.Servers;
 using System.Net;
+using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlClient.Tests
 {
@@ -22,7 +23,7 @@ namespace System.Data.SqlClient.Tests
             this.Engine = engine;
         }
 
-        public static TestTdsServer StartServerWithQueryEngine(QueryEngine engine, bool enableFedAuth = false, bool enableLog = false)
+        public static TestTdsServer StartServerWithQueryEngine(QueryEngine engine, bool enableFedAuth = false, bool enableLog = false, [CallerMemberName] string methodName = "")
         {
             TDSServerArguments args = new TDSServerArguments()
             {
@@ -36,10 +37,10 @@ namespace System.Data.SqlClient.Tests
 
             TestTdsServer server = engine == null ? new TestTdsServer(args) : new TestTdsServer(engine, args);
             server._endpoint = new TDSServerEndPoint(server) { ServerEndPoint = new IPEndPoint(IPAddress.Any, 0) };
-            server._endpoint.Start();
-
+            server._endpoint.EndpointName = methodName;
             // The server EventLog should be enabled as it logs the exceptions.
             server._endpoint.EventLog = Console.Out;
+            server._endpoint.Start();
 
             int port = server._endpoint.ServerEndPoint.Port;
             server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost," + port, ConnectTimeout = 5, Encrypt = false };
@@ -47,9 +48,9 @@ namespace System.Data.SqlClient.Tests
             return server;
         }
 
-        public static TestTdsServer StartTestServer(bool enableFedAuth = false, bool enableLog = false)
+        public static TestTdsServer StartTestServer(bool enableFedAuth = false, bool enableLog = false, [CallerMemberName] string methodName = "")
         {
-            return StartServerWithQueryEngine(null, false, false);
+            return StartServerWithQueryEngine(null, false, false, methodName);
         }
 
         public void Dispose() => _endpoint?.Stop();
