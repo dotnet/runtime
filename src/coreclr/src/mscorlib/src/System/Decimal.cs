@@ -133,7 +133,8 @@ namespace System
         // positive and 1 meaning negative.
         //
         // NOTE: Do not change the order in which these fields are declared. The
-        // native methods in this class rely on this particular order.
+        // native methods in this class rely on this particular order. 
+        // Do not rename (binary serialization).
         private int flags;
         private int hi;
         private int lo;

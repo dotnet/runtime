@@ -68,7 +68,7 @@ namespace System
 
         // internal so that DateTime doesn't have to call an extra get
         // method for some arithmetic operations.
-        internal long _ticks;
+        internal long _ticks; // Do not rename (binary serialization)
 
         //public TimeSpan() {
         //    _ticks = 0;

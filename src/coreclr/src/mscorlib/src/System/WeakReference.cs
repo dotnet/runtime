@@ -58,8 +58,8 @@ namespace System
             }
             Contract.EndContractBlock();
 
-            Object target = info.GetValue("TrackedObject", typeof(Object));
-            bool trackResurrection = info.GetBoolean("TrackResurrection");
+            Object target = info.GetValue("TrackedObject", typeof(Object)); // Do not rename (binary serialization)
+            bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             Create(target, trackResurrection);
         }
@@ -109,8 +109,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
             Contract.EndContractBlock();
-            info.AddValue("TrackedObject", Target, typeof(Object));
-            info.AddValue("TrackResurrection", IsTrackResurrection());
+            info.AddValue("TrackedObject", Target, typeof(Object)); // Do not rename (binary serialization)
+            info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
