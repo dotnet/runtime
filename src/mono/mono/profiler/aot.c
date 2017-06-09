@@ -14,7 +14,7 @@
 
 #include <config.h>
 
-#include "mono-profiler-aot.h"
+#include "aot.h"
 
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>

@@ -1,6 +1,6 @@
 #include <config.h>
 
-#include "mono-profiler-log.h"
+#include "log.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>

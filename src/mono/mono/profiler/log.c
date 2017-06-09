@@ -30,7 +30,7 @@
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-api.h>
-#include "mono-profiler-log.h"
+#include "log.h"
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>

@@ -54,7 +54,7 @@
  *                    - column: The column on the line
  */
 #include <config.h>
-#include "mono-profiler-log.h"
+#include "log.h"
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
