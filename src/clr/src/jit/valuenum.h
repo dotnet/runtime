@@ -872,20 +872,19 @@ private:
     // The base VN of the next chunk to be allocated.  Should always be a multiple of ChunkSize.
     ValueNum m_nextChunkBase;
 
-    DECLARE_TYPED_ENUM(ChunkExtraAttribs, BYTE)
+    enum ChunkExtraAttribs : BYTE
     {
-        CEA_None,          // No extra attributes.
-            CEA_Const,     // This chunk contains constant values.
-            CEA_Handle,    // This chunk contains handle constants.
-            CEA_NotAField, // This chunk contains "not a field" values.
-            CEA_Func0,     // Represents functions of arity 0.
-            CEA_Func1,     // ...arity 1.
-            CEA_Func2,     // ...arity 2.
-            CEA_Func3,     // ...arity 3.
-            CEA_Func4,     // ...arity 4.
-            CEA_Count
-    }
-    END_DECLARE_TYPED_ENUM(ChunkExtraAttribs, BYTE);
+        CEA_None,      // No extra attributes.
+        CEA_Const,     // This chunk contains constant values.
+        CEA_Handle,    // This chunk contains handle constants.
+        CEA_NotAField, // This chunk contains "not a field" values.
+        CEA_Func0,     // Represents functions of arity 0.
+        CEA_Func1,     // ...arity 1.
+        CEA_Func2,     // ...arity 2.
+        CEA_Func3,     // ...arity 3.
+        CEA_Func4,     // ...arity 4.
+        CEA_Count
+    };
 
     // A "Chunk" holds "ChunkSize" value numbers, starting at "m_baseVN".  All of these share the same
     // "m_typ" and "m_attribs".  These properties determine the interpretation of "m_defs", as discussed below.

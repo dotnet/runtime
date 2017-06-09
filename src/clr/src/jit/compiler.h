@@ -1131,14 +1131,13 @@ public:
 #endif // FEATURE_JIT_METHOD_PERF
 
 //------------------- Function/Funclet info -------------------------------
-DECLARE_TYPED_ENUM(FuncKind, BYTE)
+enum FuncKind : BYTE
 {
-    FUNC_ROOT,        // The main/root function (always id==0)
-        FUNC_HANDLER, // a funclet associated with an EH handler (finally, fault, catch, filter handler)
-        FUNC_FILTER,  // a funclet associated with an EH filter
-        FUNC_COUNT
-}
-END_DECLARE_TYPED_ENUM(FuncKind, BYTE)
+    FUNC_ROOT,    // The main/root function (always id==0)
+    FUNC_HANDLER, // a funclet associated with an EH handler (finally, fault, catch, filter handler)
+    FUNC_FILTER,  // a funclet associated with an EH filter
+    FUNC_COUNT
+};
 
 class emitLocation;
 

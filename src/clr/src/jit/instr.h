@@ -12,7 +12,7 @@
 /*****************************************************************************/
 
 // clang-format off
-DECLARE_TYPED_ENUM(instruction,unsigned)
+enum instruction : unsigned
 {
 #if defined(_TARGET_XARCH_)
     #define INST0(id, nm, fp, um, rf, wf, mr                ) INS_##id,
@@ -53,8 +53,7 @@ DECLARE_TYPED_ENUM(instruction,unsigned)
 
     INS_none,
     INS_count = INS_none
-}
-END_DECLARE_TYPED_ENUM(instruction,unsigned)
+};
 
 /*****************************************************************************/
 
@@ -79,25 +78,23 @@ enum emitJumpKind
 
 /*****************************************************************************/
 
-DECLARE_TYPED_ENUM(GCtype,unsigned)
+enum GCtype : unsigned
 {
     GCT_NONE,
     GCT_GCREF,
     GCT_BYREF
-}
-END_DECLARE_TYPED_ENUM(GCtype,unsigned)
+};
 
 // TODO-Cleanup:  Move 'insFlags' under _TARGET_ARM_ 
-DECLARE_TYPED_ENUM(insFlags,unsigned)
+enum insFlags: unsigned
 {
     INS_FLAGS_NOT_SET,
     INS_FLAGS_SET,
     INS_FLAGS_DONT_CARE
 };
-END_DECLARE_TYPED_ENUM(insFlags,unsigned)
 
 #if defined(_TARGET_ARM_)
-DECLARE_TYPED_ENUM(insOpts,unsigned)
+enum insOpts: unsigned
 {
     INS_OPTS_NONE,
     INS_OPTS_LDST_PRE_DEC,
@@ -108,10 +105,9 @@ DECLARE_TYPED_ENUM(insOpts,unsigned)
     INS_OPTS_LSR,
     INS_OPTS_ASR,
     INS_OPTS_ROR
-}
-END_DECLARE_TYPED_ENUM(insOpts,unsigned)
+};
 #elif defined(_TARGET_ARM64_)
-DECLARE_TYPED_ENUM(insOpts,unsigned)
+enum insOpts : unsigned
 {
     INS_OPTS_NONE,
 
@@ -165,10 +161,9 @@ DECLARE_TYPED_ENUM(insOpts,unsigned)
 
     INS_OPTS_S_TO_H,      // Single to Half
     INS_OPTS_D_TO_H,      // Double to Half
-}
-END_DECLARE_TYPED_ENUM(insOpts,unsigned)
+};
 
-DECLARE_TYPED_ENUM(insCond,unsigned)
+enum insCond : unsigned
 {
     INS_COND_EQ,
     INS_COND_NE,
@@ -187,10 +182,9 @@ DECLARE_TYPED_ENUM(insCond,unsigned)
 
     INS_COND_GT,
     INS_COND_LE,
-}
-END_DECLARE_TYPED_ENUM(insCond,unsigned)
+};
 
-DECLARE_TYPED_ENUM(insCflags,unsigned)
+enum insCflags : unsigned
 {
     INS_FLAGS_NONE,
     INS_FLAGS_V,
@@ -211,10 +205,9 @@ DECLARE_TYPED_ENUM(insCflags,unsigned)
     INS_FLAGS_NZV,
     INS_FLAGS_NZC,
     INS_FLAGS_NZCV,
-}
-END_DECLARE_TYPED_ENUM(insCFlags,unsigned)
+};
 
-DECLARE_TYPED_ENUM(insBarrier,unsigned)
+enum insBarrier : unsigned
 {
     INS_BARRIER_OSHLD =  1,
     INS_BARRIER_OSHST =  2,
@@ -231,12 +224,11 @@ DECLARE_TYPED_ENUM(insBarrier,unsigned)
     INS_BARRIER_LD    = 13,
     INS_BARRIER_ST    = 14,
     INS_BARRIER_SY    = 15,
-}
-END_DECLARE_TYPED_ENUM(insBarrier,unsigned)
+};
 #endif
 
 #undef EA_UNKNOWN
-DECLARE_TYPED_ENUM(emitAttr,unsigned)
+enum emitAttr : unsigned
 {
                 EA_UNKNOWN       = 0x000,
                 EA_1BYTE         = 0x001,
@@ -261,8 +253,7 @@ DECLARE_TYPED_ENUM(emitAttr,unsigned)
                 EA_BYREF         = EA_BYREF_FLG |  EA_PTRSIZE,       /* size == -2 */
                 EA_DSP_RELOC_FLG = 0x200,
                 EA_CNS_RELOC_FLG = 0x400,
-}
-END_DECLARE_TYPED_ENUM(emitAttr,unsigned)
+};
 
 #define EA_ATTR(x)                  ((emitAttr)(x))
 #define EA_SIZE(x)                  ((emitAttr)(((unsigned)(x)) &  EA_SIZE_MASK))

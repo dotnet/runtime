@@ -56,113 +56,115 @@
 //    REG_NA           - Used to indicate that a register is either not yet assigned or not required.
 //
 #if defined(_TARGET_ARM_)
-DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
-    REG_COUNT, REG_NA = REG_COUNT, ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-}
-END_DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
+};
 
-DECLARE_TYPED_ENUM(_regMask_enum, unsigned __int64)
+enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
-}
-END_DECLARE_TYPED_ENUM(_regMask_enum, unsigned __int64)
+};
 
 #elif defined(_TARGET_ARM64_)
 
-DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, xname, wname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
-    REG_COUNT, REG_NA = REG_COUNT, ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-}
-END_DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
+};
 
-DECLARE_TYPED_ENUM(_regMask_enum, unsigned __int64)
+enum _regMask_enum : unsigned __int64
 {
     RBM_NONE = 0,
 #define REGDEF(name, rnum, mask, xname, wname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
-}
-END_DECLARE_TYPED_ENUM(_regMask_enum, unsigned __int64)
+};
 
 #elif defined(_TARGET_AMD64_)
 
-DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
-    REG_COUNT, REG_NA = REG_COUNT, ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-}
-END_DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
+};
 
-DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
+enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
-}
-END_DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
+};
 
 #elif defined(_TARGET_X86_)
 
 #ifndef LEGACY_BACKEND
-DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
-    REG_COUNT, REG_NA = REG_COUNT, ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
-}
-END_DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1 // everything but REG_STK (only real regs)
+};
 
-DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
+enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #define REGALIAS(alias, realname) RBM_##alias = RBM_##realname,
 #include "register.h"
-}
-END_DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
+};
+
 #else // LEGACY_BACKEND
-DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+enum _regNumber_enum : unsigned
 {
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #define REGALIAS(alias, realname) REG_##alias = REG_##realname,
 #include "register.h"
 
-    REG_COUNT, REG_NA = REG_COUNT,
-               ACTUAL_REG_COUNT = REG_COUNT - 1, // everything but REG_STK (only real regs)
+    REG_COUNT,
+    REG_NA           = REG_COUNT,
+    ACTUAL_REG_COUNT = REG_COUNT - 1, // everything but REG_STK (only real regs)
 
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #include "registerfp.h"
 
-        REG_FPCOUNT, REG_FPNONE = REG_FPCOUNT,
+    REG_FPCOUNT,
+    REG_FPNONE = REG_FPCOUNT,
 
 #define REGDEF(name, rnum, mask, sname) REG_##name = rnum,
 #include "registerxmm.h"
 
-               REG_XMMCOUNT
-}
-END_DECLARE_TYPED_ENUM(_regNumber_enum, unsigned)
+    REG_XMMCOUNT
+};
 
-DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
+enum _regMask_enum : unsigned
 {
     RBM_NONE = 0,
 
@@ -175,8 +177,7 @@ DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
 
 #define REGDEF(name, rnum, mask, sname) RBM_##name = mask,
 #include "registerxmm.h"
-}
-END_DECLARE_TYPED_ENUM(_regMask_enum, unsigned)
+};
 
 #endif // LEGACY_BACKEND
 #else
@@ -212,7 +213,7 @@ C_ASSERT(REG_COUNT < REG_PAIR_FIRST); // make sure the register numbers (includi
 #define REG_PAIR_FIRST 0
 #endif
 
-DECLARE_TYPED_ENUM(_regPairNo_enum, unsigned)
+enum _regPairNo_enum : unsigned
 {
 #define PAIRDEF(rlo, rhi) REG_PAIR_##rlo##rhi = REG_##rlo + (REG_##rhi << REG_PAIR_NBITS) + REG_PAIR_FIRST,
 #include "regpair.h"
@@ -220,8 +221,7 @@ DECLARE_TYPED_ENUM(_regPairNo_enum, unsigned)
     REG_PAIR_LAST = (REG_COUNT - 1) + ((REG_COUNT - 1) << REG_PAIR_NBITS) + REG_PAIR_FIRST,
 
     REG_PAIR_NONE = REG_PAIR_LAST + 1
-}
-END_DECLARE_TYPED_ENUM(_regPairNo_enum, unsigned)
+};
 
 enum regPairMask
 {
