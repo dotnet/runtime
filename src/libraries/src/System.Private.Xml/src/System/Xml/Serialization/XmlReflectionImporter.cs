@@ -1836,9 +1836,9 @@ namespace System.Xml.Serialization
                     if (flags != XmlAttributeFlags.XmlnsDeclarations)
                         throw new InvalidOperationException(SR.XmlSoleXmlnsAttribute);
 
-                    if (accessorType != typeof(XmlSerializerNamespaces))
+                    if (accessorType != typeof(System.Xml.Serialization.XmlSerializerNamespaces))
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlXmlnsInvalidType, accessorName, accessorType.FullName, typeof(XmlSerializerNamespaces).FullName));
+                        throw new InvalidOperationException(SR.Format(SR.XmlXmlnsInvalidType, accessorName, accessorType.FullName, typeof(System.Xml.Serialization.XmlSerializerNamespaces).FullName));
                     }
                     accessor.Xmlns = new XmlnsAccessor();
                     accessor.Ignore = true;
