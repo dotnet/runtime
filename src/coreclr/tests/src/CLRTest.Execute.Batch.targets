@@ -261,9 +261,15 @@ set ExePath=$(InputAssemblyName)
 $(BatchLinkerTestLaunchCmds)
 $(BatchCLRTestLaunchCmds)
 
+if defined RunCrossGen (
+  call :TakeLock
+)
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
+if defined RunCrossGen (
+  call :ReleaseLock
+)
 $(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
 
