@@ -1738,14 +1738,14 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                     {
                         tmpLclNum = comp->lvaGrabTemp(
                             true DEBUGARG("Fast tail call lowering is creating a new local variable"));
-                        comp->lvaSortAgain                 = true;
-                        tmpType                            = genActualType(callerArgDsc->lvaArgType());
-                        comp->lvaTable[tmpLclNum].lvType   = tmpType;
-                        comp->lvaTable[tmpLclNum].lvRefCnt = 1;
+                        comp->lvaSortAgain                          = true;
+                        tmpType                                     = genActualType(callerArgDsc->lvaArgType());
+                        comp->lvaTable[tmpLclNum].lvType            = tmpType;
+                        comp->lvaTable[tmpLclNum].lvRefCnt          = 1;
+                        comp->lvaTable[tmpLclNum].lvDoNotEnregister = comp->lvaTable[lcl->gtLclNum].lvDoNotEnregister;
                     }
 
                     lcl->SetLclNum(tmpLclNum);
-                    lcl->SetOper(GT_LCL_VAR);
                 }
             }
         }
