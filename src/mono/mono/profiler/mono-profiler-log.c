@@ -4482,7 +4482,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	if (filename && *filename == '-') {
 		force_delete = 1;
 		filename++;
-		printf ("WARNING: the output:-FILENAME option is deprecated, the profiler now always overrides the output file\n");
+		g_warning ("WARNING: the output:-FILENAME option is deprecated, the profiler now always overrides the output file\n");
 	}
 	if (!filename) {
 		if (do_report)

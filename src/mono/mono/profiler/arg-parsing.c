@@ -304,7 +304,6 @@ usage (void)
 	printf ("\t[no]calls            enable/disable recording enter/leave method events\n");
 	printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events\n");
 	printf ("\tsample[=frequency]   enable/disable statistical sampling of threads (frequency in Hz, 100 by default)\n");
-	printf ("\t                     TYPE can be followed by /FREQUENCY\n");
 	printf ("\theapshot[=MODE]      record heap shot info (by default at each major collection)\n");
 	printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
 	printf ("\t[no]coverage         enable collection of code coverage data\n");
