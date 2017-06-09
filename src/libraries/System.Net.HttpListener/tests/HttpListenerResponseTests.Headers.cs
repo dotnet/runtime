@@ -11,6 +11,8 @@ namespace System.Net.Tests
 {
     public class HttpListenerResponseHeadersTests : HttpListenerResponseTestBase
     {
+        private static string s_longString = new string('a', ushort.MaxValue + 1);
+
         [Fact]
         [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task AddHeader_ValidValue_ReplacesHeaderInCollection()
@@ -31,6 +33,15 @@ namespace System.Net.Tests
             HttpListenerResponse response = await GetResponse();
             AssertExtensions.Throws<ArgumentNullException>("name", () => response.AddHeader(null, ""));
             AssertExtensions.Throws<ArgumentNullException>("name", () => response.AddHeader("", ""));
+        }
+
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task AddHeader_LongName_ThrowsArgumentOutOfRangeException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.AddHeader("name", s_longString));
         }
 
         [Fact]
@@ -64,6 +75,15 @@ namespace System.Net.Tests
         {
             HttpListenerResponse response = await GetResponse();
             AssertExtensions.Throws<ArgumentNullException>("name", () => response.AppendHeader(null, ""));
+        }
+
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task AppendHeader_LongName_ThrowsArgumentOutOfRangeException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.AppendHeader("name", s_longString));
         }
 
         [Fact]
@@ -837,10 +857,37 @@ namespace System.Net.Tests
                 };
                 response.Headers = headers;
                 Assert.Equal(headers, response.Headers);
+                Assert.NotSame(headers, response.Headers);
             }
 
             string clientResponse = GetClientResponse(159);
             Assert.Contains("\r\nName1: Value1\r\nName2: Value2\r\nName3: \r\n", clientResponse);
+        }
+
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        public async Task Headers_SetCollectionWithRequestHeaders_Works()
+        {
+            HttpListenerResponse response = await GetResponse();
+            response.Headers.Add("name", "value");
+
+            var headers = new WebHeaderCollection
+            {
+                { HttpRequestHeader.Accept, "value" }
+            };
+            response.Headers = headers;
+            Assert.Equal("value", response.Headers["accept"]);
+        }
+
+        [Theory]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        [InlineData("Transfer-Encoding")]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task Headers_SetRestricted_ThrowsArgumentException(string name)
+        {
+            HttpListenerResponse response = await GetResponse();
+            AssertExtensions.Throws<ArgumentException>("name", () => response.Headers.Add(name, "value"));
+            AssertExtensions.Throws<ArgumentException>("name", () => response.Headers.Add($"{name}:value"));
         }
 
         [Fact]
@@ -854,6 +901,32 @@ namespace System.Net.Tests
                 Assert.Throws<NullReferenceException>(() => response.Headers = null);
                 Assert.Equal(0, response.Headers.Count);
             }
+        }
+
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task Headers_SetLongName_ThrowsArgumentOutOfRangeException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.Headers["name"] = s_longString);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.Headers.Set("name", s_longString));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.Headers.Add("name", s_longString));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.Headers.Add($"name:{s_longString}"));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => response.Headers.Add(HttpResponseHeader.Age, s_longString));
+        }
+
+        [Fact]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(17462, TargetFrameworkMonikers.Netcoreapp)]
+        public async Task Headers_SetRequestHeader_ThrowsInvalidOperationException()
+        {
+            HttpListenerResponse response = await GetResponse();
+            Assert.Throws<InvalidOperationException>(() => response.Headers[HttpRequestHeader.Accept]);
+            Assert.Throws<InvalidOperationException>(() => response.Headers[HttpRequestHeader.Accept] = "value");
+            Assert.Throws<InvalidOperationException>(() => response.Headers.Set(HttpRequestHeader.Accept, "value"));
+            Assert.Throws<InvalidOperationException>(() => response.Headers.Add(HttpRequestHeader.Accept, "value"));
+            Assert.Throws<InvalidOperationException>(() => response.Headers.Remove(HttpRequestHeader.Accept));
         }
     }
 }
