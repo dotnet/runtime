@@ -1579,7 +1579,7 @@ namespace System.Xml.Serialization
             string xmlnsMemberName;
             if (!KeepXmlnsDeclarations(type, out xmlnsMemberName))
                 return;
-            TypeDesc xmlnsTypeDesc = Scope.GetTypeDesc(typeof(XmlSerializerNamespaces));
+            TypeDesc xmlnsTypeDesc = Scope.GetTypeDesc(typeof(System.Xml.Serialization.XmlSerializerNamespaces));
             StructMapping xmlnsMapping = new StructMapping();
 
             xmlnsMapping.TypeDesc = xmlnsTypeDesc;
