@@ -8,7 +8,7 @@
  * Calling IsNegativeZero the first time returns true, the second time false.
  * The first call to IsNegativeZero is getting inlined and the second call is not.
  * It appears the code for the non-inlined method is wrong which is how we end up with two different results for the same call with the same arg.
- * It seems that if you compile with /debug we get correct code so I’m thinking the problem is with inlining DoubleToInt64Bits into IsNegativeZero.
+ * It seems that if you compile with /debug we get correct code so Iâ€™m thinking the problem is with inlining DoubleToInt64Bits into IsNegativeZero.
  * 
  */
 
