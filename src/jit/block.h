@@ -49,7 +49,7 @@ typedef BitVec_ValRet_T ASSERT_VALRET_TP;
 
 // clang-format off
 
-DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
+enum BBjumpKinds : BYTE
 {
     BBJ_EHFINALLYRET,// block ends with 'endfinally' (for finally or fault)
     BBJ_EHFILTERRET, // block ends with 'endfilter'
@@ -64,8 +64,7 @@ DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
     BBJ_SWITCH,      // block ends with a switch statement
 
     BBJ_COUNT
-}
-END_DECLARE_TYPED_ENUM(BBjumpKinds, BYTE)
+};
 
 // clang-format on
 
