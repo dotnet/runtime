@@ -833,6 +833,8 @@ protected:
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
 
+#define ID_EXTRA_RELOC_BITS (2)
+
 #define ID_EXTRA_REG_BITS (0)
 
 #define ID_EXTRA_BITS (ID_EXTRA_BITFIELD_BITS + ID_EXTRA_RELOC_BITS + ID_EXTRA_REG_BITS)
