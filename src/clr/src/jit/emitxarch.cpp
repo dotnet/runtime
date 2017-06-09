@@ -209,6 +209,7 @@ emitter::code_t emitter::AddVexPrefix(instruction ins, code_t code, emitAttr att
 // Returns true if this instruction, for the given EA_SIZE(attr), will require a REX.W prefix
 bool TakesRexWPrefix(instruction ins, emitAttr attr)
 {
+#ifndef LEGACY_BACKEND
     // Because the current implementation of AVX does not have a way to distinguish between the register
     // size specification (128 vs. 256 bits) and the operand size specification (32 vs. 64 bits), where both are
     // required, the instruction must be created with the register size attribute (EA_16BYTE or EA_32BYTE),
@@ -217,6 +218,7 @@ bool TakesRexWPrefix(instruction ins, emitAttr attr)
     {
         return true;
     }
+#endif // !LEGACY_BACKEND
 #ifdef _TARGET_AMD64_
     // movsx should always sign extend out to 8 bytes just because we don't track
     // whether the dest should be 4 bytes or 8 bytes (attr indicates the size
@@ -359,10 +361,10 @@ emitter::code_t emitter::AddRexWPrefix(instruction ins, code_t code)
         assert(hasVexPrefix(code));
 
         // W-bit is the only bit that is added in non bit-inverted form.
-        return code | 0x00008000000000ULL;
+        return emitter::code_t(code | 0x00008000000000ULL);
     }
 #ifdef _TARGET_AMD64_
-    return code | 0x4800000000ULL;
+    return emitter::code_t(code | 0x4800000000ULL);
 #else
     assert(!"UNREACHED");
     return code;

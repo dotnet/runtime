@@ -238,6 +238,7 @@ if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)
 endif ()
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386 AND WIN32)
+    add_subdirectory(legacyjit)
     # On Windows x86, build altjit generating Windows/ARM32 code using LEGACY_BACKEND.
     # (Note: we could also create linuxlegacynonjit for generating Linux/ARM32 code using LEGACY_BACKEND, if needed.)
     add_subdirectory(legacynonjit)
