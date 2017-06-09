@@ -26,7 +26,7 @@
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
     <!-- binplace to directories for the target vertical -->
-    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+    <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
