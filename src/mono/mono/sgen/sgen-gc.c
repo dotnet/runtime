@@ -1641,7 +1641,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 		object_ops_nopar = &sgen_minor_collector.serial_ops_with_concurrent_major;
 	} else {
 		object_ops_nopar = &sgen_minor_collector.serial_ops;
-		if (sgen_minor_collector.is_parallel) {
+		if (sgen_minor_collector.is_parallel && sgen_nursery_size >= SGEN_PARALLEL_MINOR_MIN_NURSERY_SIZE) {
 			object_ops_par = &sgen_minor_collector.parallel_ops;
 			is_parallel = TRUE;
 		}
