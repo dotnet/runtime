@@ -64,11 +64,6 @@
 #define DEFINE_DACVAR(type, true_type, id, var)
 #endif
 
-// Use this macro for any server (namespace SVR) variables
-#ifndef DEFINE_DACVAR_SVR
-#define DEFINE_DACVAR_SVR(type, true_type, id, var)
-#endif
-
 // Use this macro to define a static var that is known to DAC, but not captured in a dump.                         
 #ifndef DEFINE_DACVAR_NO_DUMP
 #define DEFINE_DACVAR_NO_DUMP(type, true_type, id, var)
@@ -279,5 +274,4 @@ DEFINE_DACVAR(ULONG, TADDR, dac__g_MiniMetaDataBuffAddress, ::g_MiniMetaDataBuff
 DEFINE_DACVAR(ULONG, SIZE_T, dac__g_clrNotificationArguments, ::g_clrNotificationArguments)
 
 #undef DEFINE_DACVAR
-#undef DEFINE_DACVAR_SVR
 #undef DEFINE_DACVAR_NO_DUMP
