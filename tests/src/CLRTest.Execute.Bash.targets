@@ -255,9 +255,15 @@ fi
 ExePath=$(InputAssemblyName)
 $(BashLinkerTestLaunchCmds)
 $(BashCLRTestLaunchCmds)
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  TakeLock
+fi
 echo $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
 $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
 CLRTestExitCode=$?
+if [ ! -z ${RunCrossGen+x} ]%3B then
+  ReleaseLock
+fi
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
