@@ -81,7 +81,7 @@
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
     <!-- Generic tests -->
-    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs"  Condition="'$(TargetGroup)' == 'netcoreapp'"/>
+    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />
     <Compile Include="StructuralComparisonsTests.cs" />
     <Compile Include="BitArray\BitArray_CtorTests.cs" />
@@ -165,6 +165,9 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="ILCConfigurations.rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
