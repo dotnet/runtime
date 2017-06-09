@@ -1439,19 +1439,21 @@ gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 {
-	ENTER_LOG (&gc_events_ctr, logbuffer,
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* gc event */ +
-		BYTE_SIZE /* generation */
-	);
 
 	if (ENABLED (PROFLOG_GC_EVENTS)) {
+		ENTER_LOG (&gc_events_ctr, logbuffer,
+			EVENT_SIZE /* event */ +
+			BYTE_SIZE /* gc event */ +
+			BYTE_SIZE /* generation */
+		);
+
 		emit_event (logbuffer, TYPE_GC_EVENT | TYPE_GC);
 		emit_byte (logbuffer, ev);
 		emit_byte (logbuffer, generation);
+
+		EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 	}
 
-	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
 	switch (ev) {
 	case MONO_GC_EVENT_START:
@@ -1484,7 +1486,8 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * committed to the log file before any object move events
 		 * that will be produced during this GC.
 		 */
-		sync_point (SYNC_POINT_WORLD_STOP);
+		if (ENABLED (PROFLOG_ALLOCATION_EVENTS))
+			sync_point (SYNC_POINT_WORLD_STOP);
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
 		if (do_heap_shot && do_heap_walk) {
@@ -1502,7 +1505,8 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * object allocation events for certain addresses could come
 		 * after the move events that made those addresses available.
 		 */
-		sync_point_mark (SYNC_POINT_WORLD_START);
+		if (ENABLED (PROFLOG_GC_EVENTS | PROFLOG_GC_MOVES_EVENTS))
+			sync_point_mark (SYNC_POINT_WORLD_START);
 
 		/*
 		 * Finally, it is safe to allow other threads to write to
