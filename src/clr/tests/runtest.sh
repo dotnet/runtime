@@ -32,6 +32,7 @@ function print_usage {
     echo '                                     specified by --testRootDir. Multiple of this switch may be specified.'
     echo '  --testDirFile=<path>             : Run tests only in the directories specified by the file at <path>. Paths are listed'
     echo '                                     one line, relative to the directory specified by --testRootDir.'
+    echo '  --build-overlay-only             : Build coreoverlay only, and skip running tests.'
     echo '  --runFailingTestsOnly            : Run only the tests that are disabled on this platform due to unexpected failures.'
     echo '                                     Failing tests are listed in coreclr/tests/failingTestsOutsideWindows.txt, one per'
     echo '                                     line, as paths to .sh files relative to the directory specified by --testRootDir.'
