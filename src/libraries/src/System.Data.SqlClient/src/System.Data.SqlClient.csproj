@@ -14,6 +14,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
@@ -24,7 +26,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.2-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'uap' ">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
@@ -182,12 +184,18 @@
     <Compile Include="System\Data\SqlClient\SNI\SSRP.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectManaged.cs" />
   </ItemGroup>
+  <!-- Manage the SNI toggle for Windows netstandard and UWP -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' == 'true'">
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Managed.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectNative.cs" />
-    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Windows.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Windows.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Windows.cs" />
@@ -366,7 +374,7 @@
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Unix.cs">
       <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
     </Compile>
-    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Managed.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
@@ -413,6 +421,10 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Diagnostics.Tracing" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(OSGroup)' != 'AnyOS' AND '$(TargetGroup)' == 'uap'">
+    <Reference Include="System.Transactions.Local" /> 
+    <Reference Include="System.Collections.NonGeneric" /> 
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />
