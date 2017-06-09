@@ -1222,12 +1222,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 	if (assemblyb->dynamic_assembly)
 		return;
 
-#if HAVE_BOEHM_GC
-	/* assembly->assembly.image might be GC allocated */
-	assembly = assemblyb->dynamic_assembly = (MonoDynamicAssembly *)GC_MALLOC (sizeof (MonoDynamicAssembly));
-#else
 	assembly = assemblyb->dynamic_assembly = g_new0 (MonoDynamicAssembly, 1);
-#endif
 
 	mono_profiler_assembly_event (&assembly->assembly, MONO_PROFILE_START_LOAD);
 	
