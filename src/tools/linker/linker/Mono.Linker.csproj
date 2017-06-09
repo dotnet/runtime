@@ -10,11 +10,11 @@
       targets.
   -->
   <PropertyGroup>
-    <NetCoreBuild Condition=" $(Configuration.StartsWith('netcore')) Or '$(NuGetRestoreTargets)' != '' ">true</NetCoreBuild>
-    <NetCoreBuild Condition=" '$(NetCoreBuild)' == '' ">false</NetCoreBuild>
+    <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) Or '$(NuGetRestoreTargets)' != '' ">true</ILLinkBuild>
+    <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
     <TargetFrameworkProfile />
   </PropertyGroup>
-  <Import Project="NetCore.props" Condition=" $(NetCoreBuild) " />
+  <Import Project="ILLink.props" Condition=" $(ILLinkBuild) " />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -24,8 +24,8 @@
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Mono.Linker</RootNamespace>
-    <AssemblyName Condition=" ! $(NetCoreBuild) ">monolinker</AssemblyName>
-    <AssemblyName Condition=" $(NetCoreBuild) ">illink</AssemblyName>
+    <AssemblyName Condition=" ! $(ILLinkBuild) ">monolinker</AssemblyName>
+    <AssemblyName Condition=" $(ILLinkBuild) ">illink</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -45,7 +45,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" ! $(NetCoreBuild) " />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) " />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -53,7 +53,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup Condition=" ! $(NetCoreBuild) ">
+  <ItemGroup Condition=" ! $(ILLinkBuild) ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -98,14 +98,14 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Release' ">Configuration=netstandard_Release</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
     <ProjectReference Include="..\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Release' ">Configuration=netstandard_Release</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
       <Project>{63E6915C-7EA4-4D76-AB28-0D7191EEA626}</Project>
       <Name>Mono.Cecil.Pdb</Name>
     </ProjectReference>
