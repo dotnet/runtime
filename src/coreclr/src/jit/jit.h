@@ -225,21 +225,6 @@
 #endif
 #endif
 
-// Macros for defining strongly-typed enums. Use as follows:
-//
-// DECLARE_TYPED_ENUM(FooEnum,BYTE)
-// {
-//    fooTag1, fooTag2
-// }
-// END_DECLARE_TYPED_ENUM(FooEnum, BYTE)
-//
-// VC++ understands the syntax to declare these directly, e.g., "enum FooEnum : BYTE",
-// but GCC does not, so we use typedefs.
-
-#define DECLARE_TYPED_ENUM(tag, baseType) enum tag : baseType
-
-#define END_DECLARE_TYPED_ENUM(tag, baseType) ;
-
 #include "corhdr.h"
 #include "corjit.h"
 #include "jitee.h"
