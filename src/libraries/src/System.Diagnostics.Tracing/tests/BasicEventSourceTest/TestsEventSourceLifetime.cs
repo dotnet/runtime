@@ -21,6 +21,7 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // non-Windows EventSources don't have lifetime
+        [ActiveIssue(20837,TargetFrameworkMonikers.UapAot)]
         public void Test_EventSource_Lifetime()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
