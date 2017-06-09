@@ -221,9 +221,6 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
 #define DEFINE_DACVAR(id_type, size_type, id, var) \
     ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
 
-#define DEFINE_DACVAR_SVR(id_type, size_type, id, var) \
-    ReportMem(m_globalBase + g_dacGlobals.id, sizeof(size_type));
-
 #ifdef FEATURE_PAL
     // Add the dac table memory in coreclr
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED ( ReportMem(m_globalBase + DAC_TABLE_RVA, sizeof(g_dacGlobals)); )
