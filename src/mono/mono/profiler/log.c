@@ -1386,6 +1386,7 @@ static unsigned int hs_mode_ondemand = 0;
 static unsigned int gc_count = 0;
 static uint64_t last_hs_time = 0;
 static gboolean do_heap_walk = FALSE;
+static gboolean ignore_heap_events;
 
 static void
 heap_walk (MonoProfiler *profiler)
@@ -1412,6 +1413,9 @@ heap_walk (MonoProfiler *profiler)
 static void
 gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
 {
+	if (ignore_heap_events)
+		return;
+
 	ENTER_LOG (&heap_roots_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		LEB128_SIZE /* num */ +
@@ -1439,6 +1443,25 @@ gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 {
+	if (ev == MONO_GC_EVENT_START) {
+		uint64_t now = current_time ();
+
+		if (hs_mode_ms && (now - last_hs_time) / 1000 * 1000 >= hs_mode_ms)
+			do_heap_walk = TRUE;
+		else if (hs_mode_gc && !(gc_count % hs_mode_gc))
+			do_heap_walk = TRUE;
+		else if (hs_mode_ondemand)
+			do_heap_walk = heapshot_requested;
+		else if (!hs_mode_ms && !hs_mode_gc && generation == mono_gc_max_generation ())
+			do_heap_walk = TRUE;
+
+		//If using heapshot, ignore events for collections we don't care
+		if (ENABLED (PROFLOG_HEAPSHOT_FEATURE)) {
+			// Ignore events generated during the collection itself (IE GC ROOTS)
+			ignore_heap_events = !do_heap_walk;
+		}
+	}
+
 
 	if (ENABLED (PROFLOG_GC_EVENTS)) {
 		ENTER_LOG (&gc_events_ctr, logbuffer,
@@ -1460,16 +1483,6 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		if (generation == mono_gc_max_generation ())
 			gc_count++;
 
-		uint64_t now = current_time ();
-
-		if (hs_mode_ms && (now - last_hs_time) / 1000 * 1000 >= hs_mode_ms)
-			do_heap_walk = TRUE;
-		else if (hs_mode_gc && !(gc_count % hs_mode_gc))
-			do_heap_walk = TRUE;
-		else if (hs_mode_ondemand)
-			do_heap_walk = heapshot_requested;
-		else if (!hs_mode_ms && !hs_mode_gc && generation == mono_gc_max_generation ())
-			do_heap_walk = TRUE;
 		break;
 	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
 		/*
