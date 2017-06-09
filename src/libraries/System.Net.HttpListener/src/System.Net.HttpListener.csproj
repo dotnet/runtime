@@ -187,6 +187,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\HttpApi\Interop.HttpApi.cs">
       <Link>Common\Interop\Windows\HttpApi\Interop.HttpApi.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs">
+      <Link>Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CancelIoEx.cs">
       <Link>Common\Interop\Windows\mincore\Interop.CancelIoEx.cs</Link>
     </Compile>

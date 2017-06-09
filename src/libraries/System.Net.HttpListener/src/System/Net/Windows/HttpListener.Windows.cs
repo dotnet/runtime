@@ -177,9 +177,11 @@ namespace System.Net
                         if (_requestQueueBoundHandle == null)
                         {
                             _requestQueueBoundHandle = ThreadPoolBoundHandle.BindHandle(_requestQueueHandle);
+                            if (NetEventSource.IsEnabled) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({_requestQueueHandle}) -> {_requestQueueBoundHandle}");
                         }
                     }
                 }
+
                 return _requestQueueBoundHandle;
             }
         }
@@ -436,10 +438,10 @@ namespace System.Net
 
             // Disabling callbacks when IO operation completes synchronously (returns ErrorCodes.ERROR_SUCCESS)
             if (SkipIOCPCallbackOnSuccess &&
-                !Interop.HttpApi.SetFileCompletionNotificationModes(
+                !Interop.Kernel32.SetFileCompletionNotificationModes(
                     requestQueueHandle,
-                    Interop.HttpApi.FileCompletionNotificationModes.SkipCompletionPortOnSuccess |
-                    Interop.HttpApi.FileCompletionNotificationModes.SkipSetEventOnHandle))
+                    Interop.Kernel32.FileCompletionNotificationModes.SkipCompletionPortOnSuccess |
+                    Interop.Kernel32.FileCompletionNotificationModes.SkipSetEventOnHandle))
             {
                 throw new HttpListenerException(Marshal.GetLastWin32Error());
             }
@@ -451,6 +453,7 @@ namespace System.Net
         {
             if ((_requestQueueHandle != null) && (!_requestQueueHandle.IsInvalid))
             {
+                if (NetEventSource.IsEnabled) NetEventSource.Info($"Dispose ThreadPoolBoundHandle: {_requestQueueBoundHandle}");
                 _requestQueueBoundHandle?.Dispose();
                 _requestQueueHandle.Dispose();
             }
@@ -1914,8 +1917,10 @@ namespace System.Net
                 _ownershipState = 1;
                 _httpListener = httpListener;
                 _connectionId = connectionId;
+
                 // we can call the Unsafe API here, we won't ever call user code
                 _nativeOverlapped = httpListener.RequestQueueBoundHandle.AllocateNativeOverlapped(s_IOCallback, state: this, pinData: null);
+                if (NetEventSource.IsEnabled) NetEventSource.Info($"DisconnectAsyncResult: ThreadPoolBoundHandle.AllocateNativeOverlapped({httpListener._requestQueueBoundHandle}) -> {_nativeOverlapped->GetHashCode()}");
             }
 
             internal bool StartOwningDisconnectHandling()
@@ -1950,6 +1955,7 @@ namespace System.Net
             private static unsafe void IOCompleted(DisconnectAsyncResult asyncResult, uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(null, "_connectionId:" + asyncResult._connectionId);
+
                 asyncResult._httpListener._requestQueueBoundHandle.FreeNativeOverlapped(nativeOverlapped);
                 if (Interlocked.Exchange(ref asyncResult._ownershipState, 2) == 0)
                 {

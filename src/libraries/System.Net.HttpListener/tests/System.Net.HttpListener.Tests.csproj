@@ -9,8 +9,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="AuthenticationTests.cs" />
     <Compile Include="GetContextHelper.cs" />
+    <Compile Include="HttpListenerAuthenticationTests.cs" />
     <Compile Include="HttpListenerContextTests.cs" />
     <Compile Include="HttpListenerPrefixCollectionTests.cs" />
     <Compile Include="HttpListenerResponseTests.Cookies.cs" />

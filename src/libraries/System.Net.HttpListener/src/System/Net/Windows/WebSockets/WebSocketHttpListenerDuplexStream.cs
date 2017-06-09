@@ -852,6 +852,22 @@ namespace System.Net.WebSockets
             private readonly WebSocketBase _webSocket;
             private readonly WebSocketHttpListenerDuplexStream _currentStream;
 
+#if DEBUG
+            private volatile int _nativeOverlappedCounter = 0;
+            private volatile int _nativeOverlappedUsed = 0;
+
+            private void DebugRefCountReleaseNativeOverlapped()
+            {
+                Debug.Assert(Interlocked.Decrement(ref _nativeOverlappedCounter) == 0, "NativeOverlapped released too many times.");
+                Interlocked.Decrement(ref _nativeOverlappedUsed);
+            }
+
+            private void DebugRefCountAllocNativeOverlapped()
+            {
+                Debug.Assert(Interlocked.Increment(ref _nativeOverlappedCounter) == 1, "NativeOverlapped allocated without release.");
+            }
+#endif
+
             public HttpListenerAsyncEventArgs(WebSocketBase webSocket, WebSocketHttpListenerDuplexStream stream)
                 : base()
             {
@@ -923,7 +939,13 @@ namespace System.Net.WebSockets
 
             internal unsafe NativeOverlapped* NativeOverlapped
             {
-                get { return _ptrNativeOverlapped; }
+                get
+                {
+#if DEBUG
+                    Debug.Assert(Interlocked.Increment(ref _nativeOverlappedUsed) == 1, "NativeOverlapped reused.");
+#endif
+                    return _ptrNativeOverlapped;
+                }
             }
 
             public IntPtr EntityChunks
@@ -986,6 +1008,9 @@ namespace System.Net.WebSockets
 
             private unsafe void InitializeOverlapped(ThreadPoolBoundHandle boundHandle)
             {
+#if DEBUG
+                DebugRefCountAllocNativeOverlapped();
+#endif
                 _boundHandle = boundHandle;
                 _ptrNativeOverlapped = boundHandle.AllocateNativeOverlapped(CompletionPortCallback, null, null);
             }
@@ -998,6 +1023,9 @@ namespace System.Net.WebSockets
                     // Free the overlapped object
                     if (_ptrNativeOverlapped != null)
                     {
+#if DEBUG
+                        DebugRefCountReleaseNativeOverlapped();
+#endif
                         _boundHandle.FreeNativeOverlapped(_ptrNativeOverlapped);
                         _ptrNativeOverlapped = null;
                     }
