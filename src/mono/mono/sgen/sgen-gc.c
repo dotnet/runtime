@@ -3436,10 +3436,14 @@ sgen_gc_init (void)
 		int num_workers = 1;
 		if (major_collector.is_parallel || sgen_minor_collector.is_parallel) {
 			num_workers = mono_cpu_count ();
-			if (num_workers < 1)
+			if (num_workers <= 1) {
 				num_workers = 1;
+				major_collector.is_parallel = FALSE;
+				sgen_minor_collector.is_parallel = FALSE;
+			}
 		}
-		sgen_workers_init (num_workers, (SgenWorkerCallback) major_collector.worker_init_cb);
+		if (major_collector.is_concurrent || sgen_minor_collector.is_parallel)
+			sgen_workers_init (num_workers, (SgenWorkerCallback) major_collector.worker_init_cb);
 	}
 
 	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
