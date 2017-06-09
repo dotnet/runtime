@@ -42,16 +42,12 @@ void DacGlobals::Initialize()
 {
     TADDR baseAddress = PTR_TO_TADDR(PAL_GetSymbolModuleBase((void *)DacGlobals::Initialize));
     g_dacTable.InitializeEntries(baseAddress);
-#ifdef FEATURE_SVR_GC
-    g_dacTable.InitializeSVREntries(baseAddress);
-#endif
 }
 
 // Initializes the non-SVR table entries
 void DacGlobals::InitializeEntries(TADDR baseAddress)
 {
 #define DEFINE_DACVAR(id_type, size, id, var)                   id = PTR_TO_TADDR(&var) - baseAddress;
-#define DEFINE_DACVAR_SVR(id_type, size, id, var) 
 #define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)           id = PTR_TO_TADDR(&var) - baseAddress;
 #include "dacvars.h"
 
