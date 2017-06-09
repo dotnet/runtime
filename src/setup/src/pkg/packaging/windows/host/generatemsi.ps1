@@ -35,7 +35,7 @@ function RunCandle
         -out "$WixObjRoot\" `
         -ext WixDependencyExtension.dll `
         -dHostSrc="$SharedHostPublishRoot" `
-        -dMicrosoftEula="$PackagingRoot\osx\sharedhost\resources\en.lproj\eula.rtf" `
+        -dMicrosoftEula="$PackagingRoot\windows\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$SharedHostMSIVersion" `
         -dNugetVersion="$SharedHostNugetVersion" `
