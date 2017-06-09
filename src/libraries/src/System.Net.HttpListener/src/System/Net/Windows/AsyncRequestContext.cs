@@ -14,6 +14,22 @@ namespace System.Net
         private ThreadPoolBoundHandle _boundHandle;
         private readonly ListenerAsyncResult _result;
 
+#if DEBUG
+        private volatile int _nativeOverlappedCounter = 0;
+        private volatile int _nativeOverlappedUsed = 0;
+
+        private void DebugRefCountReleaseNativeOverlapped()
+        {
+            Debug.Assert(Interlocked.Decrement(ref _nativeOverlappedCounter) == 0, "NativeOverlapped released too many times.");
+            Interlocked.Decrement(ref _nativeOverlappedUsed);
+        }
+
+        private void DebugRefCountAllocNativeOverlapped()
+        {
+            Debug.Assert(Interlocked.Increment(ref _nativeOverlappedCounter) == 1, "NativeOverlapped allocated without release.");
+        }
+#endif
+
         internal AsyncRequestContext(ThreadPoolBoundHandle boundHandle, ListenerAsyncResult result)
         {
             _result = result;
@@ -23,19 +39,28 @@ namespace System.Net
         private Interop.HttpApi.HTTP_REQUEST* Allocate(ThreadPoolBoundHandle boundHandle, uint size)
         {
             uint newSize = size != 0 ? size : RequestBuffer == null ? 4096 : Size;
-            if (_nativeOverlapped != null && newSize != RequestBuffer.Length)
+            if (_nativeOverlapped != null)
             {
+#if DEBUG
+                DebugRefCountReleaseNativeOverlapped();
+#endif
+
                 NativeOverlapped* nativeOverlapped = _nativeOverlapped;
                 _nativeOverlapped = null;
                 _boundHandle.FreeNativeOverlapped(nativeOverlapped);
             }
+
             if (_nativeOverlapped == null)
             {
+#if DEBUG
+                DebugRefCountAllocNativeOverlapped();
+#endif
                 SetBuffer(checked((int)newSize));
                 _boundHandle = boundHandle;
                 _nativeOverlapped = boundHandle.AllocateNativeOverlapped(ListenerAsyncResult.IOCallback, state: _result, pinData: RequestBuffer);
                 return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
             }
+
             return RequestBlob;
         }
 
@@ -49,6 +74,10 @@ namespace System.Net
         {
             if (_nativeOverlapped != null)
             {
+#if DEBUG
+                DebugRefCountReleaseNativeOverlapped();
+#endif
+
                 NativeOverlapped* nativeOverlapped = _nativeOverlapped;
                 _nativeOverlapped = null;
                 _boundHandle.FreeNativeOverlapped(nativeOverlapped);
@@ -62,9 +91,13 @@ namespace System.Net
                 Debug.Assert(!disposing, "AsyncRequestContext::Dispose()|Must call ReleasePins() before calling Dispose().");
                 if (!Environment.HasShutdownStarted || disposing)
                 {
+#if DEBUG
+                    DebugRefCountReleaseNativeOverlapped();
+#endif
                     _boundHandle.FreeNativeOverlapped(_nativeOverlapped);
                 }
             }
+
             base.Dispose(disposing);
         }
 
@@ -72,9 +105,12 @@ namespace System.Net
         {
             get
             {
+#if DEBUG
+                Debug.Assert(Interlocked.Increment(ref _nativeOverlappedUsed) == 1, "NativeOverlapped reused.");
+#endif
+
                 return _nativeOverlapped;
             }
         }
     }
 }
-

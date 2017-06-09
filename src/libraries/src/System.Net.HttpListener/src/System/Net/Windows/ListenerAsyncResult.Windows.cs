@@ -132,8 +132,7 @@ namespace System.Net
                     _requestContext.Reset(listener.RequestQueueBoundHandle, _requestContext.RequestBlob->RequestId, bytesTransferred);
                     continue;
                 }
-                else if (statusCode == Interop.HttpApi.ERROR_SUCCESS &&
-                    HttpListener.SkipIOCPCallbackOnSuccess)
+                else if (statusCode == Interop.HttpApi.ERROR_SUCCESS && HttpListener.SkipIOCPCallbackOnSuccess)
                 {
                     // IO operation completed synchronously - callback won't be called to signal completion.
                     IOCompleted(this, statusCode, bytesTransferred);
