@@ -3435,8 +3435,7 @@ sgen_gc_init (void)
 	if (major_collector.is_concurrent || sgen_minor_collector.is_parallel) {
 		int num_workers = 1;
 		if (major_collector.is_parallel || sgen_minor_collector.is_parallel) {
-			/* FIXME Detect the number of physical cores, instead of logical */
-			num_workers = mono_cpu_count () / 2;
+			num_workers = mono_cpu_count ();
 			if (num_workers < 1)
 				num_workers = 1;
 		}
