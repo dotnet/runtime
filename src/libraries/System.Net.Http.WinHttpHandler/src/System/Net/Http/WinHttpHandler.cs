@@ -1182,21 +1182,17 @@ namespace System.Net.Http
         private void SetRequestHandleHttp2Options(SafeWinHttpHandle requestHandle, Version requestVersion)
         {
             Debug.Assert(requestHandle != null);
-            if (requestVersion == HttpVersion20)
+            uint optionData = (requestVersion == HttpVersion20) ? Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2 : 0;
+            if (Interop.WinHttp.WinHttpSetOption(
+                requestHandle,
+                Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL,
+                ref optionData))
             {
-                WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: setting HTTP/2 option");
-                uint optionData = Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2;
-                if (Interop.WinHttp.WinHttpSetOption(
-                    requestHandle,
-                    Interop.WinHttp.WINHTTP_OPTION_ENABLE_HTTP_PROTOCOL,
-                    ref optionData))
-                {
-                    WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: HTTP/2 option supported");
-                }
-                else
-                {
-                    WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: HTTP/2 option not supported");
-                }
+                WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: HTTP/2 option supported, setting to {0}", optionData);
+            }
+            else
+            {
+                WinHttpTraceHelper.Trace("WinHttpHandler.SetRequestHandleHttp2Options: HTTP/2 option not supported");
             }
         }
 
