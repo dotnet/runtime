@@ -52,6 +52,7 @@ usage()
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
     echo "buildstandalonegc - builds the GC in a standalone mode. Can't be used with \"cmakeargs\"."
     echo "msbuildonunsupportedplatform - build managed binaries even if distro is not officially supported."
+    echo "numproc - set the number of build processes."
     exit 1
 }
 
@@ -311,17 +312,6 @@ build_native()
         exit 1
     fi
     
-    # Get the number of processors available to the scheduler
-    # Other techniques such as `nproc` only get the number of
-    # processors available to a single process.
-    if [ `uname` = "FreeBSD" ]; then
-        NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
-    elif [ `uname` = "NetBSD" ]; then
-        NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
-    else
-        NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
-    fi
-
     # Build
     if [ $__ConfigureOnly == 1 ]; then
         echo "Finish configuration & skipping $message build."
@@ -331,9 +321,9 @@ build_native()
     # Check that the makefiles were created.
     pushd "$intermediatesForBuild"
 
-    echo "Executing $buildTool install -j $NumProc"
+    echo "Executing $buildTool install -j $__NumProc"
 
-    $buildTool install -j $NumProc
+    $buildTool install -j $__NumProc
     if [ $? != 0 ]; then
         echo "Failed to build $message."
         exit 1
@@ -627,6 +617,17 @@ __msbuildonunsupportedplatform=0
 __PgoOptDataVersion=""
 __IbcOptDataVersion=""
 
+# Get the number of processors available to the scheduler
+# Other techniques such as `nproc` only get the number of
+# processors available to a single process.
+if [ `uname` = "FreeBSD" ]; then
+  __NumProc=`sysctl hw.ncpu | awk '{ print $2+1 }'`
+elif [ `uname` = "NetBSD" ]; then
+  __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
+else
+  __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
+fi
+
 while :; do
     if [ $# -le 0 ]; then
         break
@@ -815,6 +816,15 @@ while :; do
             ;;
         msbuildonunsupportedplatform)
             __msbuildonunsupportedplatform=1
+            ;;
+        numproc)
+            if [ -n "$2" ]; then
+              __NumProc="$2"
+              shift
+            else
+              echo "ERROR: 'numproc' requires a non-empty option argument"
+              exit 1
+            fi
             ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
