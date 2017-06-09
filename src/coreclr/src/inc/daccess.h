@@ -602,14 +602,10 @@ typedef struct _DacGlobals
 #ifdef FEATURE_PAL
     static void Initialize();
     void InitializeEntries(TADDR baseAddress);
-#ifdef FEATURE_SVR_GC
-    void InitializeSVREntries(TADDR baseAddress);
-#endif // FEATURE_SVR_GC
 #endif // FEATURE_PAL
 
 // These will define all of the dac related mscorwks static and global variables    
 #define DEFINE_DACVAR(id_type, size, id, var)                 id_type id;
-#define DEFINE_DACVAR_SVR(id_type, size, id, var)             id_type id;
 #define DEFINE_DACVAR_NO_DUMP(id_type, size, id, var)         id_type id;
 #include "dacvars.h"
 
