@@ -53,7 +53,7 @@ struct _MonoType {
 
 #if !defined(DISABLE_JIT) || defined(ENABLE_INTERPRETER)
 /* Some VES is available at runtime */
-#define HAVE_ONLINE_VES
+#define ENABLE_ILGEN
 #endif
 
 struct _MonoAssemblyName {

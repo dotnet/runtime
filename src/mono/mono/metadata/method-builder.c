@@ -67,7 +67,7 @@ mono_mb_new_base (MonoClass *klass, MonoWrapperType type)
 	m->inline_info = 1;
 	m->wrapper_type = type;
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	mb->code_size = 40;
 	mb->code = (unsigned char *)g_malloc (mb->code_size);
 	mb->init_locals = TRUE;
@@ -104,7 +104,7 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 void
 mono_mb_free (MonoMethodBuilder *mb)
 {
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	GList *l;
 
 	for (l = mb->locals_list; l; l = l->next) {
@@ -134,7 +134,7 @@ mono_mb_free (MonoMethodBuilder *mb)
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
 {
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	MonoMethodHeader *header;
 #endif
 	MonoMethodWrapper *mw;
@@ -147,7 +147,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 
 	image = mb->method->klass->image;
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	if (mb->dynamic) {
 		method = mb->method;
 		mw = (MonoMethodWrapper*)method;
@@ -177,7 +177,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		else
 			method->name = mono_image_strdup (image, mb->name);
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 		mw->header = header = (MonoMethodHeader *) 
 			mono_image_alloc0 (image, MONO_SIZEOF_METHOD_HEADER + mb->locals * sizeof (MonoType *));
 
@@ -190,7 +190,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 #endif
 	}
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	/* Free the locals list so mono_mb_free () doesn't free the types twice */
 	g_list_free (mb->locals_list);
 	mb->locals_list = NULL;
@@ -200,7 +200,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	if (!signature->hasthis)
 		method->flags |= METHOD_ATTRIBUTE_STATIC;
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	if (max_stack < 8)
 		max_stack = 8;
 
@@ -236,7 +236,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 		mw->method_data = data;
 	}
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	/*{
 		static int total_code = 0;
 		static int total_alloc = 0;
@@ -284,7 +284,7 @@ mono_mb_add_data (MonoMethodBuilder *mb, gpointer data)
 	return g_list_length ((GList *)mw->method_data);
 }
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 
 /**
  * mono_mb_add_local:

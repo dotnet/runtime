@@ -25,7 +25,7 @@ typedef struct _MonoMethodBuilder {
 	MonoMethod *method;
 	char *name;
 	gboolean no_dup_name;
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 	GList *locals_list;
 	int locals;
 	gboolean dynamic;
@@ -53,7 +53,7 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data);
 
-#ifdef HAVE_ONLINE_VES
+#ifdef ENABLE_ILGEN
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value);
 
