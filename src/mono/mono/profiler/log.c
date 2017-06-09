@@ -69,6 +69,7 @@
 static volatile gint32 runtime_inited;
 static volatile gint32 in_shutdown;
 
+static ProfilerConfig config;
 static int nocalls = 0;
 static int notraces = 0;
 static int use_zip = 0;
@@ -84,6 +85,8 @@ static gboolean no_counters = FALSE;
 static gboolean only_coverage = FALSE;
 static gboolean debug_coverage = FALSE;
 static int max_allocated_sample_hits;
+
+#define ENABLED(EVT) (config.effective_mask & (EVT))
 
 // Statistics for internal profiler data structures.
 static gint32 sample_allocations_ctr,
@@ -1203,15 +1206,17 @@ free_thread (gpointer p)
 
 		InterlockedIncrement (&thread_ends_ctr);
 
-		LogBuffer *buf = ensure_logbuf_unsafe (thread,
-			EVENT_SIZE /* event */ +
-			BYTE_SIZE /* type */ +
-			LEB128_SIZE /* tid */
-		);
+		if (ENABLED (PROFLOG_THREAD_EVENTS)) {
+			LogBuffer *buf = ensure_logbuf_unsafe (thread,
+				EVENT_SIZE /* event */ +
+				BYTE_SIZE /* type */ +
+				LEB128_SIZE /* tid */
+			);
 
-		emit_event (buf, TYPE_END_UNLOAD | TYPE_METADATA);
-		emit_byte (buf, TYPE_THREAD);
-		emit_ptr (buf, (void *) thread->node.key);
+			emit_event (buf, TYPE_END_UNLOAD | TYPE_METADATA);
+			emit_byte (buf, TYPE_THREAD);
+			emit_ptr (buf, (void *) thread->node.key);
+		}
 	}
 
 	send_buffer (thread);
@@ -1440,9 +1445,11 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		BYTE_SIZE /* generation */
 	);
 
-	emit_event (logbuffer, TYPE_GC_EVENT | TYPE_GC);
-	emit_byte (logbuffer, ev);
-	emit_byte (logbuffer, generation);
+	if (ENABLED (PROFLOG_GC_EVENTS)) {
+		emit_event (logbuffer, TYPE_GC_EVENT | TYPE_GC);
+		emit_byte (logbuffer, ev);
+		emit_byte (logbuffer, generation);
+	}
 
 	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
 
@@ -2135,33 +2142,37 @@ thread_start (MonoProfiler *prof, uintptr_t tid)
 {
 	init_thread (prof, TRUE);
 
-	ENTER_LOG (&thread_starts_ctr, logbuffer,
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* tid */
-	);
+	if (ENABLED (PROFLOG_THREAD_EVENTS)) {
+		ENTER_LOG (&thread_starts_ctr, logbuffer,
+			EVENT_SIZE /* event */ +
+			BYTE_SIZE /* type */ +
+			LEB128_SIZE /* tid */
+		);
 
-	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_THREAD);
-	emit_ptr (logbuffer, (void*) tid);
+		emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
+		emit_byte (logbuffer, TYPE_THREAD);
+		emit_ptr (logbuffer, (void*) tid);
 
-	EXIT_LOG;
+		EXIT_LOG;
+	}
 }
 
 static void
 thread_end (MonoProfiler *prof, uintptr_t tid)
 {
-	ENTER_LOG (&thread_ends_ctr, logbuffer,
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* tid */
-	);
+	if (ENABLED (PROFLOG_THREAD_EVENTS)) {
+		ENTER_LOG (&thread_ends_ctr, logbuffer,
+			EVENT_SIZE /* event */ +
+			BYTE_SIZE /* type */ +
+			LEB128_SIZE /* tid */
+		);
 
-	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_THREAD);
-	emit_ptr (logbuffer, (void*) tid);
+		emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
+		emit_byte (logbuffer, TYPE_THREAD);
+		emit_ptr (logbuffer, (void*) tid);
 
-	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
+		EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
+	}
 
 	MonoProfilerThread *thread = PROF_TLS_GET ();
 
@@ -2176,20 +2187,22 @@ thread_name (MonoProfiler *prof, uintptr_t tid, const char *name)
 {
 	int len = strlen (name) + 1;
 
-	ENTER_LOG (&thread_names_ctr, logbuffer,
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* tid */ +
-		len /* name */
-	);
+	if (ENABLED (PROFLOG_THREAD_EVENTS)) {
+		ENTER_LOG (&thread_names_ctr, logbuffer,
+			EVENT_SIZE /* event */ +
+			BYTE_SIZE /* type */ +
+			LEB128_SIZE /* tid */ +
+			len /* name */
+		);
 
-	emit_event (logbuffer, TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_THREAD);
-	emit_ptr (logbuffer, (void*)tid);
-	memcpy (logbuffer->cursor, name, len);
-	logbuffer->cursor += len;
+		emit_event (logbuffer, TYPE_METADATA);
+		emit_byte (logbuffer, TYPE_THREAD);
+		emit_ptr (logbuffer, (void*)tid);
+		memcpy (logbuffer->cursor, name, len);
+		logbuffer->cursor += len;
 
-	EXIT_LOG;
+		EXIT_LOG;
+	}
 }
 
 static void
@@ -4575,8 +4588,6 @@ mono_profiler_startup_log (const char *desc)
 {
 	mono_profiler_startup (desc);
 }
-
-static ProfilerConfig config;
 
 void
 mono_profiler_startup (const char *desc)
