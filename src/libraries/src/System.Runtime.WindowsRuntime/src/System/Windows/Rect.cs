@@ -313,7 +313,7 @@ namespace Windows.Foundation
         {
             if (IsEmpty)
             {
-                return global::System.SR.DirectUI_Empty;
+                return SR.DirectUI_Empty;
             }
 
             // Helper to get the numeric list separator for a given culture.
