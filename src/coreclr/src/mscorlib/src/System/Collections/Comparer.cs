@@ -13,20 +13,16 @@
 ** 
 ===========================================================*/
 
-using System;
 using System.Globalization;
-using System.Runtime.Serialization;
 using System.Diagnostics.Contracts;
 
 namespace System.Collections
 {
-    internal sealed class Comparer : IComparer, ISerializable
+    internal sealed class Comparer : IComparer
     {
         private CompareInfo m_compareInfo;
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);
         public static readonly Comparer DefaultInvariant = new Comparer(CultureInfo.InvariantCulture);
-
-        private const String CompareInfoName = "CompareInfo";
 
         private Comparer()
         {
@@ -72,11 +68,6 @@ namespace System.Collections
                 return -ib.CompareTo(a);
 
             throw new ArgumentException(SR.Argument_ImplementIComparable);
-        }
-
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
     }
 }

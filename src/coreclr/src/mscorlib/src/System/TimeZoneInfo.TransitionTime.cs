@@ -132,12 +132,12 @@ namespace System
                 }
                 Contract.EndContractBlock();
 
-                info.AddValue("TimeOfDay", _timeOfDay);
-                info.AddValue("Month", _month);
-                info.AddValue("Week", _week);
-                info.AddValue("Day", _day);
-                info.AddValue("DayOfWeek", _dayOfWeek);
-                info.AddValue("IsFixedDateRule", _isFixedDateRule);
+                info.AddValue("TimeOfDay", _timeOfDay); // Do not rename (binary serialization)
+                info.AddValue("Month", _month); // Do not rename (binary serialization)
+                info.AddValue("Week", _week); // Do not rename (binary serialization)
+                info.AddValue("Day", _day); // Do not rename (binary serialization)
+                info.AddValue("DayOfWeek", _dayOfWeek); // Do not rename (binary serialization)
+                info.AddValue("IsFixedDateRule", _isFixedDateRule); // Do not rename (binary serialization)
             }
 
             private TransitionTime(SerializationInfo info, StreamingContext context)
@@ -147,12 +147,12 @@ namespace System
                     throw new ArgumentNullException(nameof(info));
                 }
 
-                _timeOfDay = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime));
-                _month = (byte)info.GetValue("Month", typeof(byte));
-                _week = (byte)info.GetValue("Week", typeof(byte));
-                _day = (byte)info.GetValue("Day", typeof(byte));
-                _dayOfWeek = (DayOfWeek)info.GetValue("DayOfWeek", typeof(DayOfWeek));
-                _isFixedDateRule = (bool)info.GetValue("IsFixedDateRule", typeof(bool));
+                _timeOfDay = (DateTime)info.GetValue("TimeOfDay", typeof(DateTime)); // Do not rename (binary serialization)
+                _month = (byte)info.GetValue("Month", typeof(byte)); // Do not rename (binary serialization)
+                _week = (byte)info.GetValue("Week", typeof(byte)); // Do not rename (binary serialization)
+                _day = (byte)info.GetValue("Day", typeof(byte)); // Do not rename (binary serialization)
+                _dayOfWeek = (DayOfWeek)info.GetValue("DayOfWeek", typeof(DayOfWeek)); // Do not rename (binary serialization)
+                _isFixedDateRule = (bool)info.GetValue("IsFixedDateRule", typeof(bool)); // Do not rename (binary serialization)
             }
         }
     }

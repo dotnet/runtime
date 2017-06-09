@@ -23,9 +23,9 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
     internal class ListDictionaryInternal : IDictionary
     {
-        private DictionaryNode head;
-        private int version;
-        private int count;
+        private DictionaryNode head; // Do not rename (binary serialization)
+        private int version; // Do not rename (binary serialization)
+        private int count; // Do not rename (binary serialization)
         [NonSerialized]
         private Object _syncRoot;
 
