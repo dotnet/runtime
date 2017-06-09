@@ -108,7 +108,6 @@ def static getOSGroup(def os) {
                         // Run with just stopwatch: Profile=Off
                         batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
                         batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -nowarmup -runtype ${runType} -scenarioTest -group ILLink")
 
                         // Run with the full set of counters enabled: Profile=On
                         batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
@@ -398,3 +397,92 @@ def static getOSGroup(def os) {
         }
     } // os
 } // isPR
+
+// Setup ILLink tests
+[true, false].each { isPR ->
+    ['Windows_NT'].each { os ->
+        ['x64'].each { arch ->
+            def architecture = arch
+            def newJob = job(Utilities.getFullJobName(project, "perf_illink_${os}_${arch}", isPR)) {
+                // Set the label.
+                label('windows_Illink_perf')
+                wrappers {
+                    credentialsBinding {
+                    string('BV_UPLOAD_SAS_TOKEN', 'ILLink BenchView Sas')
+                    }
+                }
+
+                if (isPR)
+                {
+                    parameters
+                    {
+                        stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                    }
+                }
+
+                parameters
+                {
+                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '1', 'Size test, one iteration is sufficient')
+                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '1', 'Size test, one iteration is sufficient')
+                }
+                def configuration = 'Release'
+                def runType = isPR ? 'private' : 'rolling'
+                def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                def uploadString = '-uploadToBenchview'
+
+                steps {
+                    // Batch
+                    batchFile("powershell wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile \"%WORKSPACE%\\nuget.exe\"")
+                    batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
+                    batchFile("\"%WORKSPACE%\\nuget.exe\" install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
+
+                    //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
+                    //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
+                    batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
+                    "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
+                    "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
+                    "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                    "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
+                    batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
+                    batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
+
+                    batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
+
+                    // Run with just stopwatch: Profile=Off
+                    batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -nowarmup -runtype ${runType} -scenarioTest -group ILLink")
+                }
+             }
+
+             // Save machinedata.json to /artifact/bin/ Jenkins dir
+            def archiveSettings = new ArchivalSettings()
+            archiveSettings.addFiles('Perf-*.xml')
+            archiveSettings.addFiles('Perf-*.log')
+            archiveSettings.addFiles('machinedata.json')
+            Utilities.addArchival(newJob, archiveSettings)
+
+            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+
+            newJob.with {
+                wrappers {
+                    timeout {
+                        absolute(240)
+                    }
+                }
+            }
+
+            if (isPR) {
+                TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+                builder.setGithubContext("${os} ${arch} ILLink Perf Tests")
+                builder.triggerOnlyOnComment()
+                builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+illink\\W+perf.*")
+                builder.triggerForBranch(branch)
+                builder.emitTrigger(newJob)
+            }
+            else {
+                // Set a push trigger
+                TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                builder.emitTrigger(newJob)
+            }
+        }
+    }
+}
