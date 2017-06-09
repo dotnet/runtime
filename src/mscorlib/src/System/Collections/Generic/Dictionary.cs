@@ -75,10 +75,10 @@ namespace System.Collections.Generic
         private Object _syncRoot;
 
         // constants for serialization
-        private const String VersionName = "Version";
-        private const String HashSizeName = "HashSize";  // Must save buckets.Length
-        private const String KeyValuePairsName = "KeyValuePairs";
-        private const String ComparerName = "Comparer";
+        private const String VersionName = "Version"; // Do not rename (binary serialization)
+        private const String HashSizeName = "HashSize"; // Do not rename (binary serialization). Must save buckets.Length
+        private const String KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
+        private const String ComparerName = "Comparer"; // Do not rename (binary serialization)
 
         public Dictionary() : this(0, null) { }
 

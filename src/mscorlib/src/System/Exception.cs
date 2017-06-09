@@ -76,17 +76,17 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            _className = info.GetString("ClassName");
-            _message = info.GetString("Message");
-            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary)));
-            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception)));
-            _helpURL = info.GetString("HelpURL");
-            _stackTraceString = info.GetString("StackTraceString");
-            _remoteStackTraceString = info.GetString("RemoteStackTraceString");
-            _remoteStackIndex = info.GetInt32("RemoteStackIndex");
-            
-            HResult = info.GetInt32("HResult");
-            _source = info.GetString("Source");
+            _className = info.GetString("ClassName"); // Do not rename (binary serialization)
+            _message = info.GetString("Message"); // Do not rename (binary serialization)
+            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
+            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
+            _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
+            _stackTraceString = info.GetString("StackTraceString"); // Do not rename (binary serialization)
+            _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
+            _remoteStackIndex = info.GetInt32("RemoteStackIndex"); // Do not rename (binary serialization)
+
+            HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)
+            _source = info.GetString("Source"); // Do not rename (binary serialization)
 
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
@@ -94,7 +94,7 @@ namespace System
             // We use the no throw version since we could be deserializing a pre-V4
             // exception object that may not have this entry. In such a case, we would
             // get null.
-            _watsonBuckets = (Object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[]));
+            _watsonBuckets = (Object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
 
             if (_className == null || HResult == 0)
@@ -460,20 +460,20 @@ namespace System
                 _source = Source; // Set the Source information correctly before serialization
             }
 
-            info.AddValue("ClassName", GetClassName(), typeof(String));
-            info.AddValue("Message", _message, typeof(String));
-            info.AddValue("Data", _data, typeof(IDictionary));
-            info.AddValue("InnerException", _innerException, typeof(Exception));
-            info.AddValue("HelpURL", _helpURL, typeof(String));
-            info.AddValue("StackTraceString", tempStackTraceString, typeof(String));
-            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(String));
-            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(Int32));
-            info.AddValue("ExceptionMethod", null, typeof(String));
-            info.AddValue("HResult", HResult);
-            info.AddValue("Source", _source, typeof(String));
+            info.AddValue("ClassName", GetClassName(), typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Message", _message, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
+            info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
+            info.AddValue("HelpURL", _helpURL, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("StackTraceString", tempStackTraceString, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(Int32)); // Do not rename (binary serialization)
+            info.AddValue("ExceptionMethod", null, typeof(String)); // Do not rename (binary serialization)
+            info.AddValue("HResult", HResult); // Do not rename (binary serialization)
+            info.AddValue("Source", _source, typeof(String)); // Do not rename (binary serialization)
 
             // Serialize the Watson bucket details as well
-            info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[]));
+            info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[])); // Do not rename (binary serialization)
         }
 
         // This method will clear the _stackTrace of the exception object upon deserialization

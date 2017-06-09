@@ -26,17 +26,17 @@ namespace System
         ////////////////////////////////////////////////////////////////////////////////
         //  Member variables
         ////////////////////////////////////////////////////////////////////////////////
-        private int _a;
-        private short _b;
-        private short _c;
-        private byte _d;
-        private byte _e;
-        private byte _f;
-        private byte _g;
-        private byte _h;
-        private byte _i;
-        private byte _j;
-        private byte _k;
+        private int _a; // Do not rename (binary serialization)
+        private short _b; // Do not rename (binary serialization)
+        private short _c; // Do not rename (binary serialization)
+        private byte _d; // Do not rename (binary serialization)
+        private byte _e; // Do not rename (binary serialization)
+        private byte _f; // Do not rename (binary serialization)
+        private byte _g; // Do not rename (binary serialization)
+        private byte _h; // Do not rename (binary serialization)
+        private byte _i; // Do not rename (binary serialization)
+        private byte _j; // Do not rename (binary serialization)
+        private byte _k; // Do not rename (binary serialization)
 
 
 

@@ -33,9 +33,9 @@ namespace System
         // instantiating another generic type in addition to ArraySegment<T> for new type parameters.
         public static ArraySegment<T> Empty { get; } = new ArraySegment<T>(new T[0]);
 
-        private readonly T[] _array;
-        private readonly int _offset;
-        private readonly int _count;
+        private readonly T[] _array; // Do not rename (binary serialization)
+        private readonly int _offset; // Do not rename (binary serialization)
+        private readonly int _count; // Do not rename (binary serialization)
 
         public ArraySegment(T[] array)
         {
