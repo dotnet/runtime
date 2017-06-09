@@ -59,10 +59,17 @@ void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
         // Call node srcCandidates = Bitwise-OR(allregs(GetReturnRegType(i))) for all i=0..RetRegCount-1
         regMaskTP srcCandidates = m_lsra->allMultiRegCallNodeRegs(call);
         op1->gtLsraInfo.setSrcCandidates(m_lsra, srcCandidates);
-        return;
     }
-
-    CheckImmedAndMakeContained(storeLoc, op1);
+#if defined(_TARGET_ARM_)
+    else if (op1->OperGet() == GT_LONG)
+    {
+        op1->SetContained();
+    }
+#endif // _TARGET_ARM_
+    else
+    {
+        CheckImmedAndMakeContained(storeLoc, op1);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -674,6 +681,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
         {
             // We consume all of the items in the GT_FIELD_LIST
             argNode->gtLsraInfo.srcCount = info->numSlots;
+            putArgChild->SetContained();
         }
         else
         {
