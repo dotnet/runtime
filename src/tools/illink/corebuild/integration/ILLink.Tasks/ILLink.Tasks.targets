@@ -1,7 +1,11 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <LinkTaskDllPath Condition=" '$(LinkTaskDllPath)' == '' ">$(MSBuildThisFileDirectory)../tools/$(TargetFramework)/ILLink.Tasks.dll</LinkTaskDllPath>
+    <_LinkTaskDirectoryRoot>$(MSBuildThisFileDirectory)../tools/</_LinkTaskDirectoryRoot>
+    <_LinkTaskTFM Condition=" '$(MSBuildRuntimeType)' == 'Core' ">netcoreapp2.0</_LinkTaskTFM>
+    <_LinkTaskTFM Condition=" '$(_LinkTaskTFM)' == '' ">net46</_LinkTaskTFM>
+    <_LinkTaskDirectory>$(_LinkTaskDirectoryRoot)$(_LinkTaskTFM)/</_LinkTaskDirectory>
+    <LinkTaskDllPath Condition=" '$(LinkTaskDllPath)' == '' ">$(_LinkTaskDirectory)ILLink.Tasks.dll</LinkTaskDllPath>
   </PropertyGroup>
 
   <PropertyGroup>

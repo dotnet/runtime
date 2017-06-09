@@ -5,7 +5,7 @@ using System.IO;
 using Mono.Collections.Generic;
 using Mono.Cecil;
 
-#if NET_CORE
+#if FEATURE_ILLINK
 namespace Mono.Linker {
 
 	public abstract class DirectoryAssemblyResolver : IAssemblyResolver {

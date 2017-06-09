@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-   <PropertyGroup>
+  <PropertyGroup>
     <VersionPrefix>0.1.4-preview</VersionPrefix>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net46</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
     <RuntimeFrameworkVersion>2.0.0-beta-001509-00</RuntimeFrameworkVersion>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <PackageOutputPath>../nupkgs</PackageOutputPath>
@@ -17,7 +18,7 @@
 
     <!-- We want to package the tasks package together with its
          package dependencies, the linker, and the linker's
-         dependencies, in order to prevent projects that contsume the
+         dependencies, in order to prevent projects that consume the
          tasks package from pulling in the linker. To do this, we need
          to include project references and package references in the
          package, and prevent any of these references from being
@@ -41,8 +42,8 @@
          references from being marked as dependencies. -->
     <!-- TODO: Remove the custom .nuspec once the P2P PrivateAssets
          issue is fixed. -->
-   <NuspecFile>ILLink.Tasks.nuspec</NuspecFile>
-    <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);description=linker tasks;tfm=$(TargetFramework);</NuspecProperties>
+    <NuspecFile>ILLink.Tasks.nuspec</NuspecFile>
+    <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);description=linker tasks;</NuspecProperties>
   </PropertyGroup>
 
   <!-- TODO: Remove this workaround once we're able to avoid using a
@@ -64,12 +65,23 @@
        Instead, we use GenerateNuspecDependsOn. We could probably also
        use BeforeTargets="GenerateNuspec". -->
   <PropertyGroup>
-    <GenerateNuspecDependsOn>Publish;SetDynamicNuspecProperties;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
+    <GenerateNuspecDependsOn>SetDynamicNuspecProperties;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
-  <Target Name="SetDynamicNuspecProperties">
+  <Target Name="SetDynamicNuspecProperties"
+          DependsOnTargets="LayoutPackage">
     <PropertyGroup>
-      <NuspecProperties>$(NuspecProperties)output=$(PublishDir);version=$(Version);</NuspecProperties>
+      <NuspecProperties>$(NuspecProperties)version=$(Version);</NuspecProperties>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="LayoutPackage">
+    <ItemGroup>
+      <TFMsToPublish Include="$(TargetFrameworks)" />
+      <ProjectsToPublish Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>TargetFramework=%(TFMsToPublish.Identity);PublishDir=%(TFMsToPublish.Identity)</AdditionalProperties>
+      </ProjectsToPublish>
+    </ItemGroup>
+    <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
   </Target>
 
   <ItemGroup>
@@ -125,18 +137,17 @@
        </ItemGroup>
    -->
 
-  
   <ItemGroup>
     <!-- TODO: Once https://github.com/dotnet/sdk/issues/952 is fixed,
          use PrivateAssets="All" to prevent this project reference
          from being marked as a dependency of the tasks package (while
          still including it in the publish output). -->
-    <ProjectReference Include="../../../linker/Mono.Linker.csproj" />
+    <ProjectReference Include="../../../linker/Mono.Linker.csproj">
       <!-- SetConfiguration isn't required when the configuration is
-           already set in the solution. However, it should be possible
-           to set it here to allow packing the tasks csproj on its
-           own. This would let us avoid some of the strange behavior
-           that shows up when trying to build from a .sln file.
+           already set in the solution. Setting it here allows packing
+           the tasks csproj on its own. This lets us avoid some of the
+           strange behavior that shows up when trying to build from a
+           .sln file.
 
            There is a nuget bug that prevents this from working
            properly during restore
@@ -152,10 +163,19 @@
            (because some target gets its reference information from
            the lock file, which doesn't have configuration info).
       -->
-      <!--
-          <SetConfiguration>Configuration=netcore_$(Configuration)</SetConfiguration>
-      -->
+      <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
+    </ProjectReference>
   </ItemGroup>
+
+  <!-- Workaround for the SetConfiguration issue described above. -->
+  <Target Name="SetCecilConfiguration"
+          AfterTargets="AssignProjectConfiguration">
+    <ItemGroup>
+      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.csproj' Or '%(Filename)%(Extension)' == 'Mono.Cecil.Pdb.csproj' ">
+        <SetConfiguration>Configuration=netstandard_$(Configuration)</SetConfiguration>
+      </ProjectReferenceWithConfiguration>
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
 
@@ -164,8 +184,13 @@
          them from becoming package dependencies, and use an msbuild
          itemgroup to include their assets in the package instead of
          passing the publish path to the .nuspec. -->
-    <PackageReference Include="Microsoft.Build.Framework" Version="0.1.0-preview-00028-160627" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="0.1.0-preview-00028-160627" />
+    <!-- We use private assets for the Microsoft.Build packages to
+         prevent them from being published with the tasks dll, because
+         these are already a part of the SDK. -->
+    <PackageReference Include="Microsoft.Build.Framework" Version="15.1.1012"
+                      PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="15.1.1012"
+                      PrivateAssets="All" />
     <PackageReference Include="NuGet.ProjectModel" Version="4.3.0-preview1-2500" />
   </ItemGroup>
 </Project>

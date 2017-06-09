@@ -8,6 +8,7 @@
   </metadata>
   <files>
     <file src="ILLink.Tasks.targets" target="build" />
-    <file src="$output$*.dll" target="tools/$tfm$" />
+    <file src="netcoreapp2.0/**/*.dll" target="tools" />
+    <file src="net46/**/*.dll" target="tools" />
   </files>
 </package>
