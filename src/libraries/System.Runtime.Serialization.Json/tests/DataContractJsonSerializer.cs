@@ -2764,7 +2764,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("dotnet/corefx #20483", TargetFrameworkMonikers.UapAot)]
     public static void DCJS_VerifyIndentation()
     {
         var testClass = new TestClass()
