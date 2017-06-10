@@ -157,6 +157,25 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void SetBuffer_NoBuffer_ResetsCountOffset()
+        {
+            using (var saea = new SocketAsyncEventArgs())
+            {
+                saea.SetBuffer(42, 84);
+                Assert.Equal(0, saea.Offset);
+                Assert.Equal(0, saea.Count);
+
+                saea.SetBuffer(new byte[3], 1, 2);
+                Assert.Equal(1, saea.Offset);
+                Assert.Equal(2, saea.Count);
+
+                saea.SetBuffer(null, 1, 2);
+                Assert.Equal(0, saea.Offset);
+                Assert.Equal(0, saea.Count);
+            }
+        }
+
+        [Fact]
         public void SetBufferListWhenBufferSet_Throws()
         {
             using (var saea = new SocketAsyncEventArgs())
