@@ -1290,7 +1290,7 @@ AGAIN:
                     {
                         return false;
                     }
-                    if (op1->gtAddrMode.gtOffset != op2->gtAddrMode.gtOffset)
+                    if (op1->gtAddrMode.Offset() != op2->gtAddrMode.Offset())
                     {
                         return false;
                     }
@@ -1916,7 +1916,7 @@ AGAIN:
                     hash += tree->gtIntrinsic.gtIntrinsicId;
                     break;
                 case GT_LEA:
-                    hash += (tree->gtAddrMode.gtOffset << 3) + tree->gtAddrMode.gtScale;
+                    hash += static_cast<unsigned>(tree->gtAddrMode.Offset() << 3) + tree->gtAddrMode.gtScale;
                     break;
 
                 case GT_BLK:
@@ -7481,9 +7481,9 @@ GenTreePtr Compiler::gtCloneExpr(
             case GT_LEA:
             {
                 GenTreeAddrMode* addrModeOp = tree->AsAddrMode();
-                copy =
-                    new (this, GT_LEA) GenTreeAddrMode(addrModeOp->TypeGet(), addrModeOp->Base(), addrModeOp->Index(),
-                                                       addrModeOp->gtScale, addrModeOp->gtOffset);
+                copy                        = new (this, GT_LEA)
+                    GenTreeAddrMode(addrModeOp->TypeGet(), addrModeOp->Base(), addrModeOp->Index(), addrModeOp->gtScale,
+                                    static_cast<unsigned>(addrModeOp->Offset()));
             }
             break;
 
@@ -9375,7 +9375,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
         {
             bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "(i*%d)+", lea->gtScale);
         }
-        bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "%d)", lea->gtOffset);
+        bufp += SimpleSprintf_s(bufp, buf, sizeof(buf), "%d)", lea->Offset());
     }
     else if (tree->gtOper == GT_ARR_BOUNDS_CHECK)
     {
@@ -15342,15 +15342,15 @@ unsigned GenTreeIndir::Scale()
     }
 }
 
-size_t GenTreeIndir::Offset()
+ssize_t GenTreeIndir::Offset()
 {
     if (isIndirAddrMode())
     {
-        return Addr()->AsAddrMode()->gtOffset;
+        return Addr()->AsAddrMode()->Offset();
     }
     else if (Addr()->gtOper == GT_CLS_VAR_ADDR)
     {
-        return (size_t)Addr()->gtClsVar.gtClsVarHnd;
+        return static_cast<ssize_t>(reinterpret_cast<intptr_t>(Addr()->gtClsVar.gtClsVarHnd));
     }
     else if (Addr()->IsCnsIntOrI() && Addr()->isContained())
     {

@@ -2473,6 +2473,8 @@ FOUND_AM:
 #if SCALED_ADDR_MODES
     *mulPtr = mul;
 #endif
+    // TODO-Cleanup: The offset is signed and it should be returned as such. See also
+    // GenTreeAddrMode::gtOffset and its associated cleanup note.
     *cnsPtr = (unsigned)cns;
 
     return true;
