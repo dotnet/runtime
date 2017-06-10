@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
@@ -12,6 +13,8 @@ namespace System.Drawing
     {
         public static Color ConvertFromString(string strValue, CultureInfo culture)
         {
+            Debug.Assert(culture != null);
+
             string text = strValue.Trim();
 
             if (text.Length == 0)
@@ -27,11 +30,6 @@ namespace System.Drawing
                 {
                     return c;
                 }
-            }
-
-            if (culture == null)
-            {
-                culture = CultureInfo.CurrentCulture;
             }
 
             char sep = culture.TextInfo.ListSeparator[0];
@@ -123,10 +121,7 @@ namespace System.Drawing
                 }
                 else
                 {
-                    if (culture == null)
-                    {
-                        culture = CultureInfo.CurrentCulture;
-                    }
+                    Debug.Assert(culture != null);
                     NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
                     return IntFromString(text, formatInfo);
                 }
