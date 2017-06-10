@@ -11,8 +11,7 @@ function(add_pgo TargetName)
     if(WIN32)
         set(ProfileFileName "${TargetName}.pgd")
     else(WIN32)
-        # Clang/LLVM uses one profdata file for the entire repo
-        set(ProfileFileName "coreclr.profdata")
+        set(ProfileFileName "${TargetName}.profdata")
     endif(WIN32)
 
     set(CLR_CMAKE_OPTDATA_PACKAGEWITHRID "optimization.${CLR_CMAKE_TARGET_OS}-${CLR_CMAKE_TARGET_ARCH}.PGO.CoreCLR")
