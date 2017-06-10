@@ -2556,8 +2556,11 @@ get_image_set (MonoImage **images, int nimages)
 			}
 
 			// If we iterated all the way through images without breaking, all items in images were found in set->images
-			if (j == nimages)
-				break; // Break on "found a set with equal members"
+			if (j == nimages) {
+				// Break on "found a set with equal members".
+				// This happens in case of a hash collision with a previously cached set.
+				break;
+			}
 		}
 
 		l = l->next;
@@ -2581,9 +2584,10 @@ get_image_set (MonoImage **images, int nimages)
 
 		g_ptr_array_add (image_sets, set);
 		++img_set_count;
-
-		img_set_cache_add (set);
 	}
+
+	/* Cache the set. If there was a cache collision, the previously cached value will be replaced. */
+	img_set_cache_add (set);
 
 	if (nimages == 1 && images [0] == mono_defaults.corlib) {
 		mono_memory_barrier ();
