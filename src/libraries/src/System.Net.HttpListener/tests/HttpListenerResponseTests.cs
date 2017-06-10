@@ -295,6 +295,7 @@ namespace System.Net.Tests
         [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
+        [OuterLoop("Investigating reliability in CI.")]
         public async Task CloseResponseEntity_NotChunkedSentHeaders_SendsEntityWithoutModifyingContentLength(bool willBlock)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -306,20 +307,8 @@ namespace System.Net.Tests
                 response.Close(new byte[] { (byte)'a' }, willBlock);
                 Assert.Equal(SimpleMessage.Length, response.ContentLength64);
 
-                try
-                {
-                    string clientResponse = GetClientResponse(111);
-                    Assert.EndsWith("Hella", clientResponse);
-                }
-                catch (SocketException)
-                {
-                    // Most of the time, the Socket can read the content send after calling Close(byte[], bool), but
-                    // occassionally this test fails as the HttpListenerResponse closes before the Socket can receive all
-                    // content. If this happens, just ignore the failure and carry on.
-                    // The exception message is: "An existing connection was forcibly closed by the remote host."
-                    // Although part of this test is to ensure that the connection isn't forcibly closed when closing,
-                    // we want to avoid intermittent failures.
-                }
+                string clientResponse = GetClientResponse(111);
+                Assert.EndsWith("Hella", clientResponse);
             }
         }
 
@@ -327,6 +316,7 @@ namespace System.Net.Tests
         [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
+        [OuterLoop("Investigating reliability in CI.")]
         public async Task CloseResponseEntity_ChunkedNotSentHeaders_ModifiesContentLength(bool willBlock)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -336,21 +326,8 @@ namespace System.Net.Tests
                 response.Close(new byte[] { (byte)'a' }, willBlock);
                 Assert.Equal(-1, response.ContentLength64);
 
-                // If we're non-blocking then it's not guaranteed that we received this when we read from the socket.
-                try
-                {
-                    string clientResponse = GetClientResponse(126);
-                    Assert.EndsWith("\r\n1\r\na\r\n0\r\n\r\n", clientResponse);
-                }
-                catch (SocketException)
-                {
-                    // Most of the time, the Socket can read the content send after calling Close(byte[], bool), but
-                    // occassionally this test fails as the HttpListenerResponse closes before the Socket can receive all
-                    // content. If this happens, just ignore the failure and carry on.
-                    // The exception message is: "An existing connection was forcibly closed by the remote host."
-                    // Although part of this test is to ensure that the connection isn't forcibly closed when closing,
-                    // we want to avoid intermittent failures.
-                }
+                string clientResponse = GetClientResponse(126);
+                Assert.EndsWith("\r\n1\r\na\r\n0\r\n\r\n", clientResponse);
             }
         }
 
@@ -358,6 +335,7 @@ namespace System.Net.Tests
         [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
+        [OuterLoop("Investigating reliability in CI.")]
         public async Task CloseResponseEntity_ChunkedSentHeaders_DoesNotModifyContentLength(bool willBlock)
         {
             using (HttpListenerResponse response = await GetResponse())
@@ -368,20 +346,8 @@ namespace System.Net.Tests
                 response.Close(new byte[] { (byte)'a' }, willBlock);
                 Assert.Equal(-1, response.ContentLength64);
 
-                try
-                {
-                    string clientResponse = GetClientResponse(136);
-                    Assert.EndsWith("\r\n5\r\nHello\r\n1\r\na\r\n0\r\n\r\n", clientResponse);
-                }
-                catch (SocketException)
-                {
-                    // Most of the time, the Socket can read the content send after calling Close(byte[], bool), but
-                    // occassionally this test fails as the HttpListenerResponse closes before the Socket can receive all
-                    // content. If this happens, just ignore the failure and carry on.
-                    // The exception message is: "An existing connection was forcibly closed by the remote host."
-                    // Although part of this test is to ensure that the connection isn't forcibly closed when closing,
-                    // we want to avoid intermittent failures.
-                }
+                string clientResponse = GetClientResponse(136);
+                Assert.EndsWith("\r\n5\r\nHello\r\n1\r\na\r\n0\r\n\r\n", clientResponse);
             }
         }
 
