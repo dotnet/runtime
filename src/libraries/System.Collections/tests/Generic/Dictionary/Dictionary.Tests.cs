@@ -198,6 +198,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(CopyConstructorInt32ComparerData))]
+        [ActiveIssue(20888, TargetFrameworkMonikers.UapAot)]
         public void CopyConstructorInt32Comparer(int size, Func<int, int> keyValueSelector, Func<IDictionary<int, int>, IDictionary<int, int>> dictionarySelector, IEqualityComparer<int> comparer)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
@@ -219,6 +220,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(CopyConstructorStringComparerData))]
+        [ActiveIssue(20888, TargetFrameworkMonikers.UapAot)]
         public void CopyConstructorStringComparer(int size, Func<int, string> keyValueSelector, Func<IDictionary<string, string>, IDictionary<string, string>> dictionarySelector, IEqualityComparer<string> comparer)
         {
             TestCopyConstructor(size, keyValueSelector, dictionarySelector, comparer);
