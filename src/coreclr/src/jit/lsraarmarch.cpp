@@ -176,7 +176,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
 
     GenTree* addr  = indirTree->Addr();
     GenTree* index = nullptr;
-    unsigned cns   = 0;
+    int      cns   = 0;
 
 #ifdef _TARGET_ARM_
     // Unaligned loads/stores for floating point values must first be loaded into integer register(s)
@@ -208,7 +208,7 @@ void Lowering::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
         assert(addr->OperGet() == GT_LEA);
         GenTreeAddrMode* lea = addr->AsAddrMode();
         index                = lea->Index();
-        cns                  = lea->gtOffset;
+        cns                  = lea->Offset();
 
         // On ARM we may need a single internal register
         // (when both conditions are true then we still only need a single internal register)
