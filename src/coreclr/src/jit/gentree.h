@@ -4533,9 +4533,24 @@ struct GenTreeAddrMode : public GenTreeOp
         return gtOp2;
     }
 
-    unsigned gtScale;  // The scale factor
+    int Offset()
+    {
+        return static_cast<int>(gtOffset);
+    }
+
+    unsigned gtScale; // The scale factor
+
+#ifndef LEGACY_BACKEND
+private:
+#endif
+    // TODO-Cleanup: gtOffset should be changed to 'int' to match the getter function and avoid accidental
+    // zero extension to 64 bit. However, this is used by legacy code and initialized, via the offset
+    // parameter of the constructor, by Lowering::TryCreateAddrMode & CodeGenInterface::genCreateAddrMode.
+    // The later computes the offset as 'ssize_t' but returns it as 'unsigned'. We should change
+    // genCreateAddrMode to return 'int' or 'ssize_t' and then update this as well.
     unsigned gtOffset; // The offset to add
 
+public:
     GenTreeAddrMode(var_types type, GenTreePtr base, GenTreePtr index, unsigned scale, unsigned offset)
         : GenTreeOp(GT_LEA, type, base, index)
     {
@@ -4570,7 +4585,7 @@ struct GenTreeIndir : public GenTreeOp
     GenTree* Base();
     GenTree* Index();
     unsigned Scale();
-    size_t   Offset();
+    ssize_t  Offset();
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data) : GenTreeOp(oper, type, addr, data)
     {
