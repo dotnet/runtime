@@ -994,8 +994,9 @@ FCIMPL1(Object*, StdMngIEnumerable::GetEnumerator, Object* refThisUNSAFE)
 
     if (retVal == NULL)
     {
-        // classic COM interop scenario
-        retVal = ObjectToOBJECTREF((Object*)GetEnumeratorWorker(args));
+        // In desktop CLR we'll attempt to call through IDispatch(DISPID_NEWENUM)
+        // This is not supported in CoreCLR
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_IDISPATCH);
     }
 
     GCPROTECT_END();
