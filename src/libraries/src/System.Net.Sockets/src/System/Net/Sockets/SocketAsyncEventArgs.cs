@@ -443,17 +443,10 @@ namespace System.Net.Sockets
         internal void StartOperationCommon(Socket socket)
         {
             // Change status to "in-use".
-            if (Interlocked.CompareExchange(ref _operating, InProgress, Free) != Free)
+            int status = Interlocked.CompareExchange(ref _operating, InProgress, Free);
+            if (status != Free)
             {
-                // If it was already "in-use" check if Dispose was called.
-                if (_disposeCalled)
-                {
-                    // Dispose was called - throw ObjectDisposed.
-                    throw new ObjectDisposedException(GetType().FullName);
-                }
-
-                // Only one at a time.
-                throw new InvalidOperationException(SR.net_socketopinprogress);
+                ThrowForNonFreeStatus(status);
             }
 
             // Prepare execution context for callback.
