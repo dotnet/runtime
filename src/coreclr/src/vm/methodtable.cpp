@@ -7021,16 +7021,17 @@ BOOL MethodTable::FindDefaultMethod(
                             MethodDesc *pMD = methodIt.GetMethodDesc();
                             if (pMD->IsVirtual() && !pMD->IsAbstract() && pMD->IsMethodImpl())
                             {
-                                MethodImpl *pImpl = pMD->GetMethodImpl();
-                                MethodDesc **pImplMDs = pImpl->GetImplementedMDs();
-                                for (DWORD i = 0; i < pImpl->GetSize(); ++i)
+                                MethodImpl::Iterator it(pMD);
+                                while (it.IsValid())
                                 {
-                                    if (pImplMDs[i] == pInterfaceMD)
+                                    if (it.GetMethodDesc() == pInterfaceMD)
                                     {
                                         pCurMD = pMD;
                                         break;
                                     }
-                                }
+
+                                    it.Next();
+                                } 
                             }
                         }
                     }
