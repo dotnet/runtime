@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -418,13 +419,22 @@ namespace System.Net.Sockets
         private void StartConfiguring()
         {
             int status = Interlocked.CompareExchange(ref _operating, Configuring, Free);
-            if (status == InProgress || status == Configuring)
+            if (status != Free)
             {
-                throw new InvalidOperationException(SR.net_socketopinprogress);
+                ThrowForNonFreeStatus(status);
             }
-            else if (status == Disposed)
+        }
+
+        private void ThrowForNonFreeStatus(int status)
+        {
+            Debug.Assert(status == InProgress || status == Configuring || status == Disposed, $"Unexpected status: {status}");
+            if (status == Disposed)
             {
                 throw new ObjectDisposedException(GetType().FullName);
+            }
+            else
+            {
+                throw new InvalidOperationException(SR.net_socketopinprogress);
             }
         }
 
