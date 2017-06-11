@@ -6192,7 +6192,7 @@ MethodTableBuilder::PlaceMethodImpls()
             {
                 // We implement this slot, record it
                 slots[slotIndex] = pCurDeclMethod->GetSlotIndex();
-                replaced[slotIndex] = pCurDeclMethod->GetMethodDesc();
+                replaced[slotIndex].SetValue(pCurDeclMethod->GetMethodDesc());
 
                 // increment the counter
                 slotIndex++;
@@ -6216,7 +6216,7 @@ MethodTableBuilder::PlaceMethodImpls()
             {
                 // We implement this slot, record it
                 slots[slotIndex] = pCurDeclMethod->GetSlotIndex();
-                replaced[slotIndex] = pCurDeclMethod->GetMethodDesc();
+                replaced[slotIndex].SetValue(pCurDeclMethod->GetMethodDesc());
 
                 // increment the counter
                 slotIndex++;
