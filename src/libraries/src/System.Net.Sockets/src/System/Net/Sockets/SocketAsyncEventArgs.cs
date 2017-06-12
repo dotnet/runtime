@@ -455,6 +455,7 @@ namespace System.Net.Sockets
             if (_completedChanged || socket != _currentSocket)
             {
                 _completedChanged = false;
+                _currentSocket = socket;
                 _context = null;
             }
 
@@ -463,9 +464,6 @@ namespace System.Net.Sockets
             {
                 _context = ExecutionContext.Capture();
             }
-
-            // Remember current socket.
-            _currentSocket = socket;
         }
 
         internal void StartOperationAccept()
