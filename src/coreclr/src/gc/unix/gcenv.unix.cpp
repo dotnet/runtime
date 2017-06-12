@@ -31,6 +31,7 @@ static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
 #include "gcenv.structs.h"
 #include "gcenv.base.h"
 #include "gcenv.os.h"
+#include "gcenv.unix.inl"
 
 #if HAVE_SYS_TIME_H
  #include <sys/time.h>
@@ -58,7 +59,7 @@ static_assert(sizeof(uint64_t) == 8, "unsigned long isn't 8 bytes");
 static uint32_t g_logicalCpuCount = 0;
 
 // Helper memory page used by the FlushProcessWriteBuffers
-static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)));
+static uint8_t* g_helperPage = 0;
 
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
@@ -68,11 +69,17 @@ bool GetWorkingSetSize(size_t* val);
 
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
 
+uint32_t g_pageSizeUnixInl = 0;
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    int pageSize = sysconf( _SC_PAGE_SIZE );
+
+    g_pageSizeUnixInl = uint32_t((pageSize > 0) pageSize : 0x1000);
+
     // Calculate and cache the number of processors on this machine
     int cpuCount = sysconf(_SC_NPROCESSORS_ONLN);
     if (cpuCount == -1)
@@ -81,6 +88,15 @@ bool GCToOSInterface::Initialize()
     }
 
     g_logicalCpuCount = cpuCount;
+
+    assert(g_helperPage == 0);
+
+    g_helperPage = static_cast<uint8_t*>(mmap(0, OS_PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+
+    if(g_helperPage == MAP_FAILED)
+    {
+        return false;
+    }
 
     // Verify that the s_helperPage is really aligned to the g_SystemInfo.dwPageSize
     assert((((size_t)g_helperPage) & (OS_PAGE_SIZE - 1)) == 0);
@@ -120,6 +136,8 @@ void GCToOSInterface::Shutdown()
     assert(ret == 0);
     ret = pthread_mutex_destroy(&g_flushProcessWriteBuffersMutex);
     assert(ret == 0);
+
+    munmap(g_helperPage, OS_PAGE_SIZE);
 }
 
 // Get numeric id of the current thread if possible on the

@@ -685,7 +685,7 @@ NativeImageDumper::DumpNativeImage()
          * I don't understand this.  Sections start on a two page boundary, but
          * data ends on a one page boundary.  What's up with that?
          */
-        m_sectionAlignment = PAGE_SIZE; //ntHeaders->OptionalHeader.SectionAlignment;
+        m_sectionAlignment = GetOsPageSize(); //ntHeaders->OptionalHeader.SectionAlignment;
         unsigned ntHeaderSize = sizeof(*ntHeaders)
             - sizeof(ntHeaders->OptionalHeader)
             + ntHeaders->FileHeader.SizeOfOptionalHeader;

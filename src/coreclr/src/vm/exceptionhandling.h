@@ -797,7 +797,7 @@ private:
     {
         //
         // Due to the unexpected growth of the ExceptionTracker struct, 
-        // OS_PAGE_SIZE does not seem appropriate anymore on x64, and
+        // GetOsPageSize() does not seem appropriate anymore on x64, and
         // we should behave the same on x64 as on ia64 regardless of
         // the difference between the page sizes on the platforms.
         //

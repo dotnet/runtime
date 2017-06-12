@@ -52,6 +52,8 @@ CRITICAL_SECTION virtual_critsec;
 // The first node in our list of allocated blocks.
 static PCMI pVirtualMemory;
 
+static size_t s_virtualPageSize = 0;
+
 /* We need MAP_ANON. However on some platforms like HP-UX, it is defined as MAP_ANONYMOUS */
 #if !defined(MAP_ANON) && defined(MAP_ANONYMOUS)
 #define MAP_ANON MAP_ANONYMOUS
@@ -163,6 +165,8 @@ extern "C"
 BOOL
 VIRTUALInitialize(bool initializeExecutableMemoryAllocator)
 {
+    s_virtualPageSize = getpagesize();
+
     TRACE("Initializing the Virtual Critical Sections. \n");
 
     InternalInitializeCriticalSection(&virtual_critsec);
@@ -656,12 +660,12 @@ static void VIRTUALDisplayList( void  )
         DBGOUT( "\t memSize %d \n", p->memSize );
 
         DBGOUT( "\t pAllocState " );
-        for ( index = 0; index < p->memSize / VIRTUAL_PAGE_SIZE; index++)
+        for ( index = 0; index < p->memSize / GetVirtualPageSize(); index++)
         {
             DBGOUT( "[%d] ", VIRTUALGetAllocationType( index, p ) );
         }
         DBGOUT( "\t pProtectionState " );
-        for ( index = 0; index < p->memSize / VIRTUAL_PAGE_SIZE; index++ )
+        for ( index = 0; index < p->memSize / GetVirtualPageSize(); index++ )
         {
             DBGOUT( "[%d] ", (UINT)p->pProtectionState[ index ] );
         }
@@ -719,7 +723,7 @@ static BOOL VIRTUALStoreAllocationInfo(
     PCMI pMemInfo        = nullptr;
     SIZE_T nBufferSize   = 0;
 
-    if ((memSize & VIRTUAL_PAGE_MASK) != 0)
+    if (!IS_ALIGNED(memSize, GetVirtualPageSize()))
     {
         ERROR("The memory size was not a multiple of the page size. \n");
         return FALSE;
@@ -736,14 +740,14 @@ static BOOL VIRTUALStoreAllocationInfo(
     pNewEntry->allocationType   = flAllocationType;
     pNewEntry->accessProtection = flProtection;
 
-    nBufferSize = memSize / VIRTUAL_PAGE_SIZE / CHAR_BIT;
-    if ((memSize / VIRTUAL_PAGE_SIZE) % CHAR_BIT != 0)
+    nBufferSize = memSize / GetVirtualPageSize() / CHAR_BIT;
+    if ((memSize / GetVirtualPageSize()) % CHAR_BIT != 0)
     {
         nBufferSize++;
     }
 
     pNewEntry->pAllocState      = (BYTE*)InternalMalloc(nBufferSize);
-    pNewEntry->pProtectionState = (BYTE*)InternalMalloc((memSize / VIRTUAL_PAGE_SIZE));
+    pNewEntry->pProtectionState = (BYTE*)InternalMalloc((memSize / GetVirtualPageSize()));
 
     if (pNewEntry->pAllocState && pNewEntry->pProtectionState)
     {
@@ -751,7 +755,7 @@ static BOOL VIRTUALStoreAllocationInfo(
         VIRTUALSetAllocState(MEM_RESERVE, 0, nBufferSize * CHAR_BIT, pNewEntry);
         memset(pNewEntry->pProtectionState,
                VIRTUALConvertWinFlags(flProtection),
-               memSize / VIRTUAL_PAGE_SIZE);
+               memSize / GetVirtualPageSize());
     }
     else
     {
@@ -829,10 +833,8 @@ static LPVOID VIRTUALResetMemory(
 
     TRACE( "Resetting the memory now..\n");
 
-    StartBoundary = (UINT_PTR)lpAddress & ~VIRTUAL_PAGE_MASK;
-    // Add the sizes, and round down to the nearest page boundary. 
-    MemSize = ( ((UINT_PTR)lpAddress + dwSize + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK ) - 
-               StartBoundary;
+    StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());
+    MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
 
     int st;
 #if HAVE_MADV_FREE
@@ -894,9 +896,7 @@ static LPVOID VIRTUALReserveMemory(
     // components that rely on this alignment when providing a specific address
     // (note that mmap itself does not make any such guarantees).
     StartBoundary = (UINT_PTR)ALIGN_DOWN(lpAddress, VIRTUAL_64KB);
-    /* Add the sizes, and round down to the nearest page boundary. */
-    MemSize = ( ((UINT_PTR)lpAddress + dwSize + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK ) - 
-               StartBoundary;
+    MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
 
     // If this is a request for special executable (JIT'ed) memory then, first of all,
     // try to get memory from the executable memory allocator to satisfy the request.
@@ -923,9 +923,8 @@ static LPVOID VIRTUALReserveMemory(
         if ( !lpAddress )
         {
             /* Compute the real values instead of the null values. */
-            StartBoundary = (UINT_PTR)pRetVal & ~VIRTUAL_PAGE_MASK;
-            MemSize = ( ((UINT_PTR)pRetVal + dwSize + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK ) -
-                      StartBoundary;
+            StartBoundary = (UINT_PTR) ALIGN_DOWN(pRetVal, GetVirtualPageSize());
+            MemSize = ALIGN_UP((UINT_PTR)pRetVal + dwSize, GetVirtualPageSize()) - StartBoundary;
         }
 
         if ( !VIRTUALStoreAllocationInfo( StartBoundary, MemSize,
@@ -1063,14 +1062,12 @@ VIRTUALCommitMemory(
 
     if ( lpAddress )
     {
-        StartBoundary = (UINT_PTR)lpAddress & ~VIRTUAL_PAGE_MASK;
-        /* Add the sizes, and round down to the nearest page boundary. */
-        MemSize = ( ((UINT_PTR)lpAddress + dwSize + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK ) - 
-                  StartBoundary;
+        StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());
+        MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
     }
     else
     {
-        MemSize = ( dwSize + VIRTUAL_PAGE_MASK ) & ~VIRTUAL_PAGE_MASK;
+        MemSize = ALIGN_UP(dwSize, GetVirtualPageSize());
     }
 
     /* See if we have already reserved this memory. */
@@ -1090,9 +1087,8 @@ VIRTUALCommitMemory(
         if ( pReservedMemory )
         {
             /* Re-align the addresses and try again to find the memory. */
-            StartBoundary = (UINT_PTR)pReservedMemory & ~VIRTUAL_PAGE_MASK;
-            MemSize = ( ((UINT_PTR)pReservedMemory + dwSize + VIRTUAL_PAGE_MASK) 
-                        & ~VIRTUAL_PAGE_MASK ) - StartBoundary;
+            StartBoundary = (UINT_PTR) ALIGN_DOWN(pReservedMemory, GetVirtualPageSize());
+            MemSize = ALIGN_UP((UINT_PTR)pReservedMemory + dwSize, GetVirtualPageSize()) - StartBoundary;
             
             pInformation = VIRTUALFindRegionInformation( StartBoundary );
 
@@ -1126,9 +1122,9 @@ VIRTUALCommitMemory(
     // if a run is already committed and has the right permissions, 
     // we don't need to do anything to it.
     
-    totalPages = MemSize / VIRTUAL_PAGE_SIZE;
+    totalPages = MemSize / GetVirtualPageSize();
     runStart = (StartBoundary - pInformation->startBoundary) /
-                VIRTUAL_PAGE_SIZE;   // Page index
+                GetVirtualPageSize();   // Page index
     initialRunStart = runStart;
     allocationType = VIRTUALGetAllocationType(runStart, pInformation);
     protectionState = pInformation->pProtectionState[runStart];
@@ -1138,7 +1134,7 @@ VIRTUALCommitMemory(
     nProtect = W32toUnixAccessControl(flProtect);
     vProtect = VIRTUALConvertWinFlags(flProtect);
 
-    if (totalPages > pInformation->memSize / VIRTUAL_PAGE_SIZE - runStart)
+    if (totalPages > pInformation->memSize / GetVirtualPageSize() - runStart)
     {
         ERROR("Trying to commit beyond the end of the region!\n");
         goto error;
@@ -1160,9 +1156,9 @@ VIRTUALCommitMemory(
             runLength++;
         }
 
-        StartBoundary = pInformation->startBoundary + runStart * VIRTUAL_PAGE_SIZE;
+        StartBoundary = pInformation->startBoundary + runStart * GetVirtualPageSize();
         pRetVal = (void *)StartBoundary;
-        MemSize = runLength * VIRTUAL_PAGE_SIZE;
+        MemSize = runLength * GetVirtualPageSize();
 
         if (allocationType != MEM_COMMIT)
         {
@@ -1208,7 +1204,7 @@ VIRTUALCommitMemory(
         protectionState = curProtectionState;
     }
 
-    pRetVal = (void *) (pInformation->startBoundary + initialRunStart * VIRTUAL_PAGE_SIZE);
+    pRetVal = (void *) (pInformation->startBoundary + initialRunStart * GetVirtualPageSize());
     goto done;
 
 error:
@@ -1278,7 +1274,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     void *address = g_executableMemoryAllocator.AllocateMemoryWithinRange(lpBeginAddress, lpEndAddress, reservationSize);
     if (address != nullptr)
     {
-        _ASSERTE(IS_ALIGNED(address, VIRTUAL_PAGE_SIZE));
+        _ASSERTE(IS_ALIGNED(address, GetVirtualPageSize()));
         if (!VIRTUALStoreAllocationInfo((UINT_PTR)address, reservationSize, MEM_RESERVE | MEM_RESERVE_EXECUTABLE, PAGE_NOACCESS))
         {
             ASSERT("Unable to store the structure in the list.\n");
@@ -1497,10 +1493,8 @@ VirtualFree(
          * released or decommitted. So round the dwSize up to the next page 
          * boundary and round the lpAddress down to the next page boundary.
          */
-        MemSize = (((UINT_PTR)(dwSize) + ((UINT_PTR)(lpAddress) & VIRTUAL_PAGE_MASK) 
-                    + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK);
-
-        StartBoundary = (UINT_PTR)lpAddress & ~VIRTUAL_PAGE_MASK;
+        StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());
+        MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
 
         PCMI pUnCommittedMem;
         pUnCommittedMem = VIRTUALFindRegionInformation( StartBoundary );
@@ -1536,9 +1530,9 @@ VirtualFree(
             SIZE_T nNumOfPagesToChange = 0;
 
             /* We can now commit this memory by calling VirtualAlloc().*/
-            index = (StartBoundary - pUnCommittedMem->startBoundary) / VIRTUAL_PAGE_SIZE;
+            index = (StartBoundary - pUnCommittedMem->startBoundary) / GetVirtualPageSize();
             
-            nNumOfPagesToChange = MemSize / VIRTUAL_PAGE_SIZE;
+            nNumOfPagesToChange = MemSize / GetVirtualPageSize();
             VIRTUALSetAllocState( MEM_RESERVE, index, 
                                   nNumOfPagesToChange, pUnCommittedMem );
 
@@ -1647,9 +1641,8 @@ VirtualProtect(
     pthrCurrent = InternalGetCurrentThread();
     InternalEnterCriticalSection(pthrCurrent, &virtual_critsec);
     
-    StartBoundary = (UINT_PTR)lpAddress & ~VIRTUAL_PAGE_MASK;
-    MemSize = (((UINT_PTR)(dwSize) + ((UINT_PTR)(lpAddress) & VIRTUAL_PAGE_MASK)
-                + VIRTUAL_PAGE_MASK) & ~VIRTUAL_PAGE_MASK);
+    StartBoundary = (UINT_PTR) ALIGN_DOWN(lpAddress, GetVirtualPageSize());
+    MemSize = ALIGN_UP((UINT_PTR)lpAddress + dwSize, GetVirtualPageSize()) - StartBoundary;
 
     if ( VIRTUALContainsInvalidProtectionFlags( flNewProtect ) )
     {
@@ -1672,8 +1665,8 @@ VirtualProtect(
     {
         /* See if the pages are committed. */
         Index = OffSet = StartBoundary - pEntry->startBoundary == 0 ?
-             0 : ( StartBoundary - pEntry->startBoundary ) / VIRTUAL_PAGE_SIZE;
-        NumberOfPagesToChange = MemSize / VIRTUAL_PAGE_SIZE;
+             0 : ( StartBoundary - pEntry->startBoundary ) / GetVirtualPageSize();
+        NumberOfPagesToChange = MemSize / GetVirtualPageSize();
 
         TRACE( "Number of pages to check %d, starting page %d \n", NumberOfPagesToChange, Index );
 
@@ -1916,7 +1909,7 @@ VirtualQuery(
         goto ExitVirtualQuery;
     }
 
-    StartBoundary = (UINT_PTR)lpAddress & ~VIRTUAL_PAGE_MASK;
+    StartBoundary = ALIGN_DOWN((SIZE_T)lpAddress, GetVirtualPageSize());
 
 #if MMAP_IGNORES_HINT
     // Make sure we have memory to map before we try to query it.
@@ -1969,7 +1962,7 @@ VirtualQuery(
     else
     {
         /* Starting page. */
-        SIZE_T Index = ( StartBoundary - pEntry->startBoundary ) / VIRTUAL_PAGE_SIZE;
+        SIZE_T Index = ( StartBoundary - pEntry->startBoundary ) / GetVirtualPageSize();
 
         /* Attributes to check for. */
         BYTE AccessProtection = pEntry->pProtectionState[ Index ];
@@ -1977,13 +1970,13 @@ VirtualQuery(
         SIZE_T RegionSize = 0;
 
         TRACE( "Index = %d, Number of Pages = %d. \n",
-               Index, pEntry->memSize / VIRTUAL_PAGE_SIZE );
+               Index, pEntry->memSize / GetVirtualPageSize() );
 
-        while ( Index < pEntry->memSize / VIRTUAL_PAGE_SIZE &&
+        while ( Index < pEntry->memSize / GetVirtualPageSize() &&
                 VIRTUALGetAllocationType( Index, pEntry ) == AllocationType &&
                 pEntry->pProtectionState[ Index ] == AccessProtection )
         {
-            RegionSize += VIRTUAL_PAGE_SIZE;
+            RegionSize += GetVirtualPageSize();
             Index++;
         }
 
@@ -2009,6 +2002,12 @@ ExitVirtualQuery:
     LOGEXIT( "VirtualQuery returning %d.\n", sizeof( *lpBuffer ) );
     PERF_EXIT(VirtualQuery);
     return sizeof( *lpBuffer );
+}
+
+size_t GetVirtualPageSize()
+{
+    _ASSERTE(s_virtualPageSize);
+    return s_virtualPageSize;
 }
 
 /*++
@@ -2299,5 +2298,5 @@ int32_t ExecutableMemoryAllocator::GenerateRandomStartOffset()
     srandom(time(NULL));
     pageCount = (int32_t)(MaxStartPageOffset * (int64_t)random() / RAND_MAX);
 
-    return pageCount * VIRTUAL_PAGE_SIZE;
+    return pageCount * GetVirtualPageSize();
 }

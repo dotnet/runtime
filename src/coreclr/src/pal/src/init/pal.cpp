@@ -265,17 +265,6 @@ Initialize(
             goto CLEANUP0;
         }
 
-#if _DEBUG
-        // Verify that our page size is what we think it is. If it's
-        // different, we can't run.
-        if (VIRTUAL_PAGE_SIZE != getpagesize())
-        {
-            ASSERT("VIRTUAL_PAGE_SIZE is incorrect for this system!\n"
-                "Change include/pal/virtual.h and clr/src/inc/stdmacros.h "
-                "to reflect the correct page size of %d.\n", getpagesize());
-        }
-#endif  // _DEBUG
-
         if (!INIT_IncreaseDescriptorLimit())
         {
             ERROR("Unable to increase the file descriptor limit!\n");
@@ -465,27 +454,7 @@ Initialize(
             goto CLEANUP2;
         }
 
-        if (flags & PAL_INITIALIZE_SYNC_THREAD)
-        {
-            //
-            // Tell the synchronization manager to start its worker thread
-            //
-            palError = CPalSynchMgrController::StartWorker(pThread);
-            if (NO_ERROR != palError)
-            {
-                ERROR("Synch manager failed to start worker thread\n");
-                goto CLEANUP5;
-            }
-        }
-
         palError = ERROR_GEN_FAILURE;
-
-        /* initialize structured exception handling stuff (signals, etc) */
-        if (FALSE == SEHInitialize(pThread, flags))
-        {
-            ERROR("Unable to initialize SEH support\n");
-            goto CLEANUP5;
-        }
 
         if (FALSE == TIMEInitialize())
         {
@@ -508,13 +477,33 @@ Initialize(
             goto CLEANUP10;
         }
 
+        if (flags & PAL_INITIALIZE_SYNC_THREAD)
+        {
+            //
+            // Tell the synchronization manager to start its worker thread
+            //
+            palError = CPalSynchMgrController::StartWorker(pThread);
+            if (NO_ERROR != palError)
+            {
+                ERROR("Synch manager failed to start worker thread\n");
+                goto CLEANUP13;
+            }
+        }
+
+        /* initialize structured exception handling stuff (signals, etc) */
+        if (FALSE == SEHInitialize(pThread, flags))
+        {
+            ERROR("Unable to initialize SEH support\n");
+            goto CLEANUP13;
+        }
+
         if (flags & PAL_INITIALIZE_STD_HANDLES)
         {
             /* create file objects for standard handles */
             if (!FILEInitStdHandles())
             {
                 ERROR("Unable to initialize standard file handles\n");
-                goto CLEANUP13;
+                goto CLEANUP14;
             }
         }
 
@@ -559,13 +548,13 @@ Initialize(
     /* No cleanup required for CRTInitStdStreams */ 
 CLEANUP15:
     FILECleanupStdHandles();
+CLEANUP14:
+    SEHCleanup();
 CLEANUP13:
     VIRTUALCleanup();
 CLEANUP10:
     MAPCleanup();
 CLEANUP6:
-    SEHCleanup();
-CLEANUP5:
     PROCCleanupInitialProcess();
 CLEANUP2:
     free(exe_path);
