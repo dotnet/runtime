@@ -173,9 +173,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ApiKey $(MyGetApiKey)  -PipelineSrcDir $(Pipeline.SourcesDirectory) -ConfigurationGroup $(PB_ConfigurationGroup) -AzureContainerPackageGlob $(PB_AzureContainerPackageGlob) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
-        "inlineScript": "param($ApiKey, $PipelineSrcDir, $ConfigurationGroup, $AzureContainerPackageGlob, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $PipelineSrcDir\\packages\\AzureTransfer\\$ConfigurationGroup\\$AzureContainerPackageGlob $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(PB_ConfigurationGroup) -PackagesGlob $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)\\$(PB_AzureContainerPackageGlob) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $PackagesGlob, $MyGetFeedUrl)\n\nif ($ConfigurationGroup -ne \"Release\") { exit }\n\n.\\build-managed.cmd -- /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
         "failOnStandardError": "true"
       }
     },
@@ -193,9 +193,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(PB_ConfigurationGroup) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup, $CustomNuGetPath, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(PB_ConfigurationGroup) -PackagesGlob $(Build.StagingDirectory)\\IndexedSymbolPackages\\*.nupkg -MyGetFeedUrl $(PB_MyGetFeedUrl)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $PackagesGlob, $MyGetFeedUrl)\n\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n\n.\\build-managed.cmd -- /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
         "failOnStandardError": "true"
       }
     },
