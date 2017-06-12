@@ -901,20 +901,19 @@ namespace Microsoft.SqlServer.Server
             }
 
             return new SmiExtendedMetaData(
-                                        colDbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        System.Globalization.CultureInfo.CurrentCulture.LCID,
-                                        SmiMetaData.GetDefaultForType(colDbType).CompareOptions,
-                                        null,   // no support for UDTs from SchemaTable
-                                        false,  // no support for multi-valued columns in a TVP yet
-                                        null,   // no support for structured columns yet
-                                        null,   // no support for structured columns yet
-                                        colName,
-                                        null,
-                                        null,
-                                        null);
+                            colDbType,
+                            maxLength,
+                            precision,
+                            scale,
+                            System.Globalization.CultureInfo.CurrentCulture.LCID,
+                            SmiMetaData.GetDefaultForType(colDbType).CompareOptions,
+                            false,  // no support for multi-valued columns in a TVP yet
+                            null,   // no support for structured columns yet
+                            null,   // no support for structured columns yet
+                            colName,
+                            null,
+                            null,
+                            null);
         }
     }
 }

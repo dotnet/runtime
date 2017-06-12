@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-
 
 namespace System.Data.SqlClient
 {
@@ -20,8 +16,7 @@ namespace System.Data.SqlClient
     {
         private enum Keywords
         { // specific ordering for ConnectionString output construction
-          //            NamedConnection,
-
+            // NamedConnection,
             DataSource,
             FailoverPartner,
             AttachDBFilename,
@@ -373,6 +368,7 @@ namespace System.Data.SqlClient
             }
         }
 
+        [TypeConverter(typeof(SqlInitialCatalogConverter))]
         public string InitialCatalog
         {
             get { return _initialCatalog; }
@@ -884,6 +880,89 @@ namespace System.Data.SqlClient
             else
             {
                 return ADP.KeywordNotSupported(keyword);
+            }
+        }
+
+        private sealed class SqlInitialCatalogConverter : StringConverter
+        {
+            // converter classes should have public ctor
+            public SqlInitialCatalogConverter()
+            {
+            }
+
+            public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
+            {
+                return GetStandardValuesSupportedInternal(context);
+            }
+
+            private bool GetStandardValuesSupportedInternal(ITypeDescriptorContext context)
+            {
+                // Only say standard values are supported if the connection string has enough
+                // information set to instantiate a connection and retrieve a list of databases
+                bool flag = false;
+                if (null != context)
+                {
+                    SqlConnectionStringBuilder constr = (context.Instance as SqlConnectionStringBuilder);
+                    if (null != constr)
+                    {
+                        if ((0 < constr.DataSource.Length) && (constr.IntegratedSecurity || (0 < constr.UserID.Length)))
+                        {
+                            flag = true;
+                        }
+                    }
+                }
+                return flag;
+            }
+
+            public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
+            {
+                // Although theoretically this could be true, some people may want to just type in a name
+                return false;
+            }
+
+            public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
+            {
+                // There can only be standard values if the connection string is in a state that might
+                // be able to instantiate a connection
+                if (GetStandardValuesSupportedInternal(context))
+                {
+
+                    // Create an array list to store the database names
+                    List<string> values = new List<string>();
+
+                    try
+                    {
+                        SqlConnectionStringBuilder constr = (SqlConnectionStringBuilder)context.Instance;
+
+                        // Create a connection
+                        using (SqlConnection connection = new SqlConnection())
+                        {
+
+                            // Create a basic connection string from current property values
+                            connection.ConnectionString = constr.ConnectionString;
+
+                            // Try to open the connection
+                            connection.Open();
+
+                            DataTable databaseTable = connection.GetSchema("DATABASES");
+
+                            foreach (DataRow row in databaseTable.Rows)
+                            {
+                                string dbName = (string)row["database_name"];
+                                values.Add(dbName);
+                            }
+                        }
+                    }
+                    catch (SqlException e)
+                    {
+                        ADP.TraceExceptionWithoutRethrow(e);
+                        // silently fail
+                    }
+
+                    // Return values as a StandardValuesCollection
+                    return new StandardValuesCollection(values);
+                }
+                return null;
             }
         }
     }

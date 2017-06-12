@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -60,8 +56,6 @@ namespace Microsoft.SqlServer.Server
         // DevNote: For now, since the list of extended property types is small, we can handle them in a simple list.
         //  In the future, we may need to create a more performant storage & lookup mechanism, such as a hash table
         //  of lists indexed by type of property or an array of lists with a well-known index for each type.
-
-
 
         // Limits for attributes (SmiMetaData will assert that these limits as applicable in constructor)
         internal const long UnlimitedMaxLengthIndicator = -1;  // unlimited (except by implementation) max-length.
@@ -123,7 +117,6 @@ namespace Microsoft.SqlServer.Server
         internal static readonly SmiMetaData DefaultDateTimeOffset = new SmiMetaData(SqlDbType.DateTimeOffset, 10, 0, 7, SqlCompareOptions.None);     // SqlDbType.DateTimeOffset
         // No default for generic UDT
 
-
         internal static SmiMetaData DefaultNVarChar
         {
             get
@@ -134,21 +127,17 @@ namespace Microsoft.SqlServer.Server
                         DefaultNVarChar_NoCollation.Precision,
                         DefaultNVarChar_NoCollation.Scale,
                         CultureInfo.CurrentCulture.LCID,
-                        SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth
-                        );
+                        SqlCompareOptions.IgnoreCase | SqlCompareOptions.IgnoreKanaType | SqlCompareOptions.IgnoreWidth);
             }
         }
 
-
-        // SMI V100 (aka V3) constructor.  Superseded in V200.
         internal SmiMetaData(
                                 SqlDbType dbType,
                                 long maxLength,
                                 byte precision,
                                 byte scale,
                                 long localeId,
-                                SqlCompareOptions compareOptions
-            ) :
+                                SqlCompareOptions compareOptions) :
                         this(dbType,
                                 maxLength,
                                 precision,
@@ -161,31 +150,6 @@ namespace Microsoft.SqlServer.Server
         {
         }
 
-        // SMI V200 ctor.
-        internal SmiMetaData(
-                                SqlDbType dbType,
-                                long maxLength,
-                                byte precision,
-                                byte scale,
-                                long localeId,
-                                SqlCompareOptions compareOptions,
-                                bool isMultiValued,
-                                IList<SmiExtendedMetaData> fieldTypes,
-                                SmiMetaDataPropertyCollection extendedProperties)
-            :
-                        this(dbType,
-                                maxLength,
-                                precision,
-                                scale,
-                                localeId,
-                                compareOptions,
-                                null,
-                                isMultiValued,
-                                fieldTypes,
-                                extendedProperties)
-        {
-        }
-
         // SMI V220 ctor.
         internal SmiMetaData(
                                 SqlDbType dbType,
@@ -194,7 +158,6 @@ namespace Microsoft.SqlServer.Server
                                 byte scale,
                                 long localeId,
                                 SqlCompareOptions compareOptions,
-                                string udtAssemblyQualifiedName,
                                 bool isMultiValued,
                                 IList<SmiExtendedMetaData> fieldTypes,
                                 SmiMetaDataPropertyCollection extendedProperties)
@@ -293,11 +256,10 @@ namespace Microsoft.SqlServer.Server
             Debug.Assert(null != _fieldMetaData && _fieldMetaData.IsReadOnly, "SmiMetaData.ctor: _fieldMetaData is " + (null != _fieldMetaData ? "writable" : "null"));
 #if DEBUG
             ((SmiDefaultFieldsProperty)_extendedProperties[SmiPropertySelector.DefaultFields]).CheckCount(_fieldMetaData.Count);
+            ((SmiOrderProperty)_extendedProperties[SmiPropertySelector.SortOrder]).CheckCount(_fieldMetaData.Count);
             ((SmiUniqueKeyProperty)_extendedProperties[SmiPropertySelector.UniqueKey]).CheckCount(_fieldMetaData.Count);
 #endif
         }
-
-
 
         // Sql-style compare options for character types.
         internal SqlCompareOptions CompareOptions
@@ -352,7 +314,6 @@ namespace Microsoft.SqlServer.Server
             }
         }
 
-
         internal bool IsMultiValued
         {
             get
@@ -398,11 +359,11 @@ namespace Microsoft.SqlServer.Server
         // Private constructor used only to initialize default instance array elements.
         // DO NOT EXPOSE OUTSIDE THIS CLASS!
         private SmiMetaData(
-                                SqlDbType sqlDbType,
-                                long maxLength,
-                                byte precision,
-                                byte scale,
-                                SqlCompareOptions compareOptions)
+            SqlDbType sqlDbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            SqlCompareOptions compareOptions)
         {
             _databaseType = sqlDbType;
             _maxLength = maxLength;
@@ -451,7 +412,7 @@ namespace Microsoft.SqlServer.Server
                 DefaultNVarChar_NoCollation,   // Placeholder for value 26
                 DefaultNVarChar_NoCollation,   // Placeholder for value 27
                 DefaultNVarChar_NoCollation,   // Placeholder for value 28
-                null,
+                null,                          // Generic Udt (not supported)
                 DefaultStructured,             // Generic structured type
                 DefaultDate,                   // SqlDbType.Date
                 DefaultTime,                   // SqlDbType.Time
@@ -475,13 +436,13 @@ namespace Microsoft.SqlServer.Server
         }
     }
 
-
     // SmiExtendedMetaData
     //
     //  Adds server-specific type extension information to base metadata, but still portable across a specific server.
     //
     internal class SmiExtendedMetaData : SmiMetaData
     {
+
         private string _name;           // context-dependent identifier, i.e. parameter name for parameters, column name for columns, etc.
 
         // three-part name for typed xml schema and for udt names
@@ -489,93 +450,58 @@ namespace Microsoft.SqlServer.Server
         private string _typeSpecificNamePart2;
         private string _typeSpecificNamePart3;
 
-
         internal SmiExtendedMetaData(
-                                        SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3) :
-                                    this(
-                                        dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        false,
-                                        null,
-                                        null,
-                                        name,
-                                        typeSpecificNamePart1,
-                                        typeSpecificNamePart2,
-                                        typeSpecificNamePart3)
-        {
-        }
-
-        // SMI V200 ctor.
-        internal SmiExtendedMetaData(
-                                        SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        bool isMultiValued,
-                                        IList<SmiExtendedMetaData> fieldMetaData,
-                                        SmiMetaDataPropertyCollection extendedProperties,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3) :
-                                this(dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        null,
-                                        isMultiValued,
-                                        fieldMetaData,
-                                        extendedProperties,
-                                        name,
-                                        typeSpecificNamePart1,
-                                        typeSpecificNamePart2,
-                                        typeSpecificNamePart3)
+            SqlDbType dbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            long localeId,
+            SqlCompareOptions compareOptions,
+            string name,
+            string typeSpecificNamePart1,
+            string typeSpecificNamePart2,
+            string typeSpecificNamePart3) :
+            this(
+                dbType,
+                maxLength,
+                precision,
+                scale,
+                localeId,
+                compareOptions,
+                false,
+                null,
+                null,
+                name,
+                typeSpecificNamePart1,
+                typeSpecificNamePart2,
+                typeSpecificNamePart3)
         {
         }
 
         // SMI V220 ctor.
         internal SmiExtendedMetaData(
-                                        SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        string udtAssemblyQualifiedName,
-                                        bool isMultiValued,
-                                        IList<SmiExtendedMetaData> fieldMetaData,
-                                        SmiMetaDataPropertyCollection extendedProperties,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3) :
-                                    base(dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        udtAssemblyQualifiedName,
-                                        isMultiValued,
-                                        fieldMetaData,
-                                        extendedProperties)
+            SqlDbType dbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            long localeId,
+            SqlCompareOptions compareOptions,
+            bool isMultiValued,
+            IList<SmiExtendedMetaData> fieldMetaData,
+            SmiMetaDataPropertyCollection extendedProperties,
+            string name,
+            string typeSpecificNamePart1,
+            string typeSpecificNamePart2,
+            string typeSpecificNamePart3) :
+            base(dbType,
+                maxLength,
+                precision,
+                scale,
+                localeId,
+                compareOptions,
+                isMultiValued,
+                fieldMetaData,
+                extendedProperties)
         {
             Debug.Assert(null == name || MaxNameLength >= name.Length, "Name is too long");
 
@@ -618,7 +544,6 @@ namespace Microsoft.SqlServer.Server
         }
     }
 
-
     // SmiParameterMetaData
     //
     //  MetaData class to send parameter definitions to server.
@@ -627,72 +552,35 @@ namespace Microsoft.SqlServer.Server
     {
         private ParameterDirection _direction;
 
-
-        // SMI V200 ctor.
-        internal SmiParameterMetaData(
-                                        SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        bool isMultiValued,
-                                        IList<SmiExtendedMetaData> fieldMetaData,
-                                        SmiMetaDataPropertyCollection extendedProperties,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3,
-                                        ParameterDirection direction) :
-                                    this(dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        null,
-                                        isMultiValued,
-                                        fieldMetaData,
-                                        extendedProperties,
-                                        name,
-                                        typeSpecificNamePart1,
-                                        typeSpecificNamePart2,
-                                        typeSpecificNamePart3,
-                                        direction)
-        {
-        }
-
         // SMI V220 ctor.
         internal SmiParameterMetaData(
-                                        SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        string udtAssemblyQualifiedName,
-                                        bool isMultiValued,
-                                        IList<SmiExtendedMetaData> fieldMetaData,
-                                        SmiMetaDataPropertyCollection extendedProperties,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3,
-                                        ParameterDirection direction) :
-                                    base(dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        udtAssemblyQualifiedName,
-                                        isMultiValued,
-                                        fieldMetaData,
-                                        extendedProperties,
-                                        name,
-                                        typeSpecificNamePart1,
-                                        typeSpecificNamePart2,
-                                        typeSpecificNamePart3)
+            SqlDbType dbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            long localeId,
+            SqlCompareOptions compareOptions,
+            bool isMultiValued,
+            IList<SmiExtendedMetaData> fieldMetaData,
+            SmiMetaDataPropertyCollection extendedProperties,
+            string name,
+            string typeSpecificNamePart1,
+            string typeSpecificNamePart2,
+            string typeSpecificNamePart3,
+            ParameterDirection direction) :
+            base(dbType,
+                maxLength,
+                precision,
+                scale,
+                localeId,
+                compareOptions,
+                isMultiValued,
+                fieldMetaData,
+                extendedProperties,
+                name,
+                typeSpecificNamePart1,
+                typeSpecificNamePart2,
+                typeSpecificNamePart3)
         {
             Debug.Assert(ParameterDirection.Input == direction
                        || ParameterDirection.Output == direction
@@ -710,7 +598,6 @@ namespace Microsoft.SqlServer.Server
         }
     }
 
-
     // SmiStorageMetaData
     //
     //  This class represents the addition of storage-level attributes to the hierarchy (i.e. attributes from 
@@ -722,42 +609,65 @@ namespace Microsoft.SqlServer.Server
     //  Maps approximately to TDS' COLMETADATA token with TABNAME and part of COLINFO thrown in.
     internal class SmiStorageMetaData : SmiExtendedMetaData
     {
-        private SqlBoolean _isKey;             // Is this one of a set of key columns that uniquely identify an underlying table?
+        // AllowsDBNull is the only value required to be specified.
+        private bool _allowsDBNull;  // could the column return nulls? equivalent to TDS's IsNullable bit
+        private string _serverName;  // underlying column's server
+        private string _catalogName; // underlying column's database
+        private string _schemaName;  // underlying column's schema
+        private string _tableName;   // underlying column's table
+        private string _columnName;  // underlying column's name
+        private SqlBoolean _isKey;   // Is this one of a set of key columns that uniquely identify an underlying table?
+        private bool _isIdentity;    // Is this from an identity column
+        private bool _isColumnSet;   // Is this column the XML representation of a columnset?
 
         // SMI V220 ctor.
         internal SmiStorageMetaData(
-                                        SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        bool isMultiValued,
-                                        IList<SmiExtendedMetaData> fieldMetaData,
-                                        SmiMetaDataPropertyCollection extendedProperties,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3,
-                                        SqlBoolean isKey
-            ) :
-                                    base(dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        isMultiValued,
-                                        fieldMetaData,
-                                        extendedProperties,
-                                        name,
-                                        typeSpecificNamePart1,
-                                        typeSpecificNamePart2,
-                                        typeSpecificNamePart3)
+            SqlDbType dbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            long localeId,
+            SqlCompareOptions compareOptions,
+            bool isMultiValued,
+            IList<SmiExtendedMetaData> fieldMetaData,
+            SmiMetaDataPropertyCollection extendedProperties,
+            string name,
+            string typeSpecificNamePart1,
+            string typeSpecificNamePart2,
+            string typeSpecificNamePart3,
+            bool allowsDBNull,
+            string serverName,
+            string catalogName,
+            string schemaName,
+            string tableName,
+            string columnName,
+            SqlBoolean isKey,
+            bool isIdentity,
+            bool isColumnSet) :
+            base(dbType,
+                maxLength,
+                precision,
+                scale,
+                localeId,
+                compareOptions,
+                isMultiValued,
+                fieldMetaData,
+                extendedProperties,
+                name,
+                typeSpecificNamePart1,
+                typeSpecificNamePart2,
+                typeSpecificNamePart3)
         {
+            _allowsDBNull = allowsDBNull;
+            _serverName = serverName;
+            _catalogName = catalogName;
+            _schemaName = schemaName;
+            _tableName = tableName;
+            _columnName = columnName;
             _isKey = isKey;
+            _isIdentity = isIdentity;
+            _isColumnSet = isColumnSet;
         }
-
 
         internal SqlBoolean IsKey
         {
@@ -775,39 +685,122 @@ namespace Microsoft.SqlServer.Server
     //  Maps to full COLMETADATA + COLINFO + TABNAME tokens on TDS.
     internal class SmiQueryMetaData : SmiStorageMetaData
     {
-        // SMI V220 ctor.
-        internal SmiQueryMetaData(SqlDbType dbType,
-                                        long maxLength,
-                                        byte precision,
-                                        byte scale,
-                                        long localeId,
-                                        SqlCompareOptions compareOptions,
-                                        bool isMultiValued,
-                                        IList<SmiExtendedMetaData> fieldMetaData,
-                                        SmiMetaDataPropertyCollection extendedProperties,
-                                        string name,
-                                        string typeSpecificNamePart1,
-                                        string typeSpecificNamePart2,
-                                        string typeSpecificNamePart3,
-                                        SqlBoolean isKey
-            ) :
-                                    base(dbType,
-                                        maxLength,
-                                        precision,
-                                        scale,
-                                        localeId,
-                                        compareOptions,
-                                        isMultiValued,
-                                        fieldMetaData,
-                                        extendedProperties,
-                                        name,
-                                        typeSpecificNamePart1,
-                                        typeSpecificNamePart2,
-                                        typeSpecificNamePart3,
-                                        isKey
-                                        )
+        private bool _isReadOnly;
+        private SqlBoolean _isExpression;
+        private SqlBoolean _isAliased;
+        private SqlBoolean _isHidden;
+
+        // SMI V200 ctor.
+        internal SmiQueryMetaData(
+            SqlDbType dbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            long localeId,
+            SqlCompareOptions compareOptions,
+            bool isMultiValued,
+            IList<SmiExtendedMetaData> fieldMetaData,
+            SmiMetaDataPropertyCollection extendedProperties,
+            string name,
+            string typeSpecificNamePart1,
+            string typeSpecificNamePart2,
+            string typeSpecificNamePart3,
+            bool allowsDBNull,
+            string serverName,
+            string catalogName,
+            string schemaName,
+            string tableName,
+            string columnName,
+            SqlBoolean isKey,
+            bool isIdentity,
+            bool isReadOnly,
+            SqlBoolean isExpression,
+            SqlBoolean isAliased,
+            SqlBoolean isHidden) :
+            this(dbType,
+                maxLength,
+                precision,
+                scale,
+                localeId,
+                compareOptions,
+                isMultiValued,
+                fieldMetaData,
+                extendedProperties,
+                name,
+                typeSpecificNamePart1,
+                typeSpecificNamePart2,
+                typeSpecificNamePart3,
+                allowsDBNull,
+                serverName,
+                catalogName,
+                schemaName,
+                tableName,
+                columnName,
+                isKey,
+                isIdentity,
+                false,
+                isReadOnly,
+                isExpression,
+                isAliased,
+                isHidden)
         {
+        }
+
+        // SMI V220 ctor.
+        internal SmiQueryMetaData(
+            SqlDbType dbType,
+            long maxLength,
+            byte precision,
+            byte scale,
+            long localeId,
+            SqlCompareOptions compareOptions,
+            bool isMultiValued,
+            IList<SmiExtendedMetaData> fieldMetaData,
+            SmiMetaDataPropertyCollection extendedProperties,
+            string name,
+            string typeSpecificNamePart1,
+            string typeSpecificNamePart2,
+            string typeSpecificNamePart3,
+            bool allowsDBNull,
+            string serverName,
+            string catalogName,
+            string schemaName,
+            string tableName,
+            string columnName,
+            SqlBoolean isKey,
+            bool isIdentity,
+            bool isColumnSet,
+            bool isReadOnly,
+            SqlBoolean isExpression,
+            SqlBoolean isAliased,
+            SqlBoolean isHidden) :
+            base(dbType,
+                maxLength,
+                precision,
+                scale,
+                localeId,
+                compareOptions,
+                isMultiValued,
+                fieldMetaData,
+                extendedProperties,
+                name,
+                typeSpecificNamePart1,
+                typeSpecificNamePart2,
+                typeSpecificNamePart3,
+                allowsDBNull,
+                serverName,
+                catalogName,
+                schemaName,
+                tableName,
+                columnName,
+                isKey,
+                isIdentity,
+                isColumnSet)
+        {
+            _isReadOnly = isReadOnly;
+            _isExpression = isExpression;
+            _isAliased = isAliased;
+            _isHidden = isHidden;
         }
     }
 }
-

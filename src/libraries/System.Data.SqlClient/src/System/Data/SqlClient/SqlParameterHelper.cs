@@ -217,6 +217,21 @@ namespace System.Data.SqlClient
             }
             return 0;
         }
+
+        internal void CopyTo(SqlParameter destination)
+        {
+            ADP.CheckArgumentNull(destination, nameof(destination));
+
+            // NOTE: _parent is not cloned
+            destination._value = _value;
+            destination._direction = _direction;
+            destination._size = _size;
+            destination._offset = _offset;
+            destination._sourceColumn = _sourceColumn;
+            destination._sourceVersion = _sourceVersion;
+            destination._sourceColumnNullMapping = _sourceColumnNullMapping;
+            destination._isNullable = _isNullable;
+        }
     }
 }
 

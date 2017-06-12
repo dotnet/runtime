@@ -71,6 +71,7 @@ namespace System.Data.SqlClient
         internal readonly int ObjectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
         // metadata (no explicit table, use 'Table')
+        private MultiPartTableName[] _tableNames = null;
         private string _resetOptionsString;
 
         private int _lastColumnWithDataChunkRead;
@@ -244,7 +245,6 @@ namespace System.Data.SqlClient
                         throw SQL.PendingBeginXXXExists();
                     }
 
-
                     Debug.Assert(_stateObj == null || _stateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
                     if (!TryConsumeMetaData())
                     {
@@ -298,22 +298,33 @@ namespace System.Data.SqlClient
                             length /= ADP.CharSize;
                         }
 
-                        metaDataReturn[index] = new SmiQueryMetaData(
-                                                        colMetaData.type,
-                                                        length,
-                                                        colMetaData.precision,
-                                                        colMetaData.scale,
-                                                        (null != collation) ? collation.LCID : _defaultLCID,
-                                                        (null != collation) ? collation.SqlCompareOptions : SqlCompareOptions.None,
-                                                        false,  // isMultiValued
-                                                        null,   // fieldmetadata
-                                                        null,   // extended properties
-                                                        colMetaData.column,
-                                                        typeSpecificNamePart1,
-                                                        typeSpecificNamePart2,
-                                                        typeSpecificNamePart3,
-                                                        colMetaData.isKey
-                                                        );
+                        metaDataReturn[index] =
+                            new SmiQueryMetaData(
+                                colMetaData.type,
+                                length,
+                                colMetaData.precision,
+                                colMetaData.scale,
+                                (null != collation) ? collation.LCID : _defaultLCID,
+                                (null != collation) ? collation.SqlCompareOptions : SqlCompareOptions.None,
+                                false, // isMultiValued
+                                null, // fieldmetadata
+                                null, // extended properties
+                                colMetaData.column,
+                                typeSpecificNamePart1,
+                                typeSpecificNamePart2,
+                                typeSpecificNamePart3,
+                                colMetaData.isNullable,
+                                colMetaData.serverName,
+                                colMetaData.catalogName,
+                                colMetaData.schemaName,
+                                colMetaData.tableName,
+                                colMetaData.baseColumn,
+                                colMetaData.isKey,
+                                colMetaData.isIdentity,
+                                0 == colMetaData.updatability,
+                                colMetaData.isExpression,
+                                colMetaData.isDifferentName,
+                                colMetaData.isHidden);
                     }
                 }
             }
@@ -349,6 +360,17 @@ namespace System.Data.SqlClient
             }
         }
 
+        internal MultiPartTableName[] TableNames
+        {
+            get
+            {
+                return _tableNames;
+            }
+            set
+            {
+                _tableNames = value;
+            }
+        }
 
         override public int VisibleFieldCount
         {
@@ -496,7 +518,6 @@ namespace System.Data.SqlClient
                 //
                 // For MAX and XML datatypes, we get 0x7fffffff from the server. Do not divide this.
                 schemaRow[size] = (col.metaType.IsSizeInCharacters && (col.length != 0x7fffffff)) ? (col.length / 2) : col.length;
-                
 
                 schemaRow[dataType] = GetFieldTypeInternal(col);
                 schemaRow[providerSpecificDataType] = GetProviderSpecificFieldTypeInternal(col);
@@ -601,9 +622,8 @@ namespace System.Data.SqlClient
                 schemaRow[isIdentity] = col.isIdentity;
                 schemaRow[isAutoIncrement] = col.isIdentity;
 
-                
                 schemaRow[isLong] = col.metaType.IsLong;
-                
+
                 // mark unique for timestamp columns
                 if (SqlDbType.Timestamp == col.type)
                 {
@@ -1038,7 +1058,7 @@ namespace System.Data.SqlClient
                 if (_parser.State == TdsParserState.Broken || _parser.State == TdsParserState.Closed)
                 {
                     // Happened for DEVDIV2:180509	(SqlDataReader.ConsumeMetaData Hangs In 100% CPU Loop Forever When TdsParser._state == TdsParserState.Broken)
-                    // during request for DTC address. 
+                    // during request for DTC address.
                     // NOTE: We doom connection for TdsParserState.Closed since it indicates that it is in some abnormal and unstable state, probably as a result of
                     // closing from another thread. In general, TdsParserState.Closed does not necessitate dooming the connection.
                     if (_parser.Connection != null)
@@ -3650,6 +3670,7 @@ namespace System.Data.SqlClient
         private void ClearMetaData()
         {
             _metaData = null;
+            _tableNames = null;
             _fieldNameLookup = null;
             _metaDataConsumed = false;
             _browseModeInfoConsumed = false;
@@ -3660,6 +3681,7 @@ namespace System.Data.SqlClient
             _metaData = metaData;
 
             // get rid of cached metadata info as well
+            _tableNames = null;
             if (_metaData != null)
             {
                 _data = SqlBuffer.CreateBufferArray(metaData.Length);
@@ -4587,6 +4609,7 @@ namespace System.Data.SqlClient
 
             public _SqlMetaDataSet _metadata;
             public _SqlMetaDataSetCollection _altMetaDataSetCollection;
+            public MultiPartTableName[] _tableNames;
 
             public SqlSequentialStream _currentStream;
             public SqlSequentialTextReader _currentTextReader;
@@ -4752,6 +4775,7 @@ namespace System.Data.SqlClient
                         // before they are updated
                         _metadata = _metaData,
                         _altMetaDataSetCollection = _altMetaDataSetCollection,
+                        _tableNames = _tableNames,
 
                         _currentStream = _currentStream,
                         _currentTextReader = _currentTextReader,
@@ -4830,6 +4854,7 @@ namespace System.Data.SqlClient
 
                 _metaData = _snapshot._metadata;
                 _altMetaDataSetCollection = _snapshot._altMetaDataSetCollection;
+                _tableNames = _snapshot._tableNames;
 
                 _currentStream = _snapshot._currentStream;
                 _currentTextReader = _snapshot._currentTextReader;

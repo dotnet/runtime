@@ -105,6 +105,8 @@
     <Compile Include="System\Data\SqlClient\SqlClientFactory.cs" />
     <Compile Include="System\Data\SqlClient\SqlClientMetaDataCollectionNames.cs" />
     <Compile Include="System\Data\SqlClient\SqlCommand.cs" />
+    <Compile Include="System\Data\SqlClient\SqlCommandBuilder.cs" />
+    <Compile Include="System\Data\SqlClient\SqlCommandSet.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnection.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionFactory.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionHelper.cs" />
@@ -395,6 +397,7 @@
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Diagnostics.Debug" />

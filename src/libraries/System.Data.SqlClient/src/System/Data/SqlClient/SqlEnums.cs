@@ -653,6 +653,11 @@ namespace System.Data.SqlClient
             return sqlVal;
         }
 
+        internal static SqlDbType GetSqlDbTypeFromOleDbType(short dbType, string typeName)
+        {
+            // OleDbTypes not supported
+            return SqlDbType.Variant;
+        }
 
         internal static MetaType GetSqlDataType(int tdsType, UInt32 userType, int length)
         {

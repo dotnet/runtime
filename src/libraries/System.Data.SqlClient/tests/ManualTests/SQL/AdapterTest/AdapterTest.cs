@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
 using System.Data.SqlTypes;
 using System.Globalization;
 using System.Text;
 using System.Reflection;
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
@@ -653,18 +651,19 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [CheckConnStrSetupFact]
         public void BulkUpdateTest()
         {
-            try
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = conn.CreateCommand())
+            using (SqlDataAdapter adapter = new SqlDataAdapter())
+            using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
             {
-                using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
-                using (SqlCommand temp = new SqlCommand("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into " + _tempTable + " from Employees where EmployeeID < 3", conn))
-                using (SqlDataAdapter adapter = new SqlDataAdapter())
-                using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
+                try
                 {
                     conn.Open();
 
-                    temp.ExecuteNonQuery();
-                    temp.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
-                    temp.ExecuteNonQuery();
+                    cmd.CommandText = "SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into " + _tempTable + " from Employees where EmployeeID < 3";
+                    cmd.ExecuteNonQuery();
+                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                    cmd.ExecuteNonQuery();
 
                     PrepareUpdateCommands(adapter, conn, _tempTable);
 
@@ -737,10 +736,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
                     dataSet.AcceptChanges();
                 }
-            }
-            finally
-            {
-                ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                finally
+                {
+                    ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                }
             }
         }
 
@@ -974,6 +973,293 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 sqlAdapter.TableMappings.Add("Table", "orders");
                 sqlAdapter.Fill(dataset);
             }
+        }
+
+        // AutoGen test
+        [CheckConnStrSetupFact]
+        public void AutoGenUpdateTest()
+        {
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+                using (SqlCommand cmd = conn.CreateCommand())
+                using (SqlDataAdapter adapter = new SqlDataAdapter())
+                using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
+                {
+                    conn.Open();
+
+                    cmd.CommandText = string.Format("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into {0} from Employees where EmployeeID < 3", _tempTable);
+                    cmd.ExecuteNonQuery();
+
+                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                    cmd.ExecuteNonQuery();
+
+                    adapter.SelectCommand = new SqlCommand(string.Format("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country from {0} where EmployeeID < 3", _tempTable), conn);
+                    adapterVerify.SelectCommand = new SqlCommand("SELECT LastName, FirstName FROM " + _tempTable + " where FirstName='" + MagicName + "'", conn);
+
+                    adapter.TableMappings.Add(_tempTable, "rowset");
+                    adapterVerify.TableMappings.Add(_tempTable, "rowset");
+
+                    // FillSchema
+                    DataSet dataSet = new DataSet();
+                    VerifyFillSchemaResult(adapter.FillSchema(dataSet, SchemaType.Mapped, _tempTable), new string[] { "rowset" });
+
+                    adapter.Fill(dataSet, _tempTable);
+
+                    // Fill from Database
+                    Assert.True(dataSet.Tables[0].Rows.Count == 2, "FAILED:  Fill after FillSchema should populate the dataSet with two rows!");
+
+                    // Verify that set is empty
+                    DataSet dataSetVerify = new DataSet();
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
+
+                    SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+
+                    // Insert
+                    DataRow datarow = dataSet.Tables["rowset"].NewRow();
+                    datarow.ItemArray = new object[] { "11", "The Original", MagicName, "Engineer", "One Microsoft Way", "Redmond", "WA", "98052", "USA" };
+                    datarow.Table.Rows.Add(datarow);
+                    adapter.Update(dataSet, _tempTable);
+
+                    // Verify that set has one 'Magic' entry
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
+
+                    // Update
+                    datarow = dataSet.Tables["rowset"].Rows.Find("11");
+                    datarow.BeginEdit();
+                    datarow.ItemArray = new object[] { "11", "The New and Improved", MagicName, "reenignE", "Yaw Tfosorcim Eno", "Dnomder", "WA", "52098", "ASU" };
+                    datarow.EndEdit();
+                    adapter.Update(dataSet, _tempTable);
+
+                    // Verify that set has updated 'Magic' entry
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
+
+                    // Delete
+                    dataSet.Tables["rowset"].Rows.Find("11").Delete();
+                    adapter.Update(dataSet, _tempTable);
+
+                    // Verify that set is empty
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
+                }
+            }
+            finally
+            {
+                ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public void AutoGenErrorTest()
+        {
+            string createIdentTable =
+                "CREATE TABLE ident(id int IDENTITY," +
+                "LastName nvarchar(50) NULL," +
+                "Firstname nvarchar(50) NULL)";
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+                using (SqlCommand cmd = new SqlCommand("SELECT * into " + _tempTable + " from ident", conn))
+                using (SqlDataAdapter adapter = new SqlDataAdapter())
+                {
+                    ExecuteNonQueryCommand(createIdentTable);
+
+                    conn.Open();
+                    adapter.SelectCommand = new SqlCommand("select * from " + _tempTable, conn);
+
+                    cmd.ExecuteNonQuery();
+
+                    // start clean
+                    DataSet ds = new DataSet();
+                    adapter.Fill(ds, _tempTable);
+
+                    // Insert
+                    DataRow row1 = ds.Tables[_tempTable].NewRow();
+                    row1.ItemArray = new object[] { 0, "Bond", "James" };
+                    row1.Table.Rows.Add(row1);
+
+                    // table has no key so we should get an error here when we try to autogen the delete command (note that all three
+                    // update command types are generated here despite the fact that we are just doing an insert)
+                    SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+                    adapter.Update(ds, _tempTable);
+                }
+            }
+            finally
+            {
+                ExecuteNonQueryCommand("DROP TABLE ident");
+            }
+        }
+
+        // These next tests verify that 'bulk' operations work. If each command type modifies more than three rows, then we do a Prep/Exec instead of
+        // adhoc ExecuteSql.
+        [CheckConnStrSetupFact]
+        public void AutoGenBulkUpdateTest()
+        {
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = conn.CreateCommand())
+            using (SqlDataAdapter adapter = new SqlDataAdapter())
+            using (SqlDataAdapter adapterVerify = new SqlDataAdapter())
+            {
+                try
+                {
+                    conn.Open();
+
+                    cmd.CommandText = "SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country into " + _tempTable + " from Employees where EmployeeID < 3";
+                    cmd.ExecuteNonQuery();
+
+                    cmd.CommandText = "alter table " + _tempTable + " add constraint " + _tempKey + " primary key (EmployeeID)";
+                    cmd.ExecuteNonQuery();
+
+                    adapter.SelectCommand = new SqlCommand("SELECT EmployeeID, LastName, FirstName, Title, Address, City, Region, PostalCode, Country FROM " + _tempTable + " WHERE EmployeeID < 3", conn);
+                    adapterVerify.SelectCommand = new SqlCommand("SELECT LastName, FirstName FROM " + _tempTable + " where FirstName='" + MagicName + "'", conn);
+
+                    adapter.TableMappings.Add(_tempTable, "rowset");
+                    adapterVerify.TableMappings.Add(_tempTable, "rowset");
+
+                    DataSet dataSet = new DataSet();
+                    adapter.FillSchema(dataSet, SchemaType.Mapped, _tempTable);
+
+                    dataSet.Tables["rowset"].PrimaryKey = new DataColumn[] { dataSet.Tables["rowset"].Columns["EmployeeID"] };
+                    adapter.Fill(dataSet, _tempTable);
+
+                    // Verify that set is empty
+                    DataSet dataSetVerify = new DataSet();
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
+
+                    SqlCommandBuilder builder = new SqlCommandBuilder(adapter);
+
+                    // Bulk Insert  (10 records)
+                    DataRow datarow = null;
+                    const int cOps = 5;
+                    for (int i = 0; i < cOps * 2; i++)
+                    {
+                        datarow = dataSet.Tables["rowset"].NewRow();
+                        string sid = "99999000" + i.ToString();
+                        datarow.ItemArray = new object[] { sid, "Bulk Insert" + i.ToString(), MagicName, "Engineer", "One Microsoft Way", "Redmond", "WA", "98052", "USA" };
+                        datarow.Table.Rows.Add(datarow);
+                    }
+                    adapter.Update(dataSet, _tempTable);
+                    // Verify that set has 10 'Magic' entries
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 10, _tempTable);
+                    dataSet.AcceptChanges();
+
+                    // Bulk Update (first 5)
+                    for (int i = 0; i < cOps; i++)
+                    {
+                        string sid = "99999000" + i.ToString();
+                        datarow = dataSet.Tables["rowset"].Rows.Find(sid);
+                        datarow.BeginEdit();
+                        datarow.ItemArray = new object[] { sid, "Bulk Update" + i.ToString(), MagicName, "reenignE", "Yaw Tfosorcim Eno", "Dnomder", "WA", "52098", "ASU" };
+                        datarow.EndEdit();
+                    }
+
+                    // Bulk Delete (last 5)
+                    for (int i = cOps; i < cOps * 2; i++)
+                    {
+                        string sid = "99999000" + i.ToString();
+                        dataSet.Tables["rowset"].Rows.Find(sid).Delete();
+                    }
+
+                    // now update the dataSet with the insert and delete changes
+                    adapter.Update(dataSet, _tempTable);
+                    // Verify that set has 5 'Magic' updated entries
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 5, _tempTable);
+
+                    // clean up the remaining 5 rows
+                    for (int i = 0; i < cOps; i++)
+                    {
+                        string sid = "99999000" + i.ToString();
+                        dataSet.Tables["rowset"].Rows.Find(sid).Delete();
+                    }
+                    adapter.Update(dataSet, _tempTable);
+                    // Verify that set has no entries
+                    VerifyUpdateRow(adapterVerify, dataSetVerify, 0, _tempTable);
+                }
+                finally
+                {
+                    ExecuteNonQueryCommand("DROP TABLE " + _tempTable);
+                }
+            }
+        }
+
+        [CheckConnStrSetupFact]
+        public void TestDeriveParameters()
+        {
+            string spEmployeeSales =
+            "create procedure [dbo].[Test_EmployeeSalesByCountry] " +
+            "@Beginning_Date DateTime, @Ending_Date DateTime AS " +
+            "SELECT Employees.Country, Employees.LastName, Employees.FirstName, Orders.ShippedDate, Orders.OrderID, \"Order Subtotals\".Subtotal AS SaleAmount " +
+            "FROM Employees INNER JOIN " +
+                "(Orders INNER JOIN \"Order Subtotals\" ON Orders.OrderID = \"Order Subtotals\".OrderID) " +
+                "ON Employees.EmployeeID = Orders.EmployeeID " +
+            "WHERE Orders.ShippedDate Between @Beginning_Date And @Ending_Date";
+            string dropSpEmployeeSales = "drop procedure [dbo].[Test_EmployeeSalesByCountry]";
+
+            string expectedParamResults =
+                "\"@RETURN_VALUE\" AS Int32 OF Int FOR Current \"\" " +
+                "0, 0, 0, ReturnValue, DEFAULT; " +
+                "\"@Beginning_Date\" AS DateTime OF DateTime FOR Current \"\" " +
+                "0, 0, 0, Input, DEFAULT; " +
+                "\"@Ending_Date\" AS DateTime OF DateTime FOR Current \"\" " +
+                "0, 0, 0, Input, DEFAULT; ";
+
+            try
+            {
+                ExecuteNonQueryCommand(spEmployeeSales);
+
+                using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+                using (SqlCommand cmd = new SqlCommand("Test_EmployeeSalesByCountry", connection))
+                {
+                    string errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_DeriveParametersNotSupported, "SqlCommand", cmd.CommandType);
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(
+                        () => SqlCommandBuilder.DeriveParameters(cmd),
+                        errorMessage);
+
+                    errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_OpenConnectionRequired, "DeriveParameters", "");
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(
+                        () => SqlCommandBuilder.DeriveParameters(cmd),
+                        errorMessage);
+
+                    connection.Open();
+
+                    SqlCommandBuilder.DeriveParameters(cmd);
+                    CheckParameters(cmd, expectedParamResults);
+
+                    cmd.CommandText = "Test_EmployeeSalesBy";
+                    errorMessage = string.Format(SystemDataResourceManager.Instance.ADP_NoStoredProcedureExists, cmd.CommandText);
+                    DataTestUtility.AssertThrowsWrapper<InvalidOperationException>(
+                        () => SqlCommandBuilder.DeriveParameters(cmd),
+                        errorMessage);
+
+                    cmd.CommandText = "Test_EmployeeSalesByCountry";
+                    SqlCommandBuilder.DeriveParameters(cmd);
+                    CheckParameters(cmd, expectedParamResults);
+                }
+            }
+            finally
+            {
+                ExecuteNonQueryCommand(dropSpEmployeeSales);
+            }
+        }
+
+        #region Utility_Methods
+        private void CheckParameters(SqlCommand cmd, string expectedResults)
+        {
+            Debug.Assert(null != cmd, "DumpParameters: null SqlCommand");
+
+            string actualResults = "";
+            StringBuilder builder = new StringBuilder();
+            foreach (SqlParameter p in cmd.Parameters)
+            {
+                byte precision = p.Precision;
+                byte scale = p.Scale;
+                builder.Append("\"" + p.ParameterName + "\" AS " + p.DbType.ToString("G") + " OF " + p.SqlDbType.ToString("G") + " FOR " + p.SourceVersion.ToString("G") + " \"" + p.SourceColumn + "\" ");
+                builder.Append(p.Size.ToString() + ", " + precision.ToString() + ", " + scale.ToString() + ", " + p.Direction.ToString("G") + ", " + DBConvertToString(p.Value) + "; ");
+            }
+            actualResults = builder.ToString();
+
+            DataTestUtility.AssertEqualsWithDescription(expectedResults, actualResults, "Unexpected Parameter results.");
         }
 
         private bool ByteArraysEqual(byte[] expectedBytes, byte[] actualBytes)
@@ -1473,6 +1759,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 return CultureInfo.InvariantCulture.CompareInfo.Compare(fieldInfoName1, fieldInfoName2, CompareOptions.IgnoreCase);
             }
         }
+        #endregion
     }
 }
 

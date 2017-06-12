@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.Sql;
 using System.Data.SqlTypes;
@@ -201,7 +202,11 @@ namespace System.Data.SqlClient
         // by the stateObject.
         private volatile bool _pendingCancel;
 
-
+        private bool _batchRPCMode;
+        private List<_SqlRPC> _RPCList;
+        private _SqlRPC[] _SqlRPCBatchArray;
+        private List<SqlParameterCollection> _parameterCollectionList;
+        private int _currentlyExecutingBatch;
 
 
         public SqlCommand() : base()
@@ -1847,6 +1852,72 @@ namespace System.Data.SqlClient
             return returnedTask;
         }
 
+        // If the user part is quoted, remove first and last brackets and then unquote any right square
+        // brackets in the procedure.  This is a very simple parser that performs no validation.  As
+        // with the function below, ideally we should have support from the server for this.
+        private static string UnquoteProcedurePart(string part)
+        {
+            if ((null != part) && (2 <= part.Length))
+            {
+                if ('[' == part[0] && ']' == part[part.Length - 1])
+                {
+                    part = part.Substring(1, part.Length - 2); // strip outer '[' & ']'
+                    part = part.Replace("]]", "]"); // undo quoted "]" from "]]" to "]"
+                }
+            }
+            return part;
+        }
+
+        // User value in this format: [server].[database].[schema].[sp_foo];1
+        // This function should only be passed "[sp_foo];1".
+        // This function uses a pretty simple parser that doesn't do any validation.
+        // Ideally, we would have support from the server rather than us having to do this.
+        private static string UnquoteProcedureName(string name, out object groupNumber)
+        {
+            groupNumber = null; // Out param - initialize value to no value.
+            string sproc = name;
+
+            if (null != sproc)
+            {
+                if (char.IsDigit(sproc[sproc.Length - 1]))
+                { // If last char is a digit, parse.
+                    int semicolon = sproc.LastIndexOf(';');
+                    if (semicolon != -1)
+                    { // If we found a semicolon, obtain the integer.
+                        string part = sproc.Substring(semicolon + 1);
+                        int number = 0;
+                        if (int.TryParse(part, out number))
+                        { // No checking, just fail if this doesn't work.
+                            groupNumber = number;
+                            sproc = sproc.Substring(0, semicolon);
+                        }
+                    }
+                }
+                sproc = UnquoteProcedurePart(sproc);
+            }
+            return sproc;
+        }
+
+        // Index into indirection arrays for columns of interest to DeriveParameters
+        private enum ProcParamsColIndex
+        {
+            ParameterName = 0,
+            ParameterType,
+            DataType, // obsolete in katmai, use ManagedDataType instead
+            ManagedDataType, // new in katmai
+            CharacterMaximumLength,
+            NumericPrecision,
+            NumericScale,
+            TypeCatalogName,
+            TypeSchemaName,
+            TypeName,
+            XmlSchemaCollectionCatalogName,
+            XmlSchemaCollectionSchemaName,
+            XmlSchemaCollectionName,
+            UdtTypeName, // obsolete in Katmai.  Holds the actual typename if UDT, since TypeName didn't back then.
+            DateTimeScale // new in Katmai
+        };
+
         // Yukon- column ordinals (this array indexed by ProcParamsColIndex
         internal static readonly string[] PreKatmaiProcParamsNames = new string[] {
             "PARAMETER_NAME",           // ParameterName,
@@ -1885,7 +1956,268 @@ namespace System.Data.SqlClient
             "SS_DATETIME_PRECISION",    // Scale for datetime types with scale
         };
 
+        internal void DeriveParameters()
+        {
+            switch (CommandType)
+            {
+                case CommandType.Text:
+                    throw ADP.DeriveParametersNotSupported(this);
+                case CommandType.StoredProcedure:
+                    break;
+                case CommandType.TableDirect:
+                    // CommandType.TableDirect - do nothing, parameters are not supported
+                    throw ADP.DeriveParametersNotSupported(this);
+                default:
+                    throw ADP.InvalidCommandType(CommandType);
+            }
 
+            // validate that we have a valid connection
+            ValidateCommand(false /*not async*/, nameof(DeriveParameters));
+
+            // Use common parser for SqlClient and OleDb - parse into 4 parts - Server, Catalog, Schema, ProcedureName
+            string[] parsedSProc = MultipartIdentifier.ParseMultipartIdentifier(CommandText, "[\"", "]\"", SR.SQL_SqlCommandCommandText, false);
+            if (null == parsedSProc[3] || string.IsNullOrEmpty(parsedSProc[3]))
+            {
+                throw ADP.NoStoredProcedureExists(CommandText);
+            }
+
+            Debug.Assert(parsedSProc.Length == 4, "Invalid array length result from SqlCommandBuilder.ParseProcedureName");
+
+            SqlCommand paramsCmd = null;
+            StringBuilder cmdText = new StringBuilder();
+
+            // Build call for sp_procedure_params_rowset built of unquoted values from user:
+            // [user server, if provided].[user catalog, else current database].[sys if Yukon, else blank].[sp_procedure_params_rowset]
+
+            // Server - pass only if user provided.
+            if (!string.IsNullOrEmpty(parsedSProc[0]))
+            {
+                SqlCommandSet.BuildStoredProcedureName(cmdText, parsedSProc[0]);
+                cmdText.Append(".");
+            }
+
+            // Catalog - pass user provided, otherwise use current database.
+            if (string.IsNullOrEmpty(parsedSProc[1]))
+            {
+                parsedSProc[1] = Connection.Database;
+            }
+            SqlCommandSet.BuildStoredProcedureName(cmdText, parsedSProc[1]);
+            cmdText.Append(".");
+
+            // Schema - only if Yukon, and then only pass sys.  Also - pass managed version of sproc
+            // for Yukon, else older sproc.
+            string[] colNames;
+            bool useManagedDataType;
+            if (Connection.IsKatmaiOrNewer)
+            {
+                // Procedure - [sp_procedure_params_managed]
+                cmdText.Append("[sys].[").Append(TdsEnums.SP_PARAMS_MGD10).Append("]");
+
+                colNames = KatmaiProcParamsNames;
+                useManagedDataType = true;
+            }
+            else
+            {
+                // Procedure - [sp_procedure_params_managed]
+                cmdText.Append("[sys].[").Append(TdsEnums.SP_PARAMS_MANAGED).Append("]");
+
+                colNames = PreKatmaiProcParamsNames;
+                useManagedDataType = false;
+            }
+
+            paramsCmd = new SqlCommand(cmdText.ToString(), Connection, Transaction)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+
+            object groupNumber;
+
+            // Prepare parameters for sp_procedure_params_rowset:
+            // 1) procedure name - unquote user value
+            // 2) group number - parsed at the time we unquoted procedure name
+            // 3) procedure schema - unquote user value
+
+            paramsCmd.Parameters.Add(new SqlParameter("@procedure_name", SqlDbType.NVarChar, 255));
+            paramsCmd.Parameters[0].Value = UnquoteProcedureName(parsedSProc[3], out groupNumber); // ProcedureName is 4rd element in parsed array
+
+            if (null != groupNumber)
+            {
+                SqlParameter param = paramsCmd.Parameters.Add(new SqlParameter("@group_number", SqlDbType.Int));
+                param.Value = groupNumber;
+            }
+
+            if (!string.IsNullOrEmpty(parsedSProc[2]))
+            { // SchemaName is 3rd element in parsed array
+                SqlParameter param = paramsCmd.Parameters.Add(new SqlParameter("@procedure_schema", SqlDbType.NVarChar, 255));
+                param.Value = UnquoteProcedurePart(parsedSProc[2]);
+            }
+
+            SqlDataReader r = null;
+
+            List<SqlParameter> parameters = new List<SqlParameter>();
+            bool processFinallyBlock = true;
+
+            try
+            {
+                r = paramsCmd.ExecuteReader();
+
+                SqlParameter p = null;
+
+                while (r.Read())
+                {
+                    // each row corresponds to a parameter of the stored proc.  Fill in all the info
+                    p = new SqlParameter()
+                    {
+                        ParameterName = (string)r[colNames[(int)ProcParamsColIndex.ParameterName]]
+                    };
+
+                    // type
+                    if (useManagedDataType)
+                    {
+                        p.SqlDbType = (SqlDbType)(short)r[colNames[(int)ProcParamsColIndex.ManagedDataType]];
+
+                        // Yukon didn't have as accurate of information as we're getting for Katmai, so re-map a couple of
+                        //  types for backward compatability.
+                        switch (p.SqlDbType)
+                        {
+                            case SqlDbType.Image:
+                            case SqlDbType.Timestamp:
+                                p.SqlDbType = SqlDbType.VarBinary;
+                                break;
+
+                            case SqlDbType.NText:
+                                p.SqlDbType = SqlDbType.NVarChar;
+                                break;
+
+                            case SqlDbType.Text:
+                                p.SqlDbType = SqlDbType.VarChar;
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        p.SqlDbType = MetaType.GetSqlDbTypeFromOleDbType((short)r[colNames[(int)ProcParamsColIndex.DataType]],
+                            ADP.IsNull(r[colNames[(int)ProcParamsColIndex.TypeName]]) ?
+                                ADP.StrEmpty :
+                                (string)r[colNames[(int)ProcParamsColIndex.TypeName]]);
+                    }
+
+                    // size
+                    object a = r[colNames[(int)ProcParamsColIndex.CharacterMaximumLength]];
+                    if (a is int)
+                    {
+                        int size = (int)a;
+
+                        // Map MAX sizes correctly.  The Katmai server-side proc sends 0 for these instead of -1.
+                        //  Should be fixed on the Katmai side, but would likely hold up the RI, and is safer to fix here.
+                        //  If we can get the server-side fixed before shipping Katmai, we can remove this mapping.
+                        if (0 == size &&
+                                (p.SqlDbType == SqlDbType.NVarChar ||
+                                 p.SqlDbType == SqlDbType.VarBinary ||
+                                 p.SqlDbType == SqlDbType.VarChar))
+                        {
+                            size = -1;
+                        }
+                        p.Size = size;
+                    }
+
+                    // direction
+                    p.Direction = ParameterDirectionFromOleDbDirection((short)r[colNames[(int)ProcParamsColIndex.ParameterType]]);
+
+                    if (p.SqlDbType == SqlDbType.Decimal)
+                    {
+                        p.ScaleInternal = (byte)((short)r[colNames[(int)ProcParamsColIndex.NumericScale]] & 0xff);
+                        p.PrecisionInternal = (byte)((short)r[colNames[(int)ProcParamsColIndex.NumericPrecision]] & 0xff);
+                    }
+
+                    // type name for Structured types (same as for Udt's except assign p.TypeName instead of p.UdtTypeName
+                    if (SqlDbType.Structured == p.SqlDbType)
+                    {
+
+                        Debug.Assert(_activeConnection.IsKatmaiOrNewer, "Invalid datatype token received from pre-katmai server");
+
+                        //read the type name
+                        p.TypeName = r[colNames[(int)ProcParamsColIndex.TypeCatalogName]] + "." +
+                            r[colNames[(int)ProcParamsColIndex.TypeSchemaName]] + "." +
+                            r[colNames[(int)ProcParamsColIndex.TypeName]];
+                    }
+
+                    // XmlSchema name for Xml types
+                    if (SqlDbType.Xml == p.SqlDbType)
+                    {
+                        object value;
+
+                        value = r[colNames[(int)ProcParamsColIndex.XmlSchemaCollectionCatalogName]];
+                        p.XmlSchemaCollectionDatabase = ADP.IsNull(value) ? String.Empty : (string)value;
+
+                        value = r[colNames[(int)ProcParamsColIndex.XmlSchemaCollectionSchemaName]];
+                        p.XmlSchemaCollectionOwningSchema = ADP.IsNull(value) ? String.Empty : (string)value;
+
+                        value = r[colNames[(int)ProcParamsColIndex.XmlSchemaCollectionName]];
+                        p.XmlSchemaCollectionName = ADP.IsNull(value) ? String.Empty : (string)value;
+                    }
+
+                    if (MetaType._IsVarTime(p.SqlDbType))
+                    {
+                        object value = r[colNames[(int)ProcParamsColIndex.DateTimeScale]];
+                        if (value is int)
+                        {
+                            p.ScaleInternal = (byte)(((int)value) & 0xff);
+                        }
+                    }
+
+                    parameters.Add(p);
+                }
+            }
+            catch (Exception e)
+            {
+                processFinallyBlock = ADP.IsCatchableExceptionType(e);
+                throw;
+            }
+            finally
+            {
+                if (processFinallyBlock)
+                {
+                    r?.Close();
+
+                    // always unhook the user's connection
+                    paramsCmd.Connection = null;
+                }
+            }
+
+            if (parameters.Count == 0)
+            {
+                throw ADP.NoStoredProcedureExists(this.CommandText);
+            }
+
+            Parameters.Clear();
+
+            foreach (SqlParameter temp in parameters)
+            {
+                _parameters.Add(temp);
+            }
+        }
+
+        private ParameterDirection ParameterDirectionFromOleDbDirection(short oledbDirection)
+        {
+            Debug.Assert(oledbDirection >= 1 && oledbDirection <= 4, "invalid parameter direction from params_rowset!");
+
+            switch (oledbDirection)
+            {
+                case 2:
+                    return ParameterDirection.InputOutput;
+                case 3:
+                    return ParameterDirection.Output;
+                case 4:
+                    return ParameterDirection.ReturnValue;
+                default:
+                    return ParameterDirection.Input;
+            }
+
+        }
 
         // get cached metadata
         internal _SqlMetaDataSet MetaData
@@ -2568,17 +2900,59 @@ namespace System.Data.SqlClient
                 stateObj.CloseSession();
             }
         }
-
         internal void OnDoneProc()
         { // called per rpc batch complete
-        }
+            if (BatchRPCMode)
+            {
+                // track the records affected for the just completed rpc batch
+                // _rowsAffected is cumulative for ExecuteNonQuery across all rpc batches
+                _SqlRPCBatchArray[_currentlyExecutingBatch].cumulativeRecordsAffected = _rowsAffected;
 
+                _SqlRPCBatchArray[_currentlyExecutingBatch].recordsAffected =
+                    (((0 < _currentlyExecutingBatch) && (0 <= _rowsAffected))
+                        ? (_rowsAffected - Math.Max(_SqlRPCBatchArray[_currentlyExecutingBatch - 1].cumulativeRecordsAffected, 0))
+                        : _rowsAffected);
+
+                // track the error collection (not available from TdsParser after ExecuteNonQuery)
+                // and the which errors are associated with the just completed rpc batch
+                _SqlRPCBatchArray[_currentlyExecutingBatch].errorsIndexStart =
+                    ((0 < _currentlyExecutingBatch)
+                        ? _SqlRPCBatchArray[_currentlyExecutingBatch - 1].errorsIndexEnd
+                        : 0);
+                _SqlRPCBatchArray[_currentlyExecutingBatch].errorsIndexEnd = _stateObj.ErrorCount;
+                _SqlRPCBatchArray[_currentlyExecutingBatch].errors = _stateObj._errors;
+
+                // track the warning collection (not available from TdsParser after ExecuteNonQuery)
+                // and the which warnings are associated with the just completed rpc batch
+                _SqlRPCBatchArray[_currentlyExecutingBatch].warningsIndexStart =
+                    ((0 < _currentlyExecutingBatch)
+                        ? _SqlRPCBatchArray[_currentlyExecutingBatch - 1].warningsIndexEnd
+                        : 0);
+                _SqlRPCBatchArray[_currentlyExecutingBatch].warningsIndexEnd = _stateObj.WarningCount;
+                _SqlRPCBatchArray[_currentlyExecutingBatch].warnings = _stateObj._warnings;
+
+                _currentlyExecutingBatch++;
+                Debug.Assert(_parameterCollectionList.Count >= _currentlyExecutingBatch, "OnDoneProc: Too many DONEPROC events");
+            }
+        }
         internal void OnReturnStatus(int status)
         {
             if (_inPrepare)
                 return;
 
             SqlParameterCollection parameters = _parameters;
+            if (BatchRPCMode)
+            {
+                if (_parameterCollectionList.Count > _currentlyExecutingBatch)
+                {
+                    parameters = _parameterCollectionList[_currentlyExecutingBatch];
+                }
+                else
+                {
+                    Debug.Assert(false, "OnReturnStatus: SqlCommand got too many DONEPROC events");
+                    parameters = null;
+                }
+            }
             // see if a return value is bound
             int count = GetParameterCount(parameters);
             for (int i = 0; i < count; i++)
@@ -2596,7 +2970,9 @@ namespace System.Data.SqlClient
                     else
                     {
                         parameter.Value = status;
+
                     }
+
                     break;
                 }
             }
@@ -2610,6 +2986,7 @@ namespace System.Data.SqlClient
         //
         internal void OnReturnValue(SqlReturnValue rec)
         {
+
             if (_inPrepare)
             {
                 if (!rec.value.IsNull)
@@ -2620,7 +2997,7 @@ namespace System.Data.SqlClient
                 return;
             }
 
-            SqlParameterCollection parameters = _parameters;
+            SqlParameterCollection parameters = GetCurrentParameterCollection();
             int count = GetParameterCount(parameters);
 
 
@@ -2634,15 +3011,7 @@ namespace System.Data.SqlClient
                 // to the com type
                 object val = thisParam.Value;
 
-                //set the UDT value as typed object rather than bytes
-                if (SqlDbType.Udt == thisParam.SqlDbType)
-                {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
-                }
-                else
-                {
-                    thisParam.SetSqlBuffer(rec.value);
-                }
+                thisParam.SetSqlBuffer(rec.value);
 
                 MetaType mt = MetaType.GetMetaTypeFromSqlDbType(rec.type, false);
 
@@ -2674,6 +3043,25 @@ namespace System.Data.SqlClient
             return;
         }
 
+        private SqlParameterCollection GetCurrentParameterCollection()
+        {
+            if (BatchRPCMode)
+            {
+                if (_parameterCollectionList.Count > _currentlyExecutingBatch)
+                {
+                    return _parameterCollectionList[_currentlyExecutingBatch];
+                }
+                else
+                {
+                    Debug.Assert(false, "OnReturnValue: SqlCommand got too many DONEPROC events");
+                    return null;
+                }
+            }
+            else
+            {
+                return _parameters;
+            }
+        }
 
         private SqlParameter GetParameterForOutputValueExtraction(SqlParameterCollection parameters,
                         string paramName, int paramCount)
@@ -2939,8 +3327,9 @@ namespace System.Data.SqlClient
         // sp_executesql(@batch_text nvarchar(4000),@batch_params nvarchar(4000), param1,.. paramN)
         private void BuildExecuteSql(CommandBehavior behavior, string commandText, SqlParameterCollection parameters, ref _SqlRPC rpc)
         {
+
             Debug.Assert(_prepareHandle == -1, "This command has an existing handle, use sp_execute!");
-            Debug.Assert(System.Data.CommandType.Text == this.CommandType, "invalid use of sp_executesql for stored proc invocation!");
+            Debug.Assert(CommandType.Text == this.CommandType, "invalid use of sp_executesql for stored proc invocation!");
             int j;
             SqlParameter sqlParam;
 
@@ -2969,7 +3358,7 @@ namespace System.Data.SqlClient
 
             if (cParams > 0)
             {
-                string paramList = BuildParamList(_stateObj.Parser, _parameters);
+                string paramList = BuildParamList(_stateObj.Parser, BatchRPCMode ? parameters : _parameters);
                 sqlParam = new SqlParameter(null, ((paramList.Length << 1) <= TdsEnums.TYPE_SIZE_LIMIT) ? SqlDbType.NVarChar : SqlDbType.NText, paramList.Length);
                 sqlParam.Value = paramList;
                 rpc.parameters[1] = sqlParam;
@@ -3282,6 +3671,117 @@ namespace System.Data.SqlClient
                     _rowsAffected += value;
                 }
             }
+        }
+
+        internal void ClearBatchCommand()
+        {
+            List<_SqlRPC> rpcList = _RPCList;
+            if (null != rpcList)
+            {
+                rpcList.Clear();
+            }
+            if (null != _parameterCollectionList)
+            {
+                _parameterCollectionList.Clear();
+            }
+
+            _SqlRPCBatchArray = null;
+            _currentlyExecutingBatch = 0;
+        }
+
+        internal bool BatchRPCMode
+        {
+            get
+            {
+                return _batchRPCMode;
+            }
+            set
+            {
+                _batchRPCMode = value;
+
+                if (_batchRPCMode == false)
+                {
+                    ClearBatchCommand();
+                }
+                else
+                {
+                    if (_RPCList == null)
+                    {
+                        _RPCList = new List<_SqlRPC>();
+                    }
+                    if (_parameterCollectionList == null)
+                    {
+                        _parameterCollectionList = new List<SqlParameterCollection>();
+                    }
+                }
+            }
+        }
+
+        internal void AddBatchCommand(string commandText, SqlParameterCollection parameters, CommandType cmdType)
+        {
+            Debug.Assert(BatchRPCMode, "Command is not in batch RPC Mode");
+            Debug.Assert(_RPCList != null);
+            Debug.Assert(_parameterCollectionList != null);
+
+            _SqlRPC rpc = new _SqlRPC();
+
+            CommandText = commandText;
+            CommandType = cmdType;
+
+            GetStateObject();
+            if (cmdType == CommandType.StoredProcedure)
+            {
+                BuildRPC(false, parameters, ref rpc);
+            }
+            else
+            {
+                // All batch sql statements must be executed inside sp_executesql, including those without parameters
+                BuildExecuteSql(CommandBehavior.Default, commandText, parameters, ref rpc);
+            }
+
+            _RPCList.Add(rpc);
+            // Always add a parameters collection per RPC, even if there are no parameters.
+            _parameterCollectionList.Add(parameters);
+
+            ReliablePutStateObject();
+        }
+
+        internal int ExecuteBatchRPCCommand()
+        {
+
+            Debug.Assert(BatchRPCMode, "Command is not in batch RPC Mode");
+            Debug.Assert(_RPCList != null, "No batch commands specified");
+
+            _SqlRPCBatchArray = _RPCList.ToArray();
+            _currentlyExecutingBatch = 0;
+            return ExecuteNonQuery();       // Check permissions, execute, return output params
+        }
+
+        internal int? GetRecordsAffected(int commandIndex)
+        {
+            Debug.Assert(BatchRPCMode, "Command is not in batch RPC Mode");
+            Debug.Assert(_SqlRPCBatchArray != null, "batch command have been cleared");
+            return _SqlRPCBatchArray[commandIndex].recordsAffected;
+        }
+
+        internal SqlException GetErrors(int commandIndex)
+        {
+            SqlException result = null;
+            int length = (_SqlRPCBatchArray[commandIndex].errorsIndexEnd - _SqlRPCBatchArray[commandIndex].errorsIndexStart);
+            if (0 < length)
+            {
+                SqlErrorCollection errors = new SqlErrorCollection();
+                for (int i = _SqlRPCBatchArray[commandIndex].errorsIndexStart; i < _SqlRPCBatchArray[commandIndex].errorsIndexEnd; ++i)
+                {
+                    errors.Add(_SqlRPCBatchArray[commandIndex].errors[i]);
+                }
+                for (int i = _SqlRPCBatchArray[commandIndex].warningsIndexStart; i < _SqlRPCBatchArray[commandIndex].warningsIndexEnd; ++i)
+                {
+                    errors.Add(_SqlRPCBatchArray[commandIndex].warnings[i]);
+                }
+                result = SqlException.CreateException(errors, Connection.ServerVersion, Connection.ClientConnectionId);
+            }
+            return result;
         }
 
 
