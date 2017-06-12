@@ -138,7 +138,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         Assert.NotNull(Console.Title);
     }
 
-    [Theory]
+    [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
     [InlineData(10)]
     [InlineData(256)]
     [InlineData(1024)]
@@ -146,13 +146,13 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     public static void Title_Set_Windows(int lengthOfTitle)
     {
         // Try to set the title to some other value.
-        RemoteInvoke(() =>
+        RemoteInvoke(lengthOfTitleString =>
         {
-            string newTitle = new string('a', lengthOfTitle);
+            string newTitle = new string('a', int.Parse(lengthOfTitleString));
             Console.Title = newTitle;
             Assert.Equal(newTitle, Console.Title);
             return SuccessExitCode;
-        }).Dispose();
+        }, lengthOfTitle.ToString()).Dispose();
     }
 
     [Fact]

@@ -45,7 +45,7 @@ namespace System.Diagnostics
             Func<int> method, 
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), Array.Empty<string>(), options);
+            return RemoteInvoke(GetMethodInfo(method), Array.Empty<string>(), options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -55,7 +55,7 @@ namespace System.Diagnostics
             Func<Task<int>> method,
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), Array.Empty<string>(), options);
+            return RemoteInvoke(GetMethodInfo(method), Array.Empty<string>(), options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -67,7 +67,7 @@ namespace System.Diagnostics
             string arg, 
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg }, options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -80,7 +80,7 @@ namespace System.Diagnostics
             string arg1, string arg2, 
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2 }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2 }, options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -94,7 +94,7 @@ namespace System.Diagnostics
             string arg1, string arg2, string arg3, 
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3 }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2, arg3 }, options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -109,7 +109,7 @@ namespace System.Diagnostics
             string arg1, string arg2, string arg3, string arg4, 
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3, arg4 }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2, arg3, arg4 }, options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -125,7 +125,7 @@ namespace System.Diagnostics
             string arg1, string arg2, string arg3, string arg4, string arg5, 
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { arg1, arg2, arg3, arg4, arg5 }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2, arg3, arg4, arg5 }, options);
         }
 
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
@@ -135,7 +135,7 @@ namespace System.Diagnostics
         internal static RemoteInvokeHandle RemoteInvokeRaw(Delegate method, string unparsedArg,
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(method.GetMethodInfo(), new[] { unparsedArg }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { unparsedArg }, options);
         }
 
 #if uap
@@ -255,6 +255,28 @@ namespace System.Diagnostics
                 new Process() { StartInfo = psi }, options);
         }
 #endif
+
+        private static MethodInfo GetMethodInfo(Delegate d)
+        {
+            // RemoteInvoke doesn't support marshaling state on classes associated with
+            // the delegate supplied (often a display class of a lambda).  If such fields
+            // are used, odd errors result, e.g. NullReferenceExceptions during the remote
+            // execution.  Try to ward off the common cases by proactively failing early
+            // if it looks like such fields are needed.
+            if (d.Target != null)
+            {
+                // The only fields on the type should be compiler-defined (any fields of the compiler's own
+                // making generally include '<' and '>', as those are invalid in C# source).  Note that this logic
+                // may need to be revised in the future as the compiler changes, as this relies on the specifics of
+                // actually how the compiler handles lifted fields for lambdas.
+                Type targetType = d.Target.GetType();
+                Assert.All(
+                    targetType.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                    fi => Assert.True(fi.Name.IndexOf('<') != -1, $"Field marshaling is not supported by {nameof(RemoteInvoke)}: {fi.Name}"));
+            }
+
+            return d.GetMethodInfo();
+        }
 
         /// <summary>A cleanup handle to the Process created for the remote invocation.</summary>
         internal sealed class RemoteInvokeHandle : IDisposable
