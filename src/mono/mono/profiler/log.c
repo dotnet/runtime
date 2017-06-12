@@ -4512,6 +4512,12 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		filename++;
 		g_warning ("WARNING: the output:-FILENAME option is deprecated, the profiler now always overrides the output file\n");
 	}
+
+	//If filename begin with +, append the pid at the end
+	if (filename && *filename == '+')
+		filename = g_strdup_printf ("%s.%d", filename + 1, getpid ());
+
+
 	if (!filename) {
 		if (do_report)
 			filename = "|mprof-report -";
