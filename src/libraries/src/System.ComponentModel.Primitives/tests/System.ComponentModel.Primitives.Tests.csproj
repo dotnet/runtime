@@ -9,6 +9,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BrowsableAttributeTests.cs" />
+    <Compile Include="ComponentCollectionTests.cs" />
+    <Compile Include="ComponentTests.cs" />
     <Compile Include="CategoryAttributeTests.cs" />
     <Compile Include="ComponentModelPrimitivesBasicTests.cs" />
     <Compile Include="DescriptionAttributeTests.cs" />
@@ -20,6 +22,7 @@
     <Compile Include="InitializationEventAttributeTests.cs" />
     <Compile Include="LocalizableAttributeTests.cs" />
     <Compile Include="MergablePropertyAttributeTests.cs" />
+    <Compile Include="MockISite.cs" />
     <Compile Include="NotifyParentPropertyAttributeTests.cs" />
     <Compile Include="ParenthesizePropertyNameAttributeTests.cs" />
     <Compile Include="ReadOnlyAttributeTests.cs" />

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.InteropServices;
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -12,9 +9,7 @@ namespace System.ComponentModel
     ///    <see cref='System.ComponentModel.IComponent'/>
     ///    interface and enables object-sharing between applications.</para>
     /// </summary>
-    [
-        DesignerCategory("Component")
-    ]
+    [DesignerCategory("Component")]
     public class Component : MarshalByRefObject, IComponent
     {
         /// <summary>
@@ -25,10 +20,7 @@ namespace System.ComponentModel
         private ISite _site;
         private EventHandlerList _events;
 
-        ~Component()
-        {
-            Dispose(false);
-        }
+        ~Component() => Dispose(false);
 
         /// <summary>
         ///     This property returns true if the component is in a mode that supports
@@ -40,59 +32,29 @@ namespace System.ComponentModel
         ///     removed from the collection, but retrieving them through the collection's Item
         ///     property will always return null.
         /// </summary>
-        protected virtual bool CanRaiseEvents
-        {
-            get
-            {
-                return true;
-            }
-        }
+        protected virtual bool CanRaiseEvents => true;
 
         /// <summary>
         ///     Internal API that allows the event handler list class to access the
         ///     CanRaiseEvents property.
         /// </summary>
-        internal bool CanRaiseEventsInternal
-        {
-            get
-            {
-                return CanRaiseEvents;
-            }
-        }
+        internal bool CanRaiseEventsInternal => CanRaiseEvents;
 
         /// <summary>
         ///    <para>Adds a event handler to listen to the Disposed event on the component.</para>
         /// </summary>
-        [
-        Browsable(false),
-        EditorBrowsable(EditorBrowsableState.Advanced)
-        ]
+        [Browsable(false)]
+        [EditorBrowsable(EditorBrowsableState.Advanced)]
         public event EventHandler Disposed
         {
-            add
-            {
-                Events.AddHandler(s_eventDisposed, value);
-            }
-            remove
-            {
-                Events.RemoveHandler(s_eventDisposed, value);
-            }
+            add => Events.AddHandler(s_eventDisposed, value);
+            remove => Events.RemoveHandler(s_eventDisposed, value);
         }
 
         /// <summary>
         ///    <para>Gets the list of event handlers that are attached to this component.</para>
         /// </summary>
-        protected EventHandlerList Events
-        {
-            get
-            {
-                if (_events == null)
-                {
-                    _events = new EventHandlerList(this);
-                }
-                return _events;
-            }
-        }
+        protected EventHandlerList Events => _events ?? (_events = new EventHandlerList(this));
 
         /// <summary>
         ///    <para>
@@ -100,14 +62,12 @@ namespace System.ComponentModel
         ///       .
         ///    </para>
         /// </summary>
-        [
-        Browsable(false),
-        DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)
-        ]
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public virtual ISite Site
         {
-            get { return _site; }
-            set { _site = value; }
+            get => _site;
+            set => _site = value;
         }
 
         /// <summary>
@@ -185,14 +145,10 @@ namespace System.ComponentModel
             {
                 lock (this)
                 {
-                    if (_site != null && _site.Container != null)
-                    {
-                        _site.Container.Remove(this);
-                    }
+                    _site?.Container?.Remove(this);
                     if (_events != null)
                     {
-                        EventHandler handler = (EventHandler)_events[s_eventDisposed];
-                        if (handler != null) handler(this, EventArgs.Empty);
+                        ((EventHandler)_events[s_eventDisposed])?.Invoke(this, EventArgs.Empty);
                     }
                 }
             }
@@ -203,35 +159,20 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>
         ///       Returns the <see cref='System.ComponentModel.IContainer'/>
-        ///       that contains the <see cref='System.ComponentModel.Component'/>
-        ///       .
+        ///       that contains the <see cref='System.ComponentModel.Component'/>.
         ///    </para>
         /// </summary>
-        [
-        Browsable(false),
-        DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)
-        ]
-        public IContainer Container
-        {
-            get
-            {
-                ISite s = _site;
-                return s == null ? null : s.Container;
-            }
-        }
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public IContainer Container => _site?.Container;
 
         /// <summary>
         ///    <para>
         ///       Returns an object representing a service provided by
-        ///       the <see cref='System.ComponentModel.Component'/>
-        ///       .
+        ///       the <see cref='System.ComponentModel.Component'/>.
         ///    </para>
         /// </summary>
-        protected virtual object GetService(Type service)
-        {
-            ISite s = _site;
-            return ((s == null) ? null : s.GetService(service));
-        }
+        protected virtual object GetService(Type service) => _site?.GetService(service);
 
         /// <summary>
         ///    <para>
@@ -239,18 +180,9 @@ namespace System.ComponentModel
         ///       is currently in design mode.
         ///    </para>
         /// </summary>
-        [
-        Browsable(false),
-        DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)
-        ]
-        protected bool DesignMode
-        {
-            get
-            {
-                ISite s = _site;
-                return (s == null) ? false : s.DesignMode;
-            }
-        }
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        protected bool DesignMode => _site?.DesignMode ?? false;
 
         /// <internalonly/>
         /// <summary>
@@ -260,7 +192,7 @@ namespace System.ComponentModel
         ///       internal use only.
         ///    </para>
         /// </summary>
-        public override String ToString()
+        public override string ToString()
         {
             ISite s = _site;
 
