@@ -282,6 +282,7 @@ namespace System.Data.SqlClient
         internal SqlClientFactory() { }
         public static readonly System.Data.SqlClient.SqlClientFactory Instance;
         public override System.Data.Common.DbCommand CreateCommand() { throw null; }
+        public override System.Data.Common.DbCommandBuilder CreateCommandBuilder() { throw null; }
         public override System.Data.Common.DbConnection CreateConnection() { throw null; }
         public override System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder() { throw null; }
         public override System.Data.Common.DbDataAdapter CreateDataAdapter() { throw null; }
@@ -343,6 +344,33 @@ namespace System.Data.SqlClient
         public System.Threading.Tasks.Task<System.Xml.XmlReader> ExecuteXmlReaderAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Prepare() { }
         public System.Data.Sql.SqlNotificationRequest Notification { get { throw null; } set { } }
+    }
+    public sealed class SqlCommandBuilder : System.Data.Common.DbCommandBuilder
+    {
+        public SqlCommandBuilder() { }
+        public SqlCommandBuilder(SqlDataAdapter adapter) { }
+        public override System.Data.Common.CatalogLocation CatalogLocation { get { throw null; } set { } }
+        public override string CatalogSeparator { get { throw null; } set { } }
+        new public SqlDataAdapter DataAdapter { get { throw null; } set { } }
+        public override string QuotePrefix { get { throw null; } set { } }
+        public override string QuoteSuffix { get { throw null; } set { } }
+        public override string SchemaSeparator { get { throw null; } set { } }
+        new public SqlCommand GetInsertCommand() { throw null; }
+        new public SqlCommand GetInsertCommand(bool useColumnsForParameterNames) { throw null; }
+        new public SqlCommand GetUpdateCommand() { throw null; }
+        new public SqlCommand GetUpdateCommand(bool useColumnsForParameterNames) { throw null; }
+        new public SqlCommand GetDeleteCommand() { throw null; }
+        new public SqlCommand GetDeleteCommand(bool useColumnsForParameterNames) { throw null; }
+        protected override void ApplyParameterInfo(System.Data.Common.DbParameter parameter, System.Data.DataRow datarow, System.Data.StatementType statementType, bool whereClause) { }
+        protected override string GetParameterName(int parameterOrdinal) { throw null; }
+        protected override string GetParameterName(string parameterName) { throw null; }
+        protected override string GetParameterPlaceholder(int parameterOrdinal) { throw null; }
+        public static void DeriveParameters(SqlCommand command) { }
+        protected override DataTable GetSchemaTable(System.Data.Common.DbCommand srcCommand) { throw null; }
+        protected override System.Data.Common.DbCommand InitializeCommand(System.Data.Common.DbCommand command) { throw null; }
+        public override string QuoteIdentifier(string unquotedIdentifier) { throw null; }
+        protected override void SetRowUpdatingHandler(System.Data.Common.DbDataAdapter adapter) { }
+        public override string UnquoteIdentifier(string quotedIdentifier) { throw null; }
     }
     public sealed partial class SqlConnection : System.Data.Common.DbConnection, System.ICloneable
     {

@@ -19,6 +19,11 @@ namespace System.Data.SqlClient
             return new SqlCommand();
         }
 
+        public override DbCommandBuilder CreateCommandBuilder()
+        {
+            return new SqlCommandBuilder();
+        }
+
         public override DbConnection CreateConnection()
         {
             return new SqlConnection();

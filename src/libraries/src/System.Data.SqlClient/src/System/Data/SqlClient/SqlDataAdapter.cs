@@ -16,6 +16,7 @@ namespace System.Data.SqlClient
 
         private SqlCommand _deleteCommand, _insertCommand, _selectCommand, _updateCommand;
 
+        private SqlCommandSet _commandSet;
         private int _updateBatchSize = 1;
 
         public SqlDataAdapter() : base()
@@ -80,7 +81,19 @@ namespace System.Data.SqlClient
             set { _selectCommand = (SqlCommand)value; }
         }
 
-        override public int UpdateBatchSize
+        new public SqlCommand UpdateCommand
+        {
+            get { return _updateCommand; }
+            set { _updateCommand = value; }
+        }
+
+        IDbCommand IDbDataAdapter.UpdateCommand
+        {
+            get { return _updateCommand; }
+            set { _updateCommand = (SqlCommand)value; }
+        }
+
+        public override int UpdateBatchSize
         {
             get
             {
@@ -96,16 +109,74 @@ namespace System.Data.SqlClient
             }
         }
 
-        new public SqlCommand UpdateCommand
+        protected override int AddToBatch(IDbCommand command)
         {
-            get { return _updateCommand; }
-            set { _updateCommand = value; }
+            int commandIdentifier = _commandSet.CommandCount;
+            _commandSet.Append((SqlCommand)command);
+            return commandIdentifier;
         }
 
-        IDbCommand IDbDataAdapter.UpdateCommand
+        protected override void ClearBatch()
         {
-            get { return _updateCommand; }
-            set { _updateCommand = (SqlCommand)value; }
+            _commandSet.Clear();
+        }
+
+        protected override int ExecuteBatch()
+        {
+            Debug.Assert(null != _commandSet && (0 < _commandSet.CommandCount), "no commands");
+            return _commandSet.ExecuteNonQuery();
+        }
+
+        protected override IDataParameter GetBatchedParameter(int commandIdentifier, int parameterIndex)
+        {
+            Debug.Assert(commandIdentifier < _commandSet.CommandCount, "commandIdentifier out of range");
+            Debug.Assert(parameterIndex < _commandSet.GetParameterCount(commandIdentifier), "parameter out of range");
+            IDataParameter parameter = _commandSet.GetParameter(commandIdentifier, parameterIndex);
+            return parameter;
+        }
+
+        protected override bool GetBatchedRecordsAffected(int commandIdentifier, out int recordsAffected, out Exception error)
+        {
+            Debug.Assert(commandIdentifier < _commandSet.CommandCount, "commandIdentifier out of range");
+            return _commandSet.GetBatchedAffected(commandIdentifier, out recordsAffected, out error);
+        }
+
+        protected override void InitializeBatching()
+        {
+            _commandSet = new SqlCommandSet();
+            SqlCommand command = SelectCommand;
+            if (null == command)
+            {
+                command = InsertCommand;
+                if (null == command)
+                {
+                    command = UpdateCommand;
+                    if (null == command)
+                    {
+                        command = DeleteCommand;
+                    }
+                }
+            }
+            if (null != command)
+            {
+                _commandSet.Connection = command.Connection;
+                _commandSet.Transaction = command.Transaction;
+                _commandSet.CommandTimeout = command.CommandTimeout;
+            }
+        }
+
+        protected override void TerminateBatching()
+        {
+            if (null != _commandSet)
+            {
+                _commandSet.Dispose();
+                _commandSet = null;
+            }
+        }
+
+        object ICloneable.Clone()
+        {
+            return new SqlDataAdapter(this);
         }
 
         protected override RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
@@ -152,11 +223,6 @@ namespace System.Data.SqlClient
             {
                 Events.RemoveHandler(EventRowUpdating, value);
             }
-        }
-
-        object ICloneable.Clone()
-        {
-            return new SqlDataAdapter(this);
         }
 
         override protected void OnRowUpdated(RowUpdatedEventArgs value)

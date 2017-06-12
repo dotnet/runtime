@@ -130,6 +130,15 @@
   <data name="ADP_NonPooledOpenTimeout" xml:space="preserve">
     <value>Timeout attempting to open the connection.  The time period elapsed prior to attempting to open the connection has been exceeded.  This may have occurred because of too many simultaneous non-pooled connection attempts.</value>
   </data>
+  <data name="ADP_SingleValuedProperty" xml:space="preserve">
+    <value>The only acceptable value for the property '{0}' is '{1}'.</value>
+  </data>
+  <data name="ADP_DoubleValuedProperty" xml:space="preserve">
+    <value>The acceptable values for the property '{0}' are '{1}' or '{2}'.</value>
+  </data>
+  <data name="ADP_InvalidPrefixSuffix" xml:space="preserve">
+    <value>Specified QuotePrefix and QuoteSuffix values do not match.</value>
+  </data>
   <data name="Arg_ArrayPlusOffTooSmall" xml:space="preserve">
     <value>Destination array is not long enough to copy all the items in the collection. Check array index and length.</value>
   </data>
@@ -150,6 +159,12 @@
   </data>
   <data name="SQL_WrongType" xml:space="preserve">
     <value>Expecting argument of type {1}, but received type {0}.</value>
+  </data>
+  <data name="ADP_DeriveParametersNotSupported" xml:space="preserve">
+    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.</value>
+  </data>
+  <data name="ADP_NoStoredProcedureExists" xml:space="preserve">
+    <value>The stored procedure '{0}' doesn't exist.</value>
   </data>
   <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve">
     <value>Invalid value for key '{0}'.</value>
@@ -174,6 +189,12 @@
   </data>
   <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve">
     <value>{0} '{1}', the current limit of '{2}' is insufficient.</value>
+  </data>
+  <data name="SQL_SqlCommandCommandText" xml:space="preserve">
+    <value>SqlCommand.DeriveParameters failed because the SqlCommand.CommandText property value is an invalid multipart name</value>
+  </data>
+  <data name="SQL_BatchedUpdatesNotAvailableOnContextConnection" xml:space="preserve">
+    <value>Batching updates is not supported on the context connection.</value>
   </data>
   <data name="SQL_BulkCopyDestinationTableName" xml:space="preserve">
     <value>SqlBulkCopy.WriteToServer failed because the SqlBulkCopy.DestinationTableName is an invalid multipart name</value>

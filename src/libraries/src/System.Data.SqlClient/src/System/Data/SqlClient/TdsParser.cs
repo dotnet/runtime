@@ -1837,9 +1837,6 @@ namespace System.Data.SqlClient
                                             _statisticsIsInTransaction = true;
                                             break;
                                         case TdsEnums.ENV_COMMITTRAN:
-                                            // SQLHOT 483
-                                            //  Must clear the retain id if the server-side transaction ends by anything other
-                                            //  than rollback.
                                             goto case TdsEnums.ENV_ROLLBACKTRAN;
                                         case TdsEnums.ENV_ROLLBACKTRAN:
                                             // When we get notification of a completed transaction
@@ -1860,9 +1857,6 @@ namespace System.Data.SqlClient
                                                 }
                                                 else if (TdsEnums.ENV_ROLLBACKTRAN == env[ii].type)
                                                 {
-                                                    //  Hold onto transaction id if distributed tran is rolled back.  This must
-                                                    //  be sent to the server on subsequent executions even though the transaction
-                                                    //  is considered to be rolled back.
                                                     _currentTransaction.Completed(TransactionState.Aborted);
                                                 }
                                                 else
@@ -1876,7 +1870,7 @@ namespace System.Data.SqlClient
                                         case TdsEnums.ENV_ENLISTDTC:
                                         case TdsEnums.ENV_DEFECTDTC:
                                         case TdsEnums.ENV_TRANSACTIONENDED:
-                                            Debug.Assert(false, "Should have thrown if DTC token encountered");
+                                            Debug.Fail("Should have thrown if DTC token encountered");
                                             break;
                                         default:
                                             _connHandler.OnEnvChange(env[ii]);
@@ -2032,6 +2026,16 @@ namespace System.Data.SqlClient
                         }
                     case TdsEnums.SQLTABNAME:
                         {
+                            if (null != dataStream)
+                            {
+                                MultiPartTableName[] tableNames;
+                                if (!TryProcessTableName(tokenLength, stateObj, out tableNames))
+                                {
+                                    return false;
+                                }
+                                dataStream.TableNames = tableNames;
+                            }
+                            else
                             {
                                 if (!stateObj.TrySkipBytes(tokenLength))
                                 {
@@ -3726,6 +3730,37 @@ namespace System.Data.SqlClient
             return true;
         }
 
+        internal bool TryProcessTableName(int length, TdsParserStateObject stateObj, out MultiPartTableName[] multiPartTableNames)
+        {
+            int tablesAdded = 0;
+
+            MultiPartTableName[] tables = new MultiPartTableName[1];
+            MultiPartTableName mpt;
+            while (length > 0)
+            {
+                if (!TryProcessOneTable(stateObj, ref length, out mpt))
+                {
+                    multiPartTableNames = null;
+                    return false;
+                }
+                if (tablesAdded == 0)
+                {
+                    tables[tablesAdded] = mpt;
+                }
+                else
+                {
+                    MultiPartTableName[] newTables = new MultiPartTableName[tables.Length + 1];
+                    Array.Copy(tables, 0, newTables, 0, tables.Length);
+                    newTables[tables.Length] = mpt;
+                    tables = newTables;
+                }
+
+                tablesAdded++;
+            }
+
+            multiPartTableNames = tables;
+            return true;
+        }
 
         private bool TryProcessOneTable(TdsParserStateObject stateObj, ref int length, out MultiPartTableName multiPartTableName)
         {
@@ -3826,8 +3861,8 @@ namespace System.Data.SqlClient
                 { // colnum, ignore
                     return false;
                 }
-                if (!stateObj.TryReadByte(out ignored))
-                { // tablenum, ignore
+                if (!stateObj.TryReadByte(out col.tableNum))
+                {
                     return false;
                 }
 
@@ -3844,7 +3879,7 @@ namespace System.Data.SqlClient
                 col.isHidden = (TdsEnums.SQLHidden == (status & TdsEnums.SQLHidden));
 
                 // read off the base table name if it is different than the select list column name
-                if (TdsEnums.SQLDifferentName == (status & TdsEnums.SQLDifferentName))
+                if (col.isDifferentName)
                 {
                     byte len;
                     if (!stateObj.TryReadByte(out len))
@@ -3857,8 +3892,16 @@ namespace System.Data.SqlClient
                     }
                 }
 
+                // Fixup column name - only if result of a table - that is if it was not the result of
+                // an expression.
+                if ((reader.TableNames != null) && (col.tableNum > 0))
+                {
+                    Debug.Assert(reader.TableNames.Length >= col.tableNum, "invalid tableNames array!");
+                    col.multiPartTableName = reader.TableNames[col.tableNum - 1];
+                }
 
-                if (TdsEnums.SQLExpression == (status & TdsEnums.SQLExpression))
+                // Expressions are readonly
+                if (col.isExpression)
                 {
                     col.updatability = 0;
                 }

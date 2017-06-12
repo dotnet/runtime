@@ -839,6 +839,11 @@ namespace System.Data.SqlClient
             return exc;
         }
 
+        internal static Exception BatchedUpdatesNotAvailableOnContextConnection()
+        {
+            return ADP.InvalidOperation(SR.GetString(SR.SQL_BatchedUpdatesNotAvailableOnContextConnection));
+        }
+
         /// <summary>
         /// gets a message for SNI error (sniError must be valid, non-zero error code)
         /// </summary>
