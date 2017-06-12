@@ -1,10 +1,12 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
   <PropertyGroup>
+    <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
+    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
     <IntermediateOutputPath>$(IntermediateOutputPath)$(OSGroup)-$(ArchGroup)/</IntermediateOutputPath>
-    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Windows_NT'">win</RuntimeOS>
-    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'OSX'">osx</RuntimeOS>
-    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(OSGroup)' == 'Linux'">linux</RuntimeOS>
+    <RuntimeOS Condition="'$(PortableBuild)' == 'true'">linux</RuntimeOS>
+    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(_runtimeOSFamily)' == 'win'">win</RuntimeOS>
+    <RuntimeOS Condition="'$(PortableBuild)' == 'true' and '$(_runtimeOSFamily)' == 'osx'">osx</RuntimeOS>
     <NugetRuntimeIdentifier>$(RuntimeOS)-$(ArchGroup)</NugetRuntimeIdentifier>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <!-- We need configuration-specific assets files. -->
