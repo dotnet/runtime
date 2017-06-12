@@ -336,13 +336,13 @@ void CodeGen::genLockedInstructions(GenTreeOp* treeNode)
 //             which invoke push {tmpReg} N times.
 //          2) Fore /o build  However, we tickle the pages to ensure that SP is always
 //             valid and is in sync with the "stack guard page". Amount of iteration
-//             is N/PAGE_SIZE.
+//             is N/eeGetPageSize().
 //
 // Comments:
 //      There can be some optimization:
 //          1) It's not needed to generate loop for zero size allocation
 //          2) For small allocation (less than 4 store) we unroll loop
-//          3) For allocation less than PAGE_SIZE and when it's not needed to initialize
+//          3) For allocation less than eeGetPageSize() and when it's not needed to initialize
 //             memory to zero, we can just increment SP.
 //
 // Notes: Size N should be aligned to STACK_ALIGN before any allocation
@@ -532,7 +532,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         //
         //  Loop:
         //       ldr   regTmp, [SP + 0]        // tickle the page - read from the page
-        //       sub   regTmp, SP, PAGE_SIZE   // decrement SP by PAGE_SIZE
+        //       sub   regTmp, SP, PAGE_SIZE   // decrement SP by eeGetPageSize()
         //       cmp   regTmp, regCnt
         //       jb    Done
         //       mov   SP, regTmp
@@ -561,7 +561,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
         getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, regTmp, REG_SPBASE, 0);
 
-        // decrement SP by PAGE_SIZE
+        // decrement SP by eeGetPageSize()
         getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, compiler->eeGetPageSize());
 
         getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);

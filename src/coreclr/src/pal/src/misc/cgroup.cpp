@@ -323,7 +323,7 @@ PAL_GetWorkingSetSize(size_t* val)
         *val = strtoull(strTok, nullptr, 0); 
         if(errno == 0)
         {
-            *val = *val * VIRTUAL_PAGE_SIZE;
+            *val = *val * GetVirtualPageSize();
             result = true;
         }
     }

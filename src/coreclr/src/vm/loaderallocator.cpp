@@ -887,11 +887,11 @@ void LoaderAllocator::ActivateManagedTracking()
 
 
 // We don't actually allocate a low frequency heap for collectible types
-#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        (0 * PAGE_SIZE)
-#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * PAGE_SIZE)
-#define COLLECTIBLE_STUB_HEAP_SIZE                 PAGE_SIZE
-#define COLLECTIBLE_CODEHEAP_SIZE                  (7 * PAGE_SIZE)
-#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (5 * PAGE_SIZE)
+#define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        (0 * GetOsPageSize())
+#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * GetOsPageSize())
+#define COLLECTIBLE_STUB_HEAP_SIZE                 GetOsPageSize()
+#define COLLECTIBLE_CODEHEAP_SIZE                  (7 * GetOsPageSize())
+#define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (5 * GetOsPageSize())
 
 void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 {
@@ -940,9 +940,9 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 #ifdef FEATURE_WINDOWSPHONE
         // code:UMEntryThunk::CreateUMEntryThunk allocates memory on executable loader heap for phone.
         // Reserve enough for a typical phone app to fit.
-        dwExecutableHeapReserveSize = 3 * PAGE_SIZE;
+        dwExecutableHeapReserveSize = 3 * GetOsPageSize();
 #else
-        dwExecutableHeapReserveSize = PAGE_SIZE;
+        dwExecutableHeapReserveSize = GetOsPageSize();
 #endif
 
         _ASSERTE(dwExecutableHeapReserveSize < dwHighFrequencyHeapReserveSize);
@@ -1038,7 +1038,7 @@ void LoaderAllocator::Init(BaseDomain *pDomain, BYTE *pExecutableHeapMemory)
 #endif
 
 #ifdef CROSSGEN_COMPILE
-    m_pPrecodeHeap = new (&m_PrecodeHeapInstance) LoaderHeap(PAGE_SIZE, PAGE_SIZE);
+    m_pPrecodeHeap = new (&m_PrecodeHeapInstance) LoaderHeap(GetOsPageSize(), GetOsPageSize());
 #else
     m_pPrecodeHeap = new (&m_PrecodeHeapInstance) CodeFragmentHeap(this, STUB_CODE_BLOCK_PRECODE);
 #endif
