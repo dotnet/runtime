@@ -9,71 +9,71 @@ namespace Microsoft.ServiceModel
     {
         internal static object XmlBufferQuotaExceeded;
 
-        public static string InvalidObjectTypePassed { get { throw new NotImplementedException();  } internal set { } }
+        public static string InvalidObjectTypePassed = "resource";
 
-        public static string ErrorParsingDateTime { get { throw new NotImplementedException();  } internal set { } }
-        public static string ErrorParsingFeed { get { throw new NotImplementedException();  } internal set { } }
+        public static string ErrorParsingDateTime = "resource";
+        public static string ErrorParsingFeed = "resource";
 
-        public static string UnknownFeedXml { get { throw new NotImplementedException(); } internal set { } }
+        public static string UnknownFeedXml = "resource";
 
-        public static string Atom10SpecRequiresTextConstruct { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedHasNonContiguousItems { get { throw new NotImplementedException(); } internal set { } }
-        public static string ErrorParsingItem { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedFormatterDoesNotHaveFeed { get { throw new NotImplementedException(); } internal set { } }
-        public static string DocumentFormatterDoesNotHaveDocument { get { throw new NotImplementedException(); } internal set { } }
-        public static string UnknownDocumentXml { get { throw new NotImplementedException(); } internal set { } }
-        public static string ErrorParsingDocument { get { throw new NotImplementedException(); } internal set { } }
-        public static string UnsupportedRssVersion { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedAuthorsIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedContributorsIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedIdIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedLinksIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemAuthorsIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemLinksIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemLastUpdatedTimeIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemCopyrightIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemContentIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemContributorsIgnoredOnWrite { get { throw new NotImplementedException(); } internal set { } }
-        public static string ValueMustBeNonNegative { get { throw new NotImplementedException(); } internal set { } }
-        public static string UriGeneratorSchemeMustNotBeEmpty { get { throw new NotImplementedException(); } internal set { } }
+        public static string Atom10SpecRequiresTextConstruct = "resource";
+        public static string FeedHasNonContiguousItems = "resource";
+        public static string ErrorParsingItem = "resource";
+        public static string FeedFormatterDoesNotHaveFeed = "resource";
+        public static string DocumentFormatterDoesNotHaveDocument = "resource";
+        public static string UnknownDocumentXml = "resource";
+        public static string ErrorParsingDocument = "resource";
+        public static string UnsupportedRssVersion = "resource";
+        public static string FeedAuthorsIgnoredOnWrite = "resource";
+        public static string FeedContributorsIgnoredOnWrite = "resource";
+        public static string FeedIdIgnoredOnWrite = "resource";
+        public static string FeedLinksIgnoredOnWrite = "resource";
+        public static string ItemAuthorsIgnoredOnWrite = "resource";
+        public static string ItemLinksIgnoredOnWrite = "resource";
+        public static string ItemLastUpdatedTimeIgnoredOnWrite = "resource";
+        public static string ItemCopyrightIgnoredOnWrite = "resource";
+        public static string ItemContentIgnoredOnWrite = "resource";
+        public static string ItemContributorsIgnoredOnWrite = "resource";
+        public static string ValueMustBeNonNegative = "resource";
+        public static string UriGeneratorSchemeMustNotBeEmpty = "resource";
 
-        public static string XmlBufferInInvalidState { get { throw new NotImplementedException(); } internal set { } }
-        public static string UnknownItemXml { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemFormatterDoesNotHaveItem { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedCreatedNullCategory { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemCreatedNullCategory { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedCreatedNullItem { get { throw new NotImplementedException(); } internal set { } }
-        public static string FeedCreatedNullPerson { get { throw new NotImplementedException(); } internal set { } }
-        public static string ItemCreatedNullPerson { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationFeedReadBegin { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationFeedReadEnd { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationFeedWriteBegin { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationFeedWriteEnd { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationItemReadBegin { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationItemReadEnd { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationItemWriteBegin { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationItemWriteEnd { get { throw new NotImplementedException(); } internal set { } }
-        public static string TraceCodeSyndicationProtocolElementIgnoredOnRead { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlLineInfo { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundEndOfFile { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundElement { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundEndElement { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundText { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundComment { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundCData { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlFoundNodeType { get { throw new NotImplementedException(); } internal set { } }
-        public static string XmlStartElementExpected { get { throw new NotImplementedException(); } internal set { } }
+        public static string XmlBufferInInvalidState = "resource";
+        public static string UnknownItemXml = "resource";
+        public static string ItemFormatterDoesNotHaveItem = "resource";
+        public static string FeedCreatedNullCategory = "resource";
+        public static string ItemCreatedNullCategory = "resource";
+        public static string FeedCreatedNullItem = "resource";
+        public static string FeedCreatedNullPerson = "resource";
+        public static string ItemCreatedNullPerson = "resource";
+        public static string TraceCodeSyndicationFeedReadBegin = "resource";
+        public static string TraceCodeSyndicationFeedReadEnd = "resource";
+        public static string TraceCodeSyndicationFeedWriteBegin = "resource";
+        public static string TraceCodeSyndicationFeedWriteEnd = "resource";
+        public static string TraceCodeSyndicationItemReadBegin = "resource";
+        public static string TraceCodeSyndicationItemReadEnd = "resource";
+        public static string TraceCodeSyndicationItemWriteBegin = "resource";
+        public static string TraceCodeSyndicationItemWriteEnd = "resource";
+        public static string TraceCodeSyndicationProtocolElementIgnoredOnRead = "resource";
+        public static string XmlLineInfo = "resource";
+        public static string XmlFoundEndOfFile = "resource";
+        public static string XmlFoundElement = "resource";
+        public static string XmlFoundEndElement = "resource";
+        public static string XmlFoundText = "resource";
+        public static string XmlFoundComment = "resource";
+        public static string XmlFoundCData = "resource";
+        public static string XmlFoundNodeType = "resource";
+        public static string XmlStartElementExpected = "resource";
 
-        public static string OuterNameOfElementExtensionEmpty { get; internal set; }
-        public static string ErrorInLine { get; internal set; }
+        public static string OuterNameOfElementExtensionEmpty= "resource";
+        public static string ErrorInLine= "resource";
 
-        public static string OuterElementNameNotSpecified { get; internal set; }
-        public static string ExtensionNameNotSpecified { get; internal set; }
-        public static string UnbufferedItemsCannotBeCloned { get; internal set; }
+        public static string OuterElementNameNotSpecified= "resource";
+        public static string ExtensionNameNotSpecified= "resource";
+        public static string UnbufferedItemsCannotBeCloned= "resource";
 
         internal static string GetString(string nvalidObjectTypePassed, params object[] args)
         {
-            //throw new NotImplementedException();
+            //"resource"
             return nvalidObjectTypePassed;
         }
     }

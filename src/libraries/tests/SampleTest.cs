@@ -12,6 +12,12 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void PassingTest()
         {
+           
+        }
+        
+        [Fact]
+        public static void crear()
+        {
             SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://microsoft.com"));
 
             //xml writter
@@ -19,11 +25,27 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
             rssf.WriteTo(xmlw);
             xmlw.Close();
-            Assert.True(sf != null);
+            Assert.True(true);
+        }
 
-            example3();
+        [Fact]
+        public static void read()
+        {
+            XmlReader xmlr = XmlReader.Create("feedatom.xml");
+            SyndicationFeed sf = SyndicationFeed.Load(xmlr);
+            //Console.WriteLine(sf.Title.ToString());
+
+            Console.WriteLine(sf.Title.ToString());
+            //Console.ReadLine();
+
+            //wite the one that was read
+            XmlWriter xmlw = XmlWriter.Create("leido.xml");
+            Atom10FeedFormatter rs = new Atom10FeedFormatter(sf);
+            rs.WriteTo(xmlw);
+            xmlw.Close();
         }
         
+        [Fact]
         public static void example3()
         {
             //Test example to syndicate the release of SyndicationFeed to .net core
@@ -59,6 +81,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Atom10FeedFormatter atomf = new Atom10FeedFormatter(feed);
             atomf.WriteTo(xmlw);
             xmlw.Close();
+            Assert.True(true);
         }
 
         [Fact]

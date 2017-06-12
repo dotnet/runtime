@@ -9,32 +9,33 @@ namespace System.ServiceModel.Diagnostics
     {
         internal Exception ThrowHelperError(ArgumentOutOfRangeException argumentOutOfRangeException)
         {
-            throw new NotImplementedException();
+            return new NotImplementedException();
         }
 
         internal Exception ThrowHelperError(Exception exception)
         {
-            throw new NotImplementedException();
+            return new NotImplementedException();
+            return new NotImplementedException();
         }
 
         internal Exception ThrowHelperArgumentNull(string v)
         {
-            throw new NotImplementedException();
+            return new NotImplementedException();
         }
 
         internal Exception ThrowHelperArgument(string v1, string v2)
         {
-            throw new NotImplementedException();
+            return new NotImplementedException();
         }
 
         internal Exception ThrowHelperWarning(InvalidOperationException invalidOperationException)
         {
-            throw new NotImplementedException();
+            return new NotImplementedException();
         }
 
         internal Exception ThrowHelperArgument(string v)
         {
-            throw new NotImplementedException();
+            return new NotImplementedException();
         }
     }
 }

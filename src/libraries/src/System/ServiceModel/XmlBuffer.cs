@@ -11,11 +11,10 @@
 namespace Microsoft.ServiceModel {
     using System;
     using System.Collections.Generic;
-    using System.Runtime;
-    using System.ServiceModel.Channels;
     using System.Xml;
     using System.IO; // added to use buffered stream
-                     //using System.ServiceModel;
+    using System.Runtime;
+    using System.ServiceModel.Channels;
 
 
 
@@ -24,7 +23,7 @@ namespace Microsoft.ServiceModel {
         List<Section> sections;
         byte[] buffer;
         int offset;
-        BufferedOutputStream stream; //BufferedStream - Original: BufferedOutputStream
+        BufferedStream stream; //BufferedStream - Original: BufferedOutputStream
         BufferState bufferState;
         XmlDictionaryWriter writer;
         XmlDictionaryReaderQuotas quotas;
@@ -73,11 +72,12 @@ namespace Microsoft.ServiceModel {
 
             int initialBufferSize = Math.Min(512, maxBufferSize);
 
-           
-            stream = new BufferManagerOutputStream(SR.XmlBufferQuotaExceeded, initialBufferSize, maxBufferSize,
-                InternalBufferManager.Create(0, int.MaxValue));
-                     
 
+            //stream = new BufferManagerOutputStream(SR.XmlBufferQuotaExceeded, initialBufferSize, maxBufferSize,
+            //    InternalBufferManager.Create(0, int.MaxValue));
+
+            stream = new BufferedStream(new MemoryStream(), initialBufferSize);
+            //stream = new MemoryStream(initialBufferSize);
             //stream = new BufferedStream(, maxBufferSize); // replacing code above
 
             sections = new List<Section>(1);
@@ -110,8 +110,8 @@ namespace Microsoft.ServiceModel {
             //if (this.writer == null)
             //{
 
-            //this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream, XD.Dictionary, null, true);
-            this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream); // this code replaces above
+            this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream, null, null, false);
+            //this.writer = XmlDictionaryWriter.CreateBinaryWriter(stream); // this code replaces above
 
             //}
             //else
@@ -125,9 +125,11 @@ namespace Microsoft.ServiceModel {
         {
             if (bufferState != BufferState.Writing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidStateException());
-            this.writer.Close();
+            this.writer.Close(); // move
             bufferState = BufferState.Created;
+            //stream.Length
             int size = (int)stream.Length - offset;
+            //int size = stream.BufferSize;
             sections.Add(new Section(offset, size, this.quotas));
             offset += size;
         }
@@ -139,11 +141,15 @@ namespace Microsoft.ServiceModel {
             bufferState = BufferState.Reading;
             //int bufferSize = 0;
             //buffer = stream.ToArray(out bufferSize); NOT SUPPORTED
-            
+
             //Implementation to do the same that the line above
-            MemoryStream ms = new MemoryStream();
-            stream.CopyTo(ms);
-            buffer = ms.ToArray();
+
+            buffer = new byte[stream.Length];
+            stream.Position = 0;
+            stream.Read(buffer, 0, buffer.Length);
+            //MemoryStream ms = new MemoryStream(stream.Length);
+            //stream.CopyTo(ms);
+            //buffer = ms.ToArray();
             //-----
             writer = null;
             stream = null;
@@ -154,14 +160,17 @@ namespace Microsoft.ServiceModel {
             return new InvalidOperationException(SR.GetString(SR.XmlBufferInInvalidState));
         }
 
-
+        
 
         public XmlDictionaryReader GetReader(int sectionIndex)
         {
             if (bufferState != BufferState.Reading)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidStateException());
             Section section = sections[sectionIndex];
-            XmlDictionaryReader reader = null;// XmlDictionaryReader.CreateBinaryReader(buffer, section.Offset, section.Size, XD.Dictionary, section.Quotas, null, null);
+            XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(buffer, section.Offset, section.Size, null, section.Quotas, null, null);
+            //reader = XmlDictionaryReader.CreateBinaryReader(buffer,section.Offset);
+            //XmlDictionaryReader reader = XmlDictionaryReader.CreateBinaryReader(buffer, section.Quotas);
+            //reader = XmlDictionaryReader.CreateBinaryReader(buffer``)
             reader.MoveToContent();
             return reader;
         }
