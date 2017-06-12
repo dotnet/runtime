@@ -213,7 +213,18 @@ namespace System.Net
             }
         }
 
-        internal bool InternalSetName(string value)
+/* 
+   VSO 449560
+   Reflecting on internal method wont work on AOT without rd.xml and DisableReflection
+   block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+   public,this is a temporary workaround till that happens. 
+*/
+#if uap 
+        public
+#else 
+        internal
+#endif
+        bool InternalSetName(string value)
         {
             if (String.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1)
             {
