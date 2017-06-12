@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 
 namespace System.ComponentModel
 {
@@ -17,14 +13,14 @@ namespace System.ComponentModel
     public class InvalidEnumArgumentException : ArgumentException
     {
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.InvalidEnumArgumentException'/> class without a message.</para>
+        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class without a message.</para>
         /// </summary>
         public InvalidEnumArgumentException() : this(null)
         {
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.InvalidEnumArgumentException'/> class with 
+        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class with 
         ///    the specified message.</para>
         /// </summary>
         public InvalidEnumArgumentException(string message)
@@ -43,7 +39,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.InvalidEnumArgumentException'/> class with a 
+        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class with a 
         ///    message generated from the argument, invalid value, and enumeration
         ///    class.</para>
         /// </summary>

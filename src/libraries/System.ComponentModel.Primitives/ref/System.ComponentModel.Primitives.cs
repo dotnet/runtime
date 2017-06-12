@@ -184,6 +184,14 @@ namespace System.ComponentModel
         public InitializationEventAttribute(string eventName) { }
         public string EventName { get; }
     }
+    public partial class InvalidEnumArgumentException : System.ArgumentException
+    {
+        public InvalidEnumArgumentException() { }
+        protected InvalidEnumArgumentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public InvalidEnumArgumentException(string message) { }
+        public InvalidEnumArgumentException(string message, System.Exception innerException) { }
+        public InvalidEnumArgumentException(string argumentName, int invalidValue, System.Type enumClass) { }
+    }
     public partial interface ISite : System.IServiceProvider
     {
         System.ComponentModel.IComponent Component { get; }
