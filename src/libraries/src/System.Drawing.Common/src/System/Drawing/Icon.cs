@@ -239,8 +239,6 @@ namespace System.Drawing
                     throw new FileNotFoundException(filePath);
                 }
 
-                Icon icon = new Icon();
-
                 StringBuilder sb = new StringBuilder(NativeMethods.MAX_PATH);
                 sb.Append(filePath);
 
@@ -248,8 +246,7 @@ namespace System.Drawing
 
                 if (hIcon != IntPtr.Zero)
                 {
-                    icon = new Icon(hIcon, true);
-                    return icon;
+                    return new Icon(hIcon, true);
                 }
             }
             return null;
@@ -652,8 +649,6 @@ namespace System.Drawing
                 byte* pbIconDirEntry = unchecked(pbIconData + 6);
                 int icondirEntrySize = Marshal.SizeOf(typeof(SafeNativeMethods.ICONDIRENTRY));
 
-                Debug.Assert((icondirEntrySize * (idCount - 1) + icondirSize) <= _iconData.Length, "Illegal number of ICONDIRENTRIES");
-
                 if ((icondirEntrySize * (idCount - 1) + icondirSize) > _iconData.Length)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", "Icon"));
@@ -729,8 +724,6 @@ namespace System.Drawing
 
                     pbIconDirEntry += icondirEntrySize;
                 }
-
-                Debug.Assert(_bestImageOffset >= 0 && _bestBytesInRes >= 0 && (_bestImageOffset + _bestBytesInRes) <= _iconData.Length, "Illegal offset/length for the Icon data");
 
                 if (_bestImageOffset < 0)
                 {
@@ -1033,10 +1026,7 @@ namespace System.Drawing
                 }
                 finally
                 {
-                    if (graphics != null)
-                    {
-                        graphics.Dispose();
-                    }
+                    graphics?.Dispose();
                 }
 
 
