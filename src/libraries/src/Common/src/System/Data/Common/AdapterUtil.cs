@@ -396,7 +396,12 @@ namespace System.Data.Common
             return IndexOutOfRange(SR.Format(SR.SQL_InvalidDataLength, length.ToString(CultureInfo.InvariantCulture)));
         }
 
+        internal static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
+            0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase);
+
         internal static int DstCompare(string strA, string strB) => CultureInfo.CurrentCulture.CompareInfo.Compare(strA, strB, ADP.DefaultCompareOptions);
+
+        internal static bool IsEmptyArray(string[] array) => (null == array) || (0 == array.Length);
 
         internal static bool IsNull(object value)
         {

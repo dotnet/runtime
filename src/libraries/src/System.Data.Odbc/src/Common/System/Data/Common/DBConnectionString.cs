@@ -27,7 +27,7 @@ namespace System.Data.Common
         private readonly string _encryptedUsersConnectionString;
 
         // hash of unique keys to values
-        private readonly Hashtable _parsetable;
+        private readonly Dictionary<string, string> _parsetable;
 
         // a linked list of key/value and their length in _encryptedUsersConnectionString
         private readonly NameValuePair _keychain;
@@ -47,7 +47,7 @@ namespace System.Data.Common
         private readonly string _encryptedActualConnectionString;
 #pragma warning restore 169
 
-        internal DBConnectionString(string value, string restrictions, KeyRestrictionBehavior behavior, Hashtable synonyms, bool useOdbcRules)
+        internal DBConnectionString(string value, string restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string> synonyms, bool useOdbcRules)
             : this(new DbConnectionOptions(value, synonyms, useOdbcRules), restrictions, behavior, synonyms, false)
         {
             // useOdbcRules is only used to parse the connection string, not to parse restrictions because values don't apply there
@@ -55,13 +55,13 @@ namespace System.Data.Common
         }
 
         internal DBConnectionString(DbConnectionOptions connectionOptions)
-            : this(connectionOptions, (string)null, KeyRestrictionBehavior.AllowOnly, (Hashtable)null, true)
+            : this(connectionOptions, (string)null, KeyRestrictionBehavior.AllowOnly, null, true)
         {
             // used by DBDataPermission to convert from DbConnectionOptions to DBConnectionString
             // since backward compatability requires Everett level classes
         }
 
-        private DBConnectionString(DbConnectionOptions connectionOptions, string restrictions, KeyRestrictionBehavior behavior, Hashtable synonyms, bool mustCloneDictionary)
+        private DBConnectionString(DbConnectionOptions connectionOptions, string restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string> synonyms, bool mustCloneDictionary)
         { // used by DBDataPermission
             Debug.Assert(null != connectionOptions, "null connectionOptions");
             switch (behavior)
@@ -76,9 +76,9 @@ namespace System.Data.Common
 
             // grab all the parsed details from DbConnectionOptions
             _encryptedUsersConnectionString = connectionOptions.UsersConnectionString(false);
-            _hasPassword = connectionOptions.HasPasswordKeyword;
+            _hasPassword = connectionOptions._hasPasswordKeyword;
             _parsetable = connectionOptions.Parsetable;
-            _keychain = connectionOptions.KeyChain;
+            _keychain = connectionOptions._keyChain;
 
             // we do not want to serialize out user password unless directed so by "persist security info=true"
             // otherwise all instances of user's password will be replaced with "*"
@@ -88,7 +88,7 @@ namespace System.Data.Common
                 {
                     // clone the hashtable to replace user's password/pwd value with "*"
                     // we only need to clone if coming from DbConnectionOptions and password exists
-                    _parsetable = (Hashtable)_parsetable.Clone();
+                    _parsetable = new Dictionary<string, string>(_parsetable);
                 }
 
                 // different than Everett in that instead of removing password/pwd from
@@ -461,7 +461,7 @@ namespace System.Data.Common
             return restrictionValues;
         }
 
-        private static string[] ParseRestrictions(string restrictions, Hashtable synonyms)
+        private static string[] ParseRestrictions(string restrictions, Dictionary<string, string> synonyms)
         {
             List<string> restrictionValues = new List<string>();
             StringBuilder buffer = new StringBuilder(restrictions.Length);

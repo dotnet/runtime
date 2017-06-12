@@ -576,11 +576,6 @@ namespace System.Data.Common
         internal static readonly IntPtr PtrZero = new IntPtr(0); // IntPtr.Zero
         internal static readonly int PtrSize = IntPtr.Size;
 
-        internal static bool CompareInsensitiveInvariant(string strvalue, string strconst)
-        {
-            return (0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase));
-        }
-
         internal static Delegate FindBuilder(MulticastDelegate mcd)
         { // V1.2.3300
             if (null != mcd)
@@ -676,11 +671,6 @@ namespace System.Data.Common
             }
             Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size"); // MDAC 73747
             return (IntPtr)checked(pbase.ToInt64() + offset);
-        }
-
-        internal static bool IsEmptyArray(string[] array)
-        {
-            return ((null == array) || (0 == array.Length));
         }
     }
 }

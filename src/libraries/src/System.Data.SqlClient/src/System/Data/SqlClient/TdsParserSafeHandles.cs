@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace System.Data.SqlClient
 {
-    internal sealed class SNILoadHandle : SafeHandle
+    internal sealed partial class SNILoadHandle : SafeHandle
     {
         internal static readonly SNILoadHandle SingletonInstance = new SNILoadHandle();
 

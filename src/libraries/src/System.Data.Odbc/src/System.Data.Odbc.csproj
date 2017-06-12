@@ -21,6 +21,9 @@
     </Compile>
     <Compile Include="Common\System\Data\Common\AdapterUtil.Odbc.cs" />
     <Compile Include="Common\System\Data\Common\DbConnectionOptions.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionOptions.Common.cs">
+      <Link>Common\System\Data\Common\DbConnectionOptions.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
     </Compile>
