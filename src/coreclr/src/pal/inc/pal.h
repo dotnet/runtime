@@ -4572,6 +4572,8 @@ YieldProcessor(
     __asm__ __volatile__(
         "rep\n"
         "nop");
+#elif defined(_ARM64_)
+    __asm__ __volatile__( "yield");
 #else
     return;
 #endif
