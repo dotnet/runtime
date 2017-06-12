@@ -616,8 +616,8 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
     // No NX support on PAL or for crossgen compilations.
     return TRUE;
 #else // !(CROSSGEN_COMPILE || FEATURE_PAL) 
-    BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, OS_PAGE_SIZE);
-    BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, OS_PAGE_SIZE);
+    BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());
+    BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, GetOsPageSize());
     _ASSERTE(length > 0);
     _ASSERTE(regionStart < regionEnd);
 

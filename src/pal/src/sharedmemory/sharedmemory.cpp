@@ -304,7 +304,7 @@ void *SharedMemoryHelpers::MemoryMapFile(int fileDescriptor, SIZE_T byteCount)
 {
     _ASSERTE(fileDescriptor != -1);
     _ASSERTE(byteCount > sizeof(SharedMemorySharedDataHeader));
-    _ASSERTE(AlignDown(byteCount, VIRTUAL_PAGE_SIZE) == byteCount);
+    _ASSERTE(AlignDown(byteCount, GetVirtualPageSize()) == byteCount);
 
     void *sharedMemoryBuffer = mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fileDescriptor, 0);
     if (sharedMemoryBuffer != MAP_FAILED)
@@ -468,7 +468,7 @@ SIZE_T SharedMemoryId::AppendSessionDirectoryName(
 
 SIZE_T SharedMemorySharedDataHeader::DetermineTotalByteCount(SIZE_T dataByteCount)
 {
-    return SharedMemoryHelpers::AlignUp(sizeof(SharedMemorySharedDataHeader) + dataByteCount, VIRTUAL_PAGE_SIZE);
+    return SharedMemoryHelpers::AlignUp(sizeof(SharedMemorySharedDataHeader) + dataByteCount, GetVirtualPageSize());
 }
 
 SharedMemorySharedDataHeader::SharedMemorySharedDataHeader(SharedMemoryType type, UINT8 version)
@@ -777,7 +777,7 @@ SharedMemoryProcessDataHeader::SharedMemoryProcessDataHeader(
     _ASSERTE(fileDescriptor != -1);
     _ASSERTE(sharedDataHeader != nullptr);
     _ASSERTE(sharedDataTotalByteCount > sizeof(SharedMemorySharedDataHeader));
-    _ASSERTE(SharedMemoryHelpers::AlignDown(sharedDataTotalByteCount, VIRTUAL_PAGE_SIZE) == sharedDataTotalByteCount);
+    _ASSERTE(SharedMemoryHelpers::AlignDown(sharedDataTotalByteCount, GetVirtualPageSize()) == sharedDataTotalByteCount);
 
     // Copy the name and initialize the ID
     char *nameCopy = reinterpret_cast<char *>(this + 1);
