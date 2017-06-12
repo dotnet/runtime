@@ -576,23 +576,19 @@ init_time (void)
 		InterlockedIncrement ((COUNTER)); \
 		LogBuffer *BUFFER = ensure_logbuf_unsafe (thread__, (SIZE))
 
-#define EXIT_LOG_EXPLICIT(SEND, REQUESTS) \
+#define EXIT_LOG_EXPLICIT(SEND) \
 		thread__->busy = FALSE; \
 		if ((SEND)) \
 			send_log_unsafe (TRUE); \
 		if (thread__->attached) \
 			buffer_unlock (); \
-		if ((REQUESTS)) \
-			process_requests (); \
 	} while (0)
 
 // Pass these to EXIT_LOG_EXPLICIT () for easier reading.
 #define DO_SEND TRUE
 #define NO_SEND FALSE
-#define DO_REQUESTS TRUE
-#define NO_REQUESTS FALSE
 
-#define EXIT_LOG EXIT_LOG_EXPLICIT (DO_SEND, DO_REQUESTS)
+#define EXIT_LOG EXIT_LOG_EXPLICIT (DO_SEND)
 
 static volatile gint32 buffer_rwlock_count;
 static volatile gpointer buffer_rwlock_exclusive;
@@ -1278,13 +1274,6 @@ dump_buffer_threadless (MonoProfiler *profiler, LogBuffer *buf)
 	dump_buffer (profiler, buf);
 }
 
-static void
-process_requests (void)
-{
-	if (heapshot_requested)
-		mono_gc_collect (mono_gc_max_generation ());
-}
-
 // Only valid if init_thread () was called with add_to_lls = FALSE.
 static void
 send_log_unsafe (gboolean if_needed)
@@ -1329,7 +1318,7 @@ sync_point_mark (MonoProfilerSyncPointType type)
 	emit_event (logbuffer, TYPE_META | TYPE_SYNC_POINT);
 	emit_byte (logbuffer, type);
 
-	EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (NO_SEND);
 
 	send_log_unsafe (FALSE);
 }
@@ -1375,7 +1364,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 		emit_obj (logbuffer, refs [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 	return 0;
 }
@@ -1397,7 +1386,7 @@ heap_walk (MonoProfiler *profiler)
 
 	emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 	mono_gc_walk_heap (0, gc_reference, NULL);
 
@@ -1407,7 +1396,7 @@ heap_walk (MonoProfiler *profiler)
 
 	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 
 static void
@@ -1437,7 +1426,15 @@ gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_
 		emit_value (logbuffer, extra_info [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
+}
+
+
+static void
+trigger_on_demand_heapshot (void)
+{
+	if (heapshot_requested)
+		mono_gc_collect (mono_gc_max_generation ());
 }
 
 static void
@@ -1474,7 +1471,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		emit_byte (logbuffer, ev);
 		emit_byte (logbuffer, generation);
 
-		EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
+		EXIT_LOG_EXPLICIT (NO_SEND);
 	}
 
 
@@ -1543,7 +1540,7 @@ gc_resize (MonoProfiler *profiler, int64_t new_size)
 	emit_event (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
 	emit_value (logbuffer, new_size);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 
 typedef struct {
@@ -1652,7 +1649,7 @@ gc_moves (MonoProfiler *prof, void **objects, int num)
 	for (int i = 0; i < num; ++i)
 		emit_obj (logbuffer, objects [i]);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 
 static void
@@ -1715,13 +1712,16 @@ finalize_begin (MonoProfiler *prof)
 static void
 finalize_end (MonoProfiler *prof)
 {
-	ENTER_LOG (&finalize_ends_ctr, buf,
-		EVENT_SIZE /* event */
-	);
+	trigger_on_demand_heapshot ();
+	if (ENABLED (MONO_PROFILE_GC_FINALIZATION)) {
+		ENTER_LOG (&finalize_ends_ctr, buf,
+			EVENT_SIZE /* event */
+		);
 
-	emit_event (buf, TYPE_GC_FINALIZE_END | TYPE_GC);
+		emit_event (buf, TYPE_GC_FINALIZE_END | TYPE_GC);
 
-	EXIT_LOG;
+		EXIT_LOG;
+	}
 }
 
 static void
@@ -2020,8 +2020,6 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji, int resu
 		return;
 
 	register_method_local (method, ji);
-
-	process_requests ();
 }
 
 static void
@@ -2188,7 +2186,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 		emit_byte (logbuffer, TYPE_THREAD);
 		emit_ptr (logbuffer, (void*) tid);
 
-		EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
+		EXIT_LOG_EXPLICIT (NO_SEND);
 	}
 
 	MonoProfilerThread *thread = PROF_TLS_GET ();
@@ -2480,7 +2478,7 @@ dump_ubin (MonoProfiler *prof, const char *filename, uintptr_t load_addr, uint64
 	memcpy (logbuffer->cursor, filename, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 #endif
 
@@ -2502,7 +2500,7 @@ dump_usym (MonoProfiler *prof, const char *name, uintptr_t value, uintptr_t size
 	memcpy (logbuffer->cursor, name, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 
 /* ELF code crashes on some systems. */
@@ -2866,7 +2864,7 @@ counters_emit (MonoProfiler *profiler)
 		agent->emitted = 1;
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 done:
 	mono_os_mutex_unlock (&counters_mutex);
@@ -2989,7 +2987,7 @@ counters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 	mono_os_mutex_unlock (&counters_mutex);
 }
@@ -3059,7 +3057,7 @@ perfcounters_emit (MonoProfiler *profiler)
 		pcagent->emitted = 1;
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 
 static gboolean
@@ -3152,7 +3150,7 @@ perfcounters_sample (MonoProfiler *profiler, uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 done:
 	mono_os_mutex_unlock (&counters_mutex);
@@ -3325,7 +3323,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, method_id);
 	emit_value (logbuffer, coverage_data->len);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 	for (i = 0; i < coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
@@ -3346,7 +3344,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		emit_uvalue (logbuffer, entry->line);
 		emit_uvalue (logbuffer, entry->column);
 
-		EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+		EXIT_LOG_EXPLICIT (DO_SEND);
 	}
 
 	method_id++;
@@ -3410,7 +3408,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 
 	g_free (class_name);
 }
@@ -3467,7 +3465,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+	EXIT_LOG_EXPLICIT (DO_SEND);
 }
 
 static void
@@ -4095,7 +4093,7 @@ helper_thread (void *arg)
 			buf [len] = 0;
 
 			if (!strcmp (buf, "heapshot\n") && hs_mode_ondemand) {
-				// Rely on the finalization callbacks invoking process_requests ().
+				// Rely on the finalization callback triggering a GC.
 				heapshot_requested = 1;
 				mono_gc_finalize_notify ();
 			}
@@ -4246,7 +4244,7 @@ handle_writer_queue_entry (MonoProfiler *prof)
 			memcpy (logbuffer->cursor, name, nlen);
 			logbuffer->cursor += nlen;
 
-			EXIT_LOG_EXPLICIT (NO_SEND, NO_REQUESTS);
+			EXIT_LOG_EXPLICIT (NO_SEND);
 
 			mono_free (name);
 
@@ -4375,7 +4373,7 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		for (int i = 0; i < sample->count; ++i)
 			emit_method (logbuffer, sample->frames [i].method);
 
-		EXIT_LOG_EXPLICIT (DO_SEND, NO_REQUESTS);
+		EXIT_LOG_EXPLICIT (DO_SEND);
 
 		mono_thread_hazardous_try_free (sample, reuse_sample_hit);
 
@@ -4754,6 +4752,10 @@ mono_profiler_startup (const char *desc)
 	if (config.effective_mask & PROFLOG_FINALIZATION_EVENTS) {
 		events |= MONO_PROFILE_GC_FINALIZATION;
 		mono_profiler_install_gc_finalize (finalize_begin, finalize_object_begin, finalize_object_end, finalize_end);	
+	} else if (ENABLED (PROFLOG_HEAPSHOT_FEATURE) && config.hs_mode_ondemand) {
+		//On Demand heapshot uses the finalizer thread to force a collection and thus a heapshot
+		events |= MONO_PROFILE_GC_FINALIZATION;
+		mono_profiler_install_gc_finalize (NULL, NULL, NULL, finalize_end);
 	}
 
 	//PROFLOG_COUNTER_EVENTS is a pseudo event controled by the no_counters global var
