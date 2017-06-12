@@ -169,9 +169,7 @@ namespace System.Tests
 
         [Theory]
         [InlineData(null)]
-        [InlineData(EnvironmentVariableTarget.User)]
-        [InlineData(EnvironmentVariableTarget.Process)]
-        [InlineData(EnvironmentVariableTarget.Machine)]
+        [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void GetEnumerator_LinqOverDictionaryEntries_Success(EnvironmentVariableTarget? target)
         {
             IDictionary envVars = target != null ?
@@ -193,9 +191,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(EnvironmentVariableTarget.Process)]
-        [InlineData(EnvironmentVariableTarget.Machine)]
-        [InlineData(EnvironmentVariableTarget.User)]
+        [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void EnvironmentVariablesAreHashtable(EnvironmentVariableTarget target)
         {
             // On NetFX, the type returned was always Hashtable
@@ -203,9 +199,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(EnvironmentVariableTarget.Process)]
-        [InlineData(EnvironmentVariableTarget.Machine)]
-        [InlineData(EnvironmentVariableTarget.User)]
+        [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void EnumerateYieldsDictionaryEntryFromIEnumerable(EnvironmentVariableTarget target)
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
@@ -222,9 +216,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(EnvironmentVariableTarget.Process)]
-        [InlineData(EnvironmentVariableTarget.Machine)]
-        [InlineData(EnvironmentVariableTarget.User)]
+        [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
             bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
