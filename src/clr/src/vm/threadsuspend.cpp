@@ -5339,6 +5339,7 @@ int RedirectedThrowControlExceptionFilter(
     return (EXCEPTION_CONTINUE_EXECUTION);
 }
 #endif
+#endif // !FEATURE_PAL
 
 // Resume a thread at this location, to persuade it to throw a ThreadStop.  The
 // exception handler needs a reasonable idea of how large this method is, so don't
@@ -5413,7 +5414,6 @@ ThrowControlForThread(
     // Here we raise an exception.
     RaiseComPlusException();
 }
-#endif // !FEATURE_PAL
 
 #if defined(FEATURE_HIJACK) && !defined(PLATFORM_UNIX)
 // This function is called by UserAbort and StopEEAndUnwindThreads.
