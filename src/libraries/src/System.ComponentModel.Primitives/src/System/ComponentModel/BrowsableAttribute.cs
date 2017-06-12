@@ -34,14 +34,12 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly BrowsableAttribute Default = Yes;
 
-        private bool _browsable;
-
         /// <summary>
         /// <para>Initializes a new instance of the <see cref='System.ComponentModel.BrowsableAttribute'/> class.</para>
         /// </summary>
         public BrowsableAttribute(bool browsable)
         {
-            _browsable = browsable;
+            Browsable = browsable;
         }
 
         /// <summary>
@@ -49,10 +47,8 @@ namespace System.ComponentModel
         ///       Gets a value indicating whether an object is browsable.
         ///    </para>
         /// </summary>
-        public bool Browsable => _browsable;
+        public bool Browsable { get; }
 
-        /// <summary>
-        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -61,20 +57,11 @@ namespace System.ComponentModel
             }
 
             BrowsableAttribute other = obj as BrowsableAttribute;
-
-            return (other != null) && other.Browsable == _browsable;
+            return other?.Browsable == Browsable;
         }
 
-        /// <summary>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return _browsable.GetHashCode();
-        }
+        public override int GetHashCode() => Browsable.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(BrowsableAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

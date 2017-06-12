@@ -16,33 +16,25 @@ namespace System.ComponentModel
         ///       Initializes a new instance of the <see cref='System.ComponentModel.DesignOnlyAttribute'/> class.
         ///    </para>
         /// </summary>
-        public DesignOnlyAttribute(bool isDesignOnly)
-        {
-            IsDesignOnly = isDesignOnly;
-        }
+        public DesignOnlyAttribute(bool isDesignOnly) => IsDesignOnly = isDesignOnly;
 
         /// <summary>
         ///    <para>
-        ///       Gets a value indicating whether a property
-        ///       can be set only at design time.
+        ///       Gets a value indicating whether a property can be set only at design time.
         ///    </para>
         /// </summary>
         public bool IsDesignOnly { get; }
 
         /// <summary>
         ///    <para>
-        ///       Specifies that a property can be set only at design time. This
-        ///    <see langword='static '/>field is read-only. 
+        ///       Specifies that a property can be set only at design time. This <see langword='static '/>field is read-only. 
         ///    </para>
         /// </summary>
         public static readonly DesignOnlyAttribute Yes = new DesignOnlyAttribute(true);
 
         /// <summary>
         ///    <para>
-        ///       Specifies
-        ///       that a
-        ///       property can be set at design time or at run
-        ///       time. This <see langword='static '/>field is read-only.
+        ///       Specifies that a property can be set at design time or at run time. This <see langword='static '/>field is read-only.
         ///    </para>
         /// </summary>
         public static readonly DesignOnlyAttribute No = new DesignOnlyAttribute(false);
@@ -63,17 +55,11 @@ namespace System.ComponentModel
             }
 
             DesignOnlyAttribute other = obj as DesignOnlyAttribute;
-            return (other != null) && other.IsDesignOnly == IsDesignOnly;
+            return other?.IsDesignOnly == IsDesignOnly;
         }
 
-        public override int GetHashCode()
-        {
-            return IsDesignOnly.GetHashCode();
-        }
+        public override int GetHashCode() => IsDesignOnly.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return IsDesignOnly == DesignOnlyAttribute.Default.IsDesignOnly;
-        }        
+        public override bool IsDefaultAttribute() => IsDesignOnly == Default.IsDesignOnly;
     }
 }

@@ -36,19 +36,10 @@ namespace System.ComponentModel
         ///  Constructs an ImmutableObjectAttribute object.
         ///
         /// </summary>
-        public ImmutableObjectAttribute(bool immutable)
-        {
-            Immutable = immutable;
-        }
+        public ImmutableObjectAttribute(bool immutable) => Immutable = immutable;
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         public bool Immutable { get; }
 
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -57,22 +48,11 @@ namespace System.ComponentModel
             }
 
             ImmutableObjectAttribute other = obj as ImmutableObjectAttribute;
-            return other != null && other.Immutable == Immutable;
+            return other?.Immutable == Immutable;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
         
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(ImmutableObjectAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

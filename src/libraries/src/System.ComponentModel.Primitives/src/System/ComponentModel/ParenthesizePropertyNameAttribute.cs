@@ -14,15 +14,11 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>
         ///       Sets the System.ComponentModel.Design.ParenthesizePropertyName
-        ///       attribute by default to
-        ///    <see langword='false'/>.
+        ///       attribute by default to <see langword='false'/>.
         ///    </para>
         /// </summary>
         public static readonly ParenthesizePropertyNameAttribute Default = new ParenthesizePropertyNameAttribute();
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         public ParenthesizePropertyNameAttribute() : this(false)
         {
         }
@@ -32,24 +28,18 @@ namespace System.ComponentModel
         /// class, using the specified value to indicate whether the attribute is
         /// marked for display with parentheses.</para>
         /// </summary>
-        public ParenthesizePropertyNameAttribute(bool needParenthesis)
-        {
-            NeedParenthesis = needParenthesis;
-        }
+        public ParenthesizePropertyNameAttribute(bool needParenthesis) => NeedParenthesis = needParenthesis;
 
         /// <summary>
         ///    <para>
-        ///       Gets a value indicating
-        ///       whether the
-        ///       attribute is placed in parentheses when listed in
-        ///       the properties window.
+        ///       Gets a value indicating whether the attribute is
+        ///       placed in parentheses when listed in the properties window.
         ///    </para>
         /// </summary>
         public bool NeedParenthesis { get; }
 
         /// <summary>
-        ///    <para>Compares the specified object
-        ///       to this object and tests for equality.</para>
+        ///    <para>Compares the specified object to this object and tests for equality.</para>
         /// </summary>
         public override bool Equals(object obj)
         {
@@ -59,22 +49,11 @@ namespace System.ComponentModel
             }
 
             ParenthesizePropertyNameAttribute other = obj as ParenthesizePropertyNameAttribute;
-            return other != null && other.NeedParenthesis == NeedParenthesis;
+            return other?.NeedParenthesis == NeedParenthesis;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(ParenthesizePropertyNameAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

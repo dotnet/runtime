@@ -36,10 +36,7 @@ namespace System.ComponentModel
         ///    that uses the specified value
         ///    to indicate whether the parent property should be notified when a child namespace property is modified.</para>
         /// </summary>
-        public NotifyParentPropertyAttribute(bool notifyParent)
-        {
-            NotifyParent = notifyParent;
-        }
+        public NotifyParentPropertyAttribute(bool notifyParent) => NotifyParent = notifyParent;
 
 
         /// <summary>
@@ -63,22 +60,11 @@ namespace System.ComponentModel
             }
 
             NotifyParentPropertyAttribute other = obj as NotifyParentPropertyAttribute;
-            return other != null && other.NotifyParent == NotifyParent;
+            return other?.NotifyParent == NotifyParent;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(NotifyParentPropertyAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

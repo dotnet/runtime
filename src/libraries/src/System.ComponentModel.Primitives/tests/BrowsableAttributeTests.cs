@@ -5,44 +5,54 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class BrowsableAttributeTests
     {
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetBrowsable(bool value)
+        public void Ctor_Browsable(bool browsable)
         {
-            var attribute = new BrowsableAttribute(value);
+            var attribute = new BrowsableAttribute(browsable);
+            Assert.Equal(browsable, attribute.Browsable);
+            Assert.Equal(browsable, attribute.IsDefaultAttribute());
+        }
 
-            Assert.Equal(value, attribute.Browsable);
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { BrowsableAttribute.Yes, BrowsableAttribute.Yes, true };
+            yield return new object[] { BrowsableAttribute.Yes, new BrowsableAttribute(false), false };
+            yield return new object[] { BrowsableAttribute.Yes, BrowsableAttribute.No, false };
+
+            yield return new object[] { BrowsableAttribute.Yes, new object(), false };
+            yield return new object[] { BrowsableAttribute.Yes, null, false };
         }
 
         [Theory]
-        [MemberData(nameof(DefaultData))]
-        public void GetBrowsable(BrowsableAttribute attribute, bool expectedBrowsable)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(BrowsableAttribute attribute, object other, bool expected)
         {
-            Assert.Equal(expectedBrowsable, attribute.Browsable);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is BrowsableAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
         }
 
-        [Fact]
-        public void Equals_DifferentValues()
-        {
-            Assert.False(BrowsableAttribute.Yes.Equals(BrowsableAttribute.No));
-        }
-
-        [Fact]
-        public void Equals_SameValue()
-        {
-            Assert.True(BrowsableAttribute.Yes.Equals(BrowsableAttribute.Yes));
-        }
-
-        private static IEnumerable<object[]> DefaultData()
+        private static IEnumerable<object[]> DefaultProperties_TestData()
         {
             yield return new object[] { BrowsableAttribute.Yes, true };
             yield return new object[] { BrowsableAttribute.Default, true };
             yield return new object[] { BrowsableAttribute.No, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultProperties_TestData))]
+        public void DefaultProperties_GetBrowsable_ReturnsExpected(BrowsableAttribute attribute, bool expectedBrowsable)
+        {
+            Assert.Equal(expectedBrowsable, attribute.Browsable);
+            Assert.Equal(expectedBrowsable, attribute.IsDefaultAttribute());
         }
     }
 }

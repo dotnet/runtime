@@ -5,44 +5,54 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class NotifyParentPropertyAttributeTests
     {
-        [Fact]
-        public void Equals_DifferentValues()
-        {
-            Assert.False(NotifyParentPropertyAttribute.Yes.Equals(NotifyParentPropertyAttribute.No));
-        }
-
-        [Fact]
-        public void Equals_SameValue()
-        {
-            Assert.True(NotifyParentPropertyAttribute.Yes.Equals(NotifyParentPropertyAttribute.Yes));
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetNotifyParent(bool value)
+        public void Ctor_NotifyParent(bool notifyParent)
         {
-            var attribute = new NotifyParentPropertyAttribute(value);
+            var attribute = new NotifyParentPropertyAttribute(notifyParent);
+            Assert.Equal(notifyParent, attribute.NotifyParent);
+            Assert.Equal(!notifyParent, attribute.IsDefaultAttribute());
+        }
 
-            Assert.Equal(value, attribute.NotifyParent);
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { NotifyParentPropertyAttribute.Yes, NotifyParentPropertyAttribute.Yes, true };
+            yield return new object[] { NotifyParentPropertyAttribute.No, new NotifyParentPropertyAttribute(false), true };
+            yield return new object[] { NotifyParentPropertyAttribute.Yes, NotifyParentPropertyAttribute.No, false };
+
+            yield return new object[] { NotifyParentPropertyAttribute.Yes, new object(), false };
+            yield return new object[] { NotifyParentPropertyAttribute.Yes, null, false };
         }
 
         [Theory]
-        [MemberData(nameof(NotifyParentPropertyAttributeData))]
-        public void NameTests(NotifyParentPropertyAttribute attribute, bool isNotifyParent)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(NotifyParentPropertyAttribute attribute, object other, bool expected)
         {
-            Assert.Equal(isNotifyParent, attribute.NotifyParent);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is NotifyParentPropertyAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
         }
 
-        private static IEnumerable<object[]> NotifyParentPropertyAttributeData()
+        private static IEnumerable<object[]> DefaultProperties_TestData()
         {
+            yield return new object[] { NotifyParentPropertyAttribute.Yes, true };
             yield return new object[] { NotifyParentPropertyAttribute.Default, false };
-            yield return new object[] { new NotifyParentPropertyAttribute(true), true };
-            yield return new object[] { new NotifyParentPropertyAttribute(false), false };
+            yield return new object[] { NotifyParentPropertyAttribute.No, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultProperties_TestData))]
+        public void DefaultProperties_GetNotifyParent_ReturnsExpected(NotifyParentPropertyAttribute attribute, bool expectedNotifyParent)
+        {
+            Assert.Equal(expectedNotifyParent, attribute.NotifyParent);
+            Assert.Equal(!expectedNotifyParent, attribute.IsDefaultAttribute());
         }
     }
 }
