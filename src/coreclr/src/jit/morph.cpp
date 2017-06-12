@@ -2939,7 +2939,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
             numArgs++;
 
-            nonStandardArgs.Add(arg, REG_VIRTUAL_STUB_PARAM);
+            nonStandardArgs.Add(arg, virtualStubParamInfo->GetReg());
         }
         else
 #endif // defined(_TARGET_X86_)

@@ -5193,7 +5193,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // Where EAX is also used as an argument to the stub dispatch helper. Make
             // sure that the call target address is computed into EAX in this case.
 
-            assert(REG_VIRTUAL_STUB_PARAM == REG_VIRTUAL_STUB_TARGET);
+            assert(compiler->virtualStubParamInfo->GetReg() == REG_VIRTUAL_STUB_TARGET);
 
             assert(target->isContainedIndir());
             assert(target->OperGet() == GT_IND);
