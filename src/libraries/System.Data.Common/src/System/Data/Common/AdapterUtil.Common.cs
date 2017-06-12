@@ -716,9 +716,6 @@ namespace System.Data.Common
         internal const string SourceColumn = "SourceColumn";
         internal const string SourceTable = "SourceTable";
 
-        internal static bool CompareInsensitiveInvariant(string strvalue, string strconst) =>
-            0 == CultureInfo.InvariantCulture.CompareInfo.Compare(strvalue, strconst, CompareOptions.IgnoreCase);
-
         internal static DataRow[] SelectAdapterRows(DataTable dataTable, bool sorted)
         {
             const DataRowState rowStates = DataRowState.Added | DataRowState.Deleted | DataRowState.Modified;
@@ -853,7 +850,5 @@ namespace System.Data.Common
         }
 
         internal static int SrcCompare(string strA, string strB) => strA == strB ? 0 : 1;
-
-        internal static bool IsEmptyArray(string[] array) => (null == array) || (0 == array.Length);
     }
 }

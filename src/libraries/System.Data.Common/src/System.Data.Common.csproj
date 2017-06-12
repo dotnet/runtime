@@ -172,6 +172,9 @@
     <Compile Include="System\Data\Common\DBCommandBuilder.cs" />
     <Compile Include="System\Data\Common\DbConnection.cs" />
     <Compile Include="System\Data\Common\DbConnectionOptions.cs" />
+    <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionOptions.Common.cs">
+      <Link>System\Data\Common\DbConnectionOptions.Common.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Data\Common\DbConnectionPoolKey.cs">
       <Link>System\Data\Common\DbConnectionPoolKey.cs</Link>
     </Compile>
