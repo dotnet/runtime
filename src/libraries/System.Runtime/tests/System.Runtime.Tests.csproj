@@ -144,6 +144,7 @@
     <Compile Include="System\LazyTests.netcoreapp.cs" />
     <Compile Include="System\StringTests.netcoreapp.cs" />
     <Compile Include="System\TimeSpanTests.netcoreapp.cs" />
+    <Compile Include="System\Reflection\MemberInfoTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeInfoTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
