@@ -5667,6 +5667,7 @@ namespace System.Reflection
         public abstract object[] GetCustomAttributes(Type attributeType, bool inherit);
         public abstract bool IsDefined(Type attributeType, bool inherit);
         public virtual System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
+        public virtual bool HasSameMetadataDefinitionAs(System.Reflection.MemberInfo other) { throw null; }
     }
     [Flags]
     public enum MemberTypes
