@@ -41,10 +41,7 @@ namespace System.ComponentModel
         ///       Initializes a new instance of the <see cref='System.ComponentModel.ReadOnlyAttribute'/> class.
         ///    </para>
         /// </summary>
-        public ReadOnlyAttribute(bool isReadOnly)
-        {
-            IsReadOnly = isReadOnly;
-        }
+        public ReadOnlyAttribute(bool isReadOnly) => IsReadOnly = isReadOnly;
 
         /// <summary>
         ///    <para>
@@ -54,9 +51,6 @@ namespace System.ComponentModel
         /// </summary>
         public bool IsReadOnly { get; }
 
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
         public override bool Equals(object value)
         {
             if (this == value)
@@ -65,22 +59,11 @@ namespace System.ComponentModel
             }
 
             ReadOnlyAttribute other = value as ReadOnlyAttribute;
-            return other != null && other.IsReadOnly == IsReadOnly;
+            return other?.IsReadOnly == IsReadOnly;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return IsReadOnly == ReadOnlyAttribute.Default.IsReadOnly;
-        }
+        public override bool IsDefaultAttribute() => IsReadOnly == Default.IsReadOnly;
     }
 }

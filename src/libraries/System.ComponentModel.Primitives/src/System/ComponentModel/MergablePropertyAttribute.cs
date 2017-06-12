@@ -43,23 +43,16 @@ namespace System.ComponentModel
         ///       class.
         ///    </para>
         /// </summary>
-        public MergablePropertyAttribute(bool allowMerge)
-        {
-            AllowMerge = allowMerge;
-        }
+        public MergablePropertyAttribute(bool allowMerge) => AllowMerge = allowMerge;
 
         /// <summary>
         ///    <para>
-        ///       Gets a value indicating whether this
-        ///       property can be combined with properties belonging to other objects in a
-        ///       properties window.
+        ///       Gets a value indicating whether this property can be combined with properties
+        ///       belonging to other objects in a properties window.
         ///    </para>
         /// </summary>
         public bool AllowMerge { get; }
 
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -68,22 +61,11 @@ namespace System.ComponentModel
             }
 
             MergablePropertyAttribute other = obj as MergablePropertyAttribute;
-            return other != null && other.AllowMerge == AllowMerge;
+            return other?.AllowMerge == AllowMerge;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(MergablePropertyAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

@@ -5,53 +5,54 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class ParenthesizePropertyNameAttributeTests
     {
         [Fact]
-        public void Equals_DifferentValues()
+        public void Ctor_Default()
         {
-            var firstAttribute = new ParenthesizePropertyNameAttribute(true);
-            var secondAttribute = new ParenthesizePropertyNameAttribute(false);
-
-            Assert.False(firstAttribute.Equals(secondAttribute));
-        }
-
-        [Fact]
-        public void Equals_Null()
-        {
-            Assert.False(ParenthesizePropertyNameAttribute.Default.Equals(null));
-        }
-
-        [Fact]
-        public void Equals_SameValue()
-        {
-            Assert.True(ParenthesizePropertyNameAttribute.Default.Equals(ParenthesizePropertyNameAttribute.Default));
+            var attribute = new ParenthesizePropertyNameAttribute();
+            Assert.False(attribute.NeedParenthesis);
+            Assert.True(attribute.IsDefaultAttribute());
         }
 
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetNeedParenthesis(bool value)
+        public void Ctor_NeedParenthesis(bool needParenthesis)
         {
-            var attribute = new ParenthesizePropertyNameAttribute(value);
+            var attribute = new ParenthesizePropertyNameAttribute(needParenthesis);
+            Assert.Equal(needParenthesis, attribute.NeedParenthesis);
+            Assert.Equal(!needParenthesis, attribute.IsDefaultAttribute());
+        }
 
-            Assert.Equal(value, attribute.NeedParenthesis);
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { new ParenthesizePropertyNameAttribute(true), new ParenthesizePropertyNameAttribute(true), true };
+            yield return new object[] { new ParenthesizePropertyNameAttribute(true), new ParenthesizePropertyNameAttribute(false), false };
+            yield return new object[] { ParenthesizePropertyNameAttribute.Default, ParenthesizePropertyNameAttribute.Default, true };
+
+            yield return new object[] { ParenthesizePropertyNameAttribute.Default, new object(), false };
+            yield return new object[] { ParenthesizePropertyNameAttribute.Default, null, false };
         }
 
         [Theory]
-        [MemberData(nameof(ParenthesizePropertyNameAttributeData))]
-        public void NameTests(ParenthesizePropertyNameAttribute attribute, bool needParenthesis)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(ParenthesizePropertyNameAttribute attribute, object other, bool expected)
         {
-            Assert.Equal(needParenthesis, attribute.NeedParenthesis);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is ParenthesizePropertyNameAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
         }
 
-        private static IEnumerable<object[]> ParenthesizePropertyNameAttributeData()
+        [Fact]
+        public void Default_GetNeedParenthesis_ReturnsFalse()
         {
-            yield return new object[] { ParenthesizePropertyNameAttribute.Default, false };
-            yield return new object[] { new ParenthesizePropertyNameAttribute(true), true };
-            yield return new object[] { new ParenthesizePropertyNameAttribute(false), false };
+            Assert.False(ParenthesizePropertyNameAttribute.Default.NeedParenthesis);
+            Assert.True(ParenthesizePropertyNameAttribute.Default.IsDefaultAttribute());
         }
     }
 }

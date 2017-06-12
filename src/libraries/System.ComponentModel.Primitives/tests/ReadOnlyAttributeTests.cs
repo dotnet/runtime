@@ -5,44 +5,54 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class ReadOnlyAttributeTests
     {
-        [Fact]
-        public void Equals_DifferentValues()
-        {
-            Assert.False(ReadOnlyAttribute.Yes.Equals(ReadOnlyAttribute.No));
-        }
-
-        [Fact]
-        public void Equals_SameValue()
-        {
-            Assert.True(ReadOnlyAttribute.Default.Equals(ReadOnlyAttribute.Default));
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetIsReadOnly(bool value)
+        public void Ctor_IsReadOnly(bool isReadOnly)
         {
-            var attribute = new ReadOnlyAttribute(value);
+            var attribute = new ReadOnlyAttribute(isReadOnly);
+            Assert.Equal(isReadOnly, attribute.IsReadOnly);
+            Assert.Equal(!isReadOnly, attribute.IsDefaultAttribute());
+        }
 
-            Assert.Equal(value, attribute.IsReadOnly);
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { ReadOnlyAttribute.Yes, ReadOnlyAttribute.Yes, true };
+            yield return new object[] { ReadOnlyAttribute.Yes, new ReadOnlyAttribute(true), true };
+            yield return new object[] { ReadOnlyAttribute.Yes, ReadOnlyAttribute.No, false };
+
+            yield return new object[] { ReadOnlyAttribute.Yes, new object(), false };
+            yield return new object[] { ReadOnlyAttribute.Yes, null, false };
         }
 
         [Theory]
-        [MemberData(nameof(ReadOnlyAttributeData))]
-        public void NameTests(ReadOnlyAttribute attribute, bool isReadOnly)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(ReadOnlyAttribute attribute, object other, bool expected)
         {
-            Assert.Equal(isReadOnly, attribute.IsReadOnly);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is ReadOnlyAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
         }
 
-        private static IEnumerable<object[]> ReadOnlyAttributeData()
+        private static IEnumerable<object[]> DefaultProperties_TestData()
         {
+            yield return new object[] { ReadOnlyAttribute.Yes, true };
             yield return new object[] { ReadOnlyAttribute.Default, false };
-            yield return new object[] { new ReadOnlyAttribute(true), true };
-            yield return new object[] { new ReadOnlyAttribute(false), false };
+            yield return new object[] { ReadOnlyAttribute.No, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultProperties_TestData))]
+        public void DefaultProperties_GetIsReadOnly_ReturnsExpected(ReadOnlyAttribute attribute, bool expectedAllowMerge)
+        {
+            Assert.Equal(expectedAllowMerge, attribute.IsReadOnly);
+            Assert.Equal(!expectedAllowMerge, attribute.IsDefaultAttribute());
         }
     }
 }

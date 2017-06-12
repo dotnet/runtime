@@ -15,31 +15,25 @@ namespace System.ComponentModel
         ///       Initializes a new instance of the <see cref='System.ComponentModel.LocalizableAttribute'/> class.
         ///    </para>
         /// </summary>
-        public LocalizableAttribute(bool isLocalizable)
-        {
-            IsLocalizable = isLocalizable;
-        }
+        public LocalizableAttribute(bool isLocalizable) => IsLocalizable = isLocalizable;
 
         /// <summary>
         ///    <para>
-        ///       Gets a value indicating whether
-        ///       a property should be localized.
+        ///       Gets a value indicating whether a property should be localized.
         ///    </para>
         /// </summary>
         public bool IsLocalizable { get; }
 
         /// <summary>
         ///    <para>
-        ///       Specifies that a property should be localized. This
-        ///    <see langword='static '/>field is read-only. 
+        ///       Specifies that a property should be localized. This <see langword='static '/>field is read-only. 
         ///    </para>
         /// </summary>
         public static readonly LocalizableAttribute Yes = new LocalizableAttribute(true);
 
         /// <summary>
         ///    <para>
-        ///       Specifies that a property should not be localized. This
-        ///    <see langword='static '/>field is read-only. 
+        ///       Specifies that a property should not be localized. This <see langword='static '/>field is read-only. 
         ///    </para>
         /// </summary>
         public static readonly LocalizableAttribute No = new LocalizableAttribute(false);
@@ -47,8 +41,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>
         ///       Specifies the default value, which is <see cref='System.ComponentModel.LocalizableAttribute.No'/> , that is
-        ///       a property should not be localized. This <see langword='static '/>field is
-        ///       read-only.
+        ///       a property should not be localized. This <see langword='static '/>field is read-only.
         ///    </para>
         /// </summary>
         public static readonly LocalizableAttribute Default = No;
@@ -61,17 +54,11 @@ namespace System.ComponentModel
             }
 
             LocalizableAttribute other = obj as LocalizableAttribute;
-            return (other != null) && other.IsLocalizable == IsLocalizable;
+            return other?.IsLocalizable == IsLocalizable;
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return IsLocalizable == LocalizableAttribute.Default.IsLocalizable;
-        }
+        public override bool IsDefaultAttribute() => IsLocalizable == Default.IsLocalizable;
     }
 }

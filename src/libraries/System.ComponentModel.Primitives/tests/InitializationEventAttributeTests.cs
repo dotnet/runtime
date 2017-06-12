@@ -4,17 +4,18 @@
 
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class InitializationEventAttributeTests
     {
-        [Fact]
-        public void GetEventName()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("test name")]
+        public void Ctor_EventName(string eventName)
         {
-            var name = "test name";
-            var attribute = new InitializationEventAttribute(name);
-
-            Assert.Equal(name, attribute.EventName);
+            var attribute = new InitializationEventAttribute(eventName);
+            Assert.Equal(eventName, attribute.EventName);
         }
     }
 }

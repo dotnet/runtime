@@ -5,44 +5,54 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class ImmutableObjectAttributeTests
     {
-        [Fact]
-        public void Equals_DifferentValues()
-        {
-            Assert.False(ImmutableObjectAttribute.Yes.Equals(ImmutableObjectAttribute.No));
-        }
-
-        [Fact]
-        public void Equals_SameValue()
-        {
-            Assert.True(ImmutableObjectAttribute.Yes.Equals(ImmutableObjectAttribute.Yes));
-        }
-
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void GetImmutable(bool value)
+        public void Ctor_Immutable(bool immutable)
         {
-            var attribute = new ImmutableObjectAttribute(value);
+            var attribute = new ImmutableObjectAttribute(immutable);
+            Assert.Equal(immutable, attribute.Immutable);
+            Assert.Equal(!immutable, attribute.IsDefaultAttribute());
+        }
 
-            Assert.Equal(value, attribute.Immutable);
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            yield return new object[] { ImmutableObjectAttribute.Yes, ImmutableObjectAttribute.Yes, true };
+            yield return new object[] { ImmutableObjectAttribute.No, new ImmutableObjectAttribute(false), true };
+            yield return new object[] { ImmutableObjectAttribute.Yes, ImmutableObjectAttribute.No, false };
+
+            yield return new object[] { ImmutableObjectAttribute.Yes, new object(), false };
+            yield return new object[] { ImmutableObjectAttribute.Yes, null, false };
         }
 
         [Theory]
-        [MemberData(nameof(ImmutableAttributesData))]
-        public void NameTests(ImmutableObjectAttribute attribute, bool isImmutable)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(ImmutableObjectAttribute attribute, object other, bool expected)
         {
-            Assert.Equal(isImmutable, attribute.Immutable);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is ImmutableObjectAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
         }
 
-        private static IEnumerable<object[]> ImmutableAttributesData()
+        private static IEnumerable<object[]> DefaultProperties_TestData()
         {
+            yield return new object[] { ImmutableObjectAttribute.Yes, true };
             yield return new object[] { ImmutableObjectAttribute.Default, false };
-            yield return new object[] { new ImmutableObjectAttribute(true), true };
-            yield return new object[] { new ImmutableObjectAttribute(false), false };
+            yield return new object[] { ImmutableObjectAttribute.No, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultProperties_TestData))]
+        public void DefaultProperties_GetImmutable_ReturnsExpected(ImmutableObjectAttribute attribute, bool expectedImmutableObject)
+        {
+            Assert.Equal(expectedImmutableObject, attribute.Immutable);
+            Assert.Equal(!expectedImmutableObject, attribute.IsDefaultAttribute());
         }
     }
 }
