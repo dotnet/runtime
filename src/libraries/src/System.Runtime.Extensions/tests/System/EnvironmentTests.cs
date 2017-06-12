@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -368,5 +369,41 @@ namespace System.Tests
             IntPtr hToken,
             uint dwFlags,
             char* pszPath);
+
+        public static IEnumerable<object[]> EnvironmentVariableTargets
+        {
+            get
+            {
+                yield return new object[] { EnvironmentVariableTarget.Process };
+                if (!(s_EnvironmentRegKeysStillAccessDenied.Value))
+                {
+                    yield return new object[] { EnvironmentVariableTarget.User };
+                    yield return new object[] { EnvironmentVariableTarget.Machine };
+                }
+            }
+        }
+
+        private static readonly Lazy<bool> s_EnvironmentRegKeysStillAccessDenied = new Lazy<bool>(
+            delegate ()
+            {
+                if (!PlatformDetection.IsWindows)
+                    return false;  // On Unix, registry-based environment api's won't throw a SecurityException - they just eat all writes.
+                if (!PlatformDetection.IsWinRT)
+                    return false;  // On non-appcontainer apps, these won't throw (except writes to Target.Machine on non-elevated but that's accounted for separately.)
+
+                try
+                {
+                    Environment.GetEnvironmentVariables(EnvironmentVariableTarget.User);
+                }
+                catch (SecurityException)
+                {
+                    return true; // AppX registry exemptions not yet granted (at least on this build.)
+                }
+                catch
+                {
+                    return false; // Hmm... some other exception. We'll enable the individual tests and let them report it...
+                }
+                return false;
+            });
     }
 }
