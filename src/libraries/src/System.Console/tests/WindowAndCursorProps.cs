@@ -138,7 +138,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         Assert.NotNull(Console.Title);
     }
 
-    [Theory]
+    [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // Nano currently ignores set title
     [InlineData(10)]
     [InlineData(256)]
     [InlineData(1024)]
