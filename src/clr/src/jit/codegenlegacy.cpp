@@ -20407,7 +20407,7 @@ regNumber CodeGen::genLclHeap(GenTreePtr size)
                   test  ESP, [ESP+0]     // X86 - tickle the page
                   ldr   REGH,[ESP+0]     // ARM - tickle the page
                   mov   REGH, ESP
-                  sub   REGH, PAGE_SIZE
+                  sub   REGH, GetOsPageSize()
                   mov   ESP, REGH
                   cmp   ESP, REG
                   jae   loop

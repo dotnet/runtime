@@ -300,8 +300,6 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 
-#define OS_PAGE_SIZE 4096
-
 #ifndef _ASSERTE
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif

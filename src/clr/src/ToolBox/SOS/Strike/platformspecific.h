@@ -190,6 +190,11 @@ struct DT_RTL_USER_PROCESS_PARAMETERS
 
 #endif // !FEATURE_PAL
 
+// TODO-ARM64-NYI Support for SOS on target with 64K pages
+//
+// This is probably as simple as redefining DT_OS_PAGE_SIZE to be a function
+// which returns the page size of the connected target
 #define DT_OS_PAGE_SIZE   4096
+#define DT_GC_PAGE_SIZE   0x1000
 
 #endif // !__PLATFORM_SPECIFIC_INCLUDED

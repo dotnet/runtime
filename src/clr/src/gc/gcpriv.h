@@ -4266,6 +4266,8 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
     return &dynamic_data_table [ gen_number ];
 }
 
+#define GC_PAGE_SIZE 0x1000
+
 #define card_word_width ((size_t)32)
 
 //
@@ -4273,9 +4275,9 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
 // In the code we also rely on the assumption that one card_table entry (uint32_t) covers an entire os page
 //
 #if defined (BIT64)
-#define card_size ((size_t)(2*OS_PAGE_SIZE/card_word_width))
+#define card_size ((size_t)(2*GC_PAGE_SIZE/card_word_width))
 #else
-#define card_size ((size_t)(OS_PAGE_SIZE/card_word_width))
+#define card_size ((size_t)(GC_PAGE_SIZE/card_word_width))
 #endif // BIT64
 
 // Returns the index of the card word a card is in

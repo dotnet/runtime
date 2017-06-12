@@ -2430,7 +2430,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         //  loop:
         //       test  ESP, [ESP+0]     // tickle the page
         //       mov   REGTMP, ESP
-        //       sub   REGTMP, PAGE_SIZE
+        //       sub   REGTMP, GetOsPageSize()
         //       mov   ESP, REGTMP
         //       cmp   ESP, REGCNT
         //       jae   loop

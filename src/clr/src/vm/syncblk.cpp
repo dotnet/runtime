@@ -35,8 +35,8 @@
 #include "runtimecallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 
-// Allocate 1 page worth. Typically enough
-#define MAXSYNCBLOCK (PAGE_SIZE-sizeof(void*))/sizeof(SyncBlock)
+// Allocate 4K worth. Typically enough
+#define MAXSYNCBLOCK (0x1000-sizeof(void*))/sizeof(SyncBlock)
 #define SYNC_TABLE_INITIAL_SIZE 250
 
 //#define DUMP_SB

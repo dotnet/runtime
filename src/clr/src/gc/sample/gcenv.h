@@ -30,6 +30,12 @@
 #include "gcenv.sync.h"
 #include "gcenv.ee.h"
 
+#ifdef PLATFORM_UNIX
+#include "gcenv.unix.inl"
+#else
+#include "gcenv.windows.inl"
+#endif
+
 #define MAX_LONGPATH 1024
 
 #ifdef _MSC_VER
