@@ -486,3 +486,7 @@ def static getOSGroup(def os) {
         }
     }
 }
+
+Utilities.createHelperJob(this, project, branch,
+    "Welcome to the ${project} Perf help",
+    "Have a nice day!")
