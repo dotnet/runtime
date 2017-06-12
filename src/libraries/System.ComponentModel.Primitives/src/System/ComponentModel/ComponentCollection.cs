@@ -12,19 +12,11 @@ namespace System.ComponentModel
 {
     public class ComponentCollection : ReadOnlyCollectionBase
     {
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        public ComponentCollection(IComponent[] components)
-        {
-            InnerList.AddRange(components);
-        }
+        public ComponentCollection(IComponent[] components) => InnerList.AddRange(components);
 
-        /** The component in the container identified by name. */
         /// <summary>
         ///    <para>
-        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>
-        ///       .
+        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>.
         ///    </para>
         /// </summary>
         public virtual IComponent this[string name]
@@ -46,28 +38,14 @@ namespace System.ComponentModel
             }
         }
 
-        /** The component in the container identified by index. */
         /// <summary>
         ///    <para>
-        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>
-        ///       .
+        ///       Gets a specific <see cref='System.ComponentModel.Component'/> in the <see cref='System.ComponentModel.Container'/>.
         ///    </para>
         /// </summary>
-        public virtual IComponent this[int index]
-        {
-            get
-            {
-                return (IComponent)InnerList[index];
-            }
-        }
+        public virtual IComponent this[int index] => (IComponent)InnerList[index];
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        public void CopyTo(IComponent[] array, int index)
-        {
-            InnerList.CopyTo(array, index);
-        }
+        public void CopyTo(IComponent[] array, int index) => InnerList.CopyTo(array, index);
     }
 }
 

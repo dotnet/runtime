@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
 using Xunit;
 
-namespace Test
+namespace System.ComponentModel.Tests
 {
     public class ComponentModelPrimitivesTests
     {
@@ -24,9 +22,6 @@ namespace Test
             ISite iSite = null;
             IServiceProvider iServiceProvider = iSite;
             Assert.Null(iServiceProvider);
-
-            ComponentCollection componentCollection = null;
-            Assert.Null(componentCollection);
 #pragma warning restore 0219
         }
     }
