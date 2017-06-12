@@ -65,30 +65,30 @@ monodir=$(top_builddir)
 # also uses eglib (e.g. the runtime). Automake doesn't support this
 # functionality, so create a separate static version of the library.
 
-libmono_profiler_aot_la_SOURCES = mono-profiler-aot.c
+libmono_profiler_aot_la_SOURCES = aot.c
 libmono_profiler_aot_la_LIBADD =  $(libmono_dep) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_aot_static_la_SOURCES = mono-profiler-aot.c
+libmono_profiler_aot_static_la_SOURCES = aot.c
 libmono_profiler_aot_static_la_LDFLAGS = -static
 
-libmono_profiler_iomap_la_SOURCES = mono-profiler-iomap.c
+libmono_profiler_iomap_la_SOURCES = iomap.c
 libmono_profiler_iomap_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_iomap_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_iomap_static_la_SOURCES = mono-profiler-iomap.c
+libmono_profiler_iomap_static_la_SOURCES = iomap.c
 libmono_profiler_iomap_static_la_LDFLAGS = -static
 
-libmono_profiler_log_la_SOURCES = mono-profiler-log.c
+libmono_profiler_log_la_SOURCES = log.c log-args.c
 libmono_profiler_log_la_LIBADD = $(libmono_dep) $(GLIB_LIBS) $(Z_LIBS)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_log_static_la_SOURCES = mono-profiler-log.c
+libmono_profiler_log_static_la_SOURCES = log.c log-args.c
 libmono_profiler_log_static_la_LDFLAGS = -static
 
 if HAVE_VTUNE
-libmono_profiler_vtune_la_SOURCES = mono-profiler-vtune.c
+libmono_profiler_vtune_la_SOURCES = vtune.c
 libmono_profiler_vtune_la_CFLAGS = $(VTUNE_CFLAGS)
 libmono_profiler_vtune_la_LIBADD = $(VTUNE_LIBS) $(LIBMONO) $(GLIB_LIBS) $(LIBICONV)
 libmono_profiler_vtune_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_vtune_static_la_SOURCES = mono-profiler-vtune.c
+libmono_profiler_vtune_static_la_SOURCES = vtune.c
 libmono_profiler_vtune_static_la_LDFLAGS = -static
 libmono_profiler_vtune_static_la_CFLAGS = $(VTUNE_CFLAGS)
 libmono_profiler_vtune_static_la_LIBADD = $(VTUNE_LIBS)
@@ -114,8 +114,8 @@ testlog: $(PLOG_TESTS)
 
 check-local: $(check_targets)
 
-EXTRA_DIST=mono-profiler-log.h \
-	mono-profiler-aot.h \
+EXTRA_DIST=log.h \
+	aot.h \
 	$(PLOG_TESTS_SRC) \
 	ptestrunner.pl \
 	$(suppression_DATA)

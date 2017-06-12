@@ -56,7 +56,7 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/json.h>
 #include <mono/utils/mono-threads-coop.h>
-#include <mono/profiler/mono-profiler-aot.h>
+#include <mono/profiler/aot.h>
 #include <mono/utils/w32api.h>
 
 #include "aot-compiler.h"
