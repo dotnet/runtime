@@ -2,6 +2,7 @@
   <Library>
     <!-- Needed because of StringComparer instance in [Theory] data which causes xunit to reflect on its ToString() -->
     <Type Name="System.OrdinalComparer" Dynamic="Required Public" />
+    <Type Name="System.Collections.Generic.GenericEqualityComparer`1" Dynamic="Required Public" />
 
     <!-- ConsistencyTests.MatchSequencePattern() test explicitly probes these types -->
     <Type Name="System.Linq.Enumerable" Dynamic="Required Public" />
