@@ -33,52 +33,56 @@ namespace System.Net.Sockets
         // Binds the Socket Win32 Handle to the ThreadPool's CompletionPort.
         public ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle(bool trySkipCompletionPortOnSuccess)
         {
+            // Check to see if the socket native _handle is already
+            // bound to the ThreadPool's completion port.
+            if (_released || _iocpBoundHandle == null)
+            {
+                GetOrAllocateThreadPoolBoundHandleSlow(trySkipCompletionPortOnSuccess);
+            }
+
+            return _iocpBoundHandle;
+        }
+
+        private void GetOrAllocateThreadPoolBoundHandleSlow(bool trySkipCompletionPortOnSuccess)
+        {
             if (_released)
             {
                 // Keep the exception message pointing at the external type.
                 throw new ObjectDisposedException(typeof(Socket).FullName);
             }
 
-            // Check to see if the socket native _handle is already
-            // bound to the ThreadPool's completion port.
-            if (_iocpBoundHandle == null)
+            lock (_iocpBindingLock)
             {
-                lock (_iocpBindingLock)
+                if (_iocpBoundHandle == null)
                 {
-                    if (_iocpBoundHandle == null)
+                    // Bind the socket native _handle to the ThreadPool.
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, "calling ThreadPool.BindHandle()");
+
+                    ThreadPoolBoundHandle boundHandle;
+                    try
                     {
-                        // Bind the socket native _handle to the ThreadPool.
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, "calling ThreadPool.BindHandle()");
-
-                        ThreadPoolBoundHandle boundHandle;
-                        try
-                        {
-                            // The handle (this) may have been already released:
-                            // E.g.: The socket has been disposed in the main thread. A completion callback may
-                            //       attempt starting another operation.
-                            boundHandle = ThreadPoolBoundHandle.BindHandle(this);
-                        }
-                        catch (Exception exception)
-                        {
-                            if (ExceptionCheck.IsFatal(exception)) throw;
-                            CloseAsIs();
-                            throw;
-                        }
-
-                        // Try to disable completions for synchronous success, if requested
-                        if (trySkipCompletionPortOnSuccess &&
-                            CompletionPortHelper.SkipCompletionPortOnSuccess(boundHandle.Handle))
-                        {
-                            _skipCompletionPortOnSuccess = true;
-                        }
-
-                        // Don't set this until after we've configured the handle above (if we did)
-                        _iocpBoundHandle = boundHandle;
+                        // The handle (this) may have been already released:
+                        // E.g.: The socket has been disposed in the main thread. A completion callback may
+                        //       attempt starting another operation.
+                        boundHandle = ThreadPoolBoundHandle.BindHandle(this);
                     }
+                    catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
+                    {
+                        CloseAsIs();
+                        throw;
+                    }
+
+                    // Try to disable completions for synchronous success, if requested
+                    if (trySkipCompletionPortOnSuccess &&
+                        CompletionPortHelper.SkipCompletionPortOnSuccess(boundHandle.Handle))
+                    {
+                        _skipCompletionPortOnSuccess = true;
+                    }
+
+                    // Don't set this until after we've configured the handle above (if we did)
+                    _iocpBoundHandle = boundHandle;
                 }
             }
-
-            return _iocpBoundHandle;
         }
 
         public bool SkipCompletionPortOnSuccess
