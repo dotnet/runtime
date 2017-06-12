@@ -6,11 +6,6 @@
 
 extern "C"
 {
-    void ThrowControlForThread(FaultingExceptionFrame *pfef)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID)    
     {
         PORTABILITY_ASSERT("Implement for PAL");
