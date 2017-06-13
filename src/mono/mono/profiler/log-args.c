@@ -314,6 +314,7 @@ usage (void)
 	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
 	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
 	printf ("\toutput=FILENAME      write the data to file FILENAME (The file is always overwriten)\n");
+	printf ("\toutput=+FILENAME     write the data to file FILENAME.pid (The file is always overwriten)\n");
 	printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM\n");
 	printf ("\t                     %%t is subtituted with date and time, %%p with the pid\n");
 	printf ("\treport               create a report instead of writing the raw data to a file\n");
