@@ -19203,12 +19203,14 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                 {
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
+#ifdef FEATURE_READYTORUN_COMPILER
                     if (call->gtEntryPoint.addr != NULL)
                     {
                         accessType = call->gtEntryPoint.accessType;
                         addr       = call->gtEntryPoint.addr;
                     }
                     else
+#endif // FEATURE_READYTORUN_COMPILER
                     {
                         void* pAddr;
 
