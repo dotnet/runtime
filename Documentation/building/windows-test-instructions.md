@@ -47,7 +47,7 @@ Note: buildtest.cmd or build.cmd skipnative skipmscorlib needs to be run atleast
 
 **runtest /?** will list supported parameters.
 
-For example to run all  ofthe tests using you checkled build:
+For example to run all of the tests using your checked build:
 
 `<repo_root>\tests\runtest.cmd checked`
 
