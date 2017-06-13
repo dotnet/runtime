@@ -1515,7 +1515,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * object allocation events for certain addresses could come
 		 * after the move events that made those addresses available.
 		 */
-		if (ENABLED (PROFLOG_GC_EVENTS | PROFLOG_GC_MOVES_EVENTS))
+		if (ENABLED (PROFLOG_GC_MOVES_EVENTS))
 			sync_point_mark (SYNC_POINT_WORLD_START);
 
 		/*
