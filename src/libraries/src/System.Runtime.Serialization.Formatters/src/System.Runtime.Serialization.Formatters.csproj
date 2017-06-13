@@ -27,6 +27,7 @@
     <Compile Include="System\Runtime\Serialization\ObjectManager.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationBinder.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationEventsCache.cs" />
+    <Compile Include="System\Runtime\Serialization\SerializationFieldInfo.cs" />
     <Compile Include="System\Runtime\Serialization\SerializationObjectManager.cs" />
     <Compile Include="System\Runtime\Serialization\SurrogateSelector.cs" />
     <Compile Include="System\Runtime\Serialization\ValueTypeFixupInfo.cs" />

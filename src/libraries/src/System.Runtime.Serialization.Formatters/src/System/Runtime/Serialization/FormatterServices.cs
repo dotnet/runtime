@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Reflection;
+using System.Diagnostics;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Globalization;
-using System.Diagnostics;
 using System.Runtime.Serialization.Formatters;
+using System.Text;
 
 namespace System.Runtime.Serialization
 {
@@ -17,8 +16,10 @@ namespace System.Runtime.Serialization
     {
         private static readonly ConcurrentDictionary<MemberHolder, MemberInfo[]> s_memberInfoTable = new ConcurrentDictionary<MemberHolder, MemberInfo[]>();
 
-        private static FieldInfo[] GetSerializableFields(Type type)
+        private static FieldInfo[] InternalGetSerializableMembers(Type type)
         {
+            Debug.Assert(type != null);
+
             if (type.IsInterface)
             {
                 return Array.Empty<FieldInfo>();
@@ -29,18 +30,132 @@ namespace System.Runtime.Serialization
                 throw new SerializationException(SR.Format(SR.Serialization_NonSerType, type.FullName, type.Assembly.FullName));
             }
 
-            var results = new List<FieldInfo>();
-            for (Type t = type; t != typeof(object); t = t.BaseType)
+            // Get all of the serializable members in the class to be serialized.
+            FieldInfo[] typeMembers = GetSerializableFields(type);
+
+            // If this class doesn't extend directly from object, walk its hierarchy and 
+            // get all of the private and assembly-access fields (e.g. all fields that aren't
+            // virtual) and include them in the list of things to be serialized.  
+            Type parentType = type.BaseType;
+            if (parentType != null && parentType != typeof(object))
             {
-                foreach (FieldInfo field in t.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                Type[] parentTypes;
+                int parentTypeCount;
+                bool classNamesUnique = GetParentTypes(parentType, out parentTypes, out parentTypeCount);
+
+                if (parentTypeCount > 0)
                 {
-                    if ((field.Attributes & FieldAttributes.NotSerialized) != FieldAttributes.NotSerialized)
+                    var allMembers = new List<FieldInfo>();
+                    for (int i = 0; i < parentTypeCount; i++)
                     {
-                        results.Add(field);
+                        parentType = parentTypes[i];
+                        if (!parentType.IsSerializable)
+                        {
+                            throw new SerializationException(SR.Format(SR.Serialization_NonSerType, parentType.FullName, parentType.Module.Assembly.FullName));
+                        }
+
+                        FieldInfo[] typeFields = parentType.GetFields(BindingFlags.NonPublic | BindingFlags.Instance);
+                        string typeName = classNamesUnique ? parentType.Name : parentType.FullName;
+                        foreach (FieldInfo field in typeFields)
+                        {
+                            // Family and Assembly fields will be gathered by the type itself.
+                            if (!field.IsNotSerialized)
+                            {
+                                allMembers.Add(new SerializationFieldInfo(field, typeName));
+                            }
+                        }
+                    }
+
+                    // If we actually found any new MemberInfo's, we need to create a new MemberInfo array and
+                    // copy all of the members which we've found so far into that.
+                    if (allMembers != null && allMembers.Count > 0)
+                    {
+                        var membersTemp = new FieldInfo[allMembers.Count + typeMembers.Length];
+                        Array.Copy(typeMembers, membersTemp, typeMembers.Length);
+                        allMembers.CopyTo(membersTemp, typeMembers.Length);
+                        typeMembers = membersTemp;
                     }
                 }
             }
-            return results.ToArray();
+
+            return typeMembers;
+        }
+
+        private static FieldInfo[] GetSerializableFields(Type type)
+        {
+            // Get the list of all fields
+            FieldInfo[] fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            int countProper = 0;
+            for (int i = 0; i < fields.Length; i++)
+            {
+                if ((fields[i].Attributes & FieldAttributes.NotSerialized) == FieldAttributes.NotSerialized)
+                {
+                    continue;
+                }
+
+                countProper++;
+            }
+
+            if (countProper != fields.Length)
+            {
+                var properFields = new FieldInfo[countProper];
+                countProper = 0;
+                for (int i = 0; i < fields.Length; i++)
+                {
+                    if ((fields[i].Attributes & FieldAttributes.NotSerialized) == FieldAttributes.NotSerialized)
+                    {
+                        continue;
+                    }
+
+                    properFields[countProper] = fields[i];
+                    countProper++;
+                }
+                return properFields;
+            }
+            else
+            {
+                return fields;
+            }
+        }
+
+        private static bool GetParentTypes(Type parentType, out Type[] parentTypes, out int parentTypeCount)
+        {
+            parentTypes = null;
+            parentTypeCount = 0;
+
+            // Check if there are any dup class names. Then we need to include as part of
+            // typeName to prefix the Field names in SerializationFieldInfo
+            bool unique = true;
+            Type objectType = typeof(object);
+            for (Type t1 = parentType; t1 != objectType; t1 = t1.BaseType)
+            {
+                if (t1.IsInterface)
+                {
+                    continue;
+                }
+
+                string t1Name = t1.Name;
+                for (int i = 0; unique && i < parentTypeCount; i++)
+                {
+                    string t2Name = parentTypes[i].Name;
+                    if (t2Name.Length == t1Name.Length && t2Name[0] == t1Name[0] && t1Name == t2Name)
+                    {
+                        unique = false;
+                        break;
+                    }
+                }
+
+                // expand array if needed
+                if (parentTypes == null || parentTypeCount == parentTypes.Length)
+                {
+                    Array.Resize(ref parentTypes, Math.Max(parentTypeCount * 2, 12));
+                }
+
+                parentTypes[parentTypeCount++] = t1;
+            }
+
+            return unique;
         }
 
         public static MemberInfo[] GetSerializableMembers(Type type)
@@ -59,7 +174,7 @@ namespace System.Runtime.Serialization
             // Otherwise, get them and add them.
             return s_memberInfoTable.GetOrAdd(
                 new MemberHolder(type, context), 
-                mh => GetSerializableFields(mh._memberType));
+                mh => InternalGetSerializableMembers(mh._memberType));
         }
 
         public static void CheckTypeSecurity(Type t, TypeFilterLevel securityLevel)
