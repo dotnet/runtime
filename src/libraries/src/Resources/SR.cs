@@ -5,6 +5,12 @@
 namespace Microsoft.ServiceModel
 {
     using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using System.Linq;
+    using System.Net.Http;
+    using System.Text;
+
     internal class SR
     {
         internal static object XmlBufferQuotaExceeded;
@@ -73,7 +79,6 @@ namespace Microsoft.ServiceModel
 
         internal static string GetString(string nvalidObjectTypePassed, params object[] args)
         {
-            //"resource"
             return nvalidObjectTypePassed;
         }
     }
