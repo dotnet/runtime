@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Security.AccessControl.Tests">
+    <Assembly Name="System.Security.AccessControl">
+      <!-- Needed for 2 CustomAce tests that require constructor metadata -->
+      <Namespace Name="System.Security.AccessControl" Dynamic="Required All" />
+    </Assembly>
+  </Library>
+</Directives>
