@@ -28,6 +28,7 @@
     <Compile Include="System\ComponentModel\IContainer.cs" />
     <Compile Include="System\ComponentModel\ImmutableObjectAttribute.cs" />
     <Compile Include="System\ComponentModel\InitializationEventAttribute.cs" />
+    <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
     <Compile Include="System\ComponentModel\ISite.cs" />
     <Compile Include="System\ComponentModel\ISupportInitialize.cs" />
     <Compile Include="System\ComponentModel\LocalizableAttribute.cs" />

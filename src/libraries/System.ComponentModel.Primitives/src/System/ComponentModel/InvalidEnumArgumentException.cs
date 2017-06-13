@@ -10,18 +10,17 @@ namespace System.ComponentModel
     /// <summary>
     ///    <para>The exception that is thrown when using invalid arguments that are enumerators.</para>
     /// </summary>
-    [Serializable]
-    internal class InvalidEnumArgumentException : ArgumentException
+    public class InvalidEnumArgumentException : ArgumentException
     {
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.InvalidEnumArgumentException'/> class without a message.</para>
+        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class without a message.</para>
         /// </summary>
         public InvalidEnumArgumentException() : this(null)
         {
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.InvalidEnumArgumentException'/> class with 
+        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class with 
         ///    the specified message.</para>
         /// </summary>
         public InvalidEnumArgumentException(string message)
@@ -40,7 +39,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.InvalidEnumArgumentException'/> class with a 
+        /// <para>Initializes a new instance of the <see cref='InvalidEnumArgumentException'/> class with a 
         ///    message generated from the argument, invalid value, and enumeration
         ///    class.</para>
         /// </summary>
@@ -58,6 +57,7 @@ namespace System.ComponentModel
         /// </summary>
         protected InvalidEnumArgumentException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
+            throw new PlatformNotSupportedException();
         }
     }
 }

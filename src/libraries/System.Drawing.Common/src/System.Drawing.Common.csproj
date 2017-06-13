@@ -39,7 +39,6 @@
   <ItemGroup>
     <Compile Include="AssemblyRef.cs" />
     <Compile Include="SRDescriptionAttribute.cs" />
-    <Compile Include="System\ComponentModel\InvalidEnumArgumentException.cs" />
     <Compile Include="System\Drawing\Advanced\AdjustableArrowCap.cs" />
     <Compile Include="System\Drawing\Advanced\BitmapData.cs" />
     <Compile Include="System\Drawing\Advanced\Blend.cs" />
