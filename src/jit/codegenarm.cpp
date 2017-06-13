@@ -308,7 +308,20 @@ void CodeGen::genReturn(GenTreePtr treeNode)
             genConsumeReg(op1);
 
             regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
-            if (op1->gtRegNum != retReg)
+            if (varTypeIsFloating(treeNode) && (compiler->opts.compUseSoftFP || compiler->info.compIsVarArgs))
+            {
+                if (targetType == TYP_FLOAT)
+                {
+                    getEmitter()->emitIns_R_R(INS_vmov_f2i, EA_4BYTE, REG_INTRET, op1->gtRegNum);
+                }
+                else
+                {
+                    assert(targetType == TYP_DOUBLE);
+                    getEmitter()->emitIns_R_R_R(INS_vmov_d2i, EA_8BYTE, REG_INTRET, REG_NEXT(REG_INTRET),
+                                                op1->gtRegNum);
+                }
+            }
+            else if (op1->gtRegNum != retReg)
             {
                 inst_RV_RV(ins_Move_Extend(targetType, true), retReg, op1->gtRegNum, targetType);
             }
