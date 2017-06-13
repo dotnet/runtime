@@ -1513,8 +1513,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 			heapshot_requested = 0;
 			last_hs_time = current_time ();
 		}
-		break;
-	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED:
+
 		/*
 		 * Similarly, we must now make sure that any object moves
 		 * written to the GC thread's buffer are flushed. Otherwise,
@@ -1523,7 +1522,8 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 */
 		if (ENABLED (ALL_GC_EVENTS_MASK))
 			sync_point_mark (SYNC_POINT_WORLD_START);
-
+		break;
+	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED:
 		/*
 		 * Finally, it is safe to allow other threads to write to
 		 * their buffers again.
