@@ -7,6 +7,8 @@
 
 using System.Runtime.Serialization;
 
+// These types were moved down to System.Primitives
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.InvalidEnumArgumentException))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.Component))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.ComponentModel.ISupportInitialize))]
 

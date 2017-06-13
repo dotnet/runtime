@@ -8,6 +8,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="InvalidEnumArgumentExceptionTests.cs" />
     <Compile Include="BrowsableAttributeTests.cs" />
     <Compile Include="ComponentCollectionTests.cs" />
     <Compile Include="ComponentTests.cs" />

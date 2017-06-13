@@ -403,14 +403,6 @@ namespace System.ComponentModel
         public virtual string Text { get { throw null; } }
         public abstract object CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Type instanceType);
     }
-    public partial class InvalidEnumArgumentException : System.ArgumentException
-    {
-        public InvalidEnumArgumentException() { }
-        protected InvalidEnumArgumentException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public InvalidEnumArgumentException(string message) { }
-        public InvalidEnumArgumentException(string message, System.Exception innerException) { }
-        public InvalidEnumArgumentException(string argumentName, int invalidValue, System.Type enumClass) { }
-    }
     public partial interface IRaiseItemChangedEvents
     {
         bool RaisesItemChangedEvents { get; }

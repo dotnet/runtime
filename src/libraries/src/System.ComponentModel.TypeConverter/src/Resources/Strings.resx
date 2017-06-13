@@ -241,9 +241,6 @@
   <data name="InstanceCreationEditorDefaultText" xml:space="preserve">
     <value>(New...)</value>
   </data>
-  <data name="InvalidEnumArgument" xml:space="preserve">
-    <value>The value of argument '{0}' ({1}) is invalid for Enum type '{2}'.</value>
-  </data> 
   <data name="ErrorPropertyAccessorException" xml:space="preserve">
     <value>Property accessor '{0}' on object '{1}' threw the following exception:'{2}'</value>
   </data>
