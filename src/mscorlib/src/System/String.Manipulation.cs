@@ -83,37 +83,6 @@ namespace System
             return Concat(arg0.ToString(), arg1.ToString(), arg2.ToString());
         }
 
-        [CLSCompliant(false)]
-        public static String Concat(Object arg0, Object arg1, Object arg2, Object arg3, __arglist)
-        {
-            Contract.Ensures(Contract.Result<String>() != null);
-            Contract.EndContractBlock();
-
-            Object[] objArgs;
-            int argCount;
-
-            ArgIterator args = new ArgIterator(__arglist);
-
-            //+4 to account for the 4 hard-coded arguments at the beginning of the list.
-            argCount = args.GetRemainingCount() + 4;
-
-            objArgs = new Object[argCount];
-
-            //Handle the hard-coded arguments
-            objArgs[0] = arg0;
-            objArgs[1] = arg1;
-            objArgs[2] = arg2;
-            objArgs[3] = arg3;
-
-            //Walk all of the args in the variable part of the argument list.
-            for (int i = 4; i < argCount; i++)
-            {
-                objArgs[i] = TypedReference.ToObject(args.GetNextArg());
-            }
-
-            return Concat(objArgs);
-        }
-
         public static string Concat(params object[] args)
         {
             if (args == null)
