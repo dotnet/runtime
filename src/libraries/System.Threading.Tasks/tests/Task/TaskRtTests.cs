@@ -463,37 +463,42 @@ namespace System.Threading.Tasks.Tests
 
                 // Make sure we throw from waiting on a faulted task
                 Assert.Throws<AggregateException>(() => { var result = Task.FromException<object>(new InvalidOperationException()).Result; });
+            }
+        }
 
-                // Make sure faulted tasks are actually faulted.  We have little choice for this test but to use reflection,
-                // as the harness will crash by throwing from the unobserved event if a task goes unhandled (everywhere
-                // other than here it's a bad thing for an exception to go unobserved)
-                var faultedTask = Task.FromException<object>(new InvalidOperationException("uh oh"));
-                object holderObject = null;
-                FieldInfo isHandledField = null;
-                var contingentPropertiesField = typeof(Task).GetField("m_contingentProperties", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (contingentPropertiesField != null)
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Uses reflection to access internal fields of the Task class.")]
+        public static void RunFromResult_FaultedTask()
+        {
+            // Make sure faulted tasks are actually faulted.  We have little choice for this test but to use reflection,
+            // as the harness will crash by throwing from the unobserved event if a task goes unhandled (everywhere
+            // other than here it's a bad thing for an exception to go unobserved)
+            var faultedTask = Task.FromException<object>(new InvalidOperationException("uh oh"));
+            object holderObject = null;
+            FieldInfo isHandledField = null;
+            var contingentPropertiesField = typeof(Task).GetField("m_contingentProperties", BindingFlags.NonPublic | BindingFlags.Instance);
+            if (contingentPropertiesField != null)
+            {
+                var contingentProperties = contingentPropertiesField.GetValue(faultedTask);
+                if (contingentProperties != null)
                 {
-                    var contingentProperties = contingentPropertiesField.GetValue(faultedTask);
-                    if (contingentProperties != null)
+                    var exceptionsHolderField = contingentProperties.GetType().GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (exceptionsHolderField != null)
                     {
-                        var exceptionsHolderField = contingentProperties.GetType().GetField("m_exceptionsHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                        if (exceptionsHolderField != null)
+                        holderObject = exceptionsHolderField.GetValue(contingentProperties);
+                        if (holderObject != null)
                         {
-                            holderObject = exceptionsHolderField.GetValue(contingentProperties);
-                            if (holderObject != null)
-                            {
-                                isHandledField = holderObject.GetType().GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                            }
+                            isHandledField = holderObject.GetType().GetField("m_isHandled", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                         }
                     }
                 }
-                Assert.NotNull(holderObject);
-                Assert.NotNull(isHandledField);
-
-                Assert.False((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be unobserved before accessing Exception");
-                var ignored = faultedTask.Exception;
-                Assert.True((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be observed after accessing Exception");
             }
+            Assert.NotNull(holderObject);
+            Assert.NotNull(isHandledField);
+
+            Assert.False((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be unobserved before accessing Exception");
+            var ignored = faultedTask.Exception;
+            Assert.True((bool)isHandledField.GetValue(holderObject), "Expected FromException task to be observed after accessing Exception");
         }
 
         [Fact]
