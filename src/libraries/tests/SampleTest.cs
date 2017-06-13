@@ -90,5 +90,11 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Assert.True(false, "This test is expected to fail");
         }
 
+        [Fact]
+        public static void readOutside()
+        {
+            XmlReader xmlr = XmlReader.Create("lol.xml");
+            SyndicationFeed sf = SyndicationFeed.Load(xmlr);
+        }
     }
 }

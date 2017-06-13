@@ -466,7 +466,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void MoveToStartElement(XmlReader reader)
         {
-            //Fx.Assert(reader != null, "reader != null");
+            
             if (!reader.IsStartElement())
             {
                 XmlExceptionHelper.ThrowStartElementExpected(XmlDictionaryReader.CreateDictionaryReader(reader));

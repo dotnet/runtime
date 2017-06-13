@@ -15,7 +15,6 @@ namespace System.ServiceModel.Diagnostics
         internal Exception ThrowHelperError(Exception exception)
         {
             return new NotImplementedException();
-            return new NotImplementedException();
         }
 
         internal Exception ThrowHelperArgumentNull(string v)
