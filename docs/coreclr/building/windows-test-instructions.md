@@ -51,13 +51,13 @@ For example to run all of the tests using your checked build:
 
 `<repo_root>\tests\runtest.cmd checked`
 
-This will generate the report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the subdirectory `<repo_root>\bin\Logs`. 
+This will generate a report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the subdirectory `<repo_root>\bin\Logs`. Any tests that failed will be listed in `TestRunResults_Windows_NT__x64__Checked.err`.
 
 **Investigating Test Failures**
 
 Upon completing a test run, you may find one or more tests have failed.
 
-The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\x64\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.
+The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\x64\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.  
 
 There are 2 files of interest: 
 
