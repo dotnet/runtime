@@ -4,10 +4,43 @@
 
 namespace System.Drawing
 {
-    internal static class KnownColorTable
+#if FEATURE_SYSTEM_EVENTS
+    using System.Drawing.Internal;
+#endif
+
+    static internal class KnownColorTable
     {
         private static int[] s_colorTable;
         private static string[] s_colorNameTable;
+
+        /**
+         * Shift count and bit mask for A, R, G, B components
+         */
+        private const int AlphaShift = 24;
+        private const int RedShift = 16;
+        private const int GreenShift = 8;
+        private const int BlueShift = 0;
+
+        private const int Win32RedShift = 0;
+        private const int Win32GreenShift = 8;
+        private const int Win32BlueShift = 16;
+
+        public static Color ArgbToKnownColor(int targetARGB)
+        {
+            EnsureColorTable();
+            for (int index = 0; index < s_colorTable.Length; ++index)
+            {
+                int argb = s_colorTable[index];
+                if (argb == targetARGB)
+                {
+                    Color color = Color.FromKnownColor((KnownColor)index);
+                    if (!color.IsSystemColor)
+                        return color;
+                }
+            }
+
+            return Color.FromArgb(targetARGB);
+        }
 
         private static void EnsureColorTable()
         {
@@ -21,7 +54,12 @@ namespace System.Drawing
 
         private static void InitColorTable()
         {
-            int[] values = new int[KnownColor.LastColor - KnownColor.FirstColor + 1];
+            int[] values = new int[(unchecked((int)KnownColor.MenuHighlight)) + 1];
+
+#if FEATURE_SYSTEM_EVENTS
+            SystemEvents.UserPreferenceChanging += new UserPreferenceChangingEventHandler(OnUserPreferenceChanging);
+#endif
+            UpdateSystemColors(values);
 
             // just consts...
             //
@@ -32,7 +70,7 @@ namespace System.Drawing
             values[(int)KnownColor.Aquamarine] = unchecked((int)0xFF7FFFD4);
             values[(int)KnownColor.Azure] = unchecked((int)0xFFF0FFFF);
             values[(int)KnownColor.Beige] = unchecked((int)0xFFF5F5DC);
-            values[(int)KnownColor.Bisque] = unchecked((int)0xFFFFE4C4);
+            values[(int)KnownColor.Bisque] = unchecked(unchecked((int)0xFFFFE4C4));
             values[(int)KnownColor.Black] = unchecked((int)0xFF000000);
             values[(int)KnownColor.BlanchedAlmond] = unchecked((int)0xFFFFEBCD);
             values[(int)KnownColor.Blue] = unchecked((int)0xFF0000FF);
@@ -181,10 +219,44 @@ namespace System.Drawing
 
         private static void InitColorNameTable()
         {
-            string[] values = new string[KnownColor.LastColor - KnownColor.FirstColor + 1];
+            string[] values = new string[((int)KnownColor.MenuHighlight) + 1];
 
             // just consts...
             //
+            values[(int)KnownColor.ActiveBorder] = "ActiveBorder";
+            values[(int)KnownColor.ActiveCaption] = "ActiveCaption";
+            values[(int)KnownColor.ActiveCaptionText] = "ActiveCaptionText";
+            values[(int)KnownColor.AppWorkspace] = "AppWorkspace";
+            values[(int)KnownColor.ButtonFace] = "ButtonFace";
+            values[(int)KnownColor.ButtonHighlight] = "ButtonHighlight";
+            values[(int)KnownColor.ButtonShadow] = "ButtonShadow";
+            values[(int)KnownColor.Control] = "Control";
+            values[(int)KnownColor.ControlDark] = "ControlDark";
+            values[(int)KnownColor.ControlDarkDark] = "ControlDarkDark";
+            values[(int)KnownColor.ControlLight] = "ControlLight";
+            values[(int)KnownColor.ControlLightLight] = "ControlLightLight";
+            values[(int)KnownColor.ControlText] = "ControlText";
+            values[(int)KnownColor.Desktop] = "Desktop";
+            values[(int)KnownColor.GradientActiveCaption] = "GradientActiveCaption";
+            values[(int)KnownColor.GradientInactiveCaption] = "GradientInactiveCaption";
+            values[(int)KnownColor.GrayText] = "GrayText";
+            values[(int)KnownColor.Highlight] = "Highlight";
+            values[(int)KnownColor.HighlightText] = "HighlightText";
+            values[(int)KnownColor.HotTrack] = "HotTrack";
+            values[(int)KnownColor.InactiveBorder] = "InactiveBorder";
+            values[(int)KnownColor.InactiveCaption] = "InactiveCaption";
+            values[(int)KnownColor.InactiveCaptionText] = "InactiveCaptionText";
+            values[(int)KnownColor.Info] = "Info";
+            values[(int)KnownColor.InfoText] = "InfoText";
+            values[(int)KnownColor.Menu] = "Menu";
+            values[(int)KnownColor.MenuBar] = "MenuBar";
+            values[(int)KnownColor.MenuHighlight] = "MenuHighlight";
+            values[(int)KnownColor.MenuText] = "MenuText";
+            values[(int)KnownColor.ScrollBar] = "ScrollBar";
+            values[(int)KnownColor.Window] = "Window";
+            values[(int)KnownColor.WindowFrame] = "WindowFrame";
+            values[(int)KnownColor.WindowText] = "WindowText";
+
             values[(int)KnownColor.Transparent] = "Transparent";
             values[(int)KnownColor.AliceBlue] = "AliceBlue";
             values[(int)KnownColor.AntiqueWhite] = "AntiqueWhite";
@@ -332,9 +404,9 @@ namespace System.Drawing
         public static int KnownColorToArgb(KnownColor color)
         {
             EnsureColorTable();
-            if (color >= KnownColor.FirstColor && color <= KnownColor.LastColor)
+            if (color <= KnownColor.MenuHighlight)
             {
-                return s_colorTable[(int)color];
+                return s_colorTable[unchecked((int)color)];
             }
             else
             {
@@ -345,14 +417,118 @@ namespace System.Drawing
         public static string KnownColorToName(KnownColor color)
         {
             EnsureColorNameTable();
-            if (color >= KnownColor.FirstColor && color <= KnownColor.LastColor)
+            if (color <= KnownColor.MenuHighlight)
             {
-                return s_colorNameTable[(int)color];
+                return s_colorNameTable[unchecked((int)color)];
             }
             else
             {
                 return null;
             }
+        }
+
+#if FEATURE_WINDOWS_SYSTEM_COLORS
+        private static int SystemColorToArgb(int index)
+        {
+            return FromWin32Value(Interop.User32.GetSysColor(index));
+        }
+
+        private static int Encode(int alpha, int red, int green, int blue)
+        {
+            return red << RedShift | green << GreenShift | blue << BlueShift | alpha << AlphaShift;
+        }
+
+        private static int FromWin32Value(int value)
+        {
+            return Encode(255,
+                          (value >> Win32RedShift) & 0xFF,
+                          (value >> Win32GreenShift) & 0xFF,
+                          (value >> Win32BlueShift) & 0xFF);
+        }
+#endif
+
+#if FEATURE_SYSTEM_EVENTS
+        private static void OnUserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
+        {
+            if (e.Category == UserPreferenceCategory.Color && colorTable != null)
+            {
+                UpdateSystemColors(colorTable);
+            }
+        }
+#endif
+
+        private static void UpdateSystemColors(int[] colorTable)
+        {
+#if FEATURE_WINDOWS_SYSTEM_COLORS
+            colorTable[(int)KnownColor.ActiveBorder] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ActiveBorder);
+            colorTable[(int)KnownColor.ActiveCaption] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ActiveCaption);
+            colorTable[(int)KnownColor.ActiveCaptionText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ActiveCaptionText);
+            colorTable[(int)KnownColor.AppWorkspace] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.AppWorkspace);
+            colorTable[(int)KnownColor.ButtonFace] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ButtonFace);
+            colorTable[(int)KnownColor.ButtonHighlight] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ButtonHighlight);
+            colorTable[(int)KnownColor.ButtonShadow] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ButtonShadow);
+            colorTable[(int)KnownColor.Control] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.Control);
+            colorTable[(int)KnownColor.ControlDark] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ControlDark);
+            colorTable[(int)KnownColor.ControlDarkDark] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ControlDarkDark);
+            colorTable[(int)KnownColor.ControlLight] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ControlLight);
+            colorTable[(int)KnownColor.ControlLightLight] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ControlLightLight);
+            colorTable[(int)KnownColor.ControlText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ControlText);
+            colorTable[(int)KnownColor.Desktop] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.Desktop);
+            colorTable[(int)KnownColor.GradientActiveCaption] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.GradientActiveCaption);
+            colorTable[(int)KnownColor.GradientInactiveCaption] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.GradientInactiveCaption);
+            colorTable[(int)KnownColor.GrayText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.GrayText);
+            colorTable[(int)KnownColor.Highlight] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.Highlight);
+            colorTable[(int)KnownColor.HighlightText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.HighlightText);
+            colorTable[(int)KnownColor.HotTrack] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.HotTrack);
+            colorTable[(int)KnownColor.InactiveBorder] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.InactiveBorder);
+            colorTable[(int)KnownColor.InactiveCaption] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.InactiveCaption);
+            colorTable[(int)KnownColor.InactiveCaptionText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.InactiveCaptionText);
+            colorTable[(int)KnownColor.Info] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.Info);
+            colorTable[(int)KnownColor.InfoText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.InfoText);
+            colorTable[(int)KnownColor.Menu] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.Menu);
+            colorTable[(int)KnownColor.MenuBar] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.MenuBar);
+            colorTable[(int)KnownColor.MenuHighlight] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.MenuHighlight);
+            colorTable[(int)KnownColor.MenuText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.MenuText);
+            colorTable[(int)KnownColor.ScrollBar] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.ScrollBar);
+            colorTable[(int)KnownColor.Window] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.Window);
+            colorTable[(int)KnownColor.WindowFrame] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.WindowFrame);
+            colorTable[(int)KnownColor.WindowText] = SystemColorToArgb((int)Interop.User32.Win32SystemColors.WindowText);
+#else
+            // Hard-coded constants, based on default Windows settings.
+            colorTable[(int)KnownColor.ActiveBorder] = unchecked((int)0xFFD4D0C8);
+            colorTable[(int)KnownColor.ActiveCaption] = unchecked((int)0xFF0054E3);
+            colorTable[(int)KnownColor.ActiveCaptionText] = unchecked((int)0xFFFFFFFF);
+            colorTable[(int)KnownColor.AppWorkspace] = unchecked((int)0xFF808080);
+            colorTable[(int)KnownColor.ButtonFace] = unchecked((int)0xFFF0F0F0);
+            colorTable[(int)KnownColor.ButtonHighlight] = unchecked((int)0xFFFFFFFF);
+            colorTable[(int)KnownColor.ButtonShadow] = unchecked((int)0xFFA0A0A0);
+            colorTable[(int)KnownColor.Control] = unchecked((int)0xFFECE9D8);
+            colorTable[(int)KnownColor.ControlDark] = unchecked((int)0xFFACA899);
+            colorTable[(int)KnownColor.ControlDarkDark] = unchecked((int)0xFF716F64);
+            colorTable[(int)KnownColor.ControlLight] = unchecked((int)0xFFF1EFE2);
+            colorTable[(int)KnownColor.ControlLightLight] = unchecked((int)0xFFFFFFFF);
+            colorTable[(int)KnownColor.ControlText] = unchecked((int)0xFF000000);
+            colorTable[(int)KnownColor.Desktop] = unchecked((int)0xFF004E98);
+            colorTable[(int)KnownColor.GradientActiveCaption] = unchecked((int)0xFFB9D1EA);
+            colorTable[(int)KnownColor.GradientInactiveCaption] = unchecked((int)0xFFD7E4F2);
+            colorTable[(int)KnownColor.GrayText] = unchecked((int)0xFFACA899);
+            colorTable[(int)KnownColor.Highlight] = unchecked((int)0xFF316AC5);
+            colorTable[(int)KnownColor.HighlightText] = unchecked((int)0xFFFFFFFF);
+            colorTable[(int)KnownColor.HotTrack] = unchecked((int)0xFF000080);
+            colorTable[(int)KnownColor.InactiveBorder] = unchecked((int)0xFFD4D0C8);
+            colorTable[(int)KnownColor.InactiveCaption] = unchecked((int)0xFF7A96DF);
+            colorTable[(int)KnownColor.InactiveCaptionText] = unchecked((int)0xFFD8E4F8);
+            colorTable[(int)KnownColor.Info] = unchecked((int)0xFFFFFFE1);
+            colorTable[(int)KnownColor.InfoText] = unchecked((int)0xFF000000);
+            colorTable[(int)KnownColor.Menu] = unchecked((int)0xFFFFFFFF);
+            colorTable[(int)KnownColor.MenuBar] = unchecked((int)0xFFF0F0F0);
+            colorTable[(int)KnownColor.MenuHighlight] = unchecked((int)0xFF3399FF);
+            colorTable[(int)KnownColor.MenuText] = unchecked((int)0xFF000000);
+            colorTable[(int)KnownColor.ScrollBar] = unchecked((int)0xFFD4D0C8);
+            colorTable[(int)KnownColor.Window] = unchecked((int)0xFFFFFFFF);
+            colorTable[(int)KnownColor.WindowFrame] = unchecked((int)0xFF000000);
+            colorTable[(int)KnownColor.WindowText] = unchecked((int)0xFF000000);
+#endif
         }
     }
 }
