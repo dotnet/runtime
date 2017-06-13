@@ -13,3 +13,7 @@ public class X
 	}
 
 }
+
+public class OnlyInV1 {
+	public static void M () { }
+}
