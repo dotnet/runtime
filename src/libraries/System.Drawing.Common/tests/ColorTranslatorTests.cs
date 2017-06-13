@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Common.Tests;
 using System.Globalization;
 using System.Reflection;
 using System.Threading;
@@ -190,15 +191,9 @@ namespace System.Drawing.Tests
         [MemberData(nameof(FromHtml_TestData))]
         public void FromHtml_String_ReturnsExpected(string htmlColor, Color expected)
         {
-            CultureInfo originalCulture = Thread.CurrentThread.CurrentCulture;
-            try
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
                 Assert.Equal(expected, ColorTranslator.FromHtml(htmlColor));
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = originalCulture;
             }
         }
 
@@ -227,15 +222,9 @@ namespace System.Drawing.Tests
         [InlineData("1,2,256", typeof(ArgumentException))]
         public void FromHtml_Invalid_Throws(string htmlColor, Type exception)
         {
-            CultureInfo originalCulture = Thread.CurrentThread.CurrentCulture;
-            try
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
                 Assert.Throws(exception, () => ColorTranslator.FromHtml(htmlColor));
-            }
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = originalCulture;
             }
         }
 
