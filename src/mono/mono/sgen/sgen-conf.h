@@ -219,4 +219,10 @@ typedef mword SgenDescriptor;
 #define SGEN_MAX_PAUSE_TIME 30
 #define SGEN_MAX_PAUSE_MARGIN 0.66f
 
+/*
+ * In practice, for nurseries smaller than this, the parallel minor tends to be
+ * ineffective, even leading to regressions. Avoid using it for smaller nurseries.
+ */
+#define SGEN_PARALLEL_MINOR_MIN_NURSERY_SIZE (1 << 24)
+
 #endif

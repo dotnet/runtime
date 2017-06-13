@@ -1641,7 +1641,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 		object_ops_nopar = &sgen_minor_collector.serial_ops_with_concurrent_major;
 	} else {
 		object_ops_nopar = &sgen_minor_collector.serial_ops;
-		if (sgen_minor_collector.is_parallel) {
+		if (sgen_minor_collector.is_parallel && sgen_nursery_size >= SGEN_PARALLEL_MINOR_MIN_NURSERY_SIZE) {
 			object_ops_par = &sgen_minor_collector.parallel_ops;
 			is_parallel = TRUE;
 		}
@@ -3435,12 +3435,15 @@ sgen_gc_init (void)
 	if (major_collector.is_concurrent || sgen_minor_collector.is_parallel) {
 		int num_workers = 1;
 		if (major_collector.is_parallel || sgen_minor_collector.is_parallel) {
-			/* FIXME Detect the number of physical cores, instead of logical */
-			num_workers = mono_cpu_count () / 2;
-			if (num_workers < 1)
+			num_workers = mono_cpu_count ();
+			if (num_workers <= 1) {
 				num_workers = 1;
+				major_collector.is_parallel = FALSE;
+				sgen_minor_collector.is_parallel = FALSE;
+			}
 		}
-		sgen_workers_init (num_workers, (SgenWorkerCallback) major_collector.worker_init_cb);
+		if (major_collector.is_concurrent || sgen_minor_collector.is_parallel)
+			sgen_workers_init (num_workers, (SgenWorkerCallback) major_collector.worker_init_cb);
 	}
 
 	sgen_memgov_init (max_heap, soft_limit, debug_print_allowance, allowance_ratio, save_target);
