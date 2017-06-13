@@ -7,6 +7,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="SharingBoundaryAttributeTests.cs" />
+    <Compile Include="SharedAttributeTests.cs" />
+    <Compile Include="PartNotDiscoverableAttributeTests.cs" />
+    <Compile Include="PartMetadataAttributeTests.cs" />
+    <Compile Include="MetadataAttributeAttributeTests.cs" />
+    <Compile Include="ImportMetadataConstraintAttributeTests.cs" />
+    <Compile Include="ImportManyAttributeTests.cs" />
+    <Compile Include="ImportingConstructorAttributeTests.cs" />
+    <Compile Include="ImportAttributeTests.cs" />
+    <Compile Include="ExportMetadataAttributeTests.cs" />
+    <Compile Include="ExportAttributeTests.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
