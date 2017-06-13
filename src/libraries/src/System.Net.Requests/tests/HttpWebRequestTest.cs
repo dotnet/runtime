@@ -556,6 +556,7 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentException>("value", () => request.Expect = "100-continue");
         }
 
+        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void DefaultMaximumResponseHeadersLength_SetAndGetLength_ValuesMatch()
         {
@@ -578,6 +579,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
+        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void DefaultMaximumErrorResponseLength_SetAndGetLength_ValuesMatch()
         {
@@ -600,6 +602,7 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
+        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void DefaultCachePolicy_SetAndGetPolicyReload_ValuesMatch()
         {
