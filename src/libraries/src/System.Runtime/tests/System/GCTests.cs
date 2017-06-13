@@ -488,11 +488,11 @@ namespace System.Tests
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.TimeOut = TimeoutMilliseconds;
-            RemoteInvoke(() =>
+            RemoteInvoke((approachString, timeoutString) =>
                 {
-                    TestWait(approach, timeout);
+                    TestWait(bool.Parse(approachString), int.Parse(timeoutString));
                     return SuccessExitCode;
-                }, options).Dispose();
+                }, approach.ToString(), timeout.ToString(), options).Dispose();
         }
 
         [Fact]
