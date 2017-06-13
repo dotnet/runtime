@@ -17,6 +17,7 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Include="ColorTranslatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="bitmaps\16x16_one_entry_4bit.ico">

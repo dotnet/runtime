@@ -53,7 +53,7 @@ namespace System.Drawing
             string strValue = value as string;
             if (strValue != null)
             {
-                return ColorConverterCommon.ConvertFromString(strValue, culture);
+                return ColorConverterCommon.ConvertFromString(strValue, culture ?? CultureInfo.CurrentCulture);
             }
             return base.ConvertFrom(context, culture, value);
         }
