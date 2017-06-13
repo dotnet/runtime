@@ -15,12 +15,14 @@ function(add_pgo TargetName)
     endif(WIN32)
 
     set(CLR_CMAKE_OPTDATA_PACKAGEWITHRID "optimization.${CLR_CMAKE_TARGET_OS}-${CLR_CMAKE_TARGET_ARCH}.PGO.CoreCLR")
+
+    # On case-sensitive file systems, NuGet packages are restored to lowercase paths
+    string(TOLOWER "${CLR_CMAKE_OPTDATA_PACKAGEWITHRID}/${CLR_CMAKE_OPTDATA_VERSION}" OptDataVersionedSubPath)
+
     file(TO_NATIVE_PATH
-        "${CLR_CMAKE_PACKAGES_DIR}/${CLR_CMAKE_OPTDATA_PACKAGEWITHRID}/${CLR_CMAKE_OPTDATA_VERSION}/data/${ProfileFileName}"
+        "${CLR_CMAKE_PACKAGES_DIR}/${OptDataVersionedSubPath}/data/${ProfileFileName}"
         ProfilePath
     )
-    # NuGet packages are restored to lowercase paths
-    string(TOLOWER "${ProfilePath}" ProfilePath)
 
     if(CLR_CMAKE_PGO_INSTRUMENT)
         if(WIN32)
