@@ -24,6 +24,7 @@ namespace System.Net.Mail.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
+        [ActiveIssue(20131, TargetFrameworkMonikers.Uap)]
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         public void EventSource_EventsRaisedAsExpected()
