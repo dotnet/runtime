@@ -6,6 +6,6 @@ namespace System
 {
     public interface IServiceProvider
     {
-        Object GetService(Type serviceType);
+        object GetService(Type serviceType);
     }
 }

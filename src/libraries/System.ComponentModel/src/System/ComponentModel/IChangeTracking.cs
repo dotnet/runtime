@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.ComponentModel
 {
     /// <summary>
@@ -16,10 +14,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether the object's content has changed since 
         /// the last call to System.ComponentModel.IChangeTracking.AcceptChanges().
         /// </summary>
-        bool IsChanged
-        {
-            get;
-        }
+        bool IsChanged { get; }
 
         /// <summary>
         /// Resets the object's state to unchanged by accepting the modifications.

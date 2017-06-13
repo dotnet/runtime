@@ -25,9 +25,6 @@ namespace System.ComponentModel
         /// Helper constructor
         /// </summary>
         /// <param name="cancel"></param>
-        public CancelEventArgs(bool cancel)
-        {
-            this.Cancel = cancel;
-        }
+        public CancelEventArgs(bool cancel) => Cancel = cancel;
     }
 }
