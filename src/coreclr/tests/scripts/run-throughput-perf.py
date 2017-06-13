@@ -301,6 +301,9 @@ def main(args):
     crossgen_path = os.path.join(bin_path,crossgen)
     jit_path = os.path.join(bin_path, jit)
 
+    # Replace assembly_root's System.Private.CoreLib with built System.Private.CoreLib.
+    shutil.copyfile(os.path.join(bin_path, 'System.Private.CoreLib.dll'), os.path.join(assembly_root, 'System.Private.CoreLib.dll'))
+
     iterations = 6
 
     python_exe = python_exe_list[os_group]
