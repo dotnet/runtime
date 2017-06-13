@@ -47,6 +47,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [ActiveIssue(21004, TargetFrameworkMonikers.UapAot)]
         public void NullComparerThrows()
         {
             Assert.Equal("comparer", Assert.Throws<ArgumentNullException>(() => new SimpleCollection(null)).ParamName);

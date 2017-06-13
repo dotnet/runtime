@@ -67,8 +67,7 @@ namespace MonoTests.System.Configuration.Util
         {
             get
             {
-                var exe = Path.GetFileName(ThisApplicationPath);
-                return exe + ".config";
+                return Assembly.GetEntryAssembly().GetName().Name + ".config";
             }
         }
     }
