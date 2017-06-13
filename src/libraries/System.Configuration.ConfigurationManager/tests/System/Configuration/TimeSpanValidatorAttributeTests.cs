@@ -111,6 +111,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot,"Exception messages are different")]
         public void MinValueString_TooSmall()
         {
             TimeSpanValidatorAttribute attribute = new TimeSpanValidatorAttribute();
@@ -122,6 +123,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Exception messages are different")]
         public void MaxValueString_TooBig()
         {
             TimeSpanValidatorAttribute attribute = new TimeSpanValidatorAttribute();
