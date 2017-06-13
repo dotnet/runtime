@@ -1713,7 +1713,7 @@ static void
 finalize_end (MonoProfiler *prof)
 {
 	trigger_on_demand_heapshot ();
-	if (ENABLED (MONO_PROFILE_GC_FINALIZATION)) {
+	if (ENABLED (PROFLOG_FINALIZATION_EVENTS)) {
 		ENTER_LOG (&finalize_ends_ctr, buf,
 			EVENT_SIZE /* event */
 		);
