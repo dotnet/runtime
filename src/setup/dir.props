@@ -20,6 +20,8 @@
     <ReleaseBrandSuffix>Preview 1</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <BranchName>master</BranchName>
+    <ContainerName>dotnet</ContainerName>
+    <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
   </PropertyGroup>
   
   <PropertyGroup>
@@ -123,6 +125,9 @@
     <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
+
+    <BinariesRelativePath>Runtime/$(SharedFrameworkNugetVersion)</BinariesRelativePath>
+    <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
   </PropertyGroup>
 
   <!-- list of nuget package sources passed to dnu -->

@@ -134,11 +134,37 @@
         {
           "Name": "Core-Setup-Publish",
           "Parameters": {
-            "PB_TargetArchitecture": "x64",
+            "PB_TargetArchitecture": "x64"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
             "SubType": "Publish",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
+      ]
+    },
+    {
+      "Name": "Signing validation",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "BuildConfiguration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Core-Setup-Signing-Validation",
+          "Parameters": {
+            "PB_TargetArchitecture": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "Validation",
             "Type": "build/product/",
             "Platform": "x64"
           }
