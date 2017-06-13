@@ -109,6 +109,8 @@ sgen_client_stop_world (int generation)
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
 		mono_sgen_gc_event_moves ();
 
+	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
+
 	acquire_gc_locks ();
 
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, generation);
@@ -125,6 +127,8 @@ sgen_client_stop_world (int generation)
 	sgen_unified_suspend_stop_world ();
 
 	SGEN_LOG (3, "world stopped");
+
+	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 
 	TV_GETTIME (end_handshake);
 	time_stop_world += TV_ELAPSED (stop_world_time, end_handshake);
@@ -147,6 +151,8 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
 		mono_sgen_gc_event_moves ();
 
+	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
+
 	FOREACH_THREAD (info) {
 		info->client_info.stack_start = NULL;
 		memset (&info->client_info.ctx, 0, sizeof (MonoContext));
@@ -163,6 +169,8 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 	end_of_last_stw = end_sw;
 
 	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d)", (int)usec, (int)max_pause_usec);
+
+	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 
 	/*
 	 * We must release the thread info suspend lock after doing
