@@ -51,7 +51,7 @@ For example to run all of the tests using your checked build:
 
 `<repo_root>\tests\runtest.cmd checked`
 
-This will generate the report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the current folder. It will also copy all the test dependencies to the folder passed at the command line.
+This will generate the report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestRun_Windows_NT__x64__Checked.html`) in the subdirectory `<repo_root>\bin\Logs`. 
 
 **Investigating Test Failures**
 
