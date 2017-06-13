@@ -28,7 +28,7 @@ public:
         m_lsra = (LinearScan*)lsra;
         assert(m_lsra);
     }
-    virtual void DoPhase();
+    virtual void DoPhase() override;
 
     // If requiresOverflowCheck is false, all other values will be unset
     struct CastInfo
