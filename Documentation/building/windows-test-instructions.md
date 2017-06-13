@@ -57,7 +57,7 @@ This will generate a report named as `TestRun_<arch>_<flavor>.html` (e.g. `TestR
 
 Upon completing a test run, you may find one or more tests have failed.
 
-The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\x64\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.  
+The output of the Test will be available in Test reports directory, but the default the directory would be something like is `<repo_root>\bin\tests\Windows_NT.x64.Checked\Reports\Exceptions\Finalization`.  
 
 There are 2 files of interest: 
 
@@ -68,11 +68,12 @@ There are 2 files of interest:
 
 If you wish to re-run a failed test, please follow the following steps:
 
-1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd. The command to set this environment variable is also specified in the test report for a failed test.
+1. Set an environment variable, `CORE_ROOT`, pointing to the path to product binaries that was passed to runtest.cmd.
+For example using a checked build the location would be: `<repo_root>\bin\tests\Windows_NT.x64.Checked\Tests\Core_Root`
+
 2. Next, run the failed test, the command to which is also present in the test report for a failed test. It will be something like `<repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd`.
 
 If you wish to run the test under a debugger (e.g. [WinDbg](http://msdn.microsoft.com/en-us/library/windows/hardware/ff551063(v=vs.85).aspx)), append `-debug <debuggerFullPath>` to the test command. For example:
-
 
      <repo_root>\binaries\tests\x64\debug\Exceptions\Finalization\Finalizer.cmd -debug <debuggerFullPath>
     
