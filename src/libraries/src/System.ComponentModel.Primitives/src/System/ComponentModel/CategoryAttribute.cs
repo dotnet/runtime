@@ -285,12 +285,6 @@ namespace System.ComponentModel
             }
         }
 
-        /// <summary>
-        /// </summary>
-        /// <summary>
-        /// </summary>
-        /// <internalonly/>
-        /// <internalonly/>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -302,25 +296,13 @@ namespace System.ComponentModel
             return other != null && Category.Equals(other.Category);
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return Category.GetHashCode();
-        }
+        public override int GetHashCode() => Category.GetHashCode();
 
         /// <summary>
         ///    <para>Looks up the localized name of a given category.</para>
         /// </summary>
-        protected virtual string GetLocalizedString(string value)
-        {
-            return SR.GetResourceString("PropertyCategory" + value, null);
-        }
+        protected virtual string GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value, null);
 
-        public override bool IsDefaultAttribute()
-        {
-            return Category.Equals(CategoryAttribute.Default.Category);
-        }
+        public override bool IsDefaultAttribute() => Category.Equals(Default.Category);
     }
 }
