@@ -32,7 +32,7 @@ namespace System.Drawing.Tests
 {
     public class RegionTests
     {
-        private static Graphics s_graphic = Graphics.FromImage(new Bitmap(1, 1));
+        private static readonly Graphics s_graphic = Graphics.FromImage(new Bitmap(1, 1));
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Default()
@@ -111,7 +111,8 @@ namespace System.Drawing.Tests
         public void Ctor_EmptyGraphicsPath_ThrowsExternalException()
         {
             var region = new Region(new GraphicsPath());
-            Assert.Throws<ExternalException>(() => new Region(region.GetRegionData()));
+            RegionData regionData = region.GetRegionData();
+            Assert.Throws<ExternalException>(() => new Region(regionData));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -125,11 +126,11 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_GraphicsPath()
         {
-            var graphics = new GraphicsPath();
-            graphics.AddRectangle(new Rectangle(1, 2, 3, 4));
-            graphics.AddRectangle(new Rectangle(4, 5, 6, 7));
+            var graphicsPath = new GraphicsPath();
+            graphicsPath.AddRectangle(new Rectangle(1, 2, 3, 4));
+            graphicsPath.AddRectangle(new Rectangle(4, 5, 6, 7));
 
-            var region = new Region(graphics);
+            var region = new Region(graphicsPath);
             Assert.Equal(new RectangleF[]
             {
                 new RectangleF(1, 2, 3, 3),
