@@ -244,13 +244,5 @@ namespace System.Drawing.Tests
         {
             Assert.Equal(expected, ColorTranslator.ToHtml(color));
         }
-
-        [Fact]
-        public void Ctor_Default_Success()
-        {
-            ConstructorInfo constructor = typeof(ColorTranslator).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-            ColorTranslator translator = (ColorTranslator)constructor.Invoke(null);
-            Assert.NotNull(translator);
-        }
     }
 }

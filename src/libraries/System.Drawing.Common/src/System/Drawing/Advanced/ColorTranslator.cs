@@ -19,12 +19,6 @@ namespace System.Drawing
 
         private static Hashtable s_htmlSysColorTable;
 
-        // not creatable...
-        //
-        private ColorTranslator()
-        {
-        }
-
         /// <include file='doc\ColorTranslator.uex' path='docs/doc[@for="ColorTranslator.ToWin32"]/*' />
         /// <devdoc>
         ///    Translates the specified <see cref='System.Drawing.Color'/> to a
