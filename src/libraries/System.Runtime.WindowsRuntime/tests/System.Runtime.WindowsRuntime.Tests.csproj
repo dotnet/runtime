@@ -8,9 +8,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="..\..\Common\tests\System\AssertExtensions.cs">
+      <Link>AssertExtensions.cs</Link>
+    </Compile>
+    <Compile Include="System\IO\AsWinRTStreamTests.cs" />
+    <Compile Include="System\IO\TestStreamProvider.cs" />
     <Compile Include="System\IO\StorageFileMock.cs" />
     <Compile Include="System\IO\CreateSafeFileHandleTests.cs" />
     <Compile Include="System\IO\StorageFolderMock.cs" />
+    <Compile Include="System\IO\WriteOnlyStream.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Windows" />
