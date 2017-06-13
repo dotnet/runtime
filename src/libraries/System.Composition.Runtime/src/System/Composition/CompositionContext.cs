@@ -149,7 +149,7 @@ namespace System.Composition
             object export;
             if (!TryGetExport(contract, out export))
                 throw new CompositionFailedException(
-                    string.Format(Properties.Resources.CompositionContext_NoExportFoundForContract, contract));
+                    string.Format(SR.CompositionContext_NoExportFoundForContract, contract));
 
             return export;
         }
