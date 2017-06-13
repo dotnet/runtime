@@ -6825,12 +6825,12 @@ emit_trampolines (MonoAotCompile *acfg)
 		emit_trampoline (acfg, acfg->got_offset, info);
 #endif
 
-#endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */
-
 		if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
 			mono_arch_get_enter_icall_trampoline (&info);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
+
+#endif /* #ifdef MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES */
 
 		/* Emit trampolines which are numerous */
 
