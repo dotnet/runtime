@@ -17,9 +17,25 @@ namespace System.Common.Tests
             _originalUICultureInfo = CultureInfo.CurrentUICulture;
         }
 
+        public ThreadCultureChange(string culture) : this()
+        {
+            ChangeCultureInfo(culture);
+        }
+
+        public ThreadCultureChange(CultureInfo newCulture) : this()
+        {
+            ChangeCultureInfo(newCulture);
+        }
+
         public void ChangeCultureInfo(string culture)
         {
             var newCulture = new CultureInfo(culture);
+            CultureInfo.CurrentCulture = newCulture;
+            CultureInfo.CurrentUICulture = newCulture;
+        }
+
+        public void ChangeCultureInfo(CultureInfo newCulture)
+        {
             CultureInfo.CurrentCulture = newCulture;
             CultureInfo.CurrentUICulture = newCulture;
         }
