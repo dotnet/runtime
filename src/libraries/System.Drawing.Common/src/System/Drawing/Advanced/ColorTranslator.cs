@@ -19,12 +19,6 @@ namespace System.Drawing
 
         private static Hashtable s_htmlSysColorTable;
 
-        // not creatable...
-        //
-        private ColorTranslator()
-        {
-        }
-
         /// <include file='doc\ColorTranslator.uex' path='docs/doc[@for="ColorTranslator.ToWin32"]/*' />
         /// <devdoc>
         ///    Translates the specified <see cref='System.Drawing.Color'/> to a
@@ -133,75 +127,69 @@ namespace System.Drawing
             //    WARNING!!! WARNING!!! WARNING!!! WARNING!!!
             //    We must never have another method called ToOle() with a different signature.
             //    This is so that we can push into the runtime a custom marshaller for OLE_COLOR to Color.
-
-            // if system color
-            // (the if < 0x18 check test whether it's a well-formed system color)
-            if (unchecked((int)(oleColor & 0xFF000000)) == unchecked((int)0x80000000)
-                && (oleColor & 0xFFFFFF) <= 0x1E)
+            
+            switch (oleColor)
             {
-                switch (oleColor)
-                {
-                    case unchecked((int)0x8000000A):
-                        return Color.FromKnownColor(KnownColor.ActiveBorder);
-                    case unchecked((int)0x80000002):
-                        return Color.FromKnownColor(KnownColor.ActiveCaption);
-                    case unchecked((int)0x80000009):
-                        return Color.FromKnownColor(KnownColor.ActiveCaptionText);
-                    case unchecked((int)0x8000000C):
-                        return Color.FromKnownColor(KnownColor.AppWorkspace);
-                    case unchecked((int)0x8000000F):
-                        return Color.FromKnownColor(KnownColor.Control);
-                    case unchecked((int)0x80000010):
-                        return Color.FromKnownColor(KnownColor.ControlDark);
-                    case unchecked((int)0x80000015):
-                        return Color.FromKnownColor(KnownColor.ControlDarkDark);
-                    case unchecked((int)0x80000016):
-                        return Color.FromKnownColor(KnownColor.ControlLight);
-                    case unchecked((int)0x80000014):
-                        return Color.FromKnownColor(KnownColor.ControlLightLight);
-                    case unchecked((int)0x80000012):
-                        return Color.FromKnownColor(KnownColor.ControlText);
-                    case unchecked((int)0x80000001):
-                        return Color.FromKnownColor(KnownColor.Desktop);
-                    case unchecked((int)0x8000001B):
-                        return Color.FromKnownColor(KnownColor.GradientActiveCaption);
-                    case unchecked((int)0x8000001C):
-                        return Color.FromKnownColor(KnownColor.GradientInactiveCaption);
-                    case unchecked((int)0x80000011):
-                        return Color.FromKnownColor(KnownColor.GrayText);
-                    case unchecked((int)0x8000000D):
-                        return Color.FromKnownColor(KnownColor.Highlight);
-                    case unchecked((int)0x8000000E):
-                        return Color.FromKnownColor(KnownColor.HighlightText);
-                    case unchecked((int)0x8000001A):
-                        return Color.FromKnownColor(KnownColor.HotTrack);
-                    case unchecked((int)0x8000000B):
-                        return Color.FromKnownColor(KnownColor.InactiveBorder);
-                    case unchecked((int)0x80000003):
-                        return Color.FromKnownColor(KnownColor.InactiveCaption);
-                    case unchecked((int)0x80000013):
-                        return Color.FromKnownColor(KnownColor.InactiveCaptionText);
-                    case unchecked((int)0x80000018):
-                        return Color.FromKnownColor(KnownColor.Info);
-                    case unchecked((int)0x80000017):
-                        return Color.FromKnownColor(KnownColor.InfoText);
-                    case unchecked((int)0x80000004):
-                        return Color.FromKnownColor(KnownColor.Menu);
-                    case unchecked((int)0x8000001E):
-                        return Color.FromKnownColor(KnownColor.MenuBar);
-                    case unchecked((int)0x8000001D):
-                        return Color.FromKnownColor(KnownColor.MenuHighlight);
-                    case unchecked((int)0x80000007):
-                        return Color.FromKnownColor(KnownColor.MenuText);
-                    case unchecked((int)0x80000000):
-                        return Color.FromKnownColor(KnownColor.ScrollBar);
-                    case unchecked((int)0x80000005):
-                        return Color.FromKnownColor(KnownColor.Window);
-                    case unchecked((int)0x80000006):
-                        return Color.FromKnownColor(KnownColor.WindowFrame);
-                    case unchecked((int)0x80000008):
-                        return Color.FromKnownColor(KnownColor.WindowText);
-                }
+                case unchecked((int)0x8000000A):
+                    return Color.FromKnownColor(KnownColor.ActiveBorder);
+                case unchecked((int)0x80000002):
+                    return Color.FromKnownColor(KnownColor.ActiveCaption);
+                case unchecked((int)0x80000009):
+                    return Color.FromKnownColor(KnownColor.ActiveCaptionText);
+                case unchecked((int)0x8000000C):
+                    return Color.FromKnownColor(KnownColor.AppWorkspace);
+                case unchecked((int)0x8000000F):
+                    return Color.FromKnownColor(KnownColor.Control);
+                case unchecked((int)0x80000010):
+                    return Color.FromKnownColor(KnownColor.ControlDark);
+                case unchecked((int)0x80000015):
+                    return Color.FromKnownColor(KnownColor.ControlDarkDark);
+                case unchecked((int)0x80000016):
+                    return Color.FromKnownColor(KnownColor.ControlLight);
+                case unchecked((int)0x80000014):
+                    return Color.FromKnownColor(KnownColor.ControlLightLight);
+                case unchecked((int)0x80000012):
+                    return Color.FromKnownColor(KnownColor.ControlText);
+                case unchecked((int)0x80000001):
+                    return Color.FromKnownColor(KnownColor.Desktop);
+                case unchecked((int)0x8000001B):
+                    return Color.FromKnownColor(KnownColor.GradientActiveCaption);
+                case unchecked((int)0x8000001C):
+                    return Color.FromKnownColor(KnownColor.GradientInactiveCaption);
+                case unchecked((int)0x80000011):
+                    return Color.FromKnownColor(KnownColor.GrayText);
+                case unchecked((int)0x8000000D):
+                    return Color.FromKnownColor(KnownColor.Highlight);
+                case unchecked((int)0x8000000E):
+                    return Color.FromKnownColor(KnownColor.HighlightText);
+                case unchecked((int)0x8000001A):
+                    return Color.FromKnownColor(KnownColor.HotTrack);
+                case unchecked((int)0x8000000B):
+                    return Color.FromKnownColor(KnownColor.InactiveBorder);
+                case unchecked((int)0x80000003):
+                    return Color.FromKnownColor(KnownColor.InactiveCaption);
+                case unchecked((int)0x80000013):
+                    return Color.FromKnownColor(KnownColor.InactiveCaptionText);
+                case unchecked((int)0x80000018):
+                    return Color.FromKnownColor(KnownColor.Info);
+                case unchecked((int)0x80000017):
+                    return Color.FromKnownColor(KnownColor.InfoText);
+                case unchecked((int)0x80000004):
+                    return Color.FromKnownColor(KnownColor.Menu);
+                case unchecked((int)0x8000001E):
+                    return Color.FromKnownColor(KnownColor.MenuBar);
+                case unchecked((int)0x8000001D):
+                    return Color.FromKnownColor(KnownColor.MenuHighlight);
+                case unchecked((int)0x80000007):
+                    return Color.FromKnownColor(KnownColor.MenuText);
+                case unchecked((int)0x80000000):
+                    return Color.FromKnownColor(KnownColor.ScrollBar);
+                case unchecked((int)0x80000005):
+                    return Color.FromKnownColor(KnownColor.Window);
+                case unchecked((int)0x80000006):
+                    return Color.FromKnownColor(KnownColor.WindowFrame);
+                case unchecked((int)0x80000008):
+                    return Color.FromKnownColor(KnownColor.WindowText);
             }
 
             Color color = Color.FromArgb((byte)((oleColor >> Win32RedShift) & 0xFF),
