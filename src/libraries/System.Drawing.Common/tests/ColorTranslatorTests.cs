@@ -76,7 +76,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20998)]
         [Theory]
         [MemberData(nameof(FromOle_TestData))]
         public void FromOle_Color_ReturnsExpected(int oleColor, Color color)
@@ -104,7 +103,6 @@ namespace System.Drawing.Tests
             yield return new object[] { SystemColors.ButtonShadow, unchecked((int)0x80000010) };
         }
 
-        [ActiveIssue(20998)]
         [Theory]
         [MemberData(nameof(ToOle_TestData))]
         public void ToOle_Color_ReturnsExpected(Color color, int oleColor)
@@ -186,7 +184,6 @@ namespace System.Drawing.Tests
             yield return new object[] { "threedlightshadow", SystemColors.ControlLightLight };
         }
 
-        [ActiveIssue(20998)]
         [Theory]
         [MemberData(nameof(FromHtml_TestData))]
         public void FromHtml_String_ReturnsExpected(string htmlColor, Color expected)
@@ -241,7 +238,6 @@ namespace System.Drawing.Tests
             yield return new object[] { SystemColors.ButtonShadow, "" };
         }
 
-        [ActiveIssue(20998)]
         [Theory]
         [MemberData(nameof(ToHtml_TestData))]
         public void ToHtml_Color_ReturnsExpected(Color color, string expected)
