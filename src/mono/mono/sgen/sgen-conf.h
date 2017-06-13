@@ -216,8 +216,11 @@ typedef mword SgenDescriptor;
  * sizing heuristics. We are keeping leeway in order to be prepared for work-load
  * variations.
  */
-#define SGEN_MAX_PAUSE_TIME 30
-#define SGEN_MAX_PAUSE_MARGIN 0.66f
+#define SGEN_DEFAULT_MAX_PAUSE_TIME 30
+#define SGEN_DEFAULT_MAX_PAUSE_MARGIN 0.66f
+
+
+#define SGEN_PAUSE_MODE_MAX_PAUSE_MARGIN 0.5f
 
 /*
  * In practice, for nurseries smaller than this, the parallel minor tends to be
