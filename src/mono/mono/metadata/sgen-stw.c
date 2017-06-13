@@ -104,11 +104,6 @@ sgen_client_stop_world (int generation)
 {
 	TV_DECLARE (end_handshake);
 
-	/* notify the profiler of the leftovers */
-	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
-		mono_sgen_gc_event_moves ();
-
 	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
 
 	acquire_gc_locks ();
