@@ -86,8 +86,8 @@ PTR_LoaderAllocator InstMethodHashTable::GetLoaderAllocator()
     }
     else
     {
-        _ASSERTE(m_pModule != NULL);
-        return m_pModule->GetLoaderAllocator();
+        _ASSERTE(!m_pModule.IsNull());
+        return GetModule()->GetLoaderAllocator();
     }
 }
 
@@ -188,7 +188,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
         RelativeFixupPointer<PTR_MethodTable> * ppMT = pMD->GetMethodTablePtr();
         TADDR pMT = ppMT->GetValueMaybeTagged((TADDR)ppMT);
 
-        if (!ZapSig::CompareTaggedPointerToTypeHandle(m_pModule, pMT, declaringType))
+        if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), pMT, declaringType))
         {
             continue;  // Next iteration of the for loop
         }
@@ -208,7 +208,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
                 // asserts on encoded fixups.
                 TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
                     
-                if (!ZapSig::CompareTaggedPointerToTypeHandle(m_pModule, candidateArg, inst[i]))
+                if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
                 {
                     match = false;
                     break;

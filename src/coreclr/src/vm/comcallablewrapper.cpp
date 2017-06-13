@@ -4997,7 +4997,7 @@ void ComMethodTable::LayOutDelegateMethodTable()
 
     // Some space for a CALL xx xx xx xx stub is reserved before the beginning of the MethodDesc
     ComCallMethodDescHolder NewMDHolder = (ComCallMethodDesc *) (pMethodDescMemory + COMMETHOD_PREPAD);
-    MethodDesc* pInvokeMD = ((DelegateEEClass *)(pDelegateMT->GetClass()))->m_pInvokeMethod;
+    MethodDesc* pInvokeMD = ((DelegateEEClass *)(pDelegateMT->GetClass()))->GetInvokeMethod();
     
     if (pInvokeMD->IsSharedByGenericInstantiations())
     {

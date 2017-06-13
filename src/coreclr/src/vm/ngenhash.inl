@@ -48,14 +48,14 @@ NgenHashTable<NGEN_HASH_ARGS>::NgenHashTable(Module *pModule, LoaderHeap *pHeap,
     // At least one of module or heap must have been specified or we won't know how to allocate entries and
     // buckets.
     _ASSERTE(pModule || pHeap);
-    m_pModule = pModule;
+    m_pModule.SetValueMaybeNull(pModule);
     m_pHeap = pHeap;
 
     S_SIZE_T cbBuckets = S_SIZE_T(sizeof(VolatileEntry*)) * S_SIZE_T(cInitialBuckets);
 
     m_cWarmEntries = 0;
     m_cWarmBuckets = cInitialBuckets;
-    m_pWarmBuckets = (PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets);
+    m_pWarmBuckets.SetValue((PTR_VolatileEntry*)(void*)GetHeap()->AllocMem(cbBuckets));
 
     // Note: Memory allocated on loader heap is zero filled
     // memset(m_pWarmBuckets, 0, sizeof(VolatileEntry*) * cInitialBuckets);
@@ -83,7 +83,7 @@ VALUE *NgenHashTable<NGEN_HASH_ARGS>::BaseAllocateEntry(AllocMemTracker *pamTrac
 
     // Faults are forbidden in BaseInsertEntry. Make the table writeable now that the faults are still allowed.
     EnsureWritablePages(this);
-    EnsureWritablePages(this->m_pWarmBuckets, m_cWarmBuckets * sizeof(PTR_VolatileEntry));
+    EnsureWritablePages(this->GetWarmBuckets(), m_cWarmBuckets * sizeof(PTR_VolatileEntry));
 
     TaggedMemAllocPtr pMemory = GetHeap()->AllocMem(S_SIZE_T(sizeof(VolatileEntry)));
 
@@ -119,8 +119,8 @@ LoaderHeap *NgenHashTable<NGEN_HASH_ARGS>::GetHeap()
 
     // If not specified then we fall back to the owning module's heap (a module must have been specified in
     // this case).
-    _ASSERTE(m_pModule != NULL);
-    return m_pModule->GetAssembly()->GetLowFrequencyHeap();
+    _ASSERTE(!m_pModule.IsNull());
+    return GetModule()->GetAssembly()->GetLowFrequencyHeap();
 }
 
 // Insert an entry previously allocated via BaseAllocateEntry (you cannot allocated entries in any other
@@ -154,13 +154,13 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInsertEntry(NgenHashValue iHash, VALUE *
     DWORD dwBucket = iHash % m_cWarmBuckets;
 
     // Prepare to link the new entry at the head of the bucket chain.
-    pVolatileEntry->m_pNextEntry = m_pWarmBuckets[dwBucket];
+    pVolatileEntry->m_pNextEntry = (GetWarmBuckets())[dwBucket];
 
     // Make sure that all writes to the entry are visible before publishing the entry.
     MemoryBarrier();
 
     // Publish the entry by pointing the bucket at it.
-    m_pWarmBuckets[dwBucket] = pVolatileEntry;
+    (GetWarmBuckets())[dwBucket] = pVolatileEntry;
 
     m_cWarmEntries++;
 
@@ -205,7 +205,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
     // again.
     for (DWORD i = 0; i < m_cWarmBuckets; i++)
     {
-        PTR_VolatileEntry pEntry = m_pWarmBuckets[i];
+        PTR_VolatileEntry pEntry = (GetWarmBuckets())[i];
 
         // Try to lock out readers from scanning this bucket. This is obviously a race which may fail.
         // However, note that it's OK if somebody is already in the list - it's OK if we mess with the bucket
@@ -213,7 +213,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
         // comparison even if it wanders aimlessly amongst entries while we are rearranging things. If a
         // lookup finds a match under those circumstances, great. If not, they will have to acquire the lock &
         // try again anyway.
-        m_pWarmBuckets[i] = NULL;
+        (GetWarmBuckets())[i] = NULL;
 
         while (pEntry != NULL)
         {
@@ -229,7 +229,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::GrowTable()
 
     // Make sure that all writes are visible before publishing the new array.
     MemoryBarrier();
-    m_pWarmBuckets = pNewBuckets;
+    m_pWarmBuckets.SetValue(pNewBuckets);
 
     // The new number of buckets has to be published last (prior to this readers may miscalculate a bucket
     // index, but the result will always be in range and they'll simply walk the wrong chain and get a miss,
@@ -697,7 +697,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     // Persisted hashes had better have supplied an owning module at creation time (otherwise we won't know
     // how to find a loader heap for further allocations at runtime: we don't know how to serialize a loader
     // heap pointer).
-    _ASSERTE(m_pModule != NULL);
+    _ASSERTE(!m_pModule.IsNull());
 
     // We can only save once during ngen so the hot and cold sections of the hash cannot have been populated
     // yet.
@@ -732,7 +732,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     for (i = 0; i < m_cWarmBuckets; i++)
     {
         // Iterate through the chain of warm entries for this bucket.
-        VolatileEntry *pOldEntry = m_pWarmBuckets[i];
+        VolatileEntry *pOldEntry = (GetWarmBuckets())[i];
         while (pOldEntry)
         {
             // Is the current entry being saved into the image?
@@ -842,18 +842,18 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     {
         m_sHotEntries.m_cEntries = cHotEntries;
         m_sHotEntries.m_cBuckets = cHotBuckets;
-        m_sHotEntries.m_pEntries = new PersistedEntry[cHotEntries];
-        m_sHotEntries.m_pBuckets = PersistedBucketList::CreateList(cHotBuckets, cHotEntries, cMaxHotChain);
-        memset(m_sHotEntries.m_pEntries, 0, cHotEntries * sizeof(PersistedEntry));      // NGen determinism
+        m_sHotEntries.m_pEntries.SetValue(new PersistedEntry[cHotEntries]);
+        m_sHotEntries.m_pBuckets.SetValue(PersistedBucketList::CreateList(cHotBuckets, cHotEntries, cMaxHotChain));
+        memset(GetPersistedHotEntries(), 0, cHotEntries * sizeof(PersistedEntry)); // NGen determinism
     }
 
     if (cColdEntries)
     {
         m_sColdEntries.m_cEntries = cColdEntries;
         m_sColdEntries.m_cBuckets = cColdBuckets;
-        m_sColdEntries.m_pEntries = new PersistedEntry[cColdEntries];
-        m_sColdEntries.m_pBuckets = PersistedBucketList::CreateList(cColdBuckets, cColdEntries, cMaxColdChain);
-        memset(m_sColdEntries.m_pEntries, 0, cColdEntries * sizeof(PersistedEntry));    // NGen determinism
+        m_sColdEntries.m_pEntries.SetValue(new PersistedEntry[cColdEntries]);
+        m_sColdEntries.m_pBuckets.SetValue(PersistedBucketList::CreateList(cColdBuckets, cColdEntries, cMaxColdChain));
+        memset(GetPersistedColdEntries(), 0, cColdEntries * sizeof(PersistedEntry));    // NGen determinism
     }
 
     //
@@ -871,7 +871,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     DWORD dwNextId = 0; // This represents the index of the next entry to start a bucket chain
     for (i = 0; i < cHotBuckets; i++)
     {
-        m_sHotEntries.m_pBuckets->SetBucket(i, dwNextId, pHotBucketSizes[i]);
+        m_sHotEntries.m_pBuckets.GetValue()->SetBucket(i, dwNextId, pHotBucketSizes[i]);
         dwNextId += pHotBucketSizes[i];
     }
     _ASSERTE(dwNextId == m_sHotEntries.m_cEntries);
@@ -879,7 +879,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     dwNextId = 0; // Reset index for the cold entries (remember they have their own table of entries)
     for (i = 0; i < cColdBuckets; i++)
     {
-        m_sColdEntries.m_pBuckets->SetBucket(i, dwNextId, pColdBucketSizes[i]);
+        m_sColdEntries.m_pBuckets.GetValue()->SetBucket(i, dwNextId, pColdBucketSizes[i]);
         dwNextId += pColdBucketSizes[i];
     }
     _ASSERTE(dwNextId == m_sColdEntries.m_cEntries);
@@ -897,15 +897,16 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
         typename EntryMappingTable::Entry *pMapEntry = &sEntryMap.m_pEntries[i];
 
         // Entry block depends on whether this entry is hot or cold.
-        PersistedEntries *pEntries = pMapEntry->m_fHot ? &m_sHotEntries : &m_sColdEntries;
+        APTR_PersistedEntry pPersistedEntries = pMapEntry->m_fHot ? GetPersistedHotEntries() : GetPersistedColdEntries();
+        PTR_PersistedBucketList pPersistedBucketsList = pMapEntry->m_fHot ? GetPersistedHotBuckets() : GetPersistedColdBuckets();
 
         // We already know the new bucket this entry will go into. Retrieve the index of the first entry in
         // that bucket chain.
-        DWORD dwBaseChainIndex = pEntries->m_pBuckets->GetInitialEntry(pMapEntry->m_dwNewBucket);
+        DWORD dwBaseChainIndex = pPersistedBucketsList->GetInitialEntry(pMapEntry->m_dwNewBucket);
 
         // This entry will be located at some offset from the index above (we calculated this ordinal in phase
         // 2).
-        PersistedEntry *pNewEntry = &pEntries->m_pEntries[dwBaseChainIndex + pMapEntry->m_dwChainOrdinal];
+        PersistedEntry *pNewEntry = &pPersistedEntries[dwBaseChainIndex + pMapEntry->m_dwChainOrdinal];
 
         // Record the address of the embedded sub-class hash entry in the map entry (sub-classes will use this
         // info to map old entry addresses to their new locations).
@@ -931,7 +932,11 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
 
     bool fAllEntriesImmutable = true;
     for (i = 0; i < sEntryMap.m_cEntries; i++)
-        if (!DOWNCALL(SaveEntry)(pImage, pProfileData, sEntryMap.m_pEntries[i].m_pOldEntry, sEntryMap.m_pEntries[i].m_pNewEntry, &sEntryMap))
+        if (!DOWNCALL(SaveEntry)(pImage,
+                                 pProfileData,
+                                 sEntryMap.m_pEntries[i].m_pOldEntry,
+                                 sEntryMap.m_pEntries[i].m_pNewEntry,
+                                 &sEntryMap))
             fAllEntriesImmutable = false;
 
     // We're mostly done. Now just some cleanup and the actual DataImage storage operations.
@@ -943,24 +948,24 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     // If there are any hot entries store the entry array and bucket list.
     if (cHotEntries)
     {
-        pImage->StoreStructure(m_sHotEntries.m_pEntries,
+        pImage->StoreStructure(GetPersistedHotEntries(),
                                static_cast<ULONG>(sizeof(PersistedEntry) * cHotEntries), 
                                fAllEntriesImmutable ? DataImage::ITEM_NGEN_HASH_ENTRIES_RO_HOT : DataImage::ITEM_NGEN_HASH_ENTRIES_HOT);
 
-        pImage->StoreStructure(m_sHotEntries.m_pBuckets,
-                               static_cast<ULONG>(m_sHotEntries.m_pBuckets->GetSize(m_sHotEntries.m_cBuckets)),
+        pImage->StoreStructure(GetPersistedHotBuckets(),
+                               static_cast<ULONG>(m_sHotEntries.m_pBuckets.GetValue()->GetSize(m_sHotEntries.m_cBuckets)),
                                DataImage::ITEM_NGEN_HASH_BUCKETLIST_HOT);
     }
 
     // If there are any cold entries store the entry array and bucket list.
     if (cColdEntries)
     {
-        pImage->StoreStructure(m_sColdEntries.m_pEntries,
+        pImage->StoreStructure(GetPersistedColdEntries(),
                                static_cast<ULONG>(sizeof(PersistedEntry) * cColdEntries), 
                                fAllEntriesImmutable ? DataImage::ITEM_NGEN_HASH_ENTRIES_RO_COLD : DataImage::ITEM_NGEN_HASH_ENTRIES_COLD);
 
-        pImage->StoreStructure(m_sColdEntries.m_pBuckets,
-                               static_cast<ULONG>(m_sColdEntries.m_pBuckets->GetSize(m_sColdEntries.m_cBuckets)),
+        pImage->StoreStructure(GetPersistedColdBuckets(),
+                               static_cast<ULONG>(GetPersistedColdBuckets()->GetSize(m_sColdEntries.m_cBuckets)),
                                DataImage::ITEM_NGEN_HASH_BUCKETLIST_COLD);
     }
 
@@ -987,7 +992,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     DWORD cNewWarmBuckets = min(m_cInitialBuckets, 11);
 
     // Create the ngen version of the warm buckets.
-    pImage->StoreStructure(m_pWarmBuckets,
+    pImage->StoreStructure(GetWarmBuckets(),
                            cNewWarmBuckets * sizeof(VolatileEntry*),
                            DataImage::ITEM_NGEN_HASH_HOT);
 
@@ -997,7 +1002,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseSave(DataImage *pImage, CorProfileData *
     pNewTable->m_cWarmBuckets = cNewWarmBuckets;
 
     // Zero-out the ngen version of the warm buckets.
-    VolatileEntry *pNewBuckets = (VolatileEntry*)pImage->GetImagePointer(m_pWarmBuckets);
+    VolatileEntry *pNewBuckets = (VolatileEntry*)pImage->GetImagePointer(GetWarmBuckets());
     memset(pNewBuckets, 0, cNewWarmBuckets * sizeof(VolatileEntry*));
 }
 
@@ -1011,7 +1016,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseFixup(DataImage *pImage)
     DWORD i;
 
     // Fixup the module pointer.
-    pImage->FixupPointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_pModule));
+    pImage->FixupRelativePointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_pModule));
 
     // Throw away the heap pointer, we can't serialize it into the image. We'll rely on the loader heap
     // associated with the module above at runtime.
@@ -1023,29 +1028,27 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseFixup(DataImage *pImage)
     // be relative to the base of this array.
 
     for (i = 0; i < m_sHotEntries.m_cEntries; i++)
-        DOWNCALL(FixupEntry)(pImage, &m_sHotEntries.m_pEntries[i].m_sValue, m_sHotEntries.m_pEntries, i * sizeof(PersistedEntry));
+        DOWNCALL(FixupEntry)(pImage,
+                             &(GetPersistedHotEntries())[i].m_sValue,
+                             GetPersistedHotEntries(),
+                             i * sizeof(PersistedEntry));
 
     for (i = 0; i < m_sColdEntries.m_cEntries; i++)
-        DOWNCALL(FixupEntry)(pImage, &m_sColdEntries.m_pEntries[i].m_sValue, m_sColdEntries.m_pEntries, i * sizeof(PersistedEntry));
+        DOWNCALL(FixupEntry)(pImage,
+                             &(GetPersistedColdEntries())[i].m_sValue,
+                             GetPersistedColdEntries(),
+                             i * sizeof(PersistedEntry));
 
     // Fixup the warm (empty) bucket list.
-    pImage->FixupPointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_pWarmBuckets));
+    pImage->FixupRelativePointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_pWarmBuckets));
 
     // Fixup the hot entry array and bucket list.
-    pImage->FixupPointerField(this,
-                              offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sHotEntries) +
-                              offsetof(PersistedEntries, m_pEntries));
-    pImage->FixupPointerField(this,
-                              offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sHotEntries) +
-                              offsetof(PersistedEntries, m_pBuckets));
+    pImage->FixupRelativePointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sHotEntries) + offsetof(PersistedEntries, m_pEntries));
+    pImage->FixupRelativePointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sHotEntries) + offsetof(PersistedEntries, m_pBuckets));
 
     // Fixup the cold entry array and bucket list.
-    pImage->FixupPointerField(this,
-                              offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sColdEntries) +
-                              offsetof(PersistedEntries, m_pEntries));
-    pImage->FixupPointerField(this,
-                              offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sColdEntries) +
-                              offsetof(PersistedEntries, m_pBuckets));
+    pImage->FixupRelativePointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sColdEntries) + offsetof(PersistedEntries, m_pEntries));
+    pImage->FixupRelativePointerField(this, offsetof(NgenHashTable<NGEN_HASH_ARGS>, m_sColdEntries) + offsetof(PersistedEntries, m_pBuckets));
 }
 #endif // !DACCESS_COMPILE
 #endif // FEATURE_PREJIT
@@ -1064,14 +1067,14 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags
     DacEnumMemoryRegion(dac_cast<TADDR>(this), sizeof(FINAL_CLASS));
 
     // Save the warm bucket list.
-    DacEnumMemoryRegion(dac_cast<TADDR>(m_pWarmBuckets), m_cWarmBuckets * sizeof(VolatileEntry*));
+    DacEnumMemoryRegion(dac_cast<TADDR>(GetWarmBuckets()), m_cWarmBuckets * sizeof(VolatileEntry*));
 
     // Save all the warm entries.
-    if (m_pWarmBuckets.IsValid())
+    if (GetWarmBuckets().IsValid())
     {
         for (DWORD i = 0; i < m_cWarmBuckets; i++)
         {
-            PTR_VolatileEntry pEntry = m_pWarmBuckets[i];
+            PTR_VolatileEntry pEntry = (GetWarmBuckets())[i];
             while (pEntry.IsValid())
             {
                 pEntry.EnumMem();
@@ -1088,25 +1091,35 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseEnumMemoryRegions(CLRDataEnumMemoryFlags
     // Save hot buckets and entries.
     if (m_sHotEntries.m_cEntries > 0)
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_sHotEntries.m_pEntries), m_sHotEntries.m_cEntries * sizeof(PersistedEntry));
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_sHotEntries.m_pBuckets), m_sHotEntries.m_pBuckets->GetSize(m_sHotEntries.m_cBuckets));
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetPersistedHotEntries()),
+                            m_sHotEntries.m_cEntries * sizeof(PersistedEntry));
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetPersistedHotBuckets()),
+                            GetPersistedHotBuckets()->GetSize(m_sHotEntries.m_cBuckets));
         for (DWORD i = 0; i < m_sHotEntries.m_cEntries; i++)
-            DOWNCALL(EnumMemoryRegionsForEntry)(VALUE_FROM_PERSISTED_ENTRY(dac_cast<PTR_PersistedEntry>(&m_sHotEntries.m_pEntries[i])), flags);
+        {
+            PTR_PersistedEntry pEntry = dac_cast<PTR_PersistedEntry>(&(GetPersistedHotEntries())[i]);
+            DOWNCALL(EnumMemoryRegionsForEntry)(VALUE_FROM_PERSISTED_ENTRY(pEntry), flags);
+        }
     }
 
     // Save cold buckets and entries.
     if (m_sColdEntries.m_cEntries > 0)
     {
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_sColdEntries.m_pEntries), m_sColdEntries.m_cEntries * sizeof(PersistedEntry));
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_sColdEntries.m_pBuckets), m_sColdEntries.m_pBuckets->GetSize(m_sColdEntries.m_cBuckets));
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetPersistedColdEntries()),
+                            m_sColdEntries.m_cEntries * sizeof(PersistedEntry));
+        DacEnumMemoryRegion(dac_cast<TADDR>(GetPersistedColdBuckets()),
+                            GetPersistedColdBuckets()->GetSize(m_sColdEntries.m_cBuckets));
         for (DWORD i = 0; i < m_sColdEntries.m_cEntries; i++)
-            DOWNCALL(EnumMemoryRegionsForEntry)(VALUE_FROM_PERSISTED_ENTRY(dac_cast<PTR_PersistedEntry>(&m_sColdEntries.m_pEntries[i])), flags);
+        {
+            PTR_PersistedEntry pEntry = dac_cast<PTR_PersistedEntry>(&(GetPersistedColdEntries())[i]);
+            DOWNCALL(EnumMemoryRegionsForEntry)(VALUE_FROM_PERSISTED_ENTRY(pEntry), flags);
+        }
     }
 #endif // FEATURE_PREJIT
 
     // Save the module if present.
-    if (m_pModule.IsValid())
-        m_pModule->EnumMemoryRegions(flags, true);
+    if (GetModule().IsValid())
+        GetModule()->EnumMemoryRegions(flags, true);
 }
 #endif // DACCESS_COMPILE
 
@@ -1136,13 +1149,31 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::FindPersistedEntryByHash(PersistedEnt
     // Since there is at least one entry there must be at least one bucket.
     _ASSERTE(pEntries->m_cBuckets > 0);
 
+    DWORD eType = (pEntries == &m_sHotEntries ? Hot : Cold);
+
     // Get the first entry and count of entries for the bucket which contains all entries with the given hash
     // code.
     DWORD dwEntryIndex, cEntriesLeft;
-    pEntries->m_pBuckets->GetBucket(iHash % pEntries->m_cBuckets, &dwEntryIndex, &cEntriesLeft);
+    if (eType == Hot)
+    {
+        GetPersistedHotBuckets()->GetBucket(iHash % pEntries->m_cBuckets, &dwEntryIndex, &cEntriesLeft);
+    }
+    else
+    {
+        GetPersistedColdBuckets()->GetBucket(iHash % pEntries->m_cBuckets, &dwEntryIndex, &cEntriesLeft);
+    }
 
     // Determine the address of the first entry in the chain by indexing into the entry array.
-    PTR_PersistedEntry pEntry = dac_cast<PTR_PersistedEntry>(&pEntries->m_pEntries[dwEntryIndex]);
+    PTR_PersistedEntry pEntry;
+
+    if (eType == Hot)
+    {
+       pEntry = dac_cast<PTR_PersistedEntry>(&(GetPersistedHotEntries())[dwEntryIndex]);
+    }
+    else
+    {
+       pEntry = dac_cast<PTR_PersistedEntry>(&(GetPersistedColdEntries())[dwEntryIndex]);
+    }
 
     // Iterate while we've still got entries left to check in this chain.
     while (cEntriesLeft--)
@@ -1154,7 +1185,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::FindPersistedEntryByHash(PersistedEnt
             // Record our current search state into the provided context so that a subsequent call to
             // BaseFindNextEntryByHash can pick up the search where it left off.
             pContext->m_pEntry = dac_cast<TADDR>(pEntry);
-            pContext->m_eType = pEntries == &m_sHotEntries ? Hot : Cold;
+            pContext->m_eType = eType;
             pContext->m_cRemainingEntries = cEntriesLeft;
 
             // Return the address of the sub-classes' embedded entry structure.
@@ -1223,7 +1254,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::FindVolatileEntryByHash(NgenHashValue
     _ASSERTE(m_cWarmBuckets > 0);
 
     // Point at the first entry in the bucket chain which would contain any entries with the given hash code.
-    PTR_VolatileEntry pEntry = m_pWarmBuckets[iHash % m_cWarmBuckets];
+    PTR_VolatileEntry pEntry = (GetWarmBuckets())[iHash % m_cWarmBuckets];
 
     // Walk the bucket chain one entry at a time.
     while (pEntry)
@@ -1257,7 +1288,7 @@ void NgenHashTable<NGEN_HASH_ARGS>::BaseInitIterator(BaseIterator *pIterator)
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    pIterator->m_pTable = this;
+    pIterator->m_pTable = dac_cast<DPTR(NgenHashTable<NGEN_HASH_ARGS>)>(this);
     pIterator->m_pEntry = NULL;
 #ifdef FEATURE_PREJIT
     pIterator->m_eType = Hot;
@@ -1299,7 +1330,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
                 if (m_pEntry == NULL)
                 {
                     // This is our first lookup in the hot section, return the first entry in the hot array.
-                    m_pEntry = dac_cast<TADDR>(m_pTable->m_sHotEntries.m_pEntries);
+                    m_pEntry = dac_cast<TADDR>(m_pTable->GetPersistedHotEntries());
                 }
                 else
                 {
@@ -1329,7 +1360,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
             {
                 // This is our first lookup in the warm section for a particular bucket, return the first
                 // entry in that bucket.
-                m_pEntry = dac_cast<TADDR>(m_pTable->m_pWarmBuckets[m_dwBucket]);
+                m_pEntry = dac_cast<TADDR>((m_pTable->GetWarmBuckets())[m_dwBucket]);
             }
             else
             {
@@ -1370,7 +1401,7 @@ DPTR(VALUE) NgenHashTable<NGEN_HASH_ARGS>::BaseIterator::Next()
                 if (m_pEntry == NULL)
                 {
                     // This is our first lookup in the cold section, return the first entry in the cold array.
-                    m_pEntry = dac_cast<TADDR>(m_pTable->m_sColdEntries.m_pEntries);
+                    m_pEntry = dac_cast<TADDR>(m_pTable->GetPersistedColdEntries());
                 }
                 else
                 {
@@ -1463,17 +1494,17 @@ void NgenHashEntryRef<NGEN_HASH_ARGS>::Fixup(DataImage *pImage, NgenHashTable<NG
     BYTE *pLocationBase;
     DWORD cbLocationOffset;
 
-    if (pLocation >= (BYTE*)pTable->m_sHotEntries.m_pEntries &&
-        pLocation < (BYTE*)(pTable->m_sHotEntries.m_pEntries + pTable->m_sHotEntries.m_cEntries))
+    if (pLocation >= (BYTE*)pTable->GetPersistedHotEntries() &&
+        pLocation < (BYTE*)(pTable->GetPersistedHotEntries() + pTable->m_sHotEntries.m_cEntries))
     {
         // The field is in a hot entry.
-        pLocationBase = (BYTE*)pTable->m_sHotEntries.m_pEntries;
+        pLocationBase = (BYTE*)pTable->GetPersistedHotEntries();
     }
-    else if (pLocation >= (BYTE*)pTable->m_sColdEntries.m_pEntries &&
-             pLocation < (BYTE*)(pTable->m_sColdEntries.m_pEntries + pTable->m_sColdEntries.m_cEntries))
+    else if (pLocation >= (BYTE*)pTable->GetPersistedColdEntries() &&
+             pLocation < (BYTE*)(pTable->GetPersistedColdEntries() + pTable->m_sColdEntries.m_cEntries))
     {
         // The field is in a cold entry.
-        pLocationBase = (BYTE*)pTable->m_sColdEntries.m_pEntries;
+        pLocationBase = (BYTE*)pTable->GetPersistedColdEntries();
     }
     else
     {
@@ -1490,17 +1521,17 @@ void NgenHashEntryRef<NGEN_HASH_ARGS>::Fixup(DataImage *pImage, NgenHashTable<NG
     BYTE *pTargetBase;
     DWORD cbTargetOffset;
 
-    if (pTarget >= (BYTE*)pTable->m_sHotEntries.m_pEntries &&
-        pTarget < (BYTE*)(pTable->m_sHotEntries.m_pEntries + pTable->m_sHotEntries.m_cEntries))
+    if (pTarget >= (BYTE*)pTable->GetPersistedHotEntries() &&
+        pTarget < (BYTE*)(pTable->GetPersistedHotEntries() + pTable->m_sHotEntries.m_cEntries))
     {
         // The target is a hot entry.
-        pTargetBase = (BYTE*)pTable->m_sHotEntries.m_pEntries;
+        pTargetBase = (BYTE*)pTable->GetPersistedHotEntries();
     }
-    else if (pTarget >= (BYTE*)pTable->m_sColdEntries.m_pEntries &&
-             pTarget < (BYTE*)(pTable->m_sColdEntries.m_pEntries + pTable->m_sColdEntries.m_cEntries))
+    else if (pTarget >= (BYTE*)pTable->GetPersistedColdEntries() &&
+             pTarget < (BYTE*)(pTable->GetPersistedColdEntries() + pTable->m_sColdEntries.m_cEntries))
     {
         // The target is a cold entry.
-        pTargetBase = (BYTE*)pTable->m_sColdEntries.m_pEntries;
+        pTargetBase = (BYTE*)pTable->GetPersistedColdEntries();
     }
     else
     {
