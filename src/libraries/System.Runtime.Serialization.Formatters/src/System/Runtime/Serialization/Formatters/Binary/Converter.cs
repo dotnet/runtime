@@ -30,8 +30,16 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal static readonly Type s_typeofUInt64 = typeof(ulong);
         internal static readonly Type s_typeofObject = typeof(object);
         internal static readonly Type s_typeofSystemVoid = typeof(void);
-        internal static readonly Assembly s_urtAssembly = s_typeofString.Assembly;
+
+        // In netfx the default assembly is mscorlib.dll --> typeof(string).Assembly.
+        // In Core type string lives in System.Private.Corelib.dll which doesn't 
+        // contain all the types which are living in mscorlib in netfx. Therefore we
+        // use our mscorlib facade which also contains manual type forwards for deserialization.
+        internal static readonly Assembly s_urtAssembly = Assembly.Load("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089");
         internal static readonly string s_urtAssemblyString = s_urtAssembly.FullName;
+
+        internal static readonly Assembly s_urtAlternativeAssembly = s_typeofString.Assembly;
+        internal static readonly string s_urtAlternativeAssemblyString = s_urtAlternativeAssembly.FullName;
 
         // Arrays
         internal static readonly Type s_typeofTypeArray = typeof(Type[]);

@@ -5,8 +5,7 @@
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>Specifies a description for a property
-    ///       or event.</para>
+    ///    <para>Specifies a description for a property or event.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.All)]
     public class DescriptionAttribute : Attribute
@@ -17,9 +16,6 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly DescriptionAttribute Default = new DescriptionAttribute();
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         public DescriptionAttribute() : this(string.Empty)
         {
         }
@@ -27,10 +23,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DescriptionAttribute'/> class.</para>
         /// </summary>
-        public DescriptionAttribute(string description)
-        {
-            DescriptionValue = description;
-        }
+        public DescriptionAttribute(string description) => DescriptionValue = description;
 
         /// <summary>
         ///    <para>Gets the description stored in this attribute.</para>
@@ -52,17 +45,11 @@ namespace System.ComponentModel
             }
 
             DescriptionAttribute other = obj as DescriptionAttribute;
-            return (other != null) && other.Description == Description;
+            return other != null && other.Description == Description;
         }
 
-        public override int GetHashCode()
-        {
-            return Description.GetHashCode();
-        }
+        public override int GetHashCode() => Description.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(DescriptionAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }
