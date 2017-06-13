@@ -72,9 +72,11 @@
     <TargetingPackReference Include="System" />
     <TargetingPackReference Include="System.Core" />
     <TargetingPackReference Include="System.IO" />
+    <TargetingPackReference Include="System.Linq" />
     <TargetingPackReference Include="System.Net.Http" />
     <TargetingPackReference Include="System.Runtime" />
     <TargetingPackReference Include="System.Xml" />
+    <TargetingPackReference Include="System.Xml.Linq" />
     <TargetingPackReference Include="Microsoft.Build" />
     <TargetingPackReference Include="Microsoft.Build.Framework" />
     <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
