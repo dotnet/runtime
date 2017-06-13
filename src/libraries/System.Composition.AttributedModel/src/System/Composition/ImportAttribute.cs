@@ -18,8 +18,7 @@ namespace System.Composition
         ///     Initializes a new instance of the <see cref="ImportAttribute"/> class, importing the 
         ///     export without a contract name.
         /// </summary>
-        public ImportAttribute()
-            : this((string)null)
+        public ImportAttribute() : this(null)
         {
         }
 
@@ -28,7 +27,7 @@ namespace System.Composition
         ///     export with the specified contract name.
         /// </summary>
         /// <param name="contractName">
-        ///      A <see cref="String"/> containing the contract name of the export to import, or 
+        ///      A <see cref="string"/> containing the contract name of the export to import, or 
         ///      <see langword="null"/> or an empty string ("") to use the default contract name.
         /// </param>
         public ImportAttribute(string contractName)
@@ -40,10 +39,10 @@ namespace System.Composition
         ///     Gets the contract name of the export to import.
         /// </summary>
         /// <value>
-        ///      A <see cref="String"/> containing the contract name of the export to import. The 
+        ///      A <see cref="string"/> containing the contract name of the export to import. The 
         ///      default value is null.
         /// </value>
-        public string ContractName { get; private set; }
+        public string ContractName { get; }
 
         /// <summary>
         ///     Gets or sets a value indicating whether the property, field or parameter will be left 
