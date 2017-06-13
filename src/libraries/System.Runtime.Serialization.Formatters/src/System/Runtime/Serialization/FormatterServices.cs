@@ -322,7 +322,14 @@ namespace System.Runtime.Serialization
                 throw new ArgumentNullException(nameof(type));
             }
 
-            foreach (Attribute first in type.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false))
+            // Special case types like arrays            
+            Type attributedType = type;
+            while (attributedType.HasElementType)
+            {
+                attributedType = attributedType.GetElementType();
+            }
+
+            foreach (Attribute first in attributedType.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false))
             {
                 hasTypeForwardedFrom = true;
                 return ((TypeForwardedFromAttribute)first).AssemblyFullName;
