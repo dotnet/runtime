@@ -35,7 +35,7 @@ namespace System.Composition.Runtime.Util
             if (!closedGenericType.IsConstructedGenericType) throw new ArgumentException();
             var name = closedGenericType.Name.Substring(0, closedGenericType.Name.IndexOf("`"));
             var args = closedGenericType.GenericTypeArguments.Select(t => Format(t));
-            return string.Format("{0}<{1}>", name, string.Join(Properties.Resources.Formatter_ListSeparatorWithSpace, args));
+            return string.Format("{0}<{1}>", name, string.Join(SR.Formatter_ListSeparatorWithSpace, args));
         }
     }
 }

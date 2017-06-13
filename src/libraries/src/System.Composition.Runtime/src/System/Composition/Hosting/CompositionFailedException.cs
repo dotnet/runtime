@@ -15,7 +15,7 @@ namespace System.Composition.Hosting
         /// Construct a <see cref="CompositionFailedException"/> with the default message.
         /// </summary>
         public CompositionFailedException()
-            : base(Properties.Resources.CompositionFailedDefaultExceptionMessage)
+            : base(SR.CompositionFailedDefaultExceptionMessage)
         { }
 
         /// <summary>
