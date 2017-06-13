@@ -1378,28 +1378,6 @@ static gboolean do_heap_walk = FALSE;
 static gboolean ignore_heap_events;
 
 static void
-heap_walk (MonoProfiler *profiler)
-{
-	ENTER_LOG (&heap_starts_ctr, logbuffer,
-		EVENT_SIZE /* event */
-	);
-
-	emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
-
-	EXIT_LOG_EXPLICIT (DO_SEND);
-
-	mono_gc_walk_heap (0, gc_reference, NULL);
-
-	ENTER_LOG (&heap_ends_ctr, logbuffer,
-		EVENT_SIZE /* event */
-	);
-
-	emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
-
-	EXIT_LOG_EXPLICIT (DO_SEND);
-}
-
-static void
 gc_roots (MonoProfiler *prof, int num, void **objects, int *root_types, uintptr_t *extra_info)
 {
 	if (ignore_heap_events)
@@ -1436,6 +1414,8 @@ trigger_on_demand_heapshot (void)
 	if (heapshot_requested)
 		mono_gc_collect (mono_gc_max_generation ());
 }
+
+#define ALL_GC_EVENTS_MASK (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_HEAPSHOT_FEATURE)
 
 static void
 gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
@@ -1474,7 +1454,6 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		EXIT_LOG_EXPLICIT (NO_SEND);
 	}
 
-
 	switch (ev) {
 	case MONO_GC_EVENT_START:
 		if (generation == mono_gc_max_generation ())
@@ -1496,13 +1475,40 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * committed to the log file before any object move events
 		 * that will be produced during this GC.
 		 */
-		if (ENABLED (PROFLOG_ALLOCATION_EVENTS))
+		if (ENABLED (ALL_GC_EVENTS_MASK))
 			sync_point (SYNC_POINT_WORLD_STOP);
+
+		/*
+		 * All heap events are surrounded by a HEAP_START and a HEAP_ENV event.
+		 * Right now, that's the case for GC Moves, GC Roots or heapshots.
+		 */
+		if (ENABLED (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS) || do_heap_walk) {
+			ENTER_LOG (&heap_starts_ctr, logbuffer,
+				EVENT_SIZE /* event */
+			);
+
+			emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
+
+			EXIT_LOG_EXPLICIT (DO_SEND);
+		}
+
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
-		if (do_heap_shot && do_heap_walk) {
-			heap_walk (profiler);
+		if (do_heap_shot && do_heap_walk)
+			mono_gc_walk_heap (0, gc_reference, NULL);
 
+		/* Matching HEAP_END to the HEAP_START from above */
+		if (ENABLED (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS) || do_heap_walk) {
+			ENTER_LOG (&heap_ends_ctr, logbuffer,
+				EVENT_SIZE /* event */
+			);
+
+			emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
+
+			EXIT_LOG_EXPLICIT (DO_SEND);
+		}
+
+		if (do_heap_shot && do_heap_walk) {
 			do_heap_walk = FALSE;
 			heapshot_requested = 0;
 			last_hs_time = current_time ();
@@ -1515,7 +1521,7 @@ gc_event (MonoProfiler *profiler, MonoGCEvent ev, int generation)
 		 * object allocation events for certain addresses could come
 		 * after the move events that made those addresses available.
 		 */
-		if (ENABLED (PROFLOG_GC_MOVES_EVENTS))
+		if (ENABLED (ALL_GC_EVENTS_MASK))
 			sync_point_mark (SYNC_POINT_WORLD_START);
 
 		/*
