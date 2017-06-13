@@ -5,46 +5,66 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.ComponentModel.Primitives.Tests
+namespace System.ComponentModel.Tests
 {
     public class DescriptionAttributeTests
     {
         [Fact]
-        public void Equals_DifferentDescriptions()
+        public void Ctor_Default()
         {
-            var firstAttribute = new DescriptionAttribute("description");
-            var secondAttribute = new DescriptionAttribute(string.Empty);
-
-            Assert.False(firstAttribute.Equals(secondAttribute));
-        }
-
-        [Fact]
-        public void Equals_SameDescription()
-        {
-            Assert.True(DescriptionAttribute.Default.Equals(DescriptionAttribute.Default));
-        }
-
-        [Fact]
-        public void GetDescription()
-        {
-            var description = "test description";
-            var attribute = new DescriptionAttribute(description);
-
-            Assert.Equal(description, attribute.Description);
+            var attribute = new DescriptionAttribute();
+            Assert.Equal(string.Empty, attribute.Description);
+            Assert.True(attribute.IsDefaultAttribute());
         }
 
         [Theory]
-        [MemberData(nameof(DescriptionData))]
-        public void CategoryNames(DescriptionAttribute attribute, string name)
+        [InlineData(null, false)]
+        [InlineData("", true)]
+        [InlineData("test description", false)]
+        public void Ctor_Description(string description, bool expectedIsDefaultAttribute)
         {
-            Assert.Equal(name, attribute.Description);
+            var attribute = new DescriptionAttribute(description);
+            Assert.Equal(description, attribute.Description);
+            Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
         }
 
-        private static IEnumerable<object[]> DescriptionData()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { DescriptionAttribute.Default, "" };
-            yield return new object[] { new DescriptionAttribute(""), "" };
-            yield return new object[] { new DescriptionAttribute("other"), "other" };
+            yield return new object[] { new DescriptionAttribute("description"), new DescriptionAttribute("description"), true };
+            yield return new object[] { new DescriptionAttribute("description"), new DescriptionAttribute(""), false };
+            yield return new object[] { DescriptionAttribute.Default, DescriptionAttribute.Default, true };
+
+            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(null), true };
+            yield return new object[] { new DescriptionAttribute("description"), new DescriptionAttribute(null), false };
+            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute("description"), false };
+
+            yield return new object[] { new DescriptionAttribute("description"), new object(), false };
+            yield return new object[] { new DescriptionAttribute("description"), null, false };
+            yield return new object[] { new DescriptionAttribute(null), null, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(DescriptionAttribute attribute, object other, bool expected)
+        {
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is DescriptionAttribute otherAttribute && otherAttribute.Description != null && attribute.Description != null)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
+        }
+
+        [Fact]
+        public void GetHashCode_NullDescription_ThrowsNullReferenceException()
+        {
+            var attribute = new DescriptionAttribute(null);
+            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+        }
+
+        [Fact]
+        public void DefaultDescriptionAttribute_GetDescription_ReturnsEmptyString()
+        {
+            Assert.Empty(DescriptionAttribute.Default.Description);
         }
     }
 }

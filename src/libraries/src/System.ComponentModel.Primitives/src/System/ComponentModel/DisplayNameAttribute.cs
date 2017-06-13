@@ -16,9 +16,6 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly DisplayNameAttribute Default = new DisplayNameAttribute();
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         public DisplayNameAttribute() : this(string.Empty)
         {
         }
@@ -26,10 +23,7 @@ namespace System.ComponentModel
         /// <summary>
         ///    <para>Initializes a new instance of the <see cref='System.ComponentModel.DisplayNameAttribute'/> class.</para>
         /// </summary>
-        public DisplayNameAttribute(string displayName)
-        {
-            DisplayNameValue = displayName;
-        }
+        public DisplayNameAttribute(string displayName) => DisplayNameValue = displayName;
 
         /// <summary>
         ///    <para>Gets the description stored in this attribute.</para>
@@ -51,18 +45,11 @@ namespace System.ComponentModel
             }
 
             DisplayNameAttribute other = obj as DisplayNameAttribute;
-
-            return (other != null) && other.DisplayName == DisplayName;
+            return other != null && other.DisplayName == DisplayName;
         }
 
-        public override int GetHashCode()
-        {
-            return DisplayName.GetHashCode();
-        }
+        public override int GetHashCode() => DisplayName.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(DisplayNameAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

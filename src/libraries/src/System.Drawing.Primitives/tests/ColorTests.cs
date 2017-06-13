@@ -11,7 +11,7 @@ namespace System.Drawing.Primitives.Tests
 {
     public partial class ColorTests
     {
-        public static IEnumerable<object[]> NamedArgbValues =>
+        public static readonly IEnumerable<object[]> NamedArgbValues =
             new[]
             {
                 new object[] {"Transparent", 0, 255, 255, 255},
@@ -157,9 +157,10 @@ namespace System.Drawing.Primitives.Tests
                 new object[] {"YellowGreen", 255, 154, 205, 50},
             };
 
-        public static IEnumerable<object[]> ColorNames => typeof(Color).GetProperties()
+        public static readonly IEnumerable<object[]> ColorNames = typeof(Color).GetProperties()
                 .Where(p => p.PropertyType == typeof(Color))
-                .Select(p => new object[] { p.Name} );
+                .Select(p => new object[] { p.Name })
+                .ToArray();
 
         private Color? GetColorByProperty(string name)
         {

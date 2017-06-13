@@ -48,10 +48,7 @@ namespace System.ComponentModel
         ///       default category.
         ///    </para>
         /// </summary>
-        public DesignerCategoryAttribute()
-        {
-            Category = string.Empty;
-        }
+        public DesignerCategoryAttribute() => Category = string.Empty;
 
         /// <summary>
         ///    <para>
@@ -59,10 +56,7 @@ namespace System.ComponentModel
         ///       the given category name.
         ///    </para>
         /// </summary>
-        public DesignerCategoryAttribute(string category)
-        {
-            Category = category;
-        }
+        public DesignerCategoryAttribute(string category) => Category = category;
 
         /// <summary>
         ///    <para>
@@ -82,22 +76,10 @@ namespace System.ComponentModel
             return other != null && other.Category == Category;
         }
 
-        public override int GetHashCode()
-        {
-            return Category.GetHashCode();
-        }
+        public override int GetHashCode() => Category.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Category.Equals(DesignerCategoryAttribute.Default.Category);
-        }
+        public override bool IsDefaultAttribute() => Category.Equals(Default.Category);
 
-        public override object TypeId
-        {
-            get
-            {
-                return base.GetType().FullName + Category;
-            }
-        }
+        public override object TypeId => GetType().FullName + Category;
     }
 }

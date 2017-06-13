@@ -10,6 +10,7 @@
     <!-- TODO: RE-ENABLE THIS -->
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
+    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
@@ -148,7 +149,6 @@
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
     <Compile Include="System\Drawing\Internal\RectangleFEx.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
-    <Compile Include="System\Drawing\KnownColorTable.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
@@ -231,11 +231,23 @@
     <Compile Include="misc\HandleCollector.cs" />
     <Compile Include="misc\InvariantComparer.cs" />
     <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.GetSysColor.cs">
+      <Link>Common\Interop\Windows\user32\Interop.GetSysColor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.Win32SystemColors.cs">
+      <Link>Common\Interop\Windows\user32\Interop.Win32SystemColors.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)/System/Drawing/ColorConverterCommon.cs">
       <Link>System\Drawing\ColorConverterCommon.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)/System/Drawing/ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
+      <Link>System\Drawing\KnownColorTable.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
