@@ -13,6 +13,25 @@
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets') and '$(UseLiveBuildTools)' != 'true'" />
 
+ <Target Name="BuildCustomTasks">
+      <MSBuild Projects="$(MSBuildThisFileDirectory)tools-local/tasks/core-setup.tasks.builds" />
+
+    <PropertyGroup>
+      <DependencyModelTFM>netstandard1.3</DependencyModelTFM>
+      <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
+    </PropertyGroup>
+    
+      <ItemGroup>
+        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
+        <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
+        <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
+      </ItemGroup>        
+      <Copy SourceFiles="@(CustomTaskDependencies)"
+            DestinationFolder="$(LocalBuildToolsTaskDir)"
+            OverwriteReadOnlyFiles="true"
+            SkipUnchangedFiles="true" />
+  </Target>
+
   <Target Name="GetLatestCommitHash">
     <!-- Get the latest commit hash -->
     <Exec Command="git rev-parse HEAD 2>&amp;1" StandardOutputImportance="Low" IgnoreExitCode="true" IgnoreStandardErrorWarningFormat="true" ConsoleToMSBuild="true">

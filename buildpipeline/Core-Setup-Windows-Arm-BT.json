@@ -122,7 +122,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\sign.proj",
+        "solution": "$(PB_SourcesDirectory)\\signing\\sign.proj",
         "msbuildLocationMethod": "version",
         "msbuildVersion": "latest",
         "msbuildArchitecture": "x64",

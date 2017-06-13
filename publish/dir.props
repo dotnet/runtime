@@ -3,12 +3,9 @@
   <Import Project="..\dir.props" />
 
   <PropertyGroup>
-    <ContainerName Condition="'$(ContainerName)' == ''">dotnet</ContainerName>
-    <ChecksumContainerName Condition="'$(ChecksumContainerName)' == ''">dotnet</ChecksumContainerName>
     <BaseUrl Condition="'$(BaseUrl)' == ''">https://dotnetcli.blob.core.windows.net/</BaseUrl>
     <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
-    <BinariesRelativePath>Runtime/$(SharedFrameworkNugetVersion)</BinariesRelativePath>
-    <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)</InstallersRelativePath>
+
     <ChecksumsRelativePath>Runtime/$(ProductVersion)</ChecksumsRelativePath>
     <ChecksumExtension>.sha512</ChecksumExtension>
   </PropertyGroup>
