@@ -257,6 +257,12 @@ namespace System.Runtime.Serialization.Formatters.Tests
     }
 
     [Serializable]
+    public class SerializableClassDerivedFromNonSerializableClass : NonSerializableClass
+    {
+        public int AnotherValue;
+    }
+
+    [Serializable]
     public class SerializableClassWithBadField
     {
         public NonSerializableClass Value;
