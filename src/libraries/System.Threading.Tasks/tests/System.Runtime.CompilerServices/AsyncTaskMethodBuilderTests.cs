@@ -345,6 +345,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("TFS 450361 - Codegen optimization issue", TargetFrameworkMonikers.UapAot)]
         public static void TaskMethodBuilder_UsesCompletedCache()
         {
             var atmb1 = new AsyncTaskMethodBuilder();
@@ -357,6 +358,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("TFS 450361 - Codegen optimization issue", TargetFrameworkMonikers.UapAot)]
         public static void TaskMethodBuilderBoolean_UsesCompletedCache(bool result)
         {
             TaskMethodBuilderT_UsesCompletedCache(result, true);
@@ -367,6 +369,7 @@ namespace System.Threading.Tasks.Tests
         [InlineData(5, true)]
         [InlineData(-5, false)]
         [InlineData(42, false)]
+        [ActiveIssue("TFS 450361 - Codegen optimization issue", TargetFrameworkMonikers.UapAot)]
         public static void TaskMethodBuilderInt32_UsesCompletedCache(int result, bool shouldBeCached)
         {
             TaskMethodBuilderT_UsesCompletedCache(result, shouldBeCached);
@@ -375,6 +378,7 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData((string)null, true)]
         [InlineData("test", false)]
+        [ActiveIssue("TFS 450361 - Codegen optimization issue", TargetFrameworkMonikers.UapAot)]
         public static void TaskMethodBuilderRef_UsesCompletedCache(string result, bool shouldBeCached)
         {
             TaskMethodBuilderT_UsesCompletedCache(result, shouldBeCached);
