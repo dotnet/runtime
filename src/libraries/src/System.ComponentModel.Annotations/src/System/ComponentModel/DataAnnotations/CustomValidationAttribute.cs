@@ -184,12 +184,7 @@ namespace System.ComponentModel.DataAnnotations
             }
             catch (TargetInvocationException tie)
             {
-                if (tie.InnerException != null)
-                {
-                    throw tie.InnerException;
-                }
-
-                throw;
+                throw tie.InnerException;
             }
         }
 
