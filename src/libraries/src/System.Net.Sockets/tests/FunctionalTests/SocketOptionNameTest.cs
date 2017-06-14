@@ -55,7 +55,7 @@ namespace System.Net.Sockets.Tests
         // TODO: Issue #4887
         // The socket option 'ReuseUnicastPost' only works on Windows 10 systems. In addition, setting the option
         // is a no-op unless specialized network settings using PowerShell configuration are first applied to the
-        // machine. This is currently difficult to test in the CI environment. So, this ests will be disabled for now
+        // machine. This is currently difficult to test in the CI environment. So, this test will be disabled for now
         [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(4887)]
         public void ReuseUnicastPort_CreateSocketSetOptionToOneAndGetOption_SocketsReuseUnicastPortSupport_OptionIsOne()
@@ -83,6 +83,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [ActiveIssue(21018, TargetFrameworkMonikers.Uap)]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -92,6 +94,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // see comment below
+        [ActiveIssue(21018, TargetFrameworkMonikers.Uap)]
         public async Task MulticastInterface_Set_Loopback_Succeeds()
         {
             // On Windows, we can apparently assume interface 1 is "loopback."  On other platforms, this is not a

@@ -30,14 +30,12 @@ namespace System.Composition
         /// <param name="sharingBoundaryNames">Boundaries implemented by the created ExportLifetimeContext{T}s.</param>
         public SharingBoundaryAttribute(params string[] sharingBoundaryNames)
         {
-            if (sharingBoundaryNames == null) throw new ArgumentNullException(nameof(sharingBoundaryNames));
-
-            _sharingBoundaryNames = sharingBoundaryNames;
+            _sharingBoundaryNames = sharingBoundaryNames ?? throw new ArgumentNullException(nameof(sharingBoundaryNames));
         }
 
         /// <summary>
         /// Boundaries implemented by the created ExportLifetimeContext{T}s.
         /// </summary>
-        public ReadOnlyCollection<string> SharingBoundaryNames { get { return new ReadOnlyCollection<string>(_sharingBoundaryNames); } }
+        public ReadOnlyCollection<string> SharingBoundaryNames => new ReadOnlyCollection<string>(_sharingBoundaryNames);
     }
 }

@@ -13,7 +13,7 @@ namespace System.Collections.Generic.Tests
     public abstract partial class ComparersGenericTests<T>
     {
         [Fact]
-        [ActiveIssue(20888, TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue(20888, TargetFrameworkMonikers.Uap)]
         public void EqualityComparer_SerializationRoundtrip()
         {
             var bf = new BinaryFormatter();
