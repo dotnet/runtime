@@ -13,6 +13,8 @@ public class MathRound3
         TestLibrary.TestFramework.LogInformation("[Positive]");
         retVal = PosTest1() && retVal;
         retVal = PosTest2() && retVal;
+        retVal = PosTest3() && retVal;
+        retVal = PosTest4() && retVal;
 
         retVal = NegTest1() && retVal;
 
@@ -90,6 +92,48 @@ public class MathRound3
         }
 
         return retVal;
+    }
+
+    public bool PosTest3()
+    {
+        bool retVal = true;
+
+        // Test based on https://github.com/dotnet/coreclr/issues/12137
+        TestLibrary.TestFramework.BeginScenario("PosTest3: Verify Round(System.double) when decimal part of arg is very close to -0.5 .");
+
+        double doubleVal = -.50000000000000011102230246251565404236316680908203;
+        double expectedVal = -1.0;
+            
+        if (Math.Round(doubleVal) != expectedVal)
+        {
+            Console.WriteLine("actual value = {0:G17}", Math.Round(doubleVal));
+            Console.WriteLine("expected value = {0:G17}", expectedVal);
+            TestLibrary.TestFramework.LogError("001.1", "Return value is wrong!");
+            retVal = false;
+        }
+        
+        return retVal;    
+    }
+
+    public bool PosTest4()
+    {
+        bool retVal = true;
+
+        // Test based on https://github.com/dotnet/coreclr/issues/12137
+        TestLibrary.TestFramework.BeginScenario("PosTest4: Verify Round(System.double) when decimal part of arg is very close to 0.5 .");
+
+        double doubleVal = 0.50000000000000011102230246251565404236316680908203;
+        double expectedVal = 1.0;
+
+        if (Math.Round(doubleVal) != expectedVal)
+        {
+            Console.WriteLine("actual value = {0:G17}", Math.Round(doubleVal));
+            Console.WriteLine("expected value = {0:G17}", expectedVal);
+            TestLibrary.TestFramework.LogError("001.1", "Return value is wrong!");
+            retVal = false;
+        }
+
+        return retVal;    
     }
     #endregion
 
