@@ -332,7 +332,7 @@ namespace System
                 throw new ArgumentNullException(nameof(obj));
 #endif
             }
-            return TextInfo.GetHashCodeOrdinalIgnoreCase(obj);
+            return obj.GetHashCode();
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
