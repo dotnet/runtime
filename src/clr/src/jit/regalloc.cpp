@@ -6352,7 +6352,7 @@ void Compiler::rpPredictRegUse()
 
         // if there are PInvoke calls and compLvFrameListRoot is enregistered,
         // it must not be in a register trashed by the callee
-        if (info.compCallUnmanaged != 0)
+        if (info.compLvFrameListRoot != BAD_VAR_NUM)
         {
             assert(!opts.ShouldUsePInvokeHelpers());
             noway_assert(info.compLvFrameListRoot < lvaCount);
