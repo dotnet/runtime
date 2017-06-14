@@ -233,9 +233,78 @@
       "valueType": "target",
       "values": [],
       "defaultValue": ""
-    }
+    },
+    "DirectoryToBuild": {
+      "description": "MsBuild property used to set the directory to scope the build to things under that directory.",
+      "valueType": "property",
+      "values": [],
+      "defaultValue": "Please-Specify-A-Directory"
+    },
   },
   "commands": {
+    "build-directory": {
+      "alias":{
+        "directory": {
+           "description": "Root directory in which to scope the build from.",
+           "settings": {
+             "DirectoryToBuild": "default"
+           }
+        },
+        "debug": {
+          "description": "Sets optimization level to debug for managed build configuration. (/p:ConfigurationGroup=Debug)",
+          "settings": {
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        "release": {
+          "description": "Sets optimization level to release for managed build configuration. (/p:ConfigurationGroup=Release)",
+          "settings": {
+            "ConfigurationGroup": "Release"
+          }
+        },
+        "allConfigurations": {
+          "description": "Builds all configurations instead of only those specified by framework/os.",
+          "settings": {
+            "BuildAllConfigurations":"true"
+          }
+        },
+        "framework": {
+          "description": "Sets target framework for managed build configuration and only builds the libraries applicable for that framework. (/p:TargetGroup=[value])",
+          "settings": {
+            "TargetGroup": "default"
+          }
+        },
+        "os": {
+          "description": "Sets OS for the managed build configuration and only builds the libraries applicable for that OS. (/p:OSGroup=[value])",
+          "settings": {
+            "OSGroup": "default"
+          }
+        },
+        "buildArch": {
+          "description": "Sets the architecture for the managed build confiuguration. (/p:ArchGroup=[value])",
+          "settings": {
+            "ArchGroup": "default"
+          }
+        },
+        "runtimeos": {
+          "description": "Sets runtime OS for the managed build configuration, which is used for building and restoring native OS dependent assets (i.e. RID specific binaries). (/p:RuntimeOS=[value]",
+          "settings": {
+            "RuntimeOS": "default"
+          }
+        },
+      },
+      "defaultValues": {
+        "toolName": "msbuild",
+        "settings": {
+          "Project": "src/dirs.proj",
+          "ConfigurationGroup": "default",
+          "DirectoryToBuild": "default",
+          "MsBuildLogging":"default",
+          "MsBuildWarning":"default",
+          "MsBuildError":"default"
+        }
+      }
+    },
     "build-managed": {
       "alias":{
         "packages": {
