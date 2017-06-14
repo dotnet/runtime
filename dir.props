@@ -84,7 +84,7 @@
 
     <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
 
-    <UWPCoreRuntimeSdkVersion>5.4.0</UWPCoreRuntimeSdkVersion>
+    <UWPCoreRuntimeSdkVersion>6.0.0</UWPCoreRuntimeSdkVersion>
     <UWPCoreRuntimeSdkFullVersion>$(UWPCoreRuntimeSdkVersion)$(ProductVersionSuffix)</UWPCoreRuntimeSdkFullVersion>
 
     <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
