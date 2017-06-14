@@ -49,9 +49,8 @@ namespace System.Drawing.Tests
 
         public static object[] Pen(Func<Pen> penThunk, Color expectedColor) => new object[] { penThunk, expectedColor };
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(SystemPens_TestData))]
-        [ActiveIssue(20865)]
         public void SystemPens_Get_ReturnsExpected(Func<Pen> penThunk, Color expectedColor)
         {
             Pen pen = penThunk();
@@ -66,14 +65,6 @@ namespace System.Drawing.Tests
         public void FromSystemColor_NotSystemColor_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>(null, () => SystemPens.FromSystemColor(Color.Blue));
-        }
-
-        [Fact]
-        public void SystemPens_PrivateCtor_Success()
-        {
-            ConstructorInfo constructor = typeof(SystemPens).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-            SystemPens pens = (SystemPens)constructor.Invoke(new object[0]);
-            Assert.NotNull(pens);
         }
     }
 }

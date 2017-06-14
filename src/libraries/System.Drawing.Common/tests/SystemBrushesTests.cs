@@ -49,9 +49,8 @@ namespace System.Drawing.Tests
 
         public static object[] Brush(Func<Brush> brushThunk, Color expectedColor) => new object[] { brushThunk, expectedColor };
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(SystemBrushes_TestData))]
-        [ActiveIssue(20865)]
         public void SystemBrushes_Get_ReturnsExpected(Func<Brush> brushThunk, Color expectedColor)
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(brushThunk());
@@ -65,14 +64,6 @@ namespace System.Drawing.Tests
         public void FromSystemColor_NotSystemColor_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>(null, () => SystemBrushes.FromSystemColor(Color.Blue));
-        }
-
-        [Fact]
-        public void SystemBrushes_PrivateCtor_Success()
-        {
-            ConstructorInfo constructor = typeof(SystemBrushes).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-            SystemBrushes Brushes = (SystemBrushes)constructor.Invoke(new object[0]);
-            Assert.NotNull(Brushes);
         }
     }
 }

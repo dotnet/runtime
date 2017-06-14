@@ -157,7 +157,7 @@ namespace System.Drawing.Tests
 
         public static object[] Pen(Func<Pen> penThunk, Color expectedColor) => new object[] { penThunk, expectedColor };
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Pens_TestData))]
         public void Pens_Get_ReturnsExpected(Func<Pen> penThunk, Color expectedColor)
         {
@@ -167,14 +167,6 @@ namespace System.Drawing.Tests
             Assert.Throws<ArgumentException>(null, () => pen.Color = Color.AliceBlue);
 
             Assert.Same(pen, penThunk());
-        }
-
-        [Fact]
-        public void Pens_PrivateCtor_Success()
-        {
-            ConstructorInfo constructor = typeof(Pens).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-            Pens pens = (Pens)constructor.Invoke(new object[0]);
-            Assert.NotNull(pens);
         }
     }
 }
