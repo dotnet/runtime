@@ -6,13 +6,17 @@
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(DirectoryToBuild)' == ''">
     <Project Include="ref.builds" />
     <Project Include="shims\shims.proj" />
     <Project Include="Native\native-binplace.proj" />
     <Project Include="src.builds" />
     <Project Include="shims\manual\*.csproj" />
     <Project Include="shims\ApiCompat.proj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
+    <Project Include="$(DirectoryToBuild)/**/*.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
