@@ -227,12 +227,28 @@ g_strerror (gint errnum)
 #endif
 
 #ifdef HAVE_STRERROR_R
-		char tmp_buff [128]; //Quite arbritrary
-		tmp_buff [0] = 0;
+		char tmp_buff [128]; //Quite arbitrary, should be large enough
+		char *buff = tmp_buff;
+		int buff_len = sizeof (tmp_buff);
+		int r;
+		buff [0] = 0;
 
-		strerror_r (errnum, tmp_buff, sizeof (tmp_buff) - 1); //Spec is not clean on whether size argument includes space for null terminator or not
+		while ((r = strerror_r (errnum, buff, buff_len - 1))) {
+			if (r != ERANGE) {
+				buff = g_strdup_printf ("Invalid Error code '%d'", errnum);
+				break;
+			}
+			if (buff == tmp_buff)
+				buff = g_malloc (buff_len * 2);
+			else
+				buff = g_realloc (buff, buff_len * 2);
+			buff_len *= 2;
+		 //Spec is not clean on whether size argument includes space for null terminator or not	
+		}
 		if (!error_messages [errnum])
-			error_messages [errnum] = g_strdup (tmp_buff);
+			error_messages [errnum] = g_strdup (buff);
+		if (buff != tmp_buff)
+			g_free (buff);
 #else
 		if (!error_messages [errnum])
 			error_messages [errnum] = g_strdup_printf ("Error code '%d'", errnum);
