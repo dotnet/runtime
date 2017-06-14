@@ -13,6 +13,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="PensTests.cs" />
+    <Compile Include="RegionTests.cs" />
     <Compile Include="SystemBrushesTests.cs" />
     <Compile Include="SystemPensTest.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
@@ -21,6 +22,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

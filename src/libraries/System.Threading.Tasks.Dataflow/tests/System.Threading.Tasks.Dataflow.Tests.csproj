@@ -24,12 +24,6 @@
     <Compile Include="Dataflow\TransformBlockTests.cs" />
     <Compile Include="Dataflow\TransformManyBlockTests.cs" />
     <Compile Include="Dataflow\WriteOnceBlockTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
-      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
-      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>

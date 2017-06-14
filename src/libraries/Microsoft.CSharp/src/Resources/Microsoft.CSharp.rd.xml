@@ -82,6 +82,11 @@
         </Type>
         <Type Name="Object" Dynamic="Required Public" />
       </Namespace>
+      <Namespace Name="System.Reflection">
+        <Type Name="MemberInfo">
+          <Method Name="HasSameMetadataDefinitionAs" Dynamic="Required"/>
+        </Type>
+      </Namespace>
     </Assembly>
 
     <Assembly Name="System.Linq.Expressions">

@@ -228,12 +228,6 @@
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
     <Compile Include="System\Reflection\StrongNameKeyPairTests.cs" />
     <Compile Include="System\Runtime\Tests.netstandard.1.7.cs" />
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
-      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
-      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
-    </Compile>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>RemoteExecutorConsoleApp</Name>
