@@ -76,7 +76,7 @@
 #if defined(__GNUC__)
 #if defined(_ARM_) || defined(_ARM64_)
 // This is functionally equivalent to the MemoryBarrier() macro used on ARM on Windows.
-#define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb sy" : : : "memory")
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
 #else
 //
 // For GCC, we prevent reordering by the compiler by inserting the following after a volatile
@@ -120,8 +120,22 @@ T VolatileLoad(T const * pt)
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
 #ifndef DACCESS_COMPILE
+#if defined(_ARM64_) && defined(__GNUC__)
+    T val;
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_load((T volatile const *)pt, &val, __ATOMIC_ACQUIRE);
+    }
+    else
+    {
+        val = *(T volatile const *)pt;
+        asm volatile ("dmb ishld" : : : "memory");
+    }
+#else
     T val = *(T volatile const *)pt;
     VOLATILE_MEMORY_BARRIER();
+#endif
 #else
     T val = *pt;
 #endif
@@ -166,8 +180,21 @@ void VolatileStore(T* pt, T val)
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 
 #ifndef DACCESS_COMPILE
+#if defined(_ARM64_) && defined(__GNUC__)
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_store((T volatile *)pt, &val, __ATOMIC_RELEASE);
+    }
+    else
+    {
+        VOLATILE_MEMORY_BARRIER();
+        *(T volatile *)pt = val;
+    }
+#else
     VOLATILE_MEMORY_BARRIER();
     *(T volatile *)pt = val;
+#endif
 #else
     *pt = val;
 #endif
