@@ -8,14 +8,10 @@ namespace System.Common.Tests
 {
     public sealed class ThreadCultureChange : IDisposable
     {
-        private readonly CultureInfo _originalCultureInfo;
-        private readonly CultureInfo _originalUICultureInfo;
+        private readonly CultureInfo _originalCultureInfo = CultureInfo.CurrentCulture;
+        private readonly CultureInfo _originalUICultureInfo = CultureInfo.CurrentUICulture;
 
-        public ThreadCultureChange()
-        {
-            _originalCultureInfo = CultureInfo.CurrentCulture;
-            _originalUICultureInfo = CultureInfo.CurrentUICulture;
-        }
+        public ThreadCultureChange() { }
 
         public ThreadCultureChange(string culture) : this()
         {
@@ -27,12 +23,7 @@ namespace System.Common.Tests
             ChangeCultureInfo(newCulture);
         }
 
-        public void ChangeCultureInfo(string culture)
-        {
-            var newCulture = new CultureInfo(culture);
-            CultureInfo.CurrentCulture = newCulture;
-            CultureInfo.CurrentUICulture = newCulture;
-        }
+        public void ChangeCultureInfo(string culture) => ChangeCultureInfo(new CultureInfo(culture));
 
         public void ChangeCultureInfo(CultureInfo newCulture)
         {
