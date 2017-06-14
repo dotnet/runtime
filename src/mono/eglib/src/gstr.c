@@ -36,6 +36,8 @@
 #include <pthread.h>
 #endif
 
+#include <errno.h>
+
 /* 
  * g_strndup and g_vasprintf need to allocate memory with g_malloc if 
  * ENABLE_OVERRIDABLE_ALLOCATORS is defined so that it can be safely freed with g_free 
