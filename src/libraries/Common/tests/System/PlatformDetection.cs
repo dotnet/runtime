@@ -186,6 +186,7 @@ namespace System
         public static bool IsDebian8 => IsDistroAndVersion("debian", "8");
         public static bool IsUbuntu1404 => IsDistroAndVersion("ubuntu", "14.04");
         public static bool IsCentos7 => IsDistroAndVersion("centos", "7");
+        public static bool IsTizen => IsDistroAndVersion("tizen");
 
         /// <summary>
         /// Get whether the OS platform matches the given Linux distro and optional version.

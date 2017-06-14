@@ -58,7 +58,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
     End Class
 
-    <Serializable()>
     Public NotInheritable Class InternalErrorException
         Inherits System.Exception
 
@@ -73,10 +72,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' default constructor
         Public Sub New()
             MyBase.New(GetResourceString(SR.InternalError))
-        End Sub
-
-        Private Sub New(ByVal info As System.Runtime.Serialization.SerializationInfo, ByVal context As System.Runtime.Serialization.StreamingContext)
-            MyBase.New(info, context)
         End Sub
 
     End Class

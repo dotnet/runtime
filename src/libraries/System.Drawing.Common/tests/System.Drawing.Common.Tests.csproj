@@ -10,12 +10,16 @@
   <ItemGroup>
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
+    <Compile Include="RegionTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
     <Compile Include="ColorTranslatorTests.cs" />
   </ItemGroup>
