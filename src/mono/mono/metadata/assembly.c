@@ -1949,11 +1949,24 @@ mono_assembly_open_predicate (const char *filename, gboolean refonly,
 	}
 
 	if (image->assembly) {
-		/* Already loaded by another appdomain */
-		mono_assembly_invoke_load_hook (image->assembly);
-		mono_image_close (image);
-		g_free (fname);
-		return image->assembly;
+		/* We want to return the MonoAssembly that's already loaded,
+		 * but if we're using the strict assembly loader, we also need
+		 * to check that the previously loaded assembly matches the
+		 * predicate.  It could be that we previously loaded a
+		 * different version that happens to have the filename that
+		 * we're currently probing. */
+		if (mono_loader_get_strict_strong_names () &&
+		    predicate && !predicate (image->assembly, user_data)) {
+			mono_image_close (image);
+			g_free (fname);
+			return NULL;
+		} else {
+			/* Already loaded by another appdomain */
+			mono_assembly_invoke_load_hook (image->assembly);
+			mono_image_close (image);
+			g_free (fname);
+			return image->assembly;
+		}
 	}
 
 	ass = mono_assembly_load_from_predicate (image, fname, refonly, predicate, user_data, status);

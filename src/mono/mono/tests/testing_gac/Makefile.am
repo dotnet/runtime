@@ -59,6 +59,8 @@ APP_V1_SRC = v1/app.cs v1/app-refl-load.cs
 
 APP_SIGNED_V1_EXE = app-v1.exe app-refl-load-v1.exe
 
+APP_BOTH_EXE = app-both.exe
+
 UNSIGNED_V1_DLL= unsigned_v1/gactestlib.dll
 UNSIGNED_V2_DLL= unsigned_v2/gactestlib.dll
 
@@ -96,8 +98,10 @@ EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS)
 .PHONY: runtest compile-tests prereqs
 
 runtest:
+	true
 if !FULL_AOT_TESTS
 if !HYBRID_AOT_TESTS
+	$(MAKE) test-app-both
 	$(MAKE) test-signed-v1-app-mp-unsigned-v1
 	$(MAKE) test-signed-v1-app-mp-signed-v1
 	$(MAKE) test-signed-v1-app-mp-unsigned-v2-signed-v1
@@ -106,7 +110,7 @@ if !HYBRID_AOT_TESTS
 endif
 endif
 
-compile-tests: prereqs $(APP_SIGNED_V1_EXE) $(APP_SIGNED_V1_AOT)
+compile-tests: prereqs $(APP_SIGNED_V1_EXE) $(APP_BOTH_EXE) $(APP_SIGNED_V1_AOT)
 
 prereqs: $(GACTESTLIB_DLLS) $(GACTESTLIB_DLLS_AOT)
 	$(MAKE) gacinstall
@@ -126,6 +130,9 @@ $(SIGNED_V1_DLL): $(V1_SRC) $(SIGNING_KEY)
 $(SIGNED_V2_DLL): $(V2_SRC) $(SIGNING_KEY)
 	-mkdir -p $(@D)
 	$(MCS) -out:$@ $(SIGN) $< && $(TOOLS_RUNTIME) $(SN) -R $@ $(SIGNING_KEY)
+
+app-both.exe: app-both.cs $(SIGNED_V1_DLL) $(SIGNED_V2_DLL)
+	$(MCS) -target:exe -out:$@ -r:V1=$(SIGNED_V1_DLL) /r:V2=$(SIGNED_V2_DLL) $<
 
 %-v1.exe: v1/%.cs $(SIGNED_V1_DLL)
 	$(MCS) -target:exe -out:$@ -r:$(SIGNED_V1_DLL) $<
@@ -149,6 +156,10 @@ test-signed-v1-app-mp-unsigned-v2-signed-v1: $(APP_SIGNED_V1_EXE) prereqs
 
 test-signed-v1-app-mp-signed-v2-signed-v1: $(APP_SIGNED_V1_EXE) prereqs
 	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "signed_v2$(PLATFORM_PATH_SEPARATOR)signed_v1$(PLATFORM_PATH_SEPARATOR)$(BASE_MONO_PATH)" $(APP_SIGNED_V1_EXE)
+
+# N.B. the path order is important - the test needs to load v1 successfully and then try to load v2 from the v1 directory.
+test-app-both: $(APP_BOTH_EXE) prereqs
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "signed_v1$(PLATFORM_PATH_SEPARATOR)signed_v2$(PLATFORM_PATH_SEPARATOR)$(BASE_MONO_PATH)" app-both.exe
 
 # MONO_GAC_PREFIX tests
 
