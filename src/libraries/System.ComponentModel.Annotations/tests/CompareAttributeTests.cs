@@ -66,6 +66,15 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void Validate_LowerAndUpperPropertyName_Success()
+        {
+            CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.comparepropertycased));
+            Assert.NotNull(attribute.GetValidationResult("b", s_context).ErrorMessage);
+            Assert.Equal(ValidationResult.Success, attribute.GetValidationResult(null, s_context));
+            Assert.Equal(nameof(CompareObject.comparepropertycased), attribute.OtherPropertyDisplayName);
+        }
+
+        [Fact]
         public static void Validate_PropertyHasDisplayName_UpdatesFormatErrorMessageToContainDisplayName()
         {
             CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName));
@@ -96,6 +105,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             public string this[int index] { get { return "abc"; } set { } }
             public string SetOnlyProperty { set { } }
+
+            public string ComparePropertyCased { get; set; }
+            public string comparepropertycased { get; set; }
 
             public CompareObject(string otherValue)
             {
