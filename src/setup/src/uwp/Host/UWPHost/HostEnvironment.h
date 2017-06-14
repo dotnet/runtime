@@ -181,7 +181,7 @@ public:
     {
         if (!m_tpaList.CStr()) 
         {
-            wchar_t *tpaEntries[] = {L"System.Private.CoreLib.ni.dll", L"mscorlib.ni.dll"};
+            wchar_t *tpaEntries[] = {L"System.Private.CoreLib.dll"};
             InitializeTPAList(tpaEntries, _countof(tpaEntries));
         }
 
