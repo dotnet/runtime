@@ -2131,7 +2131,6 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pResult->thisTransform == CORINFO_BOX_THIS)
         {
             // READYTORUN: FUTURE: Optionally create boxing stub at runtime
-            m_zapper->Warning(W("ReadyToRun: Implicit boxing for calls to constrained methods not supported\n"));
             ThrowHR(E_NOTIMPL);
         }
     }
