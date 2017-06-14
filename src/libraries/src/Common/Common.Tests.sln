@@ -1,6 +1,7 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.Tests", "tests\Common.Tests.csproj", "{C72FD34C-539A-4447-9796-62A229571199}"
 EndProject
@@ -10,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C72FD34C-539A-4447-9796-62A229571199}.Debug|Any CPU.ActiveCfg = netstandard1.3-Unix-Debug|Any CPU
-		{C72FD34C-539A-4447-9796-62A229571199}.Debug|Any CPU.Build.0 = netstandard1.3-Unix-Debug|Any CPU
-		{C72FD34C-539A-4447-9796-62A229571199}.Release|Any CPU.ActiveCfg = netstandard1.3-Unix-Release|Any CPU
-		{C72FD34C-539A-4447-9796-62A229571199}.Release|Any CPU.Build.0 = netstandard1.3-Unix-Release|Any CPU
+		{C72FD34C-539A-4447-9796-62A229571199}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
+		{C72FD34C-539A-4447-9796-62A229571199}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{C72FD34C-539A-4447-9796-62A229571199}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
+		{C72FD34C-539A-4447-9796-62A229571199}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
