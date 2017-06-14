@@ -42,9 +42,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\Compression\StreamHelpers.cs">
       <Link>Common\System\IO\Compression\StreamHelpers.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
-      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
