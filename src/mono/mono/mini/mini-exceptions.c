@@ -93,6 +93,20 @@
 #define MONO_ARCH_STACK_GROWS_UP 0
 #endif
 
+/*
+ * Raw frame information is stored in MonoException.trace_ips as an IntPtr[].
+ * This structure represents one entry.
+ * This should consists of pointers only.
+ */
+typedef struct
+{
+	gpointer ip;
+	gpointer generic_info;
+}  ExceptionTraceIp;
+
+/* Number of words in trace_ips belonging to one entry */
+#define TRACE_IP_ENTRY_SIZE (sizeof (ExceptionTraceIp) / sizeof (gpointer))
+
 static gpointer restore_context_func, call_filter_func;
 static gpointer throw_exception_func, rethrow_exception_func;
 static gpointer throw_corlib_exception_func;
@@ -830,10 +844,13 @@ mono_exception_walk_trace (MonoException *ex, MonoExceptionFrameWalk func, gpoin
 	if (ta == NULL)
 		return FALSE;
 
-	len = mono_array_length (ta) >> 1;
+	len = mono_array_length (ta) / TRACE_IP_ENTRY_SIZE;
 	for (i = 0; i < len; i++) {
-		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
-		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
+		ExceptionTraceIp trace_ip;
+
+		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
+		gpointer ip = trace_ip.ip;
+		gpointer generic_info = trace_ip.generic_info;
 		MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *)ip);
 
 		if (ji == NULL) {
@@ -866,7 +883,7 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 		return res;
 	}
 
-	len = mono_array_length (ta) >> 1;
+	len = mono_array_length (ta) / TRACE_IP_ENTRY_SIZE;
 
 	res = mono_array_new_checked (domain, mono_defaults.stack_frame_class, len > skip ? len - skip : 0, &error);
 	if (mono_error_set_pending_exception (&error))
@@ -879,8 +896,10 @@ ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_file_info
 			mono_error_set_pending_exception (&error);
 			return NULL;
 		}
-		gpointer ip = mono_array_get (ta, gpointer, i * 2 + 0);
-		gpointer generic_info = mono_array_get (ta, gpointer, i * 2 + 1);
+		ExceptionTraceIp trace_ip;
+		memcpy (&trace_ip, mono_array_addr_fast (ta, ExceptionTraceIp, i), sizeof (ExceptionTraceIp));
+		gpointer ip = trace_ip.ip;
+		gpointer generic_info = trace_ip.generic_info;
 		MonoMethod *method;
 
 		ji = mono_jit_info_table_find (domain, (char *)ip);
@@ -1566,13 +1585,13 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 	mono_ex = (MonoException*)obj;
 	MonoArray *initial_trace_ips = mono_ex->trace_ips;
 	if (initial_trace_ips) {
-		int len = mono_array_length (initial_trace_ips) >> 1;
+		int len = mono_array_length (initial_trace_ips) / TRACE_IP_ENTRY_SIZE;
 
 		for (i = 0; i < (len - 1); i++) {
-			gpointer ip = mono_array_get (initial_trace_ips, gpointer, i * 2 + 0);
-			gpointer generic_info = mono_array_get (initial_trace_ips, gpointer, i * 2 + 1);
-			trace_ips = g_list_prepend (trace_ips, ip);
-			trace_ips = g_list_prepend (trace_ips, generic_info);
+			for (int j = 0; j < TRACE_IP_ENTRY_SIZE; ++j) {
+				gpointer p = mono_array_get (initial_trace_ips, gpointer, (i * TRACE_IP_ENTRY_SIZE) + j);
+				trace_ips = g_list_prepend (trace_ips, p);
+			}
 		}
 	}
 
@@ -3284,12 +3303,12 @@ mono_llvm_load_exception (void)
 
 		size_t upper = mono_array_length (mono_ex->trace_ips);
 
-		for (int i = 0; i < upper; i+= 2) {
+		for (int i = 0; i < upper; i += TRACE_IP_ENTRY_SIZE) {
 			gpointer curr_ip = mono_array_get (mono_ex->trace_ips, gpointer, i);
-			gpointer curr_info = mono_array_get (mono_ex->trace_ips, gpointer, i + 1);
-			trace_ips = g_list_append (trace_ips, curr_ip);
-			trace_ips = g_list_append (trace_ips, curr_info);
-
+			for (int j = 0; j < TRACE_IP_ENTRY_SIZE; ++j) {
+				gpointer p = mono_array_get (mono_ex->trace_ips, gpointer, i + j);
+				trace_ips = g_list_append (trace_ips, p);
+			}
 			if (ip == curr_ip)
 				break;
 		}
