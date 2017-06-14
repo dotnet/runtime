@@ -24,12 +24,12 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Queue : ICollection, ICloneable
     {
-        private Object[] _array;
-        private int _head;       // First valid element in the queue
-        private int _tail;       // Last valid element in the queue
-        private int _size;       // Number of elements.
-        private int _growFactor; // 100 == 1.0, 130 == 1.3, 200 == 2.0
-        private int _version;
+        private Object[] _array; // Do not rename (binary serialization)
+        private int _head; // First valid element in the queue. Do not rename (binary serialization)
+        private int _tail; // Last valid element in the queue. Do not rename (binary serialization)
+        private int _size; // Number of elements. Do not rename (binary serialization)
+        private int _growFactor; // 100 == 1.0, 130 == 1.3, 200 == 2.0. Do not rename (binary serialization)
+        private int _version; // Do not rename (binary serialization)
         [NonSerialized]
         private Object _syncRoot;
 

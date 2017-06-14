@@ -23,6 +23,20 @@ namespace System.Collections.ObjectModel
     {
         //------------------------------------------------------
         //
+        //  Private Fields
+        //
+        //------------------------------------------------------
+
+        #region Private Fields
+
+        private SimpleMonitor _monitor; // Lazily allocated only when a subclass calls BlockReentrancy() or during serialization. Do not rename (binary serialization)
+
+        [NonSerialized]
+        private int _blockReentrancyCount;
+        #endregion Private Fields
+
+        //------------------------------------------------------
+        //
         //  Constructors
         //
         //------------------------------------------------------
@@ -379,7 +393,7 @@ namespace System.Collections.ObjectModel
         [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=Neutral, PublicKeyToken=31bf3856ad364e35")]
         private sealed class SimpleMonitor : IDisposable
         {
-            internal int _busyCount; // Only used during (de)serialization to maintain compatibility with desktop.
+            internal int _busyCount; // Only used during (de)serialization to maintain compatibility with desktop. Do not rename (binary serialization)
 
             [NonSerialized]
             internal ObservableCollection<T> _collection;
@@ -397,20 +411,6 @@ namespace System.Collections.ObjectModel
         }
 
         #endregion Private Types
-
-        //------------------------------------------------------
-        //
-        //  Private Fields
-        //
-        //------------------------------------------------------
-
-        #region Private Fields
-
-        private SimpleMonitor _monitor; // Lazily allocated only when a subclass calls BlockReentrancy() or during serialization.
-
-        [NonSerialized]
-        private int _blockReentrancyCount;
-        #endregion Private Fields
     }
 
     internal static class EventArgsCache

@@ -199,7 +199,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
     }
 
     [Serializable]
-    internal sealed class ObjectWithArrays
+    public sealed class ObjectWithArrays
     {
         public int[] IntArray;
         public string[] StringArray;
@@ -456,7 +456,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
     }
 
     [Serializable]
-    internal sealed class PointEqualityComparer : IEqualityComparer<Point>
+    public sealed class PointEqualityComparer : IEqualityComparer<Point>
     {
         public bool Equals(Point x, Point y) => (x.X == y.X) && (x.Y == y.Y);
 
@@ -464,7 +464,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
     }
 
     [Serializable]
-    internal class SimpleKeyedCollection : System.Collections.ObjectModel.KeyedCollection<int, Point>
+    public class SimpleKeyedCollection : System.Collections.ObjectModel.KeyedCollection<int, Point>
     {
         protected override int GetKeyForItem(Point item)
         {

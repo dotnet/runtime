@@ -26,14 +26,14 @@ namespace System.Collections.Specialized
     public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
         // const names used for serialization
-        private const String ReadOnlyName = "ReadOnly";
-        private const String CountName = "Count";
-        private const String ComparerName = "Comparer";
-        private const String HashCodeProviderName = "HashProvider";
-        private const String KeysName = "Keys";
-        private const String ValuesName = "Values";
-        private const String KeyComparerName = "KeyComparer";
-        private const String VersionName = "Version";
+        private const String ReadOnlyName = "ReadOnly"; // Do not rename (binary serialization)
+        private const String CountName = "Count"; // Do not rename (binary serialization)
+        private const String ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const String HashCodeProviderName = "HashProvider"; // Do not rename (binary serialization)
+        private const String KeysName = "Keys"; // Do not rename (binary serialization)
+        private const String ValuesName = "Values"; // Do not rename (binary serialization)
+        private const String KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
+        private const String VersionName = "Version"; // Do not rename (binary serialization)
 
         private bool _readOnly = false;
         private ArrayList _entriesArray;
