@@ -17,6 +17,7 @@
     <Compile Include="CreditCardAttributeTests.cs" />
     <Compile Include="CustomValidationAttributeTests.cs" />
     <Compile Include="DataTypeAttributeTests.cs" />
+    <Compile Include="DisplayColumnAttributeTests.cs" />
     <Compile Include="DisplayFormatAttributeTests.cs" />
     <Compile Include="DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="EditableAttributeTests.cs" />

@@ -75,6 +75,13 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
+        public static void Validate_PrivateProperty_ThrowsArgumentException()
+        {
+            CompareAttribute attribute = new CompareAttribute("PrivateProperty");
+            Assert.Throws<ValidationException>(() => attribute.Validate("b", s_context));
+        }
+
+        [Fact]
         public static void Validate_PropertyHasDisplayName_UpdatesFormatErrorMessageToContainDisplayName()
         {
             CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.ComparePropertyWithDisplayName));
@@ -105,6 +112,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             public string this[int index] { get { return "abc"; } set { } }
             public string SetOnlyProperty { set { } }
+            private string PrivateProperty { get; set; }
 
             public string ComparePropertyCased { get; set; }
             public string comparepropertycased { get; set; }
