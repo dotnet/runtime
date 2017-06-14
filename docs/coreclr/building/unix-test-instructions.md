@@ -6,11 +6,39 @@ CoreCLR tests
 
 **Building**
 
-Build CoreCLR on [Windows](https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md) & [Unix](https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md), and CoreFX on [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md).
+Build CoreCLR on [Unix](https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md), and CoreFX on [Unix](https://github.com/dotnet/corefx/blob/master/Documentation/building/unix-instructions.md).
 
-To build only the tests, on the Windows machine:
+**Building the Tests**
+
+To build the tests on Unix:
+
+> `./build-test.sh -rebuild`
+
+As of [#11860](https://github.com/dotnet/coreclr/pull/11860) building the tests on unix works; however, it will take significantly more time than building on Windows.
+
+To build on Windows:
 
 > `C:\coreclr>build-test.cmd -rebuild`
+
+**Building Individual Tests**
+
+During development there are many instances where building an individual test is fast and necessary. All of the necessary tools to build are under coreclr/Tools. It is possible to use coreclr/Tools/MSBuild.dll as you would normally use MSBuild with a few caveats.
+
+Note that coreclr/Tools/msbuild.sh exists as well to make the call shorter.
+
+**!! Note !! -- Passing /p:__BuildOs=[OSX|Linux] is required.** 
+
+>If you omit it you will get the following error: `error MSB4801: The task factory "CodeTaskFactory" could not be loaded because this version of MSBuild does not support it.`
+---
+
+**Building an Individual Test Example**
+
+>`coreclr/Tools/msbuild.sh /maxcpucount  coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
+
+Or
+
+>`coreclr/Tools/dotnetcli/dotnet coreclr/Tools/MSBuild.dll /maxcpucount coreclr/tests/src/JIT/CodeGenBringUpTests/Array1.csproj /p:__BuildType=Release /p:__BuildOS=OSX`
+
 
 **Running tests**
 
