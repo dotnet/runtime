@@ -18,6 +18,9 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
+      <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
     <Compile Include="ColorTranslatorTests.cs" />
   </ItemGroup>
   <ItemGroup>
