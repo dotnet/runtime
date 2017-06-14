@@ -180,7 +180,7 @@ namespace System.Net.WebSockets.Tests
             Assert.Same(inner, wse.InnerException);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsFullFramework))]
         public void GetObjectData_Success()
         {
             var wse = new WebSocketException();

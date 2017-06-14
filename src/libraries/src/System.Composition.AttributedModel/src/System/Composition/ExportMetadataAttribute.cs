@@ -17,7 +17,7 @@ namespace System.Composition
         ///     specified name and metadata value.
         /// </summary>
         /// <param name="name">
-        ///     A <see cref="String"/> containing the name of the metadata value; or 
+        ///     A <see cref="string"/> containing the name of the metadata value; or 
         ///     <see langword="null"/> to set the <see cref="Name"/> property to an empty 
         ///     string ("").
         /// </param>
@@ -35,9 +35,9 @@ namespace System.Composition
         ///     Gets the name of the metadata value.
         /// </summary>
         /// <value>
-        ///     A <see cref="String"/> containing the name of the metadata value.
+        ///     A <see cref="string"/> containing the name of the metadata value.
         /// </value>
-        public string Name { get; private set; }
+        public string Name { get; }
 
         /// <summary>
         ///     Gets the metadata value.
@@ -45,6 +45,6 @@ namespace System.Composition
         /// <value>
         ///     An <see cref="object"/> containing the metadata value.
         /// </value>
-        public object Value { get; private set; }
+        public object Value { get; }
     }
 }
