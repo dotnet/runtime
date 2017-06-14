@@ -2,15 +2,13 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{C92FF1A4-DEA1-4F0F-9AEB-94C9B2561B57}</ProjectGuid>
+    <ProjectGuid>{E2E59C98-998F-9965-991D-99411166AF6F}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="Tests.cs" />
+    <Compile Include="CoreFx.Private.TestUtilities.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.io.packaging.testdata\1.0.0-prerelease\content\**\*.*" />
-  </ItemGroup>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
