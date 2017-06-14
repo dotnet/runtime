@@ -825,7 +825,7 @@ RefPosition* LinearScan::newRefPosition(
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(0);
-    newRP->setAllocateIfProfitable(0);
+    newRP->setAllocateIfProfitable(false);
 
     associateRefPosWithInterval(newRP);
 
@@ -912,7 +912,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
-    newRP->setAllocateIfProfitable(0);
+    newRP->setAllocateIfProfitable(false);
 
 #ifdef DEBUG
     newRP->minRegCandidateCount = minRegCandidateCount;
@@ -4077,7 +4077,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         if (regOptionalAtUse)
         {
-            pos->setAllocateIfProfitable(1);
+            pos->setAllocateIfProfitable(true);
         }
     }
     JITDUMP("\n");
