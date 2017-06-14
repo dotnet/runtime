@@ -689,23 +689,15 @@ namespace System.Net.Sockets
         {
             SetResults(SocketError.Success, bytesTransferred, flags);
 
+            if (NetEventSource.IsEnabled || Socket.s_perfCountersEnabled)
+            {
+                LogBytesTransferred(bytesTransferred, _completedOperation);
+            }
+
             SocketError socketError = SocketError.Success;
             switch (_completedOperation)
             {
                 case SocketAsyncOperation.Accept:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, false);
-                        }
-                    }
-
                     // Get the endpoint.
                     Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_currentSocket._rightEndPoint);
 
@@ -719,72 +711,35 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        SetResults(socketError, bytesTransferred, SocketFlags.None);
+                        SetResults(socketError, bytesTransferred, flags);
                         _acceptSocket = null;
+                        _currentSocket.UpdateStatusAfterSocketError(socketError);
                     }
                     break;
 
                 case SocketAsyncOperation.Connect:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, true);
-                        }
-                    }
-
                     socketError = FinishOperationConnect();
-
-                    // Mark socket connected.
                     if (socketError == SocketError.Success)
                     {
                         if (NetEventSource.IsEnabled) NetEventSource.Connected(_currentSocket, _currentSocket.LocalEndPoint, _currentSocket.RemoteEndPoint);
 
+                        // Mark socket connected.
                         _currentSocket.SetToConnected();
                         _connectSocket = _currentSocket;
+                    }
+                    else
+                    {
+                        SetResults(socketError, bytesTransferred, flags);
+                        _currentSocket.UpdateStatusAfterSocketError(socketError);
                     }
                     break;
 
                 case SocketAsyncOperation.Disconnect:
                     _currentSocket.SetToDisconnected();
                     _currentSocket._remoteEndPoint = null;
-
-                    break;
-
-                case SocketAsyncOperation.Receive:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, false);
-                        }
-                    }
                     break;
 
                 case SocketAsyncOperation.ReceiveFrom:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, false);
-                        }
-                    }
-
                     // Deal with incoming address.
                     _socketAddress.InternalSize = GetSocketAddressSize();
                     Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint);
@@ -801,19 +756,6 @@ namespace System.Net.Sockets
                     break;
 
                 case SocketAsyncOperation.ReceiveMessageFrom:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, false);
-                        }
-                    }
-
                     // Deal with incoming address.
                     _socketAddress.InternalSize = GetSocketAddressSize();
                     socketAddressOriginal = IPEndPointExtensions.Serialize(_remoteEndPoint);
@@ -831,63 +773,38 @@ namespace System.Net.Sockets
                     FinishOperationReceiveMessageFrom();
                     break;
 
-                case SocketAsyncOperation.Send:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, true);
-                        }
-                    }
-                    break;
-
                 case SocketAsyncOperation.SendPackets:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogSendPacketsBuffers(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, true);
-                        }
-                    }
-
                     FinishOperationSendPackets();
                     break;
-
-                case SocketAsyncOperation.SendTo:
-                    if (bytesTransferred > 0)
-                    {
-                        // Log and Perf counters.
-                        if (NetEventSource.IsEnabled)
-                        {
-                            LogBuffer(bytesTransferred);
-                        }
-                        if (Socket.s_perfCountersEnabled)
-                        {
-                            UpdatePerfCounters(bytesTransferred, true);
-                        }
-                    }
-                    break;
             }
 
-            if (socketError != SocketError.Success)
-            {
-                // Asynchronous failure or something went wrong after async success.
-                SetResults(socketError, bytesTransferred, flags);
-                _currentSocket.UpdateStatusAfterSocketError(socketError);
-            }
-
-            // Complete the operation.
             Complete();
+        }
+
+        private void LogBytesTransferred(int bytesTransferred, SocketAsyncOperation operation)
+        {
+            if (bytesTransferred > 0)
+            {
+                if (NetEventSource.IsEnabled)
+                {
+                    LogBuffer(bytesTransferred);
+                }
+
+                if (Socket.s_perfCountersEnabled)
+                {
+                    bool sendOp = false;
+                    switch (operation)
+                    {
+                        case SocketAsyncOperation.Connect:
+                        case SocketAsyncOperation.Send:
+                        case SocketAsyncOperation.SendPackets:
+                        case SocketAsyncOperation.SendTo:
+                            sendOp = true;
+                            break;
+                    }
+                    UpdatePerfCounters(bytesTransferred, sendOp);
+                }
+            }
         }
 
         internal void FinishOperationAsyncSuccess(int bytesTransferred, SocketFlags flags)
