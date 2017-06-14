@@ -21,14 +21,8 @@ namespace System.ComponentModel.Tests
         {
             yield return new object[] { "", false };
             yield return new object[] { "test category", false };
-            yield return new object[] { CategoryAttribute.Default.Category, true };
-
-            // IsDefaultAttribute is case-sensitive, but the value of Default.Name may be localized to lower case.
-            string lower = CategoryAttribute.Default.Category.ToLower();
-            if (lower != CategoryAttribute.Default.Category)
-            {
-                yield return new object[] { lower, false };
-            }
+            yield return new object[] { "Misc", true };
+            yield return new object[] { "misc", false };
         }
 
         [Theory]
