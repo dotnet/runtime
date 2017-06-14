@@ -6,6 +6,7 @@
     <ProjectGuid>{5B7EAEC-93CB-40DF-BE40-A60BC189B737}</ProjectGuid>
     <RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
     <ClsCompliant>false</ClsCompliant>
+    <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
