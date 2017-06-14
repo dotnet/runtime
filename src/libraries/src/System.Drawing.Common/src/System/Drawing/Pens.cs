@@ -152,10 +152,6 @@ namespace System.Drawing
         private static readonly object s_yellowKey = new object();
         private static readonly object s_yellowGreenKey = new object();
 
-        private Pens()
-        {
-        }
-
         /// <include file='doc\Pens.uex' path='docs/doc[@for="Pens.Transparent"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

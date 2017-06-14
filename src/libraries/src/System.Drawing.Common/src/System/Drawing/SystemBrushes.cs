@@ -15,10 +15,6 @@ namespace System.Drawing
     {
         private static readonly object s_systemBrushesKey = new object();
 
-        private SystemBrushes()
-        {
-        }
-
         /// <include file='doc\SystemBrushes.uex' path='docs/doc[@for="SystemBrushes.ActiveBorder"]/*' />
         /// <devdoc>
         ///     Brush is the color of the active window border.

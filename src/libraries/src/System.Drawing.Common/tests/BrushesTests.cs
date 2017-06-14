@@ -157,7 +157,7 @@ namespace System.Drawing.Tests
 
         public static object[] Brush(Func<Brush> brushThunk, Color expectedColor) => new object[] { brushThunk, expectedColor };
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Brushes_TestData))]
         public void Brushes_Get_ReturnsExpected(Func<Brush> brushThunk, Color expectedColor)
         {
@@ -177,14 +177,6 @@ namespace System.Drawing.Tests
             {
                 brush.Color = color;
             }
-        }
-
-        [Fact]
-        public void Brushes_PrivateCtor_Success()
-        {
-            ConstructorInfo constructor = typeof(Brushes).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[0], null);
-            Brushes brushes = (Brushes)constructor.Invoke(new object[0]);
-            Assert.NotNull(brushes);
         }
     }
 }

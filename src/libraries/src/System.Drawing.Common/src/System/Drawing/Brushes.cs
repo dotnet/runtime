@@ -152,10 +152,6 @@ namespace System.Drawing
         private static readonly object s_yellowKey = new object();
         private static readonly object s_yellowGreenKey = new object();
 
-        private Brushes()
-        {
-        }
-
         /// <include file='doc\Brushes.uex' path='docs/doc[@for="Brushes.Transparent"]/*' />
         /// <devdoc>
         ///    A transparent brush.
