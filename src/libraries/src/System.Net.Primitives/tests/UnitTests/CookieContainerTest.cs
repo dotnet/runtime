@@ -251,7 +251,7 @@ namespace System.Net.Primitives.Unit.Tests
             container.Add(uri, cookie1);
             container.Add(uri, cookie2);
 
-            var cookies = container.GetCookies(uri);
+            CookieCollection cookies = container.GetCookies(uri);
             Assert.Equal(2, cookies.Count);
             Assert.Equal(OriginalDomain, cookies[CookieName1].Domain);
             Assert.Equal(OriginalDomain, cookies[CookieName2].Domain);
@@ -284,7 +284,7 @@ namespace System.Net.Primitives.Unit.Tests
             container.Add(new Uri(SchemePrefix + OriginalDomain), cookie1);
 
             var uri = new Uri(SchemePrefix + OriginalDomain);
-            var cookies = container.GetCookies(uri);
+            CookieCollection cookies = container.GetCookies(uri);
             Assert.Equal(1, cookies.Count);
             Assert.Equal(OriginalDomain, cookies[CookieName1].Domain);
 
@@ -317,7 +317,7 @@ namespace System.Net.Primitives.Unit.Tests
             container.Add(new Uri(SchemePrefix + OriginalDomain), cookie1);
 
             var uri = new Uri(SchemePrefix + OriginalDomain);
-            var cookies = container.GetCookies(uri);
+            CookieCollection cookies = container.GetCookies(uri);
             Assert.Equal(1, cookies.Count);
             Assert.Equal(OriginalDomainWithLeadingDot, cookies[CookieName1].Domain);
 

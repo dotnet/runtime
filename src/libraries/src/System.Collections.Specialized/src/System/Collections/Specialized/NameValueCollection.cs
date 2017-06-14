@@ -21,8 +21,8 @@ namespace System.Collections.Specialized
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NameValueCollection : NameObjectCollectionBase
     {
-        private String[] _all;
-        private String[] _allKeys;
+        private String[] _all; // Do not rename (binary serialization)
+        private String[] _allKeys; // Do not rename (binary serialization)
 
         //
         // Constructors

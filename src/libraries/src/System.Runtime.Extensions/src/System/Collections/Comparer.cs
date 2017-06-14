@@ -18,14 +18,14 @@ using System.Runtime.Serialization;
 namespace System.Collections
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class Comparer : IComparer, ISerializable
     {
         private CompareInfo _compareInfo;
         public static readonly Comparer Default = new Comparer(CultureInfo.CurrentCulture);
         public static readonly Comparer DefaultInvariant = new Comparer(CultureInfo.InvariantCulture);
 
-        private const string CompareInfoName = "CompareInfo";
+        private const string CompareInfoName = "CompareInfo"; // Do not rename (binary serialization)
 
         public Comparer(CultureInfo culture)
         {

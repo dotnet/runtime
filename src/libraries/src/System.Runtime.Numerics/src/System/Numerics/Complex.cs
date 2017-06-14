@@ -13,7 +13,7 @@ namespace System.Numerics
     /// are real numbers, and i is the imaginary unit, with the property i2= -1.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Complex : IEquatable<Complex>, IFormattable
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
@@ -32,9 +32,9 @@ namespace System.Numerics
         private static readonly double s_log2 = Math.Log(2.0);
 
         // Do not rename, these fields are needed for binary serialization
-        private double m_real;
-        private double m_imaginary;
-        
+        private double m_real; // Do not rename (binary serialization)
+        private double m_imaginary; // Do not rename (binary serialization)
+
         public Complex(double real, double imaginary)
         {
             m_real = real;

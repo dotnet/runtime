@@ -64,13 +64,13 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SortedList : IDictionary, ICloneable
     {
-        private Object[] _keys;
-        private Object[] _values;
-        private int _size;
-        private int _version;
-        private IComparer _comparer;
-        private KeyList _keyList;
-        private ValueList _valueList;
+        private Object[] keys; // Do not rename (binary serialization)
+        private Object[] values; // Do not rename (binary serialization)
+        private int _size; // Do not rename (binary serialization)
+        private int version; // Do not rename (binary serialization)
+        private IComparer comparer; // Do not rename (binary serialization)
+        private KeyList keyList; // Do not rename (binary serialization)
+        private ValueList valueList; // Do not rename (binary serialization)
         [NonSerialized]
         private Object _syncRoot;
 
@@ -92,10 +92,10 @@ namespace System.Collections
         
         private void Init()
         {
-            _keys = Array.Empty<Object>();
-            _values = Array.Empty<Object>();
+            keys = Array.Empty<Object>();
+            values = Array.Empty<Object>();
             _size = 0;
-            _comparer = new Comparer(CultureInfo.CurrentCulture);
+            comparer = new Comparer(CultureInfo.CurrentCulture);
         }
 
         // Constructs a new sorted list. The sorted list is initially empty and has
@@ -110,9 +110,9 @@ namespace System.Collections
             if (initialCapacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(initialCapacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
-            _keys = new Object[initialCapacity];
-            _values = new Object[initialCapacity];
-            _comparer = new Comparer(CultureInfo.CurrentCulture);
+            keys = new Object[initialCapacity];
+            values = new Object[initialCapacity];
+            comparer = new Comparer(CultureInfo.CurrentCulture);
         }
 
         // Constructs a new sorted list with a given IComparer
@@ -128,7 +128,7 @@ namespace System.Collections
         public SortedList(IComparer comparer)
             : this()
         {
-            if (comparer != null) _comparer = comparer;
+            if (comparer != null) this.comparer = comparer;
         }
 
         // Constructs a new sorted list with a given IComparer
@@ -171,15 +171,15 @@ namespace System.Collections
             if (d == null)
                 throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
             Contract.EndContractBlock();
-            d.Keys.CopyTo(_keys, 0);
-            d.Values.CopyTo(_values, 0);
+            d.Keys.CopyTo(keys, 0);
+            d.Values.CopyTo(values, 0);
 
             // Array.Sort(Array keys, Array values, IComparer comparer) does not exist in System.Runtime contract v4.0.10.0.
             // This works around that by sorting only on the keys and then assigning values accordingly.
-            Array.Sort(_keys, comparer);
-            for (int i = 0; i < _keys.Length; i++)
+            Array.Sort(keys, comparer);
+            for (int i = 0; i < keys.Length; i++)
             {
-                _values[i] = d[_keys[i]];
+                values[i] = d[keys[i]];
             }
             _size = d.Count;
         }
@@ -191,7 +191,7 @@ namespace System.Collections
         {
             if (key == null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             Contract.EndContractBlock();
-            int i = Array.BinarySearch(_keys, 0, _size, key, _comparer);
+            int i = Array.BinarySearch(keys, 0, _size, key, comparer);
             if (i >= 0)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate__, GetKey(i), key));
             Insert(~i, key, value);
@@ -207,7 +207,7 @@ namespace System.Collections
         {
             get
             {
-                return _keys.Length;
+                return keys.Length;
             }
             set
             {
@@ -217,7 +217,7 @@ namespace System.Collections
                 }
                 Contract.EndContractBlock();
 
-                if (value != _keys.Length)
+                if (value != keys.Length)
                 {
                     if (value > 0)
                     {
@@ -225,18 +225,18 @@ namespace System.Collections
                         Object[] newValues = new Object[value];
                         if (_size > 0)
                         {
-                            Array.Copy(_keys, 0, newKeys, 0, _size);
-                            Array.Copy(_values, 0, newValues, 0, _size);
+                            Array.Copy(keys, 0, newKeys, 0, _size);
+                            Array.Copy(values, 0, newValues, 0, _size);
                         }
-                        _keys = newKeys;
-                        _values = newValues;
+                        keys = newKeys;
+                        values = newValues;
                     }
                     else
                     {
                         // size can only be zero here.
                         Debug.Assert(_size == 0, "Size is not zero");
-                        _keys = Array.Empty<Object>();
-                        _values = Array.Empty<Object>();
+                        keys = Array.Empty<Object>();
+                        values = Array.Empty<Object>();
                     }
                 }
             }
@@ -310,9 +310,9 @@ namespace System.Collections
         public virtual void Clear()
         {
             // clear does not change the capacity
-            _version++;
-            Array.Clear(_keys, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
-            Array.Clear(_values, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+            version++;
+            Array.Clear(keys, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+            Array.Clear(values, 0, _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
             _size = 0;
         }
 
@@ -322,11 +322,11 @@ namespace System.Collections
         public virtual Object Clone()
         {
             SortedList sl = new SortedList(_size);
-            Array.Copy(_keys, 0, sl._keys, 0, _size);
-            Array.Copy(_values, 0, sl._values, 0, _size);
+            Array.Copy(keys, 0, sl.keys, 0, _size);
+            Array.Copy(values, 0, sl.values, 0, _size);
             sl._size = _size;
-            sl._version = _version;
-            sl._comparer = _comparer;
+            sl.version = version;
+            sl.comparer = comparer;
             // Don't copy keyList nor valueList.
             return sl;
         }
@@ -372,7 +372,7 @@ namespace System.Collections
             Contract.EndContractBlock();
             for (int i = 0; i < Count; i++)
             {
-                DictionaryEntry entry = new DictionaryEntry(_keys[i], _values[i]);
+                DictionaryEntry entry = new DictionaryEntry(keys[i], values[i]);
                 array.SetValue(entry, i + arrayIndex);
             }
         }
@@ -386,7 +386,7 @@ namespace System.Collections
             KeyValuePairs[] array = new KeyValuePairs[Count];
             for (int i = 0; i < Count; i++)
             {
-                array[i] = new KeyValuePairs(_keys[i], _values[i]);
+                array[i] = new KeyValuePairs(keys[i], values[i]);
             }
             return array;
         }
@@ -397,7 +397,7 @@ namespace System.Collections
         // to min, whichever is larger.
         private void EnsureCapacity(int min)
         {
-            int newCapacity = _keys.Length == 0 ? 16 : _keys.Length * 2;
+            int newCapacity = keys.Length == 0 ? 16 : keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
             if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
@@ -412,7 +412,7 @@ namespace System.Collections
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
-            return _values[index];
+            return values[index];
         }
 
         // Returns an IEnumerator for this sorted list.  If modifications 
@@ -441,7 +441,7 @@ namespace System.Collections
         {
             if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
-            return _keys[index];
+            return keys[index];
         }
 
         // Returns an IList representing the keys of this sorted list. The
@@ -458,8 +458,8 @@ namespace System.Collections
         // 
         public virtual IList GetKeyList()
         {
-            if (_keyList == null) _keyList = new KeyList(this);
-            return _keyList;
+            if (keyList == null) keyList = new KeyList(this);
+            return keyList;
         }
 
         // Returns an IList representing the values of this sorted list. The
@@ -475,8 +475,8 @@ namespace System.Collections
         // 
         public virtual IList GetValueList()
         {
-            if (_valueList == null) _valueList = new ValueList(this);
-            return _valueList;
+            if (valueList == null) valueList = new ValueList(this);
+            return valueList;
         }
 
         // Returns the value associated with the given key. If an entry with the
@@ -487,18 +487,18 @@ namespace System.Collections
             get
             {
                 int i = IndexOfKey(key);
-                if (i >= 0) return _values[i];
+                if (i >= 0) return values[i];
                 return null;
             }
             set
             {
                 if (key == null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 Contract.EndContractBlock();
-                int i = Array.BinarySearch(_keys, 0, _size, key, _comparer);
+                int i = Array.BinarySearch(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
-                    _values[i] = value;
-                    _version++;
+                    values[i] = value;
+                    version++;
                     return;
                 }
                 Insert(~i, key, value);
@@ -517,7 +517,7 @@ namespace System.Collections
             if (key == null)
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             Contract.EndContractBlock();
-            int ret = Array.BinarySearch(_keys, 0, _size, key, _comparer);
+            int ret = Array.BinarySearch(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
         }
 
@@ -529,22 +529,22 @@ namespace System.Collections
         // 
         public virtual int IndexOfValue(Object value)
         {
-            return Array.IndexOf(_values, value, 0, _size);
+            return Array.IndexOf(values, value, 0, _size);
         }
 
         // Inserts an entry with a given key and value at a given index.
         private void Insert(int index, Object key, Object value)
         {
-            if (_size == _keys.Length) EnsureCapacity(_size + 1);
+            if (_size == keys.Length) EnsureCapacity(_size + 1);
             if (index < _size)
             {
-                Array.Copy(_keys, index, _keys, index + 1, _size - index);
-                Array.Copy(_values, index, _values, index + 1, _size - index);
+                Array.Copy(keys, index, keys, index + 1, _size - index);
+                Array.Copy(values, index, values, index + 1, _size - index);
             }
-            _keys[index] = key;
-            _values[index] = value;
+            keys[index] = key;
+            values[index] = value;
             _size++;
-            _version++;
+            version++;
         }
 
         // Removes the entry at the given index. The size of the sorted list is
@@ -557,12 +557,12 @@ namespace System.Collections
             _size--;
             if (index < _size)
             {
-                Array.Copy(_keys, index + 1, _keys, index, _size - index);
-                Array.Copy(_values, index + 1, _values, index, _size - index);
+                Array.Copy(keys, index + 1, keys, index, _size - index);
+                Array.Copy(values, index + 1, values, index, _size - index);
             }
-            _keys[_size] = null;
-            _values[_size] = null;
-            _version++;
+            keys[_size] = null;
+            values[_size] = null;
+            version++;
         }
 
         // Removes an entry from this sorted list. If an entry with the specified
@@ -583,8 +583,8 @@ namespace System.Collections
         {
             if (index < 0 || index >= Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.EndContractBlock();
-            _values[index] = value;
-            _version++;
+            values[index] = value;
+            version++;
         }
 
         // Returns a thread-safe SortedList.
@@ -611,11 +611,12 @@ namespace System.Collections
             Capacity = _size;
         }
 
+        [Serializable]
+        [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private class SyncSortedList : SortedList
         {
-            private SortedList _list;
-            private Object _root;
-
+            private SortedList _list; // Do not rename (binary serialization)
+            private Object _root; // Do not rename (binary serialization)
 
             internal SyncSortedList(SortedList list)
             {
@@ -854,7 +855,7 @@ namespace System.Collections
                 _index = index;
                 _startIndex = index;
                 _endIndex = index + count;
-                _version = sortedList._version;
+                _version = sortedList.version;
                 _getObjectRetType = getObjRetType;
                 _current = false;
             }
@@ -865,7 +866,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_version != _sortedList._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return _key;
                 }
@@ -873,11 +874,11 @@ namespace System.Collections
 
             public virtual bool MoveNext()
             {
-                if (_version != _sortedList._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 if (_index < _endIndex)
                 {
-                    _key = _sortedList._keys[_index];
-                    _value = _sortedList._values[_index];
+                    _key = _sortedList.keys[_index];
+                    _value = _sortedList.values[_index];
                     _index++;
                     _current = true;
                     return true;
@@ -892,7 +893,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_version != _sortedList._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return new DictionaryEntry(_key, _value);
                 }
@@ -917,7 +918,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (_version != _sortedList._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                    if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                     if (_current == false) throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     return _value;
                 }
@@ -925,7 +926,7 @@ namespace System.Collections
 
             public virtual void Reset()
             {
-                if (_version != _sortedList._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
+                if (_version != _sortedList.version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = _startIndex;
                 _current = false;
                 _key = null;
@@ -934,18 +935,19 @@ namespace System.Collections
         }
 
         [Serializable]
+        [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private class KeyList : IList
         {
-            private SortedList _sortedList;
+            private SortedList sortedList; // Do not rename (binary serialization)
 
             internal KeyList(SortedList sortedList)
             {
-                _sortedList = sortedList;
+                this.sortedList = sortedList;
             }
 
             public virtual int Count
             {
-                get { return _sortedList._size; }
+                get { return sortedList._size; }
             }
 
             public virtual bool IsReadOnly
@@ -960,12 +962,12 @@ namespace System.Collections
 
             public virtual bool IsSynchronized
             {
-                get { return _sortedList.IsSynchronized; }
+                get { return sortedList.IsSynchronized; }
             }
 
             public virtual Object SyncRoot
             {
-                get { return _sortedList.SyncRoot; }
+                get { return sortedList.SyncRoot; }
             }
 
             public virtual int Add(Object key)
@@ -981,7 +983,7 @@ namespace System.Collections
 
             public virtual bool Contains(Object key)
             {
-                return _sortedList.Contains(key);
+                return sortedList.Contains(key);
             }
 
             public virtual void CopyTo(Array array, int arrayIndex)
@@ -991,7 +993,7 @@ namespace System.Collections
                 Contract.EndContractBlock();
 
                 // defer error checking to Array.Copy
-                Array.Copy(_sortedList._keys, 0, array, arrayIndex, _sortedList.Count);
+                Array.Copy(sortedList.keys, 0, array, arrayIndex, sortedList.Count);
             }
 
             public virtual void Insert(int index, Object value)
@@ -1003,7 +1005,7 @@ namespace System.Collections
             {
                 get
                 {
-                    return _sortedList.GetKey(index);
+                    return sortedList.GetKey(index);
                 }
                 set
                 {
@@ -1013,7 +1015,7 @@ namespace System.Collections
 
             public virtual IEnumerator GetEnumerator()
             {
-                return new SortedListEnumerator(_sortedList, 0, _sortedList.Count, SortedListEnumerator.Keys);
+                return new SortedListEnumerator(sortedList, 0, sortedList.Count, SortedListEnumerator.Keys);
             }
 
             public virtual int IndexOf(Object key)
@@ -1022,8 +1024,8 @@ namespace System.Collections
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 Contract.EndContractBlock();
 
-                int i = Array.BinarySearch(_sortedList._keys, 0,
-                                           _sortedList.Count, key, _sortedList._comparer);
+                int i = Array.BinarySearch(sortedList.keys, 0,
+                                           sortedList.Count, key, sortedList.comparer);
                 if (i >= 0) return i;
                 return -1;
             }
@@ -1040,18 +1042,19 @@ namespace System.Collections
         }
 
         [Serializable]
+        [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private class ValueList : IList
         {
-            private SortedList _sortedList;
+            private SortedList sortedList; // Do not rename (binary serialization)
 
             internal ValueList(SortedList sortedList)
             {
-                _sortedList = sortedList;
+                this.sortedList = sortedList;
             }
 
             public virtual int Count
             {
-                get { return _sortedList._size; }
+                get { return sortedList._size; }
             }
 
             public virtual bool IsReadOnly
@@ -1066,12 +1069,12 @@ namespace System.Collections
 
             public virtual bool IsSynchronized
             {
-                get { return _sortedList.IsSynchronized; }
+                get { return sortedList.IsSynchronized; }
             }
 
             public virtual Object SyncRoot
             {
-                get { return _sortedList.SyncRoot; }
+                get { return sortedList.SyncRoot; }
             }
 
             public virtual int Add(Object key)
@@ -1086,7 +1089,7 @@ namespace System.Collections
 
             public virtual bool Contains(Object value)
             {
-                return _sortedList.ContainsValue(value);
+                return sortedList.ContainsValue(value);
             }
 
             public virtual void CopyTo(Array array, int arrayIndex)
@@ -1096,7 +1099,7 @@ namespace System.Collections
                 Contract.EndContractBlock();
 
                 // defer error checking to Array.Copy
-                Array.Copy(_sortedList._values, 0, array, arrayIndex, _sortedList.Count);
+                Array.Copy(sortedList.values, 0, array, arrayIndex, sortedList.Count);
             }
 
             public virtual void Insert(int index, Object value)
@@ -1108,7 +1111,7 @@ namespace System.Collections
             {
                 get
                 {
-                    return _sortedList.GetByIndex(index);
+                    return sortedList.GetByIndex(index);
                 }
                 set
                 {
@@ -1118,12 +1121,12 @@ namespace System.Collections
 
             public virtual IEnumerator GetEnumerator()
             {
-                return new SortedListEnumerator(_sortedList, 0, _sortedList.Count, SortedListEnumerator.Values);
+                return new SortedListEnumerator(sortedList, 0, sortedList.Count, SortedListEnumerator.Values);
             }
 
             public virtual int IndexOf(Object value)
             {
-                return Array.IndexOf(_sortedList._values, value, 0, _sortedList.Count);
+                return Array.IndexOf(sortedList.values, value, 0, sortedList.Count);
             }
 
             public virtual void Remove(Object value)
