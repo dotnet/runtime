@@ -394,9 +394,6 @@
 /* Using the simple generational GC. */
 /* #undef HAVE_SGEN_GC */
 
-/* Some VES is available at runtime */
-#define HAVE_ONLINE_VES 1
-
  /* Have signal */
 #define HAVE_SIGNAL 1
 
