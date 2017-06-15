@@ -173,7 +173,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal sealed class CultureAwareComparer : StringComparer
+    public sealed class CultureAwareComparer : StringComparer
     {
         private readonly CompareInfo _compareInfo; // Do not rename (binary serialization)
         private readonly bool _ignoreCase; // Do not rename (binary serialization)
@@ -229,7 +229,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal class OrdinalComparer : StringComparer 
+    public class OrdinalComparer : StringComparer 
     {
         private readonly bool _ignoreCase; // Do not rename (binary serialization)
 
@@ -277,11 +277,7 @@ namespace System
         {
             if (obj == null)
             {
-#if CORECLR
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-#else
-                throw new ArgumentNullException(nameof(obj));
-#endif
             }
             Contract.EndContractBlock();
 
@@ -326,11 +322,7 @@ namespace System
         {
             if (obj == null)
             {
-#if CORECLR
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-#else
-                throw new ArgumentNullException(nameof(obj));
-#endif
             }
             return obj.GetHashCode();
         }
@@ -342,7 +334,7 @@ namespace System
         }
     }
 
-    [Serializable]    
+    [Serializable]
     internal sealed class OrdinalIgnoreCaseComparer : OrdinalComparer, ISerializable
     {
         public OrdinalIgnoreCaseComparer() : base(true)
@@ -357,11 +349,7 @@ namespace System
         {
             if (obj == null)
             {
-#if CORECLR
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-#else
-                throw new ArgumentNullException(nameof(obj));
-#endif
             }
             return TextInfo.GetHashCodeOrdinalIgnoreCase(obj);
         }
