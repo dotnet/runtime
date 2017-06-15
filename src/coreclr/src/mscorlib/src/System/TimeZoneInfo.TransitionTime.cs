@@ -103,7 +103,8 @@ namespace System
                 }
                 Contract.EndContractBlock();
 
-                if (timeOfDay.Year != 1 || timeOfDay.Month != 1 || timeOfDay.Day != 1 || (timeOfDay.Ticks % TimeSpan.TicksPerMillisecond != 0))
+                timeOfDay.GetDatePart(out int timeOfDayYear, out int timeOfDayMonth, out int timeOfDayDay);
+                if (timeOfDayYear != 1 || timeOfDayMonth != 1 || timeOfDayDay != 1 || (timeOfDay.Ticks % TimeSpan.TicksPerMillisecond != 0))
                 {
                     throw new ArgumentException(SR.Argument_DateTimeHasTicks, nameof(timeOfDay));
                 }
