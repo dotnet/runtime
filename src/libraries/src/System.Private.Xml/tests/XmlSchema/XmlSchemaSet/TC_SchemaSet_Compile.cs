@@ -137,7 +137,7 @@ namespace System.Xml.Tests
                 ss.Add(null, XmlReader.Create(new StringReader(cham)));
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
                 var settings = new XmlReaderSettings() { XmlResolver = new XmlUrlResolver() };
-                ss.Add(null, XmlReader.Create(new StringReader(main), settings, ToAbsoluteUri(tempDirectoryPath)));
+                ss.Add(null, XmlReader.Create(new StringReader(main), settings, tempDirectoryPath));
                 ss.Compile();
 
                 Assert.Equal(2, ss.Count);
@@ -155,13 +155,6 @@ namespace System.Xml.Tests
                 Assert.Equal(0, warningCount);
                 Assert.Equal(0, errorCount);
             }
-        }
-
-        // This is a workaround for https://github.com/dotnet/corefx/issues/20046
-        private static string ToAbsoluteUri(string path)
-        {
-            Uri uri = new Uri(path, UriKind.Absolute);
-            return uri.ToString();
         }
     }
 }

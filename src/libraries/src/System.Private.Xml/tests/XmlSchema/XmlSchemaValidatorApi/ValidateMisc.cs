@@ -904,7 +904,7 @@ namespace System.Xml.Tests
                 settings.XmlResolver = new XmlUrlResolver();
                 settings.Schemas.XmlResolver = new XmlUrlResolver();
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
-                settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(ToAbsoluteUri(tempDirectory.Path))));
+                settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
                 settings.ValidationType = ValidationType.Schema;
                 XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
                 XmlDocument doc = new XmlDocument();
@@ -930,7 +930,7 @@ namespace System.Xml.Tests
                 settings.XmlResolver = new XmlUrlResolver();
                 settings.Schemas.XmlResolver = new XmlUrlResolver();
                 // TempDirectory path must end with a DirectorySeratorChar, otherwise it will throw in the Xml validation.
-                settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(ToAbsoluteUri(tempDirectory.Path))));
+                settings.Schemas.Add("mainschema", XmlReader.Create(new StringReader(xsd), null, EnsureTrailingSlash(tempDirectory.Path)));
                 settings.ValidationType = ValidationType.Schema;
                 XmlReader reader = XmlReader.Create(new StringReader(xml), settings);
                 XmlDocument doc = new XmlDocument();
@@ -952,13 +952,6 @@ namespace System.Xml.Tests
             return path[path.Length - 1] == Path.DirectorySeparatorChar ? 
                 path : 
                 path + Path.DirectorySeparatorChar;
-        }
-
-        // This is a workaround for https://github.com/dotnet/corefx/issues/20046
-        private static string ToAbsoluteUri(string path)
-        {
-            Uri uri = new Uri(path, UriKind.Absolute);
-            return uri.ToString();
         }
 
         private static string xsd445844 = @"<?xml version='1.0' encoding='utf-8' ?>
