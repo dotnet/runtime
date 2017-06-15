@@ -19,8 +19,6 @@ EXTERN_C void JIT_GetSharedNonGCStaticBase_SingleAppDomain();
 EXTERN_C void JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain();
 EXTERN_C void JIT_GetSharedGCStaticBase_SingleAppDomain();
 EXTERN_C void JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain();
-EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck);
-
 
 #ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------
@@ -1095,11 +1093,7 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR,   JIT_GetSharedGCStaticBaseNoCtor_SingleAppDomain);
         SetJitHelperFunction(CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR,JIT_GetSharedNonGCStaticBaseNoCtor_SingleAppDomain);
     }
-
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
 }
-#else
-EXTERN_C void JIT_UpdateWriteBarrierState(bool) {}
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 EXTERN_C void __stdcall ProfileEnterNaked(UINT_PTR clientData)
@@ -1313,29 +1307,28 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-#ifndef CROSSGEN_COMPILE
 void StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return;
 }
 
 void StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return;
 }
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 void SwitchToWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return;
 }
 
 void SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
 {
-    JIT_UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
+    return;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#endif // CROSSGEN_COMPILE
+
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
