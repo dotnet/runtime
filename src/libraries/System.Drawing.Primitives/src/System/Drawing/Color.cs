@@ -10,7 +10,7 @@ namespace System.Drawing
 {
     [DebuggerDisplay("{NameAndARGBValue}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public struct Color : IEquatable<Color>
     {
         public static readonly Color Empty = new Color();
@@ -325,19 +325,19 @@ namespace System.Drawing
         // user supplied name of color. Will not be filled in if
         // we map to a "knowncolor"
         //
-        private readonly string name;
+        private readonly string name; // Do not rename (binary serialization)
 
         // will contain standard 32bit sRGB (ARGB)
         //
-        private readonly long value;
+        private readonly long value; // Do not rename (binary serialization)
 
         // ignored, unless "state" says it is valid
         //
-        private readonly short knownColor;
+        private readonly short knownColor; // Do not rename (binary serialization)
 
         // implementation specific information
         //
-        private readonly short state;
+        private readonly short state; // Do not rename (binary serialization)
 
 
         internal Color(KnownColor knownColor)

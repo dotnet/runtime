@@ -1,8 +1,0 @@
-kernel32.dll!ExpandEnvironmentStringsW
-kernel32.dll!GetComputerNameW
-kernel32.dll!GetLogicalDrives
-kernel32.dll!GetSystemDirectoryW
-kernel32.dll!GetVersionExW
-kernel32.dll!IsWow64Process
-secur32.dll!GetUserNameExW
-shell32.dll!SHGetKnownFolderPath

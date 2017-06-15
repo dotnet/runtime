@@ -17,7 +17,7 @@ namespace System.Data.SqlTypes
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct SqlBoolean : INullable, IComparable, IXmlSerializable
     {
         // m_value: 2 (true), 1 (false), 0 (unknown/Null)

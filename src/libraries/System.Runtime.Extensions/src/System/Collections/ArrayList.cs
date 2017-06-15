@@ -37,10 +37,10 @@ namespace System.Collections
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArrayList : IList, ICloneable
     {
-        private Object[] _items;
+        private Object[] _items; // Do not rename (binary serialization)
         [ContractPublicPropertyName("Count")]
-        private int _size;
-        private int _version;
+        private int _size; // Do not rename (binary serialization)
+        private int _version; // Do not rename (binary serialization)
         [NonSerialized]
         private Object _syncRoot;
 

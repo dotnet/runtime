@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Xml.XmlSerializer.Tests">
+    <Assembly Name="System.Xml.XmlSerializer.Tests">
+      <Namespace Name="SerializationTypes">
+        <Type Name="TypeWith2DArrayProperty1" XmlSerializer="Excluded" />
+      </Namespace>
+    </Assembly>
+  </Library>
+</Directives>

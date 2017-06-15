@@ -50,7 +50,7 @@ namespace System.Collections.Generic
     [DebuggerDisplay("Count = {Count}")]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "By design")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class HashSet<T> : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // store lower 31 bits of hash code
@@ -65,10 +65,10 @@ namespace System.Collections.Generic
         private const int ShrinkThreshold = 3;
 
         // constants for serialization
-        private const string CapacityName = "Capacity";
-        private const string ElementsName = "Elements";
-        private const string ComparerName = "Comparer";
-        private const string VersionName = "Version";
+        private const string CapacityName = "Capacity"; // Do not rename (binary serialization)
+        private const string ElementsName = "Elements"; // Do not rename (binary serialization)
+        private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const string VersionName = "Version"; // Do not rename (binary serialization)
 
         private int[] _buckets;
         private Slot[] _slots;

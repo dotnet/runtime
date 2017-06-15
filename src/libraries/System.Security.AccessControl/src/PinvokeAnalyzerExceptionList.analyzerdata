@@ -1,4 +1,0 @@
-advapi32.dll!OpenProcessToken
-advapi32.dll!OpenThreadToken
-advapi32.dll!RevertToSelf
-advapi32.dll!SetThreadToken

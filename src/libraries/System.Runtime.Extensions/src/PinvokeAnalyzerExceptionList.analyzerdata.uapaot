@@ -1,0 +1,2 @@
+kernel32.dll!GetSystemDirectoryW
+shell32.dll!SHGetKnownFolderPath

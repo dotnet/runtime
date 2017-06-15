@@ -21,8 +21,8 @@ namespace System.Numerics
 
         // For values int.MinValue < n <= int.MaxValue, the value is stored in sign
         // and _bits is null. For all other values, sign is +1 or -1 and the bits are in _bits
-        internal readonly int _sign;
-        internal readonly uint[] _bits;
+        internal readonly int _sign; // Do not rename (binary serialization)
+        internal readonly uint[] _bits; // Do not rename (binary serialization)
 
         // We have to make a choice of how to represent int.MinValue. This is the one
         // value that fits in an int, but whose negation does not fit in an int.

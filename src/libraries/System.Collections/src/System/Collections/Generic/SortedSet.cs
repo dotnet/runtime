@@ -42,18 +42,18 @@ namespace System.Collections.Generic
     {
         #region Local variables/constants
 
-        private Node root; // Do not rename (binary serialization)
-        private IComparer<T> comparer; // Do not rename (binary serialization)
-        private int count; // Do not rename (binary serialization)
-        private int version; // Do not rename (binary serialization)
+        private Node root;
+        private IComparer<T> comparer;
+        private int count;
+        private int version;
         [NonSerialized]
-        private object _syncRoot; // Do not rename (binary serialization)
-        private SerializationInfo siInfo; // A temporary variable which we need during deserialization. Do not rename (binary serialization)
+        private object _syncRoot;
+        private SerializationInfo siInfo; // A temporary variable which we need during deserialization.
 
-        private const string ComparerName = "Comparer";
-        private const string CountName = "Count";
-        private const string ItemsName = "Items";
-        private const string VersionName = "Version";
+        private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const string CountName = "Count"; // Do not rename (binary serialization)
+        private const string ItemsName = "Items"; // Do not rename (binary serialization)
+        private const string VersionName = "Version"; // Do not rename (binary serialization)
         // Needed for enumerator
         private const string TreeName = "Tree";
         private const string NodeValueName = "Item";

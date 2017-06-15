@@ -11,7 +11,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup>
+
+  <!-- Disable the whole Process tests on UAP with the active issue https://github.com/dotnet/corefx/issues/20948 -->
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
@@ -20,12 +22,6 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.Unix.cs" Condition="'$(TargetsWindows)' != 'true'">
       <Link>Common\System\PlatformDetection.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
-      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
-      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>

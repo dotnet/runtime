@@ -66,7 +66,7 @@ namespace System
             return runningVersion != null && runningVersion >= net470;
         }
 
-        public static bool IsNetfxBelow471()
+        public static bool IsNetfx471OrNewer()
         {
             if (!IsFullFramework)
             {
@@ -75,7 +75,7 @@ namespace System
 
             Version net471 = new Version(4, 7, 1);
             Version runningVersion = GetFrameworkVersion();
-            return runningVersion != null && runningVersion < net471;
+            return runningVersion != null && runningVersion >= net471;
         }
 
         public static Version GetFrameworkVersion()

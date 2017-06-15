@@ -12,7 +12,7 @@ namespace System.Drawing
     ///    define a point in a two-dimensional plane.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, PublicKeyToken=b03f5f7f11d50a3a")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public struct PointF : IEquatable<PointF>
     {
         /// <summary>

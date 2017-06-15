@@ -22,7 +22,7 @@ public partial class ThreadPoolBoundHandleTests
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void GetNativeOverlappedState_WhenUnderlyingStateIsNull_ReturnsNull()
     {
-        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath()))
         {
             using(ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle))
             {
@@ -43,7 +43,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         object context = new object();
 
-        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath()))
         {
             using(ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle))
             {
@@ -66,7 +66,7 @@ public partial class ThreadPoolBoundHandleTests
 
         AsyncResult context = new AsyncResult();
 
-        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath()))
         {
             using(ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle))
             {
