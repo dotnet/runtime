@@ -21,12 +21,6 @@ namespace System.Globalization
 
         public const int ADEra = 1;
 
-
-        internal const int DatePartYear = 0;
-        internal const int DatePartDayOfYear = 1;
-        internal const int DatePartMonth = 2;
-        internal const int DatePartDay = 3;
-
         //
         // This is the max Gregorian year can be represented by DateTime class.  The limitation
         // is derived from DateTime class.
@@ -161,57 +155,6 @@ namespace System.Globalization
         }
 
 
-        // Returns a given date part of this DateTime. This method is used
-        // to compute the year, day-of-year, month, or day part.
-        internal virtual int GetDatePart(long ticks, int part)
-        {
-            // n = number of days since 1/1/0001
-            int n = (int)(ticks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            int y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            int y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            int y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            int y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // If year was requested, compute and return it
-            if (part == DatePartYear)
-            {
-                return (y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
-            }
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // If day-of-year was requested, return it
-            if (part == DatePartDayOfYear)
-            {
-                return (n + 1);
-            }
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            bool leapYear = (y1 == 3 && (y4 != 24 || y100 == 3));
-            int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            int m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
-            // If month was requested, return it
-            if (part == DatePartMonth) return (m);
-            // Return 1-based day-of-month
-            return (n - days[m - 1] + 1);
-        }
-
         /*=================================GetAbsoluteDate==========================
         **Action: Gets the absolute date for the given Gregorian date.  The absolute date means
         **       the number of days from January 1st, 1 A.D.
@@ -283,9 +226,7 @@ namespace System.Globalization
                                 120000));
             }
             Contract.EndContractBlock();
-            int y = GetDatePart(time.Ticks, DatePartYear);
-            int m = GetDatePart(time.Ticks, DatePartMonth);
-            int d = GetDatePart(time.Ticks, DatePartDay);
+            time.GetDatePart(out int y, out int m, out int d);
             int i = m - 1 + months;
             if (i >= 0)
             {
@@ -331,7 +272,7 @@ namespace System.Globalization
 
         public override int GetDayOfMonth(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartDay));
+            return time.Day;
         }
 
         // Returns the day-of-week part of the specified DateTime. The returned value
@@ -351,7 +292,7 @@ namespace System.Globalization
 
         public override int GetDayOfYear(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartDayOfYear));
+            return time.DayOfYear;
         }
 
         // Returns the number of days in the month given by the year and
@@ -422,7 +363,7 @@ namespace System.Globalization
 
         public override int GetMonth(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartMonth));
+            return time.Month;
         }
 
         // Returns the number of months in the specified year and era.
@@ -452,7 +393,7 @@ namespace System.Globalization
 
         public override int GetYear(DateTime time)
         {
-            return (GetDatePart(time.Ticks, DatePartYear));
+            return time.Year;
         }
 
         // Checks whether a given day in the specified era is a leap day. This method returns true if
