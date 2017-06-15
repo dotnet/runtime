@@ -829,7 +829,7 @@ public:
 
     // Returns ZapImage
     virtual ZapImage * GetZapImage();
-    void Error(mdToken token, HRESULT error, LPCWSTR message);
+    void Error(mdToken token, HRESULT error, UINT resID, LPCWSTR message);
 
     // Returns virtual section for EE datastructures
     ZapVirtualSection * GetSection(CorCompileSection section)
