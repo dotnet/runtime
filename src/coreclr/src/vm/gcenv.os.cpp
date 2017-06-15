@@ -22,7 +22,7 @@
 #undef Sleep
 #endif // Sleep
 
-#include "env/gcenv.os.h"
+#include "../gc/env/gcenv.os.h"
 
 #define MAX_PTR ((uint8_t*)(~(ptrdiff_t)0))
 
