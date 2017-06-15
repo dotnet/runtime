@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Xunit;
@@ -15,7 +16,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         const int DATA_SIZE = 2;
 
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(@"SingleOverlappedOverSingleHandle.tmp");
+        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"SingleOverlappedOverSingleHandle.tmp"));
         ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle);
 
         OverlappedContext result = new OverlappedContext();
@@ -53,7 +54,7 @@ public partial class ThreadPoolBoundHandleTests
     {
         const int DATA_SIZE = 2;
 
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(@"MultipleOperationsOverSingleHandle.tmp");
+        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"MultipleOperationsOverSingleHandle.tmp"));
         ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle);
 
         OverlappedContext result1 = new OverlappedContext();
@@ -111,8 +112,8 @@ public partial class ThreadPoolBoundHandleTests
     {
         const int DATA_SIZE = 2;
 
-        SafeHandle handle1 = HandleFactory.CreateAsyncFileHandleForWrite(@"MultipleOperationsOverMultipleHandle1.tmp");
-        SafeHandle handle2 = HandleFactory.CreateAsyncFileHandleForWrite(@"MultipleOperationsOverMultipleHandle2.tmp");
+        SafeHandle handle1 = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"MultipleOperationsOverMultipleHandle1.tmp"));
+        SafeHandle handle2 = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"MultipleOperationsOverMultipleHandle2.tmp"));
         ThreadPoolBoundHandle boundHandle1 = ThreadPoolBoundHandle.BindHandle(handle1);
         ThreadPoolBoundHandle boundHandle2 = ThreadPoolBoundHandle.BindHandle(handle2);
 
@@ -185,7 +186,7 @@ public partial class ThreadPoolBoundHandleTests
 
         const int DATA_SIZE = 2;
 
-        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(@"AsyncLocal.tmp");
+        SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(Path.Combine(TestDirectory, @"AsyncLocal.tmp"));
         ThreadPoolBoundHandle boundHandle = ThreadPoolBoundHandle.BindHandle(handle);
 
         OverlappedContext context = new OverlappedContext();
