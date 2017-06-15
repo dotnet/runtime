@@ -3553,7 +3553,7 @@ void ZapImage::FileNotFoundError(LPCWSTR pszMessage)
     fileNotFoundErrorsTable.Append(message);
 }
 
-void ZapImage::Error(mdToken token, HRESULT hr, LPCWSTR message)
+void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
 {
     // Missing dependencies are reported as fatal errors in code:CompilationDomain::BindAssemblySpec.
     // Avoid printing redundant error message for them.
@@ -3562,12 +3562,21 @@ void ZapImage::Error(mdToken token, HRESULT hr, LPCWSTR message)
 
     CorZapLogLevel level = CORZAP_LOGLEVEL_ERROR;
 
+    // Some warnings are demoted to informational level
+    if (resID == IDS_EE_SIMD_NGEN_DISALLOWED)
+    {
+        // Supress printing of "Target-dependent SIMD vector types may not be used with ngen."
+        level = CORZAP_LOGLEVEL_INFO;
+    }
+
     if (m_zapper->m_pOpt->m_ignoreErrors)
     {
 #ifdef CROSSGEN_COMPILE
         // Warnings should not go to stderr during crossgen
         if (level == CORZAP_LOGLEVEL_ERROR)
+        {
             level = CORZAP_LOGLEVEL_WARNING;
+        }
 #endif
         m_zapper->Print(level, W("Warning: "));
     }
