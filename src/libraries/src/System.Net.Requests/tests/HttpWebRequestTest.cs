@@ -136,7 +136,7 @@ namespace System.Net.Tests
         public void ContentLength_SetNegativeOne_ThrowsArgumentOutOfRangeException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => request.ContentLength = -1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.ContentLength = -1);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -191,7 +191,7 @@ namespace System.Net.Tests
         public void MaximumResponseHeadersLength_SetNegativeTwo_ThrowsArgumentOutOfRangeException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => request.MaximumResponseHeadersLength = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.MaximumResponseHeadersLength = -2);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -207,8 +207,8 @@ namespace System.Net.Tests
         public void MaximumAutomaticRedirections_SetZeroOrNegative_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.MaximumAutomaticRedirections = 0);
-            Assert.Throws<ArgumentException>("value", () => request.MaximumAutomaticRedirections = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.MaximumAutomaticRedirections = 0);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.MaximumAutomaticRedirections = -1);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -239,7 +239,7 @@ namespace System.Net.Tests
         public void ContinueTimeout_SetNegativeTwo_ThrowsArgumentOutOfRangeException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => request.ContinueTimeout = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.ContinueTimeout = -2);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -262,7 +262,7 @@ namespace System.Net.Tests
         public void Timeout_SetNegativeTwo_ThrowsArgumentOutOfRangeException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => request.Timeout = -2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => request.Timeout = -2);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -406,7 +406,7 @@ namespace System.Net.Tests
         public void TransferEncoding_SetChunked_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.TransferEncoding = "chunked");
+            AssertExtensions.Throws<ArgumentException>("value", () => request.TransferEncoding = "chunked");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -534,8 +534,8 @@ namespace System.Net.Tests
         public void Connection_SetKeepAliveAndClose_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Connection = "keep-alive");
-            Assert.Throws<ArgumentException>("value", () => request.Connection = "close");
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Connection = "keep-alive");
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Connection = "close");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -553,7 +553,7 @@ namespace System.Net.Tests
         public void Expect_Set100Continue_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Expect = "100-continue");
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Expect = "100-continue");
         }
 
         [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
@@ -706,7 +706,7 @@ namespace System.Net.Tests
         public void ClientCertificates_SetNullX509_ThrowsArgumentNullException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentNullException>("value", () => request.ClientCertificates = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => request.ClientCertificates = null);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -722,7 +722,7 @@ namespace System.Net.Tests
         public void ProtocolVersion_SetInvalidHttpVersion_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.ProtocolVersion = new Version());
+            AssertExtensions.Throws<ArgumentException>("value", () => request.ProtocolVersion = new Version());
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1080,9 +1080,9 @@ namespace System.Net.Tests
         public void Method_SetInvalidString_ThrowsArgumentException(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            Assert.Throws<ArgumentException>("value", () => request.Method = null);
-            Assert.Throws<ArgumentException>("value", () => request.Method = string.Empty);
-            Assert.Throws<ArgumentException>("value", () => request.Method = "Method(2");
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = null);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = string.Empty);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Method = "Method(2");
         }
 
         [Theory, MemberData(nameof(EchoServers))]
