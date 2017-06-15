@@ -2,38 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public class ConnectionsParsingTests
+    public class ConnectionsParsingTests : FileCleanupTestBase
     {
         [Fact]
-        public static void NumSocketConnectionsParsing()
+        public void NumSocketConnectionsParsing()
         {
-            FileUtil.NormalizeLineEndings("sockstat", "sockstat_normalized");
-            FileUtil.NormalizeLineEndings("sockstat6", "sockstat6_normalized");
+            string sockstatFile = GetTestFilePath();
+            string sockstat6File = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("sockstat", sockstatFile);
+            FileUtil.NormalizeLineEndings("sockstat6", sockstat6File);
 
-            int numTcp = StringParsingHelpers.ParseNumSocketConnections("sockstat_normalized", "TCP");
+            int numTcp = StringParsingHelpers.ParseNumSocketConnections(sockstatFile, "TCP");
             Assert.Equal(4, numTcp);
 
-            int numTcp6 = StringParsingHelpers.ParseNumSocketConnections("sockstat6_normalized", "TCP6");
+            int numTcp6 = StringParsingHelpers.ParseNumSocketConnections(sockstat6File, "TCP6");
             Assert.Equal(6, numTcp6);
 
-            int numUdp = StringParsingHelpers.ParseNumSocketConnections("sockstat_normalized", "UDP");
+            int numUdp = StringParsingHelpers.ParseNumSocketConnections(sockstatFile, "UDP");
             Assert.Equal(12, numUdp);
 
-            int numUdp6 = StringParsingHelpers.ParseNumSocketConnections("sockstat6_normalized", "UDP6");
+            int numUdp6 = StringParsingHelpers.ParseNumSocketConnections(sockstat6File, "UDP6");
             Assert.Equal(3, numUdp6);
         }
 
         [Fact]
-        public static void ActiveTcpConnectionsParsing()
+        public void ActiveTcpConnectionsParsing()
         {
-            FileUtil.NormalizeLineEndings("tcp", "tcp_normalized0");
-            FileUtil.NormalizeLineEndings("tcp6", "tcp6_normalized0");
+            string tcpFile = GetTestFilePath();
+            string tcp6File = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("tcp", tcpFile);
+            FileUtil.NormalizeLineEndings("tcp6", tcp6File);
 
-            TcpConnectionInformation[] infos = StringParsingHelpers.ParseActiveTcpConnectionsFromFiles("tcp_normalized0", "tcp6_normalized0");
+            TcpConnectionInformation[] infos = StringParsingHelpers.ParseActiveTcpConnectionsFromFiles(tcpFile, tcp6File);
             Assert.Equal(11, infos.Length);
             ValidateInfo(infos[0], new IPEndPoint(0xFFFFFF01L, 0x01BD), new IPEndPoint(0L, 0), TcpState.Established);
             ValidateInfo(infos[1], new IPEndPoint(0x12345678L, 0x008B), new IPEndPoint(0L, 0), TcpState.SynSent);
@@ -79,12 +84,14 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public static void TcpListenersParsing()
+        public void TcpListenersParsing()
         {
-            FileUtil.NormalizeLineEndings("tcp", "tcp_normalized1");
-            FileUtil.NormalizeLineEndings("tcp6", "tcp6_normalized1");
+            string tcpFile = GetTestFilePath();
+            string tcp6File = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("tcp", tcpFile);
+            FileUtil.NormalizeLineEndings("tcp6", tcp6File);
 
-            IPEndPoint[] listeners = StringParsingHelpers.ParseActiveTcpListenersFromFiles("tcp_normalized1", "tcp6_normalized1");
+            IPEndPoint[] listeners = StringParsingHelpers.ParseActiveTcpListenersFromFiles(tcpFile, tcp6File);
             Assert.Equal(11, listeners.Length);
 
             Assert.Equal(new IPEndPoint(0xFFFFFF01, 0x01Bd), listeners[0]);
@@ -102,12 +109,14 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public static void UdpListenersParsing()
+        public void UdpListenersParsing()
         {
-            FileUtil.NormalizeLineEndings("udp", "udp_normalized0");
-            FileUtil.NormalizeLineEndings("udp6", "udp6_normalized0");
+            string udpFile = GetTestFilePath();
+            string udp6File = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("udp", udpFile);
+            FileUtil.NormalizeLineEndings("udp6", udp6File);
 
-            IPEndPoint[] listeners = StringParsingHelpers.ParseActiveUdpListenersFromFiles("udp_normalized0", "udp6_normalized0");
+            IPEndPoint[] listeners = StringParsingHelpers.ParseActiveUdpListenersFromFiles(udpFile, udp6File);
             Assert.Equal(15, listeners.Length);
 
             Assert.Equal(listeners[0], new IPEndPoint(0x00000000, 0x8E15));

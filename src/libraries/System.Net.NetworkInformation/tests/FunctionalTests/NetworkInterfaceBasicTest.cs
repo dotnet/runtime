@@ -261,7 +261,8 @@ namespace System.Net.NetworkInformation.Tests
         [PlatformSpecific(~TestPlatforms.OSX)]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19314")]
+        [ActiveIssue(19314, TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue(20014, TargetFrameworkMonikers.Uap)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
