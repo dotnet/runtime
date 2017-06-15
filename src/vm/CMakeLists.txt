@@ -2,9 +2,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Needed due to the cmunged files being in the binary folders, the set(CMAKE_INCLUDE_CURRENT_DIR ON) is not enough
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}) 
-
-include_directories(${CLR_DIR}/src/gc)
-
 include_directories(${ARCH_SOURCES_DIR})
 
 add_definitions(-DUNICODE)
