@@ -1490,6 +1490,9 @@ public:
 int GetCurrentProcessCpuCount();
 DWORD_PTR GetCurrentProcessCpuMask();
 
+uint32_t GetOsPageSize();
+
+
 //*****************************************************************************
 // Return != 0 if the bit at the specified index in the array is on and 0 if
 // it is off.

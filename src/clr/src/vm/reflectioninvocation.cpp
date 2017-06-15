@@ -1208,7 +1208,7 @@ FCIMPL4(Object*, RuntimeMethodHandle::InvokeMethod,
 
     // Make sure we have enough room on the stack for this. Note that we will need the stack amount twice - once to build the stack
     // and second time to actually make the call.
-    INTERIOR_STACK_PROBE_FOR(pThread, 1 + static_cast<UINT>((2 * nAllocaSize) / OS_PAGE_SIZE) + static_cast<UINT>(HOLDER_CODE_NORMAL_STACK_LIMIT));
+    INTERIOR_STACK_PROBE_FOR(pThread, 1 + static_cast<UINT>((2 * nAllocaSize) / GetOsPageSize()) + static_cast<UINT>(HOLDER_CODE_NORMAL_STACK_LIMIT));
 
     LPBYTE pAlloc = (LPBYTE)_alloca(nAllocaSize);
 

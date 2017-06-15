@@ -1758,7 +1758,7 @@ DWORD WINAPI ThreadpoolMgr::intermediateThreadProc(PVOID arg)
     STATIC_CONTRACT_SO_INTOLERANT;
 
     offset_counter++;
-    if (offset_counter * offset_multiplier > PAGE_SIZE)
+    if (offset_counter * offset_multiplier > (int)GetOsPageSize())
         offset_counter = 0;
 
     (void)_alloca(offset_counter * offset_multiplier);

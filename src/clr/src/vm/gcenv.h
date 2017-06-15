@@ -44,6 +44,12 @@
 #include "gcenv.interlocked.h"
 #include "gcenv.interlocked.inl"
 
+#ifdef PLATFORM_UNIX
+#include "gcenv.unix.inl"
+#else
+#include "gcenv.windows.inl"
+#endif
+
 namespace ETW
 {
     typedef  enum _GC_ROOT_KIND {

@@ -155,8 +155,8 @@ void ReportStackOverflow()
 
         // We expect the stackGuarantee to be a multiple of the page size for
         // the call to IsStackSpaceAvailable.
-        _ASSERTE(stackGuarantee%OS_PAGE_SIZE == 0);
-        if (pThread->IsStackSpaceAvailable(static_cast<float>(stackGuarantee)/OS_PAGE_SIZE))
+        _ASSERTE(stackGuarantee%GetOsPageSize() == 0);
+        if (pThread->IsStackSpaceAvailable(static_cast<float>(stackGuarantee)/GetOsPageSize()))
         {
             COMPlusThrowSO();
         }
@@ -296,7 +296,7 @@ FORCEINLINE BOOL RetailStackProbeHelper(unsigned int n, Thread *pThread)
     {
         probeLimit = pThread->GetProbeLimit();
     }
-    UINT_PTR probeAddress = (UINT_PTR)(&pThread) - (n * OS_PAGE_SIZE);
+    UINT_PTR probeAddress = (UINT_PTR)(&pThread) - (n * GetOsPageSize());
 
     // If the address we want to probe to is beyond the precalculated limit we fail
     // Note that we don't check for stack probing being disabled.  This is encoded in
@@ -761,7 +761,7 @@ void BaseStackGuard::HandleOverwrittenPreviousStackGuard(int probeShortFall, __i
               "The stack requested by the previous guard is at least %d pages (%d bytes) short.\n"
               MORE_INFO_STRING, stackID ? stackID : "", m_szFunction, m_szFile, m_lineNum,
               m_pPrevGuard->m_szFunction, m_pPrevGuard->m_szFile, m_pPrevGuard->m_lineNum, m_pPrevGuard->m_numPages,
-              probeShortFall/OS_PAGE_SIZE + (probeShortFall%OS_PAGE_SIZE ? 1 : 0), probeShortFall);
+              probeShortFall/GetOsPageSize() + (probeShortFall%GetOsPageSize() ? 1 : 0), probeShortFall);
 
     LOG((LF_EH, LL_INFO100000, "%s", buff));
 
@@ -796,7 +796,7 @@ void BaseStackGuard::HandleOverwrittenCurrentStackGuard(int probeShortFall, __in
               "The%s stack guard installed in %s at \"%s\" @ %d has been violated\n\n"
               "The guard requested %d pages of stack and is at least %d pages (%d bytes) short.\n"
               MORE_INFO_STRING, stackID ? stackID : "", m_szFunction, m_szFile, m_lineNum, m_numPages,
-              probeShortFall/OS_PAGE_SIZE + (probeShortFall%OS_PAGE_SIZE ? 1 : 0), probeShortFall);
+              probeShortFall/GetOsPageSize() + (probeShortFall%GetOsPageSize() ? 1 : 0), probeShortFall);
 
     LOG((LF_EH, LL_INFO100000, buff));
 
@@ -1044,8 +1044,8 @@ BOOL BaseStackGuard::RequiresNStackPagesInternal(unsigned int n, BOOL fThrowOnSO
 
     // Get the address of the last few bytes on the penultimate page we probed for.  This is slightly early than the probe point,
     // but gives us more conservatism in our overrun checking.  ("Last" here means the bytes with the smallest address.)
-    m_pMarker = ((UINT_PTR*)pStack) - (OS_PAGE_SIZE / sizeof(UINT_PTR) * (n-1));
-    m_pMarker = (UINT_PTR*)((UINT_PTR)m_pMarker & ~(OS_PAGE_SIZE - 1));
+    m_pMarker = ((UINT_PTR*)pStack) - (GetOsPageSize() / sizeof(UINT_PTR) * (n-1));
+    m_pMarker = (UINT_PTR*)((UINT_PTR)m_pMarker & ~(GetOsPageSize() - 1));
 
     // Grab the previous guard, if any, and update our depth.
     m_pPrevGuard = GetCurrentGuard();
@@ -1166,7 +1166,7 @@ BOOL BaseStackGuard::DoProbe(unsigned int n, BOOL fThrowOnSO)
     UINT_PTR *sp = (UINT_PTR*)GetCurrentSP();
     while (sp >= m_pMarker)
     {
-        sp -= (OS_PAGE_SIZE / sizeof(UINT_PTR));
+        sp -= (GetOsPageSize() / sizeof(UINT_PTR));
         *sp = NULL;
     }
 

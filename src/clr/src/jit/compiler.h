@@ -6633,6 +6633,79 @@ public:
 #endif
     }
 
+    //------------------------------------------------------------------------
+    // VirtualStubParam: virtual stub dispatch extra parameter (slot address).
+    //
+    // It represents Abi and target specific registers for the parameter.
+    //
+    class VirtualStubParamInfo
+    {
+    public:
+        VirtualStubParamInfo(bool isCoreRTABI)
+        {
+#if defined(_TARGET_X86_)
+            reg     = REG_EAX;
+            regMask = RBM_EAX;
+#elif defined(_TARGET_AMD64_)
+            if (isCoreRTABI)
+            {
+                reg     = REG_R10;
+                regMask = RBM_R10;
+            }
+            else
+            {
+                reg     = REG_R11;
+                regMask = RBM_R11;
+            }
+#elif defined(_TARGET_ARM_)
+            reg     = REG_R4;
+            regMask = RBM_R4;
+#elif defined(_TARGET_ARM64_)
+            reg     = REG_R11;
+            regMask = RBM_R11;
+#else
+#error Unsupported or unset target architecture
+#endif
+
+#ifdef LEGACY_BACKEND
+#if defined(_TARGET_X86_)
+            predict = PREDICT_REG_EAX;
+#elif defined(_TARGET_ARM_)
+            predict = PREDICT_REG_R4;
+#else
+#error Unsupported or unset target architecture
+#endif
+#endif // LEGACY_BACKEND
+        }
+
+        regNumber GetReg() const
+        {
+            return reg;
+        }
+
+        _regMask_enum GetRegMask() const
+        {
+            return regMask;
+        }
+
+#ifdef LEGACY_BACKEND
+        rpPredictReg GetPredict() const
+        {
+            return predict;
+        }
+#endif
+
+    private:
+        regNumber     reg;
+        _regMask_enum regMask;
+
+#ifdef LEGACY_BACKEND
+        rpPredictReg predict;
+#endif
+    };
+
+    VirtualStubParamInfo* virtualStubParamInfo;
+
     inline bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
     {
         return eeGetEEInfo()->targetAbi == abi;

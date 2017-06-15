@@ -103,7 +103,7 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     {
         CONSTRUCTOR_CHECK;
         PRECONDITION(CheckPointer(mappedBase));
-        PRECONDITION(CheckAligned(mappedBase, OS_PAGE_SIZE));
+        PRECONDITION(CheckAligned(mappedBase, GetOsPageSize()));
         PRECONDITION(PEDecoder(mappedBase,fixedUp).CheckNTHeaders());
         THROWS;
         GC_NOTRIGGER;
@@ -113,7 +113,7 @@ inline PEDecoder::PEDecoder(PTR_VOID mappedBase, bool fixedUp /*= FALSE*/)
     CONTRACTL_END;
 
     // Temporarily set the size to 2 pages, so we can get the headers.
-    m_size = OS_PAGE_SIZE*2;
+    m_size = GetOsPageSize()*2;
 
     m_pNTHeaders = PTR_IMAGE_NT_HEADERS(FindNTHeaders());
     if (!m_pNTHeaders)
@@ -177,7 +177,7 @@ inline HRESULT PEDecoder::Init(void *mappedBase, bool fixedUp /*= FALSE*/)
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(CheckPointer(mappedBase));
-        PRECONDITION(CheckAligned(mappedBase, OS_PAGE_SIZE));
+        PRECONDITION(CheckAligned(mappedBase, GetOsPageSize()));
         PRECONDITION(!HasContents());
     }
     CONTRACTL_END;
@@ -188,7 +188,7 @@ inline HRESULT PEDecoder::Init(void *mappedBase, bool fixedUp /*= FALSE*/)
         m_flags |= FLAG_RELOCATED;
 
     // Temporarily set the size to 2 pages, so we can get the headers.
-    m_size = OS_PAGE_SIZE*2;
+    m_size = GetOsPageSize()*2;
 
     m_pNTHeaders = FindNTHeaders();
     if (!m_pNTHeaders)

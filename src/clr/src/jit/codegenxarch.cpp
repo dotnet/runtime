@@ -2430,7 +2430,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         //  loop:
         //       test  ESP, [ESP+0]     // tickle the page
         //       mov   REGTMP, ESP
-        //       sub   REGTMP, PAGE_SIZE
+        //       sub   REGTMP, GetOsPageSize()
         //       mov   ESP, REGTMP
         //       cmp   ESP, REGCNT
         //       jae   loop
@@ -5193,7 +5193,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // Where EAX is also used as an argument to the stub dispatch helper. Make
             // sure that the call target address is computed into EAX in this case.
 
-            assert(REG_VIRTUAL_STUB_PARAM == REG_VIRTUAL_STUB_TARGET);
+            assert(compiler->virtualStubParamInfo->GetReg() == REG_VIRTUAL_STUB_TARGET);
 
             assert(target->isContainedIndir());
             assert(target->OperGet() == GT_IND);

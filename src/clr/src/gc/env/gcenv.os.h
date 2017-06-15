@@ -7,6 +7,17 @@
 #ifndef __GCENV_OS_H__
 #define __GCENV_OS_H__
 
+#ifdef Sleep
+// This is a funny workaround for the fact that "common.h" defines Sleep to be
+// Dont_Use_Sleep, with the hope of causing linker errors whenever someone tries to use sleep.
+//
+// However, GCToOSInterface defines a function called Sleep, which (due to this define) becomes
+// "Dont_Use_Sleep", which the GC in turn happily uses. The symbol that GCToOSInterface actually
+// exported was called "GCToOSInterface::Dont_Use_Sleep". While we progress in making the GC standalone,
+// we'll need to break the dependency on common.h (the VM header) and this problem will become moot.
+#undef Sleep
+#endif // Sleep
+
 // Critical section used by the GC
 class CLRCriticalSection
 {
@@ -337,6 +348,9 @@ public:
     // Remarks:
     //  Any parameter can be null.
     static void GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
+
+    // Get size of an OS memory page
+    static uint32_t GetPageSize();
 
     //
     // Misc

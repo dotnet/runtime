@@ -97,7 +97,7 @@ CObjectType CorUnix::otProcess(
 //
 // Helper memory page used by the FlushProcessWriteBuffers
 //
-static int s_helperPage[VIRTUAL_PAGE_SIZE / sizeof(int)] __attribute__((aligned(VIRTUAL_PAGE_SIZE)));
+static int* s_helperPage = 0;
 
 //
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
@@ -3035,13 +3035,22 @@ Return
 BOOL 
 InitializeFlushProcessWriteBuffers()
 {
-    // Verify that the s_helperPage is really aligned to the VIRTUAL_PAGE_SIZE
-    _ASSERTE((((SIZE_T)s_helperPage) & (VIRTUAL_PAGE_SIZE - 1)) == 0);
+    _ASSERTE(s_helperPage == 0);
+
+    s_helperPage = static_cast<int*>(mmap(0, GetVirtualPageSize(), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+
+    if(s_helperPage == MAP_FAILED)
+    {
+        return false;
+    }
+
+    // Verify that the s_helperPage is really aligned to the GetVirtualPageSize()
+    _ASSERTE((((SIZE_T)s_helperPage) & (GetVirtualPageSize() - 1)) == 0);
 
     // Locking the page ensures that it stays in memory during the two mprotect
     // calls in the FlushProcessWriteBuffers below. If the page was unmapped between
     // those calls, they would not have the expected effect of generating IPI.
-    int status = mlock(s_helperPage, VIRTUAL_PAGE_SIZE);
+    int status = mlock(s_helperPage, GetVirtualPageSize());
 
     if (status != 0)
     {
@@ -3051,7 +3060,7 @@ InitializeFlushProcessWriteBuffers()
     status = pthread_mutex_init(&flushProcessWriteBuffersMutex, NULL);
     if (status != 0)
     {
-        munlock(s_helperPage, VIRTUAL_PAGE_SIZE);
+        munlock(s_helperPage, GetVirtualPageSize());
     }
 
     return status == 0;
@@ -3084,14 +3093,14 @@ FlushProcessWriteBuffers()
     // Changing a helper memory page protection from read / write to no access 
     // causes the OS to issue IPI to flush TLBs on all processors. This also
     // results in flushing the processor buffers.
-    status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_READ | PROT_WRITE);
+    status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_READ | PROT_WRITE);
     FATAL_ASSERT(status == 0, "Failed to change helper page protection to read / write");
 
     // Ensure that the page is dirty before we change the protection so that
     // we prevent the OS from skipping the global TLB flush.
     InterlockedIncrement(s_helperPage);
 
-    status = mprotect(s_helperPage, VIRTUAL_PAGE_SIZE, PROT_NONE);
+    status = mprotect(s_helperPage, GetVirtualPageSize(), PROT_NONE);
     FATAL_ASSERT(status == 0, "Failed to change helper page protection to no access");
 
     status = pthread_mutex_unlock(&flushProcessWriteBuffersMutex);
