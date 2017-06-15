@@ -15,6 +15,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using Microsoft.ServiceModel;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor

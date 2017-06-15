@@ -10,13 +10,13 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Runtime;
-    //using System.ServiceModel.Diagnostics;
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
     using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]

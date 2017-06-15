@@ -10,6 +10,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Runtime.Serialization;
     using System.Globalization;
     using System;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
     static class FeedUtils
     {

@@ -10,6 +10,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml;
     using System.Xml.Serialization;
     using System.Runtime.CompilerServices;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
     // sealed because the ctor results in a call to the virtual InsertItem method
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
