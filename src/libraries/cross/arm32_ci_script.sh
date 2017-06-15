@@ -235,9 +235,10 @@ function cross_build_corefx_with_docker {
     # Cross building corefx with rootfs in Docker
     if [ "$__buildArch" == "armel" ]; then
         __extraCmd="/p:OverridePackageSource=https://tizen.myget.org/F/dotnet-core/api/v3/index.json"
+        __portableLinux="-PortableBuild=false"
     fi
 
-    __buildCmd="./build.sh -buildArch=$__buildArch -$__buildConfig -RuntimeOS=$__runtimeOS -- $__extraCmd"
+    __buildCmd="./build.sh -buildArch=$__buildArch -$__buildConfig -RuntimeOS=$__runtimeOS $__portableLinux -- $__extraCmd"
     $__dockerCmd $__buildCmd
     sudo chown -R $(id -u -n) ./bin
 }
