@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{297A9116-1005-499D-A895-2063D03E4C94}</ProjectGuid>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
+    <Compile Include="LdapSessionOptionsTests.cs" />
+    <Compile Include="PermissiveModifyControlTests.cs" />
+    <Compile Include="ModifyDNRequestTests.cs" />
+    <Compile Include="ModifyRequestTests.cs" />
+    <Compile Include="PageResultRequestControlTests.cs" />
+    <Compile Include="SortRequestControlTests.cs" />
+    <Compile Include="SortKeyTests.cs" />
+    <Compile Include="ReferralCallbackTests.cs" />
+    <Compile Include="VlvRequestControlTests.cs" />
+    <Compile Include="VerifyNameControlTests.cs" />
+    <Compile Include="TreeDeleteControlTests.cs" />
+    <Compile Include="ShowDeletedControlTests.cs" />
+    <Compile Include="QuotaControlTests.cs" />
+    <Compile Include="SecurityDescriptorFlagControlTests.cs" />
+    <Compile Include="SearchOptionsControlTests.cs" />
+    <Compile Include="SearchRequestTests.cs" />
+    <Compile Include="TlsOperationExceptionTests.cs" />
+    <Compile Include="LdapExceptionTests.cs" />
+    <Compile Include="LdapConnectionTests.cs" />
+    <Compile Include="LazyCommitControlTests.cs" />
+    <Compile Include="ExtendedRequestTests.cs" />
+    <Compile Include="ExtendedDNControlTests.cs" />
+    <Compile Include="DsmlAuthRequestTests.cs" />
+    <Compile Include="DomainScopeControlTests.cs" />
+    <Compile Include="DirSyncRequestControlTests.cs" />
+    <Compile Include="LdapDirectoryIdentifierTests.cs" />
+    <Compile Include="DirectoryNotificationControlTests.cs" />
+    <Compile Include="DirectoryControlCollectionTests.cs" />
+    <Compile Include="DirectoryAttributeModificationCollectionTests.cs" />
+    <Compile Include="DirectoryAttributeCollectionTests.cs" />
+    <Compile Include="DirectoryControlTests.cs" />
+    <Compile Include="DirectoryConnectionTests.cs" />
+    <Compile Include="DirectoryAttributeTests.cs" />
+    <Compile Include="DeleteRequestTests.cs" />
+    <Compile Include="CrossDomainMoveControlTests.cs" />
+    <Compile Include="CompareRequestTests.cs" />
+    <Compile Include="DirectoryAttributeModificationTests.cs" />
+    <Compile Include="DirectoryOperationExceptionTests.cs" />
+    <Compile Include="DirectoryExceptionTests.cs" />
+    <Compile Include="BerConversionExceptionTests.cs" />
+    <Compile Include="AsqRequestControlTests.cs" />
+    <Compile Include="AddRequestTests.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
