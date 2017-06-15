@@ -1749,7 +1749,8 @@ void AppDomain::CacheWinRTFactoryObject(MethodTable *pClassMT, OBJECTREF *refFac
         pNewCtxEntry = pEntry->m_pCtxEntry;
         pEntry->m_pCtxEntry = pTemp;
 
-        HndAssignHandle(pEntry->m_ohFactoryObject, *refFactory);
+        IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+        mgr->StoreObjectInHandle(pEntry->m_ohFactoryObject, OBJECTREFToObject(*refFactory));
     }
 }
 
@@ -4153,12 +4154,6 @@ AppDomain::~AppDomain()
 //*****************************************************************************
 //*****************************************************************************
 //*****************************************************************************
-#ifdef _DEBUG
-#include "handletablepriv.h"
-#endif
-
-
-
 void AppDomain::Init()
 {
     CONTRACTL

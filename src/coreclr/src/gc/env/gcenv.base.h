@@ -300,8 +300,6 @@ typedef DPTR(uint8_t)   PTR_uint8_t;
 
 #define DECLSPEC_ALIGN(x)   __declspec(align(x))
 
-#define OS_PAGE_SIZE 4096
-
 #ifndef _ASSERTE
 #define _ASSERTE(_expr) ASSERT(_expr)
 #endif
@@ -353,7 +351,7 @@ typedef PTR_PTR_Object PTR_UNCHECKED_OBJECTREF;
 #if defined(__clang__)
 #if defined(_ARM_) || defined(_ARM64_)
 // This is functionally equivalent to the MemoryBarrier() macro used on ARM on Windows.
-#define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb sy" : : : "memory")
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
 #else
 //
 // For Clang, we prevent reordering by the compiler by inserting the following after a volatile
@@ -394,8 +392,22 @@ template<typename T>
 inline
 T VolatileLoad(T const * pt)
 {
+#if defined(_ARM64_) && defined(__clang__)
+    T val;
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_load((T volatile const *)pt, &val, __ATOMIC_ACQUIRE);
+    }
+    else
+    {
+        val = *(T volatile const *)pt;
+        asm volatile ("dmb ishld" : : : "memory");
+    }
+#else
     T val = *(T volatile const *)pt;
     VOLATILE_MEMORY_BARRIER();
+#endif
     return val;
 }
 
@@ -422,8 +434,21 @@ template<typename T>
 inline
 void VolatileStore(T* pt, T val)
 {
+#if defined(_ARM64_) && defined(__clang__)
+    static const unsigned lockFreeAtomicSizeMask = (1 << 1) | (1 << 2) | (1 << 4) | (1 << 8);
+    if((1 << sizeof(T)) & lockFreeAtomicSizeMask)
+    {
+        __atomic_store((T volatile *)pt, &val, __ATOMIC_RELEASE);
+    }
+    else
+    {
+        VOLATILE_MEMORY_BARRIER();
+        *(T volatile *)pt = val;
+    }
+#else
     VOLATILE_MEMORY_BARRIER();
     *(T volatile *)pt = val;
+#endif
 }
 
 extern GCSystemInfo g_SystemInfo;

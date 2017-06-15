@@ -10,9 +10,6 @@
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.CoreDisTools">
-      <Version>1.0.1-prerelease-*</Version>
-    </PackageReference>
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
       <Version>$(CoreFxPackageVersion)</Version>
     </PackageReference>

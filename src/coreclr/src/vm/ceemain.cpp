@@ -266,7 +266,6 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 
 
-extern "C" IExecutionEngine* __stdcall IEE();
 
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
@@ -1081,8 +1080,8 @@ void EEStartupHelper(COINITIEE fFlags)
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)
         g_MiniMetaDataBuffMaxSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MiniMdBufferCapacity);
-        // align up to OS_PAGE_SIZE, with a maximum of 1 MB
-        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, OS_PAGE_SIZE), 1024 * 1024);
+        // align up to GetOsPageSize(), with a maximum of 1 MB
+        g_MiniMetaDataBuffMaxSize = (DWORD) min(ALIGN_UP(g_MiniMetaDataBuffMaxSize, GetOsPageSize()), 1024 * 1024);
         // allocate the buffer. this is never touched while the process is running, so it doesn't 
         // contribute to the process' working set. it is needed only as a "shadow" for a mini-metadata
         // buffer that will be set up and reported / updated in the Watson process (the 

@@ -1152,7 +1152,8 @@ PVOID QCALLTYPE RuntimeTypeHandle::GetGCHandle(EnregisteredTypeHandle pTypeHandl
     GCX_COOP();
 
     TypeHandle th = TypeHandle::FromPtr(pTypeHandle);
-    objHandle = th.GetDomain()->CreateTypedHandle(NULL, handleType);
+    assert(handleType >= HNDTYPE_WEAK_SHORT && handleType <= HNDTYPE_WEAK_WINRT);
+    objHandle = th.GetDomain()->CreateTypedHandle(NULL, static_cast<HandleType>(handleType));
     th.GetLoaderAllocator()->RegisterHandleForCleanup(objHandle);
 
     END_QCALL;

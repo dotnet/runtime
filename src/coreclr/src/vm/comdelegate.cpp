@@ -582,7 +582,7 @@ ComPlusCallInfo * COMDelegate::PopulateComPlusCallInfo(MethodTable * pDelMT)
 // We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
 LoaderHeap *DelegateEEClass::GetStubHeap()
 {
-    return m_pInvokeMethod->GetLoaderAllocator()->GetStubHeap();
+    return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
 }
 
 
@@ -601,7 +601,7 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 
     DelegateEEClass * pClass = (DelegateEEClass *)pDelMT->GetClass();
     
-    MethodDesc *pMD = pClass->m_pInvokeMethod;
+    MethodDesc *pMD = pClass->GetInvokeMethod();
 
     StackSArray<ShuffleEntry> rShuffleEntryArray;
     GenerateShuffleArray(pMD, pTargetMeth, &rShuffleEntryArray);
@@ -2375,7 +2375,7 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
     MethodTable *       pDelMT = pMD->GetMethodTable();
     DelegateEEClass*    pClass = (DelegateEEClass*) pDelMT->GetClass();
 
-    if (pMD == pClass->m_pInvokeMethod)
+    if (pMD == pClass->GetInvokeMethod())
     {
         // Validate the invoke method, which at the moment just means checking the calling convention
 
@@ -2391,7 +2391,7 @@ PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
         // and not an invalid-delegate-layout condition. 
         // 
         // If the call was indeed for async delegate invocation, we will just throw an exception.
-        if ((pMD == pClass->m_pBeginInvokeMethod) || (pMD == pClass->m_pEndInvokeMethod))
+        if ((pMD == pClass->GetBeginInvokeMethod()) || (pMD == pClass->GetEndInvokeMethod()))
         {
             COMPlusThrow(kPlatformNotSupportedException);
         }
@@ -2515,7 +2515,7 @@ DELEGATEREF COMDelegate::CreateSecureDelegate(DELEGATEREF delegate, MethodDesc* 
     CONTRACTL_END;
 
     MethodTable *pDelegateType = delegate->GetMethodTable();
-    MethodDesc *pMD = ((DelegateEEClass*)(pDelegateType->GetClass()))->m_pInvokeMethod;
+    MethodDesc *pMD = ((DelegateEEClass*)(pDelegateType->GetClass()))->GetInvokeMethod();
     // allocate the object
     struct _gc {
         DELEGATEREF refSecDel;
@@ -2615,7 +2615,7 @@ FCIMPL1(MethodDesc*, COMDelegate::GetInvokeMethod, Object* refThisIn)
     OBJECTREF refThis = ObjectToOBJECTREF(refThisIn);
     MethodTable * pDelMT = refThis->GetMethodTable();
 
-    MethodDesc* pMD = ((DelegateEEClass*)(pDelMT->GetClass()))->m_pInvokeMethod;
+    MethodDesc* pMD = ((DelegateEEClass*)(pDelMT->GetClass()))->GetInvokeMethod();
     _ASSERTE(pMD);
     return pMD;
 }
@@ -2633,7 +2633,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
     Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
     if (pStub == NULL)
     {
-        MethodDesc* pMD = delegateEEClass->m_pInvokeMethod;
+        MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
     
         HELPER_METHOD_FRAME_BEGIN_RET_0();
 
@@ -2757,7 +2757,7 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
     Stub *pStub = delegateEEClass->m_pMultiCastInvokeStub;
     if (pStub == NULL)
     {
-        MethodDesc* pMD = delegateEEClass->m_pInvokeMethod;
+        MethodDesc* pMD = delegateEEClass->GetInvokeMethod();
     
         HELPER_METHOD_FRAME_BEGIN_RET_0();
 
@@ -3091,7 +3091,7 @@ MethodDesc* COMDelegate::FindDelegateInvokeMethod(MethodTable *pMT)
 
     _ASSERTE(pMT->IsDelegate());
 
-    MethodDesc * pMD = ((DelegateEEClass*)pMT->GetClass())->m_pInvokeMethod;
+    MethodDesc * pMD = ((DelegateEEClass*)pMT->GetClass())->GetInvokeMethod();
     if (pMD == NULL)
         COMPlusThrowNonLocalized(kMissingMethodException, W("Invoke"));
     return pMD;
@@ -3104,7 +3104,7 @@ BOOL COMDelegate::IsDelegateInvokeMethod(MethodDesc *pMD)
     MethodTable *pMT = pMD->GetMethodTable();
     _ASSERTE(pMT->IsDelegate());
 
-    return (pMD == ((DelegateEEClass *)pMT->GetClass())->m_pInvokeMethod);
+    return (pMD == ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod());
 }
 
 BOOL COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,
@@ -3657,7 +3657,7 @@ BOOL COMDelegate::ValidateCtor(TypeHandle instHnd,
 
     DelegateEEClass *pdlgEEClass = (DelegateEEClass*)dlgtHnd.AsMethodTable()->GetClass();
     PREFIX_ASSUME(pdlgEEClass != NULL);
-    MethodDesc *pDlgtInvoke = pdlgEEClass->m_pInvokeMethod;
+    MethodDesc *pDlgtInvoke = pdlgEEClass->GetInvokeMethod();
     if (pDlgtInvoke == NULL)
         return FALSE;
     return IsMethodDescCompatible(instHnd, ftnParentHnd, pFtn, dlgtHnd, pDlgtInvoke, DBF_RelaxedSignature, pfIsOpenDelegate);
@@ -3672,18 +3672,18 @@ BOOL COMDelegate::ValidateBeginInvoke(DelegateEEClass* pClass)
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pClass));
-        PRECONDITION(CheckPointer(pClass->m_pBeginInvokeMethod));
+        PRECONDITION(CheckPointer(pClass->GetBeginInvokeMethod()));
 
         // insert fault. Can the binder throw an OOM?
     }
     CONTRACTL_END;
 
-    if (pClass->m_pInvokeMethod == NULL) 
+    if (pClass->GetInvokeMethod() == NULL)
         return FALSE;
 
     // We check the signatures under the typical instantiation of the possibly generic class 
-    MetaSig beginInvokeSig(pClass->m_pBeginInvokeMethod->LoadTypicalMethodDefinition());
-    MetaSig invokeSig(pClass->m_pInvokeMethod->LoadTypicalMethodDefinition());
+    MetaSig beginInvokeSig(pClass->GetBeginInvokeMethod()->LoadTypicalMethodDefinition());
+    MetaSig invokeSig(pClass->GetInvokeMethod()->LoadTypicalMethodDefinition());
 
     if (beginInvokeSig.GetCallingConventionInfo() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
         return FALSE;
@@ -3724,18 +3724,18 @@ BOOL COMDelegate::ValidateEndInvoke(DelegateEEClass* pClass)
         MODE_ANY;
 
         PRECONDITION(CheckPointer(pClass));
-        PRECONDITION(CheckPointer(pClass->m_pEndInvokeMethod));
+        PRECONDITION(CheckPointer(pClass->GetEndInvokeMethod()));
 
         // insert fault. Can the binder throw an OOM?
     }
     CONTRACTL_END;
 
-    if (pClass->m_pInvokeMethod == NULL) 
+    if (pClass->GetInvokeMethod() == NULL)
         return FALSE;
 
     // We check the signatures under the typical instantiation of the possibly generic class 
-    MetaSig endInvokeSig(pClass->m_pEndInvokeMethod->LoadTypicalMethodDefinition());
-    MetaSig invokeSig(pClass->m_pInvokeMethod->LoadTypicalMethodDefinition());
+    MetaSig endInvokeSig(pClass->GetEndInvokeMethod()->LoadTypicalMethodDefinition());
+    MetaSig invokeSig(pClass->GetInvokeMethod()->LoadTypicalMethodDefinition());
 
     if (endInvokeSig.GetCallingConventionInfo() != (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_DEFAULT))
         return FALSE;
