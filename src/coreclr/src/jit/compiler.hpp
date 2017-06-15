@@ -4022,6 +4022,31 @@ inline bool Compiler::IsTreeAlwaysHoistable(GenTreePtr tree)
     }
 }
 
+inline bool Compiler::IsGcSafePoint(GenTreePtr tree)
+{
+    if (tree->IsCall())
+    {
+        GenTreeCall* call = tree->AsCall();
+        if (!call->IsFastTailCall())
+        {
+            if (call->gtCallType == CT_INDIRECT)
+            {
+                return true;
+            }
+            else if (call->gtCallType == CT_USER_FUNC)
+            {
+                if ((call->gtCallMoreFlags & GTF_CALL_M_NOGCCHECK) == 0)
+                {
+                    return true;
+                }
+            }
+            // otherwise we have a CT_HELPER
+        }
+    }
+
+    return false;
+}
+
 //
 // Note that we want to have two special FIELD_HANDLES that will both
 // be considered non-Data Offset handles
