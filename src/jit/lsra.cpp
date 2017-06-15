@@ -9884,17 +9884,19 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         (resolveType == ResolveSharedCritical) ? REG_NA : getTempRegForResolution(fromBlock, toBlock, TYP_INT);
 #endif // !_TARGET_XARCH_
     regNumber tempRegFlt = REG_NA;
-#ifdef _TARGET_ARM_
-    // ARM32 requires double temp register in addition to integer and float temp registers.
-    regNumber tempRegDbl = REG_NA;
-#endif
     if ((compiler->compFloatingPointUsed) && (resolveType != ResolveSharedCritical))
     {
-        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
 
 #ifdef _TARGET_ARM_
-        // ARM32 requires double temp register in addition to integer and float temp registers.
-        tempRegDbl = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE);
+        // Let's try to reserve a double register for TYP_FLOAT and TYP_DOUBLE
+        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_DOUBLE);
+        if (tempRegFlt == REG_NA)
+        {
+            // If fails, try to reserve a float register for TYP_FLOAT
+            tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+        }
+#else
+        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
 #endif
     }
 
@@ -10050,17 +10052,18 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             {
                 regNumber tempReg = REG_NA;
                 bool      useSwap = false;
+                if (emitter::isFloatReg(targetReg))
+                {
 #ifdef _TARGET_ARM_
-                // ARM32 requires double temp register when TYP_DOUBLE
-                if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
-                {
-                    tempReg = tempRegDbl;
-                }
-                else
-#endif
-                    if (emitter::isFloatReg(targetReg))
-                {
-                    tempReg = tempRegFlt;
+                    if (sourceIntervals[fromReg]->registerType == TYP_DOUBLE)
+                    {
+                        // ARM32 requires a double temp register for TYP_DOUBLE.
+                        // We tried to reserve a double temp register first, but sometimes we can't.
+                        tempReg = genIsValidDoubleReg(tempRegFlt) ? tempRegFlt : REG_NA;
+                    }
+                    else
+#endif // _TARGET_ARM_
+                        tempReg = tempRegFlt;
                 }
 #ifdef _TARGET_XARCH_
                 else
