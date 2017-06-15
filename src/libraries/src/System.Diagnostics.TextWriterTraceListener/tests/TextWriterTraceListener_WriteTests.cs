@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Diagnostics.TextWriterTraceListenerTests
 {
-    public class TextWriterTraceListener_WriteTests : IDisposable
+    public class TextWriterTraceListener_WriteTests : FileCleanupTestBase
     {
         private readonly Stream _stream;
         private readonly string _fileName;
@@ -15,7 +15,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
 
         public TextWriterTraceListener_WriteTests()
         {
-            _fileName = string.Format("{0}.xml", GetType().Name);
+            _fileName = $"{GetTestFilePath()}.xml";
             CommonUtilities.DeleteFile(_fileName);
             _stream = new FileStream(_fileName, FileMode.OpenOrCreate, FileAccess.Write);
         }
@@ -77,10 +77,10 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
             _stream.Dispose();
-            CommonUtilities.DeleteFile(_fileName);
+            base.Dispose(disposing);
         }
     }
 }
