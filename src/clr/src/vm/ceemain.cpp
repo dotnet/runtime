@@ -266,7 +266,6 @@ extern "C" HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface);
 
 
 
-extern "C" IExecutionEngine* __stdcall IEE();
 
 // Remember how the last startup of EE went.
 HRESULT g_EEStartupStatus = S_OK;
