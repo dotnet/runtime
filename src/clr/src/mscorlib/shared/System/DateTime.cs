@@ -453,9 +453,7 @@ namespace System
         {
             if (months < -120000 || months > 120000) throw new ArgumentOutOfRangeException(nameof(months), SR.ArgumentOutOfRange_DateTimeBadMonths);
             Contract.EndContractBlock();
-            int y = GetDatePart(DatePartYear);
-            int m = GetDatePart(DatePartMonth);
-            int d = GetDatePart(DatePartDay);
+            GetDatePart(out int y, out int m, out int d);
             int i = m - 1 + months;
             if (i >= 0)
             {
@@ -857,6 +855,51 @@ namespace System
             if (part == DatePartMonth) return m;
             // Return 1-based day-of-month
             return n - days[m - 1] + 1;
+        }
+
+        // Exactly the same as GetDatePart(int part), except computing all of
+        // year/month/day rather than just one of them.  Used when all three
+        // are needed rather than redoing the computations for each.
+        internal void GetDatePart(out int year, out int month, out int day)
+        {
+            Int64 ticks = InternalTicks;
+            // n = number of days since 1/1/0001
+            int n = (int)(ticks / TicksPerDay);
+            // y400 = number of whole 400-year periods since 1/1/0001
+            int y400 = n / DaysPer400Years;
+            // n = day number within 400-year period
+            n -= y400 * DaysPer400Years;
+            // y100 = number of whole 100-year periods within 400-year period
+            int y100 = n / DaysPer100Years;
+            // Last 100-year period has an extra day, so decrement result if 4
+            if (y100 == 4) y100 = 3;
+            // n = day number within 100-year period
+            n -= y100 * DaysPer100Years;
+            // y4 = number of whole 4-year periods within 100-year period
+            int y4 = n / DaysPer4Years;
+            // n = day number within 4-year period
+            n -= y4 * DaysPer4Years;
+            // y1 = number of whole years within 4-year period
+            int y1 = n / DaysPerYear;
+            // Last year has an extra day, so decrement result if 4
+            if (y1 == 4) y1 = 3;
+            // compute year
+            year = y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1;
+            // n = day number within year
+            n -= y1 * DaysPerYear;
+            // dayOfYear = n + 1;
+            // Leap year calculation looks different from IsLeapYear since y1, y4,
+            // and y100 are relative to year 1, not year 0
+            bool leapYear = y1 == 3 && (y4 != 24 || y100 == 3);
+            int[] days = leapYear ? s_daysToMonth366 : s_daysToMonth365;
+            // All months have less than 32 days, so n >> 5 is a good conservative
+            // estimate for the month
+            int m = (n >> 5) + 1;
+            // m = 1-based month number
+            while (n >= days[m]) m++;
+            // compute month and day
+            month = m;
+            day = n - days[m - 1] + 1;
         }
 
         // Returns the day-of-month part of this DateTime. The returned
