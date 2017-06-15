@@ -32,10 +32,10 @@ namespace System.Collections.Specialized
         private Object _syncRoot;
         private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.
 
-        private const string KeyComparerName = "KeyComparer";
-        private const string ArrayListName = "ArrayList";
-        private const string ReadOnlyName = "ReadOnly";
-        private const string InitCapacityName = "InitialCapacity";
+        private const string KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
+        private const string ArrayListName = "ArrayList"; // Do not rename (binary serialization)
+        private const string ReadOnlyName = "ReadOnly"; // Do not rename (binary serialization)
+        private const string InitCapacityName = "InitialCapacity"; // Do not rename (binary serialization)
 
         public OrderedDictionary() : this(0)
         {

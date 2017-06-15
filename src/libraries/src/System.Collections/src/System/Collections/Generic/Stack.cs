@@ -27,9 +27,9 @@ namespace System.Collections.Generic
         System.Collections.ICollection,
         IReadOnlyCollection<T>
     {
-        private T[] _array;     // Storage for stack elements
-        private int _size;           // Number of items in the stack.
-        private int _version;        // Used to keep enumerator in sync w/ collection.
+        private T[] _array; // Storage for stack elements. Do not rename (binary serialization)
+        private int _size; // Number of items in the stack. Do not rename (binary serialization)
+        private int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
         [NonSerialized]
         private object _syncRoot;
 

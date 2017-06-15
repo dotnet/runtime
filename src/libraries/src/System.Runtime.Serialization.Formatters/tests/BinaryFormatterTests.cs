@@ -42,7 +42,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Theory]
         [MemberData(nameof(SerializableObjects_MemberData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ValidateAgainstBlobs(object obj, string[] blobs)
         {
             if (blobs == null || blobs.Length == 0)
@@ -51,7 +50,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     SerializeObjectToBlob(obj));
             }
 
-            foreach (string blob in blobs.Take(1))
+            foreach (string blob in blobs)
             {
                 CheckForAnyEquals(obj, DeserializeBlobToObject(blob));
             }

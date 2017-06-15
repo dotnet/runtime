@@ -50,11 +50,6 @@ namespace System.Data.Common
                 return caught;
             }
         }
-        internal static void TraceExceptionWithoutRethrow(Exception e)
-        {
-            Debug.Assert(ADP.IsCatchableExceptionType(e), "Invalid exception type, should have been re-thrown!");
-            TraceException("<comm.ADP.TraceException|ERR|CATCH> '%ls'\n", e);
-        }
 
         //
         // COM+ exceptions

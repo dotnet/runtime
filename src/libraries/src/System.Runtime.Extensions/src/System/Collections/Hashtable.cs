@@ -57,7 +57,7 @@ namespace System.Collections
     [DebuggerTypeProxy(typeof(System.Collections.Hashtable.HashtableDebugView))]
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class Hashtable : IDictionary, ISerializable, IDeserializationCallback, ICloneable
     {
         /*
@@ -114,14 +114,14 @@ namespace System.Collections
         internal const Int32 HashPrime = 101;
         private const Int32 InitialSize = 3;
 
-        private const String LoadFactorName = "LoadFactor";
-        private const String VersionName = "Version";
-        private const String ComparerName = "Comparer";
-        private const String HashCodeProviderName = "HashCodeProvider";
-        private const String HashSizeName = "HashSize";  // Must save buckets.Length
-        private const String KeysName = "Keys";
-        private const String ValuesName = "Values";
-        private const String KeyComparerName = "KeyComparer";
+        private const String LoadFactorName = "LoadFactor"; // Do not rename (binary serialization)
+        private const String VersionName = "Version"; // Do not rename (binary serialization)
+        private const String ComparerName = "Comparer"; // Do not rename (binary serialization)
+        private const String HashCodeProviderName = "HashCodeProvider"; // Do not rename (binary serialization)
+        private const String HashSizeName = "HashSize";  // Must save buckets.Length. Do not rename (binary serialization)
+        private const String KeysName = "Keys"; // Do not rename (binary serialization)
+        private const String ValuesName = "Values"; // Do not rename (binary serialization)
+        private const String KeyComparerName = "KeyComparer"; // Do not rename (binary serialization)
 
         // Deleted entries have their key set to buckets
 

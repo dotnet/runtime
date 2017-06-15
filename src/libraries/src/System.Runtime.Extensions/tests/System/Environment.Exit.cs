@@ -60,7 +60,7 @@ namespace System.Tests
 
             const string AppName = "VoidMainWithExitCodeApp.exe";
             var psi = new ProcessStartInfo();
-            if (IsFullFramework || IsNetNative)
+            if (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative)
             {
                 psi.FileName = AppName;
                 psi.Arguments = $"{expectedExitCode} {mode}";

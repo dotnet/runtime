@@ -405,7 +405,7 @@ namespace System
         //
         protected Uri(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
-            string uriString = serializationInfo.GetString("AbsoluteUri");
+            string uriString = serializationInfo.GetString("AbsoluteUri"); // Do not rename (binary serialization)
 
             if (uriString.Length != 0)
             {
@@ -413,7 +413,7 @@ namespace System
                 return;
             }
 
-            uriString = serializationInfo.GetString("RelativeUri");
+            uriString = serializationInfo.GetString("RelativeUri");  // Do not rename (binary serialization)
             if ((object)uriString == null)
                 throw new ArgumentNullException("uriString");
 
@@ -438,11 +438,11 @@ namespace System
         {
 
             if (IsAbsoluteUri)
-                serializationInfo.AddValue("AbsoluteUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+                serializationInfo.AddValue("AbsoluteUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped)); // Do not rename (binary serialization)
             else
             {
-                serializationInfo.AddValue("AbsoluteUri", string.Empty);
-                serializationInfo.AddValue("RelativeUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
+                serializationInfo.AddValue("AbsoluteUri", string.Empty); // Do not rename (binary serialization)
+                serializationInfo.AddValue("RelativeUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped)); // Do not rename (binary serialization)
             }
         }
 

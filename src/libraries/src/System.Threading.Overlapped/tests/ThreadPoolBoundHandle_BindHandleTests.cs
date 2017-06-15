@@ -53,8 +53,7 @@ public partial class ThreadPoolBoundHandleTests
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_SyncHandleAsHandle_ThrowsArgumentException()
     {   // Can't bind a handle that was not opened for overlapped I/O
-
-        using(SafeHandle handle = HandleFactory.CreateSyncFileHandleFoWrite())
+        using(SafeHandle handle = HandleFactory.CreateSyncFileHandleForWrite(GetTestFilePath()))
         {
             AssertExtensions.Throws<ArgumentException>("handle", () =>
             {
@@ -64,10 +63,11 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [ActiveIssue(21066, TargetFrameworkMonikers.Uap)]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_ClosedSyncHandleAsHandle_ThrowsArgumentException()
     {
-        using(Win32Handle handle = HandleFactory.CreateSyncFileHandleFoWrite())
+        using(Win32Handle handle = HandleFactory.CreateSyncFileHandleForWrite(GetTestFilePath()))
         {
             handle.CloseWithoutDisposing();
 
@@ -79,10 +79,11 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [ActiveIssue(21066, TargetFrameworkMonikers.Uap)]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_ClosedAsyncHandleAsHandle_ThrowsArgumentException()
     {
-        using(Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        using(Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath()))
         {
             handle.CloseWithoutDisposing();
 
@@ -97,7 +98,7 @@ public partial class ThreadPoolBoundHandleTests
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_DisposedSyncHandleAsHandle_ThrowsArgumentException()
     {
-        Win32Handle handle = HandleFactory.CreateSyncFileHandleFoWrite();
+        Win32Handle handle = HandleFactory.CreateSyncFileHandleForWrite();
         handle.Dispose();
 
         AssertExtensions.Throws<ArgumentException>("handle", () =>
@@ -111,7 +112,7 @@ public partial class ThreadPoolBoundHandleTests
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_DisposedAsyncHandleAsHandle_ThrowsArgumentException()
     {
-        Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite();
+        Win32Handle handle = HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath());
         handle.Dispose();
 
         AssertExtensions.Throws<ArgumentException>("handle", () =>
@@ -124,7 +125,7 @@ public partial class ThreadPoolBoundHandleTests
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public void BindHandle_AlreadyBoundHandleAsHandle_ThrowsArgumentException()
     {
-        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite())
+        using(SafeHandle handle = HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath()))
         {
             // Once
             ThreadPoolBoundHandle.BindHandle(handle);

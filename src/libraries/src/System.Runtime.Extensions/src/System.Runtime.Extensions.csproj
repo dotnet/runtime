@@ -160,7 +160,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SYSTEM_INFO.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.GetUserNameExW.cs">
+    <Compile Include="$(CommonPath)\Interop\Windows\secur32\Interop.GetUserNameExW.cs" Condition="'$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'uap'" >
       <Link>Common\Interop\Windows\secur32\Interop.GetUserNameExW.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\shell32\Interop.SHGetKnownFolderPath.cs">
