@@ -720,8 +720,8 @@ namespace System.Security.Principal
             if ((uint)status == Interop.StatusOptions.STATUS_INSUFFICIENT_RESOURCES || (uint)status == Interop.StatusOptions.STATUS_NO_MEMORY)
                 return new OutOfMemoryException();
 
-            int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(status);
-            return new SecurityException(new Win32Exception(win32ErrorCode).Message);
+            uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError((uint)status);
+            return new SecurityException(new Win32Exception(unchecked((int)win32ErrorCode)).Message);
         }
         
         private static SafeAccessTokenHandle GetCurrentToken(TokenAccessLevels desiredAccess, bool threadOnly, out bool isImpersonating, out int hr)
