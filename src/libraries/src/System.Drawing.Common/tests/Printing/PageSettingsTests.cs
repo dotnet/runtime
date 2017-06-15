@@ -30,19 +30,16 @@
 
 using Xunit;
 
-namespace System.Drawing.Printing.Test
+namespace System.Drawing.Printing.Tests
 {
 
-    public class PageSettingsTest
+    public class PageSettingsTests
     {
-        [Fact]
-        public void CloneTest()
-        {
-            // Check for installed printers, because we need
-            // to have at least one to test
-            if (PrinterSettings.InstalledPrinters.Count == 0)
-                return;
+        private static bool InstalledPrinters => PrinterSettings.InstalledPrinters.Count == 0;
 
+        [ConditionalFact(nameof(InstalledPrinters))]
+        public void Clone_Success()
+        {
             PageSettings ps = new PageSettings();
             ps.Color = false;
             ps.Landscape = true;

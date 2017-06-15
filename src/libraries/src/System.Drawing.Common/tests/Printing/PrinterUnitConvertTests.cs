@@ -30,9 +30,9 @@
 
 using Xunit;
 
-namespace System.Drawing.Printing.Test
+namespace System.Drawing.Printing.Tests
 {
-    public class PrinterUnitConvertTest
+    public class PrinterUnitConvertTests
     {
         [Theory]
         [InlineData(PrinterUnit.Display, PrinterUnit.Display, 100)]
@@ -51,33 +51,10 @@ namespace System.Drawing.Printing.Test
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.HundredthsOfAMillimeter, 254)]
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.TenthsOfAMillimeter, 25)]
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.ThousandthsOfAnInch, 100)]
-        public void ConvertValue(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedResult)
+        public void Convert_Int_ReturnsExpected(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedResult)
         {
-            var r = PrinterUnitConvert.Convert(100, fromUnit, toUnit);
-            Assert.Equal(expectedResult, r);
-        }
-
-        [Theory]
-        [InlineData(PrinterUnit.Display, PrinterUnit.Display, 100,1000)]
-        [InlineData(PrinterUnit.Display, PrinterUnit.HundredthsOfAMillimeter, 2540,25400)]
-        [InlineData(PrinterUnit.Display, PrinterUnit.TenthsOfAMillimeter, 254,2540)]
-        [InlineData(PrinterUnit.Display, PrinterUnit.ThousandthsOfAnInch, 1000,10000)]
-        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.Display, 4,39)]
-        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.HundredthsOfAMillimeter, 100,1000)]
-        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.TenthsOfAMillimeter, 10,100)]
-        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.ThousandthsOfAnInch, 39,394)]
-        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display, 39,394)]
-        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.HundredthsOfAMillimeter, 1000,10000)]
-        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.TenthsOfAMillimeter, 100,1000)]
-        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.ThousandthsOfAnInch, 394,3937)]
-        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.Display, 10,100)]
-        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.HundredthsOfAMillimeter, 254,2540)]
-        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.TenthsOfAMillimeter, 25,254)]
-        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.ThousandthsOfAnInch, 100,1000)]
-        public void ConvertPoint(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedX,int expectedY)
-        {
-            var r = PrinterUnitConvert.Convert(new Point(100,1000), fromUnit, toUnit);
-            Assert.Equal(new Point(expectedX, expectedY), r);
+            var converted = PrinterUnitConvert.Convert(100, fromUnit, toUnit);
+            Assert.Equal(expectedResult, converted);
         }
 
         [Theory]
@@ -97,10 +74,10 @@ namespace System.Drawing.Printing.Test
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.HundredthsOfAMillimeter, 254, 2540)]
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.TenthsOfAMillimeter, 25, 254)]
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.ThousandthsOfAnInch, 100, 1000)]
-        public void ConvertRectangle(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedLeftValue, int expectedRightValue)
+        public void Convert_Point_ReturnsExpected(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedX, int expectedY)
         {
-            var r = PrinterUnitConvert.Convert(new Rectangle(100, 1000, 100, 1000), fromUnit, toUnit);
-            Assert.Equal(new Rectangle(expectedLeftValue, expectedRightValue, expectedLeftValue, expectedRightValue), r);
+            var converted = PrinterUnitConvert.Convert(new Point(100, 1000), fromUnit, toUnit);
+            Assert.Equal(new Point(expectedX, expectedY), converted);
         }
 
         [Theory]
@@ -120,10 +97,33 @@ namespace System.Drawing.Printing.Test
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.HundredthsOfAMillimeter, 254, 2540)]
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.TenthsOfAMillimeter, 25, 254)]
         [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.ThousandthsOfAnInch, 100, 1000)]
-        public void ConvertSize(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedX, int expectedY)
+        public void Convert_Rectangle_ReturnsExpected(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedLeftValue, int expectedRightValue)
         {
-            var r = PrinterUnitConvert.Convert(new Size(100, 1000), fromUnit, toUnit);
-            Assert.Equal(new Size(expectedX, expectedY), r);
+            var converted = PrinterUnitConvert.Convert(new Rectangle(100, 1000, 100, 1000), fromUnit, toUnit);
+            Assert.Equal(new Rectangle(expectedLeftValue, expectedRightValue, expectedLeftValue, expectedRightValue), converted);
+        }
+
+        [Theory]
+        [InlineData(PrinterUnit.Display, PrinterUnit.Display, 100, 1000)]
+        [InlineData(PrinterUnit.Display, PrinterUnit.HundredthsOfAMillimeter, 2540, 25400)]
+        [InlineData(PrinterUnit.Display, PrinterUnit.TenthsOfAMillimeter, 254, 2540)]
+        [InlineData(PrinterUnit.Display, PrinterUnit.ThousandthsOfAnInch, 1000, 10000)]
+        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.Display, 4, 39)]
+        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.HundredthsOfAMillimeter, 100, 1000)]
+        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.TenthsOfAMillimeter, 10, 100)]
+        [InlineData(PrinterUnit.HundredthsOfAMillimeter, PrinterUnit.ThousandthsOfAnInch, 39, 394)]
+        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display, 39, 394)]
+        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.HundredthsOfAMillimeter, 1000, 10000)]
+        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.TenthsOfAMillimeter, 100, 1000)]
+        [InlineData(PrinterUnit.TenthsOfAMillimeter, PrinterUnit.ThousandthsOfAnInch, 394, 3937)]
+        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.Display, 10, 100)]
+        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.HundredthsOfAMillimeter, 254, 2540)]
+        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.TenthsOfAMillimeter, 25, 254)]
+        [InlineData(PrinterUnit.ThousandthsOfAnInch, PrinterUnit.ThousandthsOfAnInch, 100, 1000)]
+        public void Convert_Size_ReturnsExpected(PrinterUnit fromUnit, PrinterUnit toUnit, int expectedX, int expectedY)
+        {
+            var converted = PrinterUnitConvert.Convert(new Size(100, 1000), fromUnit, toUnit);
+            Assert.Equal(new Size(expectedX, expectedY), converted);
         }
     }
 }
