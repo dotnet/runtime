@@ -298,6 +298,10 @@ mono_handle_stack_alloc (void)
 	HandleChunk *chunk = new_handle_chunk ();
 	HandleChunk *interior = new_handle_chunk ();
 
+	chunk->prev = chunk->next = NULL;
+	chunk->size = 0;
+	interior->prev = interior->next = NULL;
+	interior->size = 0;
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
 	stack->interior = interior;
