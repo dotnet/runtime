@@ -1378,9 +1378,12 @@ class ICorCompileDataStore
     // Returns ZapImage
     virtual ZapImage * GetZapImage() = 0;
 
-    // Reports an error during preloading.  Return the error code to propagate,
-    // or S_OK to ignore the error
-    virtual void Error(mdToken token, HRESULT hr, LPCWSTR description) = 0;
+    // Report an error during preloading:
+    // 'token' is the metadata token that triggered the error
+    // hr is the HRESULT from the thrown Exception, or S_OK if we don't have an thrown exception
+    // resID is the resourceID with additional information from the thrown Exception, or 0
+    //
+    virtual void Error(mdToken token, HRESULT hr, UINT _resID, LPCWSTR description) = 0;
 };
 
 
