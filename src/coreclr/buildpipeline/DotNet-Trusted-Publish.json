@@ -151,9 +151,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey) $(ConfigurationGroup)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Pipeline_SourcesDirectory\\packages\\AzureTransfer\\$env:ConfigurationGroup\\$env:AzureContainerPackageGlob $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(ConfigurationGroup) -PackagesGlob $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(ConfigurationGroup)\\$(AzureContainerPackageGlob) -MyGetFeedUrl $(MyGetFeedUrl)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $PackagesGlob, $MyGetFeedUrl)\n\nif ($ConfigurationGroup -ne \"Release\") { exit }\n\nmsbuild /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
         "failOnStandardError": "true"
       }
     },
@@ -171,9 +171,9 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "$(MyGetApiKey) $(ConfigurationGroup)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup)\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $env:MyGetFeedUrl -Timeout 3600",
-        "workingFolder": "",
+        "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(ConfigurationGroup) -PackagesGlob $(Build.StagingDirectory)\\IndexedSymbolPackages\\*.nupkg -MyGetFeedUrl $(MyGetFeedUrl)",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $PackagesGlob, $MyGetFeedUrl)\n\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n\nmsbuild /t:NuGetPush /v:Normal `\n/p:NuGetExePath=$env:CustomNuGetPath `\n/p:NuGetApiKey=$ApiKey `\n/p:NuGetSource=$MyGetFeedUrl `\n/p:PackagesGlob=$PackagesGlob",
         "failOnStandardError": "true"
       }
     },

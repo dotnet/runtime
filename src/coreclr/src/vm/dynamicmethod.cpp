@@ -330,7 +330,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
     size_t MaxCodeHeapSize  = pInfo->getRequestSize();
     size_t ReserveBlockSize = MaxCodeHeapSize + sizeof(HeapList);
 
-    ReserveBlockSize += sizeof(TrackAllocation) + PAGE_SIZE; // make sure we have enough for the allocation
+    ReserveBlockSize += sizeof(TrackAllocation) + GetOsPageSize(); // make sure we have enough for the allocation
     // take a conservative size for the nibble map, we may change that later if appropriate
     size_t nibbleMapSize = ROUND_UP_TO_PAGE(HEAP2MAPSIZE(ROUND_UP_TO_PAGE(ALIGN_UP(ReserveBlockSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY))));
     size_t heapListSize = (sizeof(HeapList) + CODE_SIZE_ALIGN - 1) & (~(CODE_SIZE_ALIGN - 1));
@@ -343,7 +343,7 @@ HeapList* HostCodeHeap::CreateCodeHeap(CodeHeapRequestInfo *pInfo, EEJitManager 
                             (HostCodeHeap*)pCodeHeap, ReserveBlockSize, pCodeHeap->m_TotalBytesAvailable, reservedData, nibbleMapSize));
 
     BYTE *pBuffer = pCodeHeap->InitCodeHeapPrivateData(ReserveBlockSize, reservedData, nibbleMapSize);
-    _ASSERTE(((size_t)pBuffer & PAGE_MASK) == 0);
+    _ASSERTE(IS_ALIGNED(pBuffer, GetOsPageSize()));
     LOG((LF_BCL, LL_INFO100, "Level2 - CodeHeap creation {0x%p} - base addr 0x%p, size available 0x%p, nibble map ptr 0x%p\n",
                             (HostCodeHeap*)pCodeHeap, pCodeHeap->m_pBaseAddr, pCodeHeap->m_TotalBytesAvailable, pBuffer));
 
@@ -754,7 +754,7 @@ void* HostCodeHeap::AllocMemory_NoThrow(size_t size, DWORD alignment)
         }
         _ASSERTE(size > availableInFreeList);
         size_t sizeToCommit = size - availableInFreeList; 
-        sizeToCommit = (size + PAGE_SIZE - 1) & (~(PAGE_SIZE - 1)); // round up to page
+        sizeToCommit = ROUND_UP_TO_PAGE(size); // round up to page
 
         if (m_pLastAvailableCommittedAddr + sizeToCommit <= m_pBaseAddr + m_TotalBytesAvailable)
         {

@@ -73,10 +73,10 @@ BOOL isMemoryReadable(const TADDR start, unsigned len)
     // Now we have to loop thru each and every page in between and touch them.
     //
     location = start;
-    while (len > PAGE_SIZE)
+    while (len > GetOsPageSize())
     {
-        location += PAGE_SIZE;
-        len -= PAGE_SIZE;
+        location += GetOsPageSize();
+        len -= GetOsPageSize();
 
 #ifdef DACCESS_COMPILE
         if (DacReadAll(location, &buff, 1, false) != S_OK)

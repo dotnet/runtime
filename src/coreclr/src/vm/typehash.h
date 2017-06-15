@@ -42,13 +42,27 @@ typedef struct EETypeHashEntry
     void MarkAsHot();
 #endif // FEATURE_PREJIT
 
+#ifndef DACCESS_COMPILE
+    EETypeHashEntry& operator=(const EETypeHashEntry& src)
+    {
+        m_data.SetValueMaybeNull(src.m_data.GetValueMaybeNull());
+
+        return *this;
+    }
+#endif // !DACCESS_COMPILE
+
+    PTR_VOID GetData()
+    {
+        return ReadPointerMaybeNull(this, &EETypeHashEntry::m_data);
+    }
+
 private:
     friend class EETypeHashTable;
 #ifdef DACCESS_COMPILE
     friend class NativeImageDumper;
 #endif
 
-    TADDR           m_data;
+    RelativePointer<PTR_VOID> m_data;
 } EETypeHashEntry_t;
 
 
