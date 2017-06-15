@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
+    <Compile Include="Printing\MarginsTests.cs" />
     <Compile Include="RegionTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
@@ -58,11 +59,10 @@
     <Content Include="bitmaps\256x256_two_entries_multiple_bits.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Compile Include="Printing\MarginsTest.cs" />
-    <Compile Include="Printing\PageSettingsTest.cs" />
-    <Compile Include="Printing\PaperSizeTest.cs" />
-    <Compile Include="Printing\PaperSourceTest.cs" />
-    <Compile Include="Printing\PrinterUnitConvertTest.cs" />
+    <Compile Include="Printing\PageSettingsTests.cs" />
+    <Compile Include="Printing\PaperSizeTests.cs" />
+    <Compile Include="Printing\PaperSourceTests.cs" />
+    <Compile Include="Printing\PrinterUnitConvertTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
