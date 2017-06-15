@@ -11,6 +11,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="Printing\MarginsTests.cs" />
+    <Compile Include="Printing\PrinterResolutionTests.cs" />
     <Compile Include="RegionTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
