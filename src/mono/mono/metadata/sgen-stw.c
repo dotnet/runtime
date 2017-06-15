@@ -230,8 +230,7 @@ sgen_is_thread_in_current_stw (SgenThreadInfo *info, int *reason)
 	We can't suspend the workers that will do all the heavy lifting.
 	FIXME Use some state bit in SgenThreadInfo for this.
 	*/
-	if (sgen_thread_pool_is_thread_pool_thread (major_collector.get_sweep_pool (), mono_thread_info_get_tid (info)) ||
-			sgen_workers_is_worker_thread (mono_thread_info_get_tid (info))) {
+	if (sgen_thread_pool_is_thread_pool_thread (mono_thread_info_get_tid (info))) {
 		if (reason)
 			*reason = 4;
 		return FALSE;

@@ -371,9 +371,7 @@ protocol_entry (unsigned char type, gpointer data, int size)
 		 * If the thread is not a worker thread we insert 0, which is interpreted
 		 * as gc thread. Worker indexes are 1 based.
 		 */
-		worker_index = sgen_workers_is_worker_thread (tid);
-		if (!worker_index)
-			worker_index = sgen_thread_pool_is_thread_pool_thread (major_collector.get_sweep_pool (), tid);
+		worker_index = sgen_thread_pool_is_thread_pool_thread (tid);
 		/* FIXME Consider using different index bases for different thread pools */
 		buffer->buffer [index++] = (unsigned char) worker_index;
 	}

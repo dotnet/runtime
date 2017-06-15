@@ -678,9 +678,7 @@ struct _SgenMajorCollector {
 	guint8* (*get_cardtable_mod_union_for_reference) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
 	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
-	SgenThreadPool* (*get_sweep_pool) (void);
-
-	void (*worker_init_cb) (gpointer worker);
+	void (*init_block_free_lists) (gpointer *list_p);
 };
 
 extern SgenMajorCollector major_collector;

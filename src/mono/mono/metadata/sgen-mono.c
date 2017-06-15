@@ -2973,9 +2973,7 @@ mono_gc_base_init (void)
 void
 mono_gc_base_cleanup (void)
 {
-	sgen_thread_pool_shutdown (major_collector.get_sweep_pool ());
-
-	sgen_workers_shutdown ();
+	sgen_thread_pool_shutdown ();
 
 	// We should have consumed any outstanding moves.
 	g_assert (sgen_pointer_queue_is_empty (&moved_objects_queue));
