@@ -8295,25 +8295,9 @@ NO_TAIL_CALL:
     // having a call (for computing full interruptibility).
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_AMD64_
-    // Amd64 note: If this is a fast tail call then don't count it as a call
-    // since we don't insert GC-polls but instead make the method fully GC
-    // interruptible.
-    if (!call->IsFastTailCall())
-#endif
+    if (IsGcSafePoint(call))
     {
-        if (call->gtCallType == CT_INDIRECT)
-        {
-            compCurBB->bbFlags |= BBF_GC_SAFE_POINT;
-        }
-        else if (call->gtCallType == CT_USER_FUNC)
-        {
-            if ((call->gtCallMoreFlags & GTF_CALL_M_NOGCCHECK) == 0)
-            {
-                compCurBB->bbFlags |= BBF_GC_SAFE_POINT;
-            }
-        }
-        // otherwise we have a CT_HELPER
+        compCurBB->bbFlags |= BBF_GC_SAFE_POINT;
     }
 
     // Morph Type.op_Equality and Type.op_Inequality
