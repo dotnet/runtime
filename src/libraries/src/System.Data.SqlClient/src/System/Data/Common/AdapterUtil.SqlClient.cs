@@ -31,12 +31,6 @@ namespace System.Data.Common
             }
         }
 
-        internal static void TraceExceptionWithoutRethrow(Exception e)
-        {
-            Debug.Assert(ADP.IsCatchableExceptionType(e), "Invalid exception type, should have been re-thrown!");
-            TraceException("<comm.ADP.TraceException|ERR|CATCH> '%ls'\n", e);
-        }
-
         //
         // COM+ exceptions
         //
@@ -880,11 +874,6 @@ namespace System.Data.Common
             {
                 throw InvalidCommandBehavior(value);
             }
-        }
-
-        internal static ArgumentOutOfRangeException NotSupportedEnumerationValue(Type type, string value, string method)
-        {
-            return ArgumentOutOfRange(SR.GetString(SR.ADP_NotSupportedEnumerationValue, type.Name, value, method), type.Name);
         }
 
         internal static ArgumentOutOfRangeException NotSupportedCommandBehavior(CommandBehavior value, string method)

@@ -34,6 +34,12 @@ namespace System.Data.Common
             TraceException("<comm.ADP.TraceException|ERR|THROW> '{0}'", e);
         }
 
+        internal static void TraceExceptionWithoutRethrow(Exception e)
+        {
+            Debug.Assert(ADP.IsCatchableExceptionType(e), "Invalid exception type, should have been re-thrown!");
+            TraceException("<comm.ADP.TraceException|ERR|CATCH> '%ls'\n", e);
+        }
+
         internal static ArgumentException Argument(string error)
         {
             ArgumentException e = new ArgumentException(error);
@@ -121,6 +127,11 @@ namespace System.Data.Common
             NotSupportedException e = new NotSupportedException(error);
             TraceExceptionAsReturnValue(e);
             return e;
+        }
+
+        internal static ArgumentOutOfRangeException NotSupportedEnumerationValue(Type type, string value, string method)
+        {
+            return ArgumentOutOfRange(SR.Format(SR.ADP_NotSupportedEnumerationValue, type.Name, value, method), type.Name);
         }
 
         internal static InvalidOperationException DataAdapter(string error)
