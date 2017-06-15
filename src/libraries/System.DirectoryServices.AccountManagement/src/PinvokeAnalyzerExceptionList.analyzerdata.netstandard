@@ -1,3 +1,4 @@
+# not available in OneCore
 activeds.dll!ADsOpenObject
 advapi32.dll!LsaNtStatusToWinError
 credui.dll!CredUIParseUserNameW

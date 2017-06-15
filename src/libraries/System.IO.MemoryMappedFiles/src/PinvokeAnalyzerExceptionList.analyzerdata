@@ -1,4 +1,0 @@
-kernel32.dll!CreateFileMappingW
-kernel32.dll!MapViewOfFile
-kernel32.dll!OpenFileMappingW
-kernel32.dll!VirtualAlloc

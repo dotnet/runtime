@@ -1,2 +1,0 @@
-kernel32.dll!CreateFileW
-kernel32.dll!ReadDirectoryChangesW

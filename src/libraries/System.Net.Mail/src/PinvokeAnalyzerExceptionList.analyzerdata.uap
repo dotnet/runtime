@@ -1,3 +1,4 @@
+# Discussing with Networking team
 sspicli.dll!AcceptSecurityContext
 sspicli.dll!AcquireCredentialsHandleW
 sspicli.dll!ApplyControlToken
