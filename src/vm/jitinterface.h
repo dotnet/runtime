@@ -19,7 +19,7 @@
 #ifndef FEATURE_PAL
 #define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
 #else // !FEATURE_PAL
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((OS_PAGE_SIZE / 2) - 1)
+#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((GetOsPageSize() / 2) - 1)
 #endif // !FEATURE_PAL
 
 class Stub;

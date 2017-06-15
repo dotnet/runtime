@@ -146,9 +146,9 @@ TypeHandle ClassLoader::LoadCanonicalGenericInstantiation(TypeKey *pTypeKey,
     TypeHandle ret = TypeHandle();
     DECLARE_INTERIOR_STACK_PROBE;
 #ifndef DACCESS_COMPILE
-    if ((dwAllocSize/PAGE_SIZE+1) >= 2)
+    if ((dwAllocSize/GetOsPageSize()+1) >= 2)
     {
-        DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+dwAllocSize/PAGE_SIZE+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
+        DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+dwAllocSize/GetOsPageSize()+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
     }
 #endif // DACCESS_COMPILE
     TypeHandle *repInst = (TypeHandle*) _alloca(dwAllocSize);

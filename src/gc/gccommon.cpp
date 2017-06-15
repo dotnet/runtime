@@ -168,6 +168,10 @@ InitializeGarbageCollector(
     // Initialize GCConfig before anything else - initialization of our
     // various components may want to query the current configuration.
     GCConfig::Initialize();
+    if (!GCToOSInterface::Initialize())
+    {
+        return false;
+    }
 
     IGCHandleManager* handleManager = CreateGCHandleManager();
     if (handleManager == nullptr)

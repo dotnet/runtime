@@ -18599,9 +18599,9 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
 #ifdef _TARGET_ARM_
         if ((call->gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV))
         {
-            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_VIRTUAL_STUB_PARAM, regThis,
+            getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, compiler->virtualStubParamInfo->GetReg(), regThis,
                                         pInfo->offsetOfSecureDelegateIndirectCell);
-            regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
+            regTracker.rsTrackRegTrash(compiler->virtualStubParamInfo->GetReg());
         }
 #endif // _TARGET_ARM_
 
@@ -18637,7 +18637,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
         {
             case GTF_CALL_VIRT_STUB:
             {
-                regSet.rsSetRegsModified(RBM_VIRTUAL_STUB_PARAM);
+                regSet.rsSetRegsModified(compiler->virtualStubParamInfo->GetRegMask());
 
                 // An x86 JIT which uses full stub dispatch must generate only
                 // the following stub dispatch calls:
@@ -18671,7 +18671,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         // The importer decided we needed a stub call via a computed
                         // stub dispatch address, i.e. an address which came from a dictionary lookup.
                         //   - The dictionary lookup produces an indirected address, suitable for call
-                        //     via "call [REG_VIRTUAL_STUB_PARAM]"
+                        //     via "call [virtualStubParamInfo.reg]"
                         //
                         // This combination will only be generated for shared generic code and when
                         // stub dispatch is active.
@@ -18680,12 +18680,12 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
 
                         noway_assert(genStillAddressable(call->gtCallAddr));
 
-                        // Now put the address in REG_VIRTUAL_STUB_PARAM.
+                        // Now put the address in virtualStubParamInfo.reg.
                         // This is typically a nop when the register used for
-                        // the gtCallAddr is REG_VIRTUAL_STUB_PARAM
+                        // the gtCallAddr is virtualStubParamInfo.reg
                         //
-                        inst_RV_TT(INS_mov, REG_VIRTUAL_STUB_PARAM, call->gtCallAddr);
-                        regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
+                        inst_RV_TT(INS_mov, compiler->virtualStubParamInfo->GetReg(), call->gtCallAddr);
+                        regTracker.rsTrackRegTrash(compiler->virtualStubParamInfo->GetReg());
 
 #if defined(_TARGET_X86_)
                         // Emit enough bytes of nops so that this sequence can be distinguished
@@ -18697,11 +18697,11 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         getEmitter()->emitIns_Nop(3);
 
                         // Make the virtual stub call:
-                        //     call   [REG_VIRTUAL_STUB_PARAM]
+                        //     call   [virtualStubParamInfo.reg]
                         //
                         emitCallType = emitter::EC_INDIR_ARD;
 
-                        indReg = REG_VIRTUAL_STUB_PARAM;
+                        indReg = compiler->virtualStubParamInfo->GetReg();
                         genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
 
 #elif CPU_LOAD_STORE_ARCH // ARM doesn't allow us to use an indirection for the call
@@ -18709,16 +18709,17 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
 
                         // Make the virtual stub call:
-                        //     ldr   indReg, [REG_VIRTUAL_STUB_PARAM]
+                        //     ldr   indReg, [virtualStubParamInfo.reg]
                         //     call  indReg
                         //
                         emitCallType = emitter::EC_INDIR_R;
 
-                        // Now dereference [REG_VIRTUAL_STUB_PARAM] and put it in a new temp register 'indReg'
+                        // Now dereference [virtualStubParamInfo.reg] and put it in a new temp register 'indReg'
                         //
-                        indReg = regSet.rsGrabReg(RBM_ALLINT & ~RBM_VIRTUAL_STUB_PARAM);
+                        indReg = regSet.rsGrabReg(RBM_ALLINT & ~compiler->virtualStubParamInfo->GetRegMask());
                         assert(call->gtCallAddr->InReg());
-                        getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indReg, REG_VIRTUAL_STUB_PARAM, 0);
+                        getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indReg,
+                                                    compiler->virtualStubParamInfo->GetReg(), 0);
                         regTracker.rsTrackRegTrash(indReg);
 
 #else
@@ -18759,14 +18760,15 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         if (call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
                         {
 #if CPU_LOAD_STORE_ARCH
-                            callReg = regSet.rsGrabReg(RBM_VIRTUAL_STUB_PARAM);
-                            noway_assert(callReg == REG_VIRTUAL_STUB_PARAM);
+                            callReg = regSet.rsGrabReg(compiler->virtualStubParamInfo->GetRegMask());
+                            noway_assert(callReg == compiler->virtualStubParamInfo->GetReg());
 
-                            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_VIRTUAL_STUB_PARAM, (ssize_t)stubAddr);
+                            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, compiler->virtualStubParamInfo->GetReg(),
+                                                   (ssize_t)stubAddr);
                             // The stub will write-back to this register, so don't track it
-                            regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
+                            regTracker.rsTrackRegTrash(compiler->virtualStubParamInfo->GetReg());
                             getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, REG_JUMP_THUNK_PARAM,
-                                                        REG_VIRTUAL_STUB_PARAM, 0);
+                                                        compiler->virtualStubParamInfo->GetReg(), 0);
                             regTracker.rsTrackRegTrash(REG_JUMP_THUNK_PARAM);
                             callTypeStubAddr = emitter::EC_INDIR_R;
                             getEmitter()->emitIns_Call(emitter::EC_INDIR_R,
@@ -19201,12 +19203,14 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                 {
                     noway_assert(helperNum != CORINFO_HELP_UNDEF);
 
+#ifdef FEATURE_READYTORUN_COMPILER
                     if (call->gtEntryPoint.addr != NULL)
                     {
                         accessType = call->gtEntryPoint.accessType;
                         addr       = call->gtEntryPoint.addr;
                     }
                     else
+#endif // FEATURE_READYTORUN_COMPILER
                     {
                         void* pAddr;
 
@@ -19232,11 +19236,21 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                     if ((call->gtFlags & GTF_CALL_NULLCHECK) == 0)
                         aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_NONNULL);
 
-                    CORINFO_CONST_LOOKUP addrInfo;
-                    compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo, aflags);
+#ifdef FEATURE_READYTORUN_COMPILER
+                    if (call->gtEntryPoint.addr != NULL)
+                    {
+                        accessType = call->gtEntryPoint.accessType;
+                        addr       = call->gtEntryPoint.addr;
+                    }
+                    else
+#endif // FEATURE_READYTORUN_COMPILER
+                    {
+                        CORINFO_CONST_LOOKUP addrInfo;
+                        compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &addrInfo, aflags);
 
-                    accessType = addrInfo.accessType;
-                    addr       = addrInfo.addr;
+                        accessType = addrInfo.accessType;
+                        addr       = addrInfo.addr;
+                    }
                 }
 
                 if (fTailCall)
@@ -20405,7 +20419,7 @@ regNumber CodeGen::genLclHeap(GenTreePtr size)
                   test  ESP, [ESP+0]     // X86 - tickle the page
                   ldr   REGH,[ESP+0]     // ARM - tickle the page
                   mov   REGH, ESP
-                  sub   REGH, PAGE_SIZE
+                  sub   REGH, GetOsPageSize()
                   mov   ESP, REGH
                   cmp   ESP, REG
                   jae   loop

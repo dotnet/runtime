@@ -434,7 +434,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PEFileKinds.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpCodes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\Opcode.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpcodeType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpCodeType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\StackBehaviour.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OperandType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FlowControl.cs" />

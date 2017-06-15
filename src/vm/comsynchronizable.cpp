@@ -235,7 +235,7 @@ void ThreadNative::KickOffThread_Worker(LPVOID ptr)
     delete args->share;
     args->share = 0;
 
-    MethodDesc *pMeth = ((DelegateEEClass*)( gc.orDelegate->GetMethodTable()->GetClass() ))->m_pInvokeMethod;
+    MethodDesc *pMeth = ((DelegateEEClass*)( gc.orDelegate->GetMethodTable()->GetClass() ))->GetInvokeMethod();
     _ASSERTE(pMeth);
     MethodDescCallSite invokeMethod(pMeth, &gc.orDelegate);
 

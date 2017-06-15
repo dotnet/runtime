@@ -291,7 +291,7 @@ function cross_build_coreclr_with_docker {
 
     __extraArgs=""
     if [[ "$__buildArch" == "armel" && "$__linuxCodeName" == "tizen" ]]; then
-        __extraArgs="cmakeargs -DFEATURE_GDBJIT=TRUE"
+        __extraArgs="cmakeargs -DFEATURE_GDBJIT=TRUE -PortableBuild=false"
     fi
 
     # Cross building coreclr with rootfs in Docker

@@ -2123,14 +2123,12 @@ const int max_snoop_level = 128;
 #define MH_TH_CARD_BUNDLE  (180*1024*1024)
 #endif //CARD_BUNDLE
 
-#define page_size OS_PAGE_SIZE
-
 #define GC_EPHEMERAL_DECOMMIT_TIMEOUT 5000
 
 inline
 size_t align_on_page (size_t add)
 {
-    return ((add + page_size - 1) & ~(page_size - 1));
+    return ((add + OS_PAGE_SIZE - 1) & ~((size_t)OS_PAGE_SIZE - 1));
 }
 
 inline
@@ -2142,7 +2140,7 @@ uint8_t* align_on_page (uint8_t* add)
 inline
 size_t align_lower_page (size_t add)
 {
-    return (add & ~(page_size - 1));
+    return (add & ~((size_t)OS_PAGE_SIZE - 1));
 }
 
 inline
@@ -6295,7 +6293,7 @@ void gc_heap::make_c_mark_list (uint8_t** arr)
 {
     c_mark_list = arr;
     c_mark_list_index = 0;
-    c_mark_list_length = 1 + (page_size / MIN_OBJECT_SIZE);
+    c_mark_list_length = 1 + (OS_PAGE_SIZE / MIN_OBJECT_SIZE);
 }
 #endif //BACKGROUND_GC
 
@@ -6306,7 +6304,7 @@ void gc_heap::make_c_mark_list (uint8_t** arr)
 static const size_t card_bundle_word_width = 32;
 
 // How do we express the fact that 32 bits (card_word_width) is one uint32_t?
-static const size_t card_bundle_size = (size_t)(OS_PAGE_SIZE / (sizeof(uint32_t)*card_bundle_word_width));
+static const size_t card_bundle_size = (size_t)(GC_PAGE_SIZE / (sizeof(uint32_t)*card_bundle_word_width));
 
 inline
 size_t card_bundle_word (size_t cardb)
@@ -7135,7 +7133,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             if (saved_g_lowest_address < g_gc_lowest_address)
             {
                 if (ps > (size_t)g_gc_lowest_address)
-                    saved_g_lowest_address = (uint8_t*)OS_PAGE_SIZE;
+                    saved_g_lowest_address = (uint8_t*)(size_t)OS_PAGE_SIZE;
                 else
                 {
                     assert (((size_t)g_gc_lowest_address - ps) >= OS_PAGE_SIZE);
@@ -9202,7 +9200,7 @@ void gc_heap::delete_heap_segment (heap_segment* seg, BOOL consider_hoarding)
 
     if (consider_hoarding)
     {
-        assert ((heap_segment_mem (seg) - (uint8_t*)seg) <= 2*OS_PAGE_SIZE);
+        assert ((heap_segment_mem (seg) - (uint8_t*)seg) <= ptrdiff_t(2*OS_PAGE_SIZE));
         size_t ss = (size_t) (heap_segment_reserved (seg) - (uint8_t*)seg);
         //Don't keep the big ones.
         if (ss <= INITIAL_ALLOC)
@@ -12606,7 +12604,7 @@ size_t gc_heap::get_large_seg_size (size_t size)
     int align_const = get_alignment_constant (FALSE);
     size_t large_seg_size = align_on_page (
         max (default_seg_size,
-            ((size + 2 * Align(min_obj_size, align_const) + OS_PAGE_SIZE + 
+            ((size + 2 * Align(min_obj_size, align_const) + OS_PAGE_SIZE +
             align_size) / align_size * align_size)));
     return large_seg_size;
 }
@@ -21805,7 +21803,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             {
                 if (allocate_in_condemned &&
                     (settings.condemned_generation == max_generation) &&
-                    (ps > (OS_PAGE_SIZE)))
+                    (ps > OS_PAGE_SIZE))
                 {
                     ptrdiff_t reloc = plug_start - generation_allocation_pointer (consing_gen);
                     //reloc should >=0 except when we relocate
@@ -26721,7 +26719,7 @@ BOOL gc_heap::create_bgc_thread_support()
     }
 
     //needs to have room for enough smallest objects fitting on a page
-    parr = new (nothrow) (uint8_t* [1 + page_size / MIN_OBJECT_SIZE]);
+    parr = new (nothrow) uint8_t*[1 + OS_PAGE_SIZE / MIN_OBJECT_SIZE];
     if (!parr)
     {
         goto cleanup;
@@ -33440,12 +33438,6 @@ HRESULT GCHeap::Init(size_t hn)
 HRESULT GCHeap::Initialize ()
 {
     HRESULT hr = S_OK;
-
-    if (!GCToOSInterface::Initialize())
-    {
-        return E_FAIL;
-    }
-
 
     g_gc_pFreeObjectMethodTable = GCToEEInterface::GetFreeObjectMethodTable();
     g_num_processors = GCToOSInterface::GetTotalProcessorCount();

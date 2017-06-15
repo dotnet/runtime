@@ -4847,18 +4847,18 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
 
                     // We only want to record an interference between the virtual stub
                     // param reg and anything that's live AFTER the call, but we've not
-                    // yet processed the indirect target.  So add RBM_VIRTUAL_STUB_PARAM
+                    // yet processed the indirect target.  So add virtualStubParamInfo.regMask
                     // to interferingRegs.
-                    interferingRegs |= RBM_VIRTUAL_STUB_PARAM;
+                    interferingRegs |= virtualStubParamInfo->GetRegMask();
 #ifdef DEBUG
                     if (verbose)
                         printf("Adding interference with Virtual Stub Param\n");
 #endif
-                    codeGen->regSet.rsSetRegsModified(RBM_VIRTUAL_STUB_PARAM);
+                    codeGen->regSet.rsSetRegsModified(virtualStubParamInfo->GetRegMask());
 
                     if (tree->gtCall.gtCallType == CT_INDIRECT)
                     {
-                        predictReg = PREDICT_REG_VIRTUAL_STUB_PARAM;
+                        predictReg = virtualStubParamInfo->GetPredict();
                     }
                     break;
 
@@ -6352,7 +6352,7 @@ void Compiler::rpPredictRegUse()
 
         // if there are PInvoke calls and compLvFrameListRoot is enregistered,
         // it must not be in a register trashed by the callee
-        if (info.compCallUnmanaged != 0)
+        if (info.compLvFrameListRoot != BAD_VAR_NUM)
         {
             assert(!opts.ShouldUsePInvokeHelpers());
             noway_assert(info.compLvFrameListRoot < lvaCount);
