@@ -3,17 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    public class AddressParsingTests
+    public class AddressParsingTests : FileCleanupTestBase
     {
         [Fact]
-        public static void GatewayAddressParsing()
+        public void GatewayAddressParsing()
         {
-            FileUtil.NormalizeLineEndings("route", "route_normalized1");
-            List<GatewayIPAddressInformation> gatewayAddresses = StringParsingHelpers.ParseGatewayAddressesFromRouteFile("route_normalized1", "wlan0");
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("route", fileName);
+            List<GatewayIPAddressInformation> gatewayAddresses = StringParsingHelpers.ParseGatewayAddressesFromRouteFile(fileName, "wlan0");
             Assert.Equal(3, gatewayAddresses.Count);
 
             Assert.Equal(StringParsingHelpers.ParseHexIPAddress("0180690A"), gatewayAddresses[0].Address);
@@ -22,20 +24,22 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public static void DhcpServerAddressParsing()
+        public void DhcpServerAddressParsing()
         {
-            FileUtil.NormalizeLineEndings("dhclient.leases", "dhclient.leases_normalized0");
-            List<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile("dhclient.leases_normalized0", "wlan0");
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("dhclient.leases", fileName);
+            List<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(fileName, "wlan0");
             Assert.Equal(1, dhcpServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("10.105.128.4"), dhcpServerAddresses[0]);
         }
 
         [Fact]
-        public static void WinsServerAddressParsing()
+        public void WinsServerAddressParsing()
         {
-            FileUtil.NormalizeLineEndings("smb.conf", "smb.conf_normalized");
+            string fileName = GetTestFilePath();
+            FileUtil.NormalizeLineEndings("smb.conf", fileName);
 
-            List<IPAddress> winsServerAddresses = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile("smb.conf_normalized");
+            List<IPAddress> winsServerAddresses = StringParsingHelpers.ParseWinsServerAddressesFromSmbConfFile(fileName);
             Assert.Equal(1, winsServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("255.1.255.1"), winsServerAddresses[0]);
         }
