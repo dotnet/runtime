@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/corert/issues/3743 - Environment.GetCommandLineArgs() returning null on .Net Native", TargetFrameworkMonikers.UapAot)]
     public class GetCommandLineArgs : RemoteExecutorTestBase
     {
         [Fact]
