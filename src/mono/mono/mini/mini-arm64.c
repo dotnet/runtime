@@ -995,7 +995,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	switch (ji->type) {
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		/* ji->relocation is not set by the caller */
-		arm_patch_rel (ip, (guint8*)target, MONO_R_ARM64_B);
+		arm_patch_full (cfg, domain, ip, (guint8*)target, MONO_R_ARM64_B);
 		break;
 	default:
 		arm_patch_full (cfg, domain, ip, (guint8*)target, ji->relocation);
@@ -4138,6 +4138,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			} else {
 				mono_add_patch_info_rel (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method, MONO_R_ARM64_B);
 				arm_b (code, code);
+				cfg->thunk_area += THUNK_SIZE;
 			}
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
