@@ -2274,7 +2274,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         //
         //  Loop:
         //       ldr   wzr, [SP + 0]           // tickle the page - read from the page
-        //       sub   regTmp, SP, PAGE_SIZE   // decrement SP by PAGE_SIZE
+        //       sub   regTmp, SP, GetOsPageSize()   // decrement SP by GetOsPageSize()
         //       cmp   regTmp, regCnt
         //       jb    Done
         //       mov   SP, regTmp
@@ -2303,7 +2303,7 @@ void CodeGen::genLclHeap(GenTreePtr tree)
         // tickle the page - Read from the updated SP - this triggers a page fault when on the guard page
         getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, 0);
 
-        // decrement SP by PAGE_SIZE
+        // decrement SP by GetOsPageSize()
         getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, regTmp, REG_SPBASE, compiler->eeGetPageSize());
 
         getEmitter()->emitIns_R_R(INS_cmp, EA_PTRSIZE, regTmp, regCnt);

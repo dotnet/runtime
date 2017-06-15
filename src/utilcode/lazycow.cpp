@@ -43,8 +43,8 @@ LONG* EnsureCOWPageMapAllocated()
         {
             _ASSERTE(stats.ullTotalVirtual < 0x100000000ULL);
 
-            SIZE_T mapSize = (SIZE_T)((stats.ullTotalVirtual / PAGE_SIZE) / 8);
-            _ASSERTE(mapSize / PAGE_SIZE <= 32); // g_COWPageMapMap can only track 32 pages
+            SIZE_T mapSize = (SIZE_T)((stats.ullTotalVirtual / GetOsPageSize()) / 8);
+            _ASSERTE(mapSize / GetOsPageSize() <= 32); // g_COWPageMapMap can only track 32 pages
 
             // Note that VirtualAlloc will zero-fill the pages for us.
             LONG* pMap = (LONG*)VirtualAlloc(
@@ -69,7 +69,7 @@ bool EnsureCOWPageMapElementAllocated(LONG* elem)
     _ASSERTE(g_pCOWPageMap != NULL);
 
     size_t offset = (size_t)elem - (size_t)g_pCOWPageMap;
-    size_t page = offset / PAGE_SIZE;
+    size_t page = offset / GetOsPageSize();
     
     _ASSERTE(page < 32);
     int bit = (int)(1 << page);
@@ -91,7 +91,7 @@ bool IsCOWPageMapElementAllocated(LONG* elem)
     _ASSERTE(g_pCOWPageMap != NULL);
 
     size_t offset = (size_t)elem - (size_t)g_pCOWPageMap;
-    size_t page = offset / PAGE_SIZE;
+    size_t page = offset / GetOsPageSize();
     
     _ASSERTE(page < 32);
     int bit = (int)(1 << page);
@@ -112,8 +112,8 @@ bool SetCOWPageBits(BYTE* pStart, size_t len, bool value)
     //
     // Write the bits in 32-bit chunks, to avoid doing one interlocked instruction for each bit.
     //
-    size_t page = (size_t)pStart / PAGE_SIZE;
-    size_t lastPage = (size_t)(pStart+len-1) / PAGE_SIZE;
+    size_t page = (size_t)pStart / GetOsPageSize();
+    size_t lastPage = (size_t)(pStart+len-1) / GetOsPageSize();
     size_t elem = page / 32;
     LONG bits = 0;
     do
@@ -188,8 +188,8 @@ bool AreAnyCOWPageBitsSet(BYTE* pStart, size_t len)
         return false;
 
     _ASSERTE(len > 0);
-    size_t page = (size_t)pStart / PAGE_SIZE;
-    size_t lastPage = (size_t)(pStart+len-1) / PAGE_SIZE;
+    size_t page = (size_t)pStart / GetOsPageSize();
+    size_t lastPage = (size_t)(pStart+len-1) / GetOsPageSize();
     do
     {
         LONG* pElem = &pCOWPageMap[page / 32];

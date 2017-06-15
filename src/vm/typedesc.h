@@ -462,7 +462,7 @@ public:
         }
         CONTRACTL_END;
 
-        m_pModule = pModule;
+        m_pModule.SetValue(pModule);
         m_typeOrMethodDef = typeOrMethodDef;
         m_token = token;
         m_index = index;
@@ -479,7 +479,8 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
-        return m_pModule;
+
+        return ReadPointer(this, &TypeVarTypeDesc::m_pModule);
     }
 
     unsigned int GetIndex() 
@@ -567,7 +568,7 @@ protected:
     BOOL ConstrainedAsObjRefHelper();
 
     // Module containing the generic definition, also the loader module for this type desc
-    PTR_Module m_pModule;
+    RelativePointer<PTR_Module> m_pModule;
 
     // Declaring type or method
     mdToken m_typeOrMethodDef;
