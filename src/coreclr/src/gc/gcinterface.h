@@ -413,11 +413,11 @@ public:
 
     virtual bool ContainsHandle(OBJECTHANDLE handle) = 0;
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type) = 0;
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type) = 0;
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type, int heapToAffinitizeTo) = 0;
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo) = 0;
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo) = 0;
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo) = 0;
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) = 0;
 
@@ -443,13 +443,15 @@ public:
 
     virtual void DestroyHandleStore(IGCHandleStore* store) = 0;
 
-    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type) = 0;
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, HandleType type) = 0;
 
     virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle) = 0;
 
-    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type) = 0;
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type) = 0;
 
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle) = 0;
+
+    virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo) = 0;
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle) = 0;
 
@@ -462,6 +464,8 @@ public:
     virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle) = 0;
 
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
+
+    virtual HandleType HandleFetchType(OBJECTHANDLE handle) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.

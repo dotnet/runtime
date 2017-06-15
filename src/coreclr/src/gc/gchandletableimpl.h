@@ -15,11 +15,11 @@ public:
 
     virtual bool ContainsHandle(OBJECTHANDLE handle);
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type);
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type);
 
-    virtual OBJECTHANDLE CreateHandleOfType(Object* object, int type, int heapToAffinitizeTo);
+    virtual OBJECTHANDLE CreateHandleOfType(Object* object, HandleType type, int heapToAffinitizeTo);
 
-    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, int type, void* pExtraInfo);
+    virtual OBJECTHANDLE CreateHandleWithExtraInfo(Object* object, HandleType type, void* pExtraInfo);
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
 
@@ -49,13 +49,15 @@ public:
 
     virtual void DestroyHandleStore(IGCHandleStore* store);
 
-    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, int type);
+    virtual OBJECTHANDLE CreateGlobalHandleOfType(Object* object, HandleType type);
 
     virtual OBJECTHANDLE CreateDuplicateHandle(OBJECTHANDLE handle);
 
-    virtual void DestroyHandleOfType(OBJECTHANDLE handle, int type);
+    virtual void DestroyHandleOfType(OBJECTHANDLE handle, HandleType type);
 
     virtual void DestroyHandleOfUnknownType(OBJECTHANDLE handle);
+
+    virtual void SetExtraInfoForHandle(OBJECTHANDLE handle, HandleType type, void* pExtraInfo);
 
     virtual void* GetExtraInfoFromHandle(OBJECTHANDLE handle);
 
@@ -68,6 +70,8 @@ public:
     virtual Object* GetDependentHandleSecondary(OBJECTHANDLE handle);
 
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
+
+    virtual HandleType HandleFetchType(OBJECTHANDLE handle);
 };
 
 #endif  // GCHANDLETABLE_H_
