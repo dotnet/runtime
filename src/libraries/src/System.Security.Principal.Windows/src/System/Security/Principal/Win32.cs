@@ -66,9 +66,9 @@ namespace System.Security.Principal
             }
             else
             {
-                int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(unchecked((int)ReturnCode));
+                uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError(ReturnCode);
 
-                throw new Win32Exception(win32ErrorCode);
+                throw new Win32Exception(unchecked((int)win32ErrorCode));
             }
         }
 
