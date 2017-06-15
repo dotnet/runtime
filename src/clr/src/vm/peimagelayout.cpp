@@ -637,7 +637,7 @@ bool PEImageLayout::ConvertILOnlyPE32ToPE64Worker()
                             + VAL16(pHeader32->FileHeader.NumberOfSections));
     
     // On AMD64, used for a 12-byte jump thunk + the original entry point offset.
-    if (((pEnd32 + IMAGE_HEADER_3264_SIZE_DIFF /* delta in headers to compute end of 64bit header */) - pImage) > OS_PAGE_SIZE ) {
+    if (((pEnd32 + IMAGE_HEADER_3264_SIZE_DIFF /* delta in headers to compute end of 64bit header */) - pImage) > GetOsPageSize() ) {
         // This should never happen.  An IL_ONLY image should at most 3 sections.  
         _ASSERTE(!"ConvertILOnlyPE32ToPE64Worker: Insufficient room to rewrite headers as PE64");
         return false;
@@ -693,7 +693,7 @@ bool PEImageLayout::ConvertILOnlyPE32ToPE64()
     PBYTE pageBase = (PBYTE)GetBase();
     DWORD oldProtect;
 
-    if (!ClrVirtualProtect(pageBase, OS_PAGE_SIZE, PAGE_READWRITE, &oldProtect))
+    if (!ClrVirtualProtect(pageBase, GetOsPageSize(), PAGE_READWRITE, &oldProtect))
     {
         // We are not going to be able to update header.
         return false;
@@ -702,7 +702,7 @@ bool PEImageLayout::ConvertILOnlyPE32ToPE64()
     fConvertedToPE64 = ConvertILOnlyPE32ToPE64Worker();
     
     DWORD ignore;
-    if (!ClrVirtualProtect(pageBase, OS_PAGE_SIZE, oldProtect, &ignore))
+    if (!ClrVirtualProtect(pageBase, GetOsPageSize(), oldProtect, &ignore))
     {
         // This is not so bad; just ignore it
     }

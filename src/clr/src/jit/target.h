@@ -606,11 +606,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_SECRET_STUB_PARAM    REG_EAX
   #define RBM_SECRET_STUB_PARAM    RBM_EAX
 
-  // VSD extra parameter
-  #define REG_VIRTUAL_STUB_PARAM   REG_EAX
-  #define RBM_VIRTUAL_STUB_PARAM   RBM_EAX
-  #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_EAX
-
   // VSD target address register
   #define REG_VIRTUAL_STUB_TARGET  REG_EAX
   #define RBM_VIRTUAL_STUB_TARGET  RBM_EAX
@@ -999,11 +994,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_SECRET_STUB_PARAM    REG_R10
   #define RBM_SECRET_STUB_PARAM    RBM_R10
 
-  // VSD extra parameter (slot address)
-  #define REG_VIRTUAL_STUB_PARAM   REG_R11
-  #define RBM_VIRTUAL_STUB_PARAM   RBM_R11
-  #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_R11
-
   // Registers used by PInvoke frame setup
   #define REG_PINVOKE_FRAME        REG_EDI
   #define RBM_PINVOKE_FRAME        RBM_EDI
@@ -1387,11 +1377,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   #define REG_SECRET_STUB_PARAM     REG_R12
   #define RBM_SECRET_STUB_PARAM     RBM_R12
 
-  // VSD extra parameter (slot address)
-  #define REG_VIRTUAL_STUB_PARAM          REG_R4
-  #define RBM_VIRTUAL_STUB_PARAM          RBM_R4
-  #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_R4
-
   // R2R indirect call. Use the same registers as VSD
   #define REG_R2R_INDIRECT_PARAM          REG_R4
   #define RBM_R2R_INDIRECT_PARAM          RBM_R4
@@ -1677,11 +1662,6 @@ typedef unsigned short regPairNoSmall; // arm: need 12 bits
   // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
   #define REG_SECRET_STUB_PARAM     REG_R12
   #define RBM_SECRET_STUB_PARAM     RBM_R12
-
-  // VSD extra parameter (slot address)
-  #define REG_VIRTUAL_STUB_PARAM          REG_R11
-  #define RBM_VIRTUAL_STUB_PARAM          RBM_R11
-  #define PREDICT_REG_VIRTUAL_STUB_PARAM  PREDICT_REG_R11
 
   // R2R indirect call. Use the same registers as VSD
   #define REG_R2R_INDIRECT_PARAM          REG_R11

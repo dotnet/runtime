@@ -1348,9 +1348,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             if (!ClrSafeInt<DWORD>::multiply(ntypars, sizeof(TypeHandle), dwAllocaSize))
                 ThrowHR(COR_E_OVERFLOW);
 
-            if ((dwAllocaSize/PAGE_SIZE+1) >= 2)
+            if ((dwAllocaSize/GetOsPageSize()+1) >= 2)
             {
-                DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+dwAllocaSize/PAGE_SIZE+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
+                DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+dwAllocaSize/GetOsPageSize()+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
             }
             TypeHandle *thisinst = (TypeHandle*) _alloca(dwAllocaSize);
 
@@ -1634,9 +1634,9 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                     ThrowHR(COR_E_OVERFLOW);
                 }
                 
-                if ((cAllocaSize/PAGE_SIZE+1) >= 2)
+                if ((cAllocaSize/GetOsPageSize()+1) >= 2)
                 {
-                    DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+cAllocaSize/PAGE_SIZE+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
+                    DO_INTERIOR_STACK_PROBE_FOR_NOTHROW_CHECK_THREAD((10+cAllocaSize/GetOsPageSize()+1), NO_FORBIDGC_LOADER_USE_ThrowSO(););
                 }
 
                 TypeHandle *retAndArgTypes = (TypeHandle*) _alloca(cAllocaSize);

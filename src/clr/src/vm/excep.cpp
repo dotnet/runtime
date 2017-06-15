@@ -57,7 +57,7 @@
 // Windows uses 64kB as the null-reference area
 #define NULL_AREA_SIZE   (64 * 1024)
 #else // !FEATURE_PAL
-#define NULL_AREA_SIZE   OS_PAGE_SIZE
+#define NULL_AREA_SIZE   GetOsPageSize()
 #endif // !FEATURE_PAL
 
 #ifndef CROSSGEN_COMPILE

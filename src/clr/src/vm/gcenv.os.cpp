@@ -22,9 +22,14 @@
 #undef Sleep
 #endif // Sleep
 
-#include "env/gcenv.os.h"
+#include "../gc/env/gcenv.os.h"
 
 #define MAX_PTR ((uint8_t*)(~(ptrdiff_t)0))
+
+#ifdef FEATURE_PAL
+uint32_t g_pageSizeUnixInl = 0;
+#endif
+
 
 // Initialize the interface implementation
 // Return:
@@ -32,6 +37,11 @@
 bool GCToOSInterface::Initialize()
 {
     LIMITED_METHOD_CONTRACT;
+
+#ifdef FEATURE_PAL
+    g_pageSizeUnixInl = GetOsPageSize();
+#endif
+
     return true;
 }
 
@@ -299,7 +309,7 @@ bool GCToOSInterface::GetWriteWatch(bool resetState, void* address, size_t size,
     ULONG granularity;
 
     bool success = ::GetWriteWatch(flags, address, size, pageAddresses, (ULONG_PTR*)pageAddressesCount, &granularity) == 0;
-    _ASSERTE (granularity == OS_PAGE_SIZE);
+    _ASSERTE (granularity == GetOsPageSize());
 
     return success;
 }

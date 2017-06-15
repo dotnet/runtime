@@ -116,7 +116,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     ulSize = file->GetLoadedIL()->GetSize();
                 }
 
-                // memory are mapped in in OS_PAGE_SIZE size.
+                // memory are mapped in in GetOsPageSize() size.
                 // Some memory are mapped in but some are not. You cannot
                 // write all in one block. So iterating through page size
                 //
@@ -129,7 +129,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     // MethodHeader MethodDesc::GetILHeader. Without this RVA,
                     // all locals are broken. In case, you are asked about this question again.
                     //
-                    ulSizeBlock = ulSize > OS_PAGE_SIZE ? OS_PAGE_SIZE : ulSize;
+                    ulSizeBlock = ulSize > GetOsPageSize() ? GetOsPageSize() : ulSize;
                     ReportMem(pStartAddr, ulSizeBlock, false);
                     pStartAddr += ulSizeBlock;
                     ulSize -= ulSizeBlock;

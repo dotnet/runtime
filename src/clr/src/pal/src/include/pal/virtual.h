@@ -57,11 +57,11 @@ enum VIRTUAL_CONSTANTS
     VIRTUAL_NOACCESS,
     VIRTUAL_EXECUTE,
     VIRTUAL_EXECUTE_READ,
-    
-    VIRTUAL_PAGE_SIZE       = 0x1000,
-    VIRTUAL_PAGE_MASK       = VIRTUAL_PAGE_SIZE - 1,
+
     VIRTUAL_64KB            = 0x10000
 };
+
+size_t GetVirtualPageSize();
 
 /*++
 Function :
