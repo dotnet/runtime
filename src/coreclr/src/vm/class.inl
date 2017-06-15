@@ -39,7 +39,7 @@ inline void EEClassOptionalFields::Init()
 {
     LIMITED_METHOD_CONTRACT;
     m_pDictLayout = NULL;
-    m_pVarianceInfo = NULL;
+    m_pVarianceInfo.SetValueMaybeNull(NULL);
 #ifdef FEATURE_COMINTEROP
     m_pSparseVTableMap = NULL;
     m_pCoClassForIntf = TypeHandle();

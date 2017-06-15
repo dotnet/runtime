@@ -3624,12 +3624,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         // The importer decided we needed a stub call via a computed
         // stub dispatch address, i.e. an address which came from a dictionary lookup.
         //   - The dictionary lookup produces an indirected address, suitable for call
-        //     via "call [REG_VIRTUAL_STUB_PARAM]"
+        //     via "call [VirtualStubParam.reg]"
         //
         // This combination will only be generated for shared generic code and when
         // stub dispatch is active.
 
-        // fgMorphArgs will have created trees to pass the address in REG_VIRTUAL_STUB_PARAM.
+        // fgMorphArgs will have created trees to pass the address in VirtualStubParam.reg.
         // All we have to do here is add an indirection to generate the actual call target.
 
         GenTree* ind = Ind(call->gtCallAddr);
@@ -3672,7 +3672,7 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
 // So we don't use a register.
 #ifndef _TARGET_X86_
             // on x64 we must materialize the target using specific registers.
-            addr->gtRegNum = REG_VIRTUAL_STUB_PARAM;
+            addr->gtRegNum = comp->virtualStubParamInfo->GetReg();
 
             indir->gtRegNum = REG_JUMP_THUNK_PARAM;
             indir->gtFlags |= GTF_IND_REQ_ADDR_IN_REG;

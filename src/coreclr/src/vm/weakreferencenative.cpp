@@ -11,8 +11,8 @@
 
 #include "common.h"
 
+#include "gchandleutilities.h"
 #include "weakreferencenative.h"
-#include "handletablepriv.h"
 #include "typestring.h"
 #include "typeparse.h"
 
@@ -218,7 +218,7 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
             }
             else if(IsWinRTWeakReferenceHandle(handle.RawHandle))
             {
-                _ASSERTE(HandleFetchType(handle.Handle) == HNDTYPE_WEAK_WINRT);
+                _ASSERTE(GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handle.Handle) == HNDTYPE_WEAK_WINRT);
 
                 // Retrieve the associated IWeakReference* for this weak reference.  Add a reference to it while we release
                 // the spin lock so that another thread doesn't release it out from underneath us.
@@ -227,7 +227,8 @@ NOINLINE Object* LoadWinRTWeakReferenceTarget(WEAKREFERENCEREF weakReference, Ty
                 // it's always set to NULL here and there's nothing for it to release.
                 _ASSERTE(pWinRTWeakReference.IsNull());
                 CONTRACT_VIOLATION(GCViolation);
-                pWinRTWeakReference = reinterpret_cast<IWeakReference*>(HndGetHandleExtraInfo(handle.Handle));
+                IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+                pWinRTWeakReference = reinterpret_cast<IWeakReference*>(mgr->GetExtraInfoFromHandle(handle.Handle));
                 if (!pWinRTWeakReference.IsNull())
                 {
                     pWinRTWeakReference->AddRef();
@@ -508,7 +509,7 @@ void FinalizeWeakReference(Object * obj)
         handleToDestroy = GetHandleValue(handle);
 
         // Cache the old handle value
-        UINT handleType = HandleFetchType(handleToDestroy);
+        HandleType handleType = GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handleToDestroy);
 #ifdef FEATURE_COMINTEROP
         _ASSERTE(handleType == HNDTYPE_WEAK_LONG || handleType == HNDTYPE_WEAK_SHORT || handleType == HNDTYPE_WEAK_WINRT);
         isWeakWinRTHandle = handleType == HNDTYPE_WEAK_WINRT;
@@ -755,8 +756,9 @@ NOINLINE void SetWeakReferenceTarget(WEAKREFERENCEREF weakReference, OBJECTREF t
         // and update it with the new weak reference pointer.  If the incoming object is not an RCW that can
         // use IWeakReference, then pTargetWeakReference will be null.  Therefore, no matter what the incoming
         // object type is, we can unconditionally store pTargetWeakReference to the object handle's extra data.
-        IWeakReference* pExistingWeakReference = reinterpret_cast<IWeakReference*>(HndGetHandleExtraInfo(handle.Handle));
-        HndSetHandleExtraInfo(handle.Handle, HNDTYPE_WEAK_WINRT, reinterpret_cast<LPARAM>(pTargetWeakReference.GetValue()));
+        IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
+        IWeakReference* pExistingWeakReference = reinterpret_cast<IWeakReference*>(mgr->GetExtraInfoFromHandle(handle.Handle));
+        mgr->SetExtraInfoForHandle(handle.Handle, HNDTYPE_WEAK_WINRT, reinterpret_cast<void*>(pTargetWeakReference.GetValue()));
         StoreObjectInHandle(handle.Handle, target);
 
         if (pExistingWeakReference != nullptr)
@@ -931,7 +933,7 @@ FCIMPL1(FC_BOOL_RET, WeakReferenceNative::IsTrackResurrection, WeakReferenceObje
         }
         else
         {
-            trackResurrection = HandleFetchType(GetHandleValue(handle)) == HNDTYPE_WEAK_LONG;
+            trackResurrection = GCHandleUtilities::GetGCHandleManager()->HandleFetchType(GetHandleValue(handle)) == HNDTYPE_WEAK_LONG;
         }
 
         ReleaseWeakHandleSpinLock(pThis, handle);
@@ -969,7 +971,7 @@ FCIMPL1(FC_BOOL_RET, WeakReferenceOfTNative::IsTrackResurrection, WeakReferenceO
         }
         else
         {
-            trackResurrection = HandleFetchType(GetHandleValue(handle)) == HNDTYPE_WEAK_LONG;
+            trackResurrection = GCHandleUtilities::GetGCHandleManager()->HandleFetchType(GetHandleValue(handle)) == HNDTYPE_WEAK_LONG;
         }
 
         ReleaseWeakHandleSpinLock(pThis, handle);

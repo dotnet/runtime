@@ -5,7 +5,7 @@ goto :start
 :usage
 echo Set up for individual test execution, with SuperPMI collection.
 echo.
-echo Usage: collect_runtest.cmd ^<path to runtest.cmd^>
+echo Usage: collect_runtest.cmd ^<path to runtest.cmd^> [optional args]
 echo.
 echo We can't set the SuperPMI collection variables before runtest.cmd executes,
 echo because it runs other managed apps, including desktop apps, that are also
@@ -22,7 +22,7 @@ goto :eof
 :start
 if "%1"=="" echo ERROR: missing argument.&goto usage
 
-set runtestscript=%1
+set runtestscript=%*
 
 set testenvfile=%TEMP%\superpmitestenv_%RANDOM%.cmd
 
@@ -36,6 +36,8 @@ set SuperPMIShimPath=
 set COMPlus_AltJit=
 set COMPlus_AltJitName=
 
-call %runtestscript% testEnv %testenvfile%
+set _nextcmd=call %runtestscript% testEnv %testenvfile%
+echo %0: Running: %_nextcmd%
+%_nextcmd%
 
 del /f /q %testenvfile%

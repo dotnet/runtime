@@ -233,10 +233,32 @@ def static getOSGroup(def os) {
     }
 }
 
+def static getFullPerfJobName(def project, def os, def isPR) {
+    return Utilities.getFullJobName(project, "perf_${os}", isPR)
+}
+
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 [true, false].each { isPR ->
-    ['Ubuntu14.04'].each { os ->
-        def newJob = job(Utilities.getFullJobName(project, "perf_${os}", isPR)) {
+    def fullBuildJobName = Utilities.getFullJobName(project, 'perf_linux_build', isPR)
+    def architecture = 'x64'
+    def configuration = 'Release'
+
+    // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
+    ['RHEL7.2'].each { os ->
+        def newBuildJob = job(fullBuildJobName) {
+            steps {
+                shell("./build.sh verbose ${architecture} ${configuration}")
+            }
+        }
+        Utilities.setMachineAffinity(newBuildJob, os, 'latest-or-auto')
+        Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
+        Utilities.addArchival(newBuildJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
+    }
+
+    // Actual perf testing on the following OSes
+    def perfOSList = ['Ubuntu14.04']
+    perfOSList.each { os ->
+        def newJob = job(getFullPerfJobName(project, os, isPR)) {
 
             label('linux_clr_perf')
             wrappers {
@@ -253,22 +275,26 @@ def static getOSGroup(def os) {
                 }
             }
 
-            // Cap the maximum number of iterations to 21.
             parameters {
+                // Cap the maximum number of iterations to 21.
                 stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
                 stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
             }
 
             def osGroup = getOSGroup(os)
-            def architecture = 'x64'
-            def configuration = 'Release'
             def runType = isPR ? 'private' : 'rolling'
             def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
 
             steps {
                 shell("./tests/scripts/perf-prep.sh")
                 shell("./init-tools.sh")
-                shell("./build.sh ${architecture} ${configuration}")
+                copyArtifacts(fullBuildJobName) {
+                    includePatterns("bin/**")
+                    buildSelector {
+                        buildNumber('\${PRODUCT_BUILD}')
+                    }
+                }
                 shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
@@ -305,26 +331,73 @@ def static getOSGroup(def os) {
                 numToKeep(1000)
             }
         }
-        if (isPR) {
-            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-            builder.setGithubContext("${os} Perf Tests")
-            builder.triggerOnlyOnComment()
-            builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+perf.*")
-            builder.triggerForBranch(branch)
-            builder.emitTrigger(newJob)
-        }
-        else {
-            // Set a push trigger
-            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-            builder.emitTrigger(newJob)
-        }
     } // os
+
+    def flowJobPerfRunList = perfOSList.collect { os ->
+        "{ build(params + [PRODUCT_BUILD: b.build.number], '${getFullPerfJobName(project, os, isPR)}') }"
+    }
+    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, "perf_linux_flow", isPR, '')) {
+        if (isPR) {
+            parameters {
+                stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+            }
+        }
+        buildFlow("""
+// First, build the bits on RHEL7.2
+b = build(params, '${fullBuildJobName}')
+
+// Then, run the perf tests
+parallel(
+    ${flowJobPerfRunList.join(",\n    ")}
+)
+""")
+    }
+
+    Utilities.setMachineAffinity(newFlowJob, 'Windows_NT', 'latest-or-auto')
+    Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
+
+    if (isPR) {
+        TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+        builder.setGithubContext("Linux Perf Test Flow")
+        builder.triggerOnlyOnComment()
+        builder.setCustomTriggerPhrase("(?i).*test\\W+linux\\W+perf\\W+flow.*")
+        builder.triggerForBranch(branch)
+        builder.emitTrigger(newFlowJob)
+    }
+    else {
+        // Set a push trigger
+        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+        builder.emitTrigger(newFlowJob)
+    }
+
 } // isPR
+
+def static getFullThroughputJobName(def project, def os, def isPR) {
+    return Utilities.getFullJobName(project, "perf_throughput_${os}", isPR)
+}
 
 // Create the Linux/OSX/CentOS coreclr test leg for debug and release and each scenario
 [true, false].each { isPR ->
-    ['Ubuntu14.04'].each { os ->
-        def newJob = job(Utilities.getFullJobName(project, "perf_throughput_${os}", isPR)) {
+    def fullBuildJobName = Utilities.getFullJobName(project, 'perf_throughput_linux_build', isPR)
+    def architecture = 'x64'
+    def configuration = 'Release'
+
+    // Build has to happen on RHEL7.2 (that's where we produce the bits we ship)
+    ['RHEL7.2'].each { os ->
+        def newBuildJob = job(fullBuildJobName) {
+            steps {
+                shell("./build.sh verbose ${architecture} ${configuration}")
+            }
+        }
+        Utilities.setMachineAffinity(newBuildJob, os, 'latest-or-auto')
+        Utilities.standardJobSetup(newBuildJob, project, isPR, "*/${branch}")
+        Utilities.addArchival(newBuildJob, "bin/Product/**")
+    }
+
+    // Actual perf testing on the following OSes
+    def throughputOSList = ['Ubuntu14.04']
+    throughputOSList.each { os ->
+        def newJob = job(getFullThroughputJobName(project, os, isPR)) {
 
             label('linux_clr_perf')
                 wrappers {
@@ -340,16 +413,24 @@ def static getOSGroup(def os) {
                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
                 }
             }
+
+            parameters {
+                stringParam('PRODUCT_BUILD', '', 'Build number from which to copy down the CoreCLR Product binaries built for Linux')
+            }
+
             def osGroup = getOSGroup(os)
-            def architecture = 'x64'
-            def configuration = 'Release'
             def runType = isPR ? 'private' : 'rolling'
             def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
 
             steps {
                 shell("bash ./tests/scripts/perf-prep.sh --throughput")
                 shell("./init-tools.sh")
-                shell("./build.sh ${architecture} ${configuration}")
+                copyArtifacts(fullBuildJobName) {
+                    includePatterns("bin/Product/**")
+                    buildSelector {
+                        buildNumber('\${PRODUCT_BUILD}')
+                    }
+                }
                 shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
@@ -382,20 +463,45 @@ def static getOSGroup(def os) {
                 numToKeep(1000)
             }
         }
-        if (isPR) {
-            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-            builder.setGithubContext("${os} Throughput Perf Tests")
-            builder.triggerOnlyOnComment()
-            builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+throughput.*")
-            builder.triggerForBranch(branch)
-            builder.emitTrigger(newJob)
-        }
-        else {
-            // Set a push trigger
-            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-            builder.emitTrigger(newJob)
-        }
     } // os
+
+    def flowJobTPRunList = throughputOSList.collect { os ->
+        "{ build(params + [PRODUCT_BUILD: b.build.number], '${getFullThroughputJobName(project, os, isPR)}') }"
+    }
+    def newFlowJob = buildFlowJob(Utilities.getFullJobName(project, "perf_throughput_linux_flow", isPR, '')) {
+        if (isPR) {
+            parameters {
+                stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+            }
+        }
+        buildFlow("""
+// First, build the bits on RHEL7.2
+b = build(params, '${fullBuildJobName}')
+
+// Then, run the perf tests
+parallel(
+    ${flowJobTPRunList.join(",\n    ")}
+)
+""")
+    }
+
+    Utilities.setMachineAffinity(newFlowJob, 'Windows_NT', 'latest-or-auto')
+    Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
+
+    if (isPR) {
+        TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+        builder.setGithubContext("Linux Throughput Perf Test Flow")
+        builder.triggerOnlyOnComment()
+        builder.setCustomTriggerPhrase("(?i).*test\\W+linux\\W+throughput\\W+flow.*")
+        builder.triggerForBranch(branch)
+        builder.emitTrigger(newFlowJob)
+    }
+    else {
+        // Set a push trigger
+        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+        builder.emitTrigger(newFlowJob)
+    }
+
 } // isPR
 
 // Setup ILLink tests
@@ -486,3 +592,7 @@ def static getOSGroup(def os) {
         }
     }
 }
+
+Utilities.createHelperJob(this, project, branch,
+    "Welcome to the ${project} Perf help",
+    "Have a nice day!")

@@ -3011,13 +3011,13 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
         // Amd64:
         // We can mark any pc-relative 32-bit addr as containable, except for a direct VSD call address.
         // (i.e. those VSD calls for which stub addr is known during JIT compilation time).  In this case,
-        // VM requires us to pass stub addr in REG_VIRTUAL_STUB_PARAM - see LowerVirtualStubCall().  For
+        // VM requires us to pass stub addr in VirtualStubParam.reg - see LowerVirtualStubCall().  For
         // that reason we cannot mark such an addr as contained.  Note that this is not an issue for
         // indirect VSD calls since morphArgs() is explicitly materializing hidden param as a non-standard
         // argument.
         //
         // Workaround:
-        // Note that LowerVirtualStubCall() sets addr->gtRegNum to REG_VIRTUAL_STUB_PARAM and Lowering::doPhase()
+        // Note that LowerVirtualStubCall() sets addr->gtRegNum to VirtualStubParam.reg and Lowering::doPhase()
         // sets destination candidates on such nodes and resets addr->gtRegNum to REG_NA before calling
         // TreeNodeInfoInit(). Ideally we should set a flag on addr nodes that shouldn't be marked as contained
         // (in LowerVirtualStubCall()), but we don't have any GTF_* flags left for that purpose.  As a workaround

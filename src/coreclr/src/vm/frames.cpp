@@ -417,13 +417,13 @@ VOID Frame::Push(Thread *pThread)
     
     m_Next = pThread->GetFrame();
 
-    // PAGE_SIZE is used to relax the assert for cases where two Frames are
+    // GetOsPageSize() is used to relax the assert for cases where two Frames are
     // declared in the same source function. We cannot predict the order
     // in which the C compiler will lay them out in the stack frame.
-    // So PAGE_SIZE is a guess of the maximum stack frame size of any method
+    // So GetOsPageSize() is a guess of the maximum stack frame size of any method
     // with multiple Frames in mscorwks.dll
     _ASSERTE(((m_Next == FRAME_TOP) ||
-              (PBYTE(m_Next) + (2 * PAGE_SIZE)) > PBYTE(this)) &&
+              (PBYTE(m_Next) + (2 * GetOsPageSize())) > PBYTE(this)) &&
              "Pushing a frame out of order ?");
     
     _ASSERTE(// If AssertOnFailFast is set, the test expects to do stack overrun 
