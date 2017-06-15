@@ -478,6 +478,10 @@ function load_unsupported_tests {
 function load_failing_tests {
     # Load the list of tests that fail on this platform. These tests are disabled (skipped) temporarily, pending investigation.
     failingTests=($(read_array "$(dirname "$0")/testsFailingOutsideWindows.txt"))
+   
+    if [ "$ARCH" == "arm64" ]; then
+        failingTests+=($(read_array "$(dirname "$0")/testsFailingOnArm64.txt"))
+    fi
 }
 
 function load_playlist_tests {
