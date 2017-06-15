@@ -35,7 +35,6 @@
 #include "fcall.h"
 #include "dllimportcallback.h"
 #include "comdelegate.h"
-#include "handletablepriv.h"
 #include "mdaassistants.h"
 #include "typestring.h"
 #include "appdomain.inl"
@@ -640,13 +639,14 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
     OBJECTHANDLE hnd = 0;
 
     HELPER_METHOD_FRAME_BEGIN_RET_NOPOLL();
-    
+
     // If it is a pinned handle, check the object type.
     if (type == HNDTYPE_PINNED)
         GCHandleValidatePinnedObject(objRef);
 
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_WINRT);
     // Create the handle.
-    hnd = GetAppDomain()->CreateTypedHandle(objRef, type);
+    hnd = GetAppDomain()->CreateTypedHandle(objRef, static_cast<HandleType>(type));
 
     HELPER_METHOD_FRAME_END_POLL();
     return (LPVOID) hnd;
@@ -764,7 +764,7 @@ FCIMPL1(INT32, MarshalNative::GCHandleInternalGetHandleType, OBJECTHANDLE handle
 {
     FCALL_CONTRACT;
 
-    return HandleFetchType(handle);
+    return GCHandleUtilities::GetGCHandleManager()->HandleFetchType(handle);
 }
 FCIMPLEND
 
