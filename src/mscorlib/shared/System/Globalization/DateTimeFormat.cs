@@ -1059,14 +1059,15 @@ namespace System
                 dateTime = dateTime - offset;
             }
 
+            dateTime.GetDatePart(out int year, out int month, out int day);
             result.Append(InvariantAbbreviatedDayNames[(int)dateTime.DayOfWeek]);
             result.Append(',');
             result.Append(' ');
-            AppendNumber(result, dateTime.Day, 2);
+            AppendNumber(result, day, 2);
             result.Append(' ');
-            result.Append(InvariantAbbreviatedMonthNames[dateTime.Month - 1]);
+            result.Append(InvariantAbbreviatedMonthNames[month - 1]);
             result.Append(' ');
-            AppendNumber(result, dateTime.Year, 4);
+            AppendNumber(result, year, 4);
             result.Append(' ');
             AppendHHmmssTimeOfDay(result, dateTime);
             result.Append(' ');
@@ -1081,11 +1082,12 @@ namespace System
             const int roundTripFormatLength = 28;
             StringBuilder result = StringBuilderCache.Acquire(roundTripFormatLength);
 
-            AppendNumber(result, dateTime.Year, 4);
+            dateTime.GetDatePart(out int year, out int month, out int day);
+            AppendNumber(result, year, 4);
             result.Append('-');
-            AppendNumber(result, dateTime.Month, 2);
+            AppendNumber(result, month, 2);
             result.Append('-');
-            AppendNumber(result, dateTime.Day, 2);
+            AppendNumber(result, day, 2);
             result.Append('T');
             AppendHHmmssTimeOfDay(result, dateTime);
             result.Append('.');
