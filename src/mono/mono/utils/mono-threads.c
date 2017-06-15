@@ -1029,16 +1029,21 @@ STW to make sure no unsafe pending suspend is in progress.
 static void
 mono_thread_info_suspend_lock_with_info (MonoThreadInfo *info)
 {
-	g_assert (info);
-	g_assert (mono_thread_info_is_current (info));
-	g_assert (mono_thread_info_is_live (info));
+	if (mono_threads_is_coop_enabled ()) {
+		g_assert (info);
+		g_assert (mono_thread_info_is_current (info));
+		g_assert (mono_thread_info_is_live (info));
 
-	MONO_ENTER_GC_SAFE_WITH_INFO(info);
+		MONO_ENTER_GC_SAFE_WITH_INFO(info);
 
-	int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
-	g_assert (res != -1);
+		int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+		g_assert (res != -1);
 
-	MONO_EXIT_GC_SAFE_WITH_INFO;
+		MONO_EXIT_GC_SAFE_WITH_INFO;
+	} else {
+		int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+		g_assert (res != -1);
+	}
 }
 
 void
