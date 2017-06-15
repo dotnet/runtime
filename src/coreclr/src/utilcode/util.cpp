@@ -18,6 +18,7 @@
 #include "sigparser.h"
 #include "cor.h"
 #include "corinfo.h"
+#include "volatile.h"
 
 
 const char g_RTMVersion[]= "v1.0.3705";
@@ -437,7 +438,7 @@ void InitCodeAllocHint(SIZE_T base, SIZE_T size, int randomPageOffset)
     }
 
     // Randomize the adddress space
-    pStart += PAGE_SIZE * randomPageOffset;
+    pStart += GetOsPageSize() * randomPageOffset;
 
     s_CodeAllocStart = pStart;
     s_CodeAllocHint = pStart;
@@ -550,6 +551,8 @@ LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocatio
     return ClrVirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 
 #else // !FEATURE_PAL
+
+    if(alignment < GetOsPageSize()) alignment = GetOsPageSize();
 
     // UNIXTODO: Add a specialized function to PAL so that we don't have to waste memory
     dwSize += alignment;
@@ -1315,6 +1318,36 @@ DWORD_PTR GetCurrentProcessCpuMask()
     return pmask;
 #else
     return 0;
+#endif
+}
+
+uint32_t GetOsPageSizeUncached()
+{
+    SYSTEM_INFO sysInfo;
+    ::GetSystemInfo(&sysInfo);
+    return sysInfo.dwAllocationGranularity ? sysInfo.dwAllocationGranularity : 0x1000;
+}
+
+namespace
+{
+    Volatile<uint32_t> g_pageSize = 0;
+}
+
+uint32_t GetOsPageSize()
+{
+#ifdef FEATURE_PAL
+    size_t result = g_pageSize.LoadWithoutBarrier();
+
+    if(!result)
+    {
+        result = GetOsPageSizeUncached();
+
+        g_pageSize.StoreWithoutBarrier(result);
+    }
+
+    return result;
+#else
+    return 0x1000;
 #endif
 }
 

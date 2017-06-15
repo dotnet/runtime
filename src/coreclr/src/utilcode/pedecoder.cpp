@@ -297,7 +297,7 @@ CHECK PEDecoder::CheckNTHeaders() const
         // Ideally we would require the layout address to honor the section alignment constraints.
         // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
         // case, we can only guarantee OS page alignment (which after all, is good enough.)
-        CHECK(CheckAligned(m_base, OS_PAGE_SIZE));
+        CHECK(CheckAligned(m_base, GetOsPageSize()));
     }
 
     // @todo: check NumberOfSections for overflow of SizeOfHeaders
@@ -1750,7 +1750,7 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
         // Ideally we would require the layout address to honor the section alignment constraints.
         // However, we do have 8K aligned IL only images which we load on 32 bit platforms. In this
         // case, we can only guarantee OS page alignment (which after all, is good enough.)
-        PRECONDITION(CheckAligned((SIZE_T)base, OS_PAGE_SIZE));
+        PRECONDITION(CheckAligned((SIZE_T)base, GetOsPageSize()));
         THROWS;
         GC_NOTRIGGER;
     }
