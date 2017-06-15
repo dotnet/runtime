@@ -7,16 +7,16 @@
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <ItemGroup>
-    <Compile Update="Resources\res.Designer.cs">
+    <Compile Update="Resources\helpSR.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>res.resx</DependentUpon>
+      <DependentUpon>helpSR.resx</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Update="Resources\res.resx">
+    <EmbeddedResource Update="Resources\helpSR.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>res.Designer.cs</LastGenOutput>
+      <LastGenOutput>helpSR.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

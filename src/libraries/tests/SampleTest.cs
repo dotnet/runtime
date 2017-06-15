@@ -16,11 +16,10 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         }
         
         [Fact]
-        public static void crear()
+        public static void CreateBasicFeed()
         {
             SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://microsoft.com"));
 
-            //xml writter
             XmlWriter xmlw = XmlWriter.Create("FirstFeedEver.xml");
             Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
             rssf.WriteTo(xmlw);
@@ -29,14 +28,12 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static void read()
+        public static void readFeedAndReWriteAtom()
         {
             XmlReader xmlr = XmlReader.Create("feedatom.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
-            //Console.WriteLine(sf.Title.ToString());
 
             Console.WriteLine(sf.Title.ToString());
-            //Console.ReadLine();
 
             //wite the one that was read
             XmlWriter xmlw = XmlWriter.Create("leido.xml");
@@ -44,21 +41,34 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             rs.WriteTo(xmlw);
             xmlw.Close();
         }
-        
+
         [Fact]
-        public static void example3()
+        public static void readFeedAndReWriteRSS()
+        {
+            XmlReader xmlr = XmlReader.Create("topstories.xml");
+            SyndicationFeed sf = SyndicationFeed.Load(xmlr);
+
+            //wite the feed that was read
+            XmlWriter xmlw = XmlWriter.Create("RewritenTopStories.xml");
+            Rss20FeedFormatter rs = new Rss20FeedFormatter(sf);
+            rs.WriteTo(xmlw);
+            xmlw.Close();
+        }
+
+        [Fact]
+        public static void CreateSyndicationFeedWithBothFormats()
         {
             //Test example to syndicate the release of SyndicationFeed to .net core
 
-            SyndicationFeed feed = new SyndicationFeed("Microsoft News", "Most recent news from Microsoft", new Uri("http://www.microsoft.com/news"), "123FeedID", DateTime.Now);
-
+            SyndicationFeed feed = new SyndicationFeed("Microsoft News", "<div>Most recent news from Microsoft</div>", new Uri("http://www.microsoft.com/news"), "123FeedID", DateTime.Now);
+            
             //Add an author
             SyndicationPerson author = new SyndicationPerson("jerry@microsoft.com");
             feed.Authors.Add(author);
-
+            
             //Create item
             SyndicationItem item1 = new SyndicationItem("SyndicationFeed released for .net Core", "A lot of text describing the release of .net core feature", new Uri("http://microsoft.com/news/path"));
-
+            
             //Add item to feed
             List<SyndicationItem> feedList = new List<SyndicationItem> { item1 };
             feed.Items = feedList;
@@ -66,13 +76,14 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
             //add an image
             feed.ImageUrl = new Uri("http://2.bp.blogspot.com/-NA5Jb-64eUg/URx8CSdcj_I/AAAAAAAAAUo/eCx0irI0rq0/s1600/bg_Microsoft_logo3-20120824073001907469-620x349.jpg");
-
+            
             feed.BaseUri = new Uri("http://mypage.com");
             Console.WriteLine(feed.BaseUri);
 
             // Write to XML > rss
             XmlWriter xmlw = XmlWriter.Create("feed.xml");
             Rss20FeedFormatter rssff = new Rss20FeedFormatter(feed);
+            
             rssff.WriteTo(xmlw);
             xmlw.Close();
 
@@ -81,6 +92,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Atom10FeedFormatter atomf = new Atom10FeedFormatter(feed);
             atomf.WriteTo(xmlw);
             xmlw.Close();
+            
             Assert.True(true);
         }
 
@@ -91,9 +103,24 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static void readOutside()
+        public static void readFeedFromOutsideSource()
         {
-            XmlReader xmlr = XmlReader.Create("lol.xml");
+            XmlReader xmlr = XmlReader.Create("MicrosoftError.xml");
+            SyndicationFeed sf = SyndicationFeed.Load(xmlr);
+            Assert.True(sf != null);
+        }
+
+        [Fact]
+        public static void resourceTest()
+        {
+            ResourceTester rt = new ResourceTester();
+            rt.test();
+        }
+
+        [Fact]
+        public static void DateParseError()
+        {
+            XmlReader xmlr = XmlReader.Create("feedWrongDate.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
         }
     }

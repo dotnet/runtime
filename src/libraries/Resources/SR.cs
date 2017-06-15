@@ -70,12 +70,12 @@ namespace Microsoft.ServiceModel
         public static string XmlFoundNodeType = "resource";
         public static string XmlStartElementExpected = "resource";
 
-        public static string OuterNameOfElementExtensionEmpty= "resource";
-        public static string ErrorInLine= "resource";
+        public static string OuterNameOfElementExtensionEmpty = "resource";
+        public static string ErrorInLine = "resource";
 
-        public static string OuterElementNameNotSpecified= "resource";
-        public static string ExtensionNameNotSpecified= "resource";
-        public static string UnbufferedItemsCannotBeCloned= "resource";
+        public static string OuterElementNameNotSpecified = "resource";
+        public static string ExtensionNameNotSpecified = "resource";
+        public static string UnbufferedItemsCannotBeCloned = "resource";
 
         internal static string GetString(string nvalidObjectTypePassed, params object[] args)
         {

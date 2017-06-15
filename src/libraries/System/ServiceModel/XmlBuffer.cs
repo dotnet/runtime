@@ -15,7 +15,8 @@ namespace Microsoft.ServiceModel {
     using System.IO; // added to use buffered stream
     using System.Runtime;
     using System.ServiceModel.Channels;
-    
+    using Microsoft.ServiceModel.Syndication.Resources;
+
 
     class XmlBuffer
     {
@@ -71,14 +72,8 @@ namespace Microsoft.ServiceModel {
 
             int initialBufferSize = Math.Min(512, maxBufferSize);
 
-
-            //stream = new BufferManagerOutputStream(SR.XmlBufferQuotaExceeded, initialBufferSize, maxBufferSize,
-            //    InternalBufferManager.Create(0, int.MaxValue));
-
             stream = new BufferedStream(new MemoryStream(), initialBufferSize);
-            //stream = new MemoryStream(initialBufferSize);
-            //stream = new BufferedStream(, maxBufferSize); // replacing code above
-
+           
             sections = new List<Section>(1);
         }
 
@@ -86,10 +81,6 @@ namespace Microsoft.ServiceModel {
         {
             get
             {
-#if disabled
-
-                Fx.Assert(bufferState == BufferState.Reading, "Buffer size shuold only be retrieved during Reading state");
-#endif
                 return buffer.Length;
             }
         }
@@ -116,7 +107,7 @@ namespace Microsoft.ServiceModel {
         {
             if (bufferState != BufferState.Writing)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(CreateInvalidStateException());
-            this.writer.Close(); // move
+            this.writer.Close(); 
             bufferState = BufferState.Created;
 
             int size = (int)stream.Length - offset;

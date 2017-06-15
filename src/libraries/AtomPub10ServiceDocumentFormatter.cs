@@ -16,6 +16,7 @@ namespace Microsoft.ServiceModel.Syndication
     //using System.ServiceModel.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using Microsoft.ServiceModel.Syndication.Resources;
 
     internal delegate InlineCategoriesDocument CreateInlineCategoriesDelegate();
     internal delegate ReferencedCategoriesDocument CreateReferencedCategoriesDelegate();
