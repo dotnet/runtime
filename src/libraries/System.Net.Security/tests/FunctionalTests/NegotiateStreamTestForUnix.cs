@@ -109,10 +109,19 @@ namespace System.Net.Security.Tests
             // the program to be run
             startInfo.FileName = SudoCommand;
             startInfo.Arguments = string.Format("bash {0} {1}", ScriptName, args);
-            using (Process kdcSetup = Process.Start(startInfo))
+
+            try
             {
-                kdcSetup.WaitForExit();
-                return kdcSetup.ExitCode;
+                using (Process kdcSetup = Process.Start(startInfo))
+                {
+                    kdcSetup.WaitForExit();
+                    return kdcSetup.ExitCode;
+                }
+            }
+            catch
+            {
+                // Could not find the file
+                return 1;
             }
         }
     }

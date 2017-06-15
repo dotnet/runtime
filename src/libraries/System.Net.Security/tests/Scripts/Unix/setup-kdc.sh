@@ -66,6 +66,7 @@ clean_up()
             ;;
         *)
             echo "This is an unsupported operating system"
+            exit 1
             ;;
     esac
 
@@ -288,6 +289,7 @@ case ${OS} in
          ;;
     *)
         echo "This is an unsupported operating system"
+        exit 1
         ;;
 esac
 
