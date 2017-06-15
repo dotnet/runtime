@@ -255,20 +255,8 @@ fi
 ExePath=$(InputAssemblyName)
 $(BashLinkerTestLaunchCmds)
 $(BashCLRTestLaunchCmds)
-if [[ "$_DebuggerFullPath" != "" ]]
-then
-    echo $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
-    $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments
-else
-    if [[ "$OSTYPE" == "linux-gnu" ]]
-    then
-        echo timeout 10m $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
-        timeout 10m $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments
-    else
-        echo $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
-        $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments
-    fi
-fi
+echo $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
+$_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
 CLRTestExitCode=$?
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
