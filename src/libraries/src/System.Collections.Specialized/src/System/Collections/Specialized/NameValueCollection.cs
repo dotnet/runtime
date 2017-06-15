@@ -17,8 +17,6 @@ namespace System.Collections.Specialized
     /// <para>Represents a sorted collection of associated <see cref='System.String' qualify='true'/> keys and <see cref='System.String' qualify='true'/> values that
     ///    can be accessed either with the hash code of the key or with the index.</para>
     /// </devdoc>
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class NameValueCollection : NameObjectCollectionBase
     {
         private String[] _all; // Do not rename (binary serialization)
