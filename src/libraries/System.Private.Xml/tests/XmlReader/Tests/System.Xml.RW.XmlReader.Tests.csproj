@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="AsyncReaderLateInitTests.cs" />
     <Compile Include="DisposeTests.cs" />
+    <Compile Include="BaseUriTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
