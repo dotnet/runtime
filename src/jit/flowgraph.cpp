@@ -18488,8 +18488,7 @@ void Compiler::fgSetBlockOrder()
 
 #if FEATURE_FASTTAILCALL
 #ifndef JIT32_GCENCODER
-        if (block->endsWithTailCallOrJmp(this, true) && !(block->bbFlags & BBF_GC_SAFE_POINT) &&
-            optReachWithoutCall(fgFirstBB, block))
+        if (block->endsWithTailCallOrJmp(this, true) && optReachWithoutCall(fgFirstBB, block))
         {
             // We have a tail call that is reachable without making any other
             // 'normal' call that would have counted as a GC Poll.  If we were
