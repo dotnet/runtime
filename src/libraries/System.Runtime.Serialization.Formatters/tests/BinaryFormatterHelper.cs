@@ -183,11 +183,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
                 if (PlatformDetection.IsFullFramework)
                 {
-                    testDataLine = Regex.Replace(testDataLine, ", \"AAEAAAD.+\"(?!,)", ", \"" + blobs[numberOfBlobs] + "\"");
+                    testDataLine = Regex.Replace(testDataLine, ", \"AAEAAAD[^\"]+\"(?!,)", ", \"" + blobs[numberOfBlobs] + "\"");
                 }
                 else
                 {
-                    testDataLine = Regex.Replace(testDataLine, "\"AAEAAAD.+\",", "\"" + blobs[numberOfBlobs] + "\",");
+                    testDataLine = Regex.Replace(testDataLine, "\"AAEAAAD[^\"]+\",", "\"" + blobs[numberOfBlobs] + "\",");
                 }
 
                 updatedTestDataLines.Add(testDataLine);
