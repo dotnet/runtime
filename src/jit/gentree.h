@@ -3213,6 +3213,7 @@ struct GenTreeCall final : public GenTree
 #endif                           // LEGACY_BACKEND
 
 #if FEATURE_MULTIREG_RET
+
     // State required to support multi-reg returning call nodes.
     // For now it is enabled only for x64 unix.
     //
@@ -3221,13 +3222,18 @@ struct GenTreeCall final : public GenTree
 
     // gtRegNum would always be the first return reg.
     // The following array holds the other reg numbers of multi-reg return.
-    regNumber gtOtherRegs[MAX_RET_REG_COUNT - 1];
+    regNumberSmall gtOtherRegs[MAX_RET_REG_COUNT - 1];
 
     // GTF_SPILL or GTF_SPILLED flag on a multi-reg call node indicates that one or
     // more of its result regs are in that state.  The spill flag of each of the
-    // return register is stored in the below array.
-    unsigned gtSpillFlags[MAX_RET_REG_COUNT];
-#endif
+    // return register is stored here. We only need 2 bits per returned register,
+    // so this is treated as a 2-bit array. No architecture needs more than 8 bits.
+
+    static const unsigned PACKED_GTF_SPILL   = 1;
+    static const unsigned PACKED_GTF_SPILLED = 2;
+    unsigned char         gtSpillFlags;
+
+#endif // FEATURE_MULTIREG_RET
 
     //-----------------------------------------------------------------------
     // GetReturnTypeDesc: get the type descriptor of return value of the call
@@ -3272,7 +3278,7 @@ struct GenTreeCall final : public GenTree
         }
 
 #if FEATURE_MULTIREG_RET
-        return gtOtherRegs[idx - 1];
+        return (regNumber)gtOtherRegs[idx - 1];
 #else
         return REG_NA;
 #endif
@@ -3299,7 +3305,7 @@ struct GenTreeCall final : public GenTree
 #if FEATURE_MULTIREG_RET
         else
         {
-            gtOtherRegs[idx - 1] = reg;
+            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
 #else
@@ -3356,13 +3362,25 @@ struct GenTreeCall final : public GenTree
     //    idx  -  Position or index of the return register
     //
     // Return Value:
-    //    Returns GTF_* flags associated with.
+    //    Returns GTF_* flags associated with the register. Only GTF_SPILL and GTF_SPILLED are considered.
+    //
     unsigned GetRegSpillFlagByIdx(unsigned idx) const
     {
+        static_assert_no_msg(MAX_RET_REG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
         assert(idx < MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
-        return gtSpillFlags[idx];
+        unsigned bits = gtSpillFlags >> (idx * 2); // It doesn't matter that we possibly leave other high bits here.
+        unsigned spillFlags = 0;
+        if (bits & PACKED_GTF_SPILL)
+        {
+            spillFlags |= GTF_SPILL;
+        }
+        if (bits & PACKED_GTF_SPILLED)
+        {
+            spillFlags |= GTF_SPILLED;
+        }
+        return spillFlags;
 #else
         assert(!"unreached");
         return 0;
@@ -3374,17 +3392,30 @@ struct GenTreeCall final : public GenTree
     // specified by its index.
     //
     // Arguments:
-    //    flags  -  GTF_* flags
+    //    flags  -  GTF_* flags. Only GTF_SPILL and GTF_SPILLED are allowed.
     //    idx    -  Position or index of the return register
     //
     // Return Value:
     //    None
+    //
     void SetRegSpillFlagByIdx(unsigned flags, unsigned idx)
     {
+        static_assert_no_msg(MAX_RET_REG_COUNT * 2 <= sizeof(unsigned char) * BITS_PER_BYTE);
         assert(idx < MAX_RET_REG_COUNT);
 
 #if FEATURE_MULTIREG_RET
-        gtSpillFlags[idx] = flags;
+        unsigned bits = 0;
+        if (flags & GTF_SPILL)
+        {
+            bits |= PACKED_GTF_SPILL;
+        }
+        if (flags & GTF_SPILLED)
+        {
+            bits |= PACKED_GTF_SPILLED;
+        }
+
+        // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
+        gtSpillFlags = (gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2));
 #else
         unreached();
 #endif
@@ -3401,10 +3432,7 @@ struct GenTreeCall final : public GenTree
     void ClearOtherRegFlags()
     {
 #if FEATURE_MULTIREG_RET
-        for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
-        {
-            gtSpillFlags[i] = 0;
-        }
+        gtSpillFlags = 0;
 #endif
     }
 
@@ -3421,10 +3449,7 @@ struct GenTreeCall final : public GenTree
     void CopyOtherRegFlags(GenTreeCall* fromCall)
     {
 #if FEATURE_MULTIREG_RET
-        for (unsigned i = 0; i < MAX_RET_REG_COUNT; ++i)
-        {
-            this->gtSpillFlags[i] = fromCall->gtSpillFlags[i];
-        }
+        this->gtSpillFlags = fromCall->gtSpillFlags;
 #endif
     }
 
@@ -4894,7 +4919,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
     // State required to support copy/reload of a multi-reg call node.
     // First register is is always given by gtRegNum.
     //
-    regNumber gtOtherRegs[MAX_RET_REG_COUNT - 1];
+    regNumberSmall gtOtherRegs[MAX_RET_REG_COUNT - 1];
 #endif
 
     //----------------------------------------------------------
@@ -4935,7 +4960,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
         }
 
 #if FEATURE_MULTIREG_RET
-        return gtOtherRegs[idx - 1];
+        return (regNumber)gtOtherRegs[idx - 1];
 #else
         return REG_NA;
 #endif
@@ -4962,7 +4987,7 @@ struct GenTreeCopyOrReload : public GenTreeUnOp
 #if FEATURE_MULTIREG_RET
         else
         {
-            gtOtherRegs[idx - 1] = reg;
+            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
 #else
