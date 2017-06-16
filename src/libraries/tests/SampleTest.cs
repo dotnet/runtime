@@ -1,11 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Xunit;
-using Microsoft.ServiceModel.Syndication;
-using System.Xml;
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
 
 namespace Microsoft.ServiceModel.Syndication.Tests
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Xunit;
+    using Microsoft.ServiceModel.Syndication;
+    using System.Xml;
+    using Microsoft.ServiceModel.Syndication.Lab;
 {
     public static class SampleTest
     {
@@ -14,7 +19,23 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         {
            
         }
-        
+        [Fact]
+        public static void testUsingCustomParser()
+        {
+            //this test will override the default date parser and assign just a new date to the feed
+            CustomRSSParsers.DateParser = delegate (string data, XmlReader xreader)
+            {
+                DateTime dt = XmlConvert.ToDateTime(data);
+                DateTimeOffset dto = new DateTimeOffset(dt);
+                return dto;
+            };
+
+
+            XmlReader reader = XmlReader.Create("feed.xml");
+            SyndicationFeed sf = SyndicationFeed.Load(reader);
+
+        }
+
         [Fact]
         public static void CreateBasicFeed()
         {
@@ -24,7 +45,6 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
             rssf.WriteTo(xmlw);
             xmlw.Close();
-            Assert.True(true);
         }
 
         [Fact]
@@ -93,7 +113,6 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             atomf.WriteTo(xmlw);
             xmlw.Close();
             
-            Assert.True(true);
         }
 
         [Fact]
@@ -105,7 +124,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void readFeedFromOutsideSource()
         {
-            XmlReader xmlr = XmlReader.Create("MicrosoftError.xml");
+            XmlReader xmlr = XmlReader.Create("topstories.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
             Assert.True(sf != null);
         }
