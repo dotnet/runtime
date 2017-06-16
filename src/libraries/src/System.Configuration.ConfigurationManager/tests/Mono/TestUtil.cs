@@ -58,8 +58,8 @@ namespace MonoTests.System.Configuration.Util
         {
             get
             {
-                var asm = Assembly.GetEntryAssembly();
-                return asm.Location;
+                return Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+                    Assembly.GetEntryAssembly().ManifestModule.Name);
             }
         }
 
@@ -67,8 +67,7 @@ namespace MonoTests.System.Configuration.Util
         {
             get
             {
-                var exe = Path.GetFileName(ThisApplicationPath);
-                return exe + ".config";
+                return Assembly.GetEntryAssembly().ManifestModule.Name + ".config";
             }
         }
     }
