@@ -2316,7 +2316,6 @@ class Tests
 		Console.WriteLine ();
 	}
 
-	[Category ("!INTERPRETER")]
 	[Category ("!BITCODE")]
 	public static int test_0_rethrow_stacktrace () {
 		// Check that rethrowing an exception preserves the original stack trace

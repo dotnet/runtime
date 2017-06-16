@@ -596,13 +596,17 @@ fill_in_trace (MonoException *exception, MonoInvocation *frame)
 
 #define FILL_IN_TRACE(exception, frame) fill_in_trace(exception, frame)
 
-#define THROW_EX(exception,ex_ip)	\
+#define THROW_EX_GENERAL(exception,ex_ip,rethrow)		\
 	do {\
 		frame->ip = (ex_ip);		\
 		frame->ex = (MonoException*)(exception);	\
-		FILL_IN_TRACE(frame->ex, frame); \
+		if (!rethrow) { \
+			FILL_IN_TRACE(frame->ex, frame);	\
+		} \
 		goto handle_exception;	\
 	} while (0)
+
+#define THROW_EX(exception,ex_ip) THROW_EX_GENERAL ((exception), (ex_ip), FALSE)
 
 static MonoObject*
 ves_array_create (MonoInvocation *frame, MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
@@ -4974,7 +4978,7 @@ array_constructed:
 			ip += 2;
 			MINT_IN_BREAK;
 #endif
-		MINT_IN_CASE(MINT_RETHROW)
+	   MINT_IN_CASE(MINT_RETHROW) {
 			/* 
 			 * need to clarify what this should actually do:
 			 * start the search from the last found handler in
@@ -4985,9 +4989,11 @@ array_constructed:
 			 * We need to NULL frame->ex_handler for the later code to
 			 * actually run the new found handler.
 			 */
+			int exvar_offset = *(guint16*)(ip + 1);
 			frame->ex_handler = NULL;
-			THROW_EX (frame->ex, ip - 1);
+			THROW_EX_GENERAL (*(MonoException**)(frame->locals + exvar_offset), ip - 1, TRUE);
 			MINT_IN_BREAK;
+	   }
 		MINT_IN_DEFAULT
 			g_print ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname[*ip], ip-rtm->code);
 			THROW_EX (mono_get_exception_execution_engine ("Unimplemented opcode"), ip);
@@ -5055,6 +5061,7 @@ array_constructed:
 							g_print ("* Matched Filter at '%s'\n", method->name);
 #endif
 						inv->ex_handler = clause;
+						*(MonoException**)(inv->locals + inv->runtime_method->exvar_offsets [i]) = frame->ex;
 						goto handle_finally;
 					}
 				} else if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE) {
@@ -5070,6 +5077,7 @@ array_constructed:
 							g_print ("* Found handler at '%s'\n", method->name);
 #endif
 						inv->ex_handler = clause;
+						*(MonoException**)(inv->locals + inv->runtime_method->exvar_offsets [i]) = frame->ex;
 						goto handle_finally;
 					}
 				}

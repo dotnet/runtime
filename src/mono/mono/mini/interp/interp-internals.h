@@ -85,6 +85,7 @@ typedef struct _RuntimeMethod
 	int transformed;
 	guint32 *arg_offsets;
 	guint32 *local_offsets;
+	guint32 *exvar_offsets;
 	unsigned int param_count;
 	unsigned int hasthis;
 	gpointer jit_wrapper;
