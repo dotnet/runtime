@@ -88,9 +88,6 @@
   <data name="Acc_ReadOnly" xml:space="preserve">
     <value>Cannot set a constant field.</value>
   </data>
-  <data name="Acc_RvaStatic" xml:space="preserve">
-    <value>SkipVerification permission is needed to modify an image-based (RVA) static field.</value>
-  </data>
   <data name="Access_Void" xml:space="preserve">
     <value>Cannot create an instance of void.</value>
   </data>
@@ -353,7 +350,7 @@
     <value>Operation is not valid due to the current state of the object.</value>
   </data>
   <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Search pattern cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
+    <value>Search pattern '{0}' cannot contain ".." to move up directories and can be contained only internally in file/directory names, as in "a..b".</value>
   </data>
   <data name="Arg_InvalidTypeInRetType" xml:space="preserve">
     <value>The return Type contains some invalid type (i.e. null, ByRef)</value>
@@ -589,11 +586,11 @@
   <data name="Arg_ParmCnt" xml:space="preserve">
     <value>Parameter count mismatch.</value>
   </data>
-  <data name="Arg_PathIllegal" xml:space="preserve">
-    <value>The path is not of a legal form.</value>
+  <data name="Arg_PathEmpty" xml:space="preserve">
+    <value>The path is empty.</value>
   </data>
-  <data name="Arg_PathIllegalUNC" xml:space="preserve">
-    <value>The UNC path should be of the form \\\\server\\share.</value>
+  <data name="Arg_PathIllegalUNC_Path" xml:space="preserve">
+    <value>The UNC path '{0}' should be of the form \\\\server\\share.</value>
   </data>
   <data name="Arg_PlatformNotSupported" xml:space="preserve">
     <value>Operation is not supported on this platform.</value>
@@ -1384,8 +1381,8 @@
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
   </data>
-  <data name="Argument_PathFormatNotSupported" xml:space="preserve">
-    <value>The given path's format is not supported.</value>
+  <data name="Argument_PathFormatNotSupported_Path" xml:space="preserve">
+    <value>The format of the path '{0}' is not supported.</value>
   </data>
   <data name="Argument_PreAllocatedAlreadyAllocated" xml:space="preserve">
     <value>'preAllocated' is already in use.</value>
@@ -2703,7 +2700,7 @@
     <value>Could not find file '{0}'.</value>
   </data>
   <data name="IO_AlreadyExists_Name" xml:space="preserve">
-    <value>Cannot create "{0}" because a file or directory with the same name already exists.</value>
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
   </data>
   <data name="IO_BindHandleFailed" xml:space="preserve">
     <value>BindHandle for ThreadPool failed on this handle.</value>
@@ -2725,9 +2722,6 @@
   </data>
   <data name="IO_InvalidStringLen_Len" xml:space="preserve">
     <value>BinaryReader encountered an invalid string length of {0} characters.</value>
-  </data>
-  <data name="IO_NoPermissionToDirectoryName" xml:space="preserve">
-    <value>&lt;Path discovery permission to the specified directory was denied.&gt;</value>
   </data>
   <data name="IO_SeekAppendOverwrite" xml:space="preserve">
     <value>Unable seek backward to overwrite data that previously existed in a file opened in Append mode.</value>
@@ -2755,6 +2749,9 @@
   </data>
   <data name="IO_PathTooLong" xml:space="preserve">
     <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
   </data>
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
