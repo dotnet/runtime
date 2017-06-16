@@ -1,0 +1,22 @@
+{
+    "Repository": "corefx",
+    "Definitions": {
+        "Path": ".",
+        "Type": "VSTS",
+        "BaseUrl": "https://devdiv.visualstudio.com/DefaultCollection",
+        "SkipBranchAndVersionOverrides": "false"
+    },
+    "Pipelines": [
+        {
+            "Name": "Security Build for Windows",
+            "Parameters": {
+                "TreatWarningsAsErrors": "false"
+            },
+            "Definitions": [
+                {
+                    "Name": "DotNet-CoreFx-Security-Windows"
+                }
+            ]
+        }
+    ]
+}
