@@ -75,63 +75,6 @@ namespace System.IO
             throw new ArgumentException(SR.InvalidOperation_EndWriteCalledMultiple);
         }
 
-        // Given a possible fully qualified path, ensure that we have path
-        // discovery permission to that path.  If we do not, return just the 
-        // file name.  If we know it is a directory, then don't return the 
-        // directory name.
-        internal static String GetDisplayablePath(String path, bool isInvalidPath)
-        {
-            if (String.IsNullOrEmpty(path))
-                return String.Empty;
-
-            // Is it a fully qualified path?
-            bool isFullyQualified = false;
-            if (path.Length < 2)
-                return path;
-            if (PathInternal.IsDirectorySeparator(path[0]) && PathInternal.IsDirectorySeparator(path[1]))
-                isFullyQualified = true;
-            else if (path[1] == Path.VolumeSeparatorChar)
-            {
-                isFullyQualified = true;
-            }
-
-            if (!isFullyQualified && !isInvalidPath)
-                return path;
-
-            bool safeToReturn = false;
-            try
-            {
-                if (!isInvalidPath)
-                {
-                    safeToReturn = true;
-                }
-            }
-            catch (SecurityException)
-            {
-            }
-            catch (ArgumentException)
-            {
-                // ? and * characters cause ArgumentException to be thrown from HasIllegalCharacters
-                // inside FileIOPermission.AddPathList
-            }
-            catch (NotSupportedException)
-            {
-                // paths like "!Bogus\\dir:with/junk_.in it" can cause NotSupportedException to be thrown
-                // from Security.Util.StringExpressionSet.CanonicalizePath when ':' is found in the path
-                // beyond string index position 1.  
-            }
-
-            if (!safeToReturn)
-            {
-                if (PathInternal.IsDirectorySeparator(path[path.Length - 1]))
-                    path = SR.IO_NoPermissionToDirectoryName;
-                else
-                    path = Path.GetFileName(path);
-            }
-
-            return path;
-        }
-
         internal static void WinIOError()
         {
             int errorCode = Marshal.GetLastWin32Error();
@@ -143,12 +86,8 @@ namespace System.IO
         // will determine the appropriate exception to throw dependent on your 
         // error, and depending on the error, insert a string into the message 
         // gotten from the ResourceManager.
-        internal static void WinIOError(int errorCode, String maybeFullPath)
+        internal static void WinIOError(int errorCode, String str)
         {
-            // This doesn't have to be perfect, but is a perf optimization.
-            bool isInvalidPath = errorCode == Win32Native.ERROR_INVALID_NAME || errorCode == Win32Native.ERROR_BAD_PATHNAME;
-            String str = GetDisplayablePath(maybeFullPath, isInvalidPath);
-
             switch (errorCode)
             {
                 case Win32Native.ERROR_FILE_NOT_FOUND:
@@ -172,33 +111,33 @@ namespace System.IO
                 case Win32Native.ERROR_ALREADY_EXISTS:
                     if (str.Length == 0)
                         goto default;
-                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, str), Win32Native.MakeHRFromErrorCode(errorCode), str);
 
                 case Win32Native.ERROR_FILENAME_EXCED_RANGE:
-                    throw new PathTooLongException(SR.IO_PathTooLong);
+                    throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, str));
 
                 case Win32Native.ERROR_INVALID_DRIVE:
                     throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, str));
 
                 case Win32Native.ERROR_INVALID_PARAMETER:
-                    throw new IOException(Win32Native.GetMessage(errorCode), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                    throw new IOException(Win32Native.GetMessage(errorCode), Win32Native.MakeHRFromErrorCode(errorCode), str);
 
                 case Win32Native.ERROR_SHARING_VIOLATION:
                     if (str.Length == 0)
-                        throw new IOException(SR.IO_SharingViolation_NoFileName, Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                        throw new IOException(SR.IO_SharingViolation_NoFileName, Win32Native.MakeHRFromErrorCode(errorCode), str);
                     else
-                        throw new IOException(SR.Format(SR.IO_SharingViolation_File, str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                        throw new IOException(SR.Format(SR.IO_SharingViolation_File, str), Win32Native.MakeHRFromErrorCode(errorCode), str);
 
                 case Win32Native.ERROR_FILE_EXISTS:
                     if (str.Length == 0)
                         goto default;
-                    throw new IOException(SR.Format(SR.IO_FileExists_Name, str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                    throw new IOException(SR.Format(SR.IO_FileExists_Name, str), Win32Native.MakeHRFromErrorCode(errorCode), str);
 
                 case Win32Native.ERROR_OPERATION_ABORTED:
                     throw new OperationCanceledException();
 
                 default:
-                    throw new IOException(Win32Native.GetMessage(errorCode), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                    throw new IOException(Win32Native.GetMessage(errorCode), Win32Native.MakeHRFromErrorCode(errorCode), str);
             }
         }
 

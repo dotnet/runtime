@@ -53,7 +53,7 @@ namespace System.IO
                 if (fullPath.Length >= PathInternal.MaxLongPath)
                 {
                     // Fullpath is genuinely too long
-                    throw new PathTooLongException(SR.IO_PathTooLong);
+                    throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, fullPath.ToString()));
                 }
 
                 // Checking path validity used to happen before getting the full path name. To avoid additional input allocation
@@ -109,7 +109,7 @@ namespace System.IO
                             case '\\':
                                 segmentLength = index - lastSeparator - 1;
                                 if (segmentLength > PathInternal.MaxComponentLength)
-                                    throw new PathTooLongException(SR.IO_PathTooLong + fullPath.ToString());
+                                    throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, fullPath.ToString()));
                                 lastSeparator = index;
 
                                 if (foundTilde)
@@ -128,7 +128,7 @@ namespace System.IO
                                     // If we're at the end of the path and this is the first separator, we're missing the share.
                                     // Otherwise we're good, so ignore UNC tracking from here.
                                     if (index == fullPath.Length - 1)
-                                        throw new ArgumentException(SR.Arg_PathIllegalUNC);
+                                        throw new ArgumentException(SR.Format(SR.Arg_PathIllegalUNC_Path, fullPath.ToString()));
                                     else
                                         possibleBadUnc = false;
                                 }
@@ -145,11 +145,11 @@ namespace System.IO
                 }
 
                 if (possibleBadUnc)
-                    throw new ArgumentException(SR.Arg_PathIllegalUNC);
+                    throw new ArgumentException(SR.Format(SR.Arg_PathIllegalUNC_Path, fullPath.ToString()));
 
                 segmentLength = fullPath.Length - lastSeparator - 1;
                 if (segmentLength > PathInternal.MaxComponentLength)
-                    throw new PathTooLongException(SR.IO_PathTooLong);
+                    throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, fullPath.ToString()));
 
                 if (foundTilde && segmentLength <= MaxShortName)
                     possibleShortPath = true;

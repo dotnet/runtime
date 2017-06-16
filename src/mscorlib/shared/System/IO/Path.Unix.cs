@@ -23,7 +23,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
-                throw new ArgumentException(SR.Arg_PathIllegal, nameof(path));
+                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             PathInternal.CheckInvalidPathChars(path);
 
@@ -42,7 +42,7 @@ namespace System.IO
 
             if (collapsedString.Length > Interop.Sys.MaxPath)
             {
-                throw new PathTooLongException(SR.IO_PathTooLong);
+                throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
             }
 
             string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
@@ -120,7 +120,7 @@ namespace System.IO
 
                 if (++componentCharCount > Interop.Sys.MaxName)
                 {
-                    throw new PathTooLongException(SR.IO_PathTooLong);
+                    throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
                 }
 
                 // Normalize the directory separator if needed
@@ -199,7 +199,7 @@ namespace System.IO
         {
             if (path == null) return null;
 			if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException(SR.Arg_PathIllegal, nameof(path));
+                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
 			return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : String.Empty;
         }

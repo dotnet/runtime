@@ -70,13 +70,13 @@ namespace System.IO
                     || (path.Length >= startIndex && path[startIndex - 1] == PathInternal.VolumeSeparatorChar && !PathInternal.IsValidDriveChar(path[startIndex - 2]))
                     || (path.Length > startIndex && path.IndexOf(PathInternal.VolumeSeparatorChar, startIndex) != -1))
                 {
-                    throw new NotSupportedException(SR.Argument_PathFormatNotSupported);
+                    throw new NotSupportedException(SR.Format(SR.Argument_PathFormatNotSupported_Path, path));
                 }
             }
 
             // Technically this doesn't matter but we used to throw for this case
             if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException(SR.Arg_PathIllegal);
+                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             // We don't want to check invalid characters for device format- see comments for extended above
             string fullPath = PathHelper.Normalize(path, checkInvalidCharacters: !isDevice, expandShortPaths: true);
@@ -142,7 +142,7 @@ namespace System.IO
         {
             if (path == null) return null;
             if (string.IsNullOrWhiteSpace(path)) 
-                throw new ArgumentException(SR.Arg_PathIllegal, nameof(path));
+                throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             PathInternal.CheckInvalidPathChars(path);
 
