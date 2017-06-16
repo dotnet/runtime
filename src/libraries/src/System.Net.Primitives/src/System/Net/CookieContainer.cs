@@ -282,14 +282,10 @@ namespace System.Net
             {
                 lock (m_domainTable.SyncRoot)
                 {
-                    object pathValue = m_domainTable[cookie.DomainKey];
-                    if (pathValue == null)
+                    pathList = (PathList)m_domainTable[cookie.DomainKey];
+                    if (pathList == null)
                     {
-                        m_domainTable[cookie.DomainKey] = (pathList = PathList.Create());
-                    }
-                    else
-                    {
-                        pathList = (PathList)pathValue;
+                        m_domainTable[cookie.DomainKey] = (pathList = new PathList());
                     }
                 }
                 int domain_count = pathList.GetCookiesCount();
@@ -815,12 +811,11 @@ namespace System.Net
                 PathList pathList;
                 lock (m_domainTable.SyncRoot)
                 {
-                    object pathListValue = m_domainTable[domainAttribute[i]];
-                    if (pathListValue == null)
+                    pathList = (PathList)m_domainTable[domainAttribute[i]];
+                    if (pathList == null)
                     {
                         continue;
                     }
-                    pathList = (PathList)pathListValue;
                 }
 
                 lock (pathList.SyncRoot)
@@ -990,29 +985,17 @@ namespace System.Net
         }
     }
 
+    // PathList needs to be public in order to maintain binary serialization compatibility as the System shim
+    // needs to have access to type-forward it.
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    internal struct PathList
+    public sealed class PathList
     {
         // Usage of PathList depends on it being shallowly immutable;
         // adding any mutable fields to it would result in breaks.
-        private readonly SortedList m_list; // Do not rename (binary serialization)
+        private readonly SortedList m_list = SortedList.Synchronized(new SortedList(PathListComparer.StaticInstance)); // Do not rename (binary serialization)
 
-        public static PathList Create() => new PathList(SortedList.Synchronized(new SortedList(PathListComparer.StaticInstance)));
-
-        private PathList(SortedList list)
-        {
-            Debug.Assert(list != null, $"{nameof(list)} must not be null.");
-            m_list = list;
-        }
-
-        public int Count
-        {
-            get
-            {
-                return m_list.Count;
-            }
-        }
+        public int Count => m_list.Count;
 
         public int GetCookiesCount()
         {
@@ -1062,17 +1045,9 @@ namespace System.Net
             }
         }
 
-        public object SyncRoot
-        {
-            get
-            {
-                Debug.Assert(m_list != null, $"{nameof(PathList)} should never be default initialized and only ever created with {nameof(Create)}.");
-                return m_list;
-            }
-        }
+        public object SyncRoot => m_list.SyncRoot;
 
         [Serializable]
-        [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
         private sealed class PathListComparer : IComparer
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();
