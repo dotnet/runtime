@@ -1,8 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace System.Data.Common
+namespace System.Data
 {
-    internal class SafeNativeMethods
+    internal partial class SafeNativeMethods
     {
         internal static IntPtr LocalAlloc(IntPtr initialSize)
         {

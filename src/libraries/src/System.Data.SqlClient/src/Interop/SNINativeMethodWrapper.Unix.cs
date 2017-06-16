@@ -25,7 +25,7 @@ namespace System.Data.SqlClient
 
 namespace System.Data
 {
-    internal static class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
         internal static IntPtr GetProcAddress(IntPtr HModule, string funcName)
         {

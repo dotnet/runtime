@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data.Common;
@@ -192,7 +193,7 @@ namespace System.Data.Odbc
                     }
                     _knownKeywords = knownKeywords;
                 }
-                return new System.Data.Common.ReadOnlyCollection<string>(knownKeywords);
+                return new ReadOnlyCollection<string>(knownKeywords);
             }
         }
 

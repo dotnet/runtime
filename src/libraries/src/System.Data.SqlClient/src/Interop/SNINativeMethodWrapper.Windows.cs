@@ -414,7 +414,7 @@ namespace System.Data.SqlClient
 
 namespace System.Data
 {
-    internal static class SafeNativeMethods
+    internal static partial class SafeNativeMethods
     {
         [DllImport("kernel32.dll", CharSet = CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true, SetLastError = true)]
         internal static extern IntPtr GetProcAddress(IntPtr HModule, [MarshalAs(UnmanagedType.LPStr), In] string funcName);
