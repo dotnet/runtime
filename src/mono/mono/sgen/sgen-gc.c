@@ -2831,19 +2831,19 @@ sgen_get_current_collection_generation (void)
 }
 
 void*
-sgen_thread_register (SgenThreadInfo* info, void *stack_bottom_fallback)
+sgen_thread_attach (SgenThreadInfo* info)
 {
 	info->tlab_start = info->tlab_next = info->tlab_temp_end = info->tlab_real_end = NULL;
 
-	sgen_client_thread_register (info, stack_bottom_fallback);
+	sgen_client_thread_attach (info);
 
 	return info;
 }
 
 void
-sgen_thread_unregister (SgenThreadInfo *p)
+sgen_thread_detach_with_lock (SgenThreadInfo *p)
 {
-	sgen_client_thread_unregister (p);
+	sgen_client_thread_detach_with_lock (p);
 }
 
 /*

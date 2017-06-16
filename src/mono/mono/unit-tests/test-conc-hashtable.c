@@ -69,7 +69,7 @@ static void*
 pw_sr_thread (void *arg)
 {
 	int i, idx = 1000 * GPOINTER_TO_INT (arg);
-	mono_thread_info_attach ((gpointer)&arg);
+	mono_thread_info_attach ();
 
 	for (i = 0; i < 1000; ++i) {
 		mono_os_mutex_lock (&global_mutex);
@@ -118,7 +118,7 @@ static void*
 pr_sw_thread (void *arg)
 {
 	int i = 0, idx = 100 * GPOINTER_TO_INT (arg);
-	mono_thread_info_attach ((gpointer)&arg);
+	mono_thread_info_attach ();
 
 	while (i < 100) {
 		gpointer res = mono_conc_hashtable_lookup (hash, GINT_TO_POINTER (i + idx + 1));
@@ -178,7 +178,7 @@ static void*
 pw_pr_r_thread (void *arg)
 {
 	int key, val, i;
-	mono_thread_info_attach ((gpointer)&arg);
+	mono_thread_info_attach ();
 
 	/* i will not be incremented as long as running is set to 1, this guarantee that
 	   we loop over all the keys at least once after the writer threads have finished */
@@ -200,7 +200,7 @@ pw_pr_w_add_thread (void *arg)
 {
 	int i, idx = 1000 * GPOINTER_TO_INT (arg);
 
-	mono_thread_info_attach ((gpointer)&arg);
+	mono_thread_info_attach ();
 
 	for (i = idx; i < idx + 1000; i++) {
 		mono_os_mutex_lock (&global_mutex);
@@ -215,7 +215,7 @@ pw_pr_w_del_thread (void *arg)
 {
 	int i, idx = 1000 * GPOINTER_TO_INT (arg);
 
-	mono_thread_info_attach ((gpointer)&arg);
+	mono_thread_info_attach ();
 
 	for (i = idx; i < idx + 1000; i++) {
 		mono_os_mutex_lock (&global_mutex);
@@ -340,7 +340,7 @@ main (void)
 	mono_w32handle_init ();
 #endif
 
-	mono_thread_info_attach ((gpointer)&cb);
+	mono_thread_info_attach ();
 
 	// benchmark_conc ();
 	// benchmark_glib ();

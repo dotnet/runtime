@@ -884,11 +884,11 @@ start_wrapper (gpointer data)
 	start_info = (StartInfo*) data;
 	g_assert (start_info);
 
-	info = mono_thread_info_attach (&res);
+	info = mono_thread_info_attach ();
 	info->runtime_thread = TRUE;
 
 	/* Run the actual main function of the thread */
-	res = start_wrapper_internal (start_info, &res);
+	res = start_wrapper_internal (start_info, info->stack_end);
 
 	mono_thread_info_exit (res);
 
@@ -1095,7 +1095,6 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	MonoThread *thread;
 	MonoThreadInfo *info;
 	MonoNativeThreadId tid;
-	gsize stack_ptr;
 
 	if (mono_thread_internal_current_is_attached ()) {
 		if (domain != mono_domain_get ())
@@ -1104,7 +1103,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 		return mono_thread_current ();
 	}
 
-	info = mono_thread_info_attach (&stack_ptr);
+	info = mono_thread_info_attach ();
 	g_assert (info);
 
 	tid=mono_native_thread_id_get ();
@@ -1121,17 +1120,8 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 
 	THREAD_DEBUG (g_message ("%s: Attached thread ID %"G_GSIZE_FORMAT" (handle %p)", __func__, tid, internal->handle));
 
-	if (mono_thread_attach_cb) {
-		guint8 *staddr;
-		size_t stsize;
-
-		mono_thread_info_get_stack_bounds (&staddr, &stsize);
-
-		if (staddr == NULL)
-			mono_thread_attach_cb (MONO_NATIVE_THREAD_ID_TO_UINT (tid), &stack_ptr);
-		else
-			mono_thread_attach_cb (MONO_NATIVE_THREAD_ID_TO_UINT (tid), staddr + stsize);
-	}
+	if (mono_thread_attach_cb)
+		mono_thread_attach_cb (MONO_NATIVE_THREAD_ID_TO_UINT (tid), info->stack_end);
 
 	/* Can happen when we attach the profiler helper thread in order to heapshot. */
 	if (!mono_thread_info_current ()->tools_thread)

@@ -353,15 +353,15 @@ thread_handle_destroy (gpointer data)
 	g_free (thread_handle);
 }
 
-static void*
-register_thread (MonoThreadInfo *info, gpointer baseptr)
+static gboolean
+register_thread (MonoThreadInfo *info)
 {
 	size_t stsize = 0;
 	guint8 *staddr = NULL;
-	int small_id = mono_thread_info_register_small_id ();
 	gboolean result;
+
+	info->small_id = mono_thread_info_register_small_id ();
 	mono_thread_info_set_tid (info, mono_native_thread_id_get ());
-	info->small_id = small_id;
 
 	info->handle = g_new0 (MonoThreadHandle, 1);
 	mono_refcount_init (info->handle, thread_handle_destroy);
@@ -372,17 +372,6 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	/*set TLS early so SMR works */
 	mono_native_tls_set_value (thread_info_key, info);
 
-	THREADS_DEBUG ("registering info %p tid %p small id %x\n", info, mono_thread_info_get_tid (info), info->small_id);
-
-	if (threads_callbacks.thread_register) {
-		if (threads_callbacks.thread_register (info, baseptr) == NULL) {
-			// g_warning ("thread registation failed\n");
-			mono_native_tls_set_value (thread_info_key, NULL);
-			g_free (info);
-			return NULL;
-		}
-	}
-
 	mono_thread_info_get_stack_bounds (&staddr, &stsize);
 	g_assert (staddr);
 	g_assert (stsize);
@@ -392,6 +381,16 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	info->stackdata = g_byte_array_new ();
 
 	mono_threads_suspend_register (info);
+
+	THREADS_DEBUG ("registering info %p tid %p small id %x\n", info, mono_thread_info_get_tid (info), info->small_id);
+
+	if (threads_callbacks.thread_attach) {
+		if (!threads_callbacks.thread_attach (info)) {
+			// g_warning ("thread registation failed\n");
+			mono_native_tls_set_value (thread_info_key, NULL);
+			return FALSE;
+		}
+	}
 
 	/*
 	Transition it before taking any locks or publishing itself to reduce the chance
@@ -405,7 +404,8 @@ register_thread (MonoThreadInfo *info, gpointer baseptr)
 	result = mono_thread_info_insert (info);
 	g_assert (result);
 	mono_thread_info_suspend_unlock ();
-	return info;
+
+	return TRUE;
 }
 
 static void
@@ -469,8 +469,8 @@ unregister_thread (void *arg)
 	be done while holding the suspend lock to give no other thread chance
 	to suspend it.
 	*/
-	if (threads_callbacks.thread_unregister)
-		threads_callbacks.thread_unregister (info);
+	if (threads_callbacks.thread_detach_with_lock)
+		threads_callbacks.thread_detach_with_lock (info);
 
 	/* The thread is no longer active, so unref its handle */
 	mono_threads_close_thread_handle (info->handle);
@@ -492,6 +492,8 @@ unregister_thread (void *arg)
 	mono_threads_signal_thread_handle (handle);
 
 	mono_threads_close_thread_handle (handle);
+
+	mono_native_tls_set_value (thread_info_key, NULL);
 }
 
 static void
@@ -583,7 +585,6 @@ mono_thread_info_list_head (void)
 void
 mono_threads_attach_tools_thread (void)
 {
-	int dummy = 0;
 	MonoThreadInfo *info;
 
 	/* Must only be called once */
@@ -593,36 +594,39 @@ mono_threads_attach_tools_thread (void)
 		mono_thread_info_usleep (10);
 	}
 
-	info = mono_thread_info_attach (&dummy);
+	info = mono_thread_info_attach ();
 	g_assert (info);
 
 	info->tools_thread = TRUE;
 }
 
 MonoThreadInfo*
-mono_thread_info_attach (void *baseptr)
+mono_thread_info_attach (void)
 {
 	MonoThreadInfo *info;
+
+#ifdef HOST_WIN32
 	if (!mono_threads_inited)
 	{
-#ifdef HOST_WIN32
 		/* This can happen from DllMain(DLL_THREAD_ATTACH) on Windows, if a
 		 * thread is created before an embedding API user initialized Mono. */
 		THREADS_DEBUG ("mono_thread_info_attach called before mono_threads_init\n");
 		return NULL;
-#else
-		g_assert (mono_threads_inited);
-#endif
 	}
+#endif
+
+	g_assert (mono_threads_inited);
+
 	info = (MonoThreadInfo *) mono_native_tls_get_value (thread_info_key);
 	if (!info) {
 		info = (MonoThreadInfo *) g_malloc0 (thread_info_size);
 		THREADS_DEBUG ("attaching %p\n", info);
-		if (!register_thread (info, baseptr))
+		if (!register_thread (info)) {
+			g_free (info);
 			return NULL;
-	} else if (threads_callbacks.thread_attach) {
-		threads_callbacks.thread_attach (info);
+		}
 	}
+
 	return info;
 }
 
@@ -630,6 +634,8 @@ void
 mono_thread_info_detach (void)
 {
 	MonoThreadInfo *info;
+
+#ifdef HOST_WIN32
 	if (!mono_threads_inited)
 	{
 		/* This can happen from DllMain(THREAD_DETACH) on Windows, if a thread
@@ -637,11 +643,14 @@ mono_thread_info_detach (void)
 		THREADS_DEBUG ("mono_thread_info_detach called before mono_threads_init\n");
 		return;
 	}
+#endif
+
+	g_assert (mono_threads_inited);
+
 	info = (MonoThreadInfo *) mono_native_tls_get_value (thread_info_key);
 	if (info) {
 		THREADS_DEBUG ("detaching %p\n", info);
 		unregister_thread (info);
-		mono_native_tls_set_value (thread_info_key, NULL);
 	}
 }
 

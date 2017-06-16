@@ -23,7 +23,6 @@ void
 mono_gc_base_init (void)
 {
 	MonoThreadInfoCallbacks cb;
-	int dummy;
 
 	mono_counters_init ();
 
@@ -39,7 +38,7 @@ mono_gc_base_init (void)
 
 	mono_threads_init (&cb, sizeof (MonoThreadInfo));
 
-	mono_thread_info_attach (&dummy);
+	mono_thread_info_attach ();
 }
 
 void
@@ -90,12 +89,6 @@ mono_gc_get_heap_size (void)
 
 gboolean
 mono_gc_is_gc_thread (void)
-{
-	return TRUE;
-}
-
-gboolean
-mono_gc_register_thread (void *baseptr)
 {
 	return TRUE;
 }

@@ -66,7 +66,7 @@ update_current_thread_stack (void *start)
 
 	info->client_info.stack_start = align_pointer (&stack_guard);
 	g_assert (info->client_info.stack_start);
-	g_assert (info->client_info.stack_start >= info->client_info.stack_start_limit && info->client_info.stack_start < info->client_info.stack_end);
+	g_assert (info->client_info.stack_start >= info->client_info.info.stack_start_limit && info->client_info.stack_start < info->client_info.info.stack_end);
 
 #if !defined(MONO_CROSS_COMPILE) && MONO_ARCH_HAS_MONO_CONTEXT
 	MONO_CONTEXT_GET_CURRENT (info->client_info.ctx);
@@ -363,8 +363,8 @@ sgen_unified_suspend_stop_world (void)
 		/* Once we remove the old suspend code, we should move sgen to directly access the state in MonoThread */
 		info->client_info.stack_start = (gpointer) ((char*)MONO_CONTEXT_GET_SP (&info->client_info.ctx) - REDZONE_SIZE);
 
-		if (info->client_info.stack_start < info->client_info.stack_start_limit
-			 || info->client_info.stack_start >= info->client_info.stack_end) {
+		if (info->client_info.stack_start < info->client_info.info.stack_start_limit
+			 || info->client_info.stack_start >= info->client_info.info.stack_end) {
 			/*
 			 * Thread context is in unhandled state, most likely because it is
 			 * dying. We don't scan it.
@@ -378,7 +378,7 @@ sgen_unified_suspend_stop_world (void)
 		binary_protocol_thread_suspend ((gpointer) mono_thread_info_get_tid (info), stopped_ip);
 
 		THREADS_STW_DEBUG ("[GC-STW-SUSPEND-END] thread %p is suspended, stopped_ip = %p, stack = %p -> %p\n",
-			mono_thread_info_get_tid (info), stopped_ip, info->client_info.stack_start, info->client_info.stack_start ? info->client_info.stack_end : NULL);
+			mono_thread_info_get_tid (info), stopped_ip, info->client_info.stack_start, info->client_info.stack_start ? info->client_info.info.stack_end : NULL);
 	} FOREACH_THREAD_END
 }
 

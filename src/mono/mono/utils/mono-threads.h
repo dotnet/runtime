@@ -222,22 +222,21 @@ typedef struct {
 } MonoThreadInfo;
 
 typedef struct {
-	void* (*thread_register)(THREAD_INFO_TYPE *info, void *baseaddr);
+	void* (*thread_attach)(THREAD_INFO_TYPE *info);
+	/*
+	This callback is called right before thread_detach_with_lock. This is called
+	without any locks held so it's the place for complicated cleanup.
+
+	The thread must remain operational between this call and thread_detach_with_lock.
+	It must be possible to successfully suspend it after thread_detach completes.
+	*/
+	void (*thread_detach)(THREAD_INFO_TYPE *info);
 	/*
 	This callback is called with @info still on the thread list.
 	This call is made while holding the suspend lock, so don't do callbacks.
 	SMR remains functional as its small_id has not been reclaimed.
 	*/
-	void (*thread_unregister)(THREAD_INFO_TYPE *info);
-	/*
-	This callback is called right before thread_unregister. This is called
-	without any locks held so it's the place for complicated cleanup.
-
-	The thread must remain operational between this call and thread_unregister.
-	It must be possible to successfully suspend it after thread_unregister completes.
-	*/
-	void (*thread_detach)(THREAD_INFO_TYPE *info);
-	void (*thread_attach)(THREAD_INFO_TYPE *info);
+	void (*thread_detach_with_lock)(THREAD_INFO_TYPE *info);
 	gboolean (*mono_method_is_critical) (void *method);
 	gboolean (*ip_in_critical_region) (MonoDomain *domain, gpointer ip);
 	gboolean (*mono_thread_in_critical_region) (THREAD_INFO_TYPE *info);
@@ -314,7 +313,7 @@ int
 mono_thread_info_register_small_id (void);
 
 THREAD_INFO_TYPE *
-mono_thread_info_attach (void *baseptr);
+mono_thread_info_attach (void);
 
 MONO_API void
 mono_thread_info_detach (void);

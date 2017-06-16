@@ -502,9 +502,9 @@ find_pinning_ref_from_thread (char *obj, size_t size)
 		char **start = (char**)info->client_info.stack_start;
 		if (info->client_info.skip || info->client_info.gc_disabled)
 			continue;
-		while (start < (char**)info->client_info.stack_end) {
+		while (start < (char**)info->client_info.info.stack_end) {
 			if (*start >= obj && *start < endobj)
-				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->client_info.stack_start, info->client_info.stack_end);
+				SGEN_LOG (0, "Object %p referenced in thread %p (id %p) at %p, stack: %p-%p", obj, info, (gpointer)mono_thread_info_get_tid (info), start, info->client_info.stack_start, info->client_info.info.stack_end);
 			start++;
 		}
 

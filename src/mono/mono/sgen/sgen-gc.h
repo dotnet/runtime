@@ -918,8 +918,8 @@ GCObject* sgen_try_alloc_obj_nolock (GCVTable vtable, size_t size);
 
 /* Threads */
 
-void* sgen_thread_register (SgenThreadInfo* info, void *addr);
-void sgen_thread_unregister (SgenThreadInfo *p);
+void* sgen_thread_attach (SgenThreadInfo* info);
+void sgen_thread_detach_with_lock (SgenThreadInfo *p);
 
 /* Finalization/ephemeron support */
 
