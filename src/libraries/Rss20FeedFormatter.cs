@@ -17,6 +17,7 @@ namespace Microsoft.ServiceModel.Syndication
     using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;
     using Microsoft.ServiceModel.Syndication.Resources;
+    using Lab;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
@@ -28,13 +29,18 @@ namespace Microsoft.ServiceModel.Syndication
         static readonly XmlQualifiedName Rss20Url = new XmlQualifiedName(Rss20Constants.UrlTag, string.Empty);
         const string Rfc822OutputLocalDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss zzz";
         const string Rfc822OutputUtcDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss Z";
-
+        
         Atom10FeedFormatter atomSerializer;
         Type feedType;
         int maxExtensionSize;
         bool preserveAttributeExtensions;
         bool preserveElementExtensions;
         bool serializeExtensionsAsAtom;
+
+
+        //Delegates
+
+
 
         public Rss20FeedFormatter()
             : this(typeof(SyndicationFeed))
@@ -59,6 +65,7 @@ namespace Microsoft.ServiceModel.Syndication
             this.preserveAttributeExtensions = true;
             this.atomSerializer = new Atom10FeedFormatter(feedTypeToCreate);
             this.feedType = feedTypeToCreate;
+            
         }
 
         public Rss20FeedFormatter(SyndicationFeed feedToWrite)
@@ -219,7 +226,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#", Justification = "The out parameter is needed to enable implementations that read in items from the stream on demand")]
-        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        public virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
             if (feed == null)
             {
@@ -259,7 +266,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        static DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
+        public static DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
         {
             StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
             if (dateTimeStringBuilder.Length < 18)
@@ -412,7 +419,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        static void RemoveExtraWhiteSpaceAtStart(StringBuilder stringBuilder)
+        public static void RemoveExtraWhiteSpaceAtStart(StringBuilder stringBuilder)
         {
             int i = 0;
             while (i < stringBuilder.Length)
@@ -429,7 +436,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
+        public static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
         {
             int index = 0;
             int whiteSpaceStart = -1;
@@ -562,6 +569,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         void ReadFeed(XmlReader reader)
         {
+            
             SetFeed(CreateFeedInstance());
             ReadXml(reader, this.Feed);
         }
@@ -661,7 +669,7 @@ namespace Microsoft.ServiceModel.Syndication
                                     string str = reader.ReadString();
                                     if (!string.IsNullOrEmpty(str))
                                     {
-                                        result.PublishDate = DateFromString(str, reader);
+                                        result.PublishDate = CustomRSSParsers.DateParser(str,reader); // original ==> DateFromString(str, reader);
                                     }
                                     reader.ReadEndElement();
                                 }
@@ -951,6 +959,8 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.LastBuildDateTag, Rss20Constants.Rss20Namespace))
                         {
+                            
+                            //This code is now handled by a delegate in CustomParsers
                             bool canReadContent = !reader.IsEmptyElement;
                             reader.ReadStartElement();
                             if (canReadContent)
@@ -958,10 +968,11 @@ namespace Microsoft.ServiceModel.Syndication
                                 string str = reader.ReadString();
                                 if (!string.IsNullOrEmpty(str))
                                 {
-                                    result.LastUpdatedTime = DateFromString(str, reader);
+                                    result.LastUpdatedTime = CustomRSSParsers.DateParser(str, reader); // <<=== here | original DateFromString(str, reader);
                                 }
                                 reader.ReadEndElement();
                             }
+
                         }
                         else if (reader.IsStartElement(Rss20Constants.CategoryTag, Rss20Constants.Rss20Namespace))
                         {
@@ -1005,6 +1016,7 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else
                         {
+                            //All unkown tags come here as extentions
                             bool parsedExtension = this.serializeExtensionsAsAtom && this.atomSerializer.TryParseFeedElementFrom(reader, result);
                             if (!parsedExtension)
                             {
