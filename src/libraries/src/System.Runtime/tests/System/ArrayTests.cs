@@ -2955,7 +2955,6 @@ namespace System.Tests
         [Theory]
         [MemberData(nameof(Sort_Array_Array_NonGeneric_TestData))]
         [MemberData(nameof(Sort_Array_Array_Generic_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/17450")]
         public static void Sort_Array_Array_NonGeneric(Array keys, Array items, int index, int length, IComparer comparer, Array expectedKeys, Array expectedItems)
         {
             Array sortedKeysArray = null;
