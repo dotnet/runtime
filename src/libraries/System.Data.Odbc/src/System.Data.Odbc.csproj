@@ -107,7 +107,6 @@
     <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
       <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
     </Compile>
-    <Compile Include="Common\System\Data\Common\ReadOnlyCollection.cs" />
     <Compile Include="Common\System\Data\Common\UnsafeNativeMethods.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">

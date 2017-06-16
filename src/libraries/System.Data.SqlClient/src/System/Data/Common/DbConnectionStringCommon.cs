@@ -224,7 +224,7 @@ namespace System.Data.Common
         }
     }
 
-    internal static class DbConnectionStringDefaults
+    internal static partial class DbConnectionStringDefaults
     {
         // all
         //        internal const string NamedConnection           = "";
@@ -263,7 +263,7 @@ namespace System.Data.Common
     }
 
 
-    internal static class DbConnectionStringKeywords
+    internal static partial class DbConnectionStringKeywords
     {
         // all
         //        internal const string NamedConnection           = "Named Connection";
