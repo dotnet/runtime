@@ -119,7 +119,7 @@ struct sigaction g_previous_sigquit;
 struct sigaction g_previous_activation;
 #endif
 
-// Offset of the local variable containing native context in the common_signal_handler function.
+// Offset of the local variable containing pointer to windows style context in the common_signal_handler function.
 // This offset is relative to the frame pointer.
 int g_common_signal_handler_context_locvar_offset = 0;
 #endif // !HAVE_MACH_EXCEPTIONS
@@ -766,7 +766,7 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_common_signal_handler_context_locvar_offset = (int)((char*)&ucontext - (char*)__builtin_frame_address(0));
+    g_common_signal_handler_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
 
     AllocateExceptionRecords(&exceptionRecord, &contextRecord);
 
