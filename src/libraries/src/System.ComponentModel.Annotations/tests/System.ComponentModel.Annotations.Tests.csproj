@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -17,6 +17,8 @@
     <Compile Include="CreditCardAttributeTests.cs" />
     <Compile Include="CustomValidationAttributeTests.cs" />
     <Compile Include="DataTypeAttributeTests.cs" />
+    <Compile Include="DisplayFormatAttributeTests.cs" />
+    <Compile Include="DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="EditableAttributeTests.cs" />
     <Compile Include="EmailAddressAttributeTests.cs" />
     <Compile Include="EnumDataTypeAttributeTests.cs" />
@@ -46,7 +48,6 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
-    <Compile Include="DisplayFormatAttributeTest.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
