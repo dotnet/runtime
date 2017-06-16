@@ -285,6 +285,9 @@
     <Compile Include="..\..\src\System\Net\Http\Unix\CurlResponseHeaderReader.cs">
       <Link>ProductionCode\System\Net\Http\CurlResponseHeaderReader.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
+      <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Managed\AuthenticationHandler.cs">
       <Link>ProductionCode\System\Net\Http\Managed\AuthenticationHandler.cs</Link>
     </Compile>
@@ -303,7 +306,7 @@
     <Compile Include="..\..\src\System\Net\Http\Managed\DecompressionHandler.cs">
       <Link>ProductionCode\System\Net\Http\Managed\DecompressionHandler.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\ManagedHttpClientHandler.cs">
+    <Compile Include="..\..\src\System\Net\Http\Managed\ManagedHandler.cs">
       <Link>ProductionCode\System\Net\Http\Managed\ManagedHttpClientHandler.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnection.cs">

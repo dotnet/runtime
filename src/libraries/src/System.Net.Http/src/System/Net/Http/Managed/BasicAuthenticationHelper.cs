@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
     internal static class BasicAuthenticationHelper
     {

@@ -344,7 +344,7 @@ namespace System.Net.Http
             {
                 // Reset cookies in case we redirect.  Below we'll set new cookies for the
                 // new location if we have any.
-                if (_handler._useCookie)
+                if (_handler._useCookies)
                 {
                     SetCurlOption(CURLoption.CURLOPT_COOKIE, IntPtr.Zero);
                 }
@@ -366,7 +366,7 @@ namespace System.Net.Http
                     SetProxyOptions(newUri);
 
                     // Set up new cookies
-                    if (_handler._useCookie)
+                    if (_handler._useCookies)
                     {
                         SetCookieOption(newUri);
                     }
@@ -685,7 +685,7 @@ namespace System.Net.Http
 
             internal void SetCookieOption(Uri uri)
             {
-                if (!_handler._useCookie)
+                if (!_handler._useCookies)
                 {
                     return;
                 }
@@ -764,7 +764,7 @@ namespace System.Net.Http
             }
 
             internal bool ServerCertificateValidationCallbackAcceptsAll => ReferenceEquals(
-                _handler.ServerCertificateValidationCallback,
+                _handler.ServerCertificateCustomValidationCallback,
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator);
 
             internal void SetCurlCallbacks(

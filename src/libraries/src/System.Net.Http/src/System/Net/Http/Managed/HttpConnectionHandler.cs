@@ -10,7 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
     internal sealed class HttpConnectionHandler : HttpMessageHandler
     {

@@ -41,6 +41,7 @@
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
+    <Compile Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="System\Net\Http\HttpContent.cs" />
     <Compile Include="System\Net\Http\HttpMessageHandler.cs" />
@@ -117,9 +118,8 @@
     </Compile>
   </ItemGroup>
   <!-- Managed HttpClientHandler implementation -->
-  <ItemGroup>
-    <Compile Include="System\Net\Http\HttpClientHandler.Managed.cs" />
-    <Compile Include="System\Net\Http\Managed\ManagedHttpClientHandler.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
     <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnection.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionHandler.cs" />
@@ -165,6 +165,7 @@
   </ItemGroup>
   <!-- WinHTTP implementation -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap' And '$(TargetGroup)' != 'net46' And '$(TargetGroup)' != 'netfx'">
+    <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Windows.cs" />
   </ItemGroup>
   <!-- Compile the WinHttpHandler implementation into the System.Net.Http.dll binary.  This is a
@@ -202,6 +203,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />

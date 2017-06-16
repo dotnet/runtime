@@ -27,7 +27,7 @@ using RTCertificateStores = Windows.Security.Cryptography.Certificates.Certifica
 
 namespace System.Net.Http
 {
-    public class HttpClientHandler : HttpMessageHandler
+    public partial class HttpClientHandler : HttpMessageHandler
     {
         private const string clientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         private static readonly Lazy<bool> s_RTCookieUsageBehaviorSupported =
@@ -363,8 +363,6 @@ namespace System.Net.Http
                 return clientCertificates;
             }
         }
-
-        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {

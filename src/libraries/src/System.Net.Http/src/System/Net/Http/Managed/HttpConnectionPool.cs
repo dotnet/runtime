@@ -4,7 +4,7 @@
 
 using System.Collections.Concurrent;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
     internal sealed class HttpConnectionPool : IDisposable
     {
