@@ -853,15 +853,15 @@ if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
             __ClangMinorVersion=6
         fi
 
-        if [[ "$__BuildArch" == "armel" ]]; then
-            # Armel cross build is Tizen specific and does not support Portable RID build
-            __PortableBuild=0
-        fi
-
     else
         __ClangMajorVersion=3
         __ClangMinorVersion=5
     fi
+fi
+
+if [[ "$__BuildArch" == "armel" ]]; then
+    # Armel cross build is Tizen specific and does not support Portable RID build
+    __PortableBuild=0
 fi
 
 if [ $__PortableBuild == 0 ]; then
