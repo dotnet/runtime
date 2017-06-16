@@ -108,9 +108,6 @@
     <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlReflectionMember.cs">
       <Link>System\Xml\Serialization\XmlReflectionMember.cs</Link>
     </Compile>
-    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSchemaProviderAttribute.cs">
-      <Link>System\Xml\Serialization\XmlSchemaProviderAttribute.cs</Link>
-    </Compile>
     <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializationGeneratedCode.cs">
       <Link>System\Xml\Serialization\XmlSerializationGeneratedCode.cs</Link>
     </Compile>
@@ -128,12 +125,6 @@
     </Compile>
     <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlSerializerNamespaces.cs">
       <Link>System\Xml\Serialization\XmlSerializerNamespaces.cs</Link>
-    </Compile>
-    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlTextAttribute.cs">
-      <Link>System\Xml\Serialization\XmlTextAttribute.cs</Link>
-    </Compile>
-    <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlTypeAttribute.cs">
-      <Link>System\Xml\Serialization\XmlTypeAttribute.cs</Link>
     </Compile>
     <Compile Include="$(SourceDir)\System\Xml\Serialization\XmlTypeMapping.cs">
       <Link>System\Xml\Serialization\XmlTypeMapping.cs</Link>
