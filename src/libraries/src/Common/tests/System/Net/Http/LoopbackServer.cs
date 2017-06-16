@@ -79,7 +79,7 @@ namespace System.Net.Test.Common
             return AcceptSocketAsync(server, (s, stream, reader, writer) => ReadWriteAcceptedAsync(s, reader, writer, response), options);
         }
 
-        public static async Task<List<string>> ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null)
+        public static async Task<List<string>> ReadWriteAcceptedAsync(Socket s, StreamReader reader, StreamWriter writer, string response = null, bool shutdown = true)
         {
             // Read request line and headers. Skip any request body.
             var lines = new List<string>();
@@ -90,7 +90,11 @@ namespace System.Net.Test.Common
             }
 
             await writer.WriteAsync(response ?? DefaultHttpResponse).ConfigureAwait(false);
-            s.Shutdown(SocketShutdown.Send);
+
+            if (shutdown)
+            {
+                s.Shutdown(SocketShutdown.Send);
+            }
 
             return lines;
         }
