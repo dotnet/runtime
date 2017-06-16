@@ -2109,10 +2109,7 @@ namespace System
                             _flags |= Flags.UncPath;
                             idx = i;
 
-                            if (!IsWindowsSystem)
-                            {
-                                _syntax = UriParser.UnixFileUri;
-                            }
+                            _syntax = IsWindowsSystem ? _syntax : UriParser.UnixFileUri;
                         }
                         else if (!IsWindowsSystem && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && pUriString[i - 1] == '/' && i - idx == 3)
                         {
