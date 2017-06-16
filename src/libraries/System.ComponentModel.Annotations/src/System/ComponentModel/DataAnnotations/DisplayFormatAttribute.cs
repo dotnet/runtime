@@ -68,11 +68,11 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public bool HtmlEncode { get; set; }
 
-		/// <summary>
-		///     Gets or sets the <see cref="Type" /> that contains the resources for <see cref="NullDisplayText" />.
-		///     Using <see cref="NullDisplayTextResourceType" /> along with <see cref="NullDisplayText" />, allows the <see cref="GetNullDisplayText" />
-		///     method to return localized values.
-		/// </summary>
+        /// <summary>
+        ///     Gets or sets the <see cref="Type" /> that contains the resources for <see cref="NullDisplayText" />.
+        ///     Using <see cref="NullDisplayTextResourceType" /> along with <see cref="NullDisplayText" />, allows the <see cref="GetNullDisplayText" />
+        ///     method to return localized values.
+        /// </summary>
 		public Type NullDisplayTextResourceType
         {
             get { return _nullDisplayText.ResourceType; }
