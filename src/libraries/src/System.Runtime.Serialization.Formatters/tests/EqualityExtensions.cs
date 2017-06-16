@@ -8,6 +8,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Data;
+using System.Data.SqlTypes;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -88,13 +89,16 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 @this.CaseSensitive == other.CaseSensitive &&
                 @this.Locale.LCID == other.Locale.LCID &&
                 @this.EnforceConstraints == other.EnforceConstraints &&
-                @this.ExtendedProperties?.Count == other.ExtendedProperties?.Count;
+                @this.ExtendedProperties?.Count == other.ExtendedProperties?.Count &&
+                BinaryFormatterTests.CheckEquals(@this.ExtendedProperties, other.ExtendedProperties);
         }
 
         public static bool IsEqual(this DataTable @this, DataTable other)
         {
+            Assert.Equal(@this.TableName, other.TableName);
             return @this != null &&
                 other != null &&
+                @this.RemotingFormat == other.RemotingFormat && 
                 @this.TableName == other.TableName &&
                 @this.Namespace == other.Namespace &&
                 @this.Prefix == other.Prefix &&
@@ -542,7 +546,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 other != null &&
                 @this.Name == other.Name &&
                 @this.LCID == other.LCID &&
-                @this.Version == other.Version;
+                // we do not want to compare Version because it can change when changing OS
+                // we do want to make sure that they are either both null or both not null
+                (@this.Version != null) == (other.Version != null);
         }
 
         public static bool IsEqual(this SortVersion @this, SortVersion other)
@@ -669,6 +675,16 @@ namespace System.Runtime.Serialization.Formatters.Tests
             return BinaryFormatterTests.CheckEquals(thisFlattened.Item2, otherFlattened.Item2);
         }
 
+        public static bool IsEqual(this ArraySegment<int> @this, ArraySegment<int> other)
+        {
+            if (!((@this.Array != null) == (other.Array != null) &&
+                @this.Count == other.Count &&
+                @this.Offset == other.Offset))
+                return false;
+
+            return @this.Array == null || BinaryFormatterTests.CheckSequenceEquals(@this, other);
+        }
+
         public static bool IsEqual(this ObjectWithArrays @this, ObjectWithArrays other)
         {
             return @this != null &&
@@ -710,6 +726,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 other != null &&
                 @this.X == other.X &&
                 @this.Y == other.Y;
+        }
+
+        public static bool IsEqual(this SqlGuid @this, SqlGuid other)
+        {
+            return @this.IsNull == other.IsNull && (@this.IsNull || @this.Value == other.Value);
         }
 
         public static bool IsEqual(this SealedObjectWithIntStringFields @this, SealedObjectWithIntStringFields other)

@@ -56,6 +56,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         [Fact]
+        public void ArraySegmentDefaultCtor()
+        {
+            // This is workaround for Xunit bug which tries to pretty print test case name and enumerate this object.
+            // When inner array is not initialized it throws an exception when this happens.
+            object obj = new ArraySegment<int>();
+            string corefxBlob = "AAEAAAD/////AQAAAAAAAAAEAQAAAHJTeXN0ZW0uQXJyYXlTZWdtZW50YDFbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0DAAAABl9hcnJheQdfb2Zmc2V0Bl9jb3VudAcAAAgICAoAAAAAAAAAAAs=";
+            string netfxBlob = "AAEAAAD/////AQAAAAAAAAAEAQAAAHJTeXN0ZW0uQXJyYXlTZWdtZW50YDFbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0DAAAABl9hcnJheQdfb2Zmc2V0Bl9jb3VudAcAAAgICAoAAAAAAAAAAAs=";
+            CheckForAnyEquals(obj, DeserializeBlobToObject(corefxBlob));
+            CheckForAnyEquals(obj, DeserializeBlobToObject(netfxBlob));
+        }
+
+        [Fact]
         public void ValidateDeserializationOfObjectWithDifferentAssemblyVersion()
         {
             // To generate this properly, change AssemblyVersion to a value which is unlikely to happen in production and generate base64(serialized-data)

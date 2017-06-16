@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -582,4 +583,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
             return true;
         }
     }
+
+#pragma warning disable 0618 // obsolete warning
+    [Serializable]
+    internal class HashCodeProvider : IHashCodeProvider
+    {
+        public int GetHashCode(object obj)
+        {
+            return 8;
+        }
+    }
+#pragma warning restore 0618
 }
