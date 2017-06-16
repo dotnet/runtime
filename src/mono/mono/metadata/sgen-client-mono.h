@@ -345,32 +345,24 @@ static void G_GNUC_UNUSED
 sgen_client_binary_protocol_world_stopping (int generation, long long timestamp, gpointer thread)
 {
 	MONO_GC_WORLD_STOP_BEGIN ();
-
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_world_stopped (int generation, long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
 {
 	MONO_GC_WORLD_STOP_END ();
-
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_world_restarting (int generation, long long timestamp, long long total_major_cards, long long marked_major_cards, long long total_los_cards, long long marked_los_cards)
 {
 	MONO_GC_WORLD_RESTART_BEGIN (generation);
-
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_world_restarted (int generation, long long timestamp)
 {
 	MONO_GC_WORLD_RESTART_END (generation);
-
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
 }
 
 static void G_GNUC_UNUSED

@@ -1238,6 +1238,8 @@ heap_shot_find_obj_slot (HeapShot *hs, uintptr_t objaddr)
 	uintptr_t i;
 	uintptr_t start_pos;
 	HeapObjectDesc **hash = hs->objects_hash;
+	if (hs->objects_hash_size == 0)
+		return -1;
 	start_pos = ((uintptr_t)objaddr >> 3) % hs->objects_hash_size;
 	i = start_pos;
 	do {
