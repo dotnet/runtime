@@ -39,6 +39,7 @@ namespace System.ConfigurationTests
 </configuration>";
 
         [Fact]
+        [ActiveIssue(21000, TargetFrameworkMonikers.UapAot)]
         public void UriSectionIdnIriParsing()
         {
             using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))
@@ -51,6 +52,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [ActiveIssue(21000, TargetFrameworkMonikers.UapAot)]
         public void UriSectionSchemeSettings()
         {
             using (var temp = new TempConfig(PlatformDetection.IsFullFramework ? UriSectionConfiguration_NetFX : UriSectionConfiguration_Core))

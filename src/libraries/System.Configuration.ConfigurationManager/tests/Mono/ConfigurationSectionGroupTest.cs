@@ -46,6 +46,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        [ActiveIssue(21000, TargetFrameworkMonikers.UapAot)]
         public void EditAfterAdd()
         {
             Config cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
