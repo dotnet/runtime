@@ -3524,12 +3524,12 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, ASSERT_VAL
     // If local assertion prop use lcl comparison, else use VN comparison.
     if (!optLocalAssertionProp)
     {
-        ValueNum vn = op->gtVNPair.GetConservative();
-
-        if (BitVecOps::IsEmpty(apTraits, assertions))
+        if (BitVecOps::MayBeUninit(assertions) || BitVecOps::IsEmpty(apTraits, assertions))
         {
             return NO_ASSERTION_INDEX;
         }
+
+        ValueNum vn = op->gtVNPair.GetConservative();
 
         // Check each assertion to find if we have a vn == or != null assertion.
         BitVecOps::Iter iter(apTraits, assertions);
@@ -4855,7 +4855,7 @@ Compiler::fgWalkResult Compiler::optVNConstantPropCurStmt(BasicBlock* block, Gen
 //
 void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree)
 {
-    ASSERT_TP  empty   = BitVecOps::MakeEmpty(apTraits);
+    ASSERT_TP  empty   = BitVecOps::UninitVal();
     GenTreePtr newTree = nullptr;
     if (tree->OperGet() == GT_CALL)
     {
