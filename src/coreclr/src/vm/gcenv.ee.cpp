@@ -861,7 +861,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 #endif
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-        if (g_sw_ww_enabled_for_gc_heap && (args->write_watch_table != nullptr))
+        if (args->write_watch_table != nullptr)
         {
             assert(args->is_runtime_suspended);
             g_sw_ww_table = args->write_watch_table;
@@ -888,17 +888,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 
         g_lowest_address = args->lowest_address;
         VolatileStore(&g_highest_address, args->highest_address);
-
-#if defined(_ARM64_)
-        // Need to reupdate for changes to g_highest_address g_lowest_address
-        ::StompWriteBarrierResize(args->is_runtime_suspended, args->requires_upper_bounds_check);
-
-        if(!args->is_runtime_suspended)
-        {
-            // If runtime is not suspended, force updated state to be visible to all threads
-            MemoryBarrier();
-        }
-#endif
         return;
     case WriteBarrierOp::StompEphemeral:
         // StompEphemeral requires a new ephemeral low and a new ephemeral high
@@ -930,11 +919,14 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 
         FlushProcessWriteBuffers();
         
-        g_ephemeral_low = args->ephemeral_low;
-        g_ephemeral_high = args->ephemeral_high;
         g_lowest_address = args->lowest_address;
         VolatileStore(&g_highest_address, args->highest_address);
         ::StompWriteBarrierResize(true, false);
+
+        // g_ephemeral_low/high aren't needed for the write barrier stomp, but they
+        // are needed in other places.
+        g_ephemeral_low = args->ephemeral_low;
+        g_ephemeral_high = args->ephemeral_high;
         return;
     case WriteBarrierOp::SwitchToWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -950,7 +942,6 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     case WriteBarrierOp::SwitchToNonWriteWatch:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         assert(args->is_runtime_suspended && "the runtime must be suspended here!");
-        g_sw_ww_table = 0;
         g_sw_ww_enabled_for_gc_heap = false;
         ::SwitchToNonWriteWatchBarrier(true);
 #else
