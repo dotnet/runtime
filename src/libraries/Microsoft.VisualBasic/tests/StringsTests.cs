@@ -10,23 +10,25 @@ namespace Microsoft.VisualBasic.Tests
     public class StringsTests
     {
         [Fact]
-        public void AscWTest()
+        public void AscW_Char_ReturnsChar()
         {
             Assert.Equal('3', Strings.AscW('3'));
-
-            Assert.Throws<ArgumentException>(() => Strings.AscW(null));
-            Assert.Throws<ArgumentException>(() => Strings.AscW(""));
-
-            Assert.Equal('3', Strings.AscW("3"));
-            Assert.Equal('3', Strings.AscW("345"));
         }
 
         [Theory]
-        [InlineData(-32769)]
-        [InlineData(65536)]
-        public void ChrW_CharCodeOutOfRange(int charCode)
+        [InlineData("3", '3')]
+        [InlineData("345", '3')]
+        public void AscW_String_ReturnsExpected(string String, int expected)
         {
-            Assert.Throws<ArgumentException>(() => Strings.ChrW(charCode));
+            Assert.Equal(expected, Strings.AscW(String));
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        public void AscW_NullOrEmpty_ThrowsArgumentException(string String)
+        {
+            Assert.Throws<ArgumentException>(null, () => Strings.AscW(String));
         }
 
         [Theory]
@@ -34,10 +36,17 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(65)]
         [InlineData(65535)]
         [InlineData(-32768)]
-        public void ChrW_CharCodeInRange(int charCode)
+        public void ChrW_CharCodeInRange_ReturnsExpected(int charCode)
         {
-            char result = Strings.ChrW(charCode);
-            Assert.Equal(Convert.ToChar(charCode & 0XFFFF), result);
+            Assert.Equal(Convert.ToChar(charCode & 0XFFFF), Strings.ChrW(charCode));
+        }
+
+        [Theory]
+        [InlineData(-32769)]
+        [InlineData(65536)]
+        public void ChrW_CharCodeOutOfRange_ThrowsArgumentException(int charCode)
+        {
+            Assert.Throws<ArgumentException>(null, () => Strings.ChrW(charCode));
         }
     }
 }
