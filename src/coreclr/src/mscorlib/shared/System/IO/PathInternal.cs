@@ -162,7 +162,7 @@ namespace System.IO
                 // Terminal ".." . Files names cannot end in ".."
                 if (index + 2 == searchPattern.Length
                     || IsDirectorySeparator(searchPattern[index + 2]))
-                    throw new ArgumentException(SR.Arg_InvalidSearchPattern);
+                    throw new ArgumentException(SR.Format(SR.Arg_InvalidSearchPattern, searchPattern));
 
                 searchPattern = searchPattern.Substring(index + 2);
             }
