@@ -37,7 +37,6 @@ namespace System.Runtime.Loader.Tests
 
         private static void Init()
         {
-            // Delete the assembly from the temp location if it exists.
             var assemblyFilename = "System.Runtime.Loader.Noop.Assembly.dll";
             
             // Form the dynamic path that would not collide if another instance of this test is running.
@@ -50,19 +49,9 @@ namespace System.Runtime.Loader.Tests
 
             // Rename the file local to the test folder.
             var sourcePath = Path.Combine(Directory.GetCurrentDirectory(),assemblyFilename);
-            var targetRenamedPath = Path.Combine(Directory.GetCurrentDirectory(), "System.Runtime.Loader.Noop.Assembly_test.dll");
-            if (File.Exists(sourcePath))
-            {
-                if (File.Exists(targetRenamedPath))
-                {
-                    File.Delete(targetRenamedPath);
-                }
-
-                File.Move(sourcePath, targetRenamedPath);
-            }
 
             // Finally, copy the file to the temp location from where we expect to load it
-            File.Copy(targetRenamedPath, targetPath); 
+            File.Copy(sourcePath, targetPath); 
 
             // Copy the current assembly to the target location as well since we will load it in the custom load context via the
             // RefEmitted assembly.
@@ -72,6 +61,12 @@ namespace System.Runtime.Loader.Tests
             targetPath = Path.Combine(s_loadFromPath, asmCurrentAssembly.Name+".dll");
 
             File.Copy(pathCurrentAssembly, targetPath);
+        }
+
+        private static void DeleteDirectory()
+        {
+            try { Directory.Delete(s_loadFromPath, recursive: true); }
+            catch { } 
         }
 
         [Fact]
@@ -86,6 +81,7 @@ namespace System.Runtime.Loader.Tests
             // Scenario 2 - Generate a collectible dynamic assembly that triggers load of a static assembly
             RefEmitLoadContext refEmitLCRunAndCollect = new RefEmitLoadContext();
             LoadRefEmitAssemblyInLoadContext(refEmitLCRunAndCollect, AssemblyBuilderAccess.RunAndCollect);
+            DeleteDirectory();
         }
 
         public static void LoadRefEmitAssemblyInLoadContext(AssemblyLoadContext loadContext, AssemblyBuilderAccess builderType)
