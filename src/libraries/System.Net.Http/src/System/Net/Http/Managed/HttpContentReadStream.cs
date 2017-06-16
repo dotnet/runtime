@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
     internal abstract class HttpContentReadStream : Stream
     {
@@ -59,10 +59,11 @@ namespace System.Net.Http.Managed
             return ReadAsync(buffer, offset, count, CancellationToken.None).Result;
         }
 
-        public override void CopyTo(Stream destination, int bufferSize)
-        {
-            CopyToAsync(destination, bufferSize, CancellationToken.None).Wait();
-        }
+        // TODO: Restore this once we address unit test build's target
+        //public override void CopyTo(Stream destination, int bufferSize)
+        //{
+        //    CopyToAsync(destination, bufferSize, CancellationToken.None).Wait();
+        //}
 
         public abstract override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken);
         public abstract override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken);

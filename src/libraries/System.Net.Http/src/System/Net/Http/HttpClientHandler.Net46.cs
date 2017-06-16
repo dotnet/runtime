@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    public class HttpClientHandler : HttpMessageHandler
+    public partial class HttpClientHandler : HttpMessageHandler
     {
         #region Fields
 
@@ -331,8 +331,6 @@ namespace System.Net.Http
                 _proxy = value;
             }
         }
-
-        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {

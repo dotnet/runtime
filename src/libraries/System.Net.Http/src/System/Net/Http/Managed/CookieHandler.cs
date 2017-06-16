@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
     internal class CookieHandler : HttpMessageHandler
     {

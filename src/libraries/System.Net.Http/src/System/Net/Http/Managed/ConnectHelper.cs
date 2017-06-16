@@ -5,7 +5,7 @@
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
     internal static class ConnectHelper
     {

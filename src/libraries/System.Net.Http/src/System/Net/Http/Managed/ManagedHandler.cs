@@ -10,43 +10,33 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Managed
+namespace System.Net.Http
 {
-    public class ManagedHttpClientHandler : HttpMessageHandler
+    internal sealed class ManagedHandler : HttpMessageHandler
     {
         // Configuration settings
-        private bool _useCookies = true;
+        private bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
         private CookieContainer _cookieContainer;
-        private ClientCertificateOption _clientCertificateOptions = ClientCertificateOption.Manual;
-        private DecompressionMethods _automaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-        private bool _useProxy = true;
+        private ClientCertificateOption _clientCertificateOptions = HttpHandlerDefaults.DefaultClientCertificateOption;
+        private DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
+        private bool _useProxy = HttpHandlerDefaults.DefaultUseProxy;
         private IWebProxy _proxy;
         private ICredentials _defaultProxyCredentials;
-        private bool _preAuthenticate = false;
-        private bool _useDefaultCredentials = false;
+        private bool _preAuthenticate = HttpHandlerDefaults.DefaultPreAuthenticate;
+        private bool _useDefaultCredentials = HttpHandlerDefaults.DefaultUseDefaultCredentials;
         private ICredentials _credentials;
-        private bool _allowAutoRedirect = true;
-        private int _maxAutomaticRedirections = 50;
-        private int _maxResponseHeadersLength = 64 * 1024;
-        private int _maxConnectionsPerServer = int.MaxValue;
+        private bool _allowAutoRedirect = HttpHandlerDefaults.DefaultAutomaticRedirection;
+        private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
+        private int _maxResponseHeadersLength = HttpHandlerDefaults.DefaultMaxResponseHeadersLength;
+        private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
         private X509CertificateCollection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
         private bool _checkCertificateRevocationList = false;
         private SslProtocols _sslProtocols = SslProtocols.None;
-        private IDictionary<String, object> _properties;
+        private IDictionary<string, object> _properties;
 
         private HttpMessageHandler _handler;
-        private volatile bool _disposed;
-
-        private static bool s_trace = false;
-
-        private static void Trace(string msg)
-        {
-            if (s_trace)
-            {
-                Console.WriteLine(msg);
-            }
-        }
+        private bool _disposed;
 
         private void CheckInUse()
         {
@@ -57,17 +47,17 @@ namespace System.Net.Http.Managed
             }
         }
 
-        public virtual bool SupportsAutomaticDecompression
+        public bool SupportsAutomaticDecompression
         {
             get { return true; }
         }
 
-        public virtual bool SupportsProxy
+        public bool SupportsProxy
         {
             get { return true; }
         }
 
-        public virtual bool SupportsRedirectConfiguration
+        public bool SupportsRedirectConfiguration
         {
             get { return true; }
         }
@@ -196,12 +186,12 @@ namespace System.Net.Http.Managed
         {
             get
             {
-                if (_clientCertificates == null)
+                if (_clientCertificateOptions != ClientCertificateOption.Manual)
                 {
-                    _clientCertificates = new X509CertificateCollection();
+                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
                 }
 
-                return _clientCertificates;
+                return _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection());
             }
         }
 
@@ -245,10 +235,6 @@ namespace System.Net.Http.Managed
 
                 return _properties;
             }
-        }
-
-        public ManagedHttpClientHandler()
-        {
         }
 
         protected override void Dispose(bool disposing)
@@ -307,7 +293,7 @@ namespace System.Net.Http.Managed
         {
             if (_disposed)
             {
-                throw new ObjectDisposedException(nameof(ManagedHttpClientHandler));
+                throw new ObjectDisposedException(nameof(ManagedHandler));
             }
 
             if (_handler == null)

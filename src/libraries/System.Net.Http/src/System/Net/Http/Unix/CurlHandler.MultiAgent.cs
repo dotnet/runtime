@@ -981,7 +981,7 @@ namespace System.Net.Http
                                     response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
                                 }
                                 else if ((int)response.StatusCode >= 300 && (int)response.StatusCode < 400 &&
-                                    easy._handler.AutomaticRedirection &&
+                                    easy._handler.AllowAutoRedirect &&
                                     string.Equals(headerName, HttpKnownHeaderNames.Location, StringComparison.OrdinalIgnoreCase))
                                 {
                                     // A "Location" header field can mean different things for different status codes.  For 3xx status codes,
