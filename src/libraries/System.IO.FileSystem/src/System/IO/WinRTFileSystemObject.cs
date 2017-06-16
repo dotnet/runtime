@@ -213,7 +213,7 @@ namespace System.IO
                         // Ignore DirectoryNotFound, in this case we just return null;
                     }
 
-                    if (String.IsNullOrEmpty(itemName) || null == parent)
+                    if (string.IsNullOrEmpty(itemName) || null == parent)
                         _item = parent;
                     else
                         _item = await parent.TryGetItemAsync(itemName).TranslateWinRTTask(_fullPath);

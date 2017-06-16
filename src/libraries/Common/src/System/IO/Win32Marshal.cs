@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.IO
@@ -19,7 +17,7 @@ namespace System.IO
         internal static Exception GetExceptionForLastWin32Error()
         {
             int errorCode = Marshal.GetLastWin32Error();
-            return GetExceptionForWin32Error(errorCode, String.Empty);
+            return GetExceptionForWin32Error(errorCode, string.Empty);
         }
 
         /// <summary>

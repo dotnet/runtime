@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
 {
@@ -20,10 +19,10 @@ internal partial class Interop
         /// </summary>
         [System.Security.SecurityCritical]  // auto-generated
         internal static SafeFileHandle SafeCreateFile(
-            String lpFileName,
+            string lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
-            ref Interop.Kernel32.SECURITY_ATTRIBUTES securityAttrs,
+            ref SECURITY_ATTRIBUTES securityAttrs,
             FileMode dwCreationDisposition,
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
@@ -32,8 +31,8 @@ internal partial class Interop
 
             if (!handle.IsInvalid)
             {
-                int fileType = Interop.Kernel32.GetFileType(handle);
-                if (fileType != Interop.Kernel32.FileTypes.FILE_TYPE_DISK)
+                int fileType = GetFileType(handle);
+                if (fileType != FileTypes.FILE_TYPE_DISK)
                 {
                     handle.Dispose();
                     throw new NotSupportedException(SR.NotSupported_FileStreamOnNonFiles);

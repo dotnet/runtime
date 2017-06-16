@@ -10,7 +10,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        internal static int CopyFile(String src, String dst, bool failIfExists)
+        internal static int CopyFile(string src, string dst, bool failIfExists)
         {
             uint copyFlags = failIfExists ? (uint)Interop.Kernel32.FileOperations.COPY_FILE_FAIL_IF_EXISTS : 0;
             Interop.Kernel32.COPYFILE2_EXTENDED_PARAMETERS parameters = new Interop.Kernel32.COPYFILE2_EXTENDED_PARAMETERS()

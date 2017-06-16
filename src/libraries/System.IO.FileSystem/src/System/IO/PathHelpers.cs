@@ -11,8 +11,8 @@ namespace System.IO
         // Array of the separator chars
         internal static readonly char[] DirectorySeparatorChars = new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar };
 
-        // String-representation of the directory-separator character, used when appending the character to another
-        // string so as to avoid the boxing of the character when calling String.Concat(..., object).
+        // string-representation of the directory-separator character, used when appending the character to another
+        // string so as to avoid the boxing of the character when calling string.Concat(..., object).
         internal static readonly string DirectorySeparatorCharAsString = Path.DirectorySeparatorChar.ToString();
 
         // System.IO.Path has both public Combine and internal InternalCombine
@@ -34,7 +34,7 @@ namespace System.IO
             return path.Length == PathInternal.GetRootLength(path);
         }
 
-        internal static bool EndsInDirectorySeparator(String path)
+        internal static bool EndsInDirectorySeparator(string path)
         {
             return path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]);
         }

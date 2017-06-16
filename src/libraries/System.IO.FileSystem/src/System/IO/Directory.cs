@@ -2,25 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Security;
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Globalization;
-using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Threading;
+using System.Security;
 
 namespace System.IO
 {
     public static partial class Directory
     {
-        public static DirectoryInfo GetParent(String path)
+        public static DirectoryInfo GetParent(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -29,16 +20,16 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             Contract.EndContractBlock();
 
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
 
-            String s = Path.GetDirectoryName(fullPath);
+            string s = Path.GetDirectoryName(fullPath);
             if (s == null)
                 return null;
             return new DirectoryInfo(s);
         }
 
         [System.Security.SecuritySafeCritical]
-        public static DirectoryInfo CreateDirectory(String path)
+        public static DirectoryInfo CreateDirectory(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -46,7 +37,7 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             Contract.EndContractBlock();
 
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
 
             FileSystem.Current.CreateDirectory(fullPath);
 
@@ -55,9 +46,9 @@ namespace System.IO
 
         // Input to this method should already be fullpath. This method will ensure that we append 
         // the trailing slash only when appropriate.
-        internal static String EnsureTrailingDirectorySeparator(string fullPath)
+        internal static string EnsureTrailingDirectorySeparator(string fullPath)
         {
-            String fullPathWithTrailingDirectorySeparator;
+            string fullPathWithTrailingDirectorySeparator;
 
             if (!PathHelpers.EndsInDirectorySeparator(fullPath))
                 fullPathWithTrailingDirectorySeparator = fullPath + PathHelpers.DirectorySeparatorCharAsString;
@@ -74,7 +65,7 @@ namespace System.IO
         // contents.
         //
         [System.Security.SecuritySafeCritical]  // auto-generated
-        public static bool Exists(String path)
+        public static bool Exists(string path)
         {
             try
             {
@@ -83,7 +74,7 @@ namespace System.IO
                 if (path.Length == 0)
                     return false;
 
-                String fullPath = Path.GetFullPath(path);
+                string fullPath = Path.GetFullPath(path);
 
                 return FileSystem.Current.DirectoryExists(fullPath);
             }
@@ -96,78 +87,78 @@ namespace System.IO
             return false;
         }
 
-        public static void SetCreationTime(String path, DateTime creationTime)
+        public static void SetCreationTime(string path, DateTime creationTime)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetCreationTime(fullPath, creationTime, asDirectory: true);
         }
 
-        public static void SetCreationTimeUtc(String path, DateTime creationTimeUtc)
+        public static void SetCreationTimeUtc(string path, DateTime creationTimeUtc)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetCreationTime(fullPath, File.GetUtcDateTimeOffset(creationTimeUtc), asDirectory: true);
         }
 
-        public static DateTime GetCreationTime(String path)
+        public static DateTime GetCreationTime(string path)
         {
             return File.GetCreationTime(path);
         }
 
-        public static DateTime GetCreationTimeUtc(String path)
+        public static DateTime GetCreationTimeUtc(string path)
         {
             return File.GetCreationTimeUtc(path);
         }
  
-        public static void SetLastWriteTime(String path, DateTime lastWriteTime)
+        public static void SetLastWriteTime(string path, DateTime lastWriteTime)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastWriteTime(fullPath, lastWriteTime, asDirectory: true);
         }
 
-        public static void SetLastWriteTimeUtc(String path, DateTime lastWriteTimeUtc)
+        public static void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastWriteTime(fullPath, File.GetUtcDateTimeOffset(lastWriteTimeUtc), asDirectory: true);
         }
 
-        public static DateTime GetLastWriteTime(String path)
+        public static DateTime GetLastWriteTime(string path)
         {
             return File.GetLastWriteTime(path);
         }
 
-        public static DateTime GetLastWriteTimeUtc(String path)
+        public static DateTime GetLastWriteTimeUtc(string path)
         {
             return File.GetLastWriteTimeUtc(path);
         }
 
-        public static void SetLastAccessTime(String path, DateTime lastAccessTime)
+        public static void SetLastAccessTime(string path, DateTime lastAccessTime)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastAccessTime(fullPath, lastAccessTime, asDirectory: true);
         }
 
-        public static void SetLastAccessTimeUtc(String path, DateTime lastAccessTimeUtc)
+        public static void SetLastAccessTimeUtc(string path, DateTime lastAccessTimeUtc)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.SetLastAccessTime(fullPath, File.GetUtcDateTimeOffset(lastAccessTimeUtc), asDirectory: true);
         }
 
-        public static DateTime GetLastAccessTime(String path)
+        public static DateTime GetLastAccessTime(string path)
         {
             return File.GetLastAccessTime(path);
         }
 
-        public static DateTime GetLastAccessTimeUtc(String path)
+        public static DateTime GetLastAccessTimeUtc(string path)
         {
             return File.GetLastAccessTimeUtc(path);
         }
 
         // Returns an array of filenames in the DirectoryInfo specified by path
-        public static String[] GetFiles(String path)
+        public static string[] GetFiles(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetFiles(path, "*", SearchOption.TopDirectoryOnly);
@@ -175,13 +166,13 @@ namespace System.IO
 
         // Returns an array of Files in the current DirectoryInfo matching the 
         // given search pattern (i.e. "*.txt").
-        public static String[] GetFiles(String path, String searchPattern)
+        public static string[] GetFiles(string path, string searchPattern)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
@@ -189,7 +180,7 @@ namespace System.IO
 
         // Returns an array of Files in the current DirectoryInfo matching the 
         // given search pattern (i.e. "*.txt") and search option
-        public static String[] GetFiles(String path, String searchPattern, SearchOption searchOption)
+        public static string[] GetFiles(string path, string searchPattern, SearchOption searchOption)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -197,7 +188,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetFiles(path, searchPattern, searchOption);
@@ -205,7 +196,7 @@ namespace System.IO
 
         // Returns an array of Files in the current DirectoryInfo matching the 
         // given search pattern (i.e. "*.txt") and search option
-        private static String[] InternalGetFiles(String path, String searchPattern, SearchOption searchOption)
+        private static string[] InternalGetFiles(string path, string searchPattern, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
@@ -215,11 +206,11 @@ namespace System.IO
         }
 
         // Returns an array of Directories in the current directory.
-        public static String[] GetDirectories(String path)
+        public static string[] GetDirectories(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetDirectories(path, "*", SearchOption.TopDirectoryOnly);
@@ -227,13 +218,13 @@ namespace System.IO
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
         // given search criteria (i.e. "*.txt").
-        public static String[] GetDirectories(String path, String searchPattern)
+        public static string[] GetDirectories(string path, string searchPattern)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetDirectories(path, searchPattern, SearchOption.TopDirectoryOnly);
@@ -241,7 +232,7 @@ namespace System.IO
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
         // given search criteria (i.e. "*.txt").
-        public static String[] GetDirectories(String path, String searchPattern, SearchOption searchOption)
+        public static string[] GetDirectories(string path, string searchPattern, SearchOption searchOption)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -249,7 +240,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetDirectories(path, searchPattern, searchOption);
@@ -257,22 +248,22 @@ namespace System.IO
 
         // Returns an array of Directories in the current DirectoryInfo matching the 
         // given search criteria (i.e. "*.txt").
-        private static String[] InternalGetDirectories(String path, String searchPattern, SearchOption searchOption)
+        private static string[] InternalGetDirectories(string path, string searchPattern, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
 
             return InternalGetFileDirectoryNames(path, path, searchPattern, false, true, searchOption);
         }
 
         // Returns an array of strongly typed FileSystemInfo entries in the path
-        public static String[] GetFileSystemEntries(String path)
+        public static string[] GetFileSystemEntries(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetFileSystemEntries(path, "*", SearchOption.TopDirectoryOnly);
@@ -280,13 +271,13 @@ namespace System.IO
 
         // Returns an array of strongly typed FileSystemInfo entries in the path with the
         // given search criteria (i.e. "*.txt"). We disallow .. as a part of the search criteria
-        public static String[] GetFileSystemEntries(String path, String searchPattern)
+        public static string[] GetFileSystemEntries(string path, string searchPattern)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetFileSystemEntries(path, searchPattern, SearchOption.TopDirectoryOnly);
@@ -294,7 +285,7 @@ namespace System.IO
 
         // Returns an array of strongly typed FileSystemInfo entries in the path with the
         // given search criteria (i.e. "*.txt"). We disallow .. as a part of the search criteria
-        public static String[] GetFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
+        public static string[] GetFileSystemEntries(string path, string searchPattern, SearchOption searchOption)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -302,13 +293,13 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<String[]>() != null);
+            Contract.Ensures(Contract.Result<string[]>() != null);
             Contract.EndContractBlock();
 
             return InternalGetFileSystemEntries(path, searchPattern, searchOption);
         }
 
-        private static String[] InternalGetFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
+        private static string[] InternalGetFileSystemEntries(string path, string searchPattern, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
@@ -322,19 +313,19 @@ namespace System.IO
         // the given search criteria against every dir.
         // For all the dirs/files returned, it will then demand path discovery permission for 
         // their parent folders (it will avoid duplicate permission checks)
-        internal static String[] InternalGetFileDirectoryNames(String path, String userPathOriginal, String searchPattern, bool includeFiles, bool includeDirs, SearchOption searchOption)
+        internal static string[] InternalGetFileDirectoryNames(string path, string userPathOriginal, string searchPattern, bool includeFiles, bool includeDirs, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(userPathOriginal != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
 
-            IEnumerable<String> enumerable = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
+            IEnumerable<string> enumerable = FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
             return EnumerableHelpers.ToArray(enumerable);
         }
 
-        public static IEnumerable<String> EnumerateDirectories(String path)
+        public static IEnumerable<string> EnumerateDirectories(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -343,7 +334,7 @@ namespace System.IO
             return InternalEnumerateDirectories(path, "*", SearchOption.TopDirectoryOnly);
         }
 
-        public static IEnumerable<String> EnumerateDirectories(String path, String searchPattern)
+        public static IEnumerable<string> EnumerateDirectories(string path, string searchPattern)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -354,7 +345,7 @@ namespace System.IO
             return InternalEnumerateDirectories(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
 
-        public static IEnumerable<String> EnumerateDirectories(String path, String searchPattern, SearchOption searchOption)
+        public static IEnumerable<string> EnumerateDirectories(string path, string searchPattern, SearchOption searchOption)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -367,7 +358,7 @@ namespace System.IO
             return InternalEnumerateDirectories(path, searchPattern, searchOption);
         }
 
-        private static IEnumerable<String> InternalEnumerateDirectories(String path, String searchPattern, SearchOption searchOption)
+        private static IEnumerable<string> InternalEnumerateDirectories(string path, string searchPattern, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
@@ -376,29 +367,29 @@ namespace System.IO
             return EnumerateFileSystemNames(path, searchPattern, searchOption, false, true);
         }
 
-        public static IEnumerable<String> EnumerateFiles(String path)
+        public static IEnumerable<string> EnumerateFiles(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
             Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, "*", SearchOption.TopDirectoryOnly);
         }
 
-        public static IEnumerable<String> EnumerateFiles(String path, String searchPattern)
+        public static IEnumerable<string> EnumerateFiles(string path, string searchPattern)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
             Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
 
-        public static IEnumerable<String> EnumerateFiles(String path, String searchPattern, SearchOption searchOption)
+        public static IEnumerable<string> EnumerateFiles(string path, string searchPattern, SearchOption searchOption)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -406,45 +397,45 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
             Contract.EndContractBlock();
 
             return InternalEnumerateFiles(path, searchPattern, searchOption);
         }
 
-        private static IEnumerable<String> InternalEnumerateFiles(String path, String searchPattern, SearchOption searchOption)
+        private static IEnumerable<string> InternalEnumerateFiles(string path, string searchPattern, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, false);
         }
 
-        public static IEnumerable<String> EnumerateFileSystemEntries(String path)
+        public static IEnumerable<string> EnumerateFileSystemEntries(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
             Contract.EndContractBlock();
 
             return InternalEnumerateFileSystemEntries(path, "*", SearchOption.TopDirectoryOnly);
         }
 
-        public static IEnumerable<String> EnumerateFileSystemEntries(String path, String searchPattern)
+        public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
             Contract.EndContractBlock();
 
             return InternalEnumerateFileSystemEntries(path, searchPattern, SearchOption.TopDirectoryOnly);
         }
 
-        public static IEnumerable<String> EnumerateFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
+        public static IEnumerable<string> EnumerateFileSystemEntries(string path, string searchPattern, SearchOption searchOption)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -452,48 +443,48 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
                 throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
             Contract.EndContractBlock();
 
             return InternalEnumerateFileSystemEntries(path, searchPattern, searchOption);
         }
 
-        private static IEnumerable<String> InternalEnumerateFileSystemEntries(String path, String searchPattern, SearchOption searchOption)
+        private static IEnumerable<string> InternalEnumerateFileSystemEntries(string path, string searchPattern, SearchOption searchOption)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
 
             return EnumerateFileSystemNames(path, searchPattern, searchOption, true, true);
         }
 
-        private static IEnumerable<String> EnumerateFileSystemNames(String path, String searchPattern, SearchOption searchOption,
+        private static IEnumerable<string> EnumerateFileSystemNames(string path, string searchPattern, SearchOption searchOption,
                                                             bool includeFiles, bool includeDirs)
         {
             Debug.Assert(path != null);
             Debug.Assert(searchPattern != null);
             Debug.Assert(searchOption == SearchOption.AllDirectories || searchOption == SearchOption.TopDirectoryOnly);
-            Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
+            Contract.Ensures(Contract.Result<IEnumerable<string>>() != null);
 
             return FileSystem.Current.EnumeratePaths(path, searchPattern, searchOption,
                 (includeFiles ? SearchTarget.Files : 0) | (includeDirs ? SearchTarget.Directories : 0));
         }
 
         [System.Security.SecuritySafeCritical]
-        public static String GetDirectoryRoot(String path)
+        public static string GetDirectoryRoot(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             Contract.EndContractBlock();
 
-            String fullPath = Path.GetFullPath(path);
-            String root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
+            string fullPath = Path.GetFullPath(path);
+            string root = fullPath.Substring(0, PathInternal.GetRootLength(fullPath));
 
             return root;
         }
 
-        internal static String InternalGetDirectoryRoot(String path)
+        internal static string InternalGetDirectoryRoot(string path)
         {
             if (path == null) return null;
             return path.Substring(0, PathInternal.GetRootLength(path));
@@ -507,14 +498,14 @@ namespace System.IO
        **Exceptions: 
        ==============================================================================*/
         [System.Security.SecuritySafeCritical]
-        public static String GetCurrentDirectory()
+        public static string GetCurrentDirectory()
         {
             return FileSystem.Current.GetCurrentDirectory();
         }
 
 
         [System.Security.SecurityCritical] // auto-generated
-        public static void SetCurrentDirectory(String path)
+        public static void SetCurrentDirectory(string path)
         {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
@@ -524,13 +515,13 @@ namespace System.IO
             if (PathInternal.IsPathTooLong(path))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            String fulldestDirName = Path.GetFullPath(path);
+            string fulldestDirName = Path.GetFullPath(path);
 
             FileSystem.Current.SetCurrentDirectory(fulldestDirName);
         }
 
         [System.Security.SecuritySafeCritical]
-        public static void Move(String sourceDirName, String destDirName)
+        public static void Move(string sourceDirName, string destDirName)
         {
             if (sourceDirName == null)
                 throw new ArgumentNullException(nameof(sourceDirName));
@@ -543,25 +534,25 @@ namespace System.IO
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));
             Contract.EndContractBlock();
 
-            String fullsourceDirName = Path.GetFullPath(sourceDirName);
-            String sourcePath = EnsureTrailingDirectorySeparator(fullsourceDirName);
+            string fullsourceDirName = Path.GetFullPath(sourceDirName);
+            string sourcePath = EnsureTrailingDirectorySeparator(fullsourceDirName);
 
             if (PathInternal.IsDirectoryTooLong(sourcePath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
-            String fulldestDirName = Path.GetFullPath(destDirName);
-            String destPath = EnsureTrailingDirectorySeparator(fulldestDirName);
+            string fulldestDirName = Path.GetFullPath(destDirName);
+            string destPath = EnsureTrailingDirectorySeparator(fulldestDirName);
             if (PathInternal.IsDirectoryTooLong(destPath))
                 throw new PathTooLongException(SR.IO_PathTooLong);
 
             StringComparison pathComparison = PathInternal.StringComparison;
 
-            if (String.Equals(sourcePath, destPath, pathComparison))
+            if (string.Equals(sourcePath, destPath, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustBeDifferent);
 
-            String sourceRoot = Path.GetPathRoot(sourcePath);
-            String destinationRoot = Path.GetPathRoot(destPath);
-            if (!String.Equals(sourceRoot, destinationRoot, pathComparison))
+            string sourceRoot = Path.GetPathRoot(sourcePath);
+            string destinationRoot = Path.GetPathRoot(destPath);
+            if (!string.Equals(sourceRoot, destinationRoot, pathComparison))
                 throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
 
             // Windows will throw if the source file/directory doesn't exist, we preemptively check
@@ -576,16 +567,16 @@ namespace System.IO
         }
 
         [System.Security.SecuritySafeCritical]
-        public static void Delete(String path)
+        public static void Delete(string path)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, false);
         }
 
         [System.Security.SecuritySafeCritical]
-        public static void Delete(String path, bool recursive)
+        public static void Delete(string path, bool recursive)
         {
-            String fullPath = Path.GetFullPath(path);
+            string fullPath = Path.GetFullPath(path);
             FileSystem.Current.RemoveDirectory(fullPath, recursive);
         }
 
