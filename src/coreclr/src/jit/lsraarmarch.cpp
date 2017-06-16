@@ -711,6 +711,12 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
             MakeSrcContained(argNode, putArgChild);
         }
     }
+    else if (putArgChild->TypeGet() == TYP_DOUBLE) {
+        // We consume all of the items in the TYP_DOUBLE
+        // TYP_DOUBLE uses 2 numSlots
+        argNode->gtLsraInfo.srcCount = info->numSlots;
+        putArgChild->SetContained();
+    }
     else
     {
         // We must not have a multi-reg struct
