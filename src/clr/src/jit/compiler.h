@@ -9436,12 +9436,17 @@ struct NodeSizeStats
         genTreeNodeActualSize = 0;
     }
 
-    size_t genTreeNodeCnt;
-    size_t genTreeNodeSize;       // The size we allocate
-    size_t genTreeNodeActualSize; // The actual size of the node. Note that the actual size will likely be smaller
-                                  //   than the allocated size, but we sometimes use SetOper()/ChangeOper() to change
-                                  //   a smaller node to a larger one. TODO-Cleanup: add stats on
-                                  //   SetOper()/ChangeOper() usage to quanitfy this.
+    // Count of tree nodes allocated.
+    unsigned __int64 genTreeNodeCnt;
+
+    // The size we allocate.
+    unsigned __int64 genTreeNodeSize;
+
+    // The actual size of the node. Note that the actual size will likely be smaller
+    // than the allocated size, but we sometimes use SetOper()/ChangeOper() to change
+    // a smaller node to a larger one. TODO-Cleanup: add stats on
+    // SetOper()/ChangeOper() usage to quantify this.
+    unsigned __int64 genTreeNodeActualSize;
 };
 extern NodeSizeStats genNodeSizeStats;        // Total node size stats
 extern NodeSizeStats genNodeSizeStatsPerFunc; // Per-function node size stats
