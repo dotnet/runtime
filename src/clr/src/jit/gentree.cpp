@@ -1769,7 +1769,7 @@ regMaskTP GenTreeCall::GetOtherRegMask() const
     {
         if (gtOtherRegs[i] != REG_NA)
         {
-            resultMask |= genRegMask(gtOtherRegs[i]);
+            resultMask |= genRegMask((regNumber)gtOtherRegs[i]);
             continue;
         }
         break;
