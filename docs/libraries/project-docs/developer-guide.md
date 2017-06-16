@@ -137,7 +137,40 @@ Use it to pass extra msbuild properties, in this case to ignore tests ignored in
 build-tests -- /p:WithoutCategories=IgnoreForCI
 ```
 
-### Building individual CoreFx DLLs
+### Building individual libraries
+
+**Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
+
+Similar to building the entire repo with build.cmd/sh in the root you can build projects based on our directory structure by passing in the directory. We also support
+shortcuts for libraries so you can omit the root src folder from the path. When given a directory we will build all projects that we find recursively under that directory.
+
+**Examples**
+
+- Build all projects for a given library (ex: System.Collections) including running the tests
+```
+build System.Collections
+```
+or
+```
+build src\System.Collections
+```
+or
+```
+cd src\System.Collections
+..\..\build .
+```
+
+- Build just the tests for a library project.
+```
+build src\System.Collections\tests
+```
+
+- All the options listed above like framework and configuration are also supported (note they must be after the directory)
+```
+build System.Collections -framework:netfx -release
+```
+
+### Building individual projects
 
 **Note**: Before working on individual projects or test projects you **must** run `build` from the root once before beginning that work. It is also a good idea to run `build` whenever you pull a large set of unknown changes into your branch.
 
@@ -157,13 +190,19 @@ For libraries that have multiple build configurations the configurations will be
 **Examples**
 
 - Build project for Linux for netcoreapp
-`msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux`
+```
+msbuild System.Net.NetworkInformation.csproj /p:OSGroup=Linux
+```
 
 - Build project for uap (not if trying to build on non-windows you also need to specify OSGroup=Windows_NT)
-`msbuild System.Net.NetworkInformation.csproj /p:TargetGroup=uap`
+```
+msbuild System.Net.NetworkInformation.csproj /p:TargetGroup=uap
+```
 
 - Build release version of library
-`msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release`
+```
+msbuild System.Net.NetworkInformation.csproj /p:ConfigurationGroup=Release
+```
 
 **Note:** If building in a non-Windows environment, call `<repo-root>/Tools/msbuild.sh` instead of just `msbuild`.
 
@@ -300,7 +339,7 @@ This attribute can be applied either to a test class (will disable all the tests
 ```cs
 [SkipOnTargetFramework(TargetFrameworkMonikers frameworks, string reason)]
 ```
-Use this attribute over test methods to skip tests only on the specific target frameworks. The reason parameter doesn't affect the traits but we rather always use it so that when we see this attribute we know why it is being skipped on that framework. 
+Use this attribute over test methods to skip tests only on the specific target frameworks. The reason parameter doesn't affect the traits but we rather always use it so that when we see this attribute we know why it is being skipped on that framework.
 
 If it needs to be skipped in multiple frameworks and the reasons are different please use two attributes on the same test so that you can specify different reasons for each framework.
 
