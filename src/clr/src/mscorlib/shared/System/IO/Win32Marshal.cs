@@ -63,7 +63,7 @@ namespace System.IO
                     return new IOException(SR.Format(SR.IO_AlreadyExists_Name, path), MakeHRFromErrorCode(errorCode));
 
                 case Interop.Errors.ERROR_FILENAME_EXCED_RANGE:
-                    return new PathTooLongException(SR.IO_PathTooLong);
+                    return new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                     return new IOException(GetMessage(errorCode), MakeHRFromErrorCode(errorCode));
