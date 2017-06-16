@@ -15,7 +15,7 @@ namespace WebServer
     public class EchoWebSocket : IHttpHandler
     {
         private const int MaxBufferSize = 128 * 1024;
-        private bool _replyWithPartialMessages;
+        private bool _replyWithPartialMessages = false;
 
         public void ProcessRequest(HttpContext context)
         {
