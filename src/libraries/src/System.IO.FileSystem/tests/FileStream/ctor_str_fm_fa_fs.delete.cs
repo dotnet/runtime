@@ -84,6 +84,7 @@ namespace System.IO.Tests
                 Assert.True(File.Exists(newFileName));
             }
         }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // file sharing restriction limitations on Unix
         public void FileShareDeleteExistingMultipleClients()
@@ -95,7 +96,7 @@ namespace System.IO.Tests
                 fs.WriteByte(0);
             }
 
-            Assert.True(File.Exists(fileName));
+            Assert.True(File.Exists(fileName), $"'{fileName}' should exist after creating and closing filestream.");
 
             using (FileStream fs1 = CreateFileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete | FileShare.ReadWrite))
             {
@@ -103,7 +104,7 @@ namespace System.IO.Tests
                 {
                     File.Delete(fileName);
                     Assert.Equal(0, fs2.ReadByte());
-                    Assert.True(File.Exists(fileName));
+                    Assert.True(File.Exists(fileName), $"'{fileName}' should still exist after calling delete with two handles open.");
                 }
 
                 Assert.Equal(0, fs1.ReadByte());
@@ -112,7 +113,7 @@ namespace System.IO.Tests
                 // Any attempt to reopen a file in pending-delete state will return Access-denied
                 Assert.Throws<UnauthorizedAccessException>(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite));
 
-                Assert.True(File.Exists(fileName));
+                Assert.True(File.Exists(fileName), $"'{fileName}' should still exist after calling delete with inner filestream closed.");
             }
 
             Assert.False(File.Exists(fileName));

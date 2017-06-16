@@ -126,7 +126,7 @@ namespace System.IO
         {
             // This should not throw, instead we store the result so that we can throw it
             // when someone actually accesses a property
-            _dataInitialized = Win32FileSystem.FillAttributeInfo(FullPath, ref _data, tryagain: false, returnErrorOnNotFound: false);
+            _dataInitialized = Win32FileSystem.FillAttributeInfo(FullPath, ref _data, returnErrorOnNotFound: false);
         }
     }
 }

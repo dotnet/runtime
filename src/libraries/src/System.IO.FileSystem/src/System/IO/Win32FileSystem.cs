@@ -191,7 +191,7 @@ namespace System.IO
         private bool DirectoryExists(string path, out int lastError)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            lastError = FillAttributeInfo(path, ref data, false, true);
+            lastError = FillAttributeInfo(path, ref data, returnErrorOnNotFound: true);
 
             return (lastError == 0) && (data.fileAttributes != -1)
                     && ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0);
@@ -220,118 +220,58 @@ namespace System.IO
             }
         }
 
-        // Returns 0 on success, otherwise a Win32 error code.  Note that
-        // classes should use -1 as the uninitialized state for dataInitialized.
-        [System.Security.SecurityCritical]  // auto-generated
-        internal static int FillAttributeInfo(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool tryagain, bool returnErrorOnNotFound)
+        /// <summary>
+        /// Returns 0 on success, otherwise a Win32 error code.  Note that
+        /// classes should use -1 as the uninitialized state for dataInitialized.
+        /// </summary>
+        /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
+        [System.Security.SecurityCritical]
+        internal static int FillAttributeInfo(string path, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
         {
-            int errorCode = 0;
-            if (tryagain) // someone has a handle to the file open, or other error
+            int errorCode = Interop.Errors.ERROR_SUCCESS;
+
+            // Neither GetFileAttributes or FindFirstFile like trailing separators
+            path = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
+
+            using (new DisableMediaInsertionPrompt())
             {
-                Interop.Kernel32.WIN32_FIND_DATA findData;
-                findData = new Interop.Kernel32.WIN32_FIND_DATA();
-
-                // Remove trailing slash since this can cause grief to FindFirstFile. You will get an invalid argument error
-                string tempPath = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
-
-                // For removable media drives, normally the OS will pop up a dialog requesting insertion
-                // of the relevant media (CD, floppy, memory card, etc.). We don't want this prompt so we
-                // set SEM_FAILCRITICALERRORS to suppress it.
-                //
-                // Note that said dialog only shows once the relevant filesystem has been loaded, which
-                // does not happen until actual media is accessed at least once since booting.
-
-                uint oldMode;
-                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
-                try
-                {
-                    bool error = false;
-                    SafeFindHandle handle = Interop.Kernel32.FindFirstFile(tempPath, ref findData);
-                    try
-                    {
-                        if (handle.IsInvalid)
-                        {
-                            error = true;
-                            errorCode = Marshal.GetLastWin32Error();
-
-                            if (errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ||
-                                errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND ||
-                                errorCode == Interop.Errors.ERROR_NOT_READY)  // Removable media not inserted
-                            {
-                                if (!returnErrorOnNotFound)
-                                {
-                                    // Return default value for backward compatibility
-                                    errorCode = 0;
-                                    data.fileAttributes = -1;
-                                }
-                            }
-                            return errorCode;
-                        }
-                    }
-                    finally
-                    {
-                        // Close the Win32 handle
-                        try
-                        {
-                            handle.Dispose();
-                        }
-                        catch
-                        {
-                            // if we're already returning an error, don't throw another one. 
-                            if (!error)
-                            {
-                                throw Win32Marshal.GetExceptionForLastWin32Error();
-                            }
-                        }
-                    }
-                }
-                finally
-                {
-                    if (success)
-                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
-                }
-
-                // Copy the information to data
-                data.PopulateFrom(ref findData);
-            }
-            else
-            {
-                // For floppy drives, normally the OS will pop up a dialog saying
-                // there is no disk in drive A:, please insert one.  We don't want that.
-                // SetErrorMode will let us disable this, but we should set the error
-                // mode back, since this may have wide-ranging effects.
-                bool success = false;
-                uint oldMode;
-                bool errorModeSuccess = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
-                try
-                {
-                    success = Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data);
-                }
-                finally
-                {
-                    if (errorModeSuccess)
-                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
-                }
-
-                if (!success)
+                if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
                     errorCode = Marshal.GetLastWin32Error();
-                    if (errorCode != Interop.Errors.ERROR_FILE_NOT_FOUND &&
-                        errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND &&
-                        errorCode != Interop.Errors.ERROR_NOT_READY)  // floppy device not ready
+                    if (errorCode == Interop.Errors.ERROR_ACCESS_DENIED)
                     {
-                        // In case someone latched onto the file. Take the perf hit only for failure
-                        return FillAttributeInfo(path, ref data, true, returnErrorOnNotFound);
-                    }
-                    else
-                    {
-                        if (!returnErrorOnNotFound)
+                        // Files that are marked for deletion will not let you GetFileAttributes,
+                        // ERROR_ACCESS_DENIED is given back without filling out the data struct.
+                        // FindFirstFile, however, will. Historically we always gave back attributes
+                        // for marked-for-deletion files.
+
+                        var findData = new Interop.Kernel32.WIN32_FIND_DATA();
+                        using (SafeFindHandle handle = Interop.Kernel32.FindFirstFile(path, ref findData))
                         {
-                            // Return default value for backward compatibility
-                            errorCode = 0;
-                            data.fileAttributes = -1;
+                            if (handle.IsInvalid)
+                            {
+                                errorCode = Marshal.GetLastWin32Error();
+                            }
+                            else
+                            {
+                                errorCode = Interop.Errors.ERROR_SUCCESS;
+                                data.PopulateFrom(ref findData);
+                            }
                         }
                     }
+                }
+            }
+
+            if (errorCode != Interop.Errors.ERROR_SUCCESS && !returnErrorOnNotFound)
+            {
+                switch (errorCode)
+                {
+                    case Interop.Errors.ERROR_FILE_NOT_FOUND:
+                    case Interop.Errors.ERROR_PATH_NOT_FOUND:
+                    case Interop.Errors.ERROR_NOT_READY: // Removable media not ready
+                        // Return default value for backward compatibility
+                        data.fileAttributes = -1;
+                        return Interop.Errors.ERROR_SUCCESS;
                 }
             }
 
@@ -341,7 +281,7 @@ namespace System.IO
         public override bool FileExists(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, false, true);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
 
             return (errorCode == 0) && (data.fileAttributes != -1)
                     && ((data.fileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) == 0);
@@ -350,7 +290,7 @@ namespace System.IO
         public override FileAttributes GetAttributes(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, false, true);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
@@ -390,7 +330,7 @@ namespace System.IO
         public override DateTimeOffset GetCreationTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, false, false);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
@@ -408,7 +348,7 @@ namespace System.IO
         public override DateTimeOffset GetLastAccessTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, false, false);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
@@ -419,7 +359,7 @@ namespace System.IO
         public override DateTimeOffset GetLastWriteTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, false, false);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
             if (errorCode != 0)
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
 
@@ -494,7 +434,7 @@ namespace System.IO
             // but for now we're much safer if we err on the conservative side.
             // This applies to symbolic links and mount points.
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = new Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA();
-            int errorCode = FillAttributeInfo(fullPath, ref data, false, true);
+            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
             if (errorCode != 0)
             {
                 // Ensure we throw a DirectoryNotFoundException.

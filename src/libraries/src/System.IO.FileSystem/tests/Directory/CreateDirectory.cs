@@ -36,7 +36,7 @@ namespace System.IO.Tests
         public void PathWithInvalidCharactersAsPath_ThrowsArgumentException(string invalidPath)
         {
             if (invalidPath.Equals(@"\\?\") && !PathFeatures.IsUsingLegacyPathNormalization())
-                Assert.Throws<IOException>(() => Create(invalidPath));
+                AssertExtensions.ThrowsAny<IOException, UnauthorizedAccessException>(() => Create(invalidPath));
             else if (invalidPath.Contains(@"\\?\") && !PathFeatures.IsUsingLegacyPathNormalization())
                 Assert.Throws<DirectoryNotFoundException>(() => Create(invalidPath));
             else
