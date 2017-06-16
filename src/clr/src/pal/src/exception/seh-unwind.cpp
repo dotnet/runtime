@@ -261,18 +261,13 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
 
 #ifndef __APPLE__
     // Check if the PC is the return address from the SEHProcessException in the common_signal_handler. 
-    // If that's the case, extract its local variable containing the native_context_t of the hardware 
+    // If that's the case, extract its local variable containing the windows style context of the hardware 
     // exception and return that. This skips the hardware signal handler trampoline that the libunwind 
     // cannot cross on some systems.
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
-        ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT | CONTEXT_EXCEPTION_ACTIVE;
-
-    #if defined(_AMD64_)
-        contextFlags |= CONTEXT_XSTATE;
-    #endif
-        size_t nativeContext = *(size_t*)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
-        CONTEXTFromNativeContext((const native_context_t *)nativeContext, context, contextFlags);
+        CONTEXT* nativeContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), nativeContext, sizeof(CONTEXT));
 
         return TRUE;
     }
