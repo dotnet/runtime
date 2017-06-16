@@ -15,12 +15,15 @@ namespace WebServer
     public class EchoWebSocket : IHttpHandler
     {
         private const int MaxBufferSize = 128 * 1024;
+        private bool _replyWithPartialMessages = false;
 
         public void ProcessRequest(HttpContext context)
         {
+            _replyWithPartialMessages = context.Request.Url.Query.Contains("replyWithPartialMessages");
+
             string subProtocol = context.Request.QueryString["subprotocol"];
 
-            if (context.Request.Url.Query == "?delay10sec")
+            if (context.Request.Url.Query.Contains("delay10sec"))
             {
                 Thread.Sleep(10000);
             }
@@ -156,7 +159,7 @@ namespace WebServer
                     await socket.SendAsync(
                             new ArraySegment<byte>(receiveBuffer, 0, offset),
                             receiveResult.MessageType,
-                            true,
+                            !_replyWithPartialMessages,
                             CancellationToken.None);
                 }
             }
