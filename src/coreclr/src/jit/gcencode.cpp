@@ -106,6 +106,299 @@ ReturnKind GCInfo::getReturnKind()
     }
 }
 
+#if !defined(JIT32_GCENCODER) || defined(WIN64EXCEPTIONS)
+
+// gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
+//     live in a filter is marked as pinned (often by splitting the lifetime
+//     so that *only* the filter region is pinned).  This should only be
+//     called once (after generating all lifetimes, but before slot ids are
+//     finalized.
+//
+// DevDiv 376329 - The VM has to double report filters and their parent frame
+// because they occur during the 1st pass and the parent frame doesn't go dead
+// until we start unwinding in the 2nd pass.
+//
+// Untracked locals will only be reported in non-filter funclets and the
+// parent.
+// Registers can't be double reported by 2 frames since they're different.
+// That just leaves stack variables which might be double reported.
+//
+// Technically double reporting is only a problem when the GC has to relocate a
+// reference. So we avoid that problem by marking all live tracked stack
+// variables as pinned inside the filter.  Thus if they are double reported, it
+// won't be a problem since they won't be double relocated.
+//
+void GCInfo::gcMarkFilterVarsPinned()
+{
+    assert(compiler->ehAnyFunclets());
+    const EHblkDsc* endHBtab = &(compiler->compHndBBtab[compiler->compHndBBtabCount]);
+
+    for (EHblkDsc* HBtab = compiler->compHndBBtab; HBtab < endHBtab; HBtab++)
+    {
+        if (HBtab->HasFilter())
+        {
+            const UNATIVE_OFFSET filterBeg = compiler->ehCodeOffset(HBtab->ebdFilter);
+            const UNATIVE_OFFSET filterEnd = compiler->ehCodeOffset(HBtab->ebdHndBeg);
+
+            for (varPtrDsc* varTmp = gcVarPtrList; varTmp != nullptr; varTmp = varTmp->vpdNext)
+            {
+                // Get hold of the variable's flags.
+                const unsigned lowBits = varTmp->vpdVarNum & OFFSET_MASK;
+
+                // Compute the actual lifetime offsets.
+                const unsigned begOffs = varTmp->vpdBegOfs;
+                const unsigned endOffs = varTmp->vpdEndOfs;
+
+                // Special case: skip any 0-length lifetimes.
+                if (endOffs == begOffs)
+                {
+                    continue;
+                }
+
+                // Skip lifetimes with no overlap with the filter
+                if ((endOffs <= filterBeg) || (begOffs >= filterEnd))
+                {
+                    continue;
+                }
+
+#ifndef JIT32_GCENCODER
+                // Because there is no nesting within filters, nothing
+                // should be already pinned.
+                // For JIT32_GCENCODER, we should not do this check as gcVarPtrList are always sorted by vpdBegOfs
+                // which means that we could see some varPtrDsc that were already pinned by previous splitting.
+                assert((lowBits & pinned_OFFSET_FLAG) == 0);
+#endif // JIT32_GCENCODER
+
+                if (begOffs < filterBeg)
+                {
+                    if (endOffs > filterEnd)
+                    {
+                        // The variable lifetime is starts before AND ends after
+                        // the filter, so we need to create 2 new lifetimes:
+                        //     (1) a pinned one for the filter
+                        //     (2) a regular one for after the filter
+                        // and then adjust the original lifetime to end before
+                        // the filter.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("Splitting lifetime for filter: [%04X, %04X).\nOld: ", filterBeg, filterEnd);
+                            gcDumpVarPtrDsc(varTmp);
+                        }
+#endif // DEBUG
+
+                        varPtrDsc* desc1 = new (compiler, CMK_GC) varPtrDsc;
+                        desc1->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
+                        desc1->vpdBegOfs = filterBeg;
+                        desc1->vpdEndOfs = filterEnd;
+
+                        varPtrDsc* desc2 = new (compiler, CMK_GC) varPtrDsc;
+                        desc2->vpdVarNum = varTmp->vpdVarNum;
+                        desc2->vpdBegOfs = filterEnd;
+                        desc2->vpdEndOfs = endOffs;
+
+                        varTmp->vpdEndOfs = filterBeg;
+
+                        gcInsertVarPtrDscSplit(desc1, varTmp);
+                        gcInsertVarPtrDscSplit(desc2, varTmp);
+
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("New (1 of 3): ");
+                            gcDumpVarPtrDsc(varTmp);
+                            printf("New (2 of 3): ");
+                            gcDumpVarPtrDsc(desc1);
+                            printf("New (3 of 3): ");
+                            gcDumpVarPtrDsc(desc2);
+                        }
+#endif // DEBUG
+                    }
+                    else
+                    {
+                        // The variable lifetime started before the filter and ends
+                        // somewhere inside it, so we only create 1 new lifetime,
+                        // and then adjust the original lifetime to end before
+                        // the filter.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("Splitting lifetime for filter.\nOld: ");
+                            gcDumpVarPtrDsc(varTmp);
+                        }
+#endif // DEBUG
+
+                        varPtrDsc* desc = new (compiler, CMK_GC) varPtrDsc;
+                        desc->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
+                        desc->vpdBegOfs = filterBeg;
+                        desc->vpdEndOfs = endOffs;
+
+                        varTmp->vpdEndOfs = filterBeg;
+
+                        gcInsertVarPtrDscSplit(desc, varTmp);
+
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("New (1 of 2): ");
+                            gcDumpVarPtrDsc(varTmp);
+                            printf("New (2 of 2): ");
+                            gcDumpVarPtrDsc(desc);
+                        }
+#endif // DEBUG
+                    }
+                }
+                else
+                {
+                    if (endOffs > filterEnd)
+                    {
+                        // The variable lifetime starts inside the filter and
+                        // ends somewhere after it, so we create 1 new
+                        // lifetime for the part inside the filter and adjust
+                        // the start of the original lifetime to be the end
+                        // of the filter
+                        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("Splitting lifetime for filter.\nOld: ");
+                            gcDumpVarPtrDsc(varTmp);
+                        }
+#endif // DEBUG
+
+                        varPtrDsc* desc = new (compiler, CMK_GC) varPtrDsc;
+#ifndef JIT32_GCENCODER
+                        desc->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
+                        desc->vpdBegOfs = begOffs;
+                        desc->vpdEndOfs = filterEnd;
+
+                        varTmp->vpdBegOfs = filterEnd;
+#else
+                        // Mark varTmp as pinned and generated use varPtrDsc(desc) as non-pinned
+                        // since gcInsertVarPtrDscSplit requires that varTmp->vpdBegOfs must precede desc->vpdBegOfs
+                        desc->vpdVarNum = varTmp->vpdVarNum;
+                        desc->vpdBegOfs = filterEnd;
+                        desc->vpdEndOfs = endOffs;
+
+                        varTmp->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
+                        varTmp->vpdEndOfs = filterEnd;
+#endif
+
+                        gcInsertVarPtrDscSplit(desc, varTmp);
+
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("New (1 of 2): ");
+                            gcDumpVarPtrDsc(desc);
+                            printf("New (2 of 2): ");
+                            gcDumpVarPtrDsc(varTmp);
+                        }
+#endif // DEBUG
+                    }
+                    else
+                    {
+                        // The variable lifetime is completely within the filter,
+                        // so just add the pinned flag.
+                        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("Pinning lifetime for filter.\nOld: ");
+                            gcDumpVarPtrDsc(varTmp);
+                        }
+#endif // DEBUG
+
+                        varTmp->vpdVarNum |= pinned_OFFSET_FLAG;
+#ifdef DEBUG
+                        if (compiler->verbose)
+                        {
+                            printf("New : ");
+                            gcDumpVarPtrDsc(varTmp);
+                        }
+#endif // DEBUG
+                    }
+                }
+            }
+        } // HasFilter
+    }     // Foreach EH
+}
+
+// gcInsertVarPtrDscSplit - Insert varPtrDsc that were created by splitting lifetimes
+//     From gcMarkFilterVarsPinned, we may have created one or two `varPtrDsc`s due to splitting lifetimes
+//     and these newly created `varPtrDsc`s should be inserted in gcVarPtrList.
+//     However the semantics of this call depend on the architecture.
+//
+//     x86-GCInfo requires gcVarPtrList to be sorted by vpdBegOfs.
+//     Every time inserting an entry we should keep the order of entries.
+//     So this function searches for a proper insertion point from "begin" then "desc" gets inserted.
+//
+//     For other architectures(ones that uses GCInfo{En|De}coder), we don't need any sort.
+//     So the argument "begin" is unused and "desc" will be inserted at the front of the list.
+
+void GCInfo::gcInsertVarPtrDscSplit(varPtrDsc* desc, varPtrDsc* begin)
+{
+#ifndef JIT32_GCENCODER
+    (void)begin;
+    desc->vpdNext = gcVarPtrList;
+    gcVarPtrList  = desc;
+#else  // JIT32_GCENCODER
+    // "desc" and "begin" must not be null
+    assert(desc != nullptr);
+    assert(begin != nullptr);
+
+    // The caller must guarantee that desc's BegOfs is equal or greater than begin's
+    // since we will search for insertion point from "begin"
+    assert(desc->vpdBegOfs >= begin->vpdBegOfs);
+
+    varPtrDsc* varTmp    = begin->vpdNext;
+    varPtrDsc* varInsert = begin;
+
+    while (varTmp != nullptr && varTmp->vpdBegOfs < desc->vpdBegOfs)
+    {
+        varInsert = varTmp;
+        varTmp    = varTmp->vpdNext;
+    }
+
+    // Insert point cannot be null
+    assert(varInsert != nullptr);
+
+    desc->vpdNext      = varInsert->vpdNext;
+    varInsert->vpdNext = desc;
+#endif // JIT32_GCENCODER
+}
+
+#ifdef DEBUG
+
+void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
+{
+    const int    offs   = (desc->vpdVarNum & ~OFFSET_MASK);
+    const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
+    const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
+
+    printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
+           compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
+
+    if (offs < 0)
+    {
+        printf("-%02XH", -offs);
+    }
+    else if (offs > 0)
+    {
+        printf("+%02XH", +offs);
+    }
+
+    printf("] live from %04X to %04X\n", desc->vpdBegOfs, desc->vpdEndOfs);
+}
+
+#endif // DEBUG
+
+#endif // !defined(JIT32_GCENCODER) || defined(WIN64EXCEPTIONS)
+
 #ifdef JIT32_GCENCODER
 
 #include "emit.h"
@@ -1972,7 +2265,11 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     }
                 }
 
+#ifndef WIN64EXCEPTIONS
+                // For WIN64EXCEPTIONS, "this" must always be in untracked variables
+                // so we cannot have "this" in variable lifetimes
                 if (compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
+
                 {
                     // Encoding of untracked variables does not support reporting
                     // "this". So report it as a tracked variable with a liveness
@@ -1981,6 +2278,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
                     thisKeptAliveIsInUntracked = true;
                     continue;
                 }
+#endif
 
                 if (pass == 0)
                     count++;
@@ -2140,6 +2438,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
     varPtrDsc* varTmp;
     count = 0;
 
+#ifndef WIN64EXCEPTIONS
     if (thisKeptAliveIsInUntracked)
     {
         count = 1;
@@ -2166,6 +2465,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
         dest += (sz & mask);
         totalSize += sz;
     }
+#endif
 
     for (pass = 0; pass < 2; pass++)
     {
@@ -3452,27 +3752,6 @@ template class SimplerHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId, JitSim
 
 #ifdef DEBUG
 
-void GCInfo::gcDumpVarPtrDsc(varPtrDsc* desc)
-{
-    const int    offs   = (desc->vpdVarNum & ~OFFSET_MASK);
-    const GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
-    const bool   isPin  = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
-
-    printf("[%08X] %s%s var at [%s", dspPtr(desc), GCtypeStr(gcType), isPin ? "pinned-ptr" : "",
-           compiler->isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
-
-    if (offs < 0)
-    {
-        printf("-%02XH", -offs);
-    }
-    else if (offs > 0)
-    {
-        printf("+%02XH", +offs);
-    }
-
-    printf("] live from %04X to %04X\n", desc->vpdBegOfs, desc->vpdEndOfs);
-}
-
 static const char* const GcSlotFlagsNames[] = {"",
                                                "(byref) ",
                                                "(pinned) ",
@@ -4558,210 +4837,6 @@ void GCInfo::gcMakeVarPtrTable(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode
             gcInfoEncoderWithLog->SetSlotState(endOffs, varSlotId, GC_SLOT_DEAD);
         }
     }
-}
-
-// gcMarkFilterVarsPinned - Walk all lifetimes and make it so that anything
-//     live in a filter is marked as pinned (often by splitting the lifetime
-//     so that *only* the filter region is pinned).  This should only be
-//     called once (after generating all lifetimes, but before slot ids are
-//     finalized.
-//
-// DevDiv 376329 - The VM has to double report filters and their parent frame
-// because they occur during the 1st pass and the parent frame doesn't go dead
-// until we start unwinding in the 2nd pass.
-//
-// Untracked locals will only be reported in non-filter funclets and the
-// parent.
-// Registers can't be double reported by 2 frames since they're different.
-// That just leaves stack variables which might be double reported.
-//
-// Technically double reporting is only a problem when the GC has to relocate a
-// reference. So we avoid that problem by marking all live tracked stack
-// variables as pinned inside the filter.  Thus if they are double reported, it
-// won't be a problem since they won't be double relocated.
-//
-void GCInfo::gcMarkFilterVarsPinned()
-{
-    assert(compiler->ehAnyFunclets());
-    const EHblkDsc* endHBtab = &(compiler->compHndBBtab[compiler->compHndBBtabCount]);
-
-    for (EHblkDsc* HBtab = compiler->compHndBBtab; HBtab < endHBtab; HBtab++)
-    {
-        if (HBtab->HasFilter())
-        {
-            const UNATIVE_OFFSET filterBeg = compiler->ehCodeOffset(HBtab->ebdFilter);
-            const UNATIVE_OFFSET filterEnd = compiler->ehCodeOffset(HBtab->ebdHndBeg);
-
-            for (varPtrDsc* varTmp = gcVarPtrList; varTmp != nullptr; varTmp = varTmp->vpdNext)
-            {
-                // Get hold of the variable's flags.
-                const unsigned lowBits = varTmp->vpdVarNum & OFFSET_MASK;
-
-                // Compute the actual lifetime offsets.
-                const unsigned begOffs = varTmp->vpdBegOfs;
-                const unsigned endOffs = varTmp->vpdEndOfs;
-
-                // Special case: skip any 0-length lifetimes.
-                if (endOffs == begOffs)
-                {
-                    continue;
-                }
-
-                // Skip lifetimes with no overlap with the filter
-                if ((endOffs <= filterBeg) || (begOffs >= filterEnd))
-                {
-                    continue;
-                }
-
-                // Because there is no nesting within filters, nothing
-                // should be already pinned.
-                assert((lowBits & pinned_OFFSET_FLAG) == 0);
-
-                if (begOffs < filterBeg)
-                {
-                    if (endOffs > filterEnd)
-                    {
-                        // The variable lifetime is starts before AND ends after
-                        // the filter, so we need to create 2 new lifetimes:
-                        //     (1) a pinned one for the filter
-                        //     (2) a regular one for after the filter
-                        // and then adjust the original lifetime to end before
-                        // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("Splitting lifetime for filter: [%04X, %04X).\nOld: ", filterBeg, filterEnd);
-                            gcDumpVarPtrDsc(varTmp);
-                        }
-#endif // DEBUG
-
-                        varPtrDsc* desc1 = new (compiler, CMK_GC) varPtrDsc;
-                        desc1->vpdNext   = gcVarPtrList;
-                        desc1->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
-                        desc1->vpdBegOfs = filterBeg;
-                        desc1->vpdEndOfs = filterEnd;
-
-                        varPtrDsc* desc2 = new (compiler, CMK_GC) varPtrDsc;
-                        desc2->vpdNext   = desc1;
-                        desc2->vpdVarNum = varTmp->vpdVarNum;
-                        desc2->vpdBegOfs = filterEnd;
-                        desc2->vpdEndOfs = endOffs;
-                        gcVarPtrList     = desc2;
-
-                        varTmp->vpdEndOfs = filterBeg;
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("New (1 of 3): ");
-                            gcDumpVarPtrDsc(varTmp);
-                            printf("New (2 of 3): ");
-                            gcDumpVarPtrDsc(desc1);
-                            printf("New (3 of 3): ");
-                            gcDumpVarPtrDsc(desc2);
-                        }
-#endif // DEBUG
-                    }
-                    else
-                    {
-                        // The variable lifetime started before the filter and ends
-                        // somewhere inside it, so we only create 1 new lifetime,
-                        // and then adjust the original lifetime to end before
-                        // the filter.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("Splitting lifetime for filter.\nOld: ");
-                            gcDumpVarPtrDsc(varTmp);
-                        }
-#endif // DEBUG
-
-                        varPtrDsc* desc = new (compiler, CMK_GC) varPtrDsc;
-                        desc->vpdNext   = gcVarPtrList;
-                        desc->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
-                        desc->vpdBegOfs = filterBeg;
-                        desc->vpdEndOfs = endOffs;
-                        gcVarPtrList    = desc;
-
-                        varTmp->vpdEndOfs = filterBeg;
-
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("New (1 of 2): ");
-                            gcDumpVarPtrDsc(varTmp);
-                            printf("New (2 of 2): ");
-                            gcDumpVarPtrDsc(desc);
-                        }
-#endif // DEBUG
-                    }
-                }
-                else
-                {
-                    if (endOffs > filterEnd)
-                    {
-                        // The variable lifetime starts inside the filter and
-                        // ends somewhere after it, so we create 1 new
-                        // lifetime for the part inside the filter and adjust
-                        // the start of the original lifetime to be the end
-                        // of the filter
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("Splitting lifetime for filter.\nOld: ");
-                            gcDumpVarPtrDsc(varTmp);
-                        }
-#endif // DEBUG
-
-                        varPtrDsc* desc = new (compiler, CMK_GC) varPtrDsc;
-                        desc->vpdNext   = gcVarPtrList;
-                        desc->vpdVarNum = varTmp->vpdVarNum | pinned_OFFSET_FLAG;
-                        desc->vpdBegOfs = begOffs;
-                        desc->vpdEndOfs = filterEnd;
-                        gcVarPtrList    = desc;
-
-                        varTmp->vpdBegOfs = filterEnd;
-
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("New (1 of 2): ");
-                            gcDumpVarPtrDsc(desc);
-                            printf("New (2 of 2): ");
-                            gcDumpVarPtrDsc(varTmp);
-                        }
-#endif // DEBUG
-                    }
-                    else
-                    {
-                        // The variable lifetime is completely within the filter,
-                        // so just add the pinned flag.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("Pinning lifetime for filter.\nOld: ");
-                            gcDumpVarPtrDsc(varTmp);
-                        }
-#endif // DEBUG
-
-                        varTmp->vpdVarNum |= pinned_OFFSET_FLAG;
-#ifdef DEBUG
-                        if (compiler->verbose)
-                        {
-                            printf("New : ");
-                            gcDumpVarPtrDsc(varTmp);
-                        }
-#endif // DEBUG
-                    }
-                }
-            }
-        } // HasFilter
-    }     // Foreach EH
 }
 
 void GCInfo::gcInfoRecordGCStackArgLive(GcInfoEncoder* gcInfoEncoder, MakeRegPtrMode mode, regPtrDsc* genStackPtr)

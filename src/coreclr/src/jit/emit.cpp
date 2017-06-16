@@ -4721,12 +4721,14 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 // printf("Variable #%2u/%2u is at stack offset %d\n", num, indx, offs);
 
 #ifdef JIT32_GCENCODER
+#ifndef WIN64EXCEPTIONS
                 /* Remember the frame offset of the "this" argument for synchronized methods */
                 if (emitComp->lvaIsOriginalThisArg(num) && emitComp->lvaKeepAliveAndReportThis())
                 {
                     emitSyncThisObjOffs = offs;
                     offs |= this_OFFSET_FLAG;
                 }
+#endif
 #endif // JIT32_GCENCODER
 
                 if (dsc->TypeGet() == TYP_BYREF)
@@ -5512,12 +5514,14 @@ void emitter::emitGCvarLiveSet(int offs, GCtype gcType, BYTE* addr, ssize_t disp
 
     desc->vpdNext = nullptr;
 
+#if !defined(JIT32_GCENCODER) || !defined(WIN64EXCEPTIONS)
     /* the lower 2 bits encode props about the stk ptr */
 
     if (offs == emitSyncThisObjOffs)
     {
         desc->vpdVarNum |= this_OFFSET_FLAG;
     }
+#endif
 
     if (gcType == GCT_BYREF)
     {
@@ -5604,10 +5608,17 @@ void emitter::emitGCvarDeadSet(int offs, BYTE* addr, ssize_t disp)
     if (EMITVERBOSE)
     {
         GCtype gcType = (desc->vpdVarNum & byref_OFFSET_FLAG) ? GCT_BYREF : GCT_GCREF;
-        bool   isThis = (desc->vpdVarNum & this_OFFSET_FLAG) != 0;
+#if !defined(JIT32_GCENCODER) || !defined(WIN64EXCEPTIONS)
+        bool isThis = (desc->vpdVarNum & this_OFFSET_FLAG) != 0;
 
         printf("[%08X] %s%s var died at [%s", dspPtr(desc), GCtypeStr(gcType), isThis ? "this-ptr" : "",
                emitGetFrameReg());
+#else
+        bool isPinned = (desc->vpdVarNum & pinned_OFFSET_FLAG) != 0;
+
+        printf("[%08X] %s%s var died at [%s", dspPtr(desc), GCtypeStr(gcType), isPinned ? "pinned" : "",
+               emitGetFrameReg());
+#endif
 
         if (offs < 0)
         {
