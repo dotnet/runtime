@@ -325,6 +325,9 @@ MonoMethod *
 mono_marshal_get_delegate_invoke_internal (MonoMethod *method, gboolean callvirt, gboolean static_method_with_first_arg_bound, MonoMethod *target_method);
 
 MonoMethod *
+mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gboolean need_direct_wrapper);
+
+MonoMethod *
 mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean is_virtual);
 
 MonoMethod*

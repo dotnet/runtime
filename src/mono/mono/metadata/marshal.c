@@ -4306,7 +4306,7 @@ emit_runtime_invoke_body (MonoMethodBuilder *mb, MonoImage *image, MonoMethod *m
  * its \p method argument.
  */
 MonoMethod *
-mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
+mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gboolean need_direct_wrapper)
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoMethodBuilder *mb;
@@ -4317,7 +4317,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 	static MonoMethodSignature *finalize_signature = NULL;
 	char *name;
 	const char *param_names [16];
-	gboolean need_direct_wrapper = FALSE;
 	WrapperInfo *info;
 
 	g_assert (method);
@@ -4332,9 +4331,6 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 		finalize_signature->hasthis = 1;
 	}
 
-	if (virtual_)
-		need_direct_wrapper = TRUE;
-
 	/* 
 	 * Use a separate cache indexed by methods to speed things up and to avoid the
 	 * boundless mempool growth caused by the signature_dup stuff below.
@@ -4348,21 +4344,10 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 	if (res)
 		return res;
 		
-	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
-		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
-		/* 
-		 * Array Get/Set/Address methods. The JIT implements them using inline code
-		 * so we need to create an invoke wrapper which calls the method directly.
-		 */
-		need_direct_wrapper = TRUE;
-	}
-		
 	if (method->string_ctor) {
 		callsig = lookup_string_ctor_signature (mono_method_signature (method));
 		if (!callsig)
 			callsig = add_string_ctor_signature (method);
-		/* Can't share this as we push a string as this */
-		need_direct_wrapper = TRUE;
 	} else {
 		if (method_is_dynamic (method))
 			callsig = mono_metadata_signature_dup_full (method->klass->image, mono_method_signature (method));
@@ -4488,6 +4473,31 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 	mono_mb_free (mb);
 
 	return res;	
+}
+
+MonoMethod *
+mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
+{
+	gboolean need_direct_wrapper = FALSE;
+
+	if (virtual_)
+		need_direct_wrapper = TRUE;
+
+	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
+		(method->iflags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+		/*
+		 * Array Get/Set/Address methods. The JIT implements them using inline code
+		 * so we need to create an invoke wrapper which calls the method directly.
+		 */
+		need_direct_wrapper = TRUE;
+	}
+
+	if (method->string_ctor) {
+		/* Can't share this as we push a string as this */
+		need_direct_wrapper = TRUE;
+	}
+
+	return mono_marshal_get_runtime_invoke_full (method, virtual_, need_direct_wrapper);
 }
 
 /*
