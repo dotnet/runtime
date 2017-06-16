@@ -476,6 +476,9 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
                 }
             }
 
+#if !defined(JIT32_GCENCODER) || !defined(WIN64EXCEPTIONS)
+            // For x86/WIN64EXCEPTIONS, "this" must always be in untracked variables
+            // so we cannot have "this" in variable lifetimes
             if (compiler->lvaIsOriginalThisArg(varNum) && compiler->lvaKeepAliveAndReportThis())
             {
                 // Encoding of untracked variables does not support reporting
@@ -485,6 +488,7 @@ void GCInfo::gcCountForHeader(UNALIGNED unsigned int* untrackedCount, UNALIGNED 
                 thisKeptAliveIsInUntracked = true;
                 continue;
             }
+#endif
 
 #ifdef DEBUG
             if (compiler->verbose)
