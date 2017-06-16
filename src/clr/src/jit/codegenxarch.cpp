@@ -8223,6 +8223,15 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
     InfoHdr header;
 
     int s_cached;
+
+#ifdef WIN64EXCEPTIONS
+    // We should do this before gcInfoBlockHdrSave since varPtrTableSize must be finalized before it
+    if (compiler->ehAnyFunclets())
+    {
+        gcInfo.gcMarkFilterVarsPinned();
+    }
+#endif
+
 #ifdef DEBUG
     size_t headerSize =
 #endif

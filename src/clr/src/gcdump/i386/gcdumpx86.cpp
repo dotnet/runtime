@@ -323,7 +323,11 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
 
         gcPrintf("%s%s pointer\n",
                     (lowBits & byref_OFFSET_FLAG) ? "byref " : "",
+#ifndef WIN64EXCEPTIONS
                     (lowBits & this_OFFSET_FLAG)  ? "this"   : ""
+#else
+                    (lowBits & pinned_OFFSET_FLAG)  ? "pinned"   : ""
+#endif
            );
 
         _ASSERTE(endOffs <= methodSize);
@@ -677,7 +681,9 @@ size_t              GCDump::DumpGCTable(PTR_CBYTE      table,
                 {
                     argTab += decodeUnsigned(argTab, &val);
 
+#ifndef WIN64EXCEPTIONS
                     assert((val & this_OFFSET_FLAG) == 0);
+#endif
                     unsigned  stkOffs = val & ~byref_OFFSET_FLAG;
                     unsigned  lowBit  = val &  byref_OFFSET_FLAG;
 
