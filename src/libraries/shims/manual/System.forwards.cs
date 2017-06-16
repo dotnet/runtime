@@ -8,4 +8,5 @@
 #if netcoreapp
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.TreeSet<>))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Net.CookieVariant))]
+[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Net.PathList))]
 #endif
