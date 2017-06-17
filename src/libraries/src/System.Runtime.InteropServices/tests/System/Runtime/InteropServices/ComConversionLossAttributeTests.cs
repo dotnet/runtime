@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -14,9 +12,9 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Exists()
         {
-            var type = typeof(ComConversionLossAttributeTests);
-            var attr = type.GetCustomAttributes(typeof(ComConversionLossAttribute), false).OfType<ComConversionLossAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
+            Type type = typeof(ComConversionLossAttributeTests);
+            ComConversionLossAttribute attribute = Assert.IsType<ComConversionLossAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ComConversionLossAttribute), false)));
+            Assert.NotNull(attribute);
         }
     }
 }

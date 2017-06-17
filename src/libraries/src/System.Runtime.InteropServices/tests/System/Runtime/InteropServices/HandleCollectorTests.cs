@@ -7,53 +7,81 @@ using Xunit;
 
 namespace System.Runtime.InteropServices
 {
-    public static class HandleCollectorTests
+    public class HandleCollectorTests
     {
         private const int LowLimitSize = 20;
         private const int HighLimitSize = 100000;
 
-        [Fact]
-        public static void NegativeInitialThresholdCtor()
+        [Theory]
+        [InlineData(null, 0)]
+        [InlineData("", 10)]
+        [InlineData("InitialThreshold", int.MaxValue)]
+        public void Ctor_Name_InitialThreshold(string name, int initialThreshold)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new HandleCollector("NegativeInitial", -1));
+            var handleCollector = new HandleCollector(name, initialThreshold);
+            Assert.Equal(0, handleCollector.Count);
+            Assert.Equal(name ?? string.Empty, handleCollector.Name);
+            Assert.Equal(initialThreshold, handleCollector.InitialThreshold);
+            Assert.Equal(int.MaxValue, handleCollector.MaximumThreshold);
+        }
+
+        [Theory]
+        [InlineData(null, 0, 0)]
+        [InlineData("", 10, 15)]
+        [InlineData("InitialThreshold", 1, 2)]
+        public void Ctor_Name_InitialThreshold_MaximumThreshold(string name, int initialThreshold, int maximumThreshold)
+        {
+            var handleCollector = new HandleCollector(name, initialThreshold, maximumThreshold);
+            Assert.Equal(0, handleCollector.Count);
+            Assert.Equal(name ?? string.Empty, handleCollector.Name);
+            Assert.Equal(initialThreshold, handleCollector.InitialThreshold);
+            Assert.Equal(maximumThreshold, handleCollector.MaximumThreshold);
         }
 
         [Fact]
-        public static void NegateMaximumThresholdCtor()
+        public void Ctor_NegativeInitialThreshold_ThrowsArgumentOufORangeException()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new HandleCollector("NegativeMax", 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialThreshold", () => new HandleCollector("NegativeInitial", -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("initialThreshold", () => new HandleCollector("NegativeInitial", -1, 0));
         }
 
         [Fact]
-        public static void InitialGreaterThanMaxThresholdCtor()
+        public static void Ctor_NegativeMaximumThreshold_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Throws<ArgumentException>(() => new HandleCollector("InitialGreaterThanMax", 100, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("maximumThreshold", () => new HandleCollector("NegativeMax", 0, -1));
         }
 
         [Fact]
-        public static void SimplePropertyValidation()
+        public static void Ctor_InitialThresholdGreaterThanMaximumThreshold_ThrowsArgumentException()
         {
-            string name = "ExampleName";
-            int initial = 10;
-            int max = 20;
+            AssertExtensions.Throws<ArgumentException>(null, () => new HandleCollector("InitialGreaterThanMax", 100, 1));
+        }
 
-            HandleCollector collector = new HandleCollector(name, initial, max);
+        [Fact]
+        public void AddRemove_AcrossMultipleGenerations_Success()
+        {
+            var collector = new HandleCollector("name", 0);
+            collector.Add();
+            Assert.Equal(1, collector.Count);
 
+            collector.Add();
+            Assert.Equal(2, collector.Count);
+
+            collector.Add();
+            Assert.Equal(3, collector.Count);
+
+            collector.Remove();
+            Assert.Equal(2, collector.Count);
+
+            collector.Remove();
+            Assert.Equal(1, collector.Count);
+
+            collector.Remove();
             Assert.Equal(0, collector.Count);
-            Assert.Equal(name, collector.Name);
-            Assert.Equal(initial, collector.InitialThreshold);
-            Assert.Equal(max, collector.MaximumThreshold);
         }
 
         [Fact]
-        public static void NullNameCtor()
-        {
-            HandleCollector collector = new HandleCollector(null, 0, 0);
-            Assert.Equal(string.Empty, collector.Name);
-        }
-
-        [Fact]
-        public static void EmptyRemoval()
+        public static void Remove_EmptyCollection_ThrowsInvalidOperationException()
         {
             HandleCollector collector = new HandleCollector("EmptyRemoval", 10);
             Assert.Throws<InvalidOperationException>(() => collector.Remove());
@@ -61,7 +89,7 @@ namespace System.Runtime.InteropServices
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot,"Reflects on private member handleCount")]
-        public static void CountOverflow()
+        public static void Add_Overflows_ThrowsInvalidOperationException()
         {
             HandleCollector collector = new HandleCollector("CountOverflow", int.MaxValue);
 
@@ -95,10 +123,7 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void TestHandleCollector()
         {
-            Tuple<int, int, int> initialGcState = new Tuple<int, int, int>(
-                GC.CollectionCount(0),
-                GC.CollectionCount(1),
-                GC.CollectionCount(2));
+            (int gen0, int gen1, int gen2) initialGcState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
 
             HandleCollector lowLimitCollector = new HandleCollector("LowLimit.Collector", LowLimitSize);
             for (int i = 0; i < LowLimitSize + 1; ++i)
@@ -106,12 +131,9 @@ namespace System.Runtime.InteropServices
                 HandleLimitTester hlt = new HandleLimitTester(lowLimitCollector);
             }
 
-            Tuple<int, int, int> postLowLimitState = new Tuple<int, int, int>(
-                GC.CollectionCount(0),
-                GC.CollectionCount(1),
-                GC.CollectionCount(2));
+            (int gen0, int gen1, int gen2) postLowLimitState = (GC.CollectionCount(0),GC.CollectionCount(1), GC.CollectionCount(2));
 
-            Assert.True(initialGcState.Item1 + initialGcState.Item2 + initialGcState.Item3 < postLowLimitState.Item1 + postLowLimitState.Item2 + postLowLimitState.Item3, "Low limit handle did not trigger a GC");
+            Assert.True(initialGcState.gen0 + initialGcState.gen1 + initialGcState.gen2 < postLowLimitState.gen0 + postLowLimitState.gen1 + postLowLimitState.gen2, "Low limit handle did not trigger a GC");
 
             HandleCollector highLimitCollector = new HandleCollector("HighLimit.Collector", HighLimitSize);
             for (int i = 0; i < HighLimitSize + 10; ++i)
@@ -119,12 +141,9 @@ namespace System.Runtime.InteropServices
                 HandleLimitTester hlt = new HandleLimitTester(highLimitCollector);
             }
 
-            Tuple<int, int, int> postHighLimitState = new Tuple<int, int, int>(
-                GC.CollectionCount(0),
-                GC.CollectionCount(1),
-                GC.CollectionCount(2));
+            (int gen0, int gen1, int gen2) postHighLimitState = (GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
 
-            Assert.True(postLowLimitState.Item1 + postLowLimitState.Item2 + postLowLimitState.Item3 < postHighLimitState.Item1 + postHighLimitState.Item2 + postHighLimitState.Item3, "High limit handle did not trigger a GC");
+            Assert.True(postLowLimitState.gen0 + postLowLimitState.gen1 + postLowLimitState.gen2 < postHighLimitState.gen0 + postHighLimitState.gen1 + postHighLimitState.gen2, "High limit handle did not trigger a GC");
         }
 
         private sealed class HandleLimitTester
@@ -138,10 +157,7 @@ namespace System.Runtime.InteropServices
                 GC.KeepAlive(this);
             }
 
-            ~HandleLimitTester()
-            {
-                _collector.Remove();
-            }
+            ~HandleLimitTester() => _collector.Remove();
         }
     }
 }

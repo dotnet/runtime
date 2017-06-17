@@ -11,18 +11,15 @@ namespace System.Runtime.InteropServices.Tests
     public class AllowReversePInvokeCallsAttributeTests
     {
         [AllowReversePInvokeCalls]
-        private int Func(int a, int b)
-        {
-            return a + b;
-        }
+        private int Func(int a, int b) => a + b;
 
         [Fact]
         public void Exists()
         {
-            var type = typeof(AllowReversePInvokeCallsAttributeTests);
-            var method = type.GetTypeInfo().DeclaredMethods.Single(m => m.Name == "Func");
-            var attr = method.GetCustomAttributes(typeof(AllowReversePInvokeCallsAttribute), false).OfType<AllowReversePInvokeCallsAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
+            Type type = typeof(AllowReversePInvokeCallsAttributeTests);
+            MethodInfo method = type.GetTypeInfo().DeclaredMethods.Single(m => m.Name == "Func");
+            AllowReversePInvokeCallsAttribute attribute = Assert.Single(method.GetCustomAttributes< AllowReversePInvokeCallsAttribute>(false));
+            Assert.NotNull(attribute);
         }
     }
 }

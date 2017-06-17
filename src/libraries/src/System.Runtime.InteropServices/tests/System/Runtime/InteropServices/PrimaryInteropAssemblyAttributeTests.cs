@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -16,12 +15,22 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Exists()
         {
-            var type = typeof(PrimaryInteropAssemblyAttributeTests);
-            var assembly = type.GetTypeInfo().Assembly;
-            var attr = assembly.GetCustomAttributes(typeof(PrimaryInteropAssemblyAttribute), false).OfType<PrimaryInteropAssemblyAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
-            Assert.Equal(1, attr.MajorVersion);
-            Assert.Equal(2, attr.MinorVersion);
+            Type type = typeof(PrimaryInteropAssemblyAttributeTests);
+            Assembly assembly = type.GetTypeInfo().Assembly;
+            PrimaryInteropAssemblyAttribute attribute = Assert.Single(assembly.GetCustomAttributes<PrimaryInteropAssemblyAttribute>());
+            Assert.Equal(1, attribute.MajorVersion);
+            Assert.Equal(2, attribute.MinorVersion);
+        }
+
+        [Theory]
+        [InlineData(-1, -2)]
+        [InlineData(0, 0)]
+        [InlineData(1, 2)]
+        public void Ctor_MajorVersion_MinorVersion(int major, int minor)
+        {
+            var attribute = new PrimaryInteropAssemblyAttribute(major, minor);
+            Assert.Equal(major, attribute.MajorVersion);
+            Assert.Equal(minor, attribute.MinorVersion);
         }
     }
 }

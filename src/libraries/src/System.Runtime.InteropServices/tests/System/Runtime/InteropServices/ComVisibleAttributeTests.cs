@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -14,10 +12,18 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Exists()
         {
-            var type = typeof(ComVisibleAttributeTests);
-            var attr = type.GetCustomAttributes(typeof(ComVisibleAttribute), false).OfType<ComVisibleAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
-            Assert.Equal(true, attr.Value);
+            Type type = typeof(ComVisibleAttributeTests);
+            ComVisibleAttribute attribute = Assert.IsType<ComVisibleAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ComVisibleAttribute), false)));
+            Assert.True(attribute.Value);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Ctor_Visible(bool visibility)
+        {
+            var attribute = new ComVisibleAttribute(visibility);
+            Assert.Equal(visibility, attribute.Value);
         }
     }
 }
