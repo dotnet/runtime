@@ -15,11 +15,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(ReferralChasingOptions.External)]
         public void ReferralChasing_Set_GetReturnsExpected(ReferralChasingOptions value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(ReferralChasingOptions.All, options.ReferralChasing);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(ReferralChasingOptions.All, options.ReferralChasing);
 
-            options.ReferralChasing = value;
-            Assert.Equal(value, options.ReferralChasing);
+                options.ReferralChasing = value;
+                Assert.Equal(value, options.ReferralChasing);
+            }
         }
 
         [Theory]
@@ -27,8 +30,10 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData((ReferralChasingOptions)3)]
         public void ReferralChasing_SetInvalid_ThrowsInvalidEnumArgumentException(ReferralChasingOptions referralChasing)
         {
-            var connection = new LdapConnection("server");
-            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => connection.SessionOptions.ReferralChasing = referralChasing);
+            using (var connection = new LdapConnection("server"))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => connection.SessionOptions.ReferralChasing = referralChasing);
+            }
         }
 
         [Fact]
@@ -46,11 +51,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(false)]
         public void SecureSocketLayer_Set_GetReturnsExpected(bool value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.False(options.SecureSocketLayer);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.False(options.SecureSocketLayer);
 
-            options.SecureSocketLayer = value;
-            Assert.False(options.SecureSocketLayer);
+                options.SecureSocketLayer = value;
+                Assert.False(options.SecureSocketLayer);
+            }
         }
 
         [Fact]
@@ -66,18 +74,23 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void ReferralHopLimit_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(32, options.ReferralHopLimit);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(32, options.ReferralHopLimit);
 
-            options.ReferralHopLimit = 10;
-            Assert.Equal(10, options.ReferralHopLimit);
+                options.ReferralHopLimit = 10;
+                Assert.Equal(10, options.ReferralHopLimit);
+            }
         }
 
         [Fact]
         public void ReferralHopLimit_SetNegative_ThrowsArgumentException()
         {
-            var connection = new LdapConnection("server");
-            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.ReferralHopLimit = -1);
+            using (var connection = new LdapConnection("server"))
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.ReferralHopLimit = -1);
+            }
         }
 
         [Fact]
@@ -93,14 +106,17 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void ProtocolVersion_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(2, options.ProtocolVersion);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(2, options.ProtocolVersion);
 
-            options.ProtocolVersion = 3;
-            Assert.Equal(3, options.ProtocolVersion);
+                options.ProtocolVersion = 3;
+                Assert.Equal(3, options.ProtocolVersion);
 
-            options.ProtocolVersion = 2;
-            Assert.Equal(2, options.ProtocolVersion);
+                options.ProtocolVersion = 2;
+                Assert.Equal(2, options.ProtocolVersion);
+            }
         }
         
         [Theory]
@@ -108,8 +124,11 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(0)]
         public void ProtocolVersion_SetInvalid_ThrowsLdapException(int value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Throws<LdapException>(() => options.ProtocolVersion = value);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<LdapException>(() => options.ProtocolVersion = value);
+            }
         }
 
         [Fact]
@@ -125,14 +144,17 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void HostName_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Null(options.HostName);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.HostName);
 
-            options.HostName = "HostName";
-            Assert.Equal("HostName", options.HostName);
+                options.HostName = "HostName";
+                Assert.Equal("HostName", options.HostName);
 
-            options.HostName = null;
-            Assert.Equal("HostName", options.HostName);
+                options.HostName = null;
+                Assert.Equal("HostName", options.HostName);
+            }
         }
 
         [Fact]
@@ -148,14 +170,17 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void DomainName_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Null(options.DomainName);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.DomainName);
 
-            options.DomainName = "DomainName";
-            Assert.Equal("DomainName", options.DomainName);
+                options.DomainName = "DomainName";
+                Assert.Equal("DomainName", options.DomainName);
 
-            options.DomainName = null;
-            Assert.Null(options.DomainName);
+                options.DomainName = null;
+                Assert.Null(options.DomainName);
+            }
         }
 
         [Fact]
@@ -173,11 +198,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(LocatorFlags.None - 1)]
         public void LocatorFlag_Set_GetReturnsExpected(LocatorFlags value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(LocatorFlags.None, options.LocatorFlag);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(LocatorFlags.None, options.LocatorFlag);
 
-            options.LocatorFlag = value;
-            Assert.Equal(value, options.LocatorFlag);
+                options.LocatorFlag = value;
+                Assert.Equal(value, options.LocatorFlag);
+            }
         }
 
         [Fact]
@@ -193,8 +221,11 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void HostReachable_Get_ReturnsTrue()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.True(options.HostReachable);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.True(options.HostReachable);
+            }
         }
 
         [Fact]
@@ -209,11 +240,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void PingKeepAliveTimeout_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(TimeSpan.FromMinutes(2), options.PingKeepAliveTimeout);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(TimeSpan.FromMinutes(2), options.PingKeepAliveTimeout);
 
-            options.PingKeepAliveTimeout = TimeSpan.FromSeconds(10);
-            Assert.Equal(TimeSpan.FromSeconds(10), options.PingKeepAliveTimeout);
+                options.PingKeepAliveTimeout = TimeSpan.FromSeconds(10);
+                Assert.Equal(TimeSpan.FromSeconds(10), options.PingKeepAliveTimeout);
+            }
         }
 
         [Theory]
@@ -221,8 +255,10 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData((long)int.MaxValue + 1)]
         public void PingKeepAliveTimeout_InvalidTotalSeconds_ThrowsArgumentException(long seconds)
         {
-            var connection = new LdapConnection("server");
-            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingKeepAliveTimeout = TimeSpan.FromSeconds(seconds));
+            using (var connection = new LdapConnection("server"))
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingKeepAliveTimeout = TimeSpan.FromSeconds(seconds));
+            }
         }
 
         [Fact]
@@ -238,18 +274,23 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void PingLimit_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(4, options.PingLimit);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(4, options.PingLimit);
 
-            options.PingLimit = 10;
-            Assert.Equal(10, options.PingLimit);
+                options.PingLimit = 10;
+                Assert.Equal(10, options.PingLimit);
+            }
         }
 
         [Fact]
         public void PingLimit_SetNegative_ThrowsArgumentException()
         {
-            var connection = new LdapConnection("server");
-            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingLimit = -1);
+            using (var connection = new LdapConnection("server"))
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingLimit = -1);
+            }
         }
 
         [Fact]
@@ -265,11 +306,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void PingWaitTimeout_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(TimeSpan.FromSeconds(2), options.PingWaitTimeout);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(TimeSpan.FromSeconds(2), options.PingWaitTimeout);
 
-            options.PingWaitTimeout = TimeSpan.FromSeconds(10);
-            Assert.Equal(TimeSpan.FromSeconds(10), options.PingWaitTimeout);
+                options.PingWaitTimeout = TimeSpan.FromSeconds(10);
+                Assert.Equal(TimeSpan.FromSeconds(10), options.PingWaitTimeout);
+            }
         }
 
         [Theory]
@@ -277,8 +321,10 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData((long)int.MaxValue + 1)]
         public void PingWaitTimeout_InvalidTotalSeconds_ThrowsArgumentException(long seconds)
         {
-            var connection = new LdapConnection("server");
-            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingWaitTimeout = TimeSpan.FromSeconds(seconds));
+            using (var connection = new LdapConnection("server"))
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingWaitTimeout = TimeSpan.FromSeconds(seconds));
+            }
         }
 
         [Fact]
@@ -296,11 +342,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(false)]
         public void AutoReconnect_Set_GetReturnsExpected(bool value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.True(options.AutoReconnect);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.True(options.AutoReconnect);
 
-            options.AutoReconnect = value;
-            Assert.Equal(value, options.AutoReconnect);
+                options.AutoReconnect = value;
+                Assert.Equal(value, options.AutoReconnect);
+            }
         }
 
         [Fact]
@@ -318,11 +367,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(10)]
         public void SspiFlag_Set_GetReturnsExpected(int value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(16386, options.SspiFlag);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(16386, options.SspiFlag);
 
-            options.SspiFlag = value;
-            Assert.Equal(value, options.SspiFlag);
+                options.SspiFlag = value;
+                Assert.Equal(value, options.SspiFlag);
+            }
         }
 
         [Fact]
@@ -338,8 +390,11 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void SslInformation_GetNotStarted_ThrowsDirectoryOperationException()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Throws<DirectoryOperationException>(() => options.SslInformation);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<DirectoryOperationException>(() => options.SslInformation);
+            }
         }
 
         [Fact]
@@ -354,8 +409,11 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void SecurityContext_GetNotStarted_ThrowsDirectoryOperationException()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Throws<DirectoryOperationException>(() => options.SecurityContext);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<DirectoryOperationException>(() => options.SecurityContext);
+            }
         }
 
         [Fact]
@@ -372,11 +430,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(false)]
         public void Signing_Set_GetReturnsExpected(bool value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.False(options.Signing);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.False(options.Signing);
 
-            options.Signing = value;
-            Assert.Equal(value, options.Signing);
+                options.Signing = value;
+                Assert.Equal(value, options.Signing);
+            }
         }
 
         [Fact]
@@ -394,11 +455,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(false)]
         public void Sealing_Set_GetReturnsExpected(bool value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.False(options.Sealing);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.False(options.Sealing);
 
-            options.Sealing = value;
-            Assert.Equal(value, options.Sealing);
+                options.Sealing = value;
+                Assert.Equal(value, options.Sealing);
+            }
         }
 
         [Fact]
@@ -414,10 +478,13 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void SaslMethod_Set_ThrowsLdapException()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Null(options.SaslMethod);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.SaslMethod);
 
-            Assert.Throws<LdapException>(() => options.SaslMethod = "SaslMethod");
+                Assert.Throws<LdapException>(() => options.SaslMethod = "SaslMethod");
+            }
         }
 
         [Fact]
@@ -435,11 +502,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(false)]
         public void RootDseCache_Set_GetReturnsExpected(bool value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.True(options.RootDseCache);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.True(options.RootDseCache);
 
-            options.RootDseCache = value;
-            Assert.Equal(value, options.RootDseCache);
+                options.RootDseCache = value;
+                Assert.Equal(value, options.RootDseCache);
+            }
         }
 
         [Fact]
@@ -457,11 +527,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(false)]
         public void TcpKeepAlive_Set_GetReturnsExpected(bool value)
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.False(options.TcpKeepAlive);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.False(options.TcpKeepAlive);
 
-            options.TcpKeepAlive = value;
-            Assert.Equal(value, options.TcpKeepAlive);
+                options.TcpKeepAlive = value;
+                Assert.Equal(value, options.TcpKeepAlive);
+            }
         }
 
         [Fact]
@@ -477,11 +550,14 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void SendTimeout_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Equal(TimeSpan.FromSeconds(-1), options.SendTimeout);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Equal(TimeSpan.FromSeconds(-1), options.SendTimeout);
 
-            options.SendTimeout = TimeSpan.FromSeconds(10);
-            Assert.Equal(TimeSpan.FromSeconds(10), options.SendTimeout);
+                options.SendTimeout = TimeSpan.FromSeconds(10);
+                Assert.Equal(TimeSpan.FromSeconds(10), options.SendTimeout);
+            }
         }
 
         [Theory]
@@ -489,8 +565,10 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData((long)int.MaxValue + 1)]
         public void SendTimeout_InvalidTotalSeconds_ThrowsArgumentException(long seconds)
         {
-            var connection = new LdapConnection("server");
-            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.SendTimeout = TimeSpan.FromSeconds(seconds));
+            using (var connection = new LdapConnection("server"))
+            {
+                AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.SendTimeout = TimeSpan.FromSeconds(seconds));
+            }
         }
 
         [Fact]
@@ -506,28 +584,34 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void ReferralCallback_Get_ReturnsException()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Null(options.ReferralCallback.DereferenceConnection);
-            Assert.Null(options.ReferralCallback.NotifyNewConnection);
-            Assert.Null(options.ReferralCallback.QueryForConnection);
-            Assert.Same(options.ReferralCallback, options.ReferralCallback);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.ReferralCallback.DereferenceConnection);
+                Assert.Null(options.ReferralCallback.NotifyNewConnection);
+                Assert.Null(options.ReferralCallback.QueryForConnection);
+                Assert.Same(options.ReferralCallback, options.ReferralCallback);
+            }
         }
 
         [Fact]
         public void ReferralCallback_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            var value = new ReferralCallback
+            using (var connection = new LdapConnection("server"))
             {
-                DereferenceConnection = ReferralCallbackTests.DereferenceConnection,
-                NotifyNewConnection = ReferralCallbackTests.NotifyNewConnection,
-                QueryForConnection = ReferralCallbackTests.QueryForConnection
-            };
-            options.ReferralCallback = value;
-            Assert.Same(value, options.ReferralCallback);
+                LdapSessionOptions options = connection.SessionOptions;
+                var value = new ReferralCallback
+                {
+                    DereferenceConnection = ReferralCallbackTests.DereferenceConnection,
+                    NotifyNewConnection = ReferralCallbackTests.NotifyNewConnection,
+                    QueryForConnection = ReferralCallbackTests.QueryForConnection
+                };
+                options.ReferralCallback = value;
+                Assert.Same(value, options.ReferralCallback);
 
-            options.ReferralCallback = null;
-            Assert.Null(options.ReferralCallback);
+                options.ReferralCallback = null;
+                Assert.Null(options.ReferralCallback);
+            }
         }
 
         [Fact]
@@ -543,14 +627,17 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void QueryClientCertificate_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Null(options.QueryClientCertificate);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.QueryClientCertificate);
 
-            options.QueryClientCertificate = QueryClientCertificate;
-            Assert.Equal(QueryClientCertificate, options.QueryClientCertificate);
+                options.QueryClientCertificate = QueryClientCertificate;
+                Assert.Equal(QueryClientCertificate, options.QueryClientCertificate);
 
-            options.QueryClientCertificate = null;
-            Assert.Null(options.QueryClientCertificate);
+                options.QueryClientCertificate = null;
+                Assert.Null(options.QueryClientCertificate);
+            }
         }
 
         public X509Certificate QueryClientCertificate(LdapConnection connection, byte[][] trustedCAs) => null;
@@ -568,14 +655,17 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void VerifyServerCertificate_Set_GetReturnsExpected()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Null(options.VerifyServerCertificate);
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Null(options.VerifyServerCertificate);
 
-            options.VerifyServerCertificate = VerifyServerCertificate;
-            Assert.Equal(VerifyServerCertificate, options.VerifyServerCertificate);
+                options.VerifyServerCertificate = VerifyServerCertificate;
+                Assert.Equal(VerifyServerCertificate, options.VerifyServerCertificate);
 
-            options.VerifyServerCertificate = null;
-            Assert.Null(options.VerifyServerCertificate);
+                options.VerifyServerCertificate = null;
+                Assert.Null(options.VerifyServerCertificate);
+            }
         }
 
         public bool VerifyServerCertificate(LdapConnection connection, X509Certificate certificate) => false;
@@ -611,8 +701,11 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void StopTransportLayerSecurity_NotStarted_ThrowsTlsOperationException()
         {
-            LdapSessionOptions options = new LdapConnection("server").SessionOptions;
-            Assert.Throws<TlsOperationException>(() => options.StopTransportLayerSecurity());
+            using (var connection = new LdapConnection("server"))
+            {
+                LdapSessionOptions options = connection.SessionOptions;
+                Assert.Throws<TlsOperationException>(() => options.StopTransportLayerSecurity());
+            }
         }
 
         [Fact]
