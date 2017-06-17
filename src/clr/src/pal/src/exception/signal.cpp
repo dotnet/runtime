@@ -761,12 +761,13 @@ __attribute__((noinline))
 static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext, int numParams, ...)
 {
     sigset_t signal_set;
+    CONTEXT signalContextRecord;
     CONTEXT *contextRecord;
     EXCEPTION_RECORD *exceptionRecord;
     native_context_t *ucontext;
 
     ucontext = (native_context_t *)sigcontext;
-    g_common_signal_handler_context_locvar_offset = (int)((char*)&contextRecord - (char*)__builtin_frame_address(0));
+    g_common_signal_handler_context_locvar_offset = (int)((char*)&signalContextRecord - (char*)__builtin_frame_address(0));
 
     AllocateExceptionRecords(&exceptionRecord, &contextRecord);
 
@@ -809,6 +810,9 @@ static bool common_signal_handler(int code, siginfo_t *siginfo, void *sigcontext
     }
 
     contextRecord->ContextFlags |= CONTEXT_EXCEPTION_ACTIVE;
+
+    memcpy_s(&signalContextRecord, sizeof(CONTEXT), contextRecord, sizeof(CONTEXT));
+
     // The exception object takes ownership of the exceptionRecord and contextRecord
     PAL_SEHException exception(exceptionRecord, contextRecord);
 
