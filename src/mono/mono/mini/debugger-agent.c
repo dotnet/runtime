@@ -7159,7 +7159,9 @@ do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, guint8 
 		if ((invoke->flags & INVOKE_FLAG_RETURN_OUT_ARGS) && CHECK_PROTOCOL_VERSION (2, 35))
 			out_args = TRUE;
 		buffer_add_byte (buf, 1 + (out_this ? 2 : 0) + (out_args ? 4 : 0));
-		if (sig->ret->type == MONO_TYPE_VOID) {
+		if (m->string_ctor) {
+			buffer_add_value (buf, &mono_get_string_class ()->byval_arg, &res, domain);
+		} else if (sig->ret->type == MONO_TYPE_VOID && !m->string_ctor) {
 			if (!strcmp (m->name, ".ctor")) {
 				if (!m->klass->valuetype)
 					buffer_add_value (buf, &mono_defaults.object_class->byval_arg, &this_arg, domain);
