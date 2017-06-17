@@ -41,8 +41,6 @@ namespace System.IO
         // Path
         public abstract string GetCurrentDirectory();
         public abstract void SetCurrentDirectory(string fullPath);
-        public abstract int MaxPath { get; }
-        public abstract int MaxDirectoryPath { get; }
 
         // Volume
         public abstract string[] GetLogicalDrives();

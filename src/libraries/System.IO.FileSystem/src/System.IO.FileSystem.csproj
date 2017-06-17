@@ -237,7 +237,6 @@
     <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
     <Compile Include="System\IO\WinRTIOExtensions.cs" />
     <Compile Include="System\IO\WinRTFileSystem.cs" />
-    <Compile Include="System\IO\WinRTFileSystemObject.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CopyFile2.cs">
       <Link>Common\Interop\Windows\Interop.CopyFile2.cs</Link>
     </Compile>
