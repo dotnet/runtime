@@ -776,23 +776,19 @@ namespace System.Net.Http
 
             private void EnsureCapacity(int value)
             {
-                if (value > _buffer.Length)
-                {
-                    Grow(value);
-                }
-                else if (value < 0) // overflow
+                if ((uint)value > (uint)_maxBufferSize) // value cast handles overflow to negative as well
                 {
                     throw CreateOverCapacityException(_maxBufferSize);
+                }
+                else if (value > _buffer.Length)
+                {
+                    Grow(value);
                 }
             }
 
             private void Grow(int value)
             {
                 Debug.Assert(value > _buffer.Length);
-                if (value > _maxBufferSize)
-                {
-                    throw CreateOverCapacityException(_maxBufferSize);
-                }
 
                 // Extract the current buffer to be replaced.
                 byte[] currentBuffer = _buffer;
