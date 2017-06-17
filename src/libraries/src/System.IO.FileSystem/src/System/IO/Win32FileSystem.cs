@@ -13,9 +13,6 @@ namespace System.IO
     {
         internal const int GENERIC_READ = unchecked((int)0x80000000);
 
-        public override int MaxPath { get { return Interop.Kernel32.MAX_PATH; } }
-        public override int MaxDirectoryPath { get { return Interop.Kernel32.MAX_DIRECTORY_PATH; } }
-
         public override void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
