@@ -46,7 +46,7 @@ namespace System.Xml.Tests
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
-    public class XsltApiTestCaseBase
+    public class XsltApiTestCaseBase : FileCleanupTestBase
     {
         // Generic data for all derived test cases
         public String szXslNS = "http://www.w3.org/1999/XSL/Transform";
@@ -66,7 +66,7 @@ namespace System.Xml.Tests
         private bool _fTrace;            // Should we write out the results of the transform?
 
         // Other global variables
-        protected string _strOutFile = "out.xml";        // File to create when using write transforms
+        protected string _strOutFile = null;        // File to create when using write transforms
 
 #pragma warning disable 0618
         protected XslTransform xslt;                           // Main XslTransform instance
@@ -83,6 +83,7 @@ namespace System.Xml.Tests
             // Make sure that we don't cache the value of the switch to enable testing
             AppContext.SetSwitch("TestSwitch.LocalAppContext.DisableCaching", true);
             _output = output;
+            _strOutFile = GetTestFilePath();
             this.Init(null);
         }
 
