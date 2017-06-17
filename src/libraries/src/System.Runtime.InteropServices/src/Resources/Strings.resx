@@ -67,4 +67,13 @@
   <data name="Arg_InvalidThreshold" xml:space="preserve">
     <value>maximumThreshold cannot be less than initialThreshold.</value>
   </data>
+  <data name="InvalidOperation_NoComEventInterfaceAttribute" xml:space="preserve">
+    <value>Event invocation for COM objects requires the declaring interface of the event to be attributed with ComEventInterfaceAttribute.</value>
+  </data>
+  <data name="AmbiguousMatch_MultipleEventInterfaceAttributes" xml:space="preserve">
+    <value>More than one ComEventInterfaceAttribute was found on the declaring interface of the event.</value>
+  </data>
+  <data name="InvalidOperation_NoDispIdAttribute" xml:space="preserve">
+    <value>Event invocation for COM objects requires event to be attributed with DispIdAttribute.</value>
+  </data>
 </root>

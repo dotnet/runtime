@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Assembly, Inherited = false)]
-    [Obsolete("This attribute is deprecated and will be removed in a future version.", false)]
+    [Obsolete("This attribute is deprecated and will be removed in a future version.", error: false)]
     public sealed class IDispatchImplAttribute : Attribute
     {
         public IDispatchImplAttribute(short implType) : this((IDispatchImplType)implType)
@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices
         public IDispatchImplType Value { get; }
     }
 
-    [Obsolete("The IDispatchImplAttribute is deprecated.", false)]
+    [Obsolete("The IDispatchImplAttribute is deprecated.", error: false)]
     public enum IDispatchImplType
     {
         CompatibleImpl = 2,
@@ -107,7 +107,7 @@ namespace System.Runtime.InteropServices
         public int MinorVersion { get; }
     }
 
-    [Obsolete("This attribute has been deprecated.  Application Domains no longer respect Activation Context boundaries in IDispatch calls.", false)]
+    [Obsolete("This attribute has been deprecated.  Application Domains no longer respect Activation Context boundaries in IDispatch calls.", error: false)]
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class SetWin32ContextInIDispatchAttribute : Attribute
     {

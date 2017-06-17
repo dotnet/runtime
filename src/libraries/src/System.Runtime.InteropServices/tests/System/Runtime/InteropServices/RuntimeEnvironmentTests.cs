@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FromGlobalAccessCache always returns true on .NET Core.")]
-        public void FromGlobalAccessCache_INvoke_ReturnsFalse()
+        public void FromGlobalAccessCache_nNvoke_ReturnsFalse()
         {
             Assert.False(RuntimeEnvironment.FromGlobalAccessCache(typeof(RuntimeEnvironmentTests).Assembly));
             Assert.False(RuntimeEnvironment.FromGlobalAccessCache(null));

@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Exists()
         {
             Type type = typeof(ComConversionLossAttributeTests);
-            ComConversionLossAttribute attribute = Assert.IsType<ComConversionLossAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ComConversionLossAttribute), false)));
+            ComConversionLossAttribute attribute = Assert.IsType<ComConversionLossAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ComConversionLossAttribute), inherit: false)));
             Assert.NotNull(attribute);
         }
     }
