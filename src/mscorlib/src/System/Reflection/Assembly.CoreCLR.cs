@@ -51,7 +51,19 @@ namespace System.Reflection
             string requestedAssemblyPath = Path.Combine(Path.GetDirectoryName(requestorPath), requestedAssemblyName.Name+".dll");
 
             // Load the dependency via LoadFrom so that it goes through the same path of being in the LoadFrom list.
-            return Assembly.LoadFrom(requestedAssemblyPath);
+            Assembly resolvedAssembly = null;
+
+            try
+            {
+                resolvedAssembly = Assembly.LoadFrom(requestedAssemblyPath);
+            }
+            catch(FileNotFoundException)
+            {
+                // Catch FileNotFoundException when attempting to resolve assemblies via this handler to account for missing assemblies.
+                resolvedAssembly = null;
+            }
+
+            return resolvedAssembly;
         }
 
         public static Assembly LoadFrom(String assemblyFile)
