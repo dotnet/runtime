@@ -80,7 +80,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NegativeAttributeCount_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("value", () => new DirSyncRequestControl(new byte[0], DirectorySynchronizationOptions.None, -1));
+            AssertExtensions.Throws<ArgumentException>("value", () => new DirSyncRequestControl(new byte[0], DirectorySynchronizationOptions.None, -1));
         }
 
         [Fact]
@@ -94,7 +94,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void AttributeCount_SetNegative_ThrowsArgumentException()
         {
             var control = new DirSyncRequestControl();
-            Assert.Throws<ArgumentException>("value", () => control.AttributeCount = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => control.AttributeCount = -1);
         }
 
         [Fact]

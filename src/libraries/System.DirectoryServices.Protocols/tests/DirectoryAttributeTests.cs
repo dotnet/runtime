@@ -61,18 +61,18 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, ""));
-            Assert.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, new byte[0]));
-            Assert.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, new Uri("http://microsoft.com")));
-            Assert.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, new object[0]));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, ""));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, new byte[0]));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, new Uri("http://microsoft.com")));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new DirectoryAttribute(null, new object[0]));
         }
 
         [Fact]
         public void Ctor_NullValue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", (string)null));
-            Assert.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", (byte[])null));
-            Assert.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", (Uri)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", (string)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", (byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", (Uri)null));
         }
 
         [Fact]
@@ -89,21 +89,21 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullValues_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("values", () => new DirectoryAttribute("Name", (object[])null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => new DirectoryAttribute("Name", (object[])null));
         }
 
         [Fact]
         public void Ctor_NullObjectValues_ThrowsArgumentNullException()
         {
             string[] values = new string[] { "value1", null, "value2" };
-            Assert.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", values));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new DirectoryAttribute("Name", values));
         }
 
         [Fact]
         public void Ctor_InvalidObjectInValues_ThrowsArgumentException()
         {
             object[] values = new object[] { 1 };
-            Assert.Throws<ArgumentException>("value", () => new DirectoryAttribute("Name", values));
+            AssertExtensions.Throws<ArgumentException>("value", () => new DirectoryAttribute("Name", values));
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Name_SetNull_ThrowsArgumentNullException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Name = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Name = null);
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void GetValues_InvalidType_ThrowsArgumentException(Type valuesType)
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentException>("valuesType", () => attribute.GetValues(valuesType));
+            AssertExtensions.Throws<ArgumentException>("valuesType", () => attribute.GetValues(valuesType));
         }
 
         [Fact]
@@ -167,22 +167,22 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Indexer_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
         {
             var attribute = new DirectoryAttribute { "value" };
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => attribute[index]);
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => attribute[index] = "value");
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => attribute[index]);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => attribute[index] = "value");
         }
 
         [Fact]
         public void Indexer_SetNull_ThrowsArgumentNullException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentNullException>("value", () => attribute[0] = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute[0] = null);
         }
 
         [Fact]
         public void Indexer_SetInvalidType_ThrowsArgumentException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentException>("value", () => attribute[0] = 1);
+            AssertExtensions.Throws<ArgumentException>("value", () => attribute[0] = 1);
         }
 
         [Fact]
@@ -197,9 +197,9 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Add_NullValue_ThrowsArgumentNullException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Add((string)null));
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Add((byte[])null));
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Add((Uri)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Add((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Add((byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Add((Uri)null));
         }
 
         [Fact]
@@ -236,14 +236,14 @@ namespace System.DirectoryServices.Protocols.Tests
         public void AddRange_NullValues_ThrowsArgumentNullException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentNullException>("values", () => attribute.AddRange(null));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => attribute.AddRange(null));
         }
 
         [Fact]
         public void AddRange_InvalidArray_ThrowsArgumentExceptionn()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentException>("values", () => attribute.AddRange(new object[0]));
+            AssertExtensions.Throws<ArgumentException>("values", () => attribute.AddRange(new object[0]));
         }
 
         [Fact]
@@ -252,7 +252,7 @@ namespace System.DirectoryServices.Protocols.Tests
             string[] objects = new string[] { "value1", null, "value2" };
             var attribute = new DirectoryAttribute();
 
-            Assert.Throws<ArgumentException>("values", () => attribute.AddRange(objects));
+            AssertExtensions.Throws<ArgumentException>("values", () => attribute.AddRange(objects));
             Assert.Equal(0, attribute.Count);
         }
 
@@ -289,9 +289,9 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Insert_NullValue_ThrowsArgumentNullException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Insert(0, (string)null));
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Insert(0, (byte[])null));
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Insert(0, (Uri)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Insert(0, (string)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Insert(0, (byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Insert(0, (Uri)null));
         }
 
         [Theory]
@@ -300,9 +300,9 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Insert_InvalidIndex_ThrowsArgumentOutOfRangeException(int index)
         {
             var attribute = new DirectoryAttribute { "value2" };
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => attribute.Insert(index, "value"));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => attribute.Insert(index, new byte[] { 1, 2, 3 }));
-            Assert.Throws<ArgumentOutOfRangeException>("index", () => attribute.Insert(index, new Uri("http://microsoft.com")));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => attribute.Insert(index, "value"));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => attribute.Insert(index, new byte[] { 1, 2, 3 }));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => attribute.Insert(index, new Uri("http://microsoft.com")));
         }
 
         [Fact]
@@ -326,7 +326,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Remove_NullValue_ThrowsArgumentNullException()
         {
             var attribute = new DirectoryAttribute();
-            Assert.Throws<ArgumentNullException>("value", () => attribute.Remove(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Remove(null));
         }
 
         [Theory]
@@ -335,7 +335,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Remove_InvalidValue_ThrowsArgumentException(object value, string paramName)
         {
             var attribute = new DirectoryAttribute { "value" };
-            Assert.Throws<ArgumentException>(paramName, () => attribute.Remove(value));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => attribute.Remove(value));
         }
     }
 }

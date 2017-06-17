@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullAttributeName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new SortKey(null, "MatchingRule", false));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new SortKey(null, "MatchingRule", false));
         }
 
         [Fact]

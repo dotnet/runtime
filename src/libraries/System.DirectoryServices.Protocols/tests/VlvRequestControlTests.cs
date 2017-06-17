@@ -87,23 +87,23 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NegativeBeforeCount_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(-1, 0, "target"));
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(-1, 0, 0));
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(-1, 0, new byte[0]));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(-1, 0, "target"));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(-1, 0, 0));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(-1, 0, new byte[0]));
         }
 
         [Fact]
         public void Ctor_NegativeAfterCount_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(0, -1, "target"));
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(0, -1, 0));
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(0, -1, new byte[0]));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, -1, "target"));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, -1, 0));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, -1, new byte[0]));
         }
 
         [Fact]
         public void Ctor_NegativeOffset_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("value", () => new VlvRequestControl(0, 0, -1));
+            AssertExtensions.Throws<ArgumentException>("value", () => new VlvRequestControl(0, 0, -1));
         }
 
         [Fact]
@@ -117,7 +117,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void EstimateCount_SetNegative_ThrowsArgumentException()
         {
             var control = new VlvRequestControl();
-            Assert.Throws<ArgumentException>("value", () => control.EstimateCount = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => control.EstimateCount = -1);
         }
 
         [Fact]

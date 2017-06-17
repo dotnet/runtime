@@ -28,7 +28,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void ReferralChasing_SetInvalid_ThrowsInvalidEnumArgumentException(ReferralChasingOptions referralChasing)
         {
             var connection = new LdapConnection("server");
-            Assert.Throws<InvalidEnumArgumentException>("value", () => connection.SessionOptions.ReferralChasing = referralChasing);
+            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => connection.SessionOptions.ReferralChasing = referralChasing);
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void ReferralHopLimit_SetNegative_ThrowsArgumentException()
         {
             var connection = new LdapConnection("server");
-            Assert.Throws<ArgumentException>("value", () => connection.SessionOptions.ReferralHopLimit = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.ReferralHopLimit = -1);
         }
 
         [Fact]
@@ -222,7 +222,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void PingKeepAliveTimeout_InvalidTotalSeconds_ThrowsArgumentException(long seconds)
         {
             var connection = new LdapConnection("server");
-            Assert.Throws<ArgumentException>("value", () => connection.SessionOptions.PingKeepAliveTimeout = TimeSpan.FromSeconds(seconds));
+            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingKeepAliveTimeout = TimeSpan.FromSeconds(seconds));
         }
 
         [Fact]
@@ -249,7 +249,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void PingLimit_SetNegative_ThrowsArgumentException()
         {
             var connection = new LdapConnection("server");
-            Assert.Throws<ArgumentException>("value", () => connection.SessionOptions.PingLimit = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingLimit = -1);
         }
 
         [Fact]
@@ -278,7 +278,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void PingWaitTimeout_InvalidTotalSeconds_ThrowsArgumentException(long seconds)
         {
             var connection = new LdapConnection("server");
-            Assert.Throws<ArgumentException>("value", () => connection.SessionOptions.PingWaitTimeout = TimeSpan.FromSeconds(seconds));
+            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.PingWaitTimeout = TimeSpan.FromSeconds(seconds));
         }
 
         [Fact]
@@ -490,7 +490,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void SendTimeout_InvalidTotalSeconds_ThrowsArgumentException(long seconds)
         {
             var connection = new LdapConnection("server");
-            Assert.Throws<ArgumentException>("value", () => connection.SessionOptions.SendTimeout = TimeSpan.FromSeconds(seconds));
+            AssertExtensions.Throws<ArgumentException>("value", () => connection.SessionOptions.SendTimeout = TimeSpan.FromSeconds(seconds));
         }
 
         [Fact]

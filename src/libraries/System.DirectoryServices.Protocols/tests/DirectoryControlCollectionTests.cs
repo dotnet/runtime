@@ -32,7 +32,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Indexer_SetNull_ThrowsArgumentException()
         {
             var collection = new DirectoryControlCollection();
-            Assert.Throws<ArgumentNullException>("value", () => collection[0] = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => collection[0] = null);
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Add_NullControl_ThrowsArgumentNullException()
         {
             var collection = new DirectoryControlCollection();
-            Assert.Throws<ArgumentNullException>("control", () => collection.Add(null));
+            AssertExtensions.Throws<ArgumentNullException>("control", () => collection.Add(null));
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void AddRange_NullControls_ThrowsArgumentNullException()
         {
             var collection = new DirectoryControlCollection();
-            Assert.Throws<ArgumentNullException>("controls", () => collection.AddRange((DirectoryControl[])null));
+            AssertExtensions.Throws<ArgumentNullException>("controls", () => collection.AddRange((DirectoryControl[])null));
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.Protocols.Tests
             DirectoryControl[] controls = new DirectoryControl[] { new AsqRequestControl(), null, new AsqRequestControl() };
             var collection = new DirectoryControlCollection();
 
-            Assert.Throws<ArgumentException>("controls", () => collection.AddRange(controls));
+            AssertExtensions.Throws<ArgumentException>("controls", () => collection.AddRange(controls));
             Assert.Equal(0, collection.Count);
         }
 
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void AddRange_NullControlCollection_ThrowsArgumentNullException()
         {
             var collection = new DirectoryControlCollection();
-            Assert.Throws<ArgumentNullException>("controlCollection", () => collection.AddRange((DirectoryControlCollection)null));
+            AssertExtensions.Throws<ArgumentNullException>("controlCollection", () => collection.AddRange((DirectoryControlCollection)null));
         }
 
         [Fact]
@@ -137,7 +137,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Insert_NullValue_ThrowsArgumentNullException()
         {
             var collection = new DirectoryControlCollection();
-            Assert.Throws<ArgumentNullException>("value", () => collection.Insert(0, null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => collection.Insert(0, null));
         }
 
         [Fact]
@@ -163,7 +163,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Remove_NullValue_ThrowsArgumentNullException()
         {
             var collection = new DirectoryControlCollection { new AsqRequestControl() };
-            Assert.Throws<ArgumentNullException>("value", () => collection.Remove(null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => collection.Remove(null));
         }
 
         public static IEnumerable<object[]> Remove_InvalidValue_TestData()
@@ -177,7 +177,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Remove_InvalidValue_ThrowsArgumentException(object value, string paramName)
         {
             IList collection = new DirectoryControlCollection { new AsqRequestControl() };
-            Assert.Throws<ArgumentException>(paramName, () => collection.Remove(value));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => collection.Remove(value));
         }
     }
 }

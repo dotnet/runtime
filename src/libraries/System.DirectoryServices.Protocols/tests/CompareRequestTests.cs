@@ -64,17 +64,17 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullAttributeName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("attributeName", () => new CompareRequest("DistinguishedName", null, "Value"));
-            Assert.Throws<ArgumentNullException>("attributeName", () => new CompareRequest("DistinguishedName", null, new byte[0]));
-            Assert.Throws<ArgumentNullException>("attributeName", () => new CompareRequest("DistinguishedName", null, new Uri("http://microsoft.com")));
+            AssertExtensions.Throws<ArgumentNullException>("attributeName", () => new CompareRequest("DistinguishedName", null, "Value"));
+            AssertExtensions.Throws<ArgumentNullException>("attributeName", () => new CompareRequest("DistinguishedName", null, new byte[0]));
+            AssertExtensions.Throws<ArgumentNullException>("attributeName", () => new CompareRequest("DistinguishedName", null, new Uri("http://microsoft.com")));
         }
 
         [Fact]
         public void Ctor_NullValue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new CompareRequest("DistinguishedName", "AttributeName", (string)null));
-            Assert.Throws<ArgumentNullException>("value", () => new CompareRequest("DistinguishedName", "AttributeName", (byte[])null));
-            Assert.Throws<ArgumentNullException>("value", () => new CompareRequest("DistinguishedName", "AttributeName", (Uri)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new CompareRequest("DistinguishedName", "AttributeName", (string)null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new CompareRequest("DistinguishedName", "AttributeName", (byte[])null));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new CompareRequest("DistinguishedName", "AttributeName", (Uri)null));
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullAssertion_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("assertion", () => new CompareRequest("DistinguishedName", null));
+            AssertExtensions.Throws<ArgumentNullException>("assertion", () => new CompareRequest("DistinguishedName", null));
         }
 
         public static IEnumerable<object[]> InvalidAssertion_TestData()
@@ -106,7 +106,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [MemberData(nameof(InvalidAssertion_TestData))]
         public void Ctor_InvalidAssertion_ThrowsArgumentException(DirectoryAttribute assertion)
         {
-            Assert.Throws<ArgumentException>(null, () => new CompareRequest("DistinguishedName", assertion));
+            AssertExtensions.Throws<ArgumentException>(null, () => new CompareRequest("DistinguishedName", assertion));
         }
 
         [Fact]

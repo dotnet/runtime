@@ -41,13 +41,13 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullSortKeys_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("sortKeys", () => new SortRequestControl(null));
+            AssertExtensions.Throws<ArgumentNullException>("sortKeys", () => new SortRequestControl(null));
         }
 
         [Fact]
         public void CtorNullValueInSortKeys_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("sortKeys", () => new SortRequestControl(new SortKey[] { null }));
+            AssertExtensions.Throws<ArgumentException>("sortKeys", () => new SortRequestControl(new SortKey[] { null }));
         }
 
         [Fact]
@@ -103,14 +103,14 @@ namespace System.DirectoryServices.Protocols.Tests
         public void SortKeys_SetNull_ThrowsArgumentNullException()
         {
             var control = new SortRequestControl(new SortKey[0]);
-            Assert.Throws<ArgumentNullException>("value", () => control.SortKeys = null);
+            AssertExtensions.Throws<ArgumentNullException>("value", () => control.SortKeys = null);
         }
 
         [Fact]
         public void SortKeys_SetNullInValue_ThrowsArgumentException()
         {
             var control = new SortRequestControl(new SortKey[0]);
-            Assert.Throws<ArgumentException>("value", () => control.SortKeys = new SortKey[] { null });
+            AssertExtensions.Throws<ArgumentException>("value", () => control.SortKeys = new SortKey[] { null });
         }
     }
 }

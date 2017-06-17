@@ -32,7 +32,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Indexer_SetNull_ThrowsArgumentException()
         {
             var collection = new DirectoryAttributeModificationCollection();
-            Assert.Throws<ArgumentException>(null, () => collection[0] = null);
+            AssertExtensions.Throws<ArgumentException>(null, () => collection[0] = null);
         }
 
         [Fact]
@@ -49,7 +49,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Add_NullAttribute_ThrowsArgumentException()
         {
             var collection = new DirectoryAttributeModificationCollection();
-            Assert.Throws<ArgumentException>(null, () => collection.Add(null));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Add(null));
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void AddRange_NullAttributes_ThrowsArgumentNullException()
         {
             var collection = new DirectoryAttributeModificationCollection();
-            Assert.Throws<ArgumentNullException>("attributes", () => collection.AddRange((DirectoryAttributeModification[])null));
+            AssertExtensions.Throws<ArgumentNullException>("attributes", () => collection.AddRange((DirectoryAttributeModification[])null));
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.Protocols.Tests
             DirectoryAttributeModification[] attributes = new DirectoryAttributeModification[] { new DirectoryAttributeModification(), null, new DirectoryAttributeModification() };
             var collection = new DirectoryAttributeModificationCollection();
 
-            Assert.Throws<ArgumentException>(null, () => collection.AddRange(attributes));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.AddRange(attributes));
             Assert.Equal(0, collection.Count);
         }
 
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void AddRange_NullAttributeCollection_ThrowsArgumentNullException()
         {
             var collection = new DirectoryAttributeModificationCollection();
-            Assert.Throws<ArgumentNullException>("attributeCollection", () => collection.AddRange((DirectoryAttributeModificationCollection)null));
+            AssertExtensions.Throws<ArgumentNullException>("attributeCollection", () => collection.AddRange((DirectoryAttributeModificationCollection)null));
         }
 
         [Fact]
@@ -137,7 +137,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Insert_NullValue_ThrowsArgumentException()
         {
             var collection = new DirectoryAttributeModificationCollection();
-            Assert.Throws<ArgumentException>(null, () => collection.Insert(0, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Insert(0, null));
         }
 
         [Fact]
@@ -171,7 +171,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Remove_InvalidValue_ThrowsArgumentException(object value, string paramName)
         {
             IList collection = new DirectoryAttributeModificationCollection { new DirectoryAttributeModification() };
-            Assert.Throws<ArgumentException>(paramName, () => collection.Remove(value));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => collection.Remove(value));
         }
     }
 }
