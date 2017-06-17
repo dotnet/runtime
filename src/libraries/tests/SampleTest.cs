@@ -1,69 +1,65 @@
-﻿//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 
 namespace Microsoft.ServiceModel.Syndication.Tests
+{
     using System;
     using System.Collections.Generic;
     using System.Text;
     using Xunit;
     using Microsoft.ServiceModel.Syndication;
     using System.Xml;
-    using Microsoft.ServiceModel.Syndication.Lab;
-{
+    using System.IO;
+
     public static class SampleTest
     {
+                
         [Fact]
-        public static void PassingTest()
+        public static void SyndicationFeed_CreateNewFeed()
         {
-           
-        }
-        [Fact]
-        public static void testUsingCustomParser()
-        {
-            //this test will override the default date parser and assign just a new date to the feed
-            CustomRSSParsers.DateParser = delegate (string data, XmlReader xreader)
-            {
-                DateTime dt = XmlConvert.ToDateTime(data);
-                DateTimeOffset dto = new DateTimeOffset(dt);
-                return dto;
-            };
-
-
-            XmlReader reader = XmlReader.Create("feed.xml");
-            SyndicationFeed sf = SyndicationFeed.Load(reader);
-
-        }
-
-        [Fact]
-        public static void CreateBasicFeed()
-        {
+            // *** SETUP *** \\
             SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://microsoft.com"));
 
             XmlWriter xmlw = XmlWriter.Create("FirstFeedEver.xml");
             Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
+
+            // *** EXECUTE *** \\
             rssf.WriteTo(xmlw);
+        
+            // *** VALIDATE *** \\
+            Assert.True(true);
+
+            // *** CLEANUP *** \\
             xmlw.Close();
         }
 
         [Fact]
-        public static void readFeedAndReWriteAtom()
+        public static void SyndicationFeed_Load_Write_Feed()
         {
+            // *** SETUP *** \\\
             XmlReader xmlr = XmlReader.Create("feedatom.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
 
-            Console.WriteLine(sf.Title.ToString());
 
-            //wite the one that was read
-            XmlWriter xmlw = XmlWriter.Create("leido.xml");
+            // *** EXECUTE *** \\
+            //Write the same feed that was read.
+            XmlWriter xmlw = XmlWriter.Create("read.xml");
             Atom10FeedFormatter rs = new Atom10FeedFormatter(sf);
             rs.WriteTo(xmlw);
             xmlw.Close();
+
+            // *** VALIDATE *** \\
+            Assert.True(sf != null);
+            Assert.True(File.Exists("read.xml"));
+
+            // *** CLEANUP *** \\
+            
         }
 
         [Fact]
-        public static void readFeedAndReWriteRSS()
+        public static void SyndicationFeed_Load_RSS_Write_RSS()
         {
             XmlReader xmlr = XmlReader.Create("topstories.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
@@ -76,7 +72,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static void CreateSyndicationFeedWithBothFormats()
+        public static void SyndicationFeed_Write_RSS_Atom()
         {
             //Test example to syndicate the release of SyndicationFeed to .net core
 
@@ -113,31 +109,21 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             atomf.WriteTo(xmlw);
             xmlw.Close();
             
+            Assert.True(true);
         }
 
+        
         [Fact]
-        public static void FailingTest()
+        public static void SyndicationFeed_Load_FeedFromInternet()
         {
-            Assert.True(false, "This test is expected to fail");
-        }
-
-        [Fact]
-        public static void readFeedFromOutsideSource()
-        {
-            XmlReader xmlr = XmlReader.Create("topstories.xml");
+            XmlReader xmlr = XmlReader.Create("MicrosoftError.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
             Assert.True(sf != null);
         }
 
+        
         [Fact]
-        public static void resourceTest()
-        {
-            ResourceTester rt = new ResourceTester();
-            rt.test();
-        }
-
-        [Fact]
-        public static void DateParseError()
+        public static void SyndicationFeed_Load_FeedWithWrongDateFormat()
         {
             XmlReader xmlr = XmlReader.Create("feedWrongDate.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
