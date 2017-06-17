@@ -98,8 +98,6 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public void Initialize(ulong numBytes)
         {
-            if (numBytes < 0)
-                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (IntPtr.Size == 4 && numBytes > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_AddressSpace);
             Contract.EndContractBlock();
@@ -117,11 +115,6 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public void Initialize(uint numElements, uint sizeOfEachElement)
         {
-            if (numElements < 0)
-                throw new ArgumentOutOfRangeException(nameof(numElements), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (sizeOfEachElement < 0)
-                throw new ArgumentOutOfRangeException(nameof(sizeOfEachElement), SR.ArgumentOutOfRange_NeedNonNegNum);
-
             if (IntPtr.Size == 4 && numElements * sizeOfEachElement > UInt32.MaxValue)
                 throw new ArgumentOutOfRangeException("numBytes", SR.ArgumentOutOfRange_AddressSpace);
             Contract.EndContractBlock();
@@ -377,7 +370,6 @@ namespace System.Runtime.InteropServices
 
         private static InvalidOperationException NotInitialized()
         {
-            Debug.Assert(false, "Uninitialized SafeBuffer!  Someone needs to call Initialize before using this instance!");
             return new InvalidOperationException(SR.InvalidOperation_MustCallInitialize);
         }
 
