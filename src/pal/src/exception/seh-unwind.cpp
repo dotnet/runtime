@@ -266,8 +266,8 @@ BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextP
     // cannot cross on some systems.
     if ((void*)curPc == g_SEHProcessExceptionReturnAddress)
     {
-        CONTEXT* nativeContext = *(CONTEXT**)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
-        memcpy_s(context, sizeof(CONTEXT), nativeContext, sizeof(CONTEXT));
+        CONTEXT* signalContext = (CONTEXT*)(CONTEXTGetFP(context) + g_common_signal_handler_context_locvar_offset);
+        memcpy_s(context, sizeof(CONTEXT), signalContext, sizeof(CONTEXT));
 
         return TRUE;
     }
