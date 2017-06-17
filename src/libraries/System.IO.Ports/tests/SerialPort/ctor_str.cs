@@ -76,7 +76,7 @@ namespace System.IO.Ports.Tests
         public void Filename()
         {
             string portName;
-            string fileName = portName = "PortNameEqualToFileName.txt";
+            string fileName = portName = GetTestFilePath();
             FileStream testFile = File.Open(fileName, FileMode.Create);
             ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";

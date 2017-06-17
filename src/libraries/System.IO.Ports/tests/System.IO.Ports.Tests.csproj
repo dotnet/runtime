@@ -116,9 +116,9 @@
     <Compile Include="Support\TCSupport.cs" />
     <Compile Include="Support\PortsTest.cs" />
     <Compile Include="Support\TestEventHandler.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Legacy\Manual\" />
