@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.IO.Ports.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/20588", TargetFrameworkMonikers.Uap)] // fails in both Uap and UapAot
     public class GetPortNames : PortsTest
     {
         #region Test Cases
@@ -19,7 +20,6 @@ namespace System.IO.Ports.Tests
         /// Check that all ports either open correctly or fail with UnauthorizedAccessException (which implies they're already open)
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20588 - GetPortNames() has registry dependency.", TargetFrameworkMonikers.UapAot)]
         private void OpenEveryPortName()
         {
             foreach (string portName in SerialPort.GetPortNames())
@@ -41,7 +41,6 @@ namespace System.IO.Ports.Tests
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20588 - GetPortNames() has registry dependency.", TargetFrameworkMonikers.UapAot)]
         private void AllHelperPortsAreInGetPortNames()
         {
             string[] serialPortNames = SerialPort.GetPortNames();
@@ -57,7 +56,6 @@ namespace System.IO.Ports.Tests
         /// This catches regressions in the test helpers, eg GH #18928 / #20668
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20588 - GetPortNames() has registry dependency.", TargetFrameworkMonikers.UapAot)]
         private void AllGetPortNamesAreInHelperPorts()
         {
             string[] helperPortNames = PortHelper.GetPorts();

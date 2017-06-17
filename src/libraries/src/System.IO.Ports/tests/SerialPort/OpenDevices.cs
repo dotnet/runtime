@@ -13,6 +13,7 @@ namespace System.IO.Ports.Tests
     public class OpenDevices : PortsTest
     {
         [Fact]
+        [ActiveIssue(21156, TargetFrameworkMonikers.Uap)]
         public void OpenDevices01()
         {
             DosDevices dosDevices = new DosDevices();

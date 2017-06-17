@@ -216,7 +216,7 @@ namespace System.IO.Ports.Tests
             int parity = (int)Parity.Space;
             int dataBits = 8;
             int stopBits = (int)StopBits.One;
-            string fileName = portName = "PortNameEqualToFileName.txt";
+            string fileName = portName = GetTestFilePath();
             FileStream testFile = File.Open(fileName, FileMode.Create);
             ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";

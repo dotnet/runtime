@@ -19,6 +19,11 @@ namespace Legacy.Support
 
         public static string[] GetPorts()
         {
+            if (PlatformDetection.IsWinRT)
+            {
+                return new string[0]; // we are waiting for a Win32 new QueryDosDevice API since the current doesn't work for Uap https://github.com/dotnet/corefx/issues/21156
+            }
+
             List<string> ports = new List<string>();
             int returnSize = 0;
             int maxSize = 1000000;

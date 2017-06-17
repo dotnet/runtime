@@ -128,7 +128,7 @@ namespace System.IO.Ports.Tests
             int baudRate = 9600;
             int parity = (int)Parity.Space;
             int dataBits = 8;
-            string fileName = portName = "PortNameEqualToFileName.txt";
+            string fileName = portName = GetTestFilePath();
             FileStream testFile = File.Open(fileName, FileMode.Create);
             ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";
