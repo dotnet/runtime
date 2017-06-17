@@ -31,7 +31,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Operation_SetInvalid_InvalidEnumArgumentException(DirectoryAttributeOperation operation)
         {
             var modification = new DirectoryAttributeModification();
-            Assert.Throws<InvalidEnumArgumentException>("value", () => modification.Operation = operation);
+            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => modification.Operation = operation);
         }
     }
 }

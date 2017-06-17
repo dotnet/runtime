@@ -51,7 +51,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [InlineData(SearchScope.Subtree + 1)]
         public void Ctor_InvalidScope_ThrowsInvalidEnumArgumentException(SearchScope searchScope)
         {
-            Assert.Throws<InvalidEnumArgumentException>("value", () => new SearchRequest("DistinguishedName", "LdapFilter", searchScope));
+            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => new SearchRequest("DistinguishedName", "LdapFilter", searchScope));
         }
 
         [Fact]
@@ -75,7 +75,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Filter_SetInvalid_ThrowsArgumentException()
         {
             var request = new SearchRequest();
-            Assert.Throws<ArgumentException>("value", () => request.Filter = 1);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.Filter = 1);
         }
 
         [Fact]
@@ -91,7 +91,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void Aliases_SetInvalid_ThrowsInvalidEnumArgumentException(DereferenceAlias aliases)
         {
             var request = new SearchRequest();
-            Assert.Throws<InvalidEnumArgumentException>("value", () => request.Aliases = aliases);
+            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => request.Aliases = aliases);
         }
 
 
@@ -106,7 +106,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void SizeLimit_SetNegative_ThrowsArgumentException()
         {
             var request = new SearchRequest();
-            Assert.Throws<ArgumentException>("value", () => request.SizeLimit = -1);
+            AssertExtensions.Throws<ArgumentException>("value", () => request.SizeLimit = -1);
         }
 
         [Fact]
@@ -122,7 +122,7 @@ namespace System.DirectoryServices.Protocols.Tests
         public void TimeLimit_SetInvalid_ThrowsArgumentException(long totalSeconds)
         {
             var request = new SearchRequest();
-            Assert.Throws<ArgumentException>("value", () => request.TimeLimit = TimeSpan.FromSeconds(totalSeconds));
+            AssertExtensions.Throws<ArgumentException>("value", () => request.TimeLimit = TimeSpan.FromSeconds(totalSeconds));
         }
 
         [Fact]

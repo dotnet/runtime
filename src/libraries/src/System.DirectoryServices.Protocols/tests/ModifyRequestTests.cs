@@ -40,13 +40,13 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullModifications_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("attributes", () => new ModifyRequest("DistinguishedName", null));
+            AssertExtensions.Throws<ArgumentNullException>("attributes", () => new ModifyRequest("DistinguishedName", null));
         }
 
         [Fact]
         public void Ctor_NullObjectInAttributes_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => new ModifyRequest("DistinguishedName", new DirectoryAttributeModification[] { null }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ModifyRequest("DistinguishedName", new DirectoryAttributeModification[] { null }));
         }
 
         public static IEnumerable<object[]> Ctor_DistinguishedName_Operation_AttributeName_Values_TestData()
@@ -74,19 +74,19 @@ namespace System.DirectoryServices.Protocols.Tests
         [Fact]
         public void Ctor_NullAttributeName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("attributeName", () => new ModifyRequest("DistinguishedName", new DirectoryAttributeOperation(), null, new object[0]));
+            AssertExtensions.Throws<ArgumentNullException>("attributeName", () => new ModifyRequest("DistinguishedName", new DirectoryAttributeOperation(), null, new object[0]));
         }
 
         [Fact]
         public void Ctor_NullObjectInValues_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("value", () => new ModifyRequest("DistinguishedName", new DirectoryAttributeOperation(), "AttributeName", new object[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>("value", () => new ModifyRequest("DistinguishedName", new DirectoryAttributeOperation(), "AttributeName", new object[] { null }));
         }
 
         [Fact]
         public void Ctor_InvalidObjectInValues_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("value", () => new ModifyRequest("DistinguishedName", new DirectoryAttributeOperation(), "AttributeName", new object[] { 1 }));
+            AssertExtensions.Throws<ArgumentException>("value", () => new ModifyRequest("DistinguishedName", new DirectoryAttributeOperation(), "AttributeName", new object[] { 1 }));
         }
 
         [Fact]
