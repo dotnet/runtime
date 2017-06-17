@@ -113,13 +113,37 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "no exception throw on netfx")]
-        [Fact]
-        public async Task MaxResponseContentBufferSize_TooSmallForContent_Throws()
+        [Theory]
+        [InlineData(1, 2, true)]
+        [InlineData(1, 127, true)]
+        [InlineData(254, 255, true)]
+        [InlineData(10, 256, true)]
+        [InlineData(1, 440, true)]
+        [InlineData(2, 1, false)]
+        [InlineData(2, 2, false)]
+        [InlineData(1000, 1000, false)]
+        public async Task MaxResponseContentBufferSize_ThrowsIfTooSmallForContent(int maxSize, int contentLength, bool exceptionExpected)
         {
-            using (var client = new HttpClient())
+            using (var client = new HttpClient() { MaxResponseContentBufferSize = maxSize })
             {
-                client.MaxResponseContentBufferSize = 1;
-                await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(Configuration.Http.RemoteEchoServer));
+                await LoopbackServer.CreateServerAsync(async (server, url) =>
+                {
+                    Task<string> t = client.GetStringAsync(url);
+                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                        $"HTTP/1.1 200 OK\r\n" +
+                        $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                        $"Content-Length: {contentLength}\r\n" +
+                        "\r\n" +
+                        new string('s', contentLength));
+                    if (exceptionExpected)
+                    {
+                        await Assert.ThrowsAsync<HttpRequestException>(() => t);
+                    }
+                    else
+                    {
+                        await t;
+                    }
+                });
             }
         }
 
