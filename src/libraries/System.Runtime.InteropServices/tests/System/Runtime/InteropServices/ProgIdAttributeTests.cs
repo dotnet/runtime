@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Exists()
         {
             Type type = typeof(ProgIdAttributeTests);
-            ProgIdAttribute attribute = Assert.IsType<ProgIdAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ProgIdAttribute), false)));
+            ProgIdAttribute attribute = Assert.IsType<ProgIdAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ProgIdAttribute), inherit: false)));
             Assert.Equal("pizza", attribute.Value);
         }
 

@@ -79,31 +79,28 @@ namespace System.Runtime.InteropServices
 
         public override Type ReflectedType => _innerEventInfo.ReflectedType;
 
-        private static void GetDataForComInvocation(System.Reflection.EventInfo eventInfo, out Guid sourceIid, out int dispid)
+        private static void GetDataForComInvocation(EventInfo eventInfo, out Guid sourceIid, out int dispid)
         {
-            object[] comEventInterfaces = eventInfo.DeclaringType.GetCustomAttributes(typeof(ComEventInterfaceAttribute), false);
+            object[] comEventInterfaces = eventInfo.DeclaringType.GetCustomAttributes(typeof(ComEventInterfaceAttribute), inherit: false);
 
             if (comEventInterfaces == null || comEventInterfaces.Length == 0)
             {
-                // TODO: event strings need to be localizable
-                throw new InvalidOperationException("event invocation for COM objects requires interface to be attributed with ComSourceInterfaceGuidAttribute");
+                throw new InvalidOperationException(SR.InvalidOperation_NoComEventInterfaceAttribute);
             }
 
             if (comEventInterfaces.Length > 1)
             {
-                // TODO: event strings need to be localizable
-                throw new AmbiguousMatchException("more than one ComSourceInterfaceGuidAttribute found");
+                throw new AmbiguousMatchException(SR.AmbiguousMatch_MultipleEventInterfaceAttributes);
             }
 
-            Type sourceItf = ((ComEventInterfaceAttribute)comEventInterfaces[0]).SourceInterface;
-            Guid guid = sourceItf.GUID;
+            Type sourceInterface = ((ComEventInterfaceAttribute)comEventInterfaces[0]).SourceInterface;
+            Guid guid = sourceInterface.GUID;
 
-            MethodInfo methodInfo = sourceItf.GetMethod(eventInfo.Name);
+            MethodInfo methodInfo = sourceInterface.GetMethod(eventInfo.Name);
             Attribute dispIdAttribute = Attribute.GetCustomAttribute(methodInfo, typeof(DispIdAttribute));
             if (dispIdAttribute == null)
             {
-                // TODO: event strings need to be localizable
-                throw new InvalidOperationException("event invocation for COM objects requires event to be attributed with DispIdAttribute");
+                throw new InvalidOperationException(SR.InvalidOperation_NoDispIdAttribute);
             }
 
             sourceIid = guid;

@@ -13,7 +13,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Exists()
         {
             Type type = typeof(ComVisibleAttributeTests);
-            ComVisibleAttribute attribute = Assert.IsType<ComVisibleAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ComVisibleAttribute), false)));
+            ComVisibleAttribute attribute = Assert.IsType<ComVisibleAttribute>(Assert.Single(type.GetCustomAttributes(typeof(ComVisibleAttribute), inherit: false)));
             Assert.True(attribute.Value);
         }
 

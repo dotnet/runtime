@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Tests
         public void Exists()
         {
             FieldInfo field = typeof(ComAliasNameAttributeTests).GetTypeInfo().DeclaredFields.Single(f => f.Name == "_foo");
-            ComAliasNameAttribute attribute = Assert.Single(field.GetCustomAttributes<ComAliasNameAttribute>(false));
+            ComAliasNameAttribute attribute = Assert.Single(field.GetCustomAttributes<ComAliasNameAttribute>(inherit: false));
             Assert.Equal("foo", attribute.Value);
         }
 
