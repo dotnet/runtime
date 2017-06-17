@@ -5,8 +5,6 @@
 // Add any internal types that we need to forward from System. 
 
 // These types are required for Desktop <--> Core serialization as they are not covered by GenAPI because they are not exposed.
-#if netcoreapp
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Collections.Generic.TreeSet<>))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Net.CookieVariant))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Net.PathList))]
-#endif
