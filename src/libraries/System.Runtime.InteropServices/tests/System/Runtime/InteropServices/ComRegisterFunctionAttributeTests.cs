@@ -11,18 +11,15 @@ namespace System.Runtime.InteropServices.Tests
     public class ComRegisterFunctionAttributeTests
     {
         [ComRegisterFunction]
-        private int Func(int a, int b)
-        {
-            return a + b;
-        }
+        private int Func(int a, int b) => a + b;
 
         [Fact]
         public void Exists()
         {
-            var type = typeof(ComRegisterFunctionAttributeTests);
-            var method = type.GetTypeInfo().DeclaredMethods.Single(m => m.Name == "Func");
-            var attr = method.GetCustomAttributes(typeof(ComRegisterFunctionAttribute), false).OfType<ComRegisterFunctionAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
+            Type type = typeof(ComRegisterFunctionAttributeTests);
+            MethodInfo method = type.GetTypeInfo().DeclaredMethods.Single(m => m.Name == "Func");
+            ComRegisterFunctionAttribute attribute = Assert.Single(method.GetCustomAttributes<ComRegisterFunctionAttribute>(false));
+            Assert.NotNull(attribute);
         }
     }
 }

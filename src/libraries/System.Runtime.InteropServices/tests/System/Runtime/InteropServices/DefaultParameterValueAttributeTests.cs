@@ -15,10 +15,10 @@ namespace System.Runtime.InteropServices
         [InlineData(5.0f)]
         [InlineData("ExpectedValue")]
         [InlineData(null)]
-        public static void Constructor(object expected)
+        public static void Ctor_Value(object value)
         {
-            DefaultParameterValueAttribute attribute = new DefaultParameterValueAttribute(expected);
-            Assert.Equal(expected, attribute.Value);
+            var attribute = new DefaultParameterValueAttribute(value);
+            Assert.Equal(value, attribute.Value);
         }
     }
 }

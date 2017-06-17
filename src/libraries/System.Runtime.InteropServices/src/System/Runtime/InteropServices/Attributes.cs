@@ -2,27 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Interface, Inherited = false)]
     public sealed class AutomationProxyAttribute : Attribute
     {
-        public AutomationProxyAttribute(bool val)
-        {
-            Value = val;
-        }
+        public AutomationProxyAttribute(bool val) => Value = val;
+
         public bool Value { get; }
     }
 
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.ReturnValue, Inherited = false)]
     public sealed class ComAliasNameAttribute : Attribute
     {
-        public ComAliasNameAttribute(string alias)
-        {
-            Value = alias;
-        }
+        public ComAliasNameAttribute(string alias) => Value = alias;
+
         public string Value { get; }
     }
 
@@ -62,14 +56,12 @@ namespace System.Runtime.InteropServices
     [Obsolete("This attribute is deprecated and will be removed in a future version.", false)]
     public sealed class IDispatchImplAttribute : Attribute
     {
-        public IDispatchImplAttribute(short implType)
+        public IDispatchImplAttribute(short implType) : this((IDispatchImplType)implType)
         {
-            Value = (IDispatchImplType)implType;
         }
-        public IDispatchImplAttribute(IDispatchImplType implType)
-        {
-            Value = implType;
-        }
+
+        public IDispatchImplAttribute(IDispatchImplType implType) => Value = implType;
+
         public IDispatchImplType Value { get; }
     }
 
@@ -84,10 +76,8 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class ImportedFromTypeLibAttribute : Attribute
     {
-        public ImportedFromTypeLibAttribute(String tlbFile)
-        {
-            Value = tlbFile;
-        }
+        public ImportedFromTypeLibAttribute(string tlbFile) => Value = tlbFile;
+
         public string Value { get; }
     }
 
@@ -129,10 +119,8 @@ namespace System.Runtime.InteropServices
     [AttributeUsage(AttributeTargets.Interface, Inherited = false)]
     public sealed class TypeLibImportClassAttribute : Attribute
     {
-        public TypeLibImportClassAttribute(Type importClass)
-        {
-            Value = importClass.ToString();
-        }
+        public TypeLibImportClassAttribute(Type importClass) => Value = importClass.ToString();
+
         public string Value { get; }
     }
 
@@ -192,16 +180,18 @@ namespace System.Runtime.InteropServices
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Enum | AttributeTargets.Struct, Inherited = false)]
-    public sealed class  TypeLibTypeAttribute : Attribute
+    public sealed class TypeLibTypeAttribute : Attribute
     {
         public TypeLibTypeAttribute(TypeLibTypeFlags flags)
         {
             Value = flags;
         }
+
         public TypeLibTypeAttribute(short flags)
         {
             Value = (TypeLibTypeFlags)flags;
         }
+
         public TypeLibTypeFlags Value { get; }
     }
 
@@ -212,10 +202,12 @@ namespace System.Runtime.InteropServices
         {
             Value = flags;
         }
+
         public TypeLibFuncAttribute(short flags)
         {
             Value = (TypeLibFuncFlags)flags;
         }
+
         public TypeLibFuncFlags Value { get; }
     }
 
@@ -226,15 +218,17 @@ namespace System.Runtime.InteropServices
         {
             Value = flags;
         }
+
         public TypeLibVarAttribute(short flags)
         {
             Value = (TypeLibVarFlags)flags;
         }
+
         public TypeLibVarFlags Value { get; }
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
-    [System.Runtime.InteropServices.ComVisible(true)]
+    [ComVisible(true)]
     public sealed class TypeLibVersionAttribute : Attribute
     {
         public TypeLibVersionAttribute(int major, int minor)

@@ -11,19 +11,25 @@ namespace System.Runtime.InteropServices.Tests
     public class LCIDConversionAttributeTests
     {
         [LCIDConversion(1337)]
-        private int Func(int a, int b)
-        {
-            return a + b;
-        }
+        private int Func(int a, int b) => a + b;
 
         [Fact]
         public void Exists()
         {
-            var type = typeof(LCIDConversionAttributeTests);
-            var method = type.GetTypeInfo().DeclaredMethods.Single(m => m.Name == "Func");
-            var attr = method.GetCustomAttributes(typeof(LCIDConversionAttribute), false).OfType<LCIDConversionAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
-            Assert.Equal(1337, attr.Value);
+            Type type = typeof(LCIDConversionAttributeTests);
+            MethodInfo method = type.GetTypeInfo().DeclaredMethods.Single(m => m.Name == "Func");
+            LCIDConversionAttribute attribute = Assert.Single(method.GetCustomAttributes<LCIDConversionAttribute>(false));
+            Assert.Equal(1337, attribute.Value);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void Ctor_Lcid(int lcid)
+        {
+            var attribute = new LCIDConversionAttribute(lcid);
+            Assert.Equal(lcid, attribute.Value);
         }
     }
 }

@@ -2,22 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
     public class CallingConventionTests
     {
-        [Fact]
-        public void Values()
+        [Theory]
+        [InlineData(CallingConvention.Winapi, 1)]
+        [InlineData(CallingConvention.Cdecl, 2)]
+        [InlineData(CallingConvention.StdCall, 3)]
+        [InlineData(CallingConvention.ThisCall, 4)]
+        [InlineData(CallingConvention.FastCall, 5)]
+        public void CallingConvention_Get_ReturnsExpected(CallingConvention convention, int expected)
         {
-            Assert.Equal(1, (int)CallingConvention.Winapi);
-            Assert.Equal(2, (int)CallingConvention.Cdecl);
-            Assert.Equal(3, (int)CallingConvention.StdCall);
-            Assert.Equal(4, (int)CallingConvention.ThisCall);
-            Assert.Equal(5, (int)CallingConvention.FastCall);
+            Assert.Equal(expected, (int)convention);
         }
     }
 }

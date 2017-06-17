@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Linq;
-using System.Reflection;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -11,15 +9,25 @@ namespace System.Runtime.InteropServices.Tests
     public class HandleRefTests
     {
         [Fact]
-        public void Properties()
+        public void Ctor_Default()
         {
-            var obj = new object();
-            var ptr = new IntPtr(1337);
-            var handleRef = new HandleRef(obj, ptr);
-            Assert.Equal(ptr, (IntPtr)handleRef);
-            Assert.Equal(ptr, HandleRef.ToIntPtr(handleRef));
-            Assert.Equal(ptr, handleRef.Handle);
-            Assert.Same(obj, handleRef.Wrapper);
+            var handleRef = new HandleRef();
+            Assert.Null(handleRef.Wrapper);
+            Assert.Equal(IntPtr.Zero, handleRef.Handle);
+            Assert.Equal(IntPtr.Zero, (IntPtr)handleRef);
+            Assert.Equal(IntPtr.Zero, HandleRef.ToIntPtr(handleRef));
+        }
+
+        [Theory]
+        [InlineData(null, 0)]
+        [InlineData("Wrapper", 1337)]
+        public void Ctor_Wrapper_Handle(object wrapper, int handle)
+        {
+            var handleRef = new HandleRef(wrapper, (IntPtr)handle);
+            Assert.Same(wrapper, handleRef.Wrapper);
+            Assert.Equal((IntPtr)handle, handleRef.Handle);
+            Assert.Equal((IntPtr)handle, (IntPtr)handleRef);
+            Assert.Equal((IntPtr)handle, HandleRef.ToIntPtr(handleRef));
         }
     }
 }

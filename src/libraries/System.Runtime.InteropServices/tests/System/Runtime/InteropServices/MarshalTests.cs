@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Collections.Generic;
 using System.Security;
 
 namespace System.Runtime.InteropServices

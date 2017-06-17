@@ -8,10 +8,8 @@ namespace System.Runtime.InteropServices
 {
     public sealed class HandleCollector
     {
-        private const int deltaPercent = 10; // this is used for increasing the threshold.        
-        private string _name;
+        private const int DeltaPercent = 10; // this is used for increasing the threshold. 
         private int _initialThreshold;
-        private int _maximumThreshold;
         private int _threshold;
         private int _handleCount;
 
@@ -40,28 +38,20 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Arg_InvalidThreshold);
             }
 
-            if (name != null)
-            {
-                _name = name;
-            }
-            else
-            {
-                _name = String.Empty;
-            }
-
+            Name = name ?? string.Empty;
             _initialThreshold = initialThreshold;
-            _maximumThreshold = maximumThreshold;
+            MaximumThreshold = maximumThreshold;
             _threshold = initialThreshold;
             _handleCount = 0;
         }
 
-        public int Count { get { return _handleCount; } }
+        public int Count => _handleCount;
 
-        public int InitialThreshold { get { return _initialThreshold; } }
+        public int InitialThreshold => _initialThreshold;
 
-        public int MaximumThreshold { get { return _maximumThreshold; } }
+        public int MaximumThreshold { get; }
 
-        public string Name { get { return _name; } }
+        public string Name { get; }
 
         public void Add()
         {
@@ -76,7 +66,7 @@ namespace System.Runtime.InteropServices
             {
                 lock (this)
                 {
-                    _threshold = _handleCount + (_handleCount / deltaPercent);
+                    _threshold = _handleCount + (_handleCount / DeltaPercent);
                     gen_collect = _gc_gen;
                     if (_gc_gen < 2)
                     {
@@ -108,8 +98,8 @@ namespace System.Runtime.InteropServices
                 throw new InvalidOperationException(SR.InvalidOperation_HCCountOverflow);
             }
 
-            int newThreshold = _handleCount + _handleCount / deltaPercent;
-            if (newThreshold < (_threshold - _threshold / deltaPercent))
+            int newThreshold = _handleCount + _handleCount / DeltaPercent;
+            if (newThreshold < (_threshold - _threshold / DeltaPercent))
             {
                 lock (this)
                 {

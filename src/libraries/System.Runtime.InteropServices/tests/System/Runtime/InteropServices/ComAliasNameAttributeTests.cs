@@ -18,11 +18,19 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void Exists()
         {
-            var type = typeof(ComAliasNameAttributeTests);
-            var field = type.GetTypeInfo().DeclaredFields.Single(f => f.Name == "_foo");
-            var attr = field.GetCustomAttributes(typeof(ComAliasNameAttribute), false).OfType<ComAliasNameAttribute>().SingleOrDefault();
-            Assert.NotNull(attr);
-            Assert.Equal("foo", attr.Value);
+            FieldInfo field = typeof(ComAliasNameAttributeTests).GetTypeInfo().DeclaredFields.Single(f => f.Name == "_foo");
+            ComAliasNameAttribute attribute = Assert.Single(field.GetCustomAttributes<ComAliasNameAttribute>(false));
+            Assert.Equal("foo", attribute.Value);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("value")]
+        public void Ctor_Alias(string alias)
+        {
+            var attribute = new ComAliasNameAttribute(alias);
+            Assert.Equal(alias, attribute.Value);
         }
     }
 }
