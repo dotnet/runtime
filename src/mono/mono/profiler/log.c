@@ -2468,7 +2468,7 @@ dump_ubin (MonoProfiler *prof, const char *filename, uintptr_t load_addr, uint64
 	);
 
 	emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_UBIN);
-	emit_svalue (logbuffer, load_addr);
+	emit_ptr (logbuffer, load_addr);
 	emit_uvalue (logbuffer, offset);
 	emit_uvalue (logbuffer, size);
 	memcpy (logbuffer->cursor, filename, len);

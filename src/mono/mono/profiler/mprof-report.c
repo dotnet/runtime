@@ -2950,6 +2950,8 @@ decode_buffer (ProfContext *ctx)
 				/* un unmanaged binary loaded in memory */
 				uint64_t tdiff = decode_uleb128 (p + 1, &p);
 				uintptr_t addr = decode_sleb128 (p, &p);
+				if (ctx->data_version > 13)
+					addr += ptr_base;
 				uint64_t offset G_GNUC_UNUSED = decode_uleb128 (p, &p);
 				uintptr_t size = decode_uleb128 (p, &p);
 				char *name;
