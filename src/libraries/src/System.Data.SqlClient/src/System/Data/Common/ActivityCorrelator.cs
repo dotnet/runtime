@@ -51,7 +51,7 @@ namespace System.Data.Common
         // Declare the ActivityId which will be stored in TLS. The Id is unique for each thread.
         // The Sequence number will be incremented when each event happens.
         // Correlation along threads is consistent with the current XEvent mechanism at server.
-        [ThreadStaticAttribute]
+        [ThreadStatic]
         private static ActivityId t_tlsActivity;
 
         /// <summary>

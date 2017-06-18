@@ -76,18 +76,18 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // This object handles IMarshal calls for us:
         [ThreadStatic]
-        private static IMarshal s_winRtMarshalProxy = null;
+        private static IMarshal t_winRtMarshalProxy = null;
 
         private static void EnsureHasMarshalProxy()
         {
-            if (s_winRtMarshalProxy != null)
+            if (t_winRtMarshalProxy != null)
                 return;
 
             try
             {
                 IMarshal proxy;
                 Int32 hr = Interop.mincore.RoGetBufferMarshaler(out proxy);
-                s_winRtMarshalProxy = proxy;
+                t_winRtMarshalProxy = proxy;
 
                 if (hr != HResults.S_OK)
                 {
@@ -278,42 +278,42 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         void IMarshal.DisconnectObject(UInt32 dwReserved)
         {
             EnsureHasMarshalProxy();
-            s_winRtMarshalProxy.DisconnectObject(dwReserved);
+            t_winRtMarshalProxy.DisconnectObject(dwReserved);
         }
 
 
         void IMarshal.GetMarshalSizeMax(ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags, out UInt32 pSize)
         {
             EnsureHasMarshalProxy();
-            s_winRtMarshalProxy.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
+            t_winRtMarshalProxy.GetMarshalSizeMax(ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
         }
 
 
         void IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlFlags, out Guid pCid)
         {
             EnsureHasMarshalProxy();
-            s_winRtMarshalProxy.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
+            t_winRtMarshalProxy.GetUnmarshalClass(ref riid, pv, dwDestContext, pvDestContext, mshlFlags, out pCid);
         }
 
 
         void IMarshal.MarshalInterface(IntPtr pStm, ref Guid riid, IntPtr pv, UInt32 dwDestContext, IntPtr pvDestContext, UInt32 mshlflags)
         {
             EnsureHasMarshalProxy();
-            s_winRtMarshalProxy.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
+            t_winRtMarshalProxy.MarshalInterface(pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
         }
 
 
         void IMarshal.ReleaseMarshalData(IntPtr pStm)
         {
             EnsureHasMarshalProxy();
-            s_winRtMarshalProxy.ReleaseMarshalData(pStm);
+            t_winRtMarshalProxy.ReleaseMarshalData(pStm);
         }
 
 
         void IMarshal.UnmarshalInterface(IntPtr pStm, ref Guid riid, out IntPtr ppv)
         {
             EnsureHasMarshalProxy();
-            s_winRtMarshalProxy.UnmarshalInterface(pStm, ref riid, out ppv);
+            t_winRtMarshalProxy.UnmarshalInterface(pStm, ref riid, out ppv);
         }
         #endregion Implementation of IMarshal
 

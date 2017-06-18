@@ -1235,7 +1235,7 @@ namespace System.Transactions
         internal bool _asyncFlow;
 
         [ThreadStatic]
-        private static ContextData s_staticData;
+        private static ContextData t_staticData;
 
         internal ContextData(bool asyncFlow)
         {
@@ -1246,28 +1246,28 @@ namespace System.Transactions
         {
             get
             {
-                ContextData data = s_staticData;
+                ContextData data = t_staticData;
                 if (data == null)
                 {
                     data = new ContextData(false);
-                    s_staticData = data;
+                    t_staticData = data;
                 }
 
                 return data;
             }
             set
             {
-                if (value == null && s_staticData != null)
+                if (value == null && t_staticData != null)
                 {
                     // set each property to null to retain one TLS ContextData copy.
-                    s_staticData.CurrentScope = null;
-                    s_staticData.CurrentTransaction = null;
-                    s_staticData.DefaultComContextState = DefaultComContextState.Unknown;
-                    s_staticData.WeakDefaultComContext = null;
+                    t_staticData.CurrentScope = null;
+                    t_staticData.CurrentTransaction = null;
+                    t_staticData.DefaultComContextState = DefaultComContextState.Unknown;
+                    t_staticData.WeakDefaultComContext = null;
                 }
                 else
                 {
-                    s_staticData = value;
+                    t_staticData = value;
                 }
             }
         }

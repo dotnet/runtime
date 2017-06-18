@@ -13,7 +13,7 @@ namespace System.Linq.Expressions.Interpreter
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [ThreadStatic]
-        public static InterpretedFrame CurrentFrame;
+        private static InterpretedFrame s_currentFrame;
 
         internal readonly Interpreter Interpreter;
         internal InterpretedFrame _parent;
@@ -177,14 +177,14 @@ namespace System.Linq.Expressions.Interpreter
 
         internal InterpretedFrame Enter()
         {
-            InterpretedFrame currentFrame = CurrentFrame;
-            CurrentFrame = this;
+            InterpretedFrame currentFrame = s_currentFrame;
+            s_currentFrame = this;
             return _parent = currentFrame;
         }
 
         internal void Leave(InterpretedFrame prevFrame)
         {
-            CurrentFrame = prevFrame;
+            s_currentFrame = prevFrame;
         }
 
         #endregion
