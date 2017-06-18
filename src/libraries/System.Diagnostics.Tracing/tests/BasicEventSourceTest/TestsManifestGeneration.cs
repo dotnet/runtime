@@ -35,9 +35,9 @@ namespace BasicEventSourceTests
                     int i = 12;
                     es.EventWrite(i);
 
-                    Assert.Equal(1, LoudListener.LastEvent.EventId);
-                    Assert.Equal(1, LoudListener.LastEvent.Payload.Count);
-                    Assert.Equal(i, LoudListener.LastEvent.Payload[0]);
+                    Assert.Equal(1, LoudListener.t_lastEvent.EventId);
+                    Assert.Equal(1, LoudListener.t_lastEvent.Payload.Count);
+                    Assert.Equal(i, LoudListener.t_lastEvent.Payload[0]);
                 }
             }
         }

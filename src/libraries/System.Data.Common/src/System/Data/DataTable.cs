@@ -6700,7 +6700,7 @@ namespace System.Data
             // 
             // do not allocate TLS data in RETAIL bits!
             [ThreadStatic]
-            internal static List<DataTable> s_usedTables;
+            internal static List<DataTable> t_usedTables;
 #endif //DEBUG
 
             private DataTable _targetTable;
@@ -6711,14 +6711,14 @@ namespace System.Data
                 Debug.Assert(table != null);
                 Debug.Assert(table._rowDiffId == null, "rowDiffId wasn't previously cleared");
 #if DEBUG
-                Debug.Assert(s_usedTables == null || !s_usedTables.Contains(table),
+                Debug.Assert(t_usedTables == null || !t_usedTables.Contains(table),
                     "Nested call with same table can cause data corruption!");
 #endif
 
 #if DEBUG
-                if (s_usedTables == null)
-                    s_usedTables = new List<DataTable>();
-                s_usedTables.Add(table);
+                if (t_usedTables == null)
+                    t_usedTables = new List<DataTable>();
+                t_usedTables.Add(table);
 #endif
                 _targetTable = table;
                 table._rowDiffId = null;
@@ -6731,12 +6731,12 @@ namespace System.Data
                 if (_targetTable != null)
                 {
 #if DEBUG
-                    Debug.Assert(s_usedTables != null && s_usedTables.Contains(_targetTable), "missing Prepare before Cleanup");
-                    if (s_usedTables != null)
+                    Debug.Assert(t_usedTables != null && t_usedTables.Contains(_targetTable), "missing Prepare before Cleanup");
+                    if (t_usedTables != null)
                     {
-                        s_usedTables.Remove(_targetTable);
-                        if (s_usedTables.Count == 0)
-                            s_usedTables = null;
+                        t_usedTables.Remove(_targetTable);
+                        if (t_usedTables.Count == 0)
+                            t_usedTables = null;
                     }
 #endif
                     _targetTable._rowDiffId = null;
@@ -6748,8 +6748,8 @@ namespace System.Data
             {
 #if DEBUG
                 // this code asserts scope was created, but it does not assert that the table was included in it
-                // note that in case of DataSet, new tables might be added to the list in which case they won't appear in s_usedTables.
-                Debug.Assert(s_usedTables != null, message);
+                // note that in case of DataSet, new tables might be added to the list in which case they won't appear in t_usedTables.
+                Debug.Assert(t_usedTables != null, message);
 #endif
             }
         }
@@ -6767,15 +6767,15 @@ namespace System.Data
 #if DEBUG
                 // initialize list of tables out of current tables
                 // note: it might remain empty (still initialization is needed for assert to operate)
-                if (RowDiffIdUsageSection.s_usedTables == null)
-                    RowDiffIdUsageSection.s_usedTables = new List<DataTable>();
+                if (RowDiffIdUsageSection.t_usedTables == null)
+                    RowDiffIdUsageSection.t_usedTables = new List<DataTable>();
 #endif 
                 for (int tableIndex = 0; tableIndex < ds.Tables.Count; ++tableIndex)
                 {
                     DataTable table = ds.Tables[tableIndex];
 #if DEBUG
-                    Debug.Assert(!RowDiffIdUsageSection.s_usedTables.Contains(table), "Nested call with same table can cause data corruption!");
-                    RowDiffIdUsageSection.s_usedTables.Add(table);
+                    Debug.Assert(!RowDiffIdUsageSection.t_usedTables.Contains(table), "Nested call with same table can cause data corruption!");
+                    RowDiffIdUsageSection.t_usedTables.Add(table);
 #endif
                     Debug.Assert(table._rowDiffId == null, "rowDiffId wasn't previously cleared");
                     table._rowDiffId = null;
@@ -6789,7 +6789,7 @@ namespace System.Data
                 if (_targetDS != null)
                 {
 #if DEBUG
-                    Debug.Assert(RowDiffIdUsageSection.s_usedTables != null, "missing Prepare before Cleanup");
+                    Debug.Assert(RowDiffIdUsageSection.t_usedTables != null, "missing Prepare before Cleanup");
 #endif
 
                     for (int tableIndex = 0; tableIndex < _targetDS.Tables.Count; ++tableIndex)
@@ -6798,14 +6798,14 @@ namespace System.Data
 #if DEBUG
                         // cannot assert that table exists in the usedTables - new tables might be 
                         // created during diffgram processing in DataSet.ReadXml.
-                        if (RowDiffIdUsageSection.s_usedTables != null)
-                            RowDiffIdUsageSection.s_usedTables.Remove(table);
+                        if (RowDiffIdUsageSection.t_usedTables != null)
+                            RowDiffIdUsageSection.t_usedTables.Remove(table);
 #endif
                         table._rowDiffId = null;
                     }
 #if DEBUG
-                    if (RowDiffIdUsageSection.s_usedTables != null && RowDiffIdUsageSection.s_usedTables.Count == 0)
-                        RowDiffIdUsageSection.s_usedTables = null; // out-of-scope
+                    if (RowDiffIdUsageSection.t_usedTables != null && RowDiffIdUsageSection.t_usedTables.Count == 0)
+                        RowDiffIdUsageSection.t_usedTables = null; // out-of-scope
 #endif
                 }
             }

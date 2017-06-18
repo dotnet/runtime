@@ -35,7 +35,7 @@ namespace System.Threading.Tasks.Tests
                 bool postedInContext = false;
                 Action callback = () =>
                 {
-                    postedInContext = ValidateCorrectContextSynchronizationContext.IsPostedInContext;
+                    postedInContext = ValidateCorrectContextSynchronizationContext.t_isPostedInContext;
                     mres.Set();
                 };
                 if (generic)
@@ -330,7 +330,7 @@ namespace System.Threading.Tasks.Tests
         private class ValidateCorrectContextSynchronizationContext : SynchronizationContext
         {
             [ThreadStatic]
-            internal static bool IsPostedInContext;
+            internal static bool t_isPostedInContext;
 
             internal int PostCount;
             internal int SendCount;
@@ -342,12 +342,12 @@ namespace System.Threading.Tasks.Tests
                 {
                     try
                     {
-                        IsPostedInContext = true;
+                        t_isPostedInContext = true;
                         d(state);
                     }
                     finally
                     {
-                        IsPostedInContext = false;
+                        t_isPostedInContext = false;
                     }
                 });
             }
