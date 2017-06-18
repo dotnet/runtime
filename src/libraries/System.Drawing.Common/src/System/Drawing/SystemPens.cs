@@ -15,10 +15,6 @@ namespace System.Drawing
     {
         private static readonly object s_systemPensKey = new object();
 
-        private SystemPens()
-        {
-        }
-
         /// <include file='doc\SystemPens.uex' path='docs/doc[@for="SystemPens.ActiveBorder"]/*' />
         /// <devdoc>
         ///     Pen is the color of the filled area of an active window border.
