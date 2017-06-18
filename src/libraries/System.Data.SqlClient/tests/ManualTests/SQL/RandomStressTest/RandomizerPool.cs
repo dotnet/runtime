@@ -216,13 +216,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// application crashes
         /// </summary>
         [ThreadStatic]
-        private static IScope s_ts_lastCreatedScope;
+        private static IScope t_lastCreatedScope;
 
         /// <summary>
         /// holds the current scope on the thread, it is used to ensure scope creation and disposal calls are balanced
         /// </summary>
         [ThreadStatic]
-        private static IScope s_ts_currentScope;
+        private static IScope t_currentScope;
+
         /// <summary>
         /// represents a randomizer scope, that makes use of Randomizer or derived types
         /// </summary>
@@ -250,9 +251,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             /// </summary>
             internal Scope(RandomizerPool pool, IScope parent)
             {
-                s_ts_lastCreatedScope = this;
-                _previousScope = s_ts_currentScope;
-                s_ts_currentScope = this;
+                t_lastCreatedScope = this;
+                _previousScope = t_currentScope;
+                t_currentScope = this;
                 _pool = pool;
 
                 RandomizerType current;
@@ -280,14 +281,14 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     _current = null;
 
-                    if (s_ts_currentScope != this)
+                    if (t_currentScope != this)
                     {
                         // every creation of scope in test must be balanced with Dispose call, use 'using' to enforce that!
                         // nested scopes are allowed, child scope must be disposed before the parent one
                         throw new InvalidOperationException("Unbalanced call to scope.Dispose");
                     }
 
-                    s_ts_currentScope = _previousScope;
+                    t_currentScope = _previousScope;
                 }
             }
 
@@ -358,7 +359,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// </summary>
         public void SaveLastThreadScopeRepro(string reproFile)
         {
-            SaveReproInternal(reproFile, s_ts_lastCreatedScope);
+            SaveReproInternal(reproFile, t_lastCreatedScope);
         }
     }
 }
