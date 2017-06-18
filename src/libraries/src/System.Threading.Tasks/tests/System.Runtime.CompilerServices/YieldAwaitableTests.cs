@@ -28,7 +28,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.False(ya.IsCompleted, "RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
                     ya.OnCompleted(() =>
                     {
-                        Assert.True(ValidateCorrectContextSynchronizationContext.IsPostedInContext, "RunAsyncYieldAwaiterTests     > FAILURE. Expected to post in target context.");
+                        Assert.True(ValidateCorrectContextSynchronizationContext.t_isPostedInContext, "RunAsyncYieldAwaiterTests     > FAILURE. Expected to post in target context.");
                         mres.Set();
                     });
                     mres.Wait();
@@ -50,7 +50,7 @@ namespace System.Threading.Tasks.Tests
                 Assert.False(ya.IsCompleted, "RunAsyncYieldAwaiterTests     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
                 ya.OnCompleted(() =>
                 {
-                    Assert.True(ValidateCorrectContextSynchronizationContext.IsPostedInContext, "     > FAILURE. Expected to post in target context.");
+                    Assert.True(ValidateCorrectContextSynchronizationContext.t_isPostedInContext, "     > FAILURE. Expected to post in target context.");
                     mres.Set();
                 });
                 mres.Wait();
@@ -126,7 +126,7 @@ namespace System.Threading.Tasks.Tests
                 Assert.False(ya.IsCompleted, "     > FAILURE. YieldAwaiter.IsCompleted should always be false.");
                 ya.OnCompleted(() =>
                 {
-                    Assert.True(ValidateCorrectContextSynchronizationContext.IsPostedInContext, "     > FAILURE. Expected to post in target context.");
+                    Assert.True(ValidateCorrectContextSynchronizationContext.t_isPostedInContext, "     > FAILURE. Expected to post in target context.");
                     mres.Set();
                 });
                 mres.Wait();
@@ -150,7 +150,7 @@ namespace System.Threading.Tasks.Tests
         private class ValidateCorrectContextSynchronizationContext : SynchronizationContext
         {
             [ThreadStatic]
-            internal static bool IsPostedInContext;
+            internal static bool t_isPostedInContext;
 
             internal int PostCount;
             internal int SendCount;
@@ -160,9 +160,9 @@ namespace System.Threading.Tasks.Tests
                 Interlocked.Increment(ref PostCount);
                 Task.Run(() =>
                 {
-                    IsPostedInContext = true;
+                    t_isPostedInContext = true;
                     d(state);
-                    IsPostedInContext = false;
+                    t_isPostedInContext = false;
                 });
             }
 

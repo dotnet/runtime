@@ -17,17 +17,17 @@ namespace System.Net
 
         // This is to avoid user mistakes when they queue another async op from a callback the completes sync.
         [ThreadStatic]
-        private static ThreadContext s_threadContext;
+        private static ThreadContext t_threadContext;
 
         private static ThreadContext CurrentThreadContext
         {
             get
             {
-                ThreadContext threadContext = s_threadContext;
+                ThreadContext threadContext = t_threadContext;
                 if (threadContext == null)
                 {
                     threadContext = new ThreadContext();
-                    s_threadContext = threadContext;
+                    t_threadContext = threadContext;
                 }
 
                 return threadContext;

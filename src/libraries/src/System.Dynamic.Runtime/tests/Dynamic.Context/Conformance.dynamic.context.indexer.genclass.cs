@@ -29,18 +29,18 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     public class MemberClass<T>
     {
         [ThreadStatic]
-        public static int Status;
+        public static int t_status;
         public bool? this[string p1, float p2, short[] p3]
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return null;
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -48,13 +48,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return (byte)3;
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -62,13 +62,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return p1;
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -76,7 +76,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return new dynamic[]
                 {
                 p1, p2
@@ -87,7 +87,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -95,7 +95,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return new double[]
                 {
                 1.4, double.Epsilon, double.NaN
@@ -106,7 +106,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -114,13 +114,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return p1;
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -128,7 +128,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return new MyClass[]
                 {
                 null, new MyClass()
@@ -142,7 +142,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -150,13 +150,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return default(T);
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -164,13 +164,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return new MyClass();
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -178,13 +178,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return default(T);
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -192,13 +192,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return default(T);
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
 
@@ -206,13 +206,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClass<T>.Status = 1;
+                MemberClass<T>.t_status = 1;
                 return default(T);
             }
 
             set
             {
-                MemberClass<T>.Status = 2;
+                MemberClass<T>.t_status = 2;
             }
         }
     }
@@ -239,18 +239,18 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         where T : class
     {
         [ThreadStatic]
-        public static int Status;
+        public static int t_status;
         public int this[int x]
         {
             get
             {
-                MemberClassWithClassConstraint<T>.Status = 3;
+                MemberClassWithClassConstraint<T>.t_status = 3;
                 return 1;
             }
 
             set
             {
-                MemberClassWithClassConstraint<T>.Status = 4;
+                MemberClassWithClassConstraint<T>.t_status = 4;
             }
         }
 
@@ -258,13 +258,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         {
             get
             {
-                MemberClassWithClassConstraint<T>.Status = 1;
+                MemberClassWithClassConstraint<T>.t_status = 1;
                 return null;
             }
 
             set
             {
-                MemberClassWithClassConstraint<T>.Status = 2;
+                MemberClassWithClassConstraint<T>.t_status = 2;
             }
         }
     }
@@ -273,18 +273,18 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
         where T : new()
     {
         [ThreadStatic]
-        public static int Status;
+        public static int t_status;
         public dynamic this[T t]
         {
             get
             {
-                MemberClassWithNewConstraint<T>.Status = 1;
+                MemberClassWithNewConstraint<T>.t_status = 1;
                 return new T();
             }
 
             set
             {
-                MemberClassWithNewConstraint<T>.Status = 2;
+                MemberClassWithNewConstraint<T>.t_status = 2;
             }
         }
     }
@@ -450,7 +450,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             ClassWithImplicitOperator target = new ClassWithImplicitOperator();
             EmptyClass result = target; //implicit
             Assert.Null(result);
-            Assert.Equal(1, MemberClass<ClassWithImplicitOperator>.Status);
+            Assert.Equal(1, MemberClass<ClassWithImplicitOperator>.t_status);
         }
     }
     //</Code>
@@ -493,7 +493,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             byte b = 1;
             ClassWithExplicitOperator result = (ClassWithExplicitOperator)b;
             Assert.Equal(3, result.field);
-            Assert.Equal(1, MemberClass<int>.Status);
+            Assert.Equal(1, MemberClass<int>.t_status);
         }
     }
     //</Code>
@@ -535,8 +535,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             }
 
             Assert.Equal("Test", result);
-            Assert.Equal(1, MemberClass<string>.Status);
-            Assert.Equal(1, MemberClass<bool>.Status);
+            Assert.Equal(1, MemberClass<string>.t_status);
+            Assert.Equal(1, MemberClass<bool>.t_status);
         }
     }
     //</Code>
@@ -586,7 +586,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             }
 
             Assert.Equal(10, index);
-            Assert.Equal(3, MemberClassWithClassConstraint<Test>.Status);
+            Assert.Equal(3, MemberClassWithClassConstraint<Test>.t_status);
         }
     }
     //</Code>
@@ -623,7 +623,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             while (dy[p1, p2, p3] ?? true);
 
             Assert.Equal(10, index);
-            Assert.Equal(1, MemberClass<int>.Status);
+            Assert.Equal(1, MemberClass<int>.t_status);
         }
     }
     //</Code>
@@ -657,7 +657,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             }
 
             Assert.True(isChecked);
-            Assert.Equal(1, MemberClass<int>.Status);
+            Assert.Equal(1, MemberClass<int>.t_status);
         }
     }
     //</Code>
@@ -753,7 +753,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             Assert.Equal(10, ((MyClass)result[0]).Field);
             Assert.Equal(11, ((MyStruct)result[1]).Number);
 
-            Assert.Equal(2, MemberClass<int>.Status);
+            Assert.Equal(2, MemberClass<int>.t_status);
         }
     }
     //</Code>
@@ -802,7 +802,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
             Assert.True(threwException);
             Assert.Equal(new int?[] { null, null, null }, result);
-            Assert.Equal(1, MemberClass<int>.Status);
+            Assert.Equal(1, MemberClass<int>.t_status);
         }
     }
     //</Code>
@@ -838,7 +838,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             dynamic t = new Test();
             foreach (MyClass[] me in t.Increment())
             {
-                if (MemberClass<string>.Status != 1 || me.Length != 2)
+                if (MemberClass<string>.t_status != 1 || me.Length != 2)
                     return 1;
             }
 
@@ -889,7 +889,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
             Assert.Equal(1, list.Count);
             Assert.Null(list[0]._field);
-            Assert.Equal(1, MemberClassWithClassConstraint<string>.Status);
+            Assert.Equal(1, MemberClassWithClassConstraint<string>.t_status);
         }
     }
     //</Code>
@@ -939,7 +939,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
             Assert.Equal(2, result.Count);
             Assert.Equal(3, MemberClassWithAnotherTypeConstraint<string, string>.Status);
-            Assert.Equal(1, MemberClassWithNewConstraint<Test>.Status);
+            Assert.Equal(1, MemberClassWithNewConstraint<Test>.t_status);
 
             foreach (var m in result)
             {
@@ -976,11 +976,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
             dynamic dy = new MemberClassWithNewConstraint<MyClass>();
             MyClass p1 = null;
             dy[p1] = dy;
-            Assert.Equal(2, MemberClassWithNewConstraint<MyClass>.Status);
+            Assert.Equal(2, MemberClassWithNewConstraint<MyClass>.t_status);
 
             dynamic p2 = dy[p1];
             Assert.IsType<MyClass>(p2);
-            Assert.Equal(1, MemberClassWithNewConstraint<MyClass>.Status);
+            Assert.Equal(1, MemberClassWithNewConstraint<MyClass>.t_status);
         }
     }
     //</Code>
