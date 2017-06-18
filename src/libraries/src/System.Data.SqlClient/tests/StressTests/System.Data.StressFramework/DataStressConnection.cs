@@ -29,14 +29,14 @@ namespace Stress.Data
         private short _spid = 0;
 
         [ThreadStatic]
-        private static TrackedRandom s_randomInstance;
+        private static TrackedRandom t_randomInstance;
         private static TrackedRandom RandomInstance
         {
             get
             {
-                if (s_randomInstance == null)
-                    s_randomInstance = new TrackedRandom();
-                return s_randomInstance;
+                if (t_randomInstance == null)
+                    t_randomInstance = new TrackedRandom();
+                return t_randomInstance;
             }
         }
 
