@@ -8,7 +8,7 @@
 #define LOG_HEADER_ID 0x4D505A01
 #define LOG_VERSION_MAJOR 1
 #define LOG_VERSION_MINOR 1
-#define LOG_DATA_VERSION 13
+#define LOG_DATA_VERSION 14
 
 /*
  * Changes in major/minor versions:
@@ -61,6 +61,11 @@
                moved the time field in TYPE_SAMPLE_HIT to right after the event byte, now encoded as a regular time field
                changed the time field in TYPE_SAMPLE_COUNTERS to be encoded as a regular time field (in nanoseconds)
                added TYPE_GC_FINALIZE_{START,END,OBJECT_START,OBJECT_END}
+ * version 14: added event field to TYPE_MONITOR instead of encoding it in the extended info
+               all TYPE_MONITOR events can now contain backtraces
+               changed address field in TYPE_SAMPLE_UBIN to be based on ptr_base
+               added an image pointer field to assembly load events
+               added an exception object field to TYPE_CLAUSE
  */
 
 enum {
