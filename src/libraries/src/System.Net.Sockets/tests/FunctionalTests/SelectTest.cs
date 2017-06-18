@@ -177,7 +177,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SelectMode.SelectRead)]
         [InlineData(SelectMode.SelectError)]
-        [ActiveIssue(21057, TargetFrameworkMonikers.Uap)]
         public void Poll_NotReady(SelectMode mode)
         {
             KeyValuePair<Socket, Socket> pair = CreateConnectedSockets();
