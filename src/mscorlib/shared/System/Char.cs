@@ -274,7 +274,11 @@ namespace System
             // U+000d = <control> CARRIAGE RETURN
             // U+0085 = <control> NEXT LINE
             // U+00a0 = NO-BREAK SPACE
-            return c == ' ' || (c >= '\x0009' && c <= '\x000d') || c == '\x00a0' || c == '\x0085';
+            return
+                c == ' ' ||
+                (uint)(c - '\x0009') <= ('\x000d' - '\x0009') || // (c >= '\x0009' && c <= '\x000d')
+                c == '\x00a0' ||
+                c == '\x0085';
         }
 
         /*===============================ISWHITESPACE===================================
