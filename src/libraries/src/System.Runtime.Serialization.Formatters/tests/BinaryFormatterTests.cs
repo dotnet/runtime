@@ -363,9 +363,11 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(42, real);
         }
 
-        [OuterLoop]
-        [Theory]
-        [MemberData(nameof(FuzzInputs_MemberData))]
+        // Test is disabled becaues it can cause improbable memory allocations leading to interminable paging.
+        // We're keeping the code because it could be useful to a dev making local changes to binary formatter code.
+        //[OuterLoop]
+        //[Theory]
+        //[MemberData(nameof(FuzzInputs_MemberData))]
         public void Deserialize_FuzzInput(object obj, Random rand)
         {
             // Get the serialized data for the object
