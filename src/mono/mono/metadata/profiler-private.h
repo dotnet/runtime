@@ -49,7 +49,7 @@ void mono_profiler_thread_name     (gsize tid, const char *name);
 
 void mono_profiler_exception_thrown         (MonoObject *exception);
 void mono_profiler_exception_method_leave   (MonoMethod *method);
-void mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num);
+void mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num, MonoObject *exc);
 
 void mono_profiler_assembly_event  (MonoAssembly *assembly, int code);
 void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result);

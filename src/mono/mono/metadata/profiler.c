@@ -85,6 +85,7 @@ struct _ProfilerDesc {
 	MonoProfileExceptionFunc	exception_throw_cb;
 	MonoProfileMethodFunc exception_method_leave_cb;
 	MonoProfileExceptionClauseFunc exception_clause_cb;
+	MonoProfileExceptionClauseFunc2 exception_clause_cb2;
 
 	MonoProfileIomapFunc iomap_cb;
 
@@ -379,6 +380,14 @@ void mono_profiler_install_exception (MonoProfileExceptionFunc throw_callback, M
 	prof_list->exception_clause_cb = clause_callback;
 }
 
+void mono_profiler_install_exception_clause (MonoProfileExceptionClauseFunc2 clause_callback)
+{
+	if (!prof_list)
+		return;
+
+	prof_list->exception_clause_cb2 = clause_callback;
+}
+
 /**
  * mono_profiler_install_coverage_filter:
  */
@@ -635,12 +644,17 @@ mono_profiler_exception_method_leave (MonoMethod *method)
 }
 
 void
-mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num)
+mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num, MonoObject *exc)
 {
 	ProfilerDesc *prof;
 	for (prof = prof_list; prof; prof = prof->next) {
-		if ((prof->events & MONO_PROFILE_EXCEPTIONS) && prof->exception_clause_cb)
-			prof->exception_clause_cb (prof->profiler, method, clause_type, clause_num);
+		if (prof->events & MONO_PROFILE_EXCEPTIONS) {
+			if (prof->exception_clause_cb)
+				prof->exception_clause_cb (prof->profiler, method, clause_type, clause_num);
+
+			if (prof->exception_clause_cb2)
+				prof->exception_clause_cb2 (prof->profiler, method, clause_type, clause_num, exc);
+		}
 	}
 }
 
