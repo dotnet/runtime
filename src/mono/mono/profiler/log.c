@@ -121,9 +121,7 @@ static gint32 sync_points_ctr,
               code_buffers_ctr,
               exception_throws_ctr,
               exception_clauses_ctr,
-              monitor_contentions_ctr,
-              monitor_acquisitions_ctr,
-              monitor_failures_ctr,
+              monitor_events_ctr,
               thread_starts_ctr,
               thread_ends_ctr,
               thread_names_ctr,
@@ -2113,33 +2111,17 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_
 }
 
 static void
-monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEvent event)
+monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEvent ev)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces && event == MONO_PROFILER_MONITOR_CONTENTION) ? TYPE_MONITOR_BT : 0;
+	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_MONITOR_BT : 0;
 	FrameData data;
 
 	if (do_bt)
 		collect_bt (&data);
 
-	gint32 *ctr;
-
-	switch (event) {
-	case MONO_PROFILER_MONITOR_CONTENTION:
-		ctr = &monitor_contentions_ctr;
-		break;
-	case MONO_PROFILER_MONITOR_DONE:
-		ctr = &monitor_acquisitions_ctr;
-		break;
-	case MONO_PROFILER_MONITOR_FAIL:
-		ctr = &monitor_failures_ctr;
-		break;
-	default:
-		g_assert_not_reached ();
-		break;
-	}
-
-	ENTER_LOG (ctr, logbuffer,
+	ENTER_LOG (&monitor_events_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* ev */ +
 		LEB128_SIZE /* object */ +
 		(do_bt ? (
 			LEB128_SIZE /* count */ +
@@ -2149,7 +2131,8 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 		) : 0)
 	);
 
-	emit_event (logbuffer, (event << 4) | do_bt | TYPE_MONITOR);
+	emit_event (logbuffer, do_bt | TYPE_MONITOR);
+	emit_byte (logbuffer, ev);
 	emit_obj (logbuffer, object);
 
 	if (do_bt)
@@ -4468,9 +4451,7 @@ runtime_initialized (MonoProfiler *profiler)
 	register_counter ("Event: Code buffers", &code_buffers_ctr);
 	register_counter ("Event: Exception throws", &exception_throws_ctr);
 	register_counter ("Event: Exception clauses", &exception_clauses_ctr);
-	register_counter ("Event: Monitor contentions", &monitor_contentions_ctr);
-	register_counter ("Event: Monitor acquisitions", &monitor_acquisitions_ctr);
-	register_counter ("Event: Monitor failures", &monitor_failures_ctr);
+	register_counter ("Event: Monitor events", &monitor_events_ctr);
 	register_counter ("Event: Thread starts", &thread_starts_ctr);
 	register_counter ("Event: Thread ends", &thread_ends_ctr);
 	register_counter ("Event: Thread names", &thread_names_ctr);
