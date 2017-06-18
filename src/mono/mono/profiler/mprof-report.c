@@ -2828,6 +2828,8 @@ decode_buffer (ProfContext *ctx)
 				int clause_num = decode_uleb128 (p, &p);
 				int64_t ptrdiff = decode_sleb128 (p, &p);
 				method_base += ptrdiff;
+				if (ctx->data_version > 13)
+					decode_uleb128 (p, &p); // exception object
 				if (record)
 					clause_summary [clause_type]++;
 				if (debug)

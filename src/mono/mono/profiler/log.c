@@ -2099,7 +2099,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 }
 
 static void
-clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num)
+clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num, MonoObject *exc)
 {
 	ENTER_LOG (&exception_clauses_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -2112,6 +2112,7 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_
 	emit_byte (logbuffer, clause_type);
 	emit_value (logbuffer, clause_num);
 	emit_method (logbuffer, method);
+	emit_obj (logbuffer, exc);
 
 	EXIT_LOG;
 }
@@ -4697,7 +4698,8 @@ mono_profiler_startup (const char *desc)
 
 	if (config.effective_mask & PROFLOG_EXCEPTION_EVENTS) {
 		events |= MONO_PROFILE_EXCEPTIONS;
-		mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
+		mono_profiler_install_exception (throw_exc, method_exc_leave, NULL);
+		mono_profiler_install_exception_clause (clause_exc);
 	}
 
 	if (config.effective_mask & PROFLOG_ALLOCATION_EVENTS) {
