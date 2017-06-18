@@ -2494,6 +2494,8 @@ decode_buffer (ProfContext *ctx)
 				while (*p) p++;
 				p++;
 			} else if (mtype == TYPE_ASSEMBLY) {
+				if (ctx->data_version > 13)
+					decode_sleb128 (p, &p); // image
 				if (ctx->data_version < 13)
 					decode_uleb128 (p, &p); /* flags */
 				if (debug)

@@ -1847,17 +1847,20 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
+	MonoImage *image = mono_assembly_get_image (assembly);
 
 	ENTER_LOG (&assembly_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
+		LEB128_SIZE /* image */ +
 		nlen /* name */
 	);
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_ASSEMBLY);
 	emit_ptr (logbuffer, assembly);
+	emit_ptr (logbuffer, image);
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
 
@@ -1871,17 +1874,20 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
+	MonoImage *image = mono_assembly_get_image (assembly);
 
 	ENTER_LOG (&assembly_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
+		LEB128_SIZE /* image */ +
 		nlen /* name */
 	);
 
 	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_ASSEMBLY);
 	emit_ptr (logbuffer, assembly);
+	emit_ptr (logbuffer, image);
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
 
