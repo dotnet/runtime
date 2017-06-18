@@ -221,11 +221,11 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type alloc format:
  * type: TYPE_ALLOC
- * exinfo: flags: TYPE_ALLOC_BT
+ * exinfo: zero or TYPE_ALLOC_BT
  * [ptr: sleb128] class as a byte difference from ptr_base
  * [obj: sleb128] object address as a byte difference from obj_base
  * [size: uleb128] size of the object in the heap
- * If the TYPE_ALLOC_BT flag is set, a backtrace follows.
+ * If exinfo == TYPE_ALLOC_BT, a backtrace follows.
  *
  * type GC format:
  * type: TYPE_GC
@@ -268,6 +268,7 @@ static MonoLinkedListSet profiler_thread_list;
  * if mtype == TYPE_IMAGE
  * 	[name: string] image file name
  * if mtype == TYPE_ASSEMBLY
+ *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
  * 	[name: string] assembly name
  * if mtype == TYPE_DOMAIN && exinfo == 0
  * 	[name: string] domain friendly name
@@ -288,15 +289,16 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type exception format:
  * type: TYPE_EXCEPTION
- * exinfo: TYPE_THROW_BT flag or one of: TYPE_CLAUSE
+ * exinfo: zero, TYPE_CLAUSE, or TYPE_THROW_BT
  * if exinfo == TYPE_CLAUSE
  * 	[clause type: byte] MonoExceptionEnum enum value
  * 	[clause index: uleb128] index of the current clause
  * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
  * 	pointer or the buffer method_base
+ * 	[object: sleb128] the exception object as a difference from obj_base
  * else
  * 	[object: sleb128] the exception object as a difference from obj_base
- * 	if exinfo has TYPE_THROW_BT set, a backtrace follows.
+ * 	If exinfo == TYPE_THROW_BT, a backtrace follows.
  *
  * type runtime format:
  * type: TYPE_RUNTIME
@@ -310,10 +312,10 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type monitor format:
  * type: TYPE_MONITOR
- * exinfo: TYPE_MONITOR_BT flag and one of: MONO_PROFILER_MONITOR_(CONTENTION|FAIL|DONE)
+ * exinfo: zero or TYPE_MONITOR_BT
+ * [type: byte] MONO_PROFILER_MONITOR_{CONTENTION,FAIL,DONE}
  * [object: sleb128] the lock object as a difference from obj_base
- * if exinfo.low3bits == MONO_PROFILER_MONITOR_CONTENTION
- *	If the TYPE_MONITOR_BT flag is set, a backtrace follows.
+ * If exinfo == TYPE_MONITOR_BT, a backtrace follows.
  *
  * type heap format
  * type: TYPE_HEAP
@@ -353,7 +355,7 @@ static MonoLinkedListSet profiler_thread_list;
  * 	[size: uleb128] symbol size (may be 0 if unknown)
  * 	[name: string] symbol name
  * if exinfo == TYPE_SAMPLE_UBIN
- * 	[address: sleb128] address where binary has been loaded
+ * 	[address: sleb128] address where binary has been loaded as a difference from ptr_base
  * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
  * 	[size: uleb128] memory size
  * 	[name: string] binary name
@@ -376,9 +378,9 @@ static MonoLinkedListSet profiler_thread_list;
  * 		[type: byte] type of counter value
  * 		if type == string:
  * 			if value == null:
- * 				[0: uleb128] 0 -> value is null
+ * 				[0: byte] 0 -> value is null
  * 			else:
- * 				[1: uleb128] 1 -> value is not null
+ * 				[1: byte] 1 -> value is not null
  * 				[value: string] counter value
  * 		else:
  * 			[value: uleb128/sleb128/double] counter value, can be sleb128, uleb128 or double (determined by using type)
