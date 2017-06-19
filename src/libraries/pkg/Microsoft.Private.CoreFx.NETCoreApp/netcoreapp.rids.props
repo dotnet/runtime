@@ -13,6 +13,9 @@
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-arm">
