@@ -697,6 +697,7 @@ private:
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
+    void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
 #endif
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
 
