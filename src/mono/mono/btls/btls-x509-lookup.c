@@ -48,8 +48,10 @@ mono_btls_x509_lookup_new (MonoBtlsX509Store *store, MonoBtlsX509LookupType type
 		return NULL;
 
 	store_lookup = X509_STORE_add_lookup (mono_btls_x509_store_peek_store (store), method);
-	if (!store_lookup)
+	if (!store_lookup) {
+		OPENSSL_free (lookup);
 		return NULL;
+	}
 
 	memset (lookup, 0, sizeof(MonoBtlsX509Lookup));
 	// The X509_STORE owns the X509_LOOKUP.
