@@ -470,6 +470,17 @@ mono_error_set_invalid_program (MonoError *oerror, const char *msg_format, ...)
 	set_error_message ();
 }
 
+/**
+ * mono_error_set_invalid_cast:
+ *
+ * System.InvalidCastException
+ */
+void
+mono_error_set_invalid_cast (MonoError *oerror)
+{
+        mono_error_set_generic_error (oerror, "System", "InvalidCastException", "");
+}
+
 void
 mono_error_set_exception_instance (MonoError *oerror, MonoException *exc)
 {
