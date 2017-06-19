@@ -4396,7 +4396,13 @@ dumper_thread (void *arg)
 	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	while (InterlockedRead (&prof->run_dumper_thread)) {
-		mono_os_sem_wait (&prof->dumper_queue_sem, MONO_SEM_FLAGS_NONE);
+		/*
+		 * Flush samples every second so it doesn't seem like the profiler is
+		 * not working if the program is mostly idle.
+		 */
+		if (mono_os_sem_timedwait (&prof->dumper_queue_sem, 1000, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT)
+			send_log_unsafe (FALSE);
+
 		handle_dumper_queue_entry (prof);
 	}
 
