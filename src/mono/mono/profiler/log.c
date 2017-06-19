@@ -121,9 +121,7 @@ static gint32 sync_points_ctr,
               code_buffers_ctr,
               exception_throws_ctr,
               exception_clauses_ctr,
-              monitor_contentions_ctr,
-              monitor_acquisitions_ctr,
-              monitor_failures_ctr,
+              monitor_events_ctr,
               thread_starts_ctr,
               thread_ends_ctr,
               thread_names_ctr,
@@ -223,11 +221,11 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type alloc format:
  * type: TYPE_ALLOC
- * exinfo: flags: TYPE_ALLOC_BT
+ * exinfo: zero or TYPE_ALLOC_BT
  * [ptr: sleb128] class as a byte difference from ptr_base
  * [obj: sleb128] object address as a byte difference from obj_base
  * [size: uleb128] size of the object in the heap
- * If the TYPE_ALLOC_BT flag is set, a backtrace follows.
+ * If exinfo == TYPE_ALLOC_BT, a backtrace follows.
  *
  * type GC format:
  * type: TYPE_GC
@@ -270,6 +268,7 @@ static MonoLinkedListSet profiler_thread_list;
  * if mtype == TYPE_IMAGE
  * 	[name: string] image file name
  * if mtype == TYPE_ASSEMBLY
+ *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
  * 	[name: string] assembly name
  * if mtype == TYPE_DOMAIN && exinfo == 0
  * 	[name: string] domain friendly name
@@ -290,15 +289,16 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type exception format:
  * type: TYPE_EXCEPTION
- * exinfo: TYPE_THROW_BT flag or one of: TYPE_CLAUSE
+ * exinfo: zero, TYPE_CLAUSE, or TYPE_THROW_BT
  * if exinfo == TYPE_CLAUSE
  * 	[clause type: byte] MonoExceptionEnum enum value
  * 	[clause index: uleb128] index of the current clause
  * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
  * 	pointer or the buffer method_base
+ * 	[object: sleb128] the exception object as a difference from obj_base
  * else
  * 	[object: sleb128] the exception object as a difference from obj_base
- * 	if exinfo has TYPE_THROW_BT set, a backtrace follows.
+ * 	If exinfo == TYPE_THROW_BT, a backtrace follows.
  *
  * type runtime format:
  * type: TYPE_RUNTIME
@@ -312,10 +312,10 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type monitor format:
  * type: TYPE_MONITOR
- * exinfo: TYPE_MONITOR_BT flag and one of: MONO_PROFILER_MONITOR_(CONTENTION|FAIL|DONE)
+ * exinfo: zero or TYPE_MONITOR_BT
+ * [type: byte] MONO_PROFILER_MONITOR_{CONTENTION,FAIL,DONE}
  * [object: sleb128] the lock object as a difference from obj_base
- * if exinfo.low3bits == MONO_PROFILER_MONITOR_CONTENTION
- *	If the TYPE_MONITOR_BT flag is set, a backtrace follows.
+ * If exinfo == TYPE_MONITOR_BT, a backtrace follows.
  *
  * type heap format
  * type: TYPE_HEAP
@@ -355,7 +355,7 @@ static MonoLinkedListSet profiler_thread_list;
  * 	[size: uleb128] symbol size (may be 0 if unknown)
  * 	[name: string] symbol name
  * if exinfo == TYPE_SAMPLE_UBIN
- * 	[address: sleb128] address where binary has been loaded
+ * 	[address: sleb128] address where binary has been loaded as a difference from ptr_base
  * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
  * 	[size: uleb128] memory size
  * 	[name: string] binary name
@@ -378,9 +378,9 @@ static MonoLinkedListSet profiler_thread_list;
  * 		[type: byte] type of counter value
  * 		if type == string:
  * 			if value == null:
- * 				[0: uleb128] 0 -> value is null
+ * 				[0: byte] 0 -> value is null
  * 			else:
- * 				[1: uleb128] 1 -> value is not null
+ * 				[1: byte] 1 -> value is not null
  * 				[value: string] counter value
  * 		else:
  * 			[value: uleb128/sleb128/double] counter value, can be sleb128, uleb128 or double (determined by using type)
@@ -1849,17 +1849,20 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly, int result)
 
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
+	MonoImage *image = mono_assembly_get_image (assembly);
 
 	ENTER_LOG (&assembly_loads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
+		LEB128_SIZE /* image */ +
 		nlen /* name */
 	);
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_ASSEMBLY);
 	emit_ptr (logbuffer, assembly);
+	emit_ptr (logbuffer, image);
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
 
@@ -1873,17 +1876,20 @@ assembly_unloaded (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	char *name = mono_stringify_assembly_name (mono_assembly_get_name (assembly));
 	int nlen = strlen (name) + 1;
+	MonoImage *image = mono_assembly_get_image (assembly);
 
 	ENTER_LOG (&assembly_unloads_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
 		BYTE_SIZE /* type */ +
 		LEB128_SIZE /* assembly */ +
+		LEB128_SIZE /* image */ +
 		nlen /* name */
 	);
 
 	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_ASSEMBLY);
 	emit_ptr (logbuffer, assembly);
+	emit_ptr (logbuffer, image);
 	memcpy (logbuffer->cursor, name, nlen);
 	logbuffer->cursor += nlen;
 
@@ -2095,7 +2101,7 @@ throw_exc (MonoProfiler *prof, MonoObject *object)
 }
 
 static void
-clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num)
+clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num, MonoObject *exc)
 {
 	ENTER_LOG (&exception_clauses_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -2108,38 +2114,23 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_
 	emit_byte (logbuffer, clause_type);
 	emit_value (logbuffer, clause_num);
 	emit_method (logbuffer, method);
+	emit_obj (logbuffer, exc);
 
 	EXIT_LOG;
 }
 
 static void
-monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEvent event)
+monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEvent ev)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces && event == MONO_PROFILER_MONITOR_CONTENTION) ? TYPE_MONITOR_BT : 0;
+	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_MONITOR_BT : 0;
 	FrameData data;
 
 	if (do_bt)
 		collect_bt (&data);
 
-	gint32 *ctr;
-
-	switch (event) {
-	case MONO_PROFILER_MONITOR_CONTENTION:
-		ctr = &monitor_contentions_ctr;
-		break;
-	case MONO_PROFILER_MONITOR_DONE:
-		ctr = &monitor_acquisitions_ctr;
-		break;
-	case MONO_PROFILER_MONITOR_FAIL:
-		ctr = &monitor_failures_ctr;
-		break;
-	default:
-		g_assert_not_reached ();
-		break;
-	}
-
-	ENTER_LOG (ctr, logbuffer,
+	ENTER_LOG (&monitor_events_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
+		BYTE_SIZE /* ev */ +
 		LEB128_SIZE /* object */ +
 		(do_bt ? (
 			LEB128_SIZE /* count */ +
@@ -2149,7 +2140,8 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 		) : 0)
 	);
 
-	emit_event (logbuffer, (event << 4) | do_bt | TYPE_MONITOR);
+	emit_event (logbuffer, do_bt | TYPE_MONITOR);
+	emit_byte (logbuffer, ev);
 	emit_obj (logbuffer, object);
 
 	if (do_bt)
@@ -2478,7 +2470,7 @@ dump_ubin (MonoProfiler *prof, const char *filename, uintptr_t load_addr, uint64
 	);
 
 	emit_event (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_UBIN);
-	emit_svalue (logbuffer, load_addr);
+	emit_ptr (logbuffer, load_addr);
 	emit_uvalue (logbuffer, offset);
 	emit_uvalue (logbuffer, size);
 	memcpy (logbuffer->cursor, filename, len);
@@ -4468,9 +4460,7 @@ runtime_initialized (MonoProfiler *profiler)
 	register_counter ("Event: Code buffers", &code_buffers_ctr);
 	register_counter ("Event: Exception throws", &exception_throws_ctr);
 	register_counter ("Event: Exception clauses", &exception_clauses_ctr);
-	register_counter ("Event: Monitor contentions", &monitor_contentions_ctr);
-	register_counter ("Event: Monitor acquisitions", &monitor_acquisitions_ctr);
-	register_counter ("Event: Monitor failures", &monitor_failures_ctr);
+	register_counter ("Event: Monitor events", &monitor_events_ctr);
 	register_counter ("Event: Thread starts", &thread_starts_ctr);
 	register_counter ("Event: Thread ends", &thread_ends_ctr);
 	register_counter ("Event: Thread names", &thread_names_ctr);
@@ -4710,7 +4700,8 @@ mono_profiler_startup (const char *desc)
 
 	if (config.effective_mask & PROFLOG_EXCEPTION_EVENTS) {
 		events |= MONO_PROFILE_EXCEPTIONS;
-		mono_profiler_install_exception (throw_exc, method_exc_leave, clause_exc);
+		mono_profiler_install_exception (throw_exc, method_exc_leave, NULL);
+		mono_profiler_install_exception_clause (clause_exc);
 	}
 
 	if (config.effective_mask & PROFLOG_ALLOCATION_EVENTS) {

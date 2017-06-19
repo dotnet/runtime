@@ -150,6 +150,7 @@ typedef void (*MonoProfileMonitorFunc)  (MonoProfiler *prof, MonoObject *obj, Mo
 
 typedef void (*MonoProfileExceptionFunc) (MonoProfiler *prof, MonoObject *object);
 typedef void (*MonoProfileExceptionClauseFunc) (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
+typedef void (*MonoProfileExceptionClauseFunc2) (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num, MonoObject *exc);
 
 typedef void (*MonoProfileAppDomainResult)(MonoProfiler *prof, MonoDomain   *domain,   int result);
 typedef void (*MonoProfileAppDomainFriendlyNameFunc) (MonoProfiler *prof, MonoDomain *domain, const char *name);
@@ -217,6 +218,7 @@ MONO_API void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback
 MONO_API void mono_profiler_install_statistical (MonoProfileStatFunc callback);
 MONO_API void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth, MonoProfilerCallChainStrategy call_chain_strategy);
 MONO_API void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback);
+MONO_API void mono_profiler_install_exception_clause (MonoProfileExceptionClauseFunc2 clause_callback);
 MONO_API void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
 MONO_API void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
 MONO_API void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
