@@ -2109,13 +2109,21 @@ namespace System
                             // Only FILE scheme may have UNC Path flag set
                             _flags |= Flags.UncPath;
                             idx = i;
+
+                            _syntax = IsWindowsSystem ? _syntax : UriParser.UnixFileUri;
+                        }
+                        else if (!IsWindowsSystem && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && pUriString[i - 1] == '/' && i - idx == 3)
+                        {
+                            _syntax = UriParser.UnixFileUri;
+                            _flags |= Flags.UnixPath | Flags.AuthorityFound;
+                            idx += 2;
                         }
                     }
                 }
                 //
                 //STEP 1.5 decide on the Authority component
                 //
-                if ((_flags & (Flags.UncPath | Flags.DosPath)) != 0)
+                if ((_flags & (Flags.UncPath | Flags.DosPath | Flags.UnixPath)) != 0)
                 {
                 }
                 else if ((idx + 2) <= length)
@@ -2187,7 +2195,8 @@ namespace System
 
                     // This will disallow '\' as the host terminator for any scheme that is not implicitFile or cannot have a Dos Path
                     if ((idx < (ushort)length && pUriString[idx] == '\\') && NotAny(Flags.ImplicitFile) &&
-                        _syntax.NotAny(UriSyntaxFlags.AllowDOSPath))
+                        (_syntax.NotAny(UriSyntaxFlags.AllowDOSPath) ||
+                        (InFact(Flags.UncPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes))))
                     {
                         return ParsingError.BadAuthorityTerminator;
                     }
