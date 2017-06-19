@@ -11486,18 +11486,21 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 
 				switch (ip [1]) {
-					case CEE_MONO_LDPTR_CARD_TABLE:
-						ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
-						break;
-					case CEE_MONO_LDPTR_NURSERY_START:
-						ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
-						break;
-					case CEE_MONO_LDPTR_NURSERY_BITS:
-						ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GC_NURSERY_BITS, NULL);
-						break;
-					case CEE_MONO_LDPTR_INT_REQ_FLAG:
-						ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
-						break;
+				case CEE_MONO_LDPTR_CARD_TABLE:
+					ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GC_CARD_TABLE_ADDR, NULL);
+					break;
+				case CEE_MONO_LDPTR_NURSERY_START:
+					ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GC_NURSERY_START, NULL);
+					break;
+				case CEE_MONO_LDPTR_NURSERY_BITS:
+					ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_GC_NURSERY_BITS, NULL);
+					break;
+				case CEE_MONO_LDPTR_INT_REQ_FLAG:
+					ins = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG, NULL);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
 				}
 
 				*sp++ = ins;
