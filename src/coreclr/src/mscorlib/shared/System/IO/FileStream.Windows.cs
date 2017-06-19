@@ -108,9 +108,28 @@ namespace System.IO
             }
         }
 
-        private void InitFromHandle(SafeFileHandle handle)
+        private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
-            int handleType = Interop.Kernel32.GetFileType(_fileHandle);
+#if DEBUG
+            bool hadBinding = handle.ThreadPoolBinding != null;
+
+            try
+            {
+#endif
+                InitFromHandleImpl(handle, access, useAsyncIO);
+#if DEBUG
+            }
+            catch
+            {
+                Debug.Assert(hadBinding || handle.ThreadPoolBinding == null, "We should never error out with a ThreadPoolBinding we've added");
+                throw;
+            }
+#endif
+        }
+
+        private void InitFromHandleImpl(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
+        {
+            int handleType = Interop.Kernel32.GetFileType(handle);
             Debug.Assert(handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_PIPE || handleType == Interop.Kernel32.FileTypes.FILE_TYPE_CHAR, "FileStream was passed an unknown file type!");
 
             _canSeek = handleType == Interop.Kernel32.FileTypes.FILE_TYPE_DISK;
@@ -128,11 +147,11 @@ namespace System.IO
             // If, however, we've already bound this file handle to our completion port,
             // don't try to bind it again because it will fail.  A handle can only be
             // bound to a single completion port at a time.
-            if (_useAsyncIO && !GetSuppressBindHandle(handle))
+            if (useAsyncIO && !(handle.IsAsync ?? false))
             {
                 try
                 {
-                    _fileHandle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(_fileHandle);
+                    handle.ThreadPoolBinding = ThreadPoolBoundHandle.BindHandle(handle);
                 }
                 catch (Exception ex)
                 {
@@ -141,21 +160,16 @@ namespace System.IO
                     throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle), ex);
                 }
             }
-            else if (!_useAsyncIO)
+            else if (!useAsyncIO)
             {
                 if (handleType != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)
-                    VerifyHandleIsSync();
+                    VerifyHandleIsSync(handle, access);
             }
 
             if (_canSeek)
                 SeekCore(0, SeekOrigin.Current);
             else
                 _filePosition = 0;
-        }
-
-        private static bool GetSuppressBindHandle(SafeFileHandle handle)
-        {
-            return handle.IsAsync.HasValue ? handle.IsAsync.Value : false;
         }
 
         private unsafe static Interop.Kernel32.SECURITY_ATTRIBUTES GetSecAttrs(FileShare share)
@@ -173,15 +187,13 @@ namespace System.IO
 
         // Verifies that this handle supports synchronous IO operations (unless you
         // didn't open it for either reading or writing).
-        private unsafe void VerifyHandleIsSync()
+        private unsafe static void VerifyHandleIsSync(SafeFileHandle handle, FileAccess access)
         {
-            Debug.Assert(!_useAsyncIO);
-
             // Do NOT use this method on pipes.  Reading or writing to a pipe may
             // cause an app to block incorrectly, introducing a deadlock (depending
             // on whether a write will wake up an already-blocked thread or this
             // Win32FileStream's thread).
-            Debug.Assert(Interop.Kernel32.GetFileType(_fileHandle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE);
+            Debug.Assert(Interop.Kernel32.GetFileType(handle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE);
 
             byte* bytes = stackalloc byte[1];
             int numBytesReadWritten;
@@ -191,20 +203,25 @@ namespace System.IO
             // has been a write on the other end.  We'll just have to deal with it,
             // For the read end of a pipe, you can mess up and 
             // accidentally read synchronously from an async pipe.
-            if ((_access & FileAccess.Read) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
+            if ((access & FileAccess.Read) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
             {
-                r = Interop.Kernel32.ReadFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
+                r = Interop.Kernel32.ReadFile(handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             }
-            else if ((_access & FileAccess.Write) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
+            else if ((access & FileAccess.Write) != 0) // don't use the virtual CanRead or CanWrite, as this may be used in the ctor
             {
-                r = Interop.Kernel32.WriteFile(_fileHandle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
+                r = Interop.Kernel32.WriteFile(handle, bytes, 0, out numBytesReadWritten, IntPtr.Zero);
             }
 
             if (r == 0)
             {
-                int errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid(throwIfInvalidHandle: true);
-                if (errorCode == ERROR_INVALID_PARAMETER)
-                    throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
+                int errorCode = Marshal.GetLastWin32Error();
+                switch (errorCode)
+                {
+                    case Interop.Errors.ERROR_INVALID_PARAMETER:
+                        throw new ArgumentException(SR.Arg_HandleNotSync, "handle");
+                    case Interop.Errors.ERROR_INVALID_HANDLE:
+                        throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                }
             }
         }
 

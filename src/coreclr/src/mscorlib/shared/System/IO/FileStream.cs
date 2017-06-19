@@ -81,8 +81,33 @@ namespace System.IO
 
         [Obsolete("This constructor has been deprecated.  Please use new FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync) instead, and optionally make a new SafeFileHandle with ownsHandle=false if needed.  http://go.microsoft.com/fwlink/?linkid=14202")]
         public FileStream(IntPtr handle, FileAccess access, bool ownsHandle, int bufferSize, bool isAsync)
-            : this(new SafeFileHandle(handle, ownsHandle), access, bufferSize, isAsync)
         {
+            SafeFileHandle safeHandle = new SafeFileHandle(handle, ownsHandle: ownsHandle);
+            try
+            {
+                ValidateAndInitFromHandle(safeHandle, access, bufferSize, isAsync);
+            }
+            catch
+            {
+                // We don't want to take ownership of closing passed in handles
+                // *unless* the constructor completes successfully.
+                GC.SuppressFinalize(safeHandle);
+
+                // This would also prevent Close from being called, but is unnecessary
+                // as we've removed the object from the finalizer queue.
+                //
+                // safeHandle.SetHandleAsInvalid();
+                throw;
+            }
+
+            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
+            // but we can't as they're readonly.
+            _access = access;
+            _useAsyncIO = isAsync;
+
+            // As the handle was passed in, we must set the handle field at the very end to
+            // avoid the finalizer closing the handle when we throw errors.
+            _fileHandle = safeHandle;
         }
 
         public FileStream(SafeFileHandle handle, FileAccess access)
@@ -95,7 +120,7 @@ namespace System.IO
         {
         }
 
-        public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        private void ValidateAndInitFromHandle(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
         {
             if (handle.IsInvalid)
                 throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
@@ -110,13 +135,24 @@ namespace System.IO
             if (handle.IsAsync.HasValue && isAsync != handle.IsAsync.Value)
                 throw new ArgumentException(SR.Arg_HandleNotAsync, nameof(handle));
 
-            _access = access;
-            _useAsyncIO = isAsync;
             _exposedHandle = true;
             _bufferLength = bufferSize;
-            _fileHandle = handle;
 
-            InitFromHandle(handle);
+            InitFromHandle(handle, access, isAsync);
+        }
+
+        public FileStream(SafeFileHandle handle, FileAccess access, int bufferSize, bool isAsync)
+        {
+            ValidateAndInitFromHandle(handle, access, bufferSize, isAsync);
+
+            // Note: Cleaner to set the following fields in ValidateAndInitFromHandle,
+            // but we can't as they're readonly.
+            _access = access;
+            _useAsyncIO = isAsync;
+
+            // As the handle was passed in, we must set the handle field at the very end to
+            // avoid the finalizer closing the handle when we throw errors.
+            _fileHandle = handle;
         }
 
         public FileStream(string path, FileMode mode) :
