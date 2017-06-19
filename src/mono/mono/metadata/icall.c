@@ -259,30 +259,30 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 
 	if (mono_class_is_nullable (ec)) {
 		mono_nullable_init ((guint8*)ea, value, ec);
-		return;
+		goto leave;
 	}
 
 	if (!value) {
 		mono_gc_bzero_atomic (ea, esize);
-		return;
+		goto leave;
 	}
 
 #define NO_WIDENING_CONVERSION G_STMT_START{				\
 		mono_error_set_argument (error, "value", "not a widening conversion"); \
-		return;							\
+		goto leave;							\
 	}G_STMT_END
 
 #define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{			\
 		if (esize < vsize + (extra)) {				\
 			mono_error_set_argument (error, "value", "not a widening conversion"); \
-			return;						\
+			goto leave;						\
 		}							\
 	}G_STMT_END
 
 #define INVALID_CAST G_STMT_START{					\
 		mono_get_runtime_callbacks ()->set_cast_details (vc, ec); \
 		mono_error_set_invalid_cast (error);			\
-		return;							\
+		goto leave;							\
 	}G_STMT_END
 
 	/* Check element (destination) type. */
@@ -322,11 +322,11 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	if (!ec->valuetype) {
 		gboolean castOk = (NULL != mono_object_isinst_checked (value, ec, error));
 		if (!is_ok (error))
-			return;
+			goto leave;
 		if (!castOk)
 			INVALID_CAST;
 		mono_gc_wbarrier_set_arrayref (arr, ea, (MonoObject*)value);
-		return;
+		goto leave;
 	}
 
 	if (mono_object_isinst_checked (value, ec, error)) {
@@ -334,10 +334,10 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
 		else
 			mono_gc_memmove_atomic (ea, (char *)value + sizeof (MonoObject), esize);
-		return;
+		goto leave;
 	}
 	if (!is_ok (error))
-		return;
+		goto leave;
 
 	if (!vc->valuetype)
 		INVALID_CAST;
@@ -361,7 +361,7 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) u64; \
-		return; \
+		goto leave; \
 	/* You can't assign a signed value to an unsigned array. */ \
 	case MONO_TYPE_I1: \
 	case MONO_TYPE_I2: \
@@ -382,7 +382,7 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	case MONO_TYPE_I8: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) i64; \
-		return; \
+		goto leave; \
 	/* You can assign an unsigned value to a signed array if the array's */ \
 	/* element size is larger than the value size. */ \
 	case MONO_TYPE_U1: \
@@ -392,7 +392,7 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(1); \
 		*(etype *) ea = (etype) u64; \
-		return; \
+		goto leave; \
 	/* You can't assign a floating point number to an integer array. */ \
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
@@ -406,7 +406,7 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	case MONO_TYPE_R8: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) r64; \
-		return; \
+		goto leave; \
 	/* All integer values fit into a floating point array, so we don't */ \
 	/* need to CHECK_WIDENING_CONVERSION here. */ \
 	case MONO_TYPE_I1: \
@@ -414,14 +414,14 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	case MONO_TYPE_I4: \
 	case MONO_TYPE_I8: \
 		*(etype *) ea = (etype) i64; \
-		return; \
+		goto leave; \
 	case MONO_TYPE_U1: \
 	case MONO_TYPE_U2: \
 	case MONO_TYPE_U4: \
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
 		*(etype *) ea = (etype) u64; \
-		return; \
+		goto leave; \
 	} \
 }G_STMT_END
 
@@ -507,8 +507,8 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	}
 
 	INVALID_CAST;
-	/* Not reached, INVALID_CAST does not return. Just to avoid a compiler warning ... */
-	return;
+	/* Not reached, INVALID_CAST does fall thru. */
+	g_assert_not_reached ();
 
 #undef INVALID_CAST
 #undef NO_WIDENING_CONVERSION
@@ -516,6 +516,8 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 #undef ASSIGN_UNSIGNED
 #undef ASSIGN_SIGNED
 #undef ASSIGN_REAL
+leave:
+	return;
 }
 
 ICALL_EXPORT void 
