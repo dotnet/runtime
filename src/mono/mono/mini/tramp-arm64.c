@@ -79,8 +79,7 @@ mono_arch_get_call_target (guint8 *code)
 	code -= 4;
 
 	imm = *(guint32*)code;
-	/* Should be a bl */
-	g_assert (((imm >> 31) & 0x1) == 0x1);
+	/* Should be a b/bl */
 	g_assert (((imm >> 26) & 0x7) == 0x5);
 
 	disp = (imm & 0x3ffffff);
