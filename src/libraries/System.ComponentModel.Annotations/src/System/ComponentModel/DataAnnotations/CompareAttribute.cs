@@ -56,27 +56,15 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (OtherPropertyDisplayName == null)
                 {
-                    OtherPropertyDisplayName = GetDisplayNameForProperty(validationContext.ObjectType, OtherProperty);
+                    OtherPropertyDisplayName = GetDisplayNameForProperty(validationContext.ObjectType, otherPropertyInfo);
                 }
                 return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
             }
             return null;
         }
 
-        private static string GetDisplayNameForProperty(Type containerType, string propertyName)
+        private string GetDisplayNameForProperty(Type containerType, PropertyInfo property)
         {
-            var property = containerType.GetRuntimeProperties()
-                .SingleOrDefault(
-                    prop =>
-                        IsPublic(prop) &&
-                        string.Equals(propertyName, prop.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (property == null)
-            {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
-                    SR.Common_PropertyNotFound, containerType.FullName, propertyName));
-            }
-
             var attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
             var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
             if (display != null)
@@ -84,7 +72,7 @@ namespace System.ComponentModel.DataAnnotations
                 return display.GetName();
             }
 
-            return propertyName;
+            return OtherProperty;
         }
 
         private static bool IsPublic(PropertyInfo p)
