@@ -8595,6 +8595,10 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_LDDOMAIN);
 		mono_mb_emit_ldloc_addr (mb, attach_dummy_local);
+		/*
+		 * This icall is special cased in the JIT so it works in native-to-managed wrappers in unattached threads.
+		 * Keep this in sync with the CEE_JIT_ICALL code in the JIT.
+		 */
 		mono_mb_emit_icall (mb, mono_threads_attach_coop);
 		mono_mb_emit_stloc (mb, attach_cookie_local);
 	}
