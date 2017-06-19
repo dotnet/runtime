@@ -1023,8 +1023,12 @@ register_method_local (MonoMethod *method, MonoJitInfo *ji)
 		info->ji = ji;
 		info->time = current_time ();
 
+		buffer_lock ();
+
 		GPtrArray *arr = thread->methods ? thread->methods : (thread->methods = g_ptr_array_new ());
 		g_ptr_array_add (arr, info);
+
+		buffer_unlock ();
 	}
 }
 
