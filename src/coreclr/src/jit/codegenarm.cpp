@@ -1800,7 +1800,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
     {
         assert((op1->gtFlags & GTF_MUL_64RSLT) != 0);
 
-        GenTreeMulLong* mul = op1->AsMulLong();
+        GenTreeMultiRegOp* mul = op1->AsMultiRegOp();
 
         // Stack store
         getEmitter()->emitIns_S_R(ins_Store(TYP_INT), emitTypeSize(TYP_INT), mul->gtRegNum, lclNum, 0);
@@ -1818,8 +1818,9 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 // Return Value:
 //    None.
 //
-void CodeGen::genCodeForMulLong(GenTreeMulLong* node)
+void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
 {
+    assert(node->OperGet() == GT_MUL_LONG);
     genConsumeOperands(node);
     GenTree*    src1 = node->gtOp1;
     GenTree*    src2 = node->gtOp2;

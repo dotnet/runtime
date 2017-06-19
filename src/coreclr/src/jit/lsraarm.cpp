@@ -727,6 +727,35 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             info->internalIntCount = 1;
             break;
 
+        case GT_COPY:
+            info->srcCount = 1;
+            info->dstCount = 1;
+#ifdef ARM_SOFTFP
+            // This case currently only occurs for double types that are passed as TYP_LONG;
+            // actual long types would have been decomposed by now.
+            if (tree->TypeGet() == TYP_LONG)
+            {
+                info->dstCount = 2;
+            }
+#endif
+            break;
+
+        case GT_PUTARG_REG:
+#ifdef ARM_SOFTFP
+            // This case currently only occurs for double types that are passed as TYP_LONG;
+            // actual long types would have been decomposed by now.
+            if (tree->TypeGet() == TYP_LONG)
+            {
+                info->srcCount = 2;
+            }
+            else
+#endif
+            {
+                info->srcCount = 1;
+            }
+            info->dstCount = info->srcCount;
+            break;
+
         default:
 #ifdef DEBUG
             char message[256];
@@ -744,7 +773,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
         case GT_CNS_INT:
-        case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_LABEL:
         case GT_PINVOKE_PROLOG:
@@ -752,7 +780,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_SETCC:
         case GT_MEMORYBARRIER:
         case GT_OBJ:
-        case GT_COPY:
         case GT_PUTARG_SPLIT:
             info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
