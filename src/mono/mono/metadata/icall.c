@@ -119,7 +119,7 @@ static GENERATE_GET_CLASS_WITH_CACHE (event_info, "System.Reflection", "EventInf
 static GENERATE_GET_CLASS_WITH_CACHE (module, "System.Reflection", "Module")
 
 static void
-array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError *error);
+array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error);
 
 static MonoArrayHandle
 type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
@@ -223,16 +223,25 @@ ves_icall_System_Array_GetValue (MonoArray *arr, MonoArray *idxs)
 }
 
 ICALL_EXPORT void
-ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 pos)
+ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	MonoError error;
-	error_init (&error);
-	array_set_value_impl (arr, value, pos, &error);
-	mono_error_set_pending_exception (&error);
+	error_init (error);
+	array_set_value_impl (arr, value, pos, error);
 }
 
 static void
-array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError *error)
+array_set_value_impl_raw (MonoArray *arr_raw, MonoObject *value_raw, guint32 pos, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoArray, arr);
+	MONO_HANDLE_DCL (MonoObject, value);
+	error_init (error);
+	array_set_value_impl (arr, value, pos, error);
+	HANDLE_FUNCTION_RETURN ();
+}
+
+static void
+array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
@@ -243,26 +252,28 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 	gint64 i64 = 0;
 	gdouble r64 = 0;
 
+	uint32_t arr_gchandle = 0;
+	uint32_t value_gchandle = 0;
+
 	error_init (error);
 
-	if (value)
-		vc = value->vtable->klass;
+	if (!MONO_HANDLE_IS_NULL (value))
+		vc = mono_handle_class (value);
 	else
 		vc = NULL;
 
-	ac = arr->obj.vtable->klass;
+	ac = mono_handle_class (arr);
 	ec = ac->element_class;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)arr->vector + (pos * esize));
-	va = (gpointer*)((char*)value + sizeof (MonoObject));
+	ea = mono_array_handle_pin_with_size (arr, esize, pos, &arr_gchandle);
 
 	if (mono_class_is_nullable (ec)) {
-		mono_nullable_init ((guint8*)ea, value, ec);
+		mono_nullable_init ((guint8*)ea, MONO_HANDLE_RAW (value), ec); /* FIXME: use coop handles for mono_nullable_init */
 		goto leave;
 	}
 
-	if (!value) {
+	if (MONO_HANDLE_IS_NULL (value)) {
 		mono_gc_bzero_atomic (ea, esize);
 		goto leave;
 	}
@@ -319,28 +330,33 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 		break;
 	}
 
+	MonoObjectHandle inst = mono_object_handle_isinst (value, ec, error);
+	if (!is_ok (error))
+		goto leave;
+	gboolean castOk = !MONO_HANDLE_IS_NULL (inst);
+
 	if (!ec->valuetype) {
-		gboolean castOk = (NULL != mono_object_isinst_checked (value, ec, error));
-		if (!is_ok (error))
-			goto leave;
 		if (!castOk)
 			INVALID_CAST;
-		mono_gc_wbarrier_set_arrayref (arr, ea, (MonoObject*)value);
+		MONO_HANDLE_ARRAY_SETREF (arr, pos, value);
 		goto leave;
 	}
 
-	if (mono_object_isinst_checked (value, ec, error)) {
+	if (castOk) {
+		va = mono_object_handle_pin_unbox (value, &value_gchandle);
 		if (ec->has_references)
-			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
+			mono_value_copy (ea, va, ec);
 		else
-			mono_gc_memmove_atomic (ea, (char *)value + sizeof (MonoObject), esize);
+			mono_gc_memmove_atomic (ea, va, esize);
+		mono_gchandle_free (value_gchandle);
+		value_gchandle = 0;
 		goto leave;
 	}
-	if (!is_ok (error))
-		goto leave;
 
 	if (!vc->valuetype)
 		INVALID_CAST;
+
+	va = mono_object_handle_pin_unbox (value, &value_gchandle);
 
 	vsize = mono_class_instance_size (vc) - sizeof (MonoObject);
 
@@ -517,6 +533,10 @@ array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError 
 #undef ASSIGN_SIGNED
 #undef ASSIGN_REAL
 leave:
+	if (arr_gchandle)
+		mono_gchandle_free (arr_gchandle);
+	if (value_gchandle)
+		mono_gchandle_free (value_gchandle);
 	return;
 }
 
@@ -549,7 +569,7 @@ ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
 			return;
 		}
 
-		array_set_value_impl (arr, value, *ind, &error);
+		array_set_value_impl_raw (arr, value, *ind, &error);
 		mono_error_set_pending_exception (&error);
 		return;
 	}
@@ -566,7 +586,7 @@ ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
 		pos = pos * arr->bounds [i].length + ind [i] - 
 			arr->bounds [i].lower_bound;
 
-	array_set_value_impl (arr, value, pos, &error);
+	array_set_value_impl_raw (arr, value, pos, &error);
 	mono_error_set_pending_exception (&error);
 }
 

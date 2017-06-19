@@ -159,7 +159,7 @@ ICALL(ARRAY_9, "GetValue",         ves_icall_System_Array_GetValue)
 ICALL(ARRAY_10, "GetValueImpl",     ves_icall_System_Array_GetValueImpl)
 ICALL(ARRAY_11, "SetGenericValueImpl", ves_icall_System_Array_SetGenericValueImpl)
 ICALL(ARRAY_12, "SetValue",         ves_icall_System_Array_SetValue)
-ICALL(ARRAY_13, "SetValueImpl",     ves_icall_System_Array_SetValueImpl)
+HANDLES(ICALL(ARRAY_13, "SetValueImpl",     ves_icall_System_Array_SetValueImpl))
 
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_1)
 ICALL(BUFFER_1, "InternalBlockCopy", ves_icall_System_Buffer_BlockCopyInternal)
