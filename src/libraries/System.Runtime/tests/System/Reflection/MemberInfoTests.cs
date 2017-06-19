@@ -175,26 +175,30 @@ namespace System.Reflection.Tests
             Assert.True(false, "Expected to find ComVisibleAttribute");
         }
 
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19852")]
-        [Fact]
-        public void TestEquality_Multiple()
+        public static IEnumerable<object[]> EqualityOperator_TestData()
         {
-            CheckIsAllEqual(GetMembers(typeof(SampleClass)), GetMembers(typeof(SampleClass)));
-            CheckIsAllEqual(GetMembers(new MemberInfoTests().GetType()), GetMembers(new MemberInfoTests().GetType()));
-            CheckIsAllEqual(GetMembers(typeof(int)), GetMembers(typeof(int)));
-            CheckIsAllEqual(GetMembers(typeof(Dictionary<,>)), GetMembers(typeof(Dictionary<,>)));
+            yield return new object[] { typeof(SampleClass) };
+            yield return new object[] { new MemberInfoTests().GetType() };
+            yield return new object[] { typeof(int) };
+            yield return new object[] { typeof(Dictionary<,>) };
         }
 
-        //Helpers
-        private static void CheckIsAllEqual(MemberInfo[] mi1, MemberInfo[] mi2)
+        [Theory]
+        [MemberData(nameof(EqualityOperator_TestData))]
+        public void EqualityOperator_Equal_ReturnsTrue(Type type)
         {
-            Assert.Equal(mi1.Count(), mi2.Count());
+            MemberInfo[] members1 = GetOrderedMembers(type);
+            MemberInfo[] members2 = GetOrderedMembers(type);
 
-            for (int i = 0; i < mi1.Count(); i++)
+            Assert.Equal(members1.Length, members2.Length);
+            for (int i = 0; i < members1.Length; i++)
             {
-                Assert.True(mi1[i] == mi2[i]);
+                Assert.True(members1[i] == members2[i]);
+                Assert.False(members1[i] != members2[i]);
             }
         }
+
+        private MemberInfo[] GetOrderedMembers(Type type) => GetMembers(type).OrderBy(member => member.Name).ToArray();
 
         private MemberInfo[] GetMembers(Type type)
         {
