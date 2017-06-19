@@ -75,6 +75,8 @@ namespace System.Globalization
         // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
         [NonSerialized]
         private readonly bool _invariantMode = GlobalizationMode.Invariant;
+        
+        private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
 
         internal CompareInfo(CultureInfo culture)
         {
@@ -234,14 +236,26 @@ namespace System.Globalization
 
         private void OnDeserialized()
         {
-            if (m_name != null)
+            // If we didn't have a name, use the LCID
+            if (m_name == null)
+            {
+                // From whidbey, didn't have a name
+                CultureInfo ci = CultureInfo.GetCultureInfo(this.culture);
+                m_name = ci._name;
+            }
+            else
             {
                 InitSort(CultureInfo.GetCultureInfo(m_name));
             }
         }
 
         [OnSerializing]
-        private void OnSerializing(StreamingContext ctx) { }
+        private void OnSerializing(StreamingContext ctx)
+        {
+            // This is merely for serialization compatibility with Whidbey/Orcas, it can go away when we don't want that compat any more.
+            culture = CultureInfo.GetCultureInfo(this.Name).LCID; // This is the lcid of the constructing culture (still have to dereference to get target sort)
+            Contract.Assert(m_name != null, "CompareInfo.OnSerializing - expected m_name to be set already");
+        }
 
         ///////////////////////////----- Name -----/////////////////////////////////
         //
