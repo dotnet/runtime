@@ -78,6 +78,8 @@ it should show something like '-L/usr/local/Cellar/openssl/1.0.2k/lib -lssl -lcr
 If pkg-config is not found, run 'brew install pkg-config'
 ```
 
+If you miss a step or something changes, run clean.sh from top. cmake will cache certain parts and it may not pick up the updates. 
+
 
 Build the Runtime and Microsoft Core Library
 ============================================
