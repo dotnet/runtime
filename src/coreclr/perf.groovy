@@ -434,7 +434,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                 shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
-                shell("""sudo -E python3.5 ./tests/scripts/run-throughput-perf.py \\
+                shell("""python3.5 ./tests/scripts/run-throughput-perf.py \\
                 -arch \"${architecture}\" \\
                 -os \"${os}\" \\
                 -configuration \"${configuration}\" \\
