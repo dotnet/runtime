@@ -32,6 +32,12 @@
 #include <ctype.h>
 #include <glib.h>
 
+#ifndef G_OS_WIN32
+#include <pthread.h>
+#endif
+
+#include <errno.h>
+
 /* 
  * g_strndup and g_vasprintf need to allocate memory with g_malloc if 
  * ENABLE_OVERRIDABLE_ALLOCATORS is defined so that it can be safely freed with g_free 
@@ -191,10 +197,72 @@ g_strdup_printf (const gchar *format, ...)
 	return ret;
 }
 
+
+/*
+Max error number we support. It's empirically found by looking at our target OS.
+
+Last this was checked was June-2017.
+
+Apple is at 106.
+Android is at 133.
+*/
+#define MONO_ERRNO_MAX 200
+#define str(s) #s
+
+#ifndef G_OS_WIN32
+static pthread_mutex_t strerror_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+static char *error_messages [MONO_ERRNO_MAX];
+
 const gchar *
 g_strerror (gint errnum)
 {
-	return strerror (errnum);
+	if (errnum < 0)
+		errnum = -errnum;
+	if (errnum >= MONO_ERRNO_MAX)
+		return ("Error number higher than " str (MONO_ERRNO_MAX));
+
+	if (!error_messages [errnum]) {
+#ifndef G_OS_WIN32
+		pthread_mutex_lock (&strerror_lock);
+#endif
+
+#ifdef HAVE_STRERROR_R
+		char tmp_buff [128]; //Quite arbitrary, should be large enough
+		char *buff = tmp_buff;
+		int buff_len = sizeof (tmp_buff);
+		int r;
+		buff [0] = 0;
+
+		while ((r = strerror_r (errnum, buff, buff_len - 1))) {
+			if (r != ERANGE) {
+				buff = g_strdup_printf ("Invalid Error code '%d'", errnum);
+				break;
+			}
+			if (buff == tmp_buff)
+				buff = g_malloc (buff_len * 2);
+			else
+				buff = g_realloc (buff, buff_len * 2);
+			buff_len *= 2;
+		 //Spec is not clean on whether size argument includes space for null terminator or not	
+		}
+		if (!error_messages [errnum])
+			error_messages [errnum] = g_strdup (buff);
+		if (buff != tmp_buff)
+			g_free (buff);
+#else
+		if (!error_messages [errnum])
+			error_messages [errnum] = g_strdup_printf ("Error code '%d'", errnum);
+#endif
+
+
+#ifndef G_OS_WIN32
+		pthread_mutex_unlock (&strerror_lock);
+#endif
+
+	}
+	return error_messages [errnum];
 }
 
 gchar *
