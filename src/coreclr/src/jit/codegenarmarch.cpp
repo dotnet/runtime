@@ -191,7 +191,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
 #ifdef _TARGET_ARM_
         case GT_MUL_LONG:
-            genCodeForMulLong(treeNode->AsMulLong());
+            genCodeForMulLong(treeNode->AsMultiRegOp());
             break;
 #endif // _TARGET_ARM_
 
@@ -1661,11 +1661,9 @@ void CodeGen::genRegCopy(GenTree* treeNode)
             }
             else
             {
-                // TODO-Arm-Bug: We cannot assume the second destination be the next of targetReg
-                // since LSRA doesn't know that register is used. So we cannot write code like:
-                //
-                // inst_RV_RV_RV(INS_vmov_d2i, targetReg, REG_NEXT(targetReg), genConsumeReg(op1), EA_8BYTE);
-                NYI_ARM("genRegCopy from 'double' to 'int'+'int'");
+                regNumber otherReg = (regNumber)treeNode->AsCopyOrReload()->gtOtherRegs[0];
+                assert(otherReg != REG_NA);
+                inst_RV_RV_RV(INS_vmov_d2i, targetReg, otherReg, genConsumeReg(op1), EA_8BYTE);
             }
         }
 #endif // !_TARGET_ARM64_
