@@ -118,6 +118,9 @@ static GENERATE_GET_CLASS_WITH_CACHE (property_info, "System.Reflection", "Prope
 static GENERATE_GET_CLASS_WITH_CACHE (event_info, "System.Reflection", "EventInfo")
 static GENERATE_GET_CLASS_WITH_CACHE (module, "System.Reflection", "Module")
 
+static void
+array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError *error);
+
 static MonoArrayHandle
 type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
 
@@ -223,6 +226,14 @@ ICALL_EXPORT void
 ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 pos)
 {
 	MonoError error;
+	error_init (&error);
+	array_set_value_impl (arr, value, pos, &error);
+	mono_error_set_pending_exception (&error);
+}
+
+static void
+array_set_value_impl (MonoArray *arr, MonoObject *value, guint32 pos, MonoError *error)
+{
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
 	gpointer *ea, *va;
@@ -232,7 +243,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	gint64 i64 = 0;
 	gdouble r64 = 0;
 
-	error_init (&error);
+	error_init (error);
 
 	if (value)
 		vc = value->vtable->klass;
@@ -256,25 +267,23 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 		return;
 	}
 
-#define NO_WIDENING_CONVERSION G_STMT_START{\
-	mono_set_pending_exception (mono_get_exception_argument ( \
-		"value", "not a widening conversion")); \
-	return; \
-}G_STMT_END
+#define NO_WIDENING_CONVERSION G_STMT_START{				\
+		mono_error_set_argument (error, "value", "not a widening conversion"); \
+		return;							\
+	}G_STMT_END
 
-#define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{\
-		if (esize < vsize + (extra)) { 							  \
-			mono_set_pending_exception (mono_get_exception_argument (	\
-			"value", "not a widening conversion")); \
-			return;									\
-		} \
-}G_STMT_END
+#define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{			\
+		if (esize < vsize + (extra)) {				\
+			mono_error_set_argument (error, "value", "not a widening conversion"); \
+			return;						\
+		}							\
+	}G_STMT_END
 
-#define INVALID_CAST G_STMT_START{ \
+#define INVALID_CAST G_STMT_START{					\
 		mono_get_runtime_callbacks ()->set_cast_details (vc, ec); \
-	mono_set_pending_exception (mono_get_exception_invalid_cast ()); \
-	return; \
-}G_STMT_END
+		mono_error_set_invalid_cast (error);			\
+		return;							\
+	}G_STMT_END
 
 	/* Check element (destination) type. */
 	switch (ec->byval_arg.type) {
@@ -311,8 +320,8 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	}
 
 	if (!ec->valuetype) {
-		gboolean castOk = (NULL != mono_object_isinst_checked (value, ec, &error));
-		if (mono_error_set_pending_exception (&error))
+		gboolean castOk = (NULL != mono_object_isinst_checked (value, ec, error));
+		if (!is_ok (error))
 			return;
 		if (!castOk)
 			INVALID_CAST;
@@ -320,14 +329,14 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 		return;
 	}
 
-	if (mono_object_isinst_checked (value, ec, &error)) {
+	if (mono_object_isinst_checked (value, ec, error)) {
 		if (ec->has_references)
 			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
 		else
 			mono_gc_memmove_atomic (ea, (char *)value + sizeof (MonoObject), esize);
 		return;
 	}
-	if (mono_error_set_pending_exception (&error))
+	if (!is_ok (error))
 		return;
 
 	if (!vc->valuetype)
@@ -513,10 +522,13 @@ ICALL_EXPORT void
 ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
 				 MonoArray *idxs)
 {
+	MonoError error;
 	MonoClass *ac, *ic;
 	gint32 i, pos, *ind;
 
 	MONO_CHECK_ARG_NULL (idxs,);
+
+	error_init (&error);
 
 	ic = idxs->obj.vtable->klass;
 	ac = arr->obj.vtable->klass;
@@ -535,7 +547,8 @@ ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
 			return;
 		}
 
-		ves_icall_System_Array_SetValueImpl (arr, value, *ind);
+		array_set_value_impl (arr, value, *ind, &error);
+		mono_error_set_pending_exception (&error);
 		return;
 	}
 	
@@ -551,7 +564,8 @@ ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
 		pos = pos * arr->bounds [i].length + ind [i] - 
 			arr->bounds [i].lower_bound;
 
-	ves_icall_System_Array_SetValueImpl (arr, value, pos);
+	array_set_value_impl (arr, value, pos, &error);
+	mono_error_set_pending_exception (&error);
 }
 
 ICALL_EXPORT MonoArray *
