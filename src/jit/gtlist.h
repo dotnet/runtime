@@ -194,7 +194,7 @@ GTNODE(MOD_HI           , GenTreeOp          ,0,GTK_BINOP)
 #if defined(_TARGET_X86_)
 GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
 #elif defined (_TARGET_ARM_)
-GTNODE(MUL_LONG         , GenTreeMulLong     ,1,GTK_BINOP)
+GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
 #endif
 
 // The following are nodes that specify shifts that take a GT_LONG op1. The GT_LONG
@@ -293,7 +293,11 @@ GTNODE(PHYSREGDST       , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // write
 GTNODE(EMITNOP          , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // emitter-placed nop
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke prolog seq
 GTNODE(PINVOKE_EPILOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke epilog seq
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+GTNODE(PUTARG_REG       , GenTreeMultiRegOp  ,0,GTK_UNOP)               // operator that places outgoing arg in register
+#else
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,GTK_UNOP)               // operator that places outgoing arg in register
+#endif
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,GTK_UNOP|GTK_NOVALUE)   // operator that places outgoing arg in stack
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
 GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,GTK_UNOP)               // operator that places outgoing arg in registers with stack (split struct in ARM32)
