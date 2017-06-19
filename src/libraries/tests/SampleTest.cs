@@ -15,12 +15,30 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
     public static class SampleTest
     {
-                
+
+        [Fact]
+        public static void SyndicationFeed_RSS20FeedFormatter_CustomParser()
+        {
+            //this test will override the default date parser and assign just a new date to the feed
+            Rss20FeedFormatter rssformater = new Rss20FeedFormatter();
+
+            rssformater.DateParser = delegate (string date, XmlReader xmlr)
+            {
+                return new DateTimeOffset(DateTime.Now);
+            };
+
+
+            XmlReader reader = XmlReader.Create("feed.xml");
+            SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
+
+            Assert.True(sf != null);
+        }
+
         [Fact]
         public static void SyndicationFeed_CreateNewFeed()
         {
             // *** SETUP *** \\
-            SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri("https://microsoft.com"));
+            SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri(" https://github.com/dotnet/wcf"));
 
             XmlWriter xmlw = XmlWriter.Create("FirstFeedEver.xml");
             Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
@@ -125,7 +143,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_Load_FeedWithWrongDateFormat()
         {
-            XmlReader xmlr = XmlReader.Create("feedWrongDate.xml");
+            XmlReader xmlr = XmlReader.Create("topstories.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
         }
     }

@@ -37,9 +37,18 @@ namespace Microsoft.ServiceModel.Syndication
         bool preserveElementExtensions;
         bool serializeExtensionsAsAtom;
 
+        //Custom Parsers
+        public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; }
+        public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
+        public Action<XmlReader, SyndicationItem, Uri> ItemParser { get; set; }
+
         public Rss20FeedFormatter()
             : this(typeof(SyndicationFeed))
         {
+            //Setting default parsers
+            DateParser = DateParserAction;
+            CategoryParser = ReadCategory;
+            ItemParser = ReadItemFrom;
         }
 
         public Rss20FeedFormatter(Type feedTypeToCreate)
@@ -60,6 +69,12 @@ namespace Microsoft.ServiceModel.Syndication
             this.preserveAttributeExtensions = true;
             this.atomSerializer = new Atom10FeedFormatter(feedTypeToCreate);
             this.feedType = feedTypeToCreate;
+
+            //Setting default parsers
+            DateParser = DateParserAction;
+            CategoryParser = ReadCategory;
+            ItemParser = ReadItemFrom;
+
         }
 
         public Rss20FeedFormatter(SyndicationFeed feedToWrite)
@@ -214,13 +229,13 @@ namespace Microsoft.ServiceModel.Syndication
             }
             SyndicationItem item = CreateItem(feed);
             TraceItemReadBegin();
-            ReadItemFrom(reader, item, feed.BaseUri);
+            ItemParser(reader,item,feed.BaseUri);//ReadItemFrom(reader, item, feed.BaseUri);
             TraceItemReadEnd();
             return item;
         }
 
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#", Justification = "The out parameter is needed to enable implementations that read in items from the stream on demand")]
-        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        public virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
             if (feed == null)
             {
@@ -233,7 +248,7 @@ namespace Microsoft.ServiceModel.Syndication
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
             {
-                items.Add(ReadItem(reader, feed));
+                items.Add(ReadItem(reader, feed)); 
             }
             areAllItemsRead = true;
             return items;
@@ -260,73 +275,73 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        static DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
-        {
-            StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
-            if (dateTimeStringBuilder.Length < 18)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    new XmlException(FeedUtils.AddLineInfo(reader,
-                    SR.ErrorParsingDateTime)));
-            }
-            if (dateTimeStringBuilder[3] == ',')
-            {
-                // There is a leading (e.g.) "Tue, ", strip it off
-                dateTimeStringBuilder.Remove(0, 4);
-                // There's supposed to be a space here but some implementations dont have one
-                RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
-            }
-            ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
-            if (char.IsDigit(dateTimeStringBuilder[1]))
-            {
-                // two-digit day, we are good
-            }
-            else
-            {
-                dateTimeStringBuilder.Insert(0, '0');
-            }
-            if (dateTimeStringBuilder.Length < 19)
-            {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    new XmlException(FeedUtils.AddLineInfo(reader,
-                    SR.ErrorParsingDateTime)));
-            }
-            bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
-            int timeZoneStartIndex;
-            if (thereAreSeconds)
-            {
-                timeZoneStartIndex = 21;
-            }
-            else
-            {
-                timeZoneStartIndex = 18;
-            }
-            string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
-            dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
-            bool isUtc;
-            dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
-            string wellFormattedString = dateTimeStringBuilder.ToString();
+        //public static DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
+        //{
+        //    StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
+        //    if (dateTimeStringBuilder.Length < 18)
+        //    {
+        //        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+        //            new XmlException(FeedUtils.AddLineInfo(reader,
+        //            SR.ErrorParsingDateTime)));
+        //    }
+        //    if (dateTimeStringBuilder[3] == ',')
+        //    {
+        //        // There is a leading (e.g.) "Tue, ", strip it off
+        //        dateTimeStringBuilder.Remove(0, 4);
+        //        // There's supposed to be a space here but some implementations dont have one
+        //        RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
+        //    }
+        //    ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
+        //    if (char.IsDigit(dateTimeStringBuilder[1]))
+        //    {
+        //        // two-digit day, we are good
+        //    }
+        //    else
+        //    {
+        //        dateTimeStringBuilder.Insert(0, '0');
+        //    }
+        //    if (dateTimeStringBuilder.Length < 19)
+        //    {
+        //        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+        //            new XmlException(FeedUtils.AddLineInfo(reader,
+        //            SR.ErrorParsingDateTime)));
+        //    }
+        //    bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
+        //    int timeZoneStartIndex;
+        //    if (thereAreSeconds)
+        //    {
+        //        timeZoneStartIndex = 21;
+        //    }
+        //    else
+        //    {
+        //        timeZoneStartIndex = 18;
+        //    }
+        //    string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
+        //    dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
+        //    bool isUtc;
+        //    dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
+        //    string wellFormattedString = dateTimeStringBuilder.ToString();
 
-            DateTimeOffset theTime;
-            string parseFormat;
-            if (thereAreSeconds)
-            {
-                parseFormat = "dd MMM yyyy HH:mm:ss zzz";
-            }
-            else
-            {
-                parseFormat = "dd MMM yyyy HH:mm zzz";
-            }
-            if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
-                CultureInfo.InvariantCulture.DateTimeFormat,
-                (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
-            {
-                return theTime;
-            }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                new XmlException(FeedUtils.AddLineInfo(reader,
-                SR.ErrorParsingDateTime)));
-        }
+        //    DateTimeOffset theTime;
+        //    string parseFormat;
+        //    if (thereAreSeconds)
+        //    {
+        //        parseFormat = "dd MMM yyyy HH:mm:ss zzz";
+        //    }
+        //    else
+        //    {
+        //        parseFormat = "dd MMM yyyy HH:mm zzz";
+        //    }
+        //    if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
+        //        CultureInfo.InvariantCulture.DateTimeFormat,
+        //        (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
+        //    {
+        //        return theTime;
+        //    }
+        //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+        //        new XmlException(FeedUtils.AddLineInfo(reader,
+        //        SR.ErrorParsingDateTime)));
+        //}
 
         static string NormalizeTimeZone(string rfc822TimeZone, out bool isUtc)
         {
@@ -413,7 +428,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        static void RemoveExtraWhiteSpaceAtStart(StringBuilder stringBuilder)
+        public static void RemoveExtraWhiteSpaceAtStart(StringBuilder stringBuilder)
         {
             int i = 0;
             while (i < stringBuilder.Length)
@@ -430,7 +445,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
+        public static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
         {
             int index = 0;
             int whiteSpaceStart = -1;
@@ -504,7 +519,7 @@ namespace Microsoft.ServiceModel.Syndication
                 }
             }
             string uri = reader.ReadElementString();
-            link.Uri = new Uri(uri, UriKind.RelativeOrAbsolute); 
+            link.Uri = new Uri(uri, UriKind.RelativeOrAbsolute);
             return link;
         }
 
@@ -563,6 +578,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         void ReadFeed(XmlReader reader)
         {
+
             SetFeed(CreateFeedInstance());
             ReadXml(reader, this.Feed);
         }
@@ -662,7 +678,7 @@ namespace Microsoft.ServiceModel.Syndication
                                     string str = reader.ReadString();
                                     if (!string.IsNullOrEmpty(str))
                                     {
-                                        result.PublishDate = DateFromString(str, reader);
+                                        result.PublishDate = DateParser(str, reader); // original ==> DateFromString(str, reader);
                                     }
                                     reader.ReadEndElement();
                                 }
@@ -729,7 +745,7 @@ namespace Microsoft.ServiceModel.Syndication
                     {
                         if (extWriter != null)
                         {
-                            ((IDisposable) extWriter).Dispose();
+                            ((IDisposable)extWriter).Dispose();
                         }
                     }
                     reader.ReadEndElement(); // item
@@ -952,6 +968,8 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.LastBuildDateTag, Rss20Constants.Rss20Namespace))
                         {
+
+                            //This code is now handled by a delegate in CustomParsers
                             bool canReadContent = !reader.IsEmptyElement;
                             reader.ReadStartElement();
                             if (canReadContent)
@@ -959,10 +977,11 @@ namespace Microsoft.ServiceModel.Syndication
                                 string str = reader.ReadString();
                                 if (!string.IsNullOrEmpty(str))
                                 {
-                                    result.LastUpdatedTime = DateFromString(str, reader);
+                                    result.LastUpdatedTime = DateParser(str, reader); // <<=== here | original DateFromString(str, reader);
                                 }
                                 reader.ReadEndElement();
                             }
+
                         }
                         else if (reader.IsStartElement(Rss20Constants.CategoryTag, Rss20Constants.Rss20Namespace))
                         {
@@ -1006,6 +1025,7 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else
                         {
+                            //All unkown tags come here as extentions
                             bool parsedExtension = this.serializeExtensionsAsAtom && this.atomSerializer.TryParseFeedElementFrom(reader, result);
                             if (!parsedExtension)
                             {
@@ -1031,7 +1051,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     if (extWriter != null)
                     {
-                        ((IDisposable) extWriter).Dispose();
+                        ((IDisposable)extWriter).Dispose();
                     }
                 }
                 if (areAllItemsRead)
@@ -1458,12 +1478,107 @@ namespace Microsoft.ServiceModel.Syndication
             writer.WriteString(person.Email);
             writer.WriteEndElement();
         }
+
+        // Custom parsers
+        public DateTimeOffset DateParserAction(string dateTimeString, XmlReader reader)
+        {
+
+            //chain of parsers
+            try
+            {
+                StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
+                if (dateTimeStringBuilder.Length < 18)
+                {
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                        new XmlException(FeedUtils.AddLineInfo(reader,
+                        SR.ErrorParsingDateTime)));
+                }
+                if (dateTimeStringBuilder[3] == ',')
+                {
+                    // There is a leading (e.g.) "Tue, ", strip it off
+                    dateTimeStringBuilder.Remove(0, 4);
+                    // There's supposed to be a space here but some implementations dont have one
+                    Rss20FeedFormatter.RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
+                }
+                Rss20FeedFormatter.ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
+                if (char.IsDigit(dateTimeStringBuilder[1]))
+                {
+                    // two-digit day, we are good
+                }
+                else
+                {
+                    dateTimeStringBuilder.Insert(0, '0');
+                }
+                if (dateTimeStringBuilder.Length < 19)
+                {
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                        new XmlException(FeedUtils.AddLineInfo(reader,
+                        SR.ErrorParsingDateTime)));
+                }
+                bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
+                int timeZoneStartIndex;
+                if (thereAreSeconds)
+                {
+                    timeZoneStartIndex = 21;
+                }
+                else
+                {
+                    timeZoneStartIndex = 18;
+                }
+                string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
+                dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
+                bool isUtc;
+                dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
+                string wellFormattedString = dateTimeStringBuilder.ToString();
+
+                DateTimeOffset theTime;
+                string parseFormat;
+                if (thereAreSeconds)
+                {
+                    parseFormat = "dd MMM yyyy HH:mm:ss zzz";
+                }
+                else
+                {
+                    parseFormat = "dd MMM yyyy HH:mm zzz";
+                }
+                if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
+                    CultureInfo.InvariantCulture.DateTimeFormat,
+                    (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
+                {
+
+                    return theTime;
+                }
+                throw new FormatException("There was an error with the format of the date");
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                //    new XmlException(FeedUtils.AddLineInfo(reader,
+                //    SR.ErrorParsingDateTime)));
+            }
+            catch (FormatException fe)
+            {
+                Console.WriteLine("There was an error in the format of the date");
+            }
+
+            //If Parser before this one did't work
+            // we will use DateTimeOffset.Parse
+            try
+            {
+                DateTimeOffset dto = DateTimeOffset.Parse(dateTimeString);
+                return dto;
+            }
+            catch (FormatException fe) { }
+
+
+            //Impossible to parse - using a default date;
+            return new DateTimeOffset();
+
+        }
+
     }
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20FeedFormatter<TSyndicationFeed> : Rss20FeedFormatter
-        where TSyndicationFeed : SyndicationFeed, new ()
+        where TSyndicationFeed : SyndicationFeed, new()
     {
         // constructors
         public Rss20FeedFormatter()
@@ -1484,4 +1599,11 @@ namespace Microsoft.ServiceModel.Syndication
             return new TSyndicationFeed();
         }
     }
+
+
+
+
+   
+
+
 }

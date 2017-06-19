@@ -1,6 +1,6 @@
-//------------------------------------------------------------
-// Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 namespace Microsoft.ServiceModel.Syndication
 {
@@ -254,6 +254,41 @@ namespace Microsoft.ServiceModel.Syndication
             get { return this.title; }
             set { this.title = value; }
         }
+
+
+        // This zone of methods are to support custom parsers
+        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
+        {
+            return Load(reader, formatter, new Atom10FeedFormatter());
+        }
+
+        public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter) // edited by J
+        {
+            return Load(reader, new Rss20FeedFormatter(), formatter);
+        }
+
+        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) // edited by J
+        {
+            if (reader == null)
+            {
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+            }
+            Atom10FeedFormatter atomSerializer = Atomformatter;
+            if (atomSerializer.CanRead(reader))
+            {
+                atomSerializer.ReadFrom(reader);
+                return atomSerializer.Feed;
+            }
+            Rss20FeedFormatter rssSerializer = Rssformatter;
+            if (rssSerializer.CanRead(reader))
+            {
+                rssSerializer.ReadFrom(reader);
+                return rssSerializer.Feed;
+            }
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
+        }
+
+        //--------------------------------------------------
 
         public static SyndicationFeed Load(XmlReader reader)
         {
