@@ -25,8 +25,6 @@ def osGroupMap = ['Windows 7':'Windows_NT',
                   'OpenSUSE13.2': 'Linux',
                   'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
-                  'Tizen': 'Linux',
-                  'LinuxARMEmulator': 'Linux',
                   'PortableLinux': 'Linux']
 
 def osShortName = ['Windows 7' : 'win7',
@@ -299,7 +297,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     abi = "armel"
                 }
 
-                def osGroup = osGroupMap[osName]
+                def osGroup = "Linux"
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
