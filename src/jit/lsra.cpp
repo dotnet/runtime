@@ -6719,7 +6719,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
 
 #ifdef _TARGET_ARM_
 //--------------------------------------------------------------------------------------
-// isSecondHalfReg: Test if recRec is second half of double reigster
+// isSecondHalfReg: Test if recRec is second half of double register
 //                  which is assigned to an interval.
 //
 // Arguments:
@@ -8012,6 +8012,40 @@ void LinearScan::allocateRegisters()
 #endif // DEBUG
 }
 
+#ifdef _TARGET_ARM_
+//-----------------------------------------------------------------------------
+// updateAssignedInterval: Update assigned interval of register for ARM32
+// considering register type. When register type is TYP_DOUBLE, update
+// two float registers consisting a double register.
+//
+// Arguments:
+//    reg      -    register to be updated
+//    interval -    interval to be assigned
+//    regType  -    regsiter type
+//
+// Return Value:
+//    None
+//
+// Assumptions:
+//    When "regType" is TYP_DOUBLE, "reg" should be a even-numbered float register,
+//    i.e. lower half of double register.
+//
+void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType)
+{
+    reg->assignedInterval = interval;
+
+    // Update overlapping floating point register for TYP_DOUBLE
+    if (regType == TYP_DOUBLE)
+    {
+        assert(genIsValidDoubleReg(reg->regNum));
+
+        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
+
+        anotherHalfReg->assignedInterval = interval;
+    }
+}
+#endif
+
 // LinearScan::resolveLocalRef
 // Description:
 //      Update the graph for a local reference.
@@ -8087,7 +8121,11 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
         varDsc->lvRegNum = REG_STK;
         if (interval->assignedReg != nullptr && interval->assignedReg->assignedInterval == interval)
         {
+#ifdef _TARGET_ARM_
+            updateAssignedInterval(interval->assignedReg, nullptr, interval->registerType);
+#else
             interval->assignedReg->assignedInterval = nullptr;
+#endif
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
@@ -8115,7 +8153,11 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
             RegRecord* oldRegRecord = getRegisterRecord(oldAssignedReg);
             if (oldRegRecord->assignedInterval == interval)
             {
-                oldRegRecord->assignedInterval = nullptr;
+#ifdef _TARGET_ARM_
+                updateAssignedInterval(oldRegRecord, nullptr, interval->registerType);
+#else
+                oldRegRecord->assignedInterval      = nullptr;
+#endif
             }
         }
     }
@@ -8266,27 +8308,25 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
     RegRecord* physRegRecord = getRegisterRecord(homeReg);
     if (spillAfter || currentRefPosition->lastUse)
     {
-        physRegRecord->assignedInterval = nullptr;
-        interval->assignedReg           = nullptr;
-        interval->physReg               = REG_NA;
-        interval->isActive              = false;
+        interval->isActive    = false;
+        interval->assignedReg = nullptr;
+        interval->physReg     = REG_NA;
+
+#ifdef _TARGET_ARM_
+        updateAssignedInterval(physRegRecord, nullptr, interval->registerType);
+#else
+        physRegRecord->assignedInterval             = nullptr;
+#endif
     }
     else
     {
-        interval->isActive              = true;
-        physRegRecord->assignedInterval = interval;
-        interval->assignedReg           = physRegRecord;
+        interval->isActive    = true;
+        interval->assignedReg = physRegRecord;
+
 #ifdef _TARGET_ARM_
-        // Update overlapping floating point register for TYP_DOUBLE
-        if (interval->registerType == TYP_DOUBLE)
-        {
-            assert(isFloatRegType(physRegRecord->registerType));
-
-            regNumber  nextRegNum        = REG_NEXT(physRegRecord->regNum);
-            RegRecord* nextPhysRegRecord = getRegisterRecord(nextRegNum);
-
-            nextPhysRegRecord->assignedInterval = interval;
-        }
+        updateAssignedInterval(physRegRecord, interval, interval->registerType);
+#else
+        physRegRecord->assignedInterval             = interval;
 #endif
     }
 }
@@ -10052,7 +10092,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
         }
 #else
-        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+        tempRegFlt                                  = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
 #endif
     }
 
