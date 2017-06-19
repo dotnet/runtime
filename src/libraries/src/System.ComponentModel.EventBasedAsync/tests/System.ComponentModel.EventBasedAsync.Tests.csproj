@@ -12,6 +12,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AsyncOperationManagerTests.cs" />
+    <Compile Include="AsyncOperationFinalizerTests.cs" />
     <Compile Include="RunWorkerCompletedEventArgsTests.cs" />
     <Compile Include="AsyncCompletedEventArgsTests.cs" />
     <Compile Include="DoWorkEventArgsTests.cs" />
@@ -19,6 +20,12 @@
     <Compile Include="AsyncOperationTests.cs" />
     <Compile Include="BackgroundWorkerTests.cs" />
     <Compile Include="TestException.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>RemoteExecutorConsoleApp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
