@@ -134,11 +134,17 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         tree->gtRegNum = reg;
     }
 #if defined(_TARGET_ARM_)
-    else if (tree->OperGet() == GT_MUL_LONG)
+    else if (tree->OperGet() == GT_MUL_LONG || tree->OperGet() == GT_PUTARG_REG)
     {
         assert(regIdx == 1);
-        GenTreeMulLong* mul = tree->AsMulLong();
-        mul->gtOtherReg     = reg;
+        GenTreeMultiRegOp* mul = tree->AsMultiRegOp();
+        mul->gtOtherReg        = reg;
+    }
+    else if (tree->OperGet() == GT_COPY)
+    {
+        assert(regIdx == 1);
+        GenTreeCopyOrReload* copy = tree->AsCopyOrReload();
+        copy->gtOtherRegs[0]      = reg;
     }
     else if (tree->OperGet() == GT_PUTARG_SPLIT)
     {
@@ -4139,6 +4145,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // push defs
     LocationInfoList locationInfoList;
     LsraLocation     defLocation = currentLoc + 1;
+#ifdef ARM_SOFTFP
+    regMaskTP remainingUseCandidates = useCandidates;
+#endif
     for (int i = 0; i < produce; i++)
     {
         regMaskTP currCandidates = candidates;
@@ -4160,7 +4169,15 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             currCandidates = genFindLowestReg(candidates);
             candidates &= ~currCandidates;
         }
-#endif
+#ifdef ARM_SOFTFP
+        // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
+        else if (tree->OperGet() == GT_PUTARG_REG || tree->OperGet() == GT_COPY)
+        {
+            useCandidates = genFindLowestReg(remainingUseCandidates);
+            remainingUseCandidates &= ~useCandidates;
+        }
+#endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
 
         if (interval == nullptr)
         {

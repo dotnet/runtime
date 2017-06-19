@@ -6998,6 +6998,39 @@ GenTree* Compiler::gtNewBlkOpNode(
     return result;
 }
 
+//------------------------------------------------------------------------
+// gtNewPutArgReg: Creates a new PutArgReg node.
+//
+// Arguments:
+//    type - The actual type of the argument
+//    arg  - The argument node
+//
+// Return Value:
+//    Returns the newly created PutArgReg node.
+//
+// Notes:
+//    The node is generated as GenTreeMultiRegOp on armel, as GenTreeOp on all the other archs
+//
+GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg)
+{
+    assert(arg != nullptr);
+
+    GenTreePtr node = nullptr;
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    // A PUTARG_REG could be a MultiRegOp on armel since we could move a double register to two int registers.
+    if (opts.compUseSoftFP)
+    {
+        node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
+    }
+    else
+#endif
+    {
+        node = gtNewOperNode(GT_PUTARG_REG, type, arg);
+    }
+
+    return node;
+}
+
 /*****************************************************************************
  *
  *  Clones the given tree value and returns a copy of the given tree.
