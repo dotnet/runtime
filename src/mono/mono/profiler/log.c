@@ -883,7 +883,7 @@ ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
 {
 	LogBuffer *old = thread->buffer;
 
-	if (old && old->cursor + bytes + 100 < old->buf_end)
+	if (old && old->cursor + bytes < old->buf_end)
 		return old;
 
 	LogBuffer *new_ = create_buffer (thread->node.key);
