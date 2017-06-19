@@ -751,6 +751,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		csignature = mono_method_signature (target_method);
 	}
 
+	if (target_method && target_method->string_ctor) {
+		/* Create the real signature */
+		MonoMethodSignature *ctor_sig = mono_metadata_signature_dup_mempool (td->mempool, csignature);
+		ctor_sig->ret = &mono_defaults.string_class->byval_arg;
+
+		csignature = ctor_sig;
+	}
+
 	/* Intrinsics */
 	if (target_method) {
 		if (target_method->klass == mono_defaults.string_class) {

@@ -1366,8 +1366,6 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	MonoObject *retval = NULL;
 	MonoMethodSignature *sig = mono_method_signature (method);
 	MonoClass *klass = mono_class_from_mono_type (sig->ret);
-	int i, type, isobject = 0;
-	void *ret = NULL;
 	stackval result;
 	stackval *args;
 	ThreadContext context_struct;
@@ -1404,118 +1402,23 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 
 	MonoDomain *domain = mono_domain_get ();
 
-	switch (sig->ret->type) {
-	case MONO_TYPE_VOID:
-		break;
-	case MONO_TYPE_STRING:
-	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-		isobject = 1;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		retval = mono_object_new_checked (domain, klass, error);
-		ret = mono_object_unbox (retval);
-		if (!sig->ret->data.klass->enumtype)
-			result.data.vt = ret;
-		else
-			result.data.vt = alloca (mono_class_instance_size (klass));
-		break;
-	case MONO_TYPE_GENERICINST:
-		if (!MONO_TYPE_IS_REFERENCE (sig->ret)) {
-			retval = mono_object_new_checked (domain, klass, error);
-			ret = mono_object_unbox (retval);
-			if (!sig->ret->data.klass->enumtype)
-				result.data.vt = ret;
-			else
-				result.data.vt = alloca (mono_class_instance_size (klass));
-		} else {
-			isobject = 1;
-		}
-		break;
+	MonoMethod *invoke_wrapper = mono_marshal_get_runtime_invoke_full (method, FALSE, TRUE);
 
-	case MONO_TYPE_PTR:
-		retval = mono_object_new_checked (domain, mono_defaults.int_class, error);
-		ret = mono_object_unbox (retval);
-		break;
-	default:
-		retval = mono_object_new_checked (domain, klass, error);
-		ret = mono_object_unbox (retval);
-		break;
-	}
+	//* <code>MonoObject *runtime_invoke (MonoObject *this_obj, void **params, MonoObject **exc, void* method)</code>
 
-	args = alloca (sizeof (stackval) * (sig->param_count + !!sig->hasthis));
+	result.data.vt = alloca (mono_class_instance_size (klass));
+	args = alloca (sizeof (stackval) * 4);
+
 	if (sig->hasthis)
 		args [0].data.p = obj;
+	else
+		args [0].data.p = NULL;
+	args [1].data.p = params;
+	args [2].data.p = exc;
+	args [3].data.p = method;
 
-	for (i = 0; i < sig->param_count; ++i) {
-		int a_index = i + !!sig->hasthis;
-		if (sig->params [i]->byref) {
-			args [a_index].data.p = params [i];
-			continue;
-		}
-		type = sig->params [i]->type;
-handle_enum:
-		switch (type) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN:
-			args [a_index].data.i = *(MonoBoolean*)params [i];
-			break;
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-		case MONO_TYPE_CHAR:
-			args [a_index].data.i = *(gint16*)params [i];
-			break;
-#if SIZEOF_VOID_P == 4
-		case MONO_TYPE_U: /* use VAL_POINTER? */
-		case MONO_TYPE_I:
-#endif
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-			args [a_index].data.i = *(gint32*)params [i];
-			break;
-#if SIZEOF_VOID_P == 8
-		case MONO_TYPE_U:
-		case MONO_TYPE_I:
-#endif
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-			args [a_index].data.l = *(gint64*)params [i];
-			break;
-		case MONO_TYPE_R4:
-			args [a_index].data.f = *(gfloat *) params [i];
-			break;
-		case MONO_TYPE_R8:
-			args [a_index].data.f = *(gdouble *) params [i];
-			break;
-		case MONO_TYPE_VALUETYPE:
-			if (sig->params [i]->data.klass->enumtype) {
-				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
-				goto handle_enum;
-			} else {
-				args [a_index].data.p = params [i];
-			}
-			break;
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_PTR:
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_GENERICINST:
-			args [a_index].data.p = params [i];
-			break;
-		default:
-			g_error ("type 0x%x not handled in  runtime invoke", sig->params [i]->type);
-		}
-	}
+	INIT_FRAME (&frame, context->current_frame, args, &result, domain, invoke_wrapper, error);
 
-	if (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)
-		method = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
-
-	INIT_FRAME (&frame,context->current_frame,args,&result,domain,method,error);
 	if (exc)
 		frame.invoke_trap = 1;
 	context->managed_code = 1;
@@ -1537,12 +1440,7 @@ handle_enum:
 		else
 			printf("dropped exception...\n");
 	}
-	if (sig->ret->type == MONO_TYPE_VOID && !method->string_ctor)
-		return NULL;
-	if (isobject || method->string_ctor)
-		return result.data.p;
-	stackval_to_data (sig->ret, &result, ret, sig->pinvoke);
-	return retval;
+	return result.data.p;
 }
 
 typedef struct {
