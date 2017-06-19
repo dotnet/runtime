@@ -6162,12 +6162,12 @@ void Compiler::compInitVarScopeMap()
     }
 }
 
-static int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
+int __cdecl genCmpLocalVarLifeBeg(const void* elem1, const void* elem2)
 {
     return (*((VarScopeDsc**)elem1))->vsdLifeBeg - (*((VarScopeDsc**)elem2))->vsdLifeBeg;
 }
 
-static int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
+int __cdecl genCmpLocalVarLifeEnd(const void* elem1, const void* elem2)
 {
     return (*((VarScopeDsc**)elem1))->vsdLifeEnd - (*((VarScopeDsc**)elem2))->vsdLifeEnd;
 }
