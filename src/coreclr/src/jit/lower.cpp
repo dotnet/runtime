@@ -2016,367 +2016,193 @@ void Lowering::LowerCompare(GenTree* cmp)
 #ifndef _TARGET_64BIT_
     if (cmp->gtGetOp1()->TypeGet() == TYP_LONG)
     {
-        // Currently this handles only relops that produce a value or aren't used.
-        // The same approach can be used for relops that feed a GT_JTRUE, see the #if 0
-        // below and its associated comment.
-        LIR::Use cmpUse;
-        if (!BlockRange().TryGetUse(cmp, &cmpUse) || !cmpUse.User()->OperIs(GT_JTRUE))
+        GenTree* src1 = cmp->gtGetOp1();
+        GenTree* src2 = cmp->gtGetOp2();
+        assert(src1->OperIs(GT_LONG));
+        assert(src2->OperIs(GT_LONG));
+        GenTree* loSrc1 = src1->gtGetOp1();
+        GenTree* hiSrc1 = src1->gtGetOp2();
+        GenTree* loSrc2 = src2->gtGetOp1();
+        GenTree* hiSrc2 = src2->gtGetOp2();
+        BlockRange().Remove(src1);
+        BlockRange().Remove(src2);
+
+        genTreeOps condition = cmp->OperGet();
+        GenTree*   loCmp;
+        GenTree*   hiCmp;
+
+        if (cmp->OperIs(GT_EQ, GT_NE))
         {
-            GenTree* src1 = cmp->gtGetOp1();
-            GenTree* src2 = cmp->gtGetOp2();
-            assert(src1->OperIs(GT_LONG));
-            assert(src2->OperIs(GT_LONG));
-            GenTree* loSrc1 = src1->gtGetOp1();
-            GenTree* hiSrc1 = src1->gtGetOp2();
-            GenTree* loSrc2 = src2->gtGetOp1();
-            GenTree* hiSrc2 = src2->gtGetOp2();
-            BlockRange().Remove(src1);
-            BlockRange().Remove(src2);
+            //
+            // Transform (x EQ|NE y) into (((x.lo XOR y.lo) OR (x.hi XOR y.hi)) EQ|NE 0). If y is 0 then this can
+            // be reduced to just ((x.lo OR x.hi) EQ|NE 0). The OR is expected to set the condition flags so we
+            // don't need to generate a redundant compare against 0, we only generate a SETCC|JCC instruction.
+            //
+            // XOR is used rather than SUB because it is commutative and thus allows swapping the operands when
+            // the first happens to be a constant. Usually only the second compare operand is a constant but it's
+            // still possible to have a constant on the left side. For example, when src1 is a uint->ulong cast
+            // then hiSrc1 would be 0.
+            //
 
-            genTreeOps condition = cmp->OperGet();
-            GenTree*   loCmp;
-            GenTree*   hiCmp;
-
-            if (cmp->OperIs(GT_EQ, GT_NE))
+            if (loSrc1->OperIs(GT_CNS_INT))
             {
-                //
-                // Transform (x EQ|NE y) into (((x.lo SUB y.lo) OR (x.hi SUB y.hi)) EQ|NE 0). If y is 0 then this can
-                // be reduced to just ((x.lo OR x.hi) EQ|NE 0). The OR is expected to set the condition flags so we
-                // don't need to generate a redundant compare against 0, we only generate a SETCC|JCC instruction.
-                //
+                std::swap(loSrc1, loSrc2);
+            }
 
-                if (loSrc2->IsIntegralConst(0))
-                {
-                    BlockRange().Remove(loSrc2);
-                    loCmp = loSrc1;
-                }
-                else
-                {
-                    loCmp = comp->gtNewOperNode(GT_SUB, TYP_INT, loSrc1, loSrc2);
-                    BlockRange().InsertBefore(cmp, loCmp);
-                }
-
-                if (hiSrc2->IsIntegralConst(0))
-                {
-                    BlockRange().Remove(hiSrc2);
-                    hiCmp = hiSrc1;
-                }
-                else
-                {
-                    hiCmp = comp->gtNewOperNode(GT_SUB, TYP_INT, hiSrc1, hiSrc2);
-                    BlockRange().InsertBefore(cmp, hiCmp);
-                }
-
-                hiCmp = comp->gtNewOperNode(GT_OR, TYP_INT, loCmp, hiCmp);
-                BlockRange().InsertBefore(cmp, hiCmp);
+            if (loSrc2->IsIntegralConst(0))
+            {
+                BlockRange().Remove(loSrc2);
+                loCmp = loSrc1;
             }
             else
             {
-                assert(cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT));
+                loCmp = comp->gtNewOperNode(GT_XOR, TYP_INT, loSrc1, loSrc2);
+                BlockRange().InsertBefore(cmp, loCmp);
+            }
 
-                //
-                // If the compare is signed then (x LT|GE y) can be transformed into ((x SUB y) LT|GE 0).
-                // If the compare is unsigned we can still use SUB but we need to check the Carry flag,
-                // not the actual result. In both cases we can simply check the appropiate condition flags
-                // and ignore the actual result:
-                //     SUB_LO loSrc1, loSrc2
-                //     SUB_HI hiSrc1, hiSrc2
-                //     SETCC|JCC (signed|unsigned LT|GE)
-                // If loSrc2 happens to be 0 then the first SUB can be eliminated and the second one can
-                // be turned into a CMP because the first SUB would have set carry to 0. This effectively
-                // transforms a long compare against 0 into an int compare of the high part against 0.
-                //
-                // (x LE|GT y) can to be transformed into ((x SUB y) LE|GT 0) but checking that a long value
-                // is greater than 0 is not so easy. We need to turn this into a positive/negative check
-                // like the one we get for LT|GE compares, this can be achieved by swapping the compare:
-                //     (x LE|GT y) becomes (y GE|LT x)
-                //
+            if (hiSrc1->OperIs(GT_CNS_INT))
+            {
+                std::swap(hiSrc1, hiSrc2);
+            }
 
-                if (cmp->OperIs(GT_LE, GT_GT))
+            if (hiSrc2->IsIntegralConst(0))
+            {
+                BlockRange().Remove(hiSrc2);
+                hiCmp = hiSrc1;
+            }
+            else
+            {
+                hiCmp = comp->gtNewOperNode(GT_XOR, TYP_INT, hiSrc1, hiSrc2);
+                BlockRange().InsertBefore(cmp, hiCmp);
+            }
+
+            hiCmp = comp->gtNewOperNode(GT_OR, TYP_INT, loCmp, hiCmp);
+            BlockRange().InsertBefore(cmp, hiCmp);
+        }
+        else
+        {
+            assert(cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT));
+
+            //
+            // If the compare is signed then (x LT|GE y) can be transformed into ((x SUB y) LT|GE 0).
+            // If the compare is unsigned we can still use SUB but we need to check the Carry flag,
+            // not the actual result. In both cases we can simply check the appropiate condition flags
+            // and ignore the actual result:
+            //     SUB_LO loSrc1, loSrc2
+            //     SUB_HI hiSrc1, hiSrc2
+            //     SETCC|JCC (signed|unsigned LT|GE)
+            // If loSrc2 happens to be 0 then the first SUB can be eliminated and the second one can
+            // be turned into a CMP because the first SUB would have set carry to 0. This effectively
+            // transforms a long compare against 0 into an int compare of the high part against 0.
+            //
+            // (x LE|GT y) can to be transformed into ((x SUB y) LE|GT 0) but checking that a long value
+            // is greater than 0 is not so easy. We need to turn this into a positive/negative check
+            // like the one we get for LT|GE compares, this can be achieved by swapping the compare:
+            //     (x LE|GT y) becomes (y GE|LT x)
+            //
+            // Having to swap operands is problematic when the second operand is a constant. The constant
+            // moves to the first operand where it cannot be contained and thus needs a register. This can
+            // be avoided by changing the constant such that LE|GT becomes LT|GE:
+            //     (x LE|GT 41) becomes (x LT|GE 42)
+            //
+
+            if (cmp->OperIs(GT_LE, GT_GT))
+            {
+                bool mustSwap = true;
+
+                if (loSrc2->OperIs(GT_CNS_INT) && hiSrc2->OperIs(GT_CNS_INT))
+                {
+                    uint32_t loValue  = static_cast<uint32_t>(loSrc2->AsIntCon()->IconValue());
+                    uint32_t hiValue  = static_cast<uint32_t>(hiSrc2->AsIntCon()->IconValue());
+                    uint64_t value    = static_cast<uint64_t>(loValue) | (static_cast<uint64_t>(hiValue) << 32);
+                    uint64_t maxValue = cmp->IsUnsigned() ? UINT64_MAX : INT64_MAX;
+
+                    if (value != maxValue)
+                    {
+                        value++;
+                        loValue = value & UINT32_MAX;
+                        hiValue = (value >> 32) & UINT32_MAX;
+                        loSrc2->AsIntCon()->SetIconValue(loValue);
+                        hiSrc2->AsIntCon()->SetIconValue(hiValue);
+
+                        condition = cmp->OperIs(GT_LE) ? GT_LT : GT_GE;
+                        mustSwap  = false;
+                    }
+                }
+
+                if (mustSwap)
                 {
                     std::swap(loSrc1, loSrc2);
                     std::swap(hiSrc1, hiSrc2);
                     condition = GenTree::SwapRelop(condition);
                 }
+            }
 
-                assert((condition == GT_LT) || (condition == GT_GE));
+            assert((condition == GT_LT) || (condition == GT_GE));
 
-                if (loSrc2->IsIntegralConst(0))
+            if (loSrc2->IsIntegralConst(0))
+            {
+                BlockRange().Remove(loSrc2);
+
+                // Very conservative dead code removal... but it helps.
+
+                if (loSrc1->OperIs(GT_CNS_INT, GT_LCL_VAR, GT_LCL_FLD))
                 {
-                    BlockRange().Remove(loSrc2);
+                    BlockRange().Remove(loSrc1);
 
-                    hiCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, hiSrc1, hiSrc2);
-                    BlockRange().InsertBefore(cmp, hiCmp);
+                    if (loSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                    {
+                        comp->lvaDecRefCnts(m_block, loSrc1);
+                    }
                 }
-                else
-                {
-                    loCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, loSrc1, loSrc2);
-                    hiCmp = comp->gtNewOperNode(GT_SUB_HI, TYP_INT, hiSrc1, hiSrc2);
-                    BlockRange().InsertBefore(cmp, loCmp, hiCmp);
-                }
-            }
 
-            hiCmp->gtFlags |= GTF_SET_FLAGS;
-
-// TODO-CQ: We could also lower comparisons that feed a GT_JTRUE. Doing that brings
-// a ~8KB improvement in fx jit-diff but there's also a ~700 bytes regression that
-// should be investigated before enabling this.
-#if 0
-            LIR::Use cmpUse;
-            if (BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
-            {
-                BlockRange().Remove(cmp);
-
-                GenTree* jcc    = cmpUse.User();
-                jcc->gtOp.gtOp1 = nullptr;
-                jcc->ChangeOper(GT_JCC);
-                jcc->gtFlags |= (cmp->gtFlags & GTF_UNSIGNED);
-                jcc->AsCC()->gtCondition = condition;
-            }
-            else
-#endif
-            {
-                cmp->gtOp.gtOp1 = nullptr;
-                cmp->gtOp.gtOp2 = nullptr;
-                cmp->ChangeOper(GT_SETCC);
-                cmp->AsCC()->gtCondition = condition;
-            }
-
-            return;
-        }
-
-        // For 32-bit targets any comparison that feeds a `GT_JTRUE` node must be lowered such that
-        // the liveness of the operands to the comparison is properly visible to the rest of the
-        // backend. As such, a 64-bit comparison is lowered from something like this:
-        //
-        //    ------------ BB02 [004..014) -> BB02 (cond), preds={BB02,BB01} succs={BB03,BB02}
-        //    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
-        //
-        //                                                     /--*  t6     int
-        //    N002 (  2,  3) [000007] ---------U--        t7 = *  cast      long <- ulong <- uint $3c0
-        //
-        //    N003 (  3, 10) [000009] ------------        t9 =    lconst    long   0x0000000000000003 $101
-        //
-        //                                                     /--*  t7     long
-        //                                                     +--*  t9     long
-        //    N004 (  9, 17) [000010] N------N-U--       t10 = *  <         int    $149
-        //
-        //                                                     /--*  t10    int
-        //    N005 ( 11, 19) [000011] ------------             *  jmpTrue   void
-        //
-        // To something like this:
-        //
-        //    ------------ BB02 [004..014) -> BB03 (cond), preds={BB06,BB07,BB01} succs={BB06,BB03}
-        //                   [000099] ------------       t99 =    const     int    0
-        //
-        //                   [000101] ------------      t101 =    const     int    0
-        //
-        //                                                     /--*  t99    int
-        //                                                     +--*  t101   int
-        //    N004 (  9, 17) [000010] N------N-U--       t10 = *  >         int    $149
-        //
-        //                                                     /--*  t10    int
-        //    N005 ( 11, 19) [000011] ------------             *  jmpTrue   void
-        //
-        //
-        //    ------------ BB06 [???..???) -> BB02 (cond), preds={BB02} succs={BB07,BB02}
-        //                   [000105] -------N-U--                jcc       void   cond=<
-        //
-        //
-        //    ------------ BB07 [???..???) -> BB02 (cond), preds={BB06} succs={BB03,BB02}
-        //    N001 (  1,  1) [000006] ------------        t6 =    lclVar    int    V02 loc0         u:5 $148
-        //
-        //    N003 (  3, 10) [000009] ------------        t9 =    const     int    3
-        //
-        //                                                     /--*  t6     int
-        //                                                     +--*  t9     int
-        //                   [000106] N------N-U--      t106 = *  <         int
-        //
-        //                                                     /--*  t106   int
-        //                   [000107] ------------             *  jmpTrue   void
-        //
-        // Which will eventually generate code similar to the following:
-        //
-        //    33DB         xor      ebx, ebx
-        //    85DB         test     ebx, ebx
-        //    7707         ja       SHORT G_M50523_IG04
-        //    72E7         jb       SHORT G_M50523_IG03
-        //    83F803       cmp      eax, 3
-        //    72E2         jb       SHORT G_M50523_IG03
-        //
-
-        GenTree* src1   = cmp->gtGetOp1();
-        GenTree* src2   = cmp->gtGetOp2();
-        unsigned weight = m_block->getBBWeight(comp);
-
-        LIR::Use loSrc1(BlockRange(), &(src1->gtOp.gtOp1), src1);
-        LIR::Use loSrc2(BlockRange(), &(src2->gtOp.gtOp1), src2);
-
-        // TODO-CQ-32bit: We should move more code to the new basic block, currently we're only moving
-        // constants and lclvars. In particular, it would be nice to move GT_AND nodes as that would
-        // enable the and-cmp to test transform that happens later in this function. Though that's not
-        // exactly ideal, the and-cmp to test transform should run before this code but:
-        //   - it would need to run before decomposition otherwise it won't recognize the 0 constant
-        //     because after decomposition it is packed in a GT_LONG
-        //   - this code would also need to handle GT_TEST_EQ/GT_TEST_NE
-
-        if (!loSrc1.Def()->OperIs(GT_CNS_INT, GT_LCL_VAR))
-        {
-            loSrc1.ReplaceWithLclVar(comp, weight);
-        }
-
-        if (!loSrc2.Def()->OperIs(GT_CNS_INT, GT_LCL_VAR))
-        {
-            loSrc2.ReplaceWithLclVar(comp, weight);
-        }
-
-        BasicBlock* jumpDest = m_block->bbJumpDest;
-        BasicBlock* nextDest = m_block->bbNext;
-        BasicBlock* newBlock = comp->fgSplitBlockAtEnd(m_block);
-
-        cmp->gtType     = TYP_INT;
-        cmp->gtOp.gtOp1 = src1->gtOp.gtOp2;
-        cmp->gtOp.gtOp2 = src2->gtOp.gtOp2;
-
-        if (cmp->OperIs(GT_EQ, GT_NE))
-        {
-            // 64-bit equality comparisons (no matter the polarity) require two 32-bit comparisons: one for the upper 32
-            // bits and one for the lower 32 bits. As such, we update the flow graph like so:
-            //
-            //     Before:
-            //                 BB0: cond
-            //                   /   \
-            //                false  true
-            //                  |     |
-            //                 BB1   BB2
-            //
-            //     After:
-            //                  BB0: cond(hi)
-            //                   /        \
-            //                false       true
-            //                  |          |
-            //                  |     BB3: cond(lo)
-            //                  |      /       \
-            //                  |   false      true
-            //                  \    /          |
-            //                    BB1          BB2
-            //
-
-            BlockRange().Remove(loSrc1.Def());
-            BlockRange().Remove(loSrc2.Def());
-            GenTree* loCmp   = comp->gtNewOperNode(cmp->OperGet(), TYP_INT, loSrc1.Def(), loSrc2.Def());
-            loCmp->gtFlags   = cmp->gtFlags;
-            GenTree* loJtrue = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
-            LIR::AsRange(newBlock).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJtrue);
-
-            m_block->bbJumpKind = BBJ_COND;
-
-            if (cmp->OperIs(GT_EQ))
-            {
-                cmp->gtOper         = GT_NE;
-                m_block->bbJumpDest = nextDest;
-                nextDest->bbFlags |= BBF_JMP_TARGET;
-                comp->fgAddRefPred(nextDest, m_block);
+                hiCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, hiSrc1, hiSrc2);
+                BlockRange().InsertBefore(cmp, hiCmp);
             }
             else
             {
-                m_block->bbJumpDest = jumpDest;
-                comp->fgAddRefPred(jumpDest, m_block);
-            }
+                loCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, loSrc1, loSrc2);
+                hiCmp = comp->gtNewOperNode(GT_SUB_HI, TYP_INT, hiSrc1, hiSrc2);
+                BlockRange().InsertBefore(cmp, loCmp, hiCmp);
 
-            assert(newBlock->bbJumpKind == BBJ_COND);
-            assert(newBlock->bbJumpDest == jumpDest);
+                //
+                // Try to move the first SUB_HI operands right in front of it, this allows using
+                // a single temporary register instead of 2 (one for CMP and one for SUB_HI). Do
+                // this only for locals as they won't change condition flags. Note that we could
+                // move constants (except 0 which generates XOR reg, reg) but it's extremly rare
+                // to have a constant as the first operand.
+                //
+
+                if (hiSrc1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                {
+                    BlockRange().Remove(hiSrc1);
+                    BlockRange().InsertBefore(hiCmp, hiSrc1);
+                }
+            }
+        }
+
+        hiCmp->gtFlags |= GTF_SET_FLAGS;
+
+        LIR::Use cmpUse;
+        if (BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
+        {
+            BlockRange().Remove(cmp);
+
+            GenTree* jcc    = cmpUse.User();
+            jcc->gtOp.gtOp1 = nullptr;
+            jcc->ChangeOper(GT_JCC);
+            jcc->gtFlags |= (cmp->gtFlags & GTF_UNSIGNED);
+            jcc->AsCC()->gtCondition = condition;
         }
         else
         {
-            // 64-bit ordinal comparisons are more complicated: they require two comparisons for the upper 32 bits and
-            // one comparison for the lower 32 bits. We update the flowgraph as such:
-            //
-            //     Before:
-            //                 BB0: cond
-            //                   /   \
-            //                false  true
-            //                  |     |
-            //                 BB1   BB2
-            //
-            //     After:
-            //           BB0: (!cond(hi) && !eq(hi))
-            //               /                \
-            //             true              false
-            //              |                  |
-            //              |      BB3: (cond(hi) && !eq(hi))
-            //              |             /        \
-            //              |          false      true
-            //              |            |          |
-            //              |      BB4: cond(lo)    |
-            //              |       /         \     |
-            //              |    false        true  |
-            //              \     /             \   /
-            //                BB1                BB2
-            //
-            //
-            // Note that the actual comparisons used to implement "(!cond(hi) && !eq(hi))" and "(cond(hi) && !eq(hi))"
-            // differ based on the original condition, and all consist of a single node. The switch statement below
-            // performs the necessary mapping.
-            //
-
-            genTreeOps hiCmpOper;
-            genTreeOps loCmpOper;
-
-            switch (cmp->OperGet())
-            {
-                case GT_LT:
-                    cmp->gtOper = GT_GT;
-                    hiCmpOper   = GT_LT;
-                    loCmpOper   = GT_LT;
-                    break;
-                case GT_LE:
-                    cmp->gtOper = GT_GT;
-                    hiCmpOper   = GT_LT;
-                    loCmpOper   = GT_LE;
-                    break;
-                case GT_GT:
-                    cmp->gtOper = GT_LT;
-                    hiCmpOper   = GT_GT;
-                    loCmpOper   = GT_GT;
-                    break;
-                case GT_GE:
-                    cmp->gtOper = GT_LT;
-                    hiCmpOper   = GT_GT;
-                    loCmpOper   = GT_GE;
-                    break;
-                default:
-                    unreached();
-            }
-
-            BasicBlock* newBlock2 = comp->fgSplitBlockAtEnd(newBlock);
-
-            GenTree* hiJcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, hiCmpOper);
-            hiJcc->gtFlags = cmp->gtFlags;
-            LIR::AsRange(newBlock).InsertAfter(nullptr, hiJcc);
-
-            BlockRange().Remove(loSrc1.Def());
-            BlockRange().Remove(loSrc2.Def());
-            GenTree* loCmp   = comp->gtNewOperNode(loCmpOper, TYP_INT, loSrc1.Def(), loSrc2.Def());
-            loCmp->gtFlags   = cmp->gtFlags | GTF_UNSIGNED;
-            GenTree* loJtrue = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, loCmp);
-            LIR::AsRange(newBlock2).InsertAfter(nullptr, loSrc1.Def(), loSrc2.Def(), loCmp, loJtrue);
-
-            m_block->bbJumpKind = BBJ_COND;
-            m_block->bbJumpDest = nextDest;
-            nextDest->bbFlags |= BBF_JMP_TARGET;
-            comp->fgAddRefPred(nextDest, m_block);
-
-            newBlock->bbJumpKind = BBJ_COND;
-            newBlock->bbJumpDest = jumpDest;
-            comp->fgAddRefPred(jumpDest, newBlock);
-
-            assert(newBlock2->bbJumpKind == BBJ_COND);
-            assert(newBlock2->bbJumpDest == jumpDest);
+            cmp->gtOp.gtOp1 = nullptr;
+            cmp->gtOp.gtOp2 = nullptr;
+            cmp->ChangeOper(GT_SETCC);
+            cmp->AsCC()->gtCondition = condition;
         }
 
-        BlockRange().Remove(src1);
-        BlockRange().Remove(src2);
+        return;
     }
 #endif
 
