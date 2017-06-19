@@ -105,15 +105,12 @@ namespace System.IO
         }
 
         /// <summary>Initializes a stream from an already open file handle (file descriptor).</summary>
-        /// <param name="handle">The handle to the file.</param>
-        /// <param name="bufferSize">The size of the buffer to use when buffering.</param>
-        /// <param name="useAsyncIO">Whether access to the stream is performed asynchronously.</param>
-        private void InitFromHandle(SafeFileHandle handle)
+        private void InitFromHandle(SafeFileHandle handle, FileAccess access, bool useAsyncIO)
         {
-            if (_useAsyncIO)
+            if (useAsyncIO)
                 _asyncState = new AsyncState();
 
-            if (CanSeekCore) // use non-virtual CanSeekCore rather than CanSeek to avoid making virtual call during ctor
+            if (CanSeekCore(handle)) // use non-virtual CanSeekCore rather than CanSeek to avoid making virtual call during ctor
                 SeekCore(0, SeekOrigin.Current);
         }
 
@@ -189,26 +186,27 @@ namespace System.IO
         }
 
         /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        public override bool CanSeek => CanSeekCore;
+        public override bool CanSeek => CanSeekCore(_fileHandle);
 
         /// <summary>Gets a value indicating whether the current stream supports seeking.</summary>
-        /// <remarks>Separated out of CanSeek to enable making non-virtual call to this logic.</remarks>
-        private bool CanSeekCore
+        /// <remarks>
+        /// Separated out of CanSeek to enable making non-virtual call to this logic.
+        /// We also pass in the file handle to allow the constructor to use this before it stashes the handle.
+        /// </remarks>
+        private bool CanSeekCore(SafeFileHandle fileHandle)
         {
-            get
+            if (fileHandle.IsClosed)
             {
-                if (_fileHandle.IsClosed)
-                {
-                    return false;
-                }
-
-                if (!_canSeek.HasValue)
-                {
-                    // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
-                    _canSeek = Interop.Sys.LSeek(_fileHandle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
-                }
-                return _canSeek.Value;
+                return false;
             }
+
+            if (!_canSeek.HasValue)
+            {
+                // Lazily-initialize whether we're able to seek, tested by seeking to our current location.
+                _canSeek = Interop.Sys.LSeek(fileHandle, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
+            }
+
+            return _canSeek.Value;
         }
 
         private long GetLengthInternal()
