@@ -36,7 +36,7 @@ namespace System.Drawing
 
         // Icon data
         //
-        private byte[] _iconData;
+        private readonly byte[] _iconData;
         private int _bestImageOffset;
         private int _bestBitDepth;
         private int _bestBytesInRes;
@@ -1042,16 +1042,12 @@ namespace System.Drawing
 
         private Bitmap PngFrame()
         {
-            Bitmap bitmap = null;
-            if (_iconData != null)
+            Debug.Assert(_iconData != null);
+            using (var stream = new MemoryStream())
             {
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    stream.Write(_iconData, _bestImageOffset, _bestBytesInRes);
-                    bitmap = new Bitmap(stream);
-                }
+                stream.Write(_iconData, _bestImageOffset, _bestBytesInRes);
+                return new Bitmap(stream);
             }
-            return bitmap;
         }
 
         private bool HasPngSignature()
