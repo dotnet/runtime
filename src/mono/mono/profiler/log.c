@@ -1605,17 +1605,13 @@ collect_bt (FrameData *data)
 static void
 emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 {
-	/* FIXME: this is actually tons of data and we should
-	 * just output it the first time and use an id the next
-	 */
 	if (data->count > num_frames)
 		printf ("bad num frames: %d\n", data->count);
+
 	emit_value (logbuffer, data->count);
-	//if (*p != data.count) {
-	//	printf ("bad num frames enc at %d: %d -> %d\n", count, data.count, *p); printf ("frames end: %p->%p\n", p, logbuffer->cursor); exit(0);}
-	while (data->count) {
+
+	while (data->count)
 		emit_method (logbuffer, data->methods [--data->count]);
-	}
 }
 
 static void
