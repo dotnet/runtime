@@ -143,8 +143,37 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_Load_FeedWithWrongDateFormat()
         {
-            XmlReader xmlr = XmlReader.Create("topstories.xml");
+            XmlReader xmlr = XmlReader.Create("feedWrongDate.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
+            XmlDocument doc = new XmlDocument();
+            
+        }
+        
+        [Fact]
+        public static void SyndicationFeed_Load_CustomParser()
+        {
+            // *** SETUP *** \\
+            Rss20FeedFormatter feedFormatter = new Rss20FeedFormatter();
+            DateTime dateNow = DateTime.Now;
+            feedFormatter.DateParser = delegate (string date, XmlReader reader)
+            {
+                return dateNow;
+            };
+
+            XmlReader xmlr = XmlReader.Create("feed.xml");
+
+            // *** EXEUCUTE *** \\
+            SyndicationFeed sf = SyndicationFeed.Load(xmlr,feedFormatter);
+
+            // *** VALIDATE *** \\
+            Assert.True(sf.LastUpdatedTime == dateNow);
+            // *** CLEANUP *** \\
+            xmlr.Close();
         }
     }
 }
+
+// *** SETUP *** \\
+// *** EXEUCUTE *** \\
+// *** VALIDATE *** \\
+// *** CLEANUP *** \\

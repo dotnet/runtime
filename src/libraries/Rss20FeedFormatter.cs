@@ -39,16 +39,80 @@ namespace Microsoft.ServiceModel.Syndication
 
         //Custom Parsers
         public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; }
+        public Func<string, TextSyndicationContent> TitleParser { get; set; }
+        public Func<string, TextSyndicationContent> DescriptionParser { get; set; }
+        public Func<string,string> LanguageParser { get; set; }
+        public Func<string,TextSyndicationContent> CopyrightParser { get; set; }
+        public Func<string, string> GeneratorParser { get; set; }
+        public Func<string, SyndicationPerson> ManagingEditorParser { get; set; }
+        public Func<XmlReader,Uri,SyndicationLink> LinkParser { get; set; }
+
+
         public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
         public Action<XmlReader, SyndicationItem, Uri> ItemParser { get; set; }
+
+
+
+
+
+
+
+        TextSyndicationContent titleParserAction(string title)
+        {
+            return new TextSyndicationContent(title);
+        }
+
+        TextSyndicationContent descriptionParserAction(string description)
+        {
+            return new TextSyndicationContent(description);
+        }
+
+        String languageParserAction(string language)
+        {
+            return language;
+        }
+
+        TextSyndicationContent copyrightParserAction(string copyright)
+        {
+            return new TextSyndicationContent(copyright);
+        }
+
+        string generatorParserAction(string generator)
+        {
+            return generator;
+        }        
+
+        SyndicationPerson managingEditorParserAction(string email)
+        {
+            SyndicationPerson person = new SyndicationPerson(email);
+            return person;
+        }
+
+        SyndicationLink linkParserAction(XmlReader reader, Uri baseUri)
+        {
+            return ReadAlternateLink(reader,baseUri);
+        }
+
+
+        void loadDefaultParsers()
+        {
+            DateParser = DateParserAction;
+            TitleParser = titleParserAction;
+            DescriptionParser = descriptionParserAction;
+            LanguageParser = languageParserAction;
+            CopyrightParser = copyrightParserAction;
+            GeneratorParser = generatorParserAction;
+            ManagingEditorParser = managingEditorParserAction;
+            LinkParser = linkParserAction;
+            CategoryParser = ReadCategory;
+            ItemParser = ReadItemFrom;
+        }
 
         public Rss20FeedFormatter()
             : this(typeof(SyndicationFeed))
         {
             //Setting default parsers
-            DateParser = DateParserAction;
-            CategoryParser = ReadCategory;
-            ItemParser = ReadItemFrom;
+            loadDefaultParsers();
         }
 
         public Rss20FeedFormatter(Type feedTypeToCreate)
@@ -70,10 +134,9 @@ namespace Microsoft.ServiceModel.Syndication
             this.atomSerializer = new Atom10FeedFormatter(feedTypeToCreate);
             this.feedType = feedTypeToCreate;
 
-            //Setting default parsers
-            DateParser = DateParserAction;
-            CategoryParser = ReadCategory;
-            ItemParser = ReadItemFrom;
+            loadDefaultParsers();
+            //CategoryParser = ReadCategory;
+            //ItemParser = ReadItemFrom;
 
         }
 
@@ -229,7 +292,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             SyndicationItem item = CreateItem(feed);
             TraceItemReadBegin();
-            ItemParser(reader,item,feed.BaseUri);//ReadItemFrom(reader, item, feed.BaseUri);
+            ReadItemFrom(reader, item, feed.BaseUri); // delegate => ItemParser(reader,item,feed.BaseUri);//
             TraceItemReadEnd();
             return item;
         }
@@ -903,6 +966,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     while (reader.MoveToNextAttribute())
                     {
+                    
                         string ns = reader.NamespaceURI;
                         string name = reader.LocalName;
                         if (name == "base" && ns == Atom10FeedFormatter.XmlNs)
@@ -942,29 +1006,32 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     while (reader.IsStartElement())
                     {
+                        string s = reader.Value + " " + reader.Name;
                         if (reader.IsStartElement(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Title = new TextSyndicationContent(reader.ReadElementString());
+                            result.Title = TitleParser(reader.ReadElementString());
                         }
                         else if (reader.IsStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Links.Add(ReadAlternateLink(reader, result.BaseUri));
+                            //result.Links.Add(ReadAlternateLink(reader, result.BaseUri));
+                            result.Links.Add(LinkParser(reader, result.BaseUri));
                         }
                         else if (reader.IsStartElement(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Description = new TextSyndicationContent(reader.ReadElementString());
+                            result.Description = DescriptionParser(reader.ReadElementString());
                         }
                         else if (reader.IsStartElement(Rss20Constants.LanguageTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Language = reader.ReadElementString();
+                            result.Language = LanguageParser(reader.ReadElementString());
                         }
                         else if (reader.IsStartElement(Rss20Constants.CopyrightTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Copyright = new TextSyndicationContent(reader.ReadElementString());
+                            result.Copyright = CopyrightParser(reader.ReadElementString());
                         }
                         else if (reader.IsStartElement(Rss20Constants.ManagingEditorTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Authors.Add(ReadPerson(reader, result));
+                            //result.Authors.Add(ReadPerson(reader, result)); //original
+                            result.Authors.Add(ManagingEditorParser(reader.ReadElementString()));
                         }
                         else if (reader.IsStartElement(Rss20Constants.LastBuildDateTag, Rss20Constants.Rss20Namespace))
                         {
@@ -989,7 +1056,7 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.GeneratorTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Generator = reader.ReadElementString();
+                            result.Generator = GeneratorParser(reader.ReadElementString());
                         }
                         else if (reader.IsStartElement(Rss20Constants.ImageTag, Rss20Constants.Rss20Namespace))
                         {
@@ -1003,6 +1070,7 @@ namespace Microsoft.ServiceModel.Syndication
                                 else
                                 {
                                     // ignore other content
+                                    bool aix = reader.IsStartElement();
                                     TraceSyndicationElementIgnoredOnRead(reader);
                                     reader.Skip();
                                 }
@@ -1483,10 +1551,21 @@ namespace Microsoft.ServiceModel.Syndication
         public DateTimeOffset DateParserAction(string dateTimeString, XmlReader reader)
         {
 
+            bool parsed = false;
+            //try
+            //{
+            DateTimeOffset dto;
+            parsed = DateTimeOffset.TryParse(dateTimeString, out dto);
+            if (parsed)
+                return dto;
+            //}
+            //catch (FormatException fe) { }
+
+
             //chain of parsers
-            try
-            {
-                StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
+            //try
+            //{
+            StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
                 if (dateTimeStringBuilder.Length < 18)
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
@@ -1548,26 +1627,17 @@ namespace Microsoft.ServiceModel.Syndication
 
                     return theTime;
                 }
-                throw new FormatException("There was an error with the format of the date");
+                //throw new FormatException("There was an error with the format of the date");
                 //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                 //    new XmlException(FeedUtils.AddLineInfo(reader,
                 //    SR.ErrorParsingDateTime)));
-            }
-            catch (FormatException fe)
-            {
-                Console.WriteLine("There was an error in the format of the date");
-            }
+            //}
+            //catch (FormatException fe)
+            //{
+            //    Console.WriteLine("There was an error in the format of the date");
+            //}
 
-            //If Parser before this one did't work
-            // we will use DateTimeOffset.Parse
-            try
-            {
-                DateTimeOffset dto = DateTimeOffset.Parse(dateTimeString);
-                return dto;
-            }
-            catch (FormatException fe) { }
-
-
+            
             //Impossible to parse - using a default date;
             return new DateTimeOffset();
 
