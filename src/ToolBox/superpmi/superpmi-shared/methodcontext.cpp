@@ -574,7 +574,7 @@ void MethodContext::repEnvironmentSet()
 int MethodContext::repGetTestID()
 {
     // CLR Test asset only - we capture the testID via smarty-environnent (BVT_TEST_ID) during record time
-     //This procedure returns the test id if found and -1 otherwise
+    // This procedure returns the test id if found and -1 otherwise
 
     if (Environment == nullptr)
         return -1;
@@ -1573,17 +1573,18 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             value.stubLookup.runtimeLookup.indirections = (DWORD)pResult->stubLookup.runtimeLookup.indirections;
             value.stubLookup.runtimeLookup.testForNull  = (DWORD)pResult->stubLookup.runtimeLookup.testForNull;
             value.stubLookup.runtimeLookup.testForFixup = (DWORD)pResult->stubLookup.runtimeLookup.testForFixup;
-            value.stubLookup.runtimeLookup.indirectFirstOffset = (DWORD)pResult->stubLookup.runtimeLookup.indirectFirstOffset;
+            value.stubLookup.runtimeLookup.indirectFirstOffset =
+                (DWORD)pResult->stubLookup.runtimeLookup.indirectFirstOffset;
             for (int i                                    = 0; i < CORINFO_MAXINDIRECTIONS; i++)
                 value.stubLookup.runtimeLookup.offsets[i] = (DWORDLONG)pResult->stubLookup.runtimeLookup.offsets[i];
         }
         else
         {
-            value.stubLookup.runtimeLookup.signature    = (DWORDLONG)0;
-            value.stubLookup.runtimeLookup.helper       = (DWORD)0;
-            value.stubLookup.runtimeLookup.indirections = (DWORD)0;
-            value.stubLookup.runtimeLookup.testForNull  = (DWORD)0;
-            value.stubLookup.runtimeLookup.testForFixup = (DWORD)0;
+            value.stubLookup.runtimeLookup.signature           = (DWORDLONG)0;
+            value.stubLookup.runtimeLookup.helper              = (DWORD)0;
+            value.stubLookup.runtimeLookup.indirections        = (DWORD)0;
+            value.stubLookup.runtimeLookup.testForNull         = (DWORD)0;
+            value.stubLookup.runtimeLookup.testForFixup        = (DWORD)0;
             value.stubLookup.runtimeLookup.indirectFirstOffset = (DWORD)0;
             for (int i                                    = 0; i < CORINFO_MAXINDIRECTIONS; i++)
                 value.stubLookup.runtimeLookup.offsets[i] = (DWORDLONG)0;
@@ -1759,10 +1760,10 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->stubLookup.runtimeLookup.signature =
             (LPVOID)value.stubLookup.runtimeLookup.signature; // needs to be a more flexible copy based on
                                                               // valuevalue.stubLookup.runtimeLookup.signature;
-        pResult->stubLookup.runtimeLookup.helper       = (CorInfoHelpFunc)value.stubLookup.runtimeLookup.helper;
-        pResult->stubLookup.runtimeLookup.indirections = (WORD)value.stubLookup.runtimeLookup.indirections;
-        pResult->stubLookup.runtimeLookup.testForNull  = value.stubLookup.runtimeLookup.testForNull != 0;
-        pResult->stubLookup.runtimeLookup.testForFixup = value.stubLookup.runtimeLookup.testForFixup != 0;
+        pResult->stubLookup.runtimeLookup.helper              = (CorInfoHelpFunc)value.stubLookup.runtimeLookup.helper;
+        pResult->stubLookup.runtimeLookup.indirections        = (WORD)value.stubLookup.runtimeLookup.indirections;
+        pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
+        pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
         pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
         for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
@@ -2686,7 +2687,7 @@ void MethodContext::recGetArgType(CORINFO_SIG_INFO*       sig,
     Agnostic_GetArgType_Value value;
 
     // Only setting values for things the EE seems to pay attention to... this is necessary since some of the values
-     //are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisions...
     key.sig.callConv               = (DWORD)0;
     key.sig.retTypeClass           = (DWORDLONG)0;
     key.sig.retTypeSigClass        = (DWORDLONG)0;
@@ -2869,7 +2870,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     Agnostic_GetArgClass_Value value;
 
     // Only setting values for things the EE seems to pay attention to... this is necessary since some of the values
-     //are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisions...
     key.sig.callConv               = (DWORD)0;
     key.sig.retTypeClass           = (DWORDLONG)0;
     key.sig.retTypeSigClass        = (DWORDLONG)0;
@@ -3216,22 +3217,22 @@ void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
         value.lookup.constLookup.accessType = (DWORD)0;
         value.lookup.constLookup.handle     = (DWORDLONG)0;
         // copy the runtimeLookup view of the union
-        value.lookup.runtimeLookup.signature    = (DWORDLONG)pResult->lookup.runtimeLookup.signature;
-        value.lookup.runtimeLookup.helper       = (DWORD)pResult->lookup.runtimeLookup.helper;
-        value.lookup.runtimeLookup.indirections = (DWORD)pResult->lookup.runtimeLookup.indirections;
-        value.lookup.runtimeLookup.testForNull  = (DWORD)pResult->lookup.runtimeLookup.testForNull;
-        value.lookup.runtimeLookup.testForFixup = (DWORD)pResult->lookup.runtimeLookup.testForFixup;
+        value.lookup.runtimeLookup.signature           = (DWORDLONG)pResult->lookup.runtimeLookup.signature;
+        value.lookup.runtimeLookup.helper              = (DWORD)pResult->lookup.runtimeLookup.helper;
+        value.lookup.runtimeLookup.indirections        = (DWORD)pResult->lookup.runtimeLookup.indirections;
+        value.lookup.runtimeLookup.testForNull         = (DWORD)pResult->lookup.runtimeLookup.testForNull;
+        value.lookup.runtimeLookup.testForFixup        = (DWORD)pResult->lookup.runtimeLookup.testForFixup;
         value.lookup.runtimeLookup.indirectFirstOffset = (DWORD)pResult->lookup.runtimeLookup.indirectFirstOffset;
         for (int i                                = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             value.lookup.runtimeLookup.offsets[i] = (DWORDLONG)pResult->lookup.runtimeLookup.offsets[i];
     }
     else
     {
-        value.lookup.runtimeLookup.signature    = (DWORDLONG)0;
-        value.lookup.runtimeLookup.helper       = (DWORD)0;
-        value.lookup.runtimeLookup.indirections = (DWORD)0;
-        value.lookup.runtimeLookup.testForNull  = (DWORD)0;
-        value.lookup.runtimeLookup.testForFixup = (DWORD)0;
+        value.lookup.runtimeLookup.signature           = (DWORDLONG)0;
+        value.lookup.runtimeLookup.helper              = (DWORD)0;
+        value.lookup.runtimeLookup.indirections        = (DWORD)0;
+        value.lookup.runtimeLookup.testForNull         = (DWORD)0;
+        value.lookup.runtimeLookup.testForFixup        = (DWORD)0;
         value.lookup.runtimeLookup.indirectFirstOffset = (DWORD)0;
         for (int i                                = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             value.lookup.runtimeLookup.offsets[i] = (DWORDLONG)0;
@@ -3305,11 +3306,11 @@ void MethodContext::repEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
     if (pResult->lookup.lookupKind.needsRuntimeLookup)
     {
         // copy the runtimeLookup view of the union
-        pResult->lookup.runtimeLookup.signature    = (LPVOID)value.lookup.runtimeLookup.signature;
-        pResult->lookup.runtimeLookup.helper       = (CorInfoHelpFunc)value.lookup.runtimeLookup.helper;
-        pResult->lookup.runtimeLookup.indirections = (WORD)value.lookup.runtimeLookup.indirections;
-        pResult->lookup.runtimeLookup.testForNull  = value.lookup.runtimeLookup.testForNull != 0;
-        pResult->lookup.runtimeLookup.testForFixup = value.lookup.runtimeLookup.testForFixup != 0;
+        pResult->lookup.runtimeLookup.signature           = (LPVOID)value.lookup.runtimeLookup.signature;
+        pResult->lookup.runtimeLookup.helper              = (CorInfoHelpFunc)value.lookup.runtimeLookup.helper;
+        pResult->lookup.runtimeLookup.indirections        = (WORD)value.lookup.runtimeLookup.indirections;
+        pResult->lookup.runtimeLookup.testForNull         = value.lookup.runtimeLookup.testForNull != 0;
+        pResult->lookup.runtimeLookup.testForFixup        = value.lookup.runtimeLookup.testForFixup != 0;
         pResult->lookup.runtimeLookup.indirectFirstOffset = value.lookup.runtimeLookup.indirectFirstOffset != 0;
         for (int i                                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->lookup.runtimeLookup.offsets[i] = (size_t)value.lookup.runtimeLookup.offsets[i];
@@ -6678,10 +6679,10 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len)
     len -= t;
 
     // Add COMPLUS_* & dbflag environment variables to method Identity
-     //except complus_version and complus_defaultversion
-     //since they change the compilation behaviour of JIT
-     //we also need to sort them to ensure we don't produce a different
-     //hash based on the order of these variables
+    // except complus_version and complus_defaultversion
+    // since they change the compilation behaviour of JIT
+    // we also need to sort them to ensure we don't produce a different
+    // hash based on the order of these variables
     if (Environment != nullptr)
     {
         Agnostic_Environment val;
