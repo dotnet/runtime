@@ -585,9 +585,13 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariableCore(variable);
 
-#if !FEATURE_WIN32_REGISTRY
-            return null;
-#else
+#if FEATURE_WIN32_REGISTRY
+            if (AppDomain.IsAppXModel())
+#endif
+            {
+                return null;
+            }
+#if FEATURE_WIN32_REGISTRY
             RegistryKey baseKey;
             string keyName;
 
@@ -670,11 +674,15 @@ namespace System
 
         internal static IEnumerable<KeyValuePair<string, string>> EnumerateEnvironmentVariablesFromRegistry(EnvironmentVariableTarget target)
         {
-#if !FEATURE_WIN32_REGISTRY
-            // Without registry support we have nothing to return
-            ValidateTarget(target);
-            yield break;
-#else
+#if FEATURE_WIN32_REGISTRY
+            if (AppDomain.IsAppXModel())
+#endif
+            {
+                // Without registry support we have nothing to return
+                ValidateTarget(target);
+                yield break;
+            }
+#if FEATURE_WIN32_REGISTRY
             RegistryKey baseKey;
             string keyName;
             if (target == EnvironmentVariableTarget.Machine)
@@ -740,10 +748,14 @@ namespace System
                 return;
             }
 
-#if !FEATURE_WIN32_REGISTRY
-            // other targets ignored
-            return;
-#else
+#if FEATURE_WIN32_REGISTRY
+            if (AppDomain.IsAppXModel())
+#endif
+            {
+                // other targets ignored
+                return;
+            }
+#if FEATURE_WIN32_REGISTRY
             // explicitly null out value if is the empty string.
             if (string.IsNullOrEmpty(value) || value[0] == '\0')
                 value = null;
