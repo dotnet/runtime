@@ -314,7 +314,7 @@ mono_thread_info_runtime_init (MonoThreadInfoRuntimeCallbacks *callbacks);
 MonoThreadInfoRuntimeCallbacks *
 mono_threads_get_runtime_callbacks (void);
 
-int
+MONO_API int
 mono_thread_info_register_small_id (void);
 
 THREAD_INFO_TYPE *
@@ -341,7 +341,7 @@ mono_thread_info_current (void);
 THREAD_INFO_TYPE*
 mono_thread_info_current_unchecked (void);
 
-int
+MONO_API int
 mono_thread_info_get_small_id (void);
 
 MonoLinkedListSet*
