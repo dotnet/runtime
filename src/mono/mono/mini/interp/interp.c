@@ -4502,6 +4502,11 @@ array_constructed:
 			ip += 3;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_MONO_MEMORY_BARRIER) {
+			++ip;
+			mono_memory_barrier ();
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_MONO_JIT_ATTACH) {
 			++ip;
 

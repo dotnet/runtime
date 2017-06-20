@@ -3540,6 +3540,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				PUSH_TYPE (&td, STACK_TYPE_MP, NULL);
 				++td.ip;
 				break;
+			case CEE_MONO_MEMORY_BARRIER:
+				ADD_CODE (&td, MINT_MONO_MEMORY_BARRIER);
+				++td.ip;
+				break;
 			case CEE_MONO_JIT_ATTACH:
 				ADD_CODE (&td, MINT_MONO_JIT_ATTACH);
 				++td.ip;
