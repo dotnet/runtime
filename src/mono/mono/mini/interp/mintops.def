@@ -6,7 +6,7 @@
  *
  */
 
-/* OPDEF (opsymbol, opstring, oplength, optype) */
+/* OPDEF (opsymbol, opstring, oplength (in uint16s), optype) */
 
 OPDEF(MINT_NOP, "nop", 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, MintOpNoArgs)
