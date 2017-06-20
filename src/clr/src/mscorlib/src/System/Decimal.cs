@@ -805,6 +805,8 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void FCallRound(ref Decimal d, int decimals);
 
+        internal static int Sign(ref decimal d) => (d.lo | d.mid | d.hi) == 0 ? 0 : (d.flags >> 31) | 1;
+
         // Subtracts two Decimal values.
         //
         public static Decimal Subtract(Decimal d1, Decimal d2)
