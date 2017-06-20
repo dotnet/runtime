@@ -6,7 +6,7 @@ This guide will walk you through building CoreCLR on OS X. We'll start by showin
 Environment
 ===========
 
-These instructions were validated on OS X Yosemite, although they probably work on earlier versions. Pull Requests are welcome to address other environments.
+These instructions were validated on macOS 10.12. Sierra. On older versions coreFX will fail to build properly because of SSL API changes.
 
 If your machine has Command Line Tools for XCode 6.3 installed, you'll need to update them to the 6.3.1 version or higher in order to successfully build. There was an issue with the headers that shipped with version 6.3 that was subsequently fixed in 6.3.1.
 
@@ -70,7 +70,16 @@ ln -s /usr/local/opt/openssl/lib/libssl.1.0.0.dylib /usr/local/lib/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/libcrypto.pc /usr/local/lib/pkgconfig/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/libssl.pc /usr/local/lib/pkgconfig/
 ln -s /usr/local/opt/openssl/lib/pkgconfig/openssl.pc /usr/local/lib/pkgconfig/
+
+# Check pkg-config configuration
+pkg-config --libs openssl
+
+it should show something like '-L/usr/local/Cellar/openssl/1.0.2k/lib -lssl -lcrypto'
+If pkg-config is not found, run 'brew install pkg-config'
 ```
+
+If you miss a step or something changes, run clean.sh from top. cmake will cache certain parts and it may not pick up the updates. 
+
 
 Build the Runtime and Microsoft Core Library
 ============================================
