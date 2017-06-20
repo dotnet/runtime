@@ -1705,6 +1705,8 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	/* pin from pinned handles */
 	sgen_init_pinning ();
+	if (concurrent_collection_in_progress)
+		sgen_init_pinning_for_conc ();
 	sgen_client_binary_protocol_mark_start (GENERATION_NURSERY);
 	pin_from_roots (nursery_section->data, nursery_section->end_data, ctx);
 	/* pin cemented objects */
@@ -1715,6 +1717,8 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	pin_objects_in_nursery (FALSE, ctx);
 	sgen_pinning_trim_queue_to_section (nursery_section);
+	if (concurrent_collection_in_progress)
+		sgen_finish_pinning_for_conc ();
 
 	if (remset_consistency_checks)
 		sgen_check_remset_consistency ();
@@ -1904,6 +1908,8 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	TV_GETTIME (atv);
 	sgen_init_pinning ();
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT)
+		sgen_init_pinning_for_conc ();
 	SGEN_LOG (6, "Collecting pinned addresses");
 	pin_from_roots ((void*)lowest_heap_address, (void*)highest_heap_address, ctx);
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
@@ -1973,6 +1979,9 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	time_major_pinning += TV_ELAPSED (atv, btv);
 	SGEN_LOG (2, "Finding pinned pointers: %zd in %lld usecs", sgen_get_pinned_count (), (long long)TV_ELAPSED (atv, btv));
 	SGEN_LOG (4, "Start scan with %zd pinned objects", sgen_get_pinned_count ());
+
+	if (mode == COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT)
+		sgen_finish_pinning_for_conc ();
 
 	major_collector.init_to_space ();
 
