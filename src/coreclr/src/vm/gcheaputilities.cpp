@@ -25,8 +25,6 @@ uint32_t* g_card_bundle_table = nullptr;
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
-IGCHandleManager* g_pGCHandleManager = nullptr;
-
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
@@ -38,55 +36,3 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 gc_alloc_context g_global_alloc_context = {};
-
-// Debug-only validation for handle.
-
-void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex)
-{
-#ifdef _DEBUG_IMPL
-    VALIDATEOBJECTREF(objRef);
-
-    AppDomain *domain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
-
-    // Access to a handle in an unloaded domain is not allowed
-    assert(domain != nullptr);
-    assert(!domain->NoAccessToHandleTable());
-
-#if CHECK_APP_DOMAIN_LEAKS
-    if (g_pConfig->AppDomainLeaks() && objRef != NULL)
-    {
-        if (appDomainIndex.m_dwIndex)
-        {
-            objRef->TryAssignAppDomain(domain);
-        }
-        else
-        {
-            objRef->TrySetAppDomainAgile();
-        }
-    }
-#endif // CHECK_APP_DOMAIN_LEAKS
-#endif // _DEBUG_IMPL
-}
-
-void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef)
-{
-#ifdef _DEBUG_IMPL
-    _ASSERTE(handle);
-
-#ifdef DEBUG_DestroyedHandleValue
-    // Verify that we are not trying to access a freed handle.
-    _ASSERTE("Attempt to access destroyed handle." && *(_UNCHECKED_OBJECTREF*)handle != DEBUG_DestroyedHandleValue);
-#endif
-
-    IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-    ADIndex appDomainIndex = ADIndex(reinterpret_cast<DWORD>(mgr->GetHandleContext(handle)));
-
-    AppDomain *unloadingDomain = SystemDomain::AppDomainBeingUnloaded();
-    if (unloadingDomain && unloadingDomain->GetIndex() == appDomainIndex && unloadingDomain->NoAccessToHandleTable())
-    {
-        _ASSERTE (!"Access to a handle in unloaded domain is not allowed");
-    }
-
-    ValidateObjectAndAppDomain(objRef, appDomainIndex);
-#endif // _DEBUG_IMPL
-}
