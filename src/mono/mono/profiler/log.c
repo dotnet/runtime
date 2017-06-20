@@ -780,9 +780,9 @@ free_buffer (void *buf, int size)
 }
 
 static LogBuffer*
-create_buffer (uintptr_t tid)
+create_buffer (uintptr_t tid, int bytes)
 {
-	LogBuffer* buf = (LogBuffer *) alloc_buffer (BUFFER_SIZE);
+	LogBuffer* buf = (LogBuffer *) alloc_buffer (MAX (BUFFER_SIZE, bytes));
 
 	InterlockedIncrement (&buffer_allocations_ctr);
 
@@ -805,7 +805,7 @@ create_buffer (uintptr_t tid)
 static void
 init_buffer_state (MonoProfilerThread *thread)
 {
-	thread->buffer = create_buffer (thread->node.key);
+	thread->buffer = create_buffer (thread->node.key, 0);
 	thread->methods = NULL;
 }
 
@@ -886,7 +886,7 @@ ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
 	if (old && old->cursor + bytes < old->buf_end)
 		return old;
 
-	LogBuffer *new_ = create_buffer (thread->node.key);
+	LogBuffer *new_ = create_buffer (thread->node.key, bytes);
 	new_->next = old;
 	thread->buffer = new_;
 
