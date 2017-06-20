@@ -2083,14 +2083,9 @@ combinedScenarios.each { scenario ->
                                         }
                                     }
 
-                                    // Defaults for Ubuntu
                                     def arm_abi = 'arm'
-                                    def corefx_os = 'ubuntu14.04'
-                                    if (os == 'Ubuntu16.04') {
-                                        arm_abi = 'arm'
-                                        corefx_os = 'ubuntu16.04'
-                                    }
-                                    else if (os == 'Tizen') {
+                                    def corefx_os = 'linux'
+                                    if (os == 'Tizen') {
                                         arm_abi = 'armel'
                                         corefx_os = 'tizen'
                                     }
@@ -2101,6 +2096,7 @@ combinedScenarios.each { scenario ->
                                     if ( lowerConfiguration == 'checked' ) {
                                         corefx_lowerConfiguration='release'
                                     }
+
                                     copyArtifacts("${corefxFolder}/${corefx_os}_${arm_abi}_cross_${corefx_lowerConfiguration}") {
                                         includePatterns('bin/build.tar.gz')
                                         buildSelector {
