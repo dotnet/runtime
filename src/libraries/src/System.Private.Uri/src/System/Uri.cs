@@ -2109,8 +2109,6 @@ namespace System
                             // Only FILE scheme may have UNC Path flag set
                             _flags |= Flags.UncPath;
                             idx = i;
-
-                            _syntax = IsWindowsSystem ? _syntax : UriParser.UnixFileUri;
                         }
                         else if (!IsWindowsSystem && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && pUriString[i - 1] == '/' && i - idx == 3)
                         {
@@ -2193,12 +2191,18 @@ namespace System
                     if (err != ParsingError.None)
                         return err;
 
+                    char hostTerminator = idx < (ushort)length ? pUriString[idx] : default(char);
+
                     // This will disallow '\' as the host terminator for any scheme that is not implicitFile or cannot have a Dos Path
-                    if ((idx < (ushort)length && pUriString[idx] == '\\') && NotAny(Flags.ImplicitFile) &&
-                        (_syntax.NotAny(UriSyntaxFlags.AllowDOSPath) ||
-                        (InFact(Flags.UncPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes))))
+                    if (hostTerminator == '\\' && NotAny(Flags.ImplicitFile) && _syntax.NotAny(UriSyntaxFlags.AllowDOSPath))
                     {
                         return ParsingError.BadAuthorityTerminator;
+                    }
+
+                    // When the hostTerminator is '/' on Unix, use the UnixFile syntax (preserve backslashes)
+                    if (!IsWindowsSystem && hostTerminator == '/' && _syntax == UriParser.FileUri)
+                    {
+                        _syntax = UriParser.UnixFileUri;
                     }
                 }
 
