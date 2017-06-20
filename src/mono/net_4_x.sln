@@ -301,6 +301,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Workflow.Runtime-net
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Context-net_4_x", "mcs/class/System.Reflection.Context/System.Reflection.Context-net_4_x.csproj", "{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Profiler.Log-net_4_x", "mcs/class/Mono.Profiler.Log/Mono.Profiler.Log-net_4_x.csproj", "{58A188CE-DED8-48B0-98B7-065A260D21DF}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "legacy_Mono.Cecil-net_4_x", "mcs/class/legacy/Mono.Cecil/legacy_Mono.Cecil-net_4_x.csproj", "{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Security.Cryptography.X509Certificates-net_4_x", "mcs/class/Facades/System.Security.Cryptography.X509Certificates/Facades_System.Security.Cryptography.X509Certificates-net_4_x.csproj", "{C2E71C2B-A806-4FEB-AE2D-A5BE884E3BA7}"
@@ -1285,6 +1287,10 @@ Global
 		{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58A188CE-DED8-48B0-98B7-065A260D21DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58A188CE-DED8-48B0-98B7-065A260D21DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58A188CE-DED8-48B0-98B7-065A260D21DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58A188CE-DED8-48B0-98B7-065A260D21DF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Release|Any CPU.ActiveCfg = Release|Any CPU
