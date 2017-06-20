@@ -2053,7 +2053,7 @@ namespace System
                     && NotAny(Flags.ImplicitFile) && (idx + 1 < length))
                 {
                     char c;
-                    ushort i = (ushort)idx;
+                    ushort i = idx;
 
                     // V1 Compat: Allow _compression_ of > 3 slashes only for File scheme.
                     // This will skip all slashes and if their number is 2+ it sets the AuthorityFound flag
@@ -2071,10 +2071,10 @@ namespace System
                             _flags |= Flags.AuthorityFound;
                         }
                         // DOS-like path?
-                        if (i + 1 < (ushort)length && ((c = pUriString[i + 1]) == ':' || c == '|') &&
+                        if (i + 1 < length && ((c = pUriString[i + 1]) == ':' || c == '|') &&
                             UriHelper.IsAsciiLetter(pUriString[i]))
                         {
-                            if (i + 2 >= (ushort)length || ((c = pUriString[i + 2]) != '\\' && c != '/'))
+                            if (i + 2 >= length || ((c = pUriString[i + 2]) != '\\' && c != '/'))
                             {
                                 // report an error but only for a file: scheme
                                 if (_syntax.InFact(UriSyntaxFlags.FileLikeUri))
@@ -2109,8 +2109,6 @@ namespace System
                             // Only FILE scheme may have UNC Path flag set
                             _flags |= Flags.UncPath;
                             idx = i;
-
-                            _syntax = IsWindowsSystem ? _syntax : UriParser.UnixFileUri;
                         }
                         else if (!IsWindowsSystem && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && pUriString[i - 1] == '/' && i - idx == 3)
                         {
@@ -2189,16 +2187,24 @@ namespace System
                 // We must ensure that known schemes do use a server-based authority
                 {
                     ParsingError err = ParsingError.None;
-                    idx = CheckAuthorityHelper(pUriString, idx, (ushort)length, ref err, ref _flags, _syntax, ref newHost);
+                    idx = CheckAuthorityHelper(pUriString, idx, length, ref err, ref _flags, _syntax, ref newHost);
                     if (err != ParsingError.None)
                         return err;
 
-                    // This will disallow '\' as the host terminator for any scheme that is not implicitFile or cannot have a Dos Path
-                    if ((idx < (ushort)length && pUriString[idx] == '\\') && NotAny(Flags.ImplicitFile) &&
-                        (_syntax.NotAny(UriSyntaxFlags.AllowDOSPath) ||
-                        (InFact(Flags.UncPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes))))
+                    if (idx < (ushort)length)
                     {
-                        return ParsingError.BadAuthorityTerminator;
+                        char hostTerminator = pUriString[idx];
+
+                        // This will disallow '\' as the host terminator for any scheme that is not implicitFile or cannot have a Dos Path
+                        if (hostTerminator == '\\' && NotAny(Flags.ImplicitFile) && _syntax.NotAny(UriSyntaxFlags.AllowDOSPath))
+                        {
+                            return ParsingError.BadAuthorityTerminator;
+                        }
+                        // When the hostTerminator is '/' on Unix, use the UnixFile syntax (preserve backslashes)
+                        else if (!IsWindowsSystem && hostTerminator == '/' && NotAny(Flags.ImplicitFile) && InFact(Flags.UncPath) && _syntax == UriParser.FileUri)
+                        {
+                            _syntax = UriParser.UnixFileUri;
+                        }
                     }
                 }
 
