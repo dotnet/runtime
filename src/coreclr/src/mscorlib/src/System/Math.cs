@@ -660,50 +660,17 @@ namespace System
         // Sign function for VB.  Returns -1, 0, or 1 if the sign of the number
         // is negative, 0, or positive.  Throws for floating point NaN's.
         [CLSCompliant(false)]
-        public static int Sign(sbyte value)
-        {
-            if (value < 0)
-                return -1;
-            else if (value > 0)
-                return 1;
-            else
-                return 0;
-        }
-
+        public static int Sign(sbyte value) => Sign((int)value);
 
         // Sign function for VB.  Returns -1, 0, or 1 if the sign of the number
         // is negative, 0, or positive.  Throws for floating point NaN's.
-        public static int Sign(short value)
-        {
-            if (value < 0)
-                return -1;
-            else if (value > 0)
-                return 1;
-            else
-                return 0;
-        }
+        public static int Sign(short value) => Sign((int)value);
 
         // Sign function for VB.  Returns -1, 0, or 1 if the sign of the number
         // is negative, 0, or positive.  Throws for floating point NaN's.
-        public static int Sign(int value)
-        {
-            if (value < 0)
-                return -1;
-            else if (value > 0)
-                return 1;
-            else
-                return 0;
-        }
+        public static int Sign(int value) => unchecked(value >> 31 | (int)((uint)-value >> 31));
 
-        public static int Sign(long value)
-        {
-            if (value < 0)
-                return -1;
-            else if (value > 0)
-                return 1;
-            else
-                return 0;
-        }
+        public static int Sign(long value) => unchecked((int)(value >> 63 | (long)((ulong)-value >> 63)));
 
         public static int Sign(float value)
         {
@@ -727,15 +694,7 @@ namespace System
             throw new ArithmeticException(SR.Arithmetic_NaN);
         }
 
-        public static int Sign(Decimal value)
-        {
-            if (value < 0)
-                return -1;
-            else if (value > 0)
-                return 1;
-            else
-                return 0;
-        }
+        public static int Sign(decimal value) => decimal.Sign(ref value);
 
         public static long BigMul(int a, int b)
         {
