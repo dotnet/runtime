@@ -711,17 +711,15 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
             MakeSrcContained(argNode, putArgChild);
         }
     }
-#ifdef _TARGET_ARM_
-    else if (putArgChild->TypeGet() == TYP_DOUBLE) {
-        // Even though TYP_DOUBLE uses 2 numSlots, we consume 1 srcCount in TYP_DOUBLE
-        argNode->gtLsraInfo.srcCount = 1;
-        putArgChild->SetContained();
-    }
-#endif
     else
     {
+#ifdef _TARGET_ARM_
+        // We must not have a multi-reg strcut; double uses 2 slots and isn't a multi-reg struct
+        assert((info->numSlots == 1) || ((info->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE)));
+#else // !_TARGET_ARM_
         // We must not have a multi-reg struct
         assert(info->numSlots == 1);
+#endif // !_TARGET_ARM_
     }
 }
 
