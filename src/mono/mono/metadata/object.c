@@ -3758,6 +3758,49 @@ mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass)
 	}
 }
 
+/*
+ * mono_nullable_init_from_handle:
+ * @buf: The nullable structure to initialize.
+ * @value: the value to initialize from
+ * @klass: the type for the object
+ *
+ * Initialize the nullable structure pointed to by @buf from @value which
+ * should be a boxed value type.   The size of @buf should be able to hold
+ * as much data as the @klass->instance_size (which is the number of bytes
+ * that will be copies).
+ *
+ * Since Nullables have variable structure, we can not define a C
+ * structure for them.
+ */
+void
+mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *klass)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoClass *param_class = klass->cast_class;
+
+	mono_class_setup_fields (klass);
+	g_assert (klass->fields_inited);
+
+	g_assert (mono_class_from_mono_type (klass->fields [0].type) == param_class);
+	g_assert (mono_class_from_mono_type (klass->fields [1].type) == mono_defaults.boolean_class);
+
+	*(guint8*)(buf + klass->fields [1].offset - sizeof (MonoObject)) = MONO_HANDLE_IS_NULL  (value) ? 0 : 1;
+	if (!MONO_HANDLE_IS_NULL (value)) {
+		uint32_t value_gchandle = 0;
+		gpointer src = mono_object_handle_pin_unbox (value, &value_gchandle);
+		if (param_class->has_references)
+			mono_gc_wbarrier_value_copy (buf + klass->fields [0].offset - sizeof (MonoObject), src, 1, param_class);
+		else
+			mono_gc_memmove_atomic (buf + klass->fields [0].offset - sizeof (MonoObject), src, mono_class_value_size (param_class, NULL));
+		mono_gchandle_free (value_gchandle);
+	} else {
+		mono_gc_bzero_atomic (buf + klass->fields [0].offset - sizeof (MonoObject), mono_class_value_size (param_class, NULL));
+	}
+}
+
+
+
 /**
  * mono_nullable_box:
  * \param buf The buffer representing the data to be boxed
