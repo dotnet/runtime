@@ -2200,7 +2200,7 @@ namespace System
                     }
 
                     // When the hostTerminator is '/' on Unix, use the UnixFile syntax (preserve backslashes)
-                    if (!IsWindowsSystem && hostTerminator == '/' && _syntax == UriParser.FileUri)
+                    if (!IsWindowsSystem && hostTerminator == '/' && NotAny(Flags.ImplicitFile)  && _syntax == UriParser.FileUri)
                     {
                         _syntax = UriParser.UnixFileUri;
                     }
