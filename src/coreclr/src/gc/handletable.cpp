@@ -346,19 +346,6 @@ OBJECTHANDLE HndCreateHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTREF obje
 
     // store the reference
     HndAssignHandle(handle, object);
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles++;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)handle, (ObjectID)OBJECTREF_TO_UNCHECKED_OBJECTREF(object));
-        END_PIN_PROFILER();
-    }
-#endif //GC_PROFILING
-
     STRESS_LOG2(LF_GC, LL_INFO1000, "CreateHandle: %p, type=%d\n", handle, uType);
 
     // return the result
@@ -490,18 +477,6 @@ void HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE handle)
     // fetch the handle table pointer
     HandleTable *pTable = Table(hTable);
 
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)handle);
-        END_PIN_PROFILER();
-    }        
-#endif //GC_PROFILING
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles--;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
     // sanity check the type index
     _ASSERTE(uType < pTable->uTypeCount);
 
@@ -541,110 +516,6 @@ void HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle)
 
     // fetch the type and then free normally
     HndDestroyHandle(hTable, HandleFetchType(handle), handle);
-}
-
-
-/*
- * HndCreateHandles
- *
- * Entrypoint for allocating handles in bulk.
- *
- */
-uint32_t HndCreateHandles(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE *pHandles, uint32_t uCount)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    // sanity check the type index
-    _ASSERTE(uType < pTable->uTypeCount);
-
-    // keep track of the number of handles we've allocated
-    uint32_t uSatisfied = 0;
-
-    // if this is a large number of handles then bypass the cache
-    if (uCount > SMALL_ALLOC_COUNT)
-    {
-        CrstHolder ch(&pTable->Lock);
-
-        // allocate handles in bulk from the main handle table
-        uSatisfied = TableAllocBulkHandles(pTable, uType, pHandles, uCount);
-    }
-
-    // do we still need to get some handles?
-    if (uSatisfied < uCount)
-    {
-        // get some handles from the cache
-        uSatisfied += TableAllocHandlesFromCache(pTable, uType, pHandles + uSatisfied, uCount - uSatisfied);
-    }
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles += uSatisfied;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        for (uint32_t i = 0; i < uSatisfied; i++)
-            g_profControlBlock.pProfInterface->HandleCreated((uintptr_t)pHandles[i], 0);
-        END_PIN_PROFILER();
-    }
-#endif //GC_PROFILING
-
-    // return the number of handles we allocated
-    return uSatisfied;
-}
-
-
-/*
- * HndDestroyHandles
- *
- * Entrypoint for freeing handles in bulk.
- *
- */
-void HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    ValidateAppDomainForHandle(pHandles[0]);
-#endif
-    
-    // fetch the handle table pointer
-    HandleTable *pTable = Table(hTable);
-
-    // sanity check the type index
-    _ASSERTE(uType < pTable->uTypeCount);
-
-#ifdef GC_PROFILING
-    {
-        BEGIN_PIN_PROFILER(CORProfilerTrackGC());
-        for (uint32_t i = 0; i < uCount; i++)
-            g_profControlBlock.pProfInterface->HandleDestroyed((uintptr_t)pHandles[i]);
-        END_PIN_PROFILER();
-    }
-#endif
-
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
-    g_dwHandles -= uCount;
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
-    // is this a small number of handles?
-    if (uCount <= SMALL_ALLOC_COUNT)
-    {
-        // yes - free them via the handle cache
-        TableFreeHandlesToCache(pTable, uType, pHandles, uCount);
-        return;
-    }
-
-    // acquire the handle manager lock
-    {
-        CrstHolder ch(&pTable->Lock);
-    
-        // free the unsorted handles in bulk to the main handle table
-        TableFreeBulkUnpreparedHandles(pTable, uType, pHandles, uCount);
-    }
 }
 
 /*

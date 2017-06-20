@@ -75,12 +75,6 @@ void            HndDestroyHandle(HHANDLETABLE hTable, uint32_t uType, OBJECTHAND
 void            HndDestroyHandleOfUnknownType(HHANDLETABLE hTable, OBJECTHANDLE handle);
 
 /*
- * bulk handle allocation and deallocation
- */
-uint32_t        HndCreateHandles(HHANDLETABLE hTable, uint32_t uType, OBJECTHANDLE *pHandles, uint32_t uCount);
-void            HndDestroyHandles(HHANDLETABLE hTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount);
-
-/*
  * owner data associated with handles
  */
 void            HndSetHandleExtraInfo(OBJECTHANDLE handle, uint32_t uType, uintptr_t lExtraInfo);
