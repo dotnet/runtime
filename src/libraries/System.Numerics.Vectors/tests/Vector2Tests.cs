@@ -18,7 +18,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [ActiveIssue("TFS 444567 - Codegen optimization issue", TargetFrameworkMonikers.UapAot)]
         public void Vector2CopyToTest()
         {
             Vector2 v1 = new Vector2(2.0f, 3.0f);
@@ -29,7 +28,17 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => v1.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
-            Assert.Throws<ArgumentException>(() => v1.CopyTo(a, 2));
+            
+            if (!PlatformDetection.IsNetNative)
+            {
+               Assert.Throws<ArgumentException>(() => v1.CopyTo(a, 2));
+            }
+            else
+            {
+               // The .Net Native code generation optimizer does aggressive optimizations to range checks 
+               // which result in an ArgumentOutOfRangeException exception being thrown at runtime.
+               Assert.ThrowsAny<ArgumentException>(() => v1.CopyTo(a, 2));
+            }
 
             v1.CopyTo(a, 1);
             v1.CopyTo(b);
