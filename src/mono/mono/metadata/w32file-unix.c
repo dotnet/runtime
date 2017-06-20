@@ -2544,6 +2544,15 @@ gboolean mono_w32file_delete(const gunichar2 *name)
 	retval = _wapi_unlink (filename);
 	
 	if (retval == -1) {
+		/* On linux, calling unlink on an non-existing file in a read-only mount will fail with EROFS.
+		The expected behavior is for this function to return FALSE and not trigger an exception.
+		To work around this behavior, we stat the file on failure.
+		*/
+		if (errno == EROFS) {
+			MonoIOStat stat;
+			if (mono_w32file_get_attributes_ex (name, &stat)) //The file exists, so must be due the RO file system
+				errno = EROFS;
+		}
 		_wapi_set_last_path_error_from_errno (NULL, filename);
 	} else {
 		ret = TRUE;
