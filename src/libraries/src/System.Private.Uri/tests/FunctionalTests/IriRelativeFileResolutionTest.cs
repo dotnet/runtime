@@ -73,7 +73,7 @@ namespace System.PrivateUri.Tests
         public void IriRelativeResolution_CompareImplcitAndExplicitUncWithNoUnicode_AllPropertiesTheSame()
         {
             string nonUnicodeImplicitTestUnc = @"\\c\path\path3\test.txt";
-            string nonUnicodeImplicitUncBase = s_isWindowsSystem ? @"\\c\path\file.txt" : @"\\c/path/file.txt";
+            string nonUnicodeImplicitUncBase = @"\\c/path/file.txt";
 
             string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(nonUnicodeImplicitTestUnc,
@@ -100,7 +100,7 @@ namespace System.PrivateUri.Tests
         public void IriRelativeResolution_CompareImplcitAndExplicitUncWithUnicodeIriOn_AllPropertiesTheSame()
         {
             string unicodeImplicitTestUnc = @"\\c\path\\u30AF\path3\\u30EB\u30DE.text";
-            string nonUnicodeImplicitUncBase = s_isWindowsSystem ? @"\\c\path\file.txt" : @"\\c/path/file.txt";
+            string nonUnicodeImplicitUncBase = @"\\c\path\file.txt";
 
             string testResults;
             int errorCount = RelatavizeRestoreCompareImplicitVsExplicitFiles(unicodeImplicitTestUnc,
