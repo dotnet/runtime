@@ -114,13 +114,6 @@ mono_runtime_try_shutdown (void)
 	return TRUE;
 }
 
-
-gboolean
-mono_runtime_is_critical_method (MonoMethod *method)
-{
-	return FALSE;
-}
-
 /*
 Coordinate the creation of all remaining TLS slots in the runtime.
 No further TLS slots should be created after this function finishes.

@@ -18,7 +18,6 @@
 
 MONO_BEGIN_DECLS
 
-gboolean mono_runtime_is_critical_method (MonoMethod *method);
 gboolean mono_runtime_try_shutdown (void);
 
 void mono_runtime_init_tls (void);

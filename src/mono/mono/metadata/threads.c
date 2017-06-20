@@ -658,8 +658,18 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	g_assert (thread);
 
 	info = mono_thread_info_current ();
+	g_assert (info);
 
 	internal = thread->internal_thread;
+	g_assert (internal);
+
+	/* It is needed to store the MonoInternalThread on the MonoThreadInfo, because of the following case:
+	 *  - the MonoInternalThread TLS key is destroyed: set it to NULL
+	 *  - the MonoThreadInfo TLS key is destroyed: calls mono_thread_info_detach
+	 *    - it calls MonoThreadInfoCallbacks.thread_detach
+	 *      - mono_thread_internal_current returns NULL -> fails to detach the MonoInternalThread. */
+	mono_thread_info_set_internal_thread_gchandle (info, mono_gchandle_new ((MonoObject*) internal, FALSE));
+
 	internal->handle = mono_threads_open_thread_handle (info->handle);
 #ifdef HOST_WIN32
 	internal->native_handle = OpenThread (THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId ());
@@ -1077,18 +1087,7 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 	return (NULL != mono_thread_create_internal (domain, func, arg, MONO_THREAD_CREATE_FLAGS_NONE, error));
 }
 
-/**
- * mono_thread_attach:
- */
-MonoThread *
-mono_thread_attach (MonoDomain *domain)
-{
-	MonoThread *thread = mono_thread_attach_full (domain, FALSE);
-
-	return thread;
-}
-
-MonoThread *
+static MonoThread *
 mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 {
 	MonoInternalThread *internal;
@@ -1131,12 +1130,22 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 	return thread;
 }
 
+/**
+ * mono_thread_attach:
+ */
+MonoThread *
+mono_thread_attach (MonoDomain *domain)
+{
+	return mono_thread_attach_full (domain, FALSE);
+}
+
 void
 mono_thread_detach_internal (MonoInternalThread *thread)
 {
 	gboolean removed;
 
 	g_assert (thread != NULL);
+	SET_CURRENT_OBJECT (thread);
 
 	THREAD_DEBUG (g_message ("%s: mono_thread_detach for %p (%"G_GSIZE_FORMAT")", __func__, thread, (gsize)thread->tid));
 
@@ -1264,6 +1273,8 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 done:
 	SET_CURRENT_OBJECT (NULL);
 	mono_domain_unset ();
+
+	mono_thread_info_unset_internal_thread_gchandle ((MonoThreadInfo*) thread->thread_info);
 
 	/* Don't need to close the handle to this thread, even though we took a
 	 * reference in mono_thread_attach (), because the GC will do it
@@ -2940,6 +2951,84 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 
 	mono_thread_start_cb = start_cb;
 	mono_thread_attach_cb = attach_cb;
+}
+
+static gpointer
+thread_attach (MonoThreadInfo *info)
+{
+	return mono_gc_thread_attach (info);
+}
+
+static void
+thread_detach (MonoThreadInfo *info)
+{
+	MonoInternalThread *internal;
+	guint32 gchandle;
+
+	/* If a delegate is passed to native code and invoked on a thread we dont
+	 * know about, marshal will register it with mono_threads_attach_coop, but
+	 * we have no way of knowing when that thread goes away.  SGen has a TSD
+	 * so we assume that if the domain is still registered, we can detach
+	 * the thread */
+
+	g_assert (info);
+
+	if (!mono_thread_info_try_get_internal_thread_gchandle (info, &gchandle))
+		return;
+
+	internal = (MonoInternalThread*) mono_gchandle_get_target (gchandle);
+	g_assert (internal);
+
+	mono_gchandle_free (gchandle);
+
+	mono_thread_detach_internal (internal);
+}
+
+static void
+thread_detach_with_lock (MonoThreadInfo *info)
+{
+	return mono_gc_thread_detach_with_lock (info);
+}
+
+static gboolean
+thread_in_critical_region (MonoThreadInfo *info)
+{
+	return mono_gc_thread_in_critical_region (info);
+}
+
+static gboolean
+ip_in_critical_region (MonoDomain *domain, gpointer ip)
+{
+	MonoJitInfo *ji;
+	MonoMethod *method;
+
+	/*
+	 * We pass false for 'try_aot' so this becomes async safe.
+	 * It won't find aot methods whose jit info is not yet loaded,
+	 * so we preload their jit info in the JIT.
+	 */
+	ji = mono_jit_info_table_find_internal (domain, ip, FALSE, FALSE);
+	if (!ji)
+		return FALSE;
+
+	method = mono_jit_info_get_method (ji);
+	g_assert (method);
+
+	return mono_gc_is_critical_method (method);
+}
+
+void
+mono_thread_callbacks_init (void)
+{
+	MonoThreadInfoCallbacks cb;
+
+	memset (&cb, 0, sizeof(cb));
+	cb.thread_attach = thread_attach;
+	cb.thread_detach = thread_detach;
+	cb.thread_detach_with_lock = thread_detach_with_lock;
+	cb.ip_in_critical_region = ip_in_critical_region;
+	cb.thread_in_critical_region = thread_in_critical_region;
+	mono_thread_info_callbacks_init (&cb);
 }
 
 /**

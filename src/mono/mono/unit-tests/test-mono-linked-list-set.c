@@ -116,15 +116,12 @@ int
 main (int argc, char *argv [])
 {
 	int primes [] = { 1, 2, 3, 5, 7, 11, 13, 17 };
-	MonoThreadInfoCallbacks thread_callbacks;
 	thread_data_t thread_data [NUM_THREADS];
 	int i;
 
-	memset (&thread_callbacks, 0, sizeof (thread_callbacks));
-
 	mono_metadata_init ();
 
-	mono_threads_init (&thread_callbacks, 0);
+	mono_thread_info_init (0);
 
 	mono_lls_init (&lls, free_node);
 

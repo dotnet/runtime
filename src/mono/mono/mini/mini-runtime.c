@@ -2084,7 +2084,7 @@ lookup_start:
 		if ((code = mono_aot_get_method_checked (domain, method, error))) {
 			MonoVTable *vtable;
 
-			if (mono_runtime_is_critical_method (method) || mono_gc_is_critical_method (method)) {
+			if (mono_gc_is_critical_method (method)) {
 				/*
 				 * The suspend code needs to be able to lookup these methods by ip in async context,
 				 * so preload their jit info.
@@ -3855,7 +3855,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_w32handle_init ();
 #endif
 
-	mono_threads_runtime_init (&ticallbacks);
+	mono_thread_info_runtime_init (&ticallbacks);
 
 	if (g_hasenv ("MONO_DEBUG")) {
 		mini_parse_debug_options ();
@@ -3920,7 +3920,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_set_generic_sharing_supported (TRUE);
 #endif
 
-	mono_threads_signals_init ();
+	mono_thread_info_signals_init ();
 
 #ifndef MONO_CROSS_COMPILE
 	mono_runtime_install_handlers ();

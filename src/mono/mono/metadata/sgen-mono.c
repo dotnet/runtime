@@ -219,26 +219,6 @@ sgen_has_critical_method (void)
 	return sgen_has_managed_allocator ();
 }
 
-static gboolean
-ip_in_critical_region (MonoDomain *domain, gpointer ip)
-{
-	MonoJitInfo *ji;
-	MonoMethod *method;
-
-	/*
-	 * We pass false for 'try_aot' so this becomes async safe.
-	 * It won't find aot methods whose jit info is not yet loaded,
-	 * so we preload their jit info in the JIT.
-	 */
-	ji = mono_jit_info_table_find_internal (domain, ip, FALSE, FALSE);
-	if (!ji)
-		return FALSE;
-
-	method = mono_jit_info_get_method (ji);
-
-	return mono_runtime_is_critical_method (method) || sgen_is_critical_method (method);
-}
-
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
@@ -2208,6 +2188,12 @@ mono_gc_get_gc_callbacks ()
 	return &gc_callbacks;
 }
 
+gpointer
+mono_gc_thread_attach (SgenThreadInfo *info)
+{
+	return sgen_thread_attach (info);
+}
+
 void
 sgen_client_thread_attach (SgenThreadInfo* info)
 {
@@ -2232,6 +2218,12 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.info.stack_end);
 
 	info->client_info.info.handle_stack = mono_handle_stack_alloc ();
+}
+
+void
+mono_gc_thread_detach_with_lock (SgenThreadInfo *info)
+{
+	return sgen_thread_detach_with_lock (info);
 }
 
 void
@@ -2277,23 +2269,10 @@ mono_gc_set_skip_thread (gboolean skip)
 	}
 }
 
-static gboolean
-thread_in_critical_region (SgenThreadInfo *info)
+gboolean
+mono_gc_thread_in_critical_region (SgenThreadInfo *info)
 {
 	return info->client_info.in_critical_region;
-}
-
-static void
-sgen_thread_detach (SgenThreadInfo *p)
-{
-	/* If a delegate is passed to native code and invoked on a thread we dont
-	 * know about, marshal will register it with mono_threads_attach_coop, but
-	 * we have no way of knowing when that thread goes away.  SGen has a TSD
-	 * so we assume that if the domain is still registered, we can detach
-	 * the thread
-	 */
-	if (mono_thread_internal_current_is_attached ())
-		mono_thread_detach_internal (mono_thread_internal_current ());
 }
 
 /**
@@ -2857,15 +2836,8 @@ sgen_client_vtable_get_name (MonoVTable *vt)
 void
 sgen_client_init (void)
 {
-	MonoThreadInfoCallbacks cb;
-
-	cb.thread_attach = sgen_thread_attach;
-	cb.thread_detach = sgen_thread_detach;
-	cb.thread_detach_with_lock = sgen_thread_detach_with_lock;
-	cb.mono_thread_in_critical_region = thread_in_critical_region;
-	cb.ip_in_critical_region = ip_in_critical_region;
-
-	mono_threads_init (&cb, sizeof (SgenThreadInfo));
+	mono_thread_callbacks_init ();
+	mono_thread_info_init (sizeof (SgenThreadInfo));
 
 	///* Keep this the default for now */
 	/* Precise marking is broken on all supported targets. Disable until fixed. */

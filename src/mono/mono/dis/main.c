@@ -2038,7 +2038,7 @@ main (int argc, char *argv [])
 #ifndef HOST_WIN32
 	mono_w32handle_init ();
 #endif
-	mono_threads_runtime_init (&ticallbacks);
+	mono_thread_info_runtime_init (&ticallbacks);
 
 	mono_install_assembly_load_hook (monodis_assembly_load_hook, NULL);
 	mono_install_assembly_search_hook (monodis_assembly_search_hook, NULL);

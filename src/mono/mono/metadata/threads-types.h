@@ -59,6 +59,9 @@ typedef void (*MonoThreadCleanupFunc) (MonoNativeThreadId tid);
 /* INFO has type MonoThreadInfo* */
 typedef void (*MonoThreadNotifyPendingExcFunc) (gpointer info);
 
+void
+mono_thread_callbacks_init (void);
+
 typedef enum {
 	MONO_THREAD_CREATE_FLAGS_NONE         = 0x0,
 	MONO_THREAD_CREATE_FLAGS_THREADPOOL   = 0x1,
@@ -236,9 +239,6 @@ void mono_threads_perform_thread_dump (void);
 
 gboolean
 mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
-
-MonoThread *
-mono_thread_attach_full (MonoDomain *domain, gboolean force_attach);
 
 /* Can't include utils/mono-threads.h because of the THREAD_INFO_TYPE wizardry */
 void mono_threads_add_joinable_thread (gpointer tid);
