@@ -3784,12 +3784,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				td.sp -= 3;
 				td.ip += 1;
 				break;
-#if 0
 			case CEE_NO_:
 				/* FIXME: implement */
-				ip += 2;
+				td.ip += 2;
 				break;
-#endif
 			case CEE_RETHROW: {
 				int clause_index = td.clause_indexes [in_offset];
 				g_assert (clause_index != -1);
