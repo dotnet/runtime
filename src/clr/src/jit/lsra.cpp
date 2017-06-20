@@ -7027,14 +7027,11 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                     }
                     else
                     {
-                        // This interval is no longer assigned to this register.
-                        targetRegRecord->assignedInterval = nullptr;
+// This interval is no longer assigned to this register.
 #ifdef _TARGET_ARM_
-                        if (assignedInterval->registerType == TYP_DOUBLE)
-                        {
-                            RegRecord* anotherHalfRegRec        = findAnotherHalfRegRec(targetRegRecord);
-                            anotherHalfRegRec->assignedInterval = nullptr;
-                        }
+                        updateAssignedInterval(targetRegRecord, nullptr, assignedInterval->registerType);
+#else
+                        targetRegRecord->assignedInterval = nullptr;
 #endif
                     }
                 }
