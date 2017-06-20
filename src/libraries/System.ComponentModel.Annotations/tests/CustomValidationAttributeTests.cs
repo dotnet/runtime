@@ -70,7 +70,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void FormatErrorMessage_NoError_ContainsName()
+        public void FormatErrorMessage_NotPerformedValidation_ContainsName()
         {
             CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArg));
             string errorMessage = attribute.FormatErrorMessage("name");
@@ -79,7 +79,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [Fact]
-        public void FormatErrorMessage_Error_DoesNotContainName()
+        public void FormatErrorMessage_PerformedValidation_DoesNotContainName()
         {
             CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArg));
             Assert.False(attribute.IsValid(new TestClass("AnyString")));
