@@ -904,7 +904,8 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTreePtr treeNode)
 
 #if defined(_TARGET_ARM_)
     // Longs are returned in two return registers on Arm32.
-    assert(varTypeIsLong(treeNode));
+    // Structs are returned in four registers on ARM32 and HFAs.
+    assert(varTypeIsLong(treeNode) || varTypeIsStruct(treeNode));
 #elif defined(_TARGET_ARM64_)
     // Structs of size >=9 and <=16 are returned in two return registers on ARM64 and HFAs.
     assert(varTypeIsStruct(treeNode));

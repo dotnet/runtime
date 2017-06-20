@@ -16928,12 +16928,9 @@ void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
 //     Returns ith return register as per target ABI.
 //
 // Notes:
-//     Right now this is implemented only for x64 Unix
-//     and yet to be implemented for other multi-reg return
-//     targets (Arm64/Arm32/x86).
+//     x86 and ARM return long in multiple registers.
+//     ARM and ARM64 return HFA struct in multiple registers.
 //
-// TODO-ARM:   Implement this routine to support HFA returns.
-// TODO-X86:   Implement this routine to support long returns.
 regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 {
     unsigned count = GetReturnRegCount();
@@ -16986,7 +16983,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         }
     }
 
-#elif defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#elif defined(_TARGET_X86_)
 
     if (idx == 0)
     {
@@ -16995,6 +16992,38 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
     else if (idx == 1)
     {
         resultReg = REG_LNGRET_HI;
+    }
+
+#elif defined(_TARGET_ARM_)
+
+    var_types regType = GetReturnRegType(idx);
+    if (varTypeIsIntegralOrI(regType))
+    {
+        // Ints are returned in one return register.
+        // Longs are returned in two return registers.
+        if (idx == 0)
+        {
+            resultReg = REG_LNGRET_LO;
+        }
+        else if (idx == 1)
+        {
+            resultReg = REG_LNGRET_HI;
+        }
+    }
+    else
+    {
+        // Floats are returned in one return register (f0).
+        // Doubles are returned in one return register (d0).
+        // Structs are returned in four registers with HFAs.
+        assert(idx < MAX_RET_REG_COUNT); // Up to 4 return registers for HFA's
+        if (regType == TYP_DOUBLE)
+        {
+            resultReg = (regNumber)((unsigned)(REG_FLOATRET) + idx * 2); // d0, d1, d2 or d3
+        }
+        else
+        {
+            resultReg = (regNumber)((unsigned)(REG_FLOATRET) + idx); // f0, f1, f2 or f3
+        }
     }
 
 #elif defined(_TARGET_ARM64_)
@@ -17027,15 +17056,8 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
 //    reg mask of return registers in which the return type is returned.
 //
 // Note:
-//    For now this is implemented only for x64 Unix and yet to be implemented
-//    for other multi-reg return targets (Arm64/Arm32x86).
-//
 //    This routine can be used when the caller is not particular about the order
 //    of return registers and wants to know the set of return registers.
-//
-// TODO-ARM:   Implement this routine to support HFA returns.
-// TODO-ARM64: Implement this routine to support HFA returns.
-// TODO-X86:   Implement this routine to support long returns.
 //
 // static
 regMaskTP ReturnTypeDesc::GetABIReturnRegs()
