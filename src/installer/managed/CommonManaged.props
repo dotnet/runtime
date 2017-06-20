@@ -3,9 +3,11 @@
   <!-- Don't import props files above this folder since they don't work with the .NET Core SDK. -->
   <!--<Import Project="..\dir.props" />-->
 
+  <Import Project="$(MSBuildThisFileDirectory)../../RepoDirectories.props" />
+  <Import Project="$(RepoRoot)BranchInfo.props" />
+
   <PropertyGroup>
-    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../..'))/</RepoRoot>
-    <VersionPrefix>2.1.0</VersionPrefix>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
     <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -15,6 +17,26 @@
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+  </PropertyGroup>
+
+  <!--
+  Once https://github.com/dotnet/buildtools/issues/1548 is fixed, the following version sections should be simply
+  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
+  -->
+  <PropertyGroup>
+    <TodayTimeStamp>$([System.DateTime]::Now.ToString(yyyyMMdd))</TodayTimeStamp>
+    <BuildVersionFile Condition="'$(BuildVersionFile)'==''">$(ObjDir)BuildVersion-$(TodayTimeStamp).props</BuildVersionFile>
+  </PropertyGroup>
+
+  <Import Condition="Exists('$(BuildVersionFile)')" Project="$(BuildVersionFile)" />
+
+  <PropertyGroup Condition="'$(StabilizePackageVersion)' != 'true'">
+    <!-- 
+    Ensure VersionSuffix is set (especially during 'dotnet restore')
+    to work around https://github.com/NuGet/Home/issues/4337
+     -->
+    <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
+    <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -45,5 +67,5 @@
     </Content>
   </ItemGroup>
 
-  <Import Condition="Exists('$(RepoRoot)Tools/versioning.props')" Project="$(RepoRoot)Tools/versioning.props" /> 
+  <Import Condition="Exists('$(ToolsDir)versioning.props')" Project="$(ToolsDir)versioning.props" />
 </Project>
