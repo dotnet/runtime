@@ -230,17 +230,6 @@ ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value
 }
 
 static void
-array_set_value_impl_raw (MonoArray *arr_raw, MonoObject *value_raw, guint32 pos, MonoError *error)
-{
-	HANDLE_FUNCTION_ENTER ();
-	MONO_HANDLE_DCL (MonoArray, arr);
-	MONO_HANDLE_DCL (MonoObject, value);
-	error_init (error);
-	array_set_value_impl (arr, value, pos, error);
-	HANDLE_FUNCTION_RETURN ();
-}
-
-static void
 array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
 	MonoClass *ac, *vc, *ec;
@@ -269,7 +258,7 @@ array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, 
 	ea = mono_array_handle_pin_with_size (arr, esize, pos, &arr_gchandle);
 
 	if (mono_class_is_nullable (ec)) {
-		mono_nullable_init ((guint8*)ea, MONO_HANDLE_RAW (value), ec); /* FIXME: use coop handles for mono_nullable_init */
+		mono_nullable_init_from_handle ((guint8*)ea, value, ec);
 		goto leave;
 	}
 
@@ -541,53 +530,62 @@ leave:
 }
 
 ICALL_EXPORT void 
-ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
-				 MonoArray *idxs)
+ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
+				 MonoArrayHandle idxs, MonoError *error)
 {
-	MonoError error;
+	MonoArrayBounds dim;
 	MonoClass *ac, *ic;
-	gint32 i, pos, *ind;
+	gint32 idx;
+	gint32 i, pos;
 
-	MONO_CHECK_ARG_NULL (idxs,);
+	error_init (error);
 
-	error_init (&error);
-
-	ic = idxs->obj.vtable->klass;
-	ac = arr->obj.vtable->klass;
-
-	g_assert (ic->rank == 1);
-	if (idxs->bounds != NULL || idxs->max_length != ac->rank) {
-		mono_set_pending_exception (mono_get_exception_argument (NULL, NULL));
+	if (MONO_HANDLE_IS_NULL (idxs)) {
+		mono_error_set_argument_null (error, "idxs", "");
 		return;
 	}
 
-	ind = (gint32 *)idxs->vector;
+	ic = mono_handle_class (idxs);
+	ac = mono_handle_class (arr);
 
-	if (arr->bounds == NULL) {
-		if (*ind < 0 || *ind >= arr->max_length) {
-			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
+	g_assert (ic->rank == 1);
+	if (mono_handle_array_has_bounds (idxs) || MONO_HANDLE_GETVAL (idxs, max_length) != ac->rank) {
+		mono_error_set_argument (error, "idxs", "");
+		return;
+	}
+
+	if (!mono_handle_array_has_bounds (arr)) {
+		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, 0);
+		if (idx < 0 || idx >= MONO_HANDLE_GETVAL (arr, max_length)) {
+			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
 			return;
 		}
 
-		array_set_value_impl_raw (arr, value, *ind, &error);
-		mono_error_set_pending_exception (&error);
+		array_set_value_impl (arr, value, idx, error);
 		return;
 	}
 	
-	for (i = 0; i < ac->rank; i++)
-		if ((ind [i] < arr->bounds [i].lower_bound) ||
-		    (ind [i] >= (mono_array_lower_bound_t)arr->bounds [i].length + arr->bounds [i].lower_bound)) {
-			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
+	for (i = 0; i < ac->rank; i++) {
+		mono_handle_array_get_bounds_dim (arr, i, &dim);
+		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
+		if ((idx < dim.lower_bound) ||
+		    (idx >= (mono_array_lower_bound_t)dim.length + dim.lower_bound)) {
+			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
 			return;
 		}
+	}
 
-	pos = ind [0] - arr->bounds [0].lower_bound;
-	for (i = 1; i < ac->rank; i++)
-		pos = pos * arr->bounds [i].length + ind [i] - 
-			arr->bounds [i].lower_bound;
 
-	array_set_value_impl_raw (arr, value, pos, &error);
-	mono_error_set_pending_exception (&error);
+	MONO_HANDLE_ARRAY_GETVAL  (idx, idxs, gint32, 0);
+	mono_handle_array_get_bounds_dim (arr, 0, &dim);
+	pos = idx - dim.lower_bound;
+	for (i = 1; i < ac->rank; i++) {
+		mono_handle_array_get_bounds_dim (arr, i, &dim);
+		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
+		pos = pos * dim.length + idx - dim.lower_bound;
+	}
+
+	array_set_value_impl (arr, value, pos, error);
 }
 
 ICALL_EXPORT MonoArray *

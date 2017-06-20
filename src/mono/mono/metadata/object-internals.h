@@ -160,6 +160,19 @@ struct _MonoString {
 		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
+static inline gboolean
+mono_handle_array_has_bounds (MonoArrayHandle arr)
+{
+	return MONO_HANDLE_GETVAL (arr, bounds) != NULL;
+}
+
+static inline void
+mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
+{
+	MonoArrayBounds *src = MONO_HANDLE_GETVAL (arr, bounds);
+	memcpy (bounds, &src[dim], sizeof (MonoArrayBounds));
+}
+
 
 typedef struct {
 	MonoObject obj;
