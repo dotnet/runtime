@@ -222,6 +222,12 @@ typedef struct {
 
 	/* GCHandle to MonoInternalThread */
 	guint32 internal_thread_gchandle;
+
+	/*
+	 * Used by the sampling code in mini-posix.c to ensure that a thread has
+	 * handled a sampling signal before sending another one.
+	 */
+	gint32 profiler_signal_ack;
 } MonoThreadInfo;
 
 typedef struct {

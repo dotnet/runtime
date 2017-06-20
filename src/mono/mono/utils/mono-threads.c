@@ -395,6 +395,8 @@ register_thread (MonoThreadInfo *info)
 
 	info->internal_thread_gchandle = G_MAXUINT32;
 
+	info->profiler_signal_ack = 1;
+
 	mono_threads_suspend_register (info);
 
 	THREADS_DEBUG ("registering info %p tid %p small id %x\n", info, mono_thread_info_get_tid (info), info->small_id);
