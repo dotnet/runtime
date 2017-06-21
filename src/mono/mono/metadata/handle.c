@@ -552,6 +552,16 @@ mono_string_handle_pin_chars (MonoStringHandle handle, uint32_t *gchandle)
 	return mono_string_chars (raw);
 }
 
+gpointer
+mono_object_handle_pin_unbox (MonoObjectHandle obj, uint32_t *gchandle)
+{
+	g_assert (!MONO_HANDLE_IS_NULL (obj));
+	MonoClass *klass = mono_handle_class (obj);
+	g_assert (klass->valuetype);
+	*gchandle = mono_gchandle_from_handle (obj, TRUE);
+	return mono_object_unbox (MONO_HANDLE_RAW (obj));
+}
+
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
 {

@@ -423,6 +423,13 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		*(TYPE*)(mono_handle_unsafe_field_addr (__obj, __field)) = __value; \
 	} while (0)
 
+#define MONO_HANDLE_SET_FIELD_REF(HANDLE,FIELD,VALH) do {		\
+		MonoObjectHandle __obj = MONO_HANDLE_CAST (MonoObject, (HANDLE)); \
+		MonoClassField *__field = (FIELD);			\
+		MonoObjectHandle __value = MONO_HANDLE_CAST (MonoObject, (VALH)); \
+		mono_gc_wbarrier_generic_store (mono_handle_unsafe_field_addr (__obj, __field), MONO_HANDLE_RAW (__value)); \
+	} while (0)
+
 /* Baked typed handles we all want */
 TYPED_HANDLE_DECL (MonoString);
 TYPED_HANDLE_DECL (MonoArray);
@@ -496,6 +503,9 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t ind
 
 gunichar2 *
 mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);
+
+gpointer
+mono_object_handle_pin_unbox (MonoObjectHandle boxed_valuetype_obj, uint32_t *gchandle_out);
 
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);

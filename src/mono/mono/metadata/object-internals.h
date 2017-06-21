@@ -160,6 +160,19 @@ struct _MonoString {
 		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
+static inline gboolean
+mono_handle_array_has_bounds (MonoArrayHandle arr)
+{
+	return MONO_HANDLE_GETVAL (arr, bounds) != NULL;
+}
+
+static inline void
+mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
+{
+	MonoArrayBounds *src = MONO_HANDLE_GETVAL (arr, bounds);
+	memcpy (bounds, &src[dim], sizeof (MonoArrayBounds));
+}
+
 
 typedef struct {
 	MonoObject obj;
@@ -1593,6 +1606,9 @@ mono_get_addr_from_ftnptr (gpointer descr);
 
 void
 mono_nullable_init (guint8 *buf, MonoObject *value, MonoClass *klass);
+
+void
+mono_nullable_init_from_handle (guint8 *buf, MonoObjectHandle value, MonoClass *klass);
 
 MonoObject *
 mono_value_box_checked (MonoDomain *domain, MonoClass *klass, void* val, MonoError *error);

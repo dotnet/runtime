@@ -118,6 +118,9 @@ static GENERATE_GET_CLASS_WITH_CACHE (property_info, "System.Reflection", "Prope
 static GENERATE_GET_CLASS_WITH_CACHE (event_info, "System.Reflection", "EventInfo")
 static GENERATE_GET_CLASS_WITH_CACHE (module, "System.Reflection", "Module")
 
+static void
+array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error);
+
 static MonoArrayHandle
 type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
 
@@ -220,9 +223,15 @@ ves_icall_System_Array_GetValue (MonoArray *arr, MonoArray *idxs)
 }
 
 ICALL_EXPORT void
-ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 pos)
+ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	MonoError error;
+	error_init (error);
+	array_set_value_impl (arr, value, pos, error);
+}
+
+static void
+array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
+{
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
 	gpointer *ea, *va;
@@ -232,49 +241,49 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	gint64 i64 = 0;
 	gdouble r64 = 0;
 
-	error_init (&error);
+	uint32_t arr_gchandle = 0;
+	uint32_t value_gchandle = 0;
 
-	if (value)
-		vc = value->vtable->klass;
+	error_init (error);
+
+	if (!MONO_HANDLE_IS_NULL (value))
+		vc = mono_handle_class (value);
 	else
 		vc = NULL;
 
-	ac = arr->obj.vtable->klass;
+	ac = mono_handle_class (arr);
 	ec = ac->element_class;
 
 	esize = mono_array_element_size (ac);
-	ea = (gpointer*)((char*)arr->vector + (pos * esize));
-	va = (gpointer*)((char*)value + sizeof (MonoObject));
+	ea = mono_array_handle_pin_with_size (arr, esize, pos, &arr_gchandle);
 
 	if (mono_class_is_nullable (ec)) {
-		mono_nullable_init ((guint8*)ea, value, ec);
-		return;
+		mono_nullable_init_from_handle ((guint8*)ea, value, ec);
+		goto leave;
 	}
 
-	if (!value) {
+	if (MONO_HANDLE_IS_NULL (value)) {
 		mono_gc_bzero_atomic (ea, esize);
-		return;
+		goto leave;
 	}
 
-#define NO_WIDENING_CONVERSION G_STMT_START{\
-	mono_set_pending_exception (mono_get_exception_argument ( \
-		"value", "not a widening conversion")); \
-	return; \
-}G_STMT_END
+#define NO_WIDENING_CONVERSION G_STMT_START{				\
+		mono_error_set_argument (error, "value", "not a widening conversion"); \
+		goto leave;							\
+	}G_STMT_END
 
-#define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{\
-		if (esize < vsize + (extra)) { 							  \
-			mono_set_pending_exception (mono_get_exception_argument (	\
-			"value", "not a widening conversion")); \
-			return;									\
-		} \
-}G_STMT_END
+#define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{			\
+		if (esize < vsize + (extra)) {				\
+			mono_error_set_argument (error, "value", "not a widening conversion"); \
+			goto leave;						\
+		}							\
+	}G_STMT_END
 
-#define INVALID_CAST G_STMT_START{ \
+#define INVALID_CAST G_STMT_START{					\
 		mono_get_runtime_callbacks ()->set_cast_details (vc, ec); \
-	mono_set_pending_exception (mono_get_exception_invalid_cast ()); \
-	return; \
-}G_STMT_END
+		mono_error_set_invalid_cast (error);			\
+		goto leave;							\
+	}G_STMT_END
 
 	/* Check element (destination) type. */
 	switch (ec->byval_arg.type) {
@@ -310,28 +319,33 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 		break;
 	}
 
+	MonoObjectHandle inst = mono_object_handle_isinst (value, ec, error);
+	if (!is_ok (error))
+		goto leave;
+	gboolean castOk = !MONO_HANDLE_IS_NULL (inst);
+
 	if (!ec->valuetype) {
-		gboolean castOk = (NULL != mono_object_isinst_checked (value, ec, &error));
-		if (mono_error_set_pending_exception (&error))
-			return;
 		if (!castOk)
 			INVALID_CAST;
-		mono_gc_wbarrier_set_arrayref (arr, ea, (MonoObject*)value);
-		return;
+		MONO_HANDLE_ARRAY_SETREF (arr, pos, value);
+		goto leave;
 	}
 
-	if (mono_object_isinst_checked (value, ec, &error)) {
+	if (castOk) {
+		va = mono_object_handle_pin_unbox (value, &value_gchandle);
 		if (ec->has_references)
-			mono_value_copy (ea, (char*)value + sizeof (MonoObject), ec);
+			mono_value_copy (ea, va, ec);
 		else
-			mono_gc_memmove_atomic (ea, (char *)value + sizeof (MonoObject), esize);
-		return;
+			mono_gc_memmove_atomic (ea, va, esize);
+		mono_gchandle_free (value_gchandle);
+		value_gchandle = 0;
+		goto leave;
 	}
-	if (mono_error_set_pending_exception (&error))
-		return;
 
 	if (!vc->valuetype)
 		INVALID_CAST;
+
+	va = mono_object_handle_pin_unbox (value, &value_gchandle);
 
 	vsize = mono_class_instance_size (vc) - sizeof (MonoObject);
 
@@ -352,7 +366,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) u64; \
-		return; \
+		goto leave; \
 	/* You can't assign a signed value to an unsigned array. */ \
 	case MONO_TYPE_I1: \
 	case MONO_TYPE_I2: \
@@ -373,7 +387,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	case MONO_TYPE_I8: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) i64; \
-		return; \
+		goto leave; \
 	/* You can assign an unsigned value to a signed array if the array's */ \
 	/* element size is larger than the value size. */ \
 	case MONO_TYPE_U1: \
@@ -383,7 +397,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	case MONO_TYPE_CHAR: \
 		CHECK_WIDENING_CONVERSION(1); \
 		*(etype *) ea = (etype) u64; \
-		return; \
+		goto leave; \
 	/* You can't assign a floating point number to an integer array. */ \
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
@@ -397,7 +411,7 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	case MONO_TYPE_R8: \
 		CHECK_WIDENING_CONVERSION(0); \
 		*(etype *) ea = (etype) r64; \
-		return; \
+		goto leave; \
 	/* All integer values fit into a floating point array, so we don't */ \
 	/* need to CHECK_WIDENING_CONVERSION here. */ \
 	case MONO_TYPE_I1: \
@@ -405,14 +419,14 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	case MONO_TYPE_I4: \
 	case MONO_TYPE_I8: \
 		*(etype *) ea = (etype) i64; \
-		return; \
+		goto leave; \
 	case MONO_TYPE_U1: \
 	case MONO_TYPE_U2: \
 	case MONO_TYPE_U4: \
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
 		*(etype *) ea = (etype) u64; \
-		return; \
+		goto leave; \
 	} \
 }G_STMT_END
 
@@ -498,8 +512,8 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 	}
 
 	INVALID_CAST;
-	/* Not reached, INVALID_CAST does not return. Just to avoid a compiler warning ... */
-	return;
+	/* Not reached, INVALID_CAST does fall thru. */
+	g_assert_not_reached ();
 
 #undef INVALID_CAST
 #undef NO_WIDENING_CONVERSION
@@ -507,51 +521,71 @@ ves_icall_System_Array_SetValueImpl (MonoArray *arr, MonoObject *value, guint32 
 #undef ASSIGN_UNSIGNED
 #undef ASSIGN_SIGNED
 #undef ASSIGN_REAL
+leave:
+	if (arr_gchandle)
+		mono_gchandle_free (arr_gchandle);
+	if (value_gchandle)
+		mono_gchandle_free (value_gchandle);
+	return;
 }
 
 ICALL_EXPORT void 
-ves_icall_System_Array_SetValue (MonoArray *arr, MonoObject *value,
-				 MonoArray *idxs)
+ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
+				 MonoArrayHandle idxs, MonoError *error)
 {
+	MonoArrayBounds dim;
 	MonoClass *ac, *ic;
-	gint32 i, pos, *ind;
+	gint32 idx;
+	gint32 i, pos;
 
-	MONO_CHECK_ARG_NULL (idxs,);
+	error_init (error);
 
-	ic = idxs->obj.vtable->klass;
-	ac = arr->obj.vtable->klass;
-
-	g_assert (ic->rank == 1);
-	if (idxs->bounds != NULL || idxs->max_length != ac->rank) {
-		mono_set_pending_exception (mono_get_exception_argument (NULL, NULL));
+	if (MONO_HANDLE_IS_NULL (idxs)) {
+		mono_error_set_argument_null (error, "idxs", "");
 		return;
 	}
 
-	ind = (gint32 *)idxs->vector;
+	ic = mono_handle_class (idxs);
+	ac = mono_handle_class (arr);
 
-	if (arr->bounds == NULL) {
-		if (*ind < 0 || *ind >= arr->max_length) {
-			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
+	g_assert (ic->rank == 1);
+	if (mono_handle_array_has_bounds (idxs) || MONO_HANDLE_GETVAL (idxs, max_length) != ac->rank) {
+		mono_error_set_argument (error, "idxs", "");
+		return;
+	}
+
+	if (!mono_handle_array_has_bounds (arr)) {
+		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, 0);
+		if (idx < 0 || idx >= MONO_HANDLE_GETVAL (arr, max_length)) {
+			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
 			return;
 		}
 
-		ves_icall_System_Array_SetValueImpl (arr, value, *ind);
+		array_set_value_impl (arr, value, idx, error);
 		return;
 	}
 	
-	for (i = 0; i < ac->rank; i++)
-		if ((ind [i] < arr->bounds [i].lower_bound) ||
-		    (ind [i] >= (mono_array_lower_bound_t)arr->bounds [i].length + arr->bounds [i].lower_bound)) {
-			mono_set_pending_exception (mono_get_exception_index_out_of_range ());
+	for (i = 0; i < ac->rank; i++) {
+		mono_handle_array_get_bounds_dim (arr, i, &dim);
+		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
+		if ((idx < dim.lower_bound) ||
+		    (idx >= (mono_array_lower_bound_t)dim.length + dim.lower_bound)) {
+			mono_error_set_exception_instance (error, mono_get_exception_index_out_of_range ());
 			return;
 		}
+	}
 
-	pos = ind [0] - arr->bounds [0].lower_bound;
-	for (i = 1; i < ac->rank; i++)
-		pos = pos * arr->bounds [i].length + ind [i] - 
-			arr->bounds [i].lower_bound;
 
-	ves_icall_System_Array_SetValueImpl (arr, value, pos);
+	MONO_HANDLE_ARRAY_GETVAL  (idx, idxs, gint32, 0);
+	mono_handle_array_get_bounds_dim (arr, 0, &dim);
+	pos = idx - dim.lower_bound;
+	for (i = 1; i < ac->rank; i++) {
+		mono_handle_array_get_bounds_dim (arr, i, &dim);
+		MONO_HANDLE_ARRAY_GETVAL (idx, idxs, gint32, i);
+		pos = pos * dim.length + idx - dim.lower_bound;
+	}
+
+	array_set_value_impl (arr, value, pos, error);
 }
 
 ICALL_EXPORT MonoArray *
@@ -1915,32 +1949,27 @@ ves_icall_MonoField_GetValueInternal (MonoReflectionField *field, MonoObject *ob
 }
 
 ICALL_EXPORT void
-ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *obj, MonoObject *value)
+ves_icall_MonoField_SetValueInternal (MonoReflectionFieldHandle field, MonoObjectHandle obj, MonoObjectHandle value, MonoError  *error)
 {
-	MonoError error;
-	MonoClassField *cf = field->field;
-	MonoType *type;
-	gchar *v;
+	MonoClassField *cf = MONO_HANDLE_GETVAL (field, field);
 
-	if (field->klass->image->assembly->ref_only) {
-		mono_set_pending_exception (mono_get_exception_invalid_operation (
-					"It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods."));
+	MonoClass *field_klass = MONO_HANDLE_GETVAL (field, klass);
+	if (field_klass->image->assembly->ref_only) {
+		mono_error_set_invalid_operation (error, "It is illegal to set the value on a field on a type loaded using the ReflectionOnly methods.");
 		return;
 	}
 
 	if (mono_security_core_clr_enabled () &&
-	    !mono_security_core_clr_ensure_reflection_access_field (cf, &error)) {
-		mono_error_set_pending_exception (&error);
+	    !mono_security_core_clr_ensure_reflection_access_field (cf, error)) {
 		return;
 	}
 
-	type = mono_field_get_type_checked (cf, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return;
-	}
+	MonoType *type = mono_field_get_type_checked (cf, error);
+	return_if_nok (error);
 
-	v = (gchar *) value;
+	gboolean isref = FALSE;
+	uint32_t value_gchandle = 0;
+	gchar *v = NULL;
 	if (!type->byref) {
 		switch (type->type) {
 		case MONO_TYPE_U1:
@@ -1959,8 +1988,9 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_R8:
 		case MONO_TYPE_VALUETYPE:
 		case MONO_TYPE_PTR:
-			if (v != NULL)
-				v += sizeof (MonoObject);
+			isref = FALSE;
+			if (!MONO_HANDLE_IS_NULL (value))
+				v = mono_object_handle_pin_unbox (value, &value_gchandle);
 			break;
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_OBJECT:
@@ -1968,6 +1998,7 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 			/* Do nothing */
+			isref = TRUE;
 			break;
 		case MONO_TYPE_GENERICINST: {
 			MonoGenericClass *gclass = type->data.generic_class;
@@ -1975,26 +2006,29 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 
 			if (mono_class_is_nullable (mono_class_from_mono_type (type))) {
 				MonoClass *nklass = mono_class_from_mono_type (type);
-				MonoObject *nullable;
 
 				/* 
 				 * Convert the boxed vtype into a Nullable structure.
 				 * This is complicated by the fact that Nullables have
 				 * a variable structure.
 				 */
-				nullable = mono_object_new_checked (mono_domain_get (), nklass, &error);
-				if (!mono_error_ok (&error)) {
-					mono_error_set_pending_exception (&error);
-					return;
-				}
+				MonoObjectHandle nullable = MONO_HANDLE_NEW (MonoObject, mono_object_new_checked (mono_domain_get (), nklass, error));
+				return_if_nok (error);
 
-				mono_nullable_init ((guint8 *)mono_object_unbox (nullable), value, nklass);
+				uint32_t nullable_gchandle = 0;
+				guint8 *nval = mono_object_handle_pin_unbox (nullable, &nullable_gchandle);
+				mono_nullable_init_from_handle (nval, value, nklass);
 
-				v = (gchar *)mono_object_unbox (nullable);
+				isref = FALSE;
+				value_gchandle = nullable_gchandle;
+				v = (gchar*)nval;
 			}
-			else 
-				if (gclass->container_class->valuetype && (v != NULL))
-					v += sizeof (MonoObject);
+			else {
+				isref = !gclass->container_class->valuetype;
+				if (!isref && !MONO_HANDLE_IS_NULL (value)) {
+					v = mono_object_handle_pin_unbox (value, &value_gchandle);
+				};
+			}
 			break;
 		}
 		default:
@@ -2004,22 +2038,35 @@ ves_icall_MonoField_SetValueInternal (MonoReflectionField *field, MonoObject *ob
 		}
 	}
 
+	/* either value is a reference type, or it's a value type and we pinned
+	 * it and v points to the payload. */
+	g_assert ((isref && v == NULL && value_gchandle == 0) ||
+		  (!isref && v != NULL && value_gchandle != 0) ||
+		  (!isref && v == NULL && value_gchandle == 0));
+
 	if (type->attrs & FIELD_ATTRIBUTE_STATIC) {
-		MonoVTable *vtable = mono_class_vtable_full (mono_object_domain (field), cf->parent, &error);
-		if (!is_ok (&error)) {
-			mono_error_set_pending_exception (&error);
-			return;
-		}
+		MonoVTable *vtable = mono_class_vtable_full (MONO_HANDLE_DOMAIN (field), cf->parent, error);
+		if (!is_ok (error))
+			goto leave;
+
 		if (!vtable->initialized) {
-			if (!mono_runtime_class_init_full (vtable, &error)) {
-				mono_error_set_pending_exception (&error);
-				return;
-			}
+			if (!mono_runtime_class_init_full (vtable, error))
+				goto leave;
 		}
-		mono_field_static_set_value (vtable, cf, v);
+		if (isref)
+			mono_field_static_set_value (vtable, cf, MONO_HANDLE_RAW (value)); /* FIXME make mono_field_static_set_value work with handles for value */
+		else
+			mono_field_static_set_value (vtable, cf, v);
 	} else {
-		mono_field_set_value (obj, cf, v);
+
+		if (isref)
+			MONO_HANDLE_SET_FIELD_REF (obj, cf, value);
+		else
+			mono_field_set_value (MONO_HANDLE_RAW (obj), cf, v); /* FIXME: make mono_field_set_value take a handle for obj */
 	}
+leave:
+	if (value_gchandle)
+		mono_gchandle_free (value_gchandle);
 }
 
 ICALL_EXPORT void

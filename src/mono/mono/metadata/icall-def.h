@@ -158,8 +158,8 @@ ICALL(ARRAY_8, "GetRank",          ves_icall_System_Array_GetRank)
 ICALL(ARRAY_9, "GetValue",         ves_icall_System_Array_GetValue)
 ICALL(ARRAY_10, "GetValueImpl",     ves_icall_System_Array_GetValueImpl)
 ICALL(ARRAY_11, "SetGenericValueImpl", ves_icall_System_Array_SetGenericValueImpl)
-ICALL(ARRAY_12, "SetValue",         ves_icall_System_Array_SetValue)
-ICALL(ARRAY_13, "SetValueImpl",     ves_icall_System_Array_SetValueImpl)
+HANDLES(ICALL(ARRAY_12, "SetValue",         ves_icall_System_Array_SetValue))
+HANDLES(ICALL(ARRAY_13, "SetValueImpl",     ves_icall_System_Array_SetValueImpl))
 
 ICALL_TYPE(BUFFER, "System.Buffer", BUFFER_1)
 ICALL(BUFFER_1, "InternalBlockCopy", ves_icall_System_Buffer_BlockCopyInternal)
@@ -612,7 +612,7 @@ HANDLES(ICALL(MFIELD_2, "GetParentType", ves_icall_MonoField_GetParentType))
 ICALL(MFIELD_5, "GetRawConstantValue", ves_icall_MonoField_GetRawConstantValue)
 ICALL(MFIELD_3, "GetValueInternal", ves_icall_MonoField_GetValueInternal)
 HANDLES(ICALL(MFIELD_6, "ResolveType", ves_icall_MonoField_ResolveType))
-ICALL(MFIELD_4, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
+HANDLES(ICALL(MFIELD_4, "SetValueInternal", ves_icall_MonoField_SetValueInternal))
 ICALL(MFIELD_7, "get_core_clr_security_level", ves_icall_MonoField_get_core_clr_security_level)
 
 ICALL_TYPE(MMETH, "System.Reflection.MonoMethod", MMETH_2)
@@ -763,7 +763,7 @@ ICALL(RVH_1, "GetRuntimeId", ves_icall_System_Runtime_Versioning_VersioningHelpe
 
 ICALL_TYPE(RFH, "System.RuntimeFieldHandle", RFH_1)
 ICALL(RFH_1, "SetValueDirect", ves_icall_System_RuntimeFieldHandle_SetValueDirect)
-ICALL(RFH_2, "SetValueInternal", ves_icall_MonoField_SetValueInternal)
+HANDLES(ICALL(RFH_2, "SetValueInternal", ves_icall_MonoField_SetValueInternal))
 
 ICALL_TYPE(MHAN, "System.RuntimeMethodHandle", MHAN_1)
 HANDLES(ICALL(MHAN_1, "GetFunctionPointer", ves_icall_RuntimeMethodHandle_GetFunctionPointer))
