@@ -714,9 +714,9 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
     else
     {
 #ifdef _TARGET_ARM_
-        // We must not have a multi-reg strcut; double uses 2 slots and isn't a multi-reg struct
+        // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
         assert((info->numSlots == 1) || ((info->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE)));
-#else // !_TARGET_ARM_
+#else  // !_TARGET_ARM_
         // We must not have a multi-reg struct
         assert(info->numSlots == 1);
 #endif // !_TARGET_ARM_
