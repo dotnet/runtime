@@ -972,10 +972,18 @@ void LIR::Range::InsertAtEnd(Range&& range)
 // Arguments:
 //    node - The node to remove. Must be part of this range.
 //
-void LIR::Range::Remove(GenTree* node)
+void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
 {
     assert(node != nullptr);
     assert(Contains(node));
+
+    if (markOperandsUnused)
+    {
+        for (GenTree* operand : node->Operands())
+        {
+            operand->gtLIRFlags |= Flags::IsUnusedValue;
+        }
+    }
 
     GenTree* prev = node->gtPrev;
     GenTree* next = node->gtNext;
