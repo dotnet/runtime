@@ -12,7 +12,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: dotnet/corefx #16805")]
+    [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
     public class HttpClientHandler_DefaultProxyCredentials_Test : RemoteExecutorTestBase
     {
         [Fact]
