@@ -439,7 +439,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                 -os \"${os}\" \\
                 -configuration \"${configuration}\" \\
                 -clr_root \"\${WORKSPACE}\" \\
-                -assembly_root \"\${WORKSPACE}/_/fx/bin/runtime/netcoreapp-${osGroup}-${configuration}-${architecture}\" \\
+                -assembly_root \"\${WORKSPACE}/Microsoft.Benchview.ThroughputBenchmarks.${architecture}.Windows_NT/lib\" \\
                 -run_type \"${runType}\" \\
                 -benchview_path \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\"""")
             }
