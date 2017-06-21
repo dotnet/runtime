@@ -27,7 +27,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.GetEnvironmentVariable("test", (EnvironmentVariableTarget)42));
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.SetEnvironmentVariable("test", "test", (EnvironmentVariableTarget)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("target", null, () => Environment.GetEnvironmentVariables((EnvironmentVariableTarget)(3)));
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && System.Tests.SetEnvironmentVariable.IsSupportedTarget(EnvironmentVariableTarget.User))
             {
                 AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
