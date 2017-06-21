@@ -79,11 +79,11 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_Load_RSS_Write_RSS()
         {
-            XmlReader xmlr = XmlReader.Create("topstories.xml");
+            XmlReader xmlr = XmlReader.Create("feedWrongDate.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
 
             //wite the feed that was read
-            XmlWriter xmlw = XmlWriter.Create("RewritenTopStories.xml");
+            XmlWriter xmlw = XmlWriter.Create("RewritenfeedWrongDate.xml");
             Rss20FeedFormatter rs = new Rss20FeedFormatter(sf);
             rs.WriteTo(xmlw);
             xmlw.Close();
@@ -143,7 +143,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_Load_FeedWithWrongDateFormat()
         {
-            XmlReader xmlr = XmlReader.Create("feedWrongDate.xml");
+            XmlReader xmlr = XmlReader.Create("feed3Gb.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
             XmlDocument doc = new XmlDocument();
             

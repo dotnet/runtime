@@ -39,53 +39,86 @@ namespace Microsoft.ServiceModel.Syndication
 
         //Custom Parsers
         public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; }
-        public Func<string, TextSyndicationContent> TitleParser { get; set; }
-        public Func<string, TextSyndicationContent> DescriptionParser { get; set; }
-        public Func<string,string> LanguageParser { get; set; }
-        public Func<string,TextSyndicationContent> CopyrightParser { get; set; }
-        public Func<string, string> GeneratorParser { get; set; }
-        public Func<string, SyndicationPerson> ManagingEditorParser { get; set; }
-        public Func<XmlReader,Uri,SyndicationLink> LinkParser { get; set; }
 
+
+        public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
+        public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
+        public Func<XmlReader, string> LanguageParser { get; set; }
+        public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
+        public Func<XmlReader, string> GeneratorParser { get; set; }
+        public Func<XmlReader,Uri,SyndicationLink> LinkParser { get; set; }
+        public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
+
+        public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
+
+
+        //We need to declare our delegate to use the out keyword
+        public delegate bool ItemParserType(XmlReader reader,SyndicationFeed result, out bool areAllItemsRead);
+        public ItemParserType ItemParser { get; set; }
 
         public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
-        public Action<XmlReader, SyndicationItem, Uri> ItemParser { get; set; }
+        
 
-
-
-
-
-
-
-        TextSyndicationContent titleParserAction(string title)
+       
+        bool ImageParserAction(XmlReader reader, SyndicationFeed result)
         {
-            return new TextSyndicationContent(title);
+            reader.ReadStartElement();
+            while (reader.IsStartElement())
+            {
+                if (reader.IsStartElement(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
+                {
+                    result.ImageUrl = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
+                }
+                else
+                {
+                    // ignore other content
+                    bool aix = reader.IsStartElement();
+                    TraceSyndicationElementIgnoredOnRead(reader);
+                    reader.Skip();
+                }
+            }
+            reader.ReadEndElement(); // image
+            return true;
+        }
+              
+        bool ItemParserAction(XmlReader reader, SyndicationFeed result, out bool areAllItemsRead)
+        {
+            
+            result.Items = ReadItems(reader, result, out areAllItemsRead);
+           
+            return true;
+        }
+        TextSyndicationContent titleParserAction(XmlReader reader)
+        {
+            return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        TextSyndicationContent descriptionParserAction(string description)
+        TextSyndicationContent descriptionParserAction(XmlReader reader)
         {
-            return new TextSyndicationContent(description);
+            return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        String languageParserAction(string language)
+        String languageParserAction(XmlReader reader)
         {
-            return language;
+            return reader.ReadElementString();
         }
 
-        TextSyndicationContent copyrightParserAction(string copyright)
+        TextSyndicationContent copyrightParserAction(XmlReader reader)
         {
-            return new TextSyndicationContent(copyright);
+            return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        string generatorParserAction(string generator)
+        string generatorParserAction(XmlReader reader)
         {
-            return generator;
-        }        
+            return reader.ReadElementString();
+        }
 
-        SyndicationPerson managingEditorParserAction(string email)
+        SyndicationPerson managingEditorParserAction(XmlReader reader, SyndicationFeed feed)
         {
-            SyndicationPerson person = new SyndicationPerson(email);
-            return person;
+            //person = new SyndicationPerson();
+            SyndicationPerson result = CreatePerson(feed);
+            ReadPerson(reader, result);
+            return result;
         }
 
         SyndicationLink linkParserAction(XmlReader reader, Uri baseUri)
@@ -105,7 +138,8 @@ namespace Microsoft.ServiceModel.Syndication
             ManagingEditorParser = managingEditorParserAction;
             LinkParser = linkParserAction;
             CategoryParser = ReadCategory;
-            ItemParser = ReadItemFrom;
+            ItemParser = ItemParserAction;
+            ImageParser = ImageParserAction;
         }
 
         public Rss20FeedFormatter()
@@ -135,8 +169,6 @@ namespace Microsoft.ServiceModel.Syndication
             this.feedType = feedTypeToCreate;
 
             loadDefaultParsers();
-            //CategoryParser = ReadCategory;
-            //ItemParser = ReadItemFrom;
 
         }
 
@@ -602,6 +634,9 @@ namespace Microsoft.ServiceModel.Syndication
 
         void ReadCategory(XmlReader reader, SyndicationCategory category)
         {
+
+            string DebugString = "" + reader.Name + "," + reader.Value + "," + reader.NodeType;
+
             bool isEmpty = reader.IsEmptyElement;
             if (reader.HasAttributes)
             {
@@ -695,20 +730,23 @@ namespace Microsoft.ServiceModel.Syndication
                         {
                             if (reader.IsStartElement(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace))
                             {
-                                result.Title = new TextSyndicationContent(reader.ReadElementString());
+                                //result.Title = new TextSyndicationContent(reader.ReadElementString());
+                                result.Title = TitleParser(reader);
                             }
                             else if (reader.IsStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
                             {
-                                result.Links.Add(ReadAlternateLink(reader, result.BaseUri));
+                                //result.Links.Add(ReadAlternateLink(reader, result.BaseUri));
+                                result.Links.Add(LinkParser(reader,result.BaseUri));
                                 readAlternateLink = true;
                             }
                             else if (reader.IsStartElement(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace))
                             {
-                                result.Summary = new TextSyndicationContent(reader.ReadElementString());
+                                //result.Summary = new TextSyndicationContent(reader.ReadElementString());
+                                result.Summary = DescriptionParser(reader);
                             }
                             else if (reader.IsStartElement(Rss20Constants.AuthorTag, Rss20Constants.Rss20Namespace))
                             {
-                                result.Authors.Add(ReadPerson(reader, result));
+                                result.Authors.Add(ReadPerson(reader, result)); // missing custom parser
                             }
                             else if (reader.IsStartElement(Rss20Constants.CategoryTag, Rss20Constants.Rss20Namespace))
                             {
@@ -1009,7 +1047,7 @@ namespace Microsoft.ServiceModel.Syndication
                         string s = reader.Value + " " + reader.Name;
                         if (reader.IsStartElement(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Title = TitleParser(reader.ReadElementString());
+                            result.Title = TitleParser(reader);
                         }
                         else if (reader.IsStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
                         {
@@ -1018,25 +1056,25 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Description = DescriptionParser(reader.ReadElementString());
+                            result.Description = DescriptionParser(reader);
                         }
                         else if (reader.IsStartElement(Rss20Constants.LanguageTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Language = LanguageParser(reader.ReadElementString());
+                            result.Language = LanguageParser(reader);
                         }
                         else if (reader.IsStartElement(Rss20Constants.CopyrightTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Copyright = CopyrightParser(reader.ReadElementString());
+                            result.Copyright = CopyrightParser(reader);
                         }
                         else if (reader.IsStartElement(Rss20Constants.ManagingEditorTag, Rss20Constants.Rss20Namespace))
                         {
                             //result.Authors.Add(ReadPerson(reader, result)); //original
-                            result.Authors.Add(ManagingEditorParser(reader.ReadElementString()));
+                            result.Authors.Add(ManagingEditorParser(reader,result));
                         }
                         else if (reader.IsStartElement(Rss20Constants.LastBuildDateTag, Rss20Constants.Rss20Namespace))
                         {
 
-                            //This code is now handled by a delegate in CustomParsers
+                            //The code below is now handled by a delegate in CustomParsers
                             bool canReadContent = !reader.IsEmptyElement;
                             reader.ReadStartElement();
                             if (canReadContent)
@@ -1056,34 +1094,24 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.GeneratorTag, Rss20Constants.Rss20Namespace))
                         {
-                            result.Generator = GeneratorParser(reader.ReadElementString());
+                            result.Generator = GeneratorParser(reader);
                         }
                         else if (reader.IsStartElement(Rss20Constants.ImageTag, Rss20Constants.Rss20Namespace))
                         {
-                            reader.ReadStartElement();
-                            while (reader.IsStartElement())
-                            {
-                                if (reader.IsStartElement(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
-                                {
-                                    result.ImageUrl = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
-                                }
-                                else
-                                {
-                                    // ignore other content
-                                    bool aix = reader.IsStartElement();
-                                    TraceSyndicationElementIgnoredOnRead(reader);
-                                    reader.Skip();
-                                }
-                            }
-                            reader.ReadEndElement(); // image
+                            ImageParser(reader,result);
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
+                            ItemParseOptions options = new ItemParseOptions(readItemsAtLeastOnce,areAllItemsRead);
                             if (readItemsAtLeastOnce)
                             {
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperWarning(new InvalidOperationException(SR.GetString(SR.FeedHasNonContiguousItems, this.GetType().ToString())));
                             }
-                            result.Items = ReadItems(reader, result, out areAllItemsRead);
+
+
+                            //result.Items = ReadItems(reader, result, out areAllItemsRead);
+                            ItemParser(reader,result,out areAllItemsRead);
+
                             readItemsAtLeastOnce = true;
                             // if the derived class is reading the items lazily, then stop reading from the stream
                             if (!areAllItemsRead)
@@ -1093,7 +1121,6 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else
                         {
-                            //All unkown tags come here as extentions
                             bool parsedExtension = this.serializeExtensionsAsAtom && this.atomSerializer.TryParseFeedElementFrom(reader, result);
                             if (!parsedExtension)
                             {
@@ -1568,9 +1595,11 @@ namespace Microsoft.ServiceModel.Syndication
             StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
                 if (dateTimeStringBuilder.Length < 18)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        new XmlException(FeedUtils.AddLineInfo(reader,
-                        SR.ErrorParsingDateTime)));
+                    //If we thrown an exception here, the program will stop
+                    
+                    //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                    //    new XmlException(FeedUtils.AddLineInfo(reader,
+                    //    SR.ErrorParsingDateTime)));                    
                 }
                 if (dateTimeStringBuilder[3] == ',')
                 {
@@ -1671,7 +1700,17 @@ namespace Microsoft.ServiceModel.Syndication
     }
 
 
+    class ItemParseOptions
+    {
+        public bool readItemsAtLeastOnce;
+        public bool areAllItemsRead;
 
+        public ItemParseOptions(bool readItemsAtLeastOnce, bool areAllItemsRead)
+        {
+            this.readItemsAtLeastOnce = readItemsAtLeastOnce;
+            this.areAllItemsRead = areAllItemsRead;
+        }
+    }
 
    
 
