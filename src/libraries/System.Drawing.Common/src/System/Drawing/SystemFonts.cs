@@ -2,38 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing
 {
-    using System.Diagnostics;
-    using System.IO;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts"]/*' />
-    /// <devdoc>
-    ///     Selected system-wide fonts.
-    /// </devdoc>
     public sealed class SystemFonts
     {
+        private SystemFonts() { }
+
         private static readonly object s_systemFontsKey = new object();
 
-        // Cannot be instantiated.
-        private SystemFonts()
-        {
-        }
-
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.CaptionFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for captions.
-        ///    </para>
-        /// </devdoc>
         public static Font CaptionFont
         {
             get
             {
                 Font captionFont = null;
 
-                NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
+                var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
                 if (result && data.lfCaptionFont != null)
@@ -65,20 +52,13 @@ namespace System.Drawing
             }
         }
 
-
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.SmallCaptionFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for small captions.
-        ///    </para>
-        /// </devdoc>
         public static Font SmallCaptionFont
         {
             get
             {
                 Font smcaptionFont = null;
 
-                NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
+                var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
                 if (result && data.lfSmCaptionFont != null)
@@ -110,19 +90,13 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.MenuFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for menus.
-        ///    </para>
-        /// </devdoc>
         public static Font MenuFont
         {
             get
             {
                 Font menuFont = null;
 
-                NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
+                var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
                 if (result && data.lfMenuFont != null)
@@ -154,19 +128,13 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.StatusFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for status bars.
-        ///    </para>
-        /// </devdoc>
         public static Font StatusFont
         {
             get
             {
                 Font statusFont = null;
 
-                NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
+                var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
                 if (result && data.lfStatusFont != null)
@@ -198,19 +166,13 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.MessageBoxFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for message boxes.
-        ///    </para>
-        /// </devdoc>
         public static Font MessageBoxFont
         {
             get
             {
                 Font messageboxFont = null;
 
-                NativeMethods.NONCLIENTMETRICS data = new NativeMethods.NONCLIENTMETRICS();
+                var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
                 if (result && data.lfMessageFont != null)
@@ -242,9 +204,6 @@ namespace System.Drawing
             }
         }
 
-        /// <devdoc>
-        ///     Determines whether the specified exception should be handled.
-        /// </devdoc>
         private static bool IsCriticalFontException(Exception ex)
         {
             return !(
@@ -257,19 +216,13 @@ namespace System.Drawing
                 ex is FileNotFoundException);
         }
 
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.IconTitleFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for icon titles.
-        ///    </para>
-        /// </devdoc>
         public static Font IconTitleFont
         {
             get
             {
                 Font icontitleFont = null;
 
-                SafeNativeMethods.LOGFONT itfont = new SafeNativeMethods.LOGFONT();
+                var itfont = new SafeNativeMethods.LOGFONT();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETICONTITLELOGFONT, Marshal.SizeOf(itfont), itfont, 0);
 
                 if (result && itfont != null)
@@ -301,20 +254,6 @@ namespace System.Drawing
             }
         }
 
-        //////////////////////////////////////////////////////////////////////////////////////////////
-        //                                                                                          //
-        // SystemFonts.DefaultFont is code moved from System.Windows.Forms.Control.DefaultFont      //
-        // System.Windows.Forms.Control.DefaultFont delegates to SystemFonts.DefaultFont now.       //
-        // Treat any changes to this code as you would treat breaking changes.                      //
-        //                                                                                          //
-        //////////////////////////////////////////////////////////////////////////////////////////////
-
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.DefaultFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's default font.
-        ///    </para>
-        /// </devdoc>
         public static Font DefaultFont
         {
             get
@@ -352,11 +291,10 @@ namespace System.Drawing
                 }
 
                 // For arabic systems, regardless of the platform, always return Tahoma 8.
-                // vsWhidbey 82453.
                 if (systemDefaultLCIDIsArabic)
                 {
                     Debug.Assert(defaultFont == null);
-                    // Try TAHOMA 8
+                    // Try Tahoma 8.
                     try
                     {
                         defaultFont = new Font("Tahoma", 8);
@@ -431,12 +369,6 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.DialogFont"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the system's font for dialogs.
-        ///    </para>
-        /// </devdoc>
         public static Font DialogFont
         {
             get
@@ -483,17 +415,11 @@ namespace System.Drawing
             }
         }
 
-        //Copied from System.Windows.Forms.ControlPaint
         private static Font FontInPoints(Font font)
         {
             return new Font(font.FontFamily, font.SizeInPoints, font.Style, GraphicsUnit.Point, font.GdiCharSet, font.GdiVerticalFont);
         }
-        /// <include file='doc\SystemFonts.uex' path='docs/doc[@for="SystemFonts.GetFontByName"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the <see cref='System.Drawing.SystemFont'/> that corresponds to a given SystemFont name.
-        ///    </para>
-        /// </devdoc>
+
         public static Font GetFontByName(string systemFontName)
         {
             if ("CaptionFont".Equals(systemFontName))
