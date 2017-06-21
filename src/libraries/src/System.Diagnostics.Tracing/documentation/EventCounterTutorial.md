@@ -24,7 +24,7 @@ public sealed class MinimalEventCounterSource : EventSource
         this.requestCounter = new EventCounter("request", this);
     }
 
-    /// &lt;summary&gt;
+    /// <summary>
     /// Call this method to indicate that a request for a URL was made which tool a particular amount of time
     public void Request(string url, float elapsedMSec)
     {
