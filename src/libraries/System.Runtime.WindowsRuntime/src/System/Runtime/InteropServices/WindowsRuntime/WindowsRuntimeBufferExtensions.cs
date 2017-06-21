@@ -435,9 +435,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
 
             Int32 originInStream = streamData.Offset;
-
-            Debug.Assert(underlyingStream.Length <= Int32.MaxValue);
-
             Int32 buffCapacity = Math.Min(length, underlyingStream.Capacity - positionInStream);
             Int32 buffLength = Math.Max(0, Math.Min(length, ((Int32)underlyingStream.Length) - positionInStream));
             return new WindowsRuntimeBuffer(streamData.Array, originInStream + positionInStream, buffLength, buffCapacity);
