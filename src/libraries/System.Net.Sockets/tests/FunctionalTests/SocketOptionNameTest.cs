@@ -84,7 +84,6 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [ActiveIssue(21018, TargetFrameworkMonikers.Uap)]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -94,11 +93,11 @@ namespace System.Net.Sockets.Tests
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // see comment below
-        [ActiveIssue(21018, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21327, TargetFrameworkMonikers.Uap)] // UWP Apps are forbidden to send network traffic to the local Computer.
         public async Task MulticastInterface_Set_Loopback_Succeeds()
         {
-            // On Windows, we can apparently assume interface 1 is "loopback."  On other platforms, this is not a
-            // valid assumption.  We could maybe use NetworkInterface.LoopbackInterfaceIndex to get the index, but
+            // On Windows, we can apparently assume interface 1 is "loopback." On other platforms, this is not a
+            // valid assumption. We could maybe use NetworkInterface.LoopbackInterfaceIndex to get the index, but
             // this would introduce a dependency on System.Net.NetworkInformation, which depends on System.Net.Sockets,
             // which is what we're testing here....  So for now, we'll just assume "loopback == 1" and run this on
             // Windows only.
