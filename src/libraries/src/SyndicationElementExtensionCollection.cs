@@ -245,7 +245,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (string.IsNullOrEmpty(extensionName))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.GetString(SR.ExtensionNameNotSpecified));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.ExtensionNameNotSpecified);
             }
             //Fx.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace

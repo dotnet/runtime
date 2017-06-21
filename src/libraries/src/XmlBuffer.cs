@@ -68,8 +68,10 @@ namespace Microsoft.ServiceModel {
         public XmlBuffer(int maxBufferSize)
         {
             if (maxBufferSize < 0)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("maxBufferSize", maxBufferSize,
-                                                                            SR.GetString(SR.ValueMustBeNonNegative)));
+                throw new ArgumentOutOfRangeException("maxBufferSize", maxBufferSize,SR.ValueMustBeNonNegative);    
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("maxBufferSize", maxBufferSize,
+                //                                                            SR.GetString(SR.ValueMustBeNonNegative)));
+
             
             int initialBufferSize = Math.Min(512, maxBufferSize);
 
@@ -135,7 +137,7 @@ namespace Microsoft.ServiceModel {
 
         Exception CreateInvalidStateException()
         {
-            return new InvalidOperationException(SR.GetString(SR.XmlBufferInInvalidState));
+            return new InvalidOperationException(SR.XmlBufferInInvalidState);
         }
               
 

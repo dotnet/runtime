@@ -586,11 +586,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
             {
-                string s = SR.GetString(res, arg1);
+                string s = String.Format(res, arg1);
                 IXmlLineInfo lineInfo = reader as IXmlLineInfo;
                 if (lineInfo != null && lineInfo.HasLineInfo())
                 {
-                    s += " " + SR.GetString(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
+                    s += " " + String.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
                 }
 
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(s));
@@ -607,23 +607,23 @@ namespace Microsoft.ServiceModel.Syndication
             static string GetWhatWasFound(XmlDictionaryReader reader)
             {
                 if (reader.EOF)
-                    return SR.GetString(SR.XmlFoundEndOfFile);
+                    return SR.XmlFoundEndOfFile;
                 switch (reader.NodeType)
                 {
                     case XmlNodeType.Element:
-                        return SR.GetString(SR.XmlFoundElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
+                        return String.Format(SR.XmlFoundElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
                     case XmlNodeType.EndElement:
-                        return SR.GetString(SR.XmlFoundEndElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
+                        return String.Format(SR.XmlFoundEndElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
                     case XmlNodeType.Text:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        return SR.GetString(SR.XmlFoundText, reader.Value);
+                        return String.Format(SR.XmlFoundText, reader.Value);
                     case XmlNodeType.Comment:
-                        return SR.GetString(SR.XmlFoundComment, reader.Value);
+                        return String.Format(SR.XmlFoundComment, reader.Value);
                     case XmlNodeType.CDATA:
-                        return SR.GetString(SR.XmlFoundCData, reader.Value);
+                        return String.Format(SR.XmlFoundCData, reader.Value);
                 }
-                return SR.GetString(SR.XmlFoundNodeType, reader.NodeType);
+                return String.Format(SR.XmlFoundNodeType, reader.NodeType);
             }
 
             static public void ThrowStartElementExpected(XmlDictionaryReader reader)

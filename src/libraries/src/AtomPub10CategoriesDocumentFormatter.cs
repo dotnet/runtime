@@ -43,8 +43,9 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("inlineDocumentType",
-                    SR.GetString(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("inlineDocumentType",
+                //    SR.GetString(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
             }
             if (referencedDocumentType == null)
             {
@@ -52,8 +53,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(ReferencedCategoriesDocument).IsAssignableFrom(referencedDocumentType))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("referencedDocumentType",
-                    SR.GetString(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("referencedDocumentType",
+                //    SR.GetString(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
+
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
             }
             this.maxExtensionSize = int.MaxValue;
             this.preserveAttributeExtensions = true;
@@ -122,7 +125,8 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (this.Document == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
             TraceCategoriesDocumentWriteBegin();
             WriteDocument(writer);
@@ -137,7 +141,8 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(String.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
             TraceCategoriesDocumentReadBegin();
             ReadDocument(reader);
@@ -152,7 +157,8 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (this.Document == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
             TraceCategoriesDocumentWriteBegin();
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);

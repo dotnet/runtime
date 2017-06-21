@@ -44,8 +44,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("documentTypeToCreate",
-                    SR.GetString(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("documentTypeToCreate",
+                //    SR.GetString(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
+
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
             }
             this.maxExtensionSize = int.MaxValue;
             this.preserveAttributeExtensions = true;
@@ -104,7 +106,8 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (this.Document == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
             TraceServiceDocumentWriteBegin();
             WriteDocument(writer);
@@ -120,7 +123,8 @@ namespace Microsoft.ServiceModel.Syndication
             reader.MoveToContent();
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(String.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
             TraceServiceDocumentReadBegin();
             ReadDocument(reader);
@@ -135,7 +139,8 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (this.Document == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
             TraceServiceDocumentWriteBegin();
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Service, App10Constants.Namespace);
