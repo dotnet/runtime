@@ -1188,7 +1188,7 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
     // Don't bother looking for uses of nodes that are not values.
     // If the node is the last node, we won't find a use (and we would
     // end up creating an illegal range if we tried).
-    if (node->IsValue() && (node != LastNode()))
+    if (node->IsValue() && ((node->gtLIRFlags & Flags::IsUnusedValue) == 0) && (node != LastNode()))
     {
         for (GenTree* n : ReadOnlyRange(node->gtNext, m_lastNode))
         {
