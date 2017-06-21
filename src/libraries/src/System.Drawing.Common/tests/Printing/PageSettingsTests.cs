@@ -1,5 +1,4 @@
 // Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 //
 // Copyright (C) 2004-2005 Novell, Inc (http://www.novell.com)
@@ -35,9 +34,9 @@ namespace System.Drawing.Printing.Tests
 
     public class PageSettingsTests
     {
-        private static bool InstalledPrinters => PrinterSettings.InstalledPrinters.Count == 0;
+        private static bool AnyInstalledPrinters => PrinterSettings.InstalledPrinters.Count == 0;
 
-        [ConditionalFact(nameof(InstalledPrinters))]
+        [ConditionalFact(nameof(AnyInstalledPrinters))]
         public void Clone_Success()
         {
             PageSettings ps = new PageSettings();
