@@ -14,6 +14,8 @@
     <Compile Include="System\IO\CreateSafeFileHandleTests.cs" />
     <Compile Include="System\IO\StorageFolderMock.cs" />
     <Compile Include="System\IO\WriteOnlyStream.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntimeBufferExtensionsTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntimeBufferTests.cs" />
     <Compile Include="Windows\Foundation\PointTests.cs" />
     <Compile Include="Windows\Foundation\RectTests.cs" />
     <Compile Include="Windows\Foundation\SizeTests.cs" />
