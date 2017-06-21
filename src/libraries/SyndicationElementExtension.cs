@@ -67,7 +67,11 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (outerName == string.Empty)
             {
+
+                
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.GetString(SR.OuterNameOfElementExtensionEmpty));
+                
+                
             }
             if (dataContractSerializer == null)
             {
@@ -89,6 +93,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 serializer = new XmlSerializer(xmlSerializerExtension.GetType());
             }
+            
             this.extensionData = xmlSerializerExtension;
             this.extensionDataWriter = new ExtensionDataWriter(this.extensionData, serializer);
         }

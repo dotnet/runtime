@@ -61,8 +61,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("feedTypeToCreate",
-                    SR.GetString(SR.InvalidObjectTypePassed, "feedTypeToCreate", "SyndicationFeed"));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("feedTypeToCreate",
+                //    SR.GetString(SR.InvalidObjectTypePassed, "feedTypeToCreate", "SyndicationFeed"));
+
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "feedTypeToCreate", "SyndicationFeed"));
             }
             this.maxExtensionSize = int.MaxValue;
             this.preserveAttributeExtensions = this.preserveElementExtensions = true;
@@ -147,7 +149,8 @@ namespace Microsoft.ServiceModel.Syndication
             TraceFeedReadBegin();
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
             ReadFeed(reader);
             TraceFeedReadEnd();
@@ -597,7 +600,8 @@ namespace Microsoft.ServiceModel.Syndication
                     kind = TextSyndicationContentKind.XHtml;
                     break;
                     //default:
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.GetString(SR.Atom10SpecRequiresTextConstruct, context, type))));
+                    //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.GetString(SR.Atom10SpecRequiresTextConstruct, context, type))));
+                    throw new XmlException(String.Format(SR.Atom10SpecRequiresTextConstruct, context, type));
             }
 
             Dictionary<XmlQualifiedName, string> attrs = null;
@@ -854,7 +858,8 @@ namespace Microsoft.ServiceModel.Syndication
                             {
                                 if (readItemsAtLeastOnce)
                                 {
-                                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperWarning(new InvalidOperationException(SR.GetString(SR.FeedHasNonContiguousItems, this.GetType().ToString())));
+                                    //throw DiagnosticUtility.ExceptionUtility.ThrowHelperWarning(new InvalidOperationException(SR.GetString(SR.FeedHasNonContiguousItems, this.GetType().ToString())));
+                                    throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
                                 }
                                 result.Items = ReadItems(reader, result, out areAllItemsRead);
                                 readItemsAtLeastOnce = true;
@@ -1212,7 +1217,8 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (this.Feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.FeedFormatterDoesNotHaveFeed)));
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.FeedFormatterDoesNotHaveFeed)));
+                throw new InvalidOperationException(SR.FeedFormatterDoesNotHaveFeed);
             }
             WriteFeedTo(writer, this.Feed, false); //  isSourceFeed 
         }

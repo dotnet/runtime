@@ -30,7 +30,7 @@ namespace System.ServiceModel.Channels
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("scheme"));
 
             if (scheme.Length == 0)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.GetString(SR.UriGeneratorSchemeMustNotBeEmpty), "scheme"));
+                throw new ArgumentException(String.Format(SR.UriGeneratorSchemeMustNotBeEmpty, "scheme"));
 
             prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
         }
