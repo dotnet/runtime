@@ -10585,32 +10585,49 @@ GenTree* Compiler::fgMorphForRegisterFP(GenTree* tree)
     return tree;
 }
 
+//--------------------------------------------------------------------------------------------------------------
+// fgMorphRecognizeBoxNullable:
+//   Recognize this pattern:
+//
+//   stmtExpr  void  (IL 0x000...  ???)
+//     return    int
+//             CNS_INT     ref    null
+//         EQ/NE/GT        int
+//             CALL help ref    HELPER.CORINFO_HELP_BOX_NULLABLE
+//                 CNS_INT(h)  long   0x7fed96836c8 class
+//                 ADDR      byref
+//                     FIELD struct value
+//                         LCL_VAR ref V00 this
+//
+//   which comes from this code:
+//
+//      return this.value==null;
+//
+//   and transform it into
+//
+//   stmtExpr  void  (IL 0x000...  ???)
+//     return    int
+//             CNS_INT     ref    null
+//         EQ/NE/GT        int
+//             IND bool
+//                 ADDR      byref
+//                     FIELD struct value
+//                         LCL_VAR ref V00 this
+//
+// Arguments:
+//       compare - Compare tree to optimize.
+//
+// return value:
+//       A tree that has a call to CORINFO_HELP_BOX_NULLABLE optimized away if the pattern is found;
+//       the original tree otherwise.
+//
+
 GenTree* Compiler::fgMorphRecognizeBoxNullable(GenTree* compare)
 {
     GenTree*     op1 = compare->gtOp.gtOp1;
     GenTree*     op2 = compare->gtOp.gtOp2;
     GenTree*     opCns;
     GenTreeCall* opCall;
-
-    // recognize this pattern:
-    //
-    // stmtExpr  void  (IL 0x000...  ???)
-    //     return    int
-    //             const     ref    null
-    //         ==        int
-    //             call help ref    HELPER.CORINFO_HELP_BOX_NULLABLE
-    //                 const(h)  long   0x7fed96836c8 class
-    //                 addr      byref
-    //                     ld.lclVar struct V00 arg0
-    //
-    //
-    // which comes from this code (reported by customer as being slow) :
-    //
-    // private static bool IsNull<T>(T arg)
-    // {
-    //    return arg==null;
-    // }
-    //
 
     if (op1->IsCnsIntOrI() && op2->IsHelperCall())
     {
@@ -10637,8 +10654,17 @@ GenTree* Compiler::fgMorphRecognizeBoxNullable(GenTree* compare)
         return compare;
     }
 
-    // replace the box with an access of the nullable 'hasValue' field which is at the zero offset
-    GenTree* newOp = gtNewOperNode(GT_IND, TYP_BOOL, opCall->gtCall.gtCallArgs->gtOp.gtOp2->gtOp.gtOp1);
+    // Get the nullable struct argument
+    GenTree* arg = opCall->gtCall.gtCallArgs->gtOp.gtOp2->gtOp.gtOp1;
+
+    // Check for cases that are unsafe to optimize and return the unchanged tree
+    if (arg->IsArgPlaceHolderNode() || arg->IsNothingNode() || ((arg->gtFlags & GTF_LATE_ARG) != 0))
+    {
+        return compare;
+    }
+
+    // Replace the box with an access of the nullable 'hasValue' field which is at the zero offset
+    GenTree* newOp = gtNewOperNode(GT_IND, TYP_BOOL, arg);
 
     if (opCall == op1)
     {
@@ -11496,7 +11522,17 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                         }
                     }
                 }
-                fgMorphRecognizeBoxNullable(tree);
+
+                __fallthrough;
+
+            case GT_GT:
+
+                // Try to optimize away calls to CORINFO_HELP_BOX_NULLABLE for GT_EQ, GT_NE, and unsigned GT_GT.
+                if ((oper != GT_GT) || tree->IsUnsigned())
+                {
+                    fgMorphRecognizeBoxNullable(tree);
+                }
+
                 op1 = tree->gtOp.gtOp1;
                 op2 = tree->gtGetOp2IfPresent();
 
