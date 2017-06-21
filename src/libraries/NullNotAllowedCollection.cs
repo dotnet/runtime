@@ -4,6 +4,7 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
+    using System;
     using System.Collections.ObjectModel;
 
     class NullNotAllowedCollection<TCollectionItem> : Collection<TCollectionItem>
@@ -18,7 +19,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             base.InsertItem(index, item);
         }
@@ -27,7 +28,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             base.SetItem(index, item);
         }

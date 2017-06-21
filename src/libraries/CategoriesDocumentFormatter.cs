@@ -10,6 +10,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Xml;
     using System.Runtime.CompilerServices;
+    using System;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [DataContract]
@@ -24,7 +25,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (documentToWrite == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("documentToWrite");
+                throw new ArgumentNullException("documentToWrite");
             }
             this.document = documentToWrite;
         }

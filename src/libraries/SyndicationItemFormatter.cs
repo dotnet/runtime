@@ -12,7 +12,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml.Serialization;
     using System.Xml.Schema;
     using System.Diagnostics.CodeAnalysis;
-    using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
+
     using System.Runtime.CompilerServices;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -30,7 +30,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (itemToWrite == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemToWrite");
+                throw new ArgumentNullException("itemToWrite");
             }
             this.item = itemToWrite;
         }
@@ -61,7 +61,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             this.item = item;
         }

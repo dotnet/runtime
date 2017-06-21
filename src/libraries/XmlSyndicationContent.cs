@@ -9,6 +9,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml;
     using System.Xml.Serialization;
     using System.Runtime.CompilerServices;
+    using System;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -25,7 +26,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             SyndicationFeedFormatter.MoveToStartElement(reader);
             if (reader.HasAttributes)
@@ -72,7 +73,8 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (extension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("extension");
+                throw new ArgumentNullException("extension");
+
             }
             this.type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
             this.extension = extension;
@@ -83,7 +85,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
+                throw new ArgumentNullException("source");
             }
             this.contentBuffer = source.contentBuffer;
             this.extension = source.extension;
@@ -131,7 +133,6 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                //Fx.Assert(this.contentBuffer != null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = this.contentBuffer.GetReader(0))
                 {
                     // skip past the content element
@@ -153,7 +154,6 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                //Fx.Assert(this.contentBuffer != null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = this.contentBuffer.GetReader(0))
                 {
                     // skip past the content element
@@ -168,7 +168,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
             if (this.extension != null)
             {

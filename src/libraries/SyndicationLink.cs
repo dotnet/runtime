@@ -33,7 +33,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (length < 0)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("length"));
+                throw new ArgumentOutOfRangeException("length");
             }
             this.baseUri = null;
             this.uri = uri;
@@ -52,7 +52,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
+                throw new ArgumentNullException("source");
             }
             this.length = source.length;
             this.mediaType = source.mediaType;
@@ -86,7 +86,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (value < 0)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("value"));
+                    throw new ArgumentOutOfRangeException("value");
                 }
                 this.length = value;
             }

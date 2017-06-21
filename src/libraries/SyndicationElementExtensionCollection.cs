@@ -11,6 +11,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml.Serialization;
     using System.Runtime.CompilerServices;
     using Microsoft.ServiceModel.Syndication.Resources;
+    using System;
 
     // sealed because the ctor results in a call to the virtual InsertItem method
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -72,7 +73,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("dataContractExtension");
+                throw new ArgumentNullException("dataContractExtension");
             }
             if (dataContractSerializer == null)
             {
@@ -85,7 +86,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlSerializerExtension");
+                throw new ArgumentNullException("xmlSerializerExtension");
             }
             if (serializer == null)
             {
@@ -98,7 +99,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (xmlReader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlReader");
+                throw new ArgumentNullException("xmlReader");
             }
             base.Add(new SyndicationElementExtension(xmlReader));
         }
@@ -120,7 +121,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw new ArgumentNullException("serializer");
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
@@ -129,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw new ArgumentNullException("serializer");
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
@@ -170,7 +171,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             base.InsertItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
@@ -194,7 +195,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             base.SetItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
@@ -245,9 +246,8 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (string.IsNullOrEmpty(extensionName))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.ExtensionNameNotSpecified);
+                throw new ArgumentNullException(SR.ExtensionNameNotSpecified);
             }
-            //Fx.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace
             if (extensionNamespace == null)
             {

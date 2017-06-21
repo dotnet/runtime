@@ -36,12 +36,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (itemTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemTypeToCreate");
+                throw new ArgumentNullException("itemTypeToCreate");
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("itemTypeToCreate",
-                //    SR.GetString(SR.InvalidObjectTypePassed, "itemTypeToCreate", "SyndicationItem"));
 
                 throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "itemTypeToCreate", "SyndicationItem"));
             }
@@ -115,7 +113,8 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
@@ -131,11 +130,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
-            SyndicationFeedFormatter.TraceItemReadBegin();
             ReadItem(reader);
-            SyndicationFeedFormatter.TraceItemReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -143,36 +141,29 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer"); 
             }
-            SyndicationFeedFormatter.TraceItemWriteBegin();
             WriteItem(writer);
-            SyndicationFeedFormatter.TraceItemWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
-            SyndicationFeedFormatter.TraceItemReadBegin();
             if (!CanRead(reader))
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI)));
                 throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
             ReadItem(reader);
-            SyndicationFeedFormatter.TraceItemReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
-            SyndicationFeedFormatter.TraceItemWriteBegin();
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
             WriteItem(writer);
             writer.WriteEndElement();
-            SyndicationFeedFormatter.TraceItemWriteEnd();
         }
 
         protected override SyndicationItem CreateItemInstance()
@@ -190,7 +181,6 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (this.Item == null)
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.ItemFormatterDoesNotHaveItem)));
                 throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);

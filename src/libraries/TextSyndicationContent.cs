@@ -27,7 +27,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (!TextSyndicationContentKindHelper.IsDefined(textKind))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("textKind"));
+                throw new ArgumentOutOfRangeException("textKind");
             }
             this.text = text;
             this.textKind = textKind;
@@ -38,7 +38,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
+                throw new ArgumentNullException("source");
             }
             this.text = source.text;
             this.textKind = source.textKind;
