@@ -3415,7 +3415,7 @@ struct GenTreeCall final : public GenTree
         }
 
         // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
-        gtSpillFlags = (gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2));
+        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2)));
 #else
         unreached();
 #endif
