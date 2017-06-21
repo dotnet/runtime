@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices", "src\System.DirectoryServices.csproj", "{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -15,20 +15,42 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E89
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EF6F08C3-2EF9-4CAC-9A25-61B55EB6583A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.DirectoryServices.Tests", "tests\System.DirectoryServices.Tests.csproj", "{297A9116-1005-499D-A895-2063D03E4C94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		netstandard-Debug|Any CPU = netstandard-Debug|Any CPU
+		netstandard-Release|Any CPU = netstandard-Release|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard-Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard-Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard-Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.netstandard-Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -36,5 +58,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{CBCDA53B-4C01-4267-B08C-413205FE4D8D} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+		{297A9116-1005-499D-A895-2063D03E4C94} = {EF6F08C3-2EF9-4CAC-9A25-61B55EB6583A}
 	EndGlobalSection
 EndGlobal
