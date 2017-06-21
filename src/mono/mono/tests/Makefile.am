@@ -966,6 +966,7 @@ INTERP_DISABLED_TESTS = \
 	call_missing_method.exe \
 	calliGenericTest.exe \
 	cominterop.exe \
+	context-static.exe \
 	cross-domain.exe \
 	delegate-with-null-target.exe \
 	delegate9.exe \
