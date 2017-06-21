@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
@@ -525,8 +526,12 @@ namespace System.Net.Http
                 webRequest.ServerCertificateValidationCallback = ServerCertificateValidationCallback;
             }
 
-            if (_defaultProxyCredentials != null && webRequest.Proxy != null)
+            if (_defaultProxyCredentials != null && _useProxy && _proxy == null)
             {
+                // The HttpClientHandler has specified to use a proxy but has not
+                // set an explicit IWebProxy. That means to use the system default
+                // proxy setting object which is the default value of webRequest.Proxy.
+                Debug.Assert(webRequest.Proxy != null);
                 webRequest.Proxy.Credentials = _defaultProxyCredentials;
             }
 
