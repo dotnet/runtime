@@ -39,8 +39,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         //Custom Parsers
         public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; }
-
-
+        
         public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
         public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
         public Func<XmlReader, string> LanguageParser { get; set; }

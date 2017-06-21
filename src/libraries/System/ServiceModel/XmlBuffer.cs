@@ -70,7 +70,7 @@ namespace Microsoft.ServiceModel {
             if (maxBufferSize < 0)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("maxBufferSize", maxBufferSize,
                                                                             SR.GetString(SR.ValueMustBeNonNegative)));
-
+            
             int initialBufferSize = Math.Min(512, maxBufferSize);
 
             stream = new BufferedStream(new MemoryStream(), initialBufferSize);
