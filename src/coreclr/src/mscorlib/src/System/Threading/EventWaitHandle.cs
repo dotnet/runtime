@@ -39,6 +39,9 @@ namespace System.Threading
     [ComVisibleAttribute(true)]
     public class EventWaitHandle : WaitHandle
     {
+        private const uint AccessRights =
+            (uint)Win32Native.MAXIMUM_ALLOWED | Win32Native.SYNCHRONIZE | Win32Native.EVENT_MODIFY_STATE;
+
         public EventWaitHandle(bool initialState, EventResetMode mode) : this(initialState, mode, null) { }
 
         public EventWaitHandle(bool initialState, EventResetMode mode, string name)
@@ -56,19 +59,21 @@ namespace System.Threading
             }
             Contract.EndContractBlock();
 
-            SafeWaitHandle _handle = null;
+            uint eventFlags = initialState ? Win32Native.CREATE_EVENT_INITIAL_SET : 0;
             switch (mode)
             {
                 case EventResetMode.ManualReset:
-                    _handle = Win32Native.CreateEvent(null, true, initialState, name);
+                    eventFlags |= Win32Native.CREATE_EVENT_MANUAL_RESET;
                     break;
+
                 case EventResetMode.AutoReset:
-                    _handle = Win32Native.CreateEvent(null, false, initialState, name);
                     break;
 
                 default:
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidFlag, name));
             };
+
+            SafeWaitHandle _handle = Win32Native.CreateEventEx(null, name, eventFlags, AccessRights);
 
             if (_handle.IsInvalid)
             {
@@ -104,24 +109,23 @@ namespace System.Threading
             Contract.EndContractBlock();
             Win32Native.SECURITY_ATTRIBUTES secAttrs = null;
 
-            SafeWaitHandle _handle = null;
-            Boolean isManualReset;
+            uint eventFlags = initialState ? Win32Native.CREATE_EVENT_INITIAL_SET : 0;
             switch (mode)
             {
                 case EventResetMode.ManualReset:
-                    isManualReset = true;
+                    eventFlags |= Win32Native.CREATE_EVENT_MANUAL_RESET;
                     break;
+
                 case EventResetMode.AutoReset:
-                    isManualReset = false;
                     break;
 
                 default:
                     throw new ArgumentException(SR.Format(SR.Argument_InvalidFlag, name));
             };
 
-            _handle = Win32Native.CreateEvent(secAttrs, isManualReset, initialState, name);
-            int errorCode = Marshal.GetLastWin32Error();
+            SafeWaitHandle _handle = Win32Native.CreateEventEx(secAttrs, name, eventFlags, AccessRights);
 
+            int errorCode = Marshal.GetLastWin32Error();
             if (_handle.IsInvalid)
             {
                 _handle.SetHandleAsInvalid();
@@ -193,7 +197,7 @@ namespace System.Threading
 
             result = null;
 
-            SafeWaitHandle myHandle = Win32Native.OpenEvent(Win32Native.EVENT_MODIFY_STATE | Win32Native.SYNCHRONIZE, false, name);
+            SafeWaitHandle myHandle = Win32Native.OpenEvent(AccessRights, false, name);
 
             if (myHandle.IsInvalid)
             {

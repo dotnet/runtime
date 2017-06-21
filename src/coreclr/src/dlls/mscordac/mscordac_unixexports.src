@@ -71,7 +71,9 @@ CreateFileMappingW
 CreateFileA
 CreateFileW
 CreateMutexW
+CreateMutexExW
 CreateEventW
+CreateEventExW
 CreateProcessW
 CreateSemaphoreExW
 CreateStreamOnHGlobal

@@ -161,7 +161,6 @@ Parameters:
 See MSDN doc.
 --*/
 
-PALIMPORT
 HANDLE
 PALAPI
 CreateSemaphoreExW(
@@ -172,10 +171,7 @@ CreateSemaphoreExW(
         IN /*_Reserved_*/  DWORD dwFlags,
         IN DWORD dwDesiredAccess)
 {
-    // dwFlags is reserved and unused, and dwDesiredAccess is currently
-    // only ever used as SEMAPHORE_ALL_ACCESS.  The other parameters
-    // all map to CreateSemaphoreW.
-    _ASSERTE(SEMAPHORE_ALL_ACCESS == dwDesiredAccess);
+    // dwFlags is reserved and unused
 
     return CreateSemaphoreW(
         lpSemaphoreAttributes,

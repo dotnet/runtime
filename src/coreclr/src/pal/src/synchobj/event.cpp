@@ -189,6 +189,36 @@ CreateEventW(
 
 /*++
 Function:
+  CreateEventExW
+
+Note:
+  lpEventAttributes and dwDesiredAccess are currently ignored:
+  -- Win32 object security not supported
+  -- handles to event objects are not inheritable
+  -- Access rights are not supported
+
+Parameters:  
+  See MSDN doc.
+--*/
+
+HANDLE
+PALAPI
+CreateEventExW(
+    IN LPSECURITY_ATTRIBUTES lpEventAttributes,
+    IN LPCWSTR lpName,
+    IN DWORD dwFlags,
+    IN DWORD dwDesiredAccess)
+{
+    return
+        CreateEventW(
+            lpEventAttributes,
+            (dwFlags & CREATE_EVENT_MANUAL_RESET) != 0,
+            (dwFlags & CREATE_EVENT_INITIAL_SET) != 0,
+            lpName);
+}
+
+/*++
+Function:
   InternalCreateEvent
 
 Note:
