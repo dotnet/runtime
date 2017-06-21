@@ -106,15 +106,25 @@ public:
         DWORD     pMethodSpec_Index;
         DWORD     cbMethodSpec;
     };
-    struct Agnostic_GetArgType
+    struct GetArgTypeValue
     {
-        Agnostic_CORINFO_SIG_INFO sig;
-        DWORDLONG                 args;
+        DWORD     flags;
+        DWORD     numArgs;
+        DWORD     sigInst_classInstCount;
+        DWORD     sigInst_classInst_Index;
+        DWORD     sigInst_methInstCount;
+        DWORD     sigInst_methInst_Index;
+        DWORDLONG     scope;
+        DWORDLONG args;
     };
-    struct Agnostic_GetArgClass
+    struct GetArgClassValue
     {
-        Agnostic_CORINFO_SIG_INFO sig;
-        DWORDLONG                 args;
+        DWORD     sigInst_classInstCount;
+        DWORD     sigInst_classInst_Index;
+        DWORD     sigInst_methInstCount;
+        DWORD     sigInst_methInst_Index;
+        DWORDLONG scope;
+        DWORDLONG args;
     };
     struct Agnostic_GetBoundaries
     {
@@ -277,10 +287,12 @@ public:
         DWORD     sigTOK;
         DWORDLONG context;
     };
-    struct Agnostic_PInvokeMarshalingRequired
+    struct PInvokeMarshalingRequiredValue
     {
-        DWORDLONG                 method;
-        Agnostic_CORINFO_SIG_INFO callSiteSig;
+        DWORDLONG method;
+        DWORD     pSig;
+        DWORD     cbSig;
+        DWORDLONG scope;
     };
     struct Agnostic_CORINFO_EH_CLAUSE
     {
@@ -358,13 +370,13 @@ public:
     };
     struct Agnostic_GetNewHelper
     {
-        Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
-        DWORDLONG                       callerHandle;
+        DWORDLONG hClass;
+        DWORDLONG callerHandle;
     };
     struct Agnostic_GetCastingHelper
     {
-        Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
-        DWORD                           fThrowing;
+        DWORDLONG hClass;
+        DWORD     fThrowing;
     };
     struct Agnostic_GetClassModuleIdForStatics
     {
@@ -451,6 +463,40 @@ public:
     {
         Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
         DWORD                              success;
+    };
+
+    struct GetTokenTypeAsHandleValue
+    {
+        DWORDLONG hMethod;
+        DWORDLONG hField;
+    };
+
+    struct GetVarArgsHandleValue
+    {
+        DWORD     cbSig;
+        DWORD     pSig;
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct CanGetVarArgsHandleValue
+    {
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct GetCookieForPInvokeCalliSigValue
+    {
+        DWORD     cbSig;
+        DWORD     pSig;
+        DWORDLONG scope;
+        DWORD     token;
+    };
+
+    struct CanGetCookieForPInvokeCalliSigValue
+    {
+        DWORDLONG scope;
+        DWORD     token;
     };
 
 #pragma pack(pop)
@@ -725,7 +771,7 @@ public:
                        CORINFO_CLASS_HANDLE*   vcTypeRet,
                        CorInfoTypeWithMod      result,
                        DWORD                   exception);
-    void dmpGetArgType(const Agnostic_GetArgType& key, const Agnostic_GetArgType_Value& value);
+    void dmpGetArgType(const GetArgTypeValue& key, const Agnostic_GetArgType_Value& value);
     CorInfoTypeWithMod repGetArgType(CORINFO_SIG_INFO*       sig,
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
@@ -743,7 +789,7 @@ public:
                         CORINFO_ARG_LIST_HANDLE args,
                         CORINFO_CLASS_HANDLE    result,
                         DWORD                   exceptionCode);
-    void dmpGetArgClass(const Agnostic_GetArgClass& key, const Agnostic_GetArgClass_Value& value);
+    void dmpGetArgClass(const GetArgClassValue& key, const Agnostic_GetArgClass_Value& value);
     CORINFO_CLASS_HANDLE repGetArgClass(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args, DWORD* exceptionCode);
 
     void recGetHFAType(CORINFO_CLASS_HANDLE clsHnd, CorInfoType result);
@@ -791,7 +837,7 @@ public:
                                                   CORINFO_CONTEXT_HANDLE ownerType);
 
     void recGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CLASS_HANDLE result);
-    void dmpGetTokenTypeAsHandle(const Agnostic_CORINFO_RESOLVED_TOKEN& key, DWORDLONG value);
+    void dmpGetTokenTypeAsHandle(const GetTokenTypeAsHandleValue& key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     void recGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -842,7 +888,7 @@ public:
     CORINFO_CLASS_HANDLE repEmbedClassHandle(CORINFO_CLASS_HANDLE handle, void** ppIndirection);
 
     void recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig, BOOL result);
-    void dmpPInvokeMarshalingRequired(const Agnostic_PInvokeMarshalingRequired& key, DWORD value);
+    void dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value);
     BOOL repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig);
 
     void recFindSig(CORINFO_MODULE_HANDLE  module,
@@ -1036,11 +1082,11 @@ public:
     void* repGetMethodSync(CORINFO_METHOD_HANDLE ftn, void** ppIndirection);
 
     void recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection, CORINFO_VARARGS_HANDLE result);
-    void dmpGetVarArgsHandle(const Agnostic_CORINFO_SIG_INFO& key, DLDL value);
+    void dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value);
     CORINFO_VARARGS_HANDLE repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection);
 
     void recCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig, bool result);
-    void dmpCanGetVarArgsHandle(const Agnostic_CORINFO_SIG_INFO& key, DWORD value);
+    void dmpCanGetVarArgsHandle(const CanGetVarArgsHandleValue& key, DWORD value);
     bool repCanGetVarArgsHandle(CORINFO_SIG_INFO* pSig);
 
     void recGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection, DWORD result);
@@ -1063,11 +1109,11 @@ public:
     CORINFO_CLASS_HANDLE repMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2);
 
     void recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection, LPVOID result);
-    void dmpGetCookieForPInvokeCalliSig(const Agnostic_CORINFO_SIG_INFO& key, DLDL value);
+    void dmpGetCookieForPInvokeCalliSig(const GetCookieForPInvokeCalliSigValue& key, DLDL value);
     LPVOID repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
 
     void recCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, bool result);
-    void dmpCanGetCookieForPInvokeCalliSig(const Agnostic_CORINFO_SIG_INFO& key, DWORD value);
+    void dmpCanGetCookieForPInvokeCalliSig(const CanGetCookieForPInvokeCalliSigValue& key, DWORD value);
     bool repCanGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig);
 
     void recCanAccessFamily(CORINFO_METHOD_HANDLE hCaller, CORINFO_CLASS_HANDLE hInstanceType, BOOL result);
