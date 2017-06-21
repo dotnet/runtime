@@ -107,7 +107,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
             if (sourceIndex < 0) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
-            if (destinationIndex < 0) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
             if (source.Length <= sourceIndex) throw new ArgumentException(SR.Argument_IndexOutOfArrayBounds, nameof(sourceIndex));
             if (source.Length - sourceIndex < count) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (destination.Capacity - destinationIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
@@ -146,7 +145,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-            if (sourceIndex < 0) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             if (source.Capacity <= sourceIndex) throw new ArgumentException(SR.Argument_BufferIndexExceedsCapacity);
             if (source.Capacity - sourceIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInSourceBuffer);
             Contract.EndContractBlock();
@@ -181,7 +179,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (destination == null) throw new ArgumentNullException(nameof(destination));
             if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-            if (sourceIndex < 0) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             if (destinationIndex < 0) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
             if (source.Capacity <= sourceIndex) throw new ArgumentException(SR.Argument_BufferIndexExceedsCapacity);
             if (source.Capacity - sourceIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInSourceBuffer);
@@ -223,9 +220,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (destination == null) throw new ArgumentNullException(nameof(destination));
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count));
-            if (sourceIndex < 0) throw new ArgumentOutOfRangeException(nameof(sourceIndex));
-            if (destinationIndex < 0) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
             if (source.Capacity <= sourceIndex) throw new ArgumentException(SR.Argument_BufferIndexExceedsCapacity);
             if (source.Capacity - sourceIndex < count) throw new ArgumentException(SR.Argument_InsufficientSpaceInSourceBuffer);
             if (destination.Capacity <= destinationIndex) throw new ArgumentException(SR.Argument_BufferIndexExceedsCapacity);
@@ -485,7 +479,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static Byte GetByte(this IBuffer source, UInt32 byteOffset)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
-            if (byteOffset < 0) throw new ArgumentOutOfRangeException(nameof(byteOffset));
             if (source.Capacity <= byteOffset) throw new ArgumentException(SR.Argument_BufferIndexExceedsCapacity, nameof(byteOffset));
 
             Contract.EndContractBlock();
