@@ -1659,15 +1659,14 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	binary_protocol_collection_begin (gc_stats.minor_gc_count, GENERATION_NURSERY);
 
-	if (sgen_concurrent_collection_in_progress ()) {
-		/* FIXME Support parallel nursery collections with concurrent major */
-		object_ops_nopar = &sgen_minor_collector.serial_ops_with_concurrent_major;
-	} else {
-		object_ops_nopar = &sgen_minor_collector.serial_ops;
-		if (sgen_minor_collector.is_parallel && sgen_nursery_size >= SGEN_PARALLEL_MINOR_MIN_NURSERY_SIZE) {
-			object_ops_par = &sgen_minor_collector.parallel_ops;
-			is_parallel = TRUE;
-		}
+	object_ops_nopar = sgen_concurrent_collection_in_progress ()
+				? &sgen_minor_collector.serial_ops_with_concurrent_major
+				: &sgen_minor_collector.serial_ops;
+	if (sgen_minor_collector.is_parallel && sgen_nursery_size >= SGEN_PARALLEL_MINOR_MIN_NURSERY_SIZE) {
+		object_ops_par = sgen_concurrent_collection_in_progress ()
+					? &sgen_minor_collector.parallel_ops_with_concurrent_major
+					: &sgen_minor_collector.parallel_ops;
+		is_parallel = TRUE;
 	}
 
 	if (do_verify_nursery || do_dump_nursery_content)

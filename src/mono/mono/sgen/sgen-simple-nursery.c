@@ -129,6 +129,18 @@ fill_serial_with_concurrent_major_ops (SgenObjectOperations *ops)
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
 }
 
+#define SGEN_SIMPLE_PAR_NURSERY
+
+#include "sgen-minor-copy-object.h"
+#include "sgen-minor-scan-object.h"
+
+static void
+fill_parallel_with_concurrent_major_ops (SgenObjectOperations *ops)
+{
+	ops->copy_or_mark_object = SERIAL_COPY_OBJECT;
+	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
+}
+
 void
 sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 {
@@ -151,6 +163,7 @@ sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 	fill_serial_ops (&collector->serial_ops);
 	fill_serial_with_concurrent_major_ops (&collector->serial_ops_with_concurrent_major);
 	fill_parallel_ops (&collector->parallel_ops);
+	fill_parallel_with_concurrent_major_ops (&collector->parallel_ops_with_concurrent_major);
 
 	/*
 	 * The nursery worker context is created first so it will have priority over

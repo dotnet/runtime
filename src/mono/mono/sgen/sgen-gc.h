@@ -552,6 +552,7 @@ typedef struct {
 	SgenObjectOperations serial_ops;
 	SgenObjectOperations serial_ops_with_concurrent_major;
 	SgenObjectOperations parallel_ops;
+	SgenObjectOperations parallel_ops_with_concurrent_major;
 
 	void (*prepare_to_space) (char *to_space_bitmap, size_t space_bitmap_size);
 	void (*clear_fragments) (void);
