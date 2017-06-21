@@ -6823,6 +6823,15 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
     return retVal;
 }
 
+bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
+{
+    bool isAssigned = (interval->assignedReg == regRec);
+#ifdef _TARGET_ARM_
+    isAssigned |= isSecondHalfReg(regRec, interval);
+#endif
+    return isAssigned;
+}
+
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
@@ -7005,12 +7014,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 // Is there another interval currently assigned to this register?  If so unassign it.
                 if (assignedInterval != nullptr)
                 {
-#ifdef _TARGET_ARM_
-                    if (assignedInterval->assignedReg == targetRegRecord ||
-                        isSecondHalfReg(targetRegRecord, assignedInterval))
-#else
-                    if (assignedInterval->assignedReg == targetRegRecord)
-#endif
+                    if (isAssignedToInterval(assignedInterval, targetRegRecord))
                     {
                         regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
 
