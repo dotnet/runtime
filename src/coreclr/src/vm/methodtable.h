@@ -247,7 +247,7 @@ typedef DPTR(GenericsDictInfo) PTR_GenericsDictInfo;
 struct GenericsStaticsInfo
 {
     // Pointer to field descs for statics
-    PTR_FieldDesc       m_pFieldDescs;
+    RelativePointer<PTR_FieldDesc> m_pFieldDescs;
 
     // Method table ID for statics
     SIZE_T              m_DynamicTypeID;
@@ -2209,12 +2209,12 @@ public:
     inline void SetClass(EEClass *pClass)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pEEClass = pClass;
+        m_pEEClass.SetValue(pClass);
     }
 
     inline void SetCanonicalMethodTable(MethodTable * pMT)
     {
-        m_pCanonMT = (TADDR)pMT | MethodTable::UNION_METHODTABLE;
+        m_pCanonMT.SetValue((TADDR)pMT | MethodTable::UNION_METHODTABLE);
     }
 #endif
 
@@ -2639,7 +2639,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         _ASSERTE(HasGenericsStaticsInfo());
-        return GetGenericsStaticsInfo()->m_pFieldDescs;
+        return ReadPointerMaybeNull((GenericsStaticsInfo *)GetGenericsStaticsInfo(), &GenericsStaticsInfo::m_pFieldDescs);
     }
 
     BOOL HasCrossModuleGenericStaticsInfo()
@@ -4044,7 +4044,7 @@ private:
     // for enum_flag_HasIndirectParentMethodTable.
     TADDR           m_pParentMethodTable;
 
-    PTR_Module      m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
+    RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
     
     PTR_MethodTableWriteableData m_pWriteableData;
     
@@ -4058,8 +4058,13 @@ private:
     static const TADDR UNION_MASK = 3; 
 
     union {
-        EEClass *   m_pEEClass;
-        TADDR       m_pCanonMT;
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+        RelativePointer<DPTR(EEClass)> m_pEEClass;
+        RelativePointer<TADDR> m_pCanonMT;
+#else
+        PlainPointer<DPTR(EEClass)> m_pEEClass;
+        PlainPointer<TADDR> m_pCanonMT;
+#endif
     };
 
     __forceinline static LowBits union_getLowBits(TADDR pCanonMT)
@@ -4088,7 +4093,11 @@ private:
     public:
     union
     {
-        InterfaceInfo_t *   m_pInterfaceMap;
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+        RelativePointer<PTR_InterfaceInfo>   m_pInterfaceMap;
+#else
+        PlainPointer<PTR_InterfaceInfo>   m_pInterfaceMap;
+#endif
         TADDR               m_pMultipurposeSlot2;
     };
 
