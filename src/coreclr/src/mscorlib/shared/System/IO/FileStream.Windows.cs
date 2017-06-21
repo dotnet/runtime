@@ -100,7 +100,7 @@ namespace System.IO
             // For Append mode...
             if (mode == FileMode.Append)
             {
-                _appendStart = SeekCore(0, SeekOrigin.End);
+                _appendStart = SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
             else
             {
@@ -167,7 +167,7 @@ namespace System.IO
             }
 
             if (_canSeek)
-                SeekCore(0, SeekOrigin.Current);
+                SeekCore(handle, 0, SeekOrigin.Current);
             else
                 _filePosition = 0;
         }
@@ -389,7 +389,7 @@ namespace System.IO
 
             VerifyOSHandlePosition();
             if (_filePosition != value)
-                SeekCore(value, SeekOrigin.Begin);
+                SeekCore(_fileHandle, value, SeekOrigin.Begin);
             if (!Interop.Kernel32.SetEndOfFile(_fileHandle))
             {
                 int errorCode = Marshal.GetLastWin32Error();
@@ -401,9 +401,9 @@ namespace System.IO
             if (origPos != value)
             {
                 if (origPos < value)
-                    SeekCore(origPos, SeekOrigin.Begin);
+                    SeekCore(_fileHandle, origPos, SeekOrigin.Begin);
                 else
-                    SeekCore(0, SeekOrigin.End);
+                    SeekCore(_fileHandle, 0, SeekOrigin.End);
             }
         }
 
@@ -557,13 +557,13 @@ namespace System.IO
             VerifyOSHandlePosition();
 
             long oldPos = _filePosition + (_readPos - _readLength);
-            long pos = SeekCore(offset, origin);
+            long pos = SeekCore(_fileHandle, offset, origin);
 
             // Prevent users from overwriting data in a file that was opened in
             // append mode.
             if (_appendStart != -1 && pos < _appendStart)
             {
-                SeekCore(oldPos, SeekOrigin.Begin);
+                SeekCore(_fileHandle, oldPos, SeekOrigin.Begin);
                 throw new IOException(SR.IO_SeekAppendOverwrite);
             }
 
@@ -587,7 +587,7 @@ namespace System.IO
                     // If we still have buffered data, we must update the stream's 
                     // position so our Position property is correct.
                     if (_readLength > 0)
-                        SeekCore(_readLength, SeekOrigin.Current);
+                        SeekCore(_fileHandle, _readLength, SeekOrigin.Current);
                 }
                 else if (oldPos - _readPos < pos && pos < oldPos + _readLength - _readPos)
                 {
@@ -597,7 +597,7 @@ namespace System.IO
                     _readLength -= (_readPos + diff);
                     _readPos = 0;
                     if (_readLength > 0)
-                        SeekCore(_readLength, SeekOrigin.Current);
+                        SeekCore(_fileHandle, _readLength, SeekOrigin.Current);
                 }
                 else
                 {
@@ -614,18 +614,23 @@ namespace System.IO
         // This doesn't do argument checking.  Necessary for SetLength, which must
         // set the file pointer beyond the end of the file. This will update the 
         // internal position
-        // This is called during construction so it should avoid any virtual
-        // calls
-        private long SeekCore(long offset, SeekOrigin origin)
+        private long SeekCore(SafeFileHandle fileHandle, long offset, SeekOrigin origin, bool closeInvalidHandle = false)
         {
             Debug.Assert(!_fileHandle.IsClosed && _canSeek, "!_handle.IsClosed && _parent.CanSeek");
             Debug.Assert(origin >= SeekOrigin.Begin && origin <= SeekOrigin.End, "origin>=SeekOrigin.Begin && origin<=SeekOrigin.End");
+
             long ret = 0;
 
-            if (!Interop.Kernel32.SetFilePointerEx(_fileHandle, offset, out ret, (uint)origin))
+            if (!Interop.Kernel32.SetFilePointerEx(fileHandle, offset, out ret, (uint)origin))
             {
-                int errorCode = GetLastWin32ErrorAndDisposeHandleIfInvalid();
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode);
+                if (closeInvalidHandle)
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(GetLastWin32ErrorAndDisposeHandleIfInvalid(throwIfInvalidHandle: false));
+                }
+                else
+                {
+                    throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error());
+                }
             }
 
             _filePosition = ret;
@@ -899,7 +904,7 @@ namespace System.IO
                 // the file pointer when writing to a UNC path!   
                 // So changed the code below to seek to an absolute 
                 // location, not a relative one.  ReadFile seems consistent though.
-                SeekCore(numBytes, SeekOrigin.Current);
+                SeekCore(_fileHandle, numBytes, SeekOrigin.Current);
             }
 
             // queue an async ReadFile operation and pass in a packed overlapped
@@ -932,7 +937,7 @@ namespace System.IO
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
-                        SeekCore(0, SeekOrigin.Current);
+                        SeekCore(_fileHandle, 0, SeekOrigin.Current);
                     }
 
                     completionSource.ReleaseNativeResource();
@@ -1123,7 +1128,7 @@ namespace System.IO
                 // When using overlapped IO, the OS is not supposed to 
                 // touch the file pointer location at all.  We will adjust it 
                 // ourselves.  This isn't threadsafe.
-                SeekCore(numBytes, SeekOrigin.Current);
+                SeekCore(_fileHandle, numBytes, SeekOrigin.Current);
             }
 
             //Console.WriteLine("WriteInternalCoreAsync finishing.  pos: "+pos+"  numBytes: "+numBytes+"  _pos: "+_pos+"  Position: "+Position);
@@ -1158,7 +1163,7 @@ namespace System.IO
                 {
                     if (!_fileHandle.IsClosed && CanSeek)  // Update Position - It could be anywhere.
                     {
-                        SeekCore(0, SeekOrigin.Current);
+                        SeekCore(_fileHandle, 0, SeekOrigin.Current);
                     }
 
                     completionSource.ReleaseNativeResource();
@@ -1562,7 +1567,7 @@ namespace System.IO
                 // Make sure the stream's current position reflects where we ended up
                 if (!_fileHandle.IsClosed && CanSeek)
                 {
-                    SeekCore(0, SeekOrigin.End);
+                    SeekCore(_fileHandle, 0, SeekOrigin.End);
                 }
             }
         }

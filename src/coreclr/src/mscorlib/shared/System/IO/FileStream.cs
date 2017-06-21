@@ -461,7 +461,7 @@ namespace System.IO
             if (verifyPosition && CanSeek)
             {
                 long oldPos = _filePosition; // SeekCore will override the current _position, so save it now
-                long curPos = SeekCore(0, SeekOrigin.Current);
+                long curPos = SeekCore(_fileHandle, 0, SeekOrigin.Current);
                 if (oldPos != curPos)
                 {
                     // For reads, this is non-fatal but we still could have returned corrupted 
@@ -589,7 +589,7 @@ namespace System.IO
             if (rewind != 0)
             {
                 Debug.Assert(CanSeek, "FileStream will lose buffered read data now.");
-                SeekCore(rewind, SeekOrigin.Current);
+                SeekCore(_fileHandle, rewind, SeekOrigin.Current);
             }
             _readPos = _readLength = 0;
         }
