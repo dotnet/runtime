@@ -24,6 +24,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
@@ -33,7 +34,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
-    public class IconTests
+    public class IconTests : RemoteExecutorTestBase
     {
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData("48x48_multiple_entries_4bit.ico")]
@@ -471,41 +472,121 @@ namespace System.Drawing.Tests
             yield return new object[] { new Icon(Helpers.GetTestBitmapPath("256x256_two_entries_multiple_bits.ico"), 48, 48) };
             yield return new object[] { new Icon(Helpers.GetTestBitmapPath("256x256_two_entries_multiple_bits.ico"), 256, 256) };
             yield return new object[] { new Icon(Helpers.GetTestBitmapPath("256x256_two_entries_multiple_bits.ico"), 0, 0) };
-
-            // Handle rerring to icon without any colour.
-            var icon_48x48_one_entry_1bit = new Icon(Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico"));
-            yield return new object[] { Icon.FromHandle(icon_48x48_one_entry_1bit.Handle) };
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(ToBitmap_TestData))]
-        public void ToBitmap_BitmapIcon_Success(Icon icon)
+        public void ToBitmap_BitmapIcon_ReturnsExpected(Icon icon)
         {
-            using (Bitmap bitmap = icon.ToBitmap())
+            try
             {
-                Assert.NotSame(icon.ToBitmap(), bitmap);
-                Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
-                Assert.Empty(bitmap.Palette.Entries);
-                Assert.Equal(icon.Width, bitmap.Width);
-                Assert.Equal(icon.Height, bitmap.Height);
+                using (Bitmap bitmap = icon.ToBitmap())
+                {
+                    Assert.NotSame(icon.ToBitmap(), bitmap);
+                    Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
+                    Assert.Empty(bitmap.Palette.Entries);
+                    Assert.Equal(icon.Width, bitmap.Width);
+                    Assert.Equal(icon.Height, bitmap.Height);
 
-                Assert.Equal(ImageFormat.MemoryBmp, bitmap.RawFormat);
-                Assert.Equal(2, bitmap.Flags);
+                    Assert.Equal(ImageFormat.MemoryBmp, bitmap.RawFormat);
+                    Assert.Equal(2, bitmap.Flags);
+                }
+            }
+            finally
+            {
+                icon.Dispose();
             }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void ToBitmap_PngIcon_Success()
+        public void ToBitmap_BitmapIconFromHandle_ReturnsExpected()
         {
-            Icon icon;
+            // Handle refers to an icon without any colour. This is not in ToBitmap_TestData as there is
+            // a chance that the original icon will be finalized as it is not kept alive in the iterator.
+            using (var originalIcon = new Icon(Helpers.GetTestBitmapPath("48x48_one_entry_1bit.ico")))
+            using (Icon icon = Icon.FromHandle(originalIcon.Handle))
+            {
+                ToBitmap_BitmapIcon_ReturnsExpected(icon);
+            }
+        }
+
+        private const string DontSupportPngFramesInIcons = "Switch.System.Drawing.DontSupportPngFramesInIcons";
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void ToBitmap_PngIconSupportedInSwitches_Success()
+        {
+            void VerifyPng()
+            {
+                using (Icon icon = GetPngIcon())
+                using (Bitmap bitmap = icon.ToBitmap())
+                {
+                    using (Bitmap secondBitmap = icon.ToBitmap())
+                    {
+                        Assert.NotSame(icon.ToBitmap(), bitmap);
+                    }
+                    Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
+                    Assert.Empty(bitmap.Palette.Entries);
+                    Assert.Equal(icon.Width, bitmap.Width);
+                    Assert.Equal(icon.Height, bitmap.Height);
+
+                    Assert.Equal(ImageFormat.Png, bitmap.RawFormat);
+                    Assert.Equal(77842, bitmap.Flags);
+                }
+            }
+
+            if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || isEnabled)
+            {
+                RemoteInvoke(() =>
+                {
+                    AppContext.SetSwitch(DontSupportPngFramesInIcons, false);
+                    VerifyPng();
+                    return SuccessExitCode;
+                }).Dispose();
+            }
+            else
+            {
+                VerifyPng();
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void ToBitmap_PngIconNotSupportedInSwitches_ThrowsArgumentOutOfRangeException()
+        {
+            void VerifyPngNotSupported()
+            {
+                using (Icon icon = GetPngIcon())
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => icon.ToBitmap());
+                }
+            }
+
+            if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || !isEnabled)
+            {
+                RemoteInvoke(() =>
+                {
+                    AppContext.SetSwitch(DontSupportPngFramesInIcons, true);
+                    VerifyPngNotSupported();
+                    return SuccessExitCode;
+                }).Dispose();
+            }
+            else
+            {
+                VerifyPngNotSupported();
+            }
+        }
+
+        private static Icon GetPngIcon()
+        {
             using (var stream = new MemoryStream())
             {
                 // Create a PNG inside an ICO.
-                var bitmap = new Bitmap(10, 10);
-                stream.Write(new byte[] { 0, 0, 1, 0, 1, 0, (byte)bitmap.Width, (byte)bitmap.Height, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 22, 0, 0, 0 }, 0, 22);
+                using (var bitmap = new Bitmap(10, 10))
+                {
+                    stream.Write(new byte[] { 0, 0, 1, 0, 1, 0, (byte)bitmap.Width, (byte)bitmap.Height, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 22, 0, 0, 0 }, 0, 22);
 
-                // Writing actual data
-                bitmap.Save(stream, ImageFormat.Png);
+                    // Writing actual data
+                    bitmap.Save(stream, ImageFormat.Png);
+                }
 
                 // Getting data length (file length minus header)
                 long length = stream.Length - 22;
@@ -515,19 +596,7 @@ namespace System.Drawing.Tests
 
                 // Read the PNG inside an ICO.
                 stream.Position = 0;
-                icon = new Icon(stream);
-            }
-
-            using (Bitmap bitmap = icon.ToBitmap())
-            {
-                Assert.NotSame(icon.ToBitmap(), bitmap);
-                Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
-                Assert.Empty(bitmap.Palette.Entries);
-                Assert.Equal(icon.Width, bitmap.Width);
-                Assert.Equal(icon.Height, bitmap.Height);
-
-                Assert.Equal(ImageFormat.Png, bitmap.RawFormat);
-                Assert.Equal(77842, bitmap.Flags);
+                return new Icon(stream);
             }
         }
 
@@ -653,6 +722,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The hardcoded bytes depend on the existence of the System.Drawing.Common assembly.")]
         public void Deserialize_InvalidBytes_ThrowsInvalidOperationException()
         {
             // In these bytes, IconData is set to null.
@@ -692,26 +762,24 @@ namespace System.Drawing.Tests
                     Assert.Equal(icon.Width, loaded.Width);
 
                     using (Bitmap expected = icon.ToBitmap())
+                    using (Bitmap actual = loaded.ToBitmap())
                     {
-                        using (Bitmap actual = loaded.ToBitmap())
-                        {
-                            Assert.Equal(expected.Height, actual.Height);
-                            Assert.Equal(expected.Width, actual.Width);
+                        Assert.Equal(expected.Height, actual.Height);
+                        Assert.Equal(expected.Width, actual.Width);
 
-                            for (int y = 0; y < expected.Height; y++)
+                        for (int y = 0; y < expected.Height; y++)
+                        {
+                            for (int x = 0; x < expected.Width; x++)
                             {
-                                for (int x = 0; x < expected.Width; x++)
+                                Color e = expected.GetPixel(x, y);
+                                Color a = actual.GetPixel(x, y);
+                                if (alpha)
                                 {
-                                    Color e = expected.GetPixel(x, y);
-                                    Color a = actual.GetPixel(x, y);
-                                    if (alpha)
-                                    {
-                                        Assert.Equal(e.A, a.A);
-                                    }
-                                    Assert.Equal(e.R, a.R);
-                                    Assert.Equal(e.G, a.G);
-                                    Assert.Equal(e.B, a.B);
+                                    Assert.Equal(e.A, a.A);
                                 }
+                                Assert.Equal(e.R, a.R);
+                                Assert.Equal(e.G, a.G);
+                                Assert.Equal(e.B, a.B);
                             }
                         }
                     }
