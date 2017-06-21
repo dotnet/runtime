@@ -3763,7 +3763,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				if (volatile_)
 					ADD_CODE (&td, MINT_MONO_MEMORY_BARRIER);
 				ADD_CODE(&td, MINT_CPBLK);
-				BARRIER_IF_VOLATILE (&td);
+				BARRIER_IF_VOLATILE (td);
 				td.sp -= 3;
 				++td.ip;
 				break;
