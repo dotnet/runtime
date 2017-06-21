@@ -2,24 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 1634, 1691
 namespace Microsoft.ServiceModel.Syndication
 {
+    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
-    using System.Runtime;
+    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
-    using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
-    using System.Runtime.CompilerServices;
-    using Microsoft.ServiceModel.Syndication.Resources;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
+
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20FeedFormatter : SyndicationFeedFormatter, IXmlSerializable
     {
@@ -38,27 +34,26 @@ namespace Microsoft.ServiceModel.Syndication
         bool serializeExtensionsAsAtom;
 
         //Custom Parsers
-        public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; }
-        
+        public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; } // ParseDate
         public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
         public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
         public Func<XmlReader, string> LanguageParser { get; set; }
         public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
         public Func<XmlReader, string> GeneratorParser { get; set; }
-        public Func<XmlReader,Uri,SyndicationLink> LinkParser { get; set; }
+        public Func<XmlReader, Uri, SyndicationLink> LinkParser { get; set; }
         public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
 
         public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
 
 
         //We need to declare our delegate to use the out keyword
-        public delegate bool ItemParserType(XmlReader reader,SyndicationFeed result, out bool areAllItemsRead);
+        public delegate bool ItemParserType(XmlReader reader, SyndicationFeed result, out bool areAllItemsRead);
         public ItemParserType ItemParser { get; set; }
 
         public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
-        
 
-       
+
+
         bool ImageParserAction(XmlReader reader, SyndicationFeed result)
         {
             reader.ReadStartElement();
@@ -72,19 +67,18 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     // ignore other content
                     bool aix = reader.IsStartElement();
-                    TraceSyndicationElementIgnoredOnRead(reader);
                     reader.Skip();
                 }
             }
             reader.ReadEndElement(); // image
             return true;
         }
-              
+
         bool ItemParserAction(XmlReader reader, SyndicationFeed result, out bool areAllItemsRead)
         {
-            
+
             result.Items = ReadItems(reader, result, out areAllItemsRead);
-           
+
             return true;
         }
         TextSyndicationContent titleParserAction(XmlReader reader)
@@ -122,7 +116,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         SyndicationLink linkParserAction(XmlReader reader, Uri baseUri)
         {
-            return ReadAlternateLink(reader,baseUri);
+            return ReadAlternateLink(reader, baseUri);
         }
 
 
@@ -153,13 +147,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feedTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feedTypeToCreate");
+                throw new ArgumentNullException("feedTypeToCreate");
             }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("feedTypeToCreate",
-                //    SR.GetString(SR.InvalidObjectTypePassed, "feedTypeToCreate", "SyndicationFeed"));
-
                 throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "feedTypeToCreate", "SyndicationFeed"));
             }
             this.serializeExtensionsAsAtom = true;
@@ -225,7 +216,8 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
             return reader.IsStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
         }
@@ -241,11 +233,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
-            TraceFeedReadBegin();
             ReadFeed(reader);
-            TraceFeedReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -253,36 +244,31 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
+
             }
-            TraceFeedWriteBegin();
             WriteFeed(writer);
-            TraceFeedWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
-            TraceFeedReadBegin();
             if (!CanRead(reader))
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
                 throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
             ReadFeed(reader);
-            TraceFeedReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
+
             }
-            TraceFeedWriteBegin();
             writer.WriteStartElement(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
             WriteFeed(writer);
             writer.WriteEndElement();
-            TraceFeedWriteEnd();
         }
 
         protected internal override void SetFeed(SyndicationFeed feed)
@@ -291,13 +277,7 @@ namespace Microsoft.ServiceModel.Syndication
             this.atomSerializer.SetFeed(this.Feed);
         }
 
-        internal static void TraceExtensionsIgnoredOnWrite(string message)
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationProtocolElementIgnoredOnWrite, SR.GetString(message));
-            }
-        }
+        
 
         internal void ReadItemFrom(XmlReader reader, SyndicationItem result)
         {
@@ -318,16 +298,16 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
+                throw new ArgumentNullException("feed");
+
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
             SyndicationItem item = CreateItem(feed);
-            TraceItemReadBegin();
-            ReadItemFrom(reader, item, feed.BaseUri); // delegate => ItemParser(reader,item,feed.BaseUri);//
-            TraceItemReadEnd();
+            ReadItemFrom(reader, item, feed.BaseUri);
             return item;
         }
 
@@ -336,16 +316,18 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
+                throw new ArgumentNullException("feed");
+
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
             {
-                items.Add(ReadItem(reader, feed)); 
+                items.Add(ReadItem(reader, feed));
             }
             areAllItemsRead = true;
             return items;
@@ -353,11 +335,9 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected virtual void WriteItem(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
-            TraceItemWriteBegin();
             writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
             WriteItemContents(writer, item, feedBaseUri);
             writer.WriteEndElement();
-            TraceItemWriteEnd();
         }
 
         protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
@@ -372,74 +352,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        //public static DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
-        //{
-        //    StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
-        //    if (dateTimeStringBuilder.Length < 18)
-        //    {
-        //        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-        //            new XmlException(FeedUtils.AddLineInfo(reader,
-        //            SR.ErrorParsingDateTime)));
-        //    }
-        //    if (dateTimeStringBuilder[3] == ',')
-        //    {
-        //        // There is a leading (e.g.) "Tue, ", strip it off
-        //        dateTimeStringBuilder.Remove(0, 4);
-        //        // There's supposed to be a space here but some implementations dont have one
-        //        RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
-        //    }
-        //    ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
-        //    if (char.IsDigit(dateTimeStringBuilder[1]))
-        //    {
-        //        // two-digit day, we are good
-        //    }
-        //    else
-        //    {
-        //        dateTimeStringBuilder.Insert(0, '0');
-        //    }
-        //    if (dateTimeStringBuilder.Length < 19)
-        //    {
-        //        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-        //            new XmlException(FeedUtils.AddLineInfo(reader,
-        //            SR.ErrorParsingDateTime)));
-        //    }
-        //    bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
-        //    int timeZoneStartIndex;
-        //    if (thereAreSeconds)
-        //    {
-        //        timeZoneStartIndex = 21;
-        //    }
-        //    else
-        //    {
-        //        timeZoneStartIndex = 18;
-        //    }
-        //    string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
-        //    dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
-        //    bool isUtc;
-        //    dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
-        //    string wellFormattedString = dateTimeStringBuilder.ToString();
-
-        //    DateTimeOffset theTime;
-        //    string parseFormat;
-        //    if (thereAreSeconds)
-        //    {
-        //        parseFormat = "dd MMM yyyy HH:mm:ss zzz";
-        //    }
-        //    else
-        //    {
-        //        parseFormat = "dd MMM yyyy HH:mm zzz";
-        //    }
-        //    if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
-        //        CultureInfo.InvariantCulture.DateTimeFormat,
-        //        (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
-        //    {
-        //        return theTime;
-        //    }
-        //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-        //        new XmlException(FeedUtils.AddLineInfo(reader,
-        //        SR.ErrorParsingDateTime)));
-        //}
-
+       
         static string NormalizeTimeZone(string rfc822TimeZone, out bool isUtc)
         {
             isUtc = false;
@@ -570,7 +483,6 @@ namespace Microsoft.ServiceModel.Syndication
                 ++index;
             }
             // we have already trimmed the start and end so there cannot be a trail of white spaces in the end
-            //Fx.Assert(builder.Length == 0 || builder[builder.Length - 1] != ' ', "The string builder doesnt end in a white space");
         }
 
         string AsString(DateTimeOffset dateTime)
@@ -607,10 +519,6 @@ namespace Microsoft.ServiceModel.Syndication
                         if (this.PreserveAttributeExtensions)
                         {
                             link.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
-                        }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
                         }
                     }
                 }
@@ -661,10 +569,6 @@ namespace Microsoft.ServiceModel.Syndication
                         {
                             category.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                         }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
-                        }
                     }
                 }
             }
@@ -712,10 +616,6 @@ namespace Microsoft.ServiceModel.Syndication
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                             }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -738,7 +638,7 @@ namespace Microsoft.ServiceModel.Syndication
                             else if (reader.IsStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
                             {
                                 //result.Links.Add(ReadAlternateLink(reader, result.BaseUri));
-                                result.Links.Add(LinkParser(reader,result.BaseUri));
+                                result.Links.Add(LinkParser(reader, result.BaseUri));
                                 readAlternateLink = true;
                             }
                             else if (reader.IsStartElement(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace))
@@ -810,10 +710,6 @@ namespace Microsoft.ServiceModel.Syndication
                                             {
                                                 feed.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                                             }
-                                            else
-                                            {
-                                                TraceSyndicationElementIgnoredOnRead(reader);
-                                            }
                                         }
                                     }
                                 }
@@ -836,7 +732,6 @@ namespace Microsoft.ServiceModel.Syndication
                                     }
                                     else
                                     {
-                                        TraceSyndicationElementIgnoredOnRead(reader);
                                         reader.Skip();
                                     }
                                 }
@@ -868,11 +763,11 @@ namespace Microsoft.ServiceModel.Syndication
             }
             catch (FormatException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e);
             }
             catch (ArgumentException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e));
+                new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingItem), e);
             }
         }
 
@@ -915,10 +810,6 @@ namespace Microsoft.ServiceModel.Syndication
                         if (this.preserveAttributeExtensions)
                         {
                             link.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
-                        }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
                         }
                     }
                 }
@@ -965,10 +856,6 @@ namespace Microsoft.ServiceModel.Syndication
                         {
                             person.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
                         }
-                        else
-                        {
-                            TraceSyndicationElementIgnoredOnRead(reader);
-                        }
                     }
                 }
             }
@@ -990,7 +877,6 @@ namespace Microsoft.ServiceModel.Syndication
                 string version = reader.GetAttribute(Rss20Constants.VersionTag, Rss20Constants.Rss20Namespace);
                 if (version != Rss20Constants.Version)
                 {
-                    //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(FeedUtils.AddLineInfo(reader, (SR.GetString(SR.UnsupportedRssVersion, version)))));
                     throw new NotSupportedException(FeedUtils.AddLineInfo(reader, (String.Format(SR.UnsupportedRssVersion, version))));
 
                 }
@@ -1008,7 +894,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     while (reader.MoveToNextAttribute())
                     {
-                    
+
                         string ns = reader.NamespaceURI;
                         string name = reader.LocalName;
                         if (name == "base" && ns == Atom10FeedFormatter.XmlNs)
@@ -1026,10 +912,6 @@ namespace Microsoft.ServiceModel.Syndication
                             if (this.preserveAttributeExtensions)
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
-                            }
-                            else
-                            {
-                                TraceSyndicationElementIgnoredOnRead(reader);
                             }
                         }
                     }
@@ -1073,7 +955,7 @@ namespace Microsoft.ServiceModel.Syndication
                         else if (reader.IsStartElement(Rss20Constants.ManagingEditorTag, Rss20Constants.Rss20Namespace))
                         {
                             //result.Authors.Add(ReadPerson(reader, result)); //original
-                            result.Authors.Add(ManagingEditorParser(reader,result));
+                            result.Authors.Add(ManagingEditorParser(reader, result));
                         }
                         else if (reader.IsStartElement(Rss20Constants.LastBuildDateTag, Rss20Constants.Rss20Namespace))
                         {
@@ -1102,20 +984,19 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.ImageTag, Rss20Constants.Rss20Namespace))
                         {
-                            ImageParser(reader,result);
+                            ImageParser(reader, result);
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
-                            ItemParseOptions options = new ItemParseOptions(readItemsAtLeastOnce,areAllItemsRead);
+                            ItemParseOptions options = new ItemParseOptions(readItemsAtLeastOnce, areAllItemsRead);
                             if (readItemsAtLeastOnce)
                             {
-                                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperWarning(new InvalidOperationException(SR.GetString(SR.FeedHasNonContiguousItems, this.GetType().ToString())));
                                 throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
                             }
 
 
                             //result.Items = ReadItems(reader, result, out areAllItemsRead);
-                            ItemParser(reader,result,out areAllItemsRead);
+                            ItemParser(reader, result, out areAllItemsRead);
 
                             readItemsAtLeastOnce = true;
                             // if the derived class is reading the items lazily, then stop reading from the stream
@@ -1139,7 +1020,6 @@ namespace Microsoft.ServiceModel.Syndication
                                 }
                                 else
                                 {
-                                    TraceSyndicationElementIgnoredOnRead(reader);
                                     reader.Skip();
                                 }
                             }
@@ -1162,11 +1042,11 @@ namespace Microsoft.ServiceModel.Syndication
             }
             catch (FormatException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e));
+                new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
             }
             catch (ArgumentException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e));
+                new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
             }
         }
 
@@ -1203,7 +1083,6 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (this.Feed == null)
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.FeedFormatterDoesNotHaveFeed)));
                 throw new InvalidOperationException(SR.FeedFormatterDoesNotHaveFeed);
             }
             if (this.serializeExtensionsAsAtom)
@@ -1246,9 +1125,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             // if there's a single author with an email address, then serialize as the managingEditor
             // else serialize the authors as Atom extensions
-#pragma warning disable 56506 // tvish: this.Feed.Authors is never null
             if ((this.Feed.Authors.Count == 1) && (this.Feed.Authors[0].Email != null))
-#pragma warning restore 56506
             {
                 WritePerson(writer, Rss20Constants.ManagingEditorTag, this.Feed.Authors[0]);
             }
@@ -1257,10 +1134,6 @@ namespace Microsoft.ServiceModel.Syndication
                 if (serializeExtensionsAsAtom)
                 {
                     this.atomSerializer.WriteFeedAuthorsTo(writer, this.Feed.Authors);
-                }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedAuthorsIgnoredOnWrite);
                 }
             }
 
@@ -1271,9 +1144,7 @@ namespace Microsoft.ServiceModel.Syndication
                 writer.WriteEndElement();
             }
 
-#pragma warning disable 56506 // tvish: this.Feed.Categories is never null
             for (int i = 0; i < this.Feed.Categories.Count; ++i)
-#pragma warning restore 56506
             {
                 WriteCategory(writer, this.Feed.Categories[i]);
             }
@@ -1283,17 +1154,11 @@ namespace Microsoft.ServiceModel.Syndication
                 writer.WriteElementString(Rss20Constants.GeneratorTag, this.Feed.Generator);
             }
 
-#pragma warning disable 56506 // tvish: this.Feed.Contributors is never null
             if (this.Feed.Contributors.Count > 0)
-#pragma warning restore 56506
             {
                 if (serializeExtensionsAsAtom)
                 {
                     this.atomSerializer.WriteFeedContributorsTo(writer, this.Feed.Contributors);
-                }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedContributorsIgnoredOnWrite);
                 }
             }
 
@@ -1321,17 +1186,6 @@ namespace Microsoft.ServiceModel.Syndication
                         continue;
                     }
                     this.atomSerializer.WriteLink(writer, this.Feed.Links[i], this.Feed.BaseUri);
-                }
-            }
-            else
-            {
-                if (this.Feed.Id != null)
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedIdIgnoredOnWrite);
-                }
-                if (this.Feed.Links.Count > 1)
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.FeedLinksIgnoredOnWrite);
                 }
             }
 
@@ -1385,9 +1239,7 @@ namespace Microsoft.ServiceModel.Syndication
                 WriteAlternateLink(writer, firstAlternateLink, (item.BaseUri != null ? item.BaseUri : feedBaseUri));
             }
 
-#pragma warning disable 56506 // tvish, item.Authors is never null
             if (item.Authors.Count == 1 && !string.IsNullOrEmpty(item.Authors[0].Email))
-#pragma warning restore 56506
             {
                 WritePerson(writer, Rss20Constants.AuthorTag, item.Authors[0]);
             }
@@ -1397,15 +1249,9 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     this.atomSerializer.WriteItemAuthorsTo(writer, item.Authors);
                 }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemAuthorsIgnoredOnWrite);
-                }
             }
 
-#pragma warning disable 56506 // tvish, item.Categories is never null
             for (int i = 0; i < item.Categories.Count; ++i)
-#pragma warning restore 56506
             {
                 WriteCategory(writer, item.Categories[i]);
             }
@@ -1493,10 +1339,7 @@ namespace Microsoft.ServiceModel.Syndication
                     isLinkIgnored = true;
                 }
             }
-            if (isLinkIgnored)
-            {
-                TraceExtensionsIgnoredOnWrite(SR.ItemLinksIgnoredOnWrite);
-            }
+            
 
             if (item.LastUpdatedTime > DateTimeOffset.MinValue)
             {
@@ -1504,19 +1347,11 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     this.atomSerializer.WriteItemLastUpdatedTimeTo(writer, item.LastUpdatedTime);
                 }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemLastUpdatedTimeIgnoredOnWrite);
-                }
             }
 
             if (serializeExtensionsAsAtom)
             {
                 this.atomSerializer.WriteContentTo(writer, Atom10Constants.RightsTag, item.Copyright);
-            }
-            else
-            {
-                TraceExtensionsIgnoredOnWrite(SR.ItemCopyrightIgnoredOnWrite);
             }
 
             if (!serializedContentAsDescription)
@@ -1525,23 +1360,13 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     this.atomSerializer.WriteContentTo(writer, Atom10Constants.ContentTag, item.Content);
                 }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemContentIgnoredOnWrite);
-                }
             }
 
-#pragma warning disable 56506 // tvish, item.COntributors is never null
             if (item.Contributors.Count > 0)
-#pragma warning restore 56506
             {
                 if (serializeExtensionsAsAtom)
                 {
                     this.atomSerializer.WriteItemContributorsTo(writer, item.Contributors);
-                }
-                else
-                {
-                    TraceExtensionsIgnoredOnWrite(SR.ItemContributorsIgnoredOnWrite);
                 }
             }
 
@@ -1586,93 +1411,85 @@ namespace Microsoft.ServiceModel.Syndication
 
             bool parsed = false;
             //try
-            //{
             DateTimeOffset dto;
             parsed = DateTimeOffset.TryParse(dateTimeString, out dto);
+
             if (parsed)
                 return dto;
-            //}
-            //catch (FormatException fe) { }
 
 
-            //chain of parsers
-            //try
-            //{
             StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
-                if (dateTimeStringBuilder.Length < 18)
-                {
-                    //If we thrown an exception here, the program will stop
-                    
-                    //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                    //    new XmlException(FeedUtils.AddLineInfo(reader,
-                    //    SR.ErrorParsingDateTime)));                    
-                }
-                if (dateTimeStringBuilder[3] == ',')
-                {
-                    // There is a leading (e.g.) "Tue, ", strip it off
-                    dateTimeStringBuilder.Remove(0, 4);
-                    // There's supposed to be a space here but some implementations dont have one
-                    Rss20FeedFormatter.RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
-                }
-                Rss20FeedFormatter.ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
-                if (char.IsDigit(dateTimeStringBuilder[1]))
-                {
-                    // two-digit day, we are good
-                }
-                else
-                {
-                    dateTimeStringBuilder.Insert(0, '0');
-                }
-                if (dateTimeStringBuilder.Length < 19)
-                {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                        new XmlException(FeedUtils.AddLineInfo(reader,
-                        SR.ErrorParsingDateTime)));
-                }
-                bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
-                int timeZoneStartIndex;
-                if (thereAreSeconds)
-                {
-                    timeZoneStartIndex = 21;
-                }
-                else
-                {
-                    timeZoneStartIndex = 18;
-                }
-                string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
-                dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
-                bool isUtc;
-                dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
-                string wellFormattedString = dateTimeStringBuilder.ToString();
+            if (dateTimeStringBuilder.Length < 18)
+            {
+                //If we thrown an exception here, the program will stop
 
-                DateTimeOffset theTime;
-                string parseFormat;
-                if (thereAreSeconds)
-                {
-                    parseFormat = "dd MMM yyyy HH:mm:ss zzz";
-                }
-                else
-                {
-                    parseFormat = "dd MMM yyyy HH:mm zzz";
-                }
-                if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
-                    CultureInfo.InvariantCulture.DateTimeFormat,
-                    (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
-                {
-
-                    return theTime;
-                }
-                //throw new FormatException("There was an error with the format of the date");
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+                //    new XmlException(FeedUtils.AddLineInfo(reader,
+                //    SR.ErrorParsingDateTime)));                    
+            }
+            if (dateTimeStringBuilder[3] == ',')
+            {
+                // There is a leading (e.g.) "Tue, ", strip it off
+                dateTimeStringBuilder.Remove(0, 4);
+                // There's supposed to be a space here but some implementations dont have one
+                Rss20FeedFormatter.RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
+            }
+            Rss20FeedFormatter.ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
+            if (char.IsDigit(dateTimeStringBuilder[1]))
+            {
+                // two-digit day, we are good
+            }
+            else
+            {
+                dateTimeStringBuilder.Insert(0, '0');
+            }
+            if (dateTimeStringBuilder.Length < 19)
+            {
                 //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                 //    new XmlException(FeedUtils.AddLineInfo(reader,
                 //    SR.ErrorParsingDateTime)));
-            //}
-            //catch (FormatException fe)
-            //{
-            //    Console.WriteLine("There was an error in the format of the date");
-            //}
 
-            
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
+            }
+            bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
+            int timeZoneStartIndex;
+            if (thereAreSeconds)
+            {
+                timeZoneStartIndex = 21;
+            }
+            else
+            {
+                timeZoneStartIndex = 18;
+            }
+            string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
+            dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
+            bool isUtc;
+            dateTimeStringBuilder.Append(NormalizeTimeZone(timeZoneSuffix, out isUtc));
+            string wellFormattedString = dateTimeStringBuilder.ToString();
+
+            DateTimeOffset theTime;
+            string parseFormat;
+            if (thereAreSeconds)
+            {
+                parseFormat = "dd MMM yyyy HH:mm:ss zzz";
+            }
+            else
+            {
+                parseFormat = "dd MMM yyyy HH:mm zzz";
+            }
+            if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
+                CultureInfo.InvariantCulture.DateTimeFormat,
+                (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
+            {
+
+                return theTime;
+            }
+            //throw new FormatException("There was an error with the format of the date");
+            //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
+            //    new XmlException(FeedUtils.AddLineInfo(reader,
+            //    SR.ErrorParsingDateTime)));
+
+
             //Impossible to parse - using a default date;
             return new DateTimeOffset();
 
@@ -1680,7 +1497,6 @@ namespace Microsoft.ServiceModel.Syndication
 
     }
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.RssTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20FeedFormatter<TSyndicationFeed> : Rss20FeedFormatter
         where TSyndicationFeed : SyndicationFeed, new()
@@ -1718,7 +1534,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
     }
 
-   
+
 
 
 }

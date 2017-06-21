@@ -40,13 +40,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (documentTypeToCreate == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("documentTypeToCreate");
+                throw new ArgumentNullException("documentTypeToCreate");
             }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("documentTypeToCreate",
-                //    SR.GetString(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
-
                 throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
             }
             this.maxExtensionSize = int.MaxValue;
@@ -74,7 +71,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
@@ -90,11 +87,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
-            TraceServiceDocumentReadBegin();
             ReadDocument(reader);
-            TraceServiceDocumentReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -102,51 +98,44 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
             if (this.Document == null)
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            TraceServiceDocumentWriteBegin();
             WriteDocument(writer);
-            TraceServiceDocumentWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
+
             }
             reader.MoveToContent();
             if (!CanRead(reader))
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI)));
                 throw new XmlException(String.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
-            TraceServiceDocumentReadBegin();
             ReadDocument(reader);
-            TraceServiceDocumentReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
+
             }
             if (this.Document == null)
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            TraceServiceDocumentWriteBegin();
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Service, App10Constants.Namespace);
             WriteDocument(writer);
             writer.WriteEndElement();
-            TraceServiceDocumentWriteEnd();
         }
 
         internal static CategoriesDocument ReadCategories(XmlReader reader, Uri baseUri, CreateInlineCategoriesDelegate inlineCategoriesFactory, CreateReferencedCategoriesDelegate referencedCategoriesFactory, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
@@ -166,37 +155,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        internal static void TraceServiceDocumentReadBegin()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationReadServiceDocumentBegin, SR.GetString(SR.TraceCodeSyndicationReadServiceDocumentBegin));
-            }
-        }
-
-        internal static void TraceServiceDocumentReadEnd()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationReadServiceDocumentEnd, SR.GetString(SR.TraceCodeSyndicationReadServiceDocumentEnd));
-            }
-        }
-
-        internal static void TraceServiceDocumentWriteBegin()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationWriteServiceDocumentBegin, SR.GetString(SR.TraceCodeSyndicationWriteServiceDocumentBegin));
-            }
-        }
-
-        internal static void TraceServiceDocumentWriteEnd()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationWriteServiceDocumentEnd, SR.GetString(SR.TraceCodeSyndicationWriteServiceDocumentEnd));
-            }
-        }
+        
 
         internal static void WriteCategoriesInnerXml(XmlWriter writer, CategoriesDocument categories, Uri baseUri, string version)
         {
@@ -269,10 +228,6 @@ namespace Microsoft.ServiceModel.Syndication
                             {
                                 inlineCategories.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
-                            else
-                            {
-                                SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -306,7 +261,6 @@ namespace Microsoft.ServiceModel.Syndication
                             }
                             else
                             {
-                                SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
                                 reader.Skip();
                             }
                         }
@@ -359,10 +313,6 @@ namespace Microsoft.ServiceModel.Syndication
                             {
                                 referencedCategories.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
-                            else
-                            {
-                                SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -383,11 +333,6 @@ namespace Microsoft.ServiceModel.Syndication
                             if (preserveElementExtensions)
                             {
                                 SyndicationFeedFormatter.CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, maxExtensionSize);
-                            }
-                            else
-                            {
-                                SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
-                                reader.Skip();
                             }
                         }
                     }
@@ -482,10 +427,6 @@ namespace Microsoft.ServiceModel.Syndication
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
-                            else
-                            {
-                                SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -533,7 +474,6 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else
                         {
-                            SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
                             reader.Skip();
                         }
                     }
@@ -585,10 +525,6 @@ namespace Microsoft.ServiceModel.Syndication
                                 {
                                     result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                                 }
-                                else
-                                {
-                                    SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
-                                }
                             }
                         }
                     }
@@ -615,7 +551,6 @@ namespace Microsoft.ServiceModel.Syndication
                                 }
                                 else
                                 {
-                                    SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
                                     reader.Skip();
                                 }
                             }
@@ -634,11 +569,11 @@ namespace Microsoft.ServiceModel.Syndication
             }
             catch (FormatException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument),e);
             }
             catch (ArgumentException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument), e));
+                new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument),e);
             }
             SetDocument(result);
         }
@@ -670,10 +605,6 @@ namespace Microsoft.ServiceModel.Syndication
                             {
                                 result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
                             }
-                            else
-                            {
-                                SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
-                            }
                         }
                     }
                 }
@@ -703,7 +634,6 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else
                         {
-                            SyndicationFeedFormatter.TraceSyndicationElementIgnoredOnRead(reader);
                             reader.Skip();
                         }
                     }

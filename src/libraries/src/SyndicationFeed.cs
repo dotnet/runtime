@@ -86,7 +86,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
+                throw new ArgumentNullException("source");
             }
             this.authors = FeedUtils.ClonePersons(source.authors);
             this.categories = FeedUtils.CloneCategories(source.categories);
@@ -116,7 +116,6 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (cloneItems)
                 {
-                    //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.UnbufferedItemsCannotBeCloned)));
                     throw new InvalidOperationException(SR.UnbufferedItemsCannotBeCloned);
                 }
                 this.items = source.items;
@@ -220,7 +219,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (value == null)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
+                    throw new ArgumentNullException("value");
                 }
                 this.items = value;
             }
@@ -272,7 +271,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             Atom10FeedFormatter atomSerializer = Atomformatter;
             if (atomSerializer.CanRead(reader))
@@ -286,7 +285,6 @@ namespace Microsoft.ServiceModel.Syndication
                 rssSerializer.ReadFrom(reader);
                 return rssSerializer.Feed;
             }
-            //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
             throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
@@ -302,7 +300,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
@@ -316,7 +314,6 @@ namespace Microsoft.ServiceModel.Syndication
                 rssSerializer.ReadFrom(reader);
                 return rssSerializer.Feed as TSyndicationFeed;
             }
-            //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI)));
             throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 

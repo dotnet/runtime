@@ -86,11 +86,12 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (readerOverUnparsedExtensions == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("readerOverUnparsedExtensions");
+                throw new ArgumentNullException("readerOverUnparsedExtensions");
+
             }
             if (maxExtensionSize < 0)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("maxExtensionSize"));
+                throw new ArgumentOutOfRangeException("maxExtensionSize");
             }
             XmlDictionaryReader r = XmlDictionaryReader.CreateDictionaryReader(readerOverUnparsedExtensions);
             this.elementExtensions = new SyndicationElementExtensionCollection(CreateXmlBuffer(r, maxExtensionSize));
@@ -106,7 +107,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
             if (this.attributeExtensions != null)
             {
@@ -122,7 +123,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
             if (this.elementExtensions != null)
             {

@@ -134,7 +134,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_Load_FeedFromInternet()
         {
-            XmlReader xmlr = XmlReader.Create("MicrosoftError.xml");
+            XmlReader xmlr = XmlReader.Create("feedwrongdate.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
             Assert.True(sf != null);
         }
@@ -143,7 +143,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         [Fact]
         public static void SyndicationFeed_Load_FeedWithWrongDateFormat()
         {
-            XmlReader xmlr = XmlReader.Create("feed3Gb.xml");
+            XmlReader xmlr = XmlReader.Create("feedwrongdate.xml");
             SyndicationFeed sf = SyndicationFeed.Load(xmlr);
             XmlDocument doc = new XmlDocument();
             

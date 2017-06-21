@@ -27,7 +27,8 @@ namespace System.ServiceModel.Channels
         public UriGenerator(string scheme, string delimiter)
         {
             if (scheme == null)
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("scheme"));
+                throw new ArgumentException("scheme");  
+                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("scheme"));
 
             if (scheme.Length == 0)
                 throw new ArgumentException(String.Format(SR.UriGeneratorSchemeMustNotBeEmpty, "scheme"));
