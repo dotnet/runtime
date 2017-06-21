@@ -700,6 +700,7 @@ private:
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
 #endif
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
+    bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
