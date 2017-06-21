@@ -1345,6 +1345,19 @@ CreateEventW(
          IN BOOL bInitialState,
          IN LPCWSTR lpName);
 
+PALIMPORT
+HANDLE
+PALAPI
+CreateEventExW(
+         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
+         IN LPCWSTR lpName,
+         IN DWORD dwFlags,
+         IN DWORD dwDesiredAccess);
+
+// CreateEventExW: dwFlags
+#define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
+#define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
+
 #ifdef UNICODE
 #define CreateEvent CreateEventW
 #else
@@ -1383,10 +1396,22 @@ CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName);
 
+PALIMPORT
+HANDLE
+PALAPI
+CreateMutexExW(
+    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
+    IN LPCWSTR lpName,
+    IN DWORD dwFlags,
+    IN DWORD dwDesiredAccess);
+
+// CreateMutexExW: dwFlags
+#define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
+
 #ifdef UNICODE
-#define CreateMutex  CreateMutexW
+#define CreateMutex CreateMutexW
 #else
-#define CreateMutex  CreateMutexA
+#define CreateMutex CreateMutexA
 #endif
 
 PALIMPORT
@@ -3949,19 +3974,17 @@ typedef struct _RUNTIME_FUNCTION {
 #define STANDARD_RIGHTS_REQUIRED  (0x000F0000L)
 #define SYNCHRONIZE               (0x00100000L)
 #define READ_CONTROL              (0x00020000L)
+#define MAXIMUM_ALLOWED           (0x02000000L)
 
 #define EVENT_MODIFY_STATE        (0x0002)
-#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   0x3) 
+#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3) 
 
 #define MUTANT_QUERY_STATE        (0x0001)
-#define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   MUTANT_QUERY_STATE)
+#define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
 #define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
 
 #define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | \
-                                   0x3)
+#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
 
 #define PROCESS_TERMINATE         (0x0001)  
 #define PROCESS_CREATE_THREAD     (0x0002)  
