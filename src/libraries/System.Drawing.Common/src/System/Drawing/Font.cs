@@ -9,8 +9,6 @@ namespace System.Drawing
     using System.Drawing.Internal;
     using System.Globalization;
     using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
 
     /*
     * Represent a font object
@@ -22,7 +20,7 @@ namespace System.Drawing
     ///    including font face, size, and style attributes.
     /// </devdoc>
     [ComVisible(true)]
-    public sealed class Font : MarshalByRefObject, ICloneable, ISerializable, IDisposable
+    public sealed partial class Font : MarshalByRefObject, ICloneable, IDisposable
     {
         private const int LogFontCharSetOffset = 23;
         private const int LogFontNameOffset = 28;
@@ -63,21 +61,6 @@ namespace System.Drawing
             {
                 throw SafeNativeMethods.Gdip.StatusException(status);
             }
-        }
-
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.ISerializable.GetObjectData"]/*' />
-        /// <devdoc>
-        ///     ISerializable private implementation
-        /// </devdoc>
-        /// <internalonly/>
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            // Serialize the original Font name rather than the fallback font name if we have one
-            si.AddValue("Name", String.IsNullOrEmpty(OriginalFontName) ? Name : OriginalFontName);
-            si.AddValue("Size", Size);
-            si.AddValue("Style", Style);
-            si.AddValue("Unit", Unit);
         }
 
         /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font"]/*' />

@@ -41,6 +41,7 @@
     <Compile Include="AssemblyRef.cs" />
     <Compile Include="SRDescriptionAttribute.cs" />
     <Compile Include="System\Drawing\Bitmap.cs" />
+    <Compile Include="System\Drawing\Bitmap.Serializable.cs" />
     <Compile Include="System\Drawing\BitmapSelector.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
@@ -94,14 +95,17 @@
     <Compile Include="System\Drawing\Drawing2D\WarpMode.cs" />
     <Compile Include="System\Drawing\Drawing2D\WrapMode.cs" />
     <Compile Include="System\Drawing\Font.cs" />
+    <Compile Include="System\Drawing\Font.Serializable.cs" />
     <Compile Include="System\Drawing\FontFamily.cs" />
     <Compile Include="System\Drawing\FontStyle.cs" />
     <Compile Include="System\Drawing\Gdiplus.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
     <Compile Include="System\Drawing\Icon.cs" />
+    <Compile Include="System\Drawing\Icon.Serializable.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
     <Compile Include="System\Drawing\Image.cs" />
+    <Compile Include="System\Drawing\Image.Serializable.cs" />
     <Compile Include="System\Drawing\ImageAnimator.cs" />
     <Compile Include="System\Drawing\ImageInfo.cs" />
     <Compile Include="System\Drawing\Imaging\BitmapData.cs" />
@@ -130,6 +134,7 @@
     <Compile Include="System\Drawing\Imaging\ImageFormat.cs" />
     <Compile Include="System\Drawing\Imaging\ImageLockMode.cs" />
     <Compile Include="System\Drawing\Imaging\Metafile.cs" />
+    <Compile Include="System\Drawing\Imaging\Metafile.Serializable.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileFrameUnit.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeader.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeaderEmf.cs" />
@@ -156,12 +161,17 @@
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\Duplex.cs" />
     <Compile Include="System\Drawing\Printing\InvalidPrinterException.cs" />
+    <Compile Include="System\Drawing\Printing\InvalidPrinterException.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\Margins.cs" />
+    <Compile Include="System\Drawing\Printing\Margins.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
     <Compile Include="System\Drawing\Printing\PageSettings.cs" />
+    <Compile Include="System\Drawing\Printing\PageSettings.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\PaperKinds.cs" />
     <Compile Include="System\Drawing\Printing\PaperSize.cs" />
+    <Compile Include="System\Drawing\Printing\PaperSize.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\PaperSource.cs" />
+    <Compile Include="System\Drawing\Printing\PaperSource.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\PaperSourceKind.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPageInfo.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPrintController.cs" />
@@ -171,8 +181,10 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\Drawing\Printing\PrinterResolution.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterResolution.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\PrinterResolutionKind.cs" />
     <Compile Include="System\Drawing\Printing\PrinterSettings.cs" />
+    <Compile Include="System\Drawing\Printing\PrinterSettings.Serializable.cs" />
     <Compile Include="System\Drawing\Printing\PrinterUnit.cs" />
     <Compile Include="System\Drawing\Printing\PrinterUnitConvert.cs" />
     <Compile Include="System\Drawing\Printing\PrintEvent.cs" />
@@ -184,6 +196,7 @@
     <Compile Include="System\Drawing\Printing\QueryPageSettingsEventArgs.cs" />
     <Compile Include="System\Drawing\Printing\QueryPageSettingsEventHandler.cs" />
     <Compile Include="System\Drawing\Printing\TriState.cs" />
+    <Compile Include="System\Drawing\Printing\TriState.Serializable.cs" />
     <Compile Include="System\Drawing\PropertyItemInternal.cs" />
     <Compile Include="System\Drawing\Region.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
@@ -229,7 +242,6 @@
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
     <Compile Include="misc\HandleCollector.cs" />
-    <Compile Include="misc\InvariantComparer.cs" />
     <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>

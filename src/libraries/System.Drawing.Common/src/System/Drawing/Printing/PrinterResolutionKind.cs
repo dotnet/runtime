@@ -8,7 +8,6 @@ namespace System.Drawing.Printing
     /// <devdoc>
     ///    <para>Specifies a printer resolution.</para>
     /// </devdoc>
-    [Serializable]
     public enum PrinterResolutionKind
     {
         /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind.High"]/*' />

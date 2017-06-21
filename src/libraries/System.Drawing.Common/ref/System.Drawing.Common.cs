@@ -284,7 +284,7 @@ namespace System.Drawing
         Whiteness = 16711778,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
+    public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
         public Font(System.Drawing.Font prototype, System.Drawing.FontStyle newStyle) { }
         public Font(System.Drawing.FontFamily family, float emSize) { }
@@ -341,8 +341,6 @@ namespace System.Drawing
         public float GetHeight() { throw null; }
         public float GetHeight(System.Drawing.Graphics graphics) { throw null; }
         public float GetHeight(float dpi) { throw null; }
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(128))]
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.IntPtr ToHfont() { throw null; }
         public void ToLogFont(object logFont) { }
         public void ToLogFont(object logFont, System.Drawing.Graphics graphics) { }
@@ -648,7 +646,7 @@ namespace System.Drawing
         Point = 3,
         World = 0,
     }
-    public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
+    public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
         public Icon(System.Drawing.Icon original, System.Drawing.Size size) { }
         public Icon(System.Drawing.Icon original, int width, int height) { }
@@ -673,7 +671,6 @@ namespace System.Drawing
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
         public void Save(System.IO.Stream outputStream) { }
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(128))]
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public System.Drawing.Bitmap ToBitmap() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -688,7 +685,7 @@ namespace System.Drawing
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, System.Runtime.Serialization.ISerializable
+    public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable
     {
         internal Image() { }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -749,8 +746,6 @@ namespace System.Drawing
         public void SaveAdd(System.Drawing.Imaging.EncoderParameters encoderParams) { }
         public int SelectActiveFrame(System.Drawing.Imaging.FrameDimension dimension, int frameIndex) { throw null; }
         public void SetPropertyItem(System.Drawing.Imaging.PropertyItem propitem) { }
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(128))]
-        void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo si, System.Runtime.Serialization.StreamingContext context) { }
         public delegate bool GetThumbnailImageAbort();
     }
     public sealed partial class ImageAnimator
@@ -2537,9 +2532,6 @@ namespace System.Drawing.Printing
     public partial class InvalidPrinterException : System.SystemException
     {
         public InvalidPrinterException(System.Drawing.Printing.PrinterSettings settings) { }
-        protected InvalidPrinterException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.Demand, SerializationFormatter=true)]
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial class Margins : System.ICloneable
     {

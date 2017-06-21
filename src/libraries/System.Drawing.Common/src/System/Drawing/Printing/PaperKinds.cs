@@ -10,7 +10,6 @@ namespace System.Drawing.Printing
     ///       Specifies the standard paper sizes.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public enum PaperKind
     {
         /// <include file='doc\PaperKinds.uex' path='docs/doc[@for="PaperKind.Custom"]/*' />
