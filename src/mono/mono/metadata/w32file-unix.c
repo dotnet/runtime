@@ -2544,6 +2544,19 @@ gboolean mono_w32file_delete(const gunichar2 *name)
 	retval = _wapi_unlink (filename);
 	
 	if (retval == -1) {
+		/* On linux, calling unlink on an non-existing file in a read-only mount will fail with EROFS.
+		 * The expected behavior is for this function to return FALSE and not trigger an exception.
+		 * To work around this behavior, we stat the file on failure.
+		 *
+		 * This was supposedly fixed on kernel 3.0 [1] but we could reproduce it with Ubuntu 16.04 which has kernel 4.4.
+		 * We can't remove this workaround until the early 2020's when most Android deviced will have a fix.
+		 * [1] https://github.com/torvalds/linux/commit/50338b889dc504c69e0cb316ac92d1b9e51f3c8a
+		 */
+		if (errno == EROFS) {
+			MonoIOStat stat;
+			if (mono_w32file_get_attributes_ex (name, &stat)) //The file exists, so must be due the RO file system
+				errno = EROFS;
+		}
 		_wapi_set_last_path_error_from_errno (NULL, filename);
 	} else {
 		ret = TRUE;
