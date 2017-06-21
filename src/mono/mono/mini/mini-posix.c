@@ -315,7 +315,9 @@ static gint32 profiler_interrupt_signals_received;
 MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 {
 	int old_errno = errno;
-	int hp_save_index;
+
+	InterlockedWrite (&mono_thread_info_current ()->profiler_signal_ack, 1);
+
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	/* See the comment in mono_runtime_shutdown_stat_profiler (). */
@@ -326,21 +328,24 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 
 	InterlockedIncrement (&profiler_signals_received);
 
-	if (mono_thread_info_get_small_id () == -1)
-		return; //an non-attached thread got the signal
-
-	if (!mono_domain_get () || !mono_tls_get_jit_tls ())
-		return; //thread in the process of dettaching
+	// Did a non-attached or detaching thread get the signal?
+	if (mono_thread_info_get_small_id () == -1 ||
+	    !mono_domain_get () ||
+	    !mono_tls_get_jit_tls ()) {
+		errno = old_errno;
+		return;
+	}
 
 	InterlockedIncrement (&profiler_signals_accepted);
 
-	hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
+	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
 	mono_thread_info_set_is_async_context (TRUE);
 	per_thread_profiler_hit (ctx);
 	mono_thread_info_set_is_async_context (FALSE);
 
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
+
 	errno = old_errno;
 
 	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -728,6 +733,14 @@ sampling_thread_func (void *data)
 		FOREACH_THREAD_SAFE (info) {
 			/* info should never be this thread as we're a tools thread. */
 			g_assert (mono_thread_info_get_tid (info) != mono_native_thread_id_get ());
+
+			/*
+			 * Require an ack for the last sampling signal sent to the thread
+			 * so that we don't overflow the signal queue, leading to all sorts
+			 * of problems (e.g. GC STW failing).
+			 */
+			if (profiler_signal != SIGPROF && !InterlockedCompareExchange (&info->profiler_signal_ack, 0, 1))
+				continue;
 
 			mono_threads_pthread_kill (info, profiler_signal);
 			InterlockedIncrement (&profiler_signals_sent);

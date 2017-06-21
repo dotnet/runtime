@@ -479,7 +479,41 @@ typedef struct {
 
 	// Has this thread written a thread end event to `buffer`?
 	gboolean ended;
+
+	// Stored in `buffer_lock_state` to take the exclusive lock.
+	int small_id;
 } MonoProfilerThread;
+
+// Do not use these TLS macros directly unless you know what you're doing.
+
+#ifdef HOST_WIN32
+
+#define PROF_TLS_SET(VAL) (TlsSetValue (profiler_tls, (VAL)))
+#define PROF_TLS_GET() ((MonoProfilerThread *) TlsGetValue (profiler_tls))
+#define PROF_TLS_INIT() (profiler_tls = TlsAlloc ())
+#define PROF_TLS_FREE() (TlsFree (profiler_tls))
+
+static DWORD profiler_tls;
+
+#elif HAVE_KW_THREAD
+
+#define PROF_TLS_SET(VAL) (profiler_tls = (VAL))
+#define PROF_TLS_GET() (profiler_tls)
+#define PROF_TLS_INIT()
+#define PROF_TLS_FREE()
+
+static __thread MonoProfilerThread *profiler_tls;
+
+#else
+
+#define PROF_TLS_SET(VAL) (pthread_setspecific (profiler_tls, (VAL)))
+#define PROF_TLS_GET() ((MonoProfilerThread *) pthread_getspecific (profiler_tls))
+#define PROF_TLS_INIT() (pthread_key_create (&profiler_tls, NULL))
+#define PROF_TLS_FREE() (pthread_key_delete (profiler_tls))
+
+static pthread_key_t profiler_tls;
+
+#endif
 
 static uintptr_t
 thread_id (void)
@@ -558,17 +592,22 @@ init_time (void)
 }
 
 /*
- * These macros should be used when writing an event to a log buffer. They take
- * care of a bunch of stuff that can be repetitive and error-prone, such as
- * acquiring/releasing the buffer lock, incrementing the event counter,
- * expanding the log buffer, processing requests, etc. They also create a scope
- * so that it's harder to leak the LogBuffer pointer, which can be problematic
- * as the pointer is unstable when the buffer lock isn't acquired.
+ * These macros should be used when writing an event to a log buffer. They
+ * take care of a bunch of stuff that can be repetitive and error-prone, such
+ * as attaching the current thread, acquiring/releasing the buffer lock,
+ * incrementing the event counter, expanding the log buffer, etc. They also
+ * create a scope so that it's harder to leak the LogBuffer pointer, which can
+ * be problematic as the pointer is unstable when the buffer lock isn't
+ * acquired.
+ *
+ * If the calling thread is already attached, these macros will not alter its
+ * attach mode (i.e. whether it's added to the LLS). If the thread is not
+ * attached, init_thread () will be called with add_to_lls = TRUE.
  */
 
 #define ENTER_LOG(COUNTER, BUFFER, SIZE) \
 	do { \
-		MonoProfilerThread *thread__ = PROF_TLS_GET (); \
+		MonoProfilerThread *thread__ = get_thread (); \
 		if (thread__->attached) \
 			buffer_lock (); \
 		g_assert (!thread__->busy && "Why are we trying to write a new event while already writing one?"); \
@@ -590,90 +629,14 @@ init_time (void)
 
 #define EXIT_LOG EXIT_LOG_EXPLICIT (DO_SEND)
 
-static volatile gint32 buffer_rwlock_count;
-static volatile gpointer buffer_rwlock_exclusive;
-
-// Can be used recursively.
-static void
-buffer_lock (void)
-{
-	/*
-	 * If the thread holding the exclusive lock tries to modify the
-	 * reader count, just make it a no-op. This way, we also avoid
-	 * invoking the GC safe point macros below, which could break if
-	 * done from a thread that is currently the initiator of STW.
-	 *
-	 * In other words, we rely on the fact that the GC thread takes
-	 * the exclusive lock in the gc_event () callback when the world
-	 * is about to stop.
-	 */
-	if (InterlockedReadPointer (&buffer_rwlock_exclusive) != (gpointer) thread_id ()) {
-		MONO_ENTER_GC_SAFE;
-
-		while (InterlockedReadPointer (&buffer_rwlock_exclusive))
-			mono_thread_info_yield ();
-
-		InterlockedIncrement (&buffer_rwlock_count);
-
-		MONO_EXIT_GC_SAFE;
-	}
-
-	mono_memory_barrier ();
-}
-
-static void
-buffer_unlock (void)
-{
-	mono_memory_barrier ();
-
-	// See the comment in buffer_lock ().
-	if (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id ())
-		return;
-
-	g_assert (InterlockedRead (&buffer_rwlock_count) && "Why are we trying to decrement a zero reader count?");
-
-	InterlockedDecrement (&buffer_rwlock_count);
-}
-
-// Cannot be used recursively.
-static void
-buffer_lock_excl (void)
-{
-	gpointer tid = (gpointer) thread_id ();
-
-	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) != tid && "Why are we taking the exclusive lock twice?");
-
-	MONO_ENTER_GC_SAFE;
-
-	while (InterlockedCompareExchangePointer (&buffer_rwlock_exclusive, tid, 0))
-		mono_thread_info_yield ();
-
-	while (InterlockedRead (&buffer_rwlock_count))
-		mono_thread_info_yield ();
-
-	MONO_EXIT_GC_SAFE;
-
-	mono_memory_barrier ();
-}
-
-static void
-buffer_unlock_excl (void)
-{
-	mono_memory_barrier ();
-
-	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) && "Why is the exclusive lock not held?");
-	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why does another thread hold the exclusive lock?");
-	g_assert (!InterlockedRead (&buffer_rwlock_count) && "Why are there readers when the exclusive lock is held?");
-
-	InterlockedWritePointer (&buffer_rwlock_exclusive, NULL);
-}
-
 typedef struct _BinaryObject BinaryObject;
 struct _BinaryObject {
 	BinaryObject *next;
 	void *addr;
 	char *name;
 };
+
+static MonoProfiler *log_profiler;
 
 struct _MonoProfiler {
 	FILE* file;
@@ -720,35 +683,6 @@ typedef struct {
 	uint64_t time;
 } MethodInfo;
 
-#ifdef HOST_WIN32
-
-#define PROF_TLS_SET(VAL) (TlsSetValue (profiler_tls, (VAL)))
-#define PROF_TLS_GET() ((MonoProfilerThread *) TlsGetValue (profiler_tls))
-#define PROF_TLS_INIT() (profiler_tls = TlsAlloc ())
-#define PROF_TLS_FREE() (TlsFree (profiler_tls))
-
-static DWORD profiler_tls;
-
-#elif HAVE_KW_THREAD
-
-#define PROF_TLS_SET(VAL) (profiler_tls = (VAL))
-#define PROF_TLS_GET() (profiler_tls)
-#define PROF_TLS_INIT()
-#define PROF_TLS_FREE()
-
-static __thread MonoProfilerThread *profiler_tls;
-
-#else
-
-#define PROF_TLS_SET(VAL) (pthread_setspecific (profiler_tls, (VAL)))
-#define PROF_TLS_GET() ((MonoProfilerThread *) pthread_getspecific (profiler_tls))
-#define PROF_TLS_INIT() (pthread_key_create (&profiler_tls, NULL))
-#define PROF_TLS_FREE() (pthread_key_delete (profiler_tls))
-
-static pthread_key_t profiler_tls;
-
-#endif
-
 static char*
 pstrdup (const char *s)
 {
@@ -771,9 +705,9 @@ free_buffer (void *buf, int size)
 }
 
 static LogBuffer*
-create_buffer (uintptr_t tid)
+create_buffer (uintptr_t tid, int bytes)
 {
-	LogBuffer* buf = (LogBuffer *) alloc_buffer (BUFFER_SIZE);
+	LogBuffer* buf = (LogBuffer *) alloc_buffer (MAX (BUFFER_SIZE, bytes));
 
 	InterlockedIncrement (&buffer_allocations_ctr);
 
@@ -796,7 +730,7 @@ create_buffer (uintptr_t tid)
 static void
 init_buffer_state (MonoProfilerThread *thread)
 {
-	thread->buffer = create_buffer (thread->node.key);
+	thread->buffer = create_buffer (thread->node.key, 0);
 	thread->methods = NULL;
 }
 
@@ -837,6 +771,8 @@ init_thread (MonoProfiler *prof, gboolean add_to_lls)
 
 	init_buffer_state (thread);
 
+	thread->small_id = mono_thread_info_register_small_id ();
+
 	/*
 	 * Some internal profiler threads don't need to be cleaned up
 	 * by the main thread on shutdown.
@@ -862,20 +798,153 @@ deinit_thread (MonoProfilerThread *thread)
 	PROF_TLS_SET (NULL);
 }
 
+static MonoProfilerThread *
+get_thread (void)
+{
+	return init_thread (log_profiler, TRUE);
+}
+
 // Only valid if init_thread () was called with add_to_lls = FALSE.
 static LogBuffer *
 ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
 {
 	LogBuffer *old = thread->buffer;
 
-	if (old && old->cursor + bytes + 100 < old->buf_end)
+	if (old->cursor + bytes < old->buf_end)
 		return old;
 
-	LogBuffer *new_ = create_buffer (thread->node.key);
+	LogBuffer *new_ = create_buffer (thread->node.key, bytes);
 	new_->next = old;
 	thread->buffer = new_;
 
 	return new_;
+}
+
+/*
+ * This is a reader/writer spin lock of sorts used to protect log buffers.
+ * When a thread modifies its own log buffer, it increments the reader
+ * count. When a thread wants to access log buffers of other threads, it
+ * takes the exclusive lock.
+ *
+ * `buffer_lock_state` holds the reader count in its lower 16 bits, and
+ * the small ID of the thread currently holding the exclusive (writer)
+ * lock in its upper 16 bits. Both can be zero. It's important that the
+ * whole lock state is a single word that can be read/written atomically
+ * to avoid race conditions where there could end up being readers while
+ * the writer lock is held.
+ *
+ * The lock is writer-biased. When a thread wants to take the exclusive
+ * lock, it increments `buffer_lock_exclusive_intent` which will make new
+ * readers spin until it's back to zero, then takes the exclusive lock
+ * once the reader count has reached zero. After releasing the exclusive
+ * lock, it decrements `buffer_lock_exclusive_intent`, which, when it
+ * reaches zero again, allows readers to increment the reader count.
+ *
+ * The writer bias is necessary because we take the exclusive lock in
+ * `gc_event ()` during STW. If the writer bias was not there, and a
+ * program had a large number of threads, STW-induced pauses could be
+ * significantly longer than they have to be. Also, we emit periodic
+ * sync points from the helper thread, which requires taking the
+ * exclusive lock, and we need those to arrive with a reasonably
+ * consistent frequency so that readers don't have to queue up too many
+ * events between sync points.
+ */
+static volatile gint32 buffer_lock_state;
+static volatile gint32 buffer_lock_exclusive_intent;
+
+// Can be used recursively.
+static void
+buffer_lock (void)
+{
+	/*
+	 * If the thread holding the exclusive lock tries to modify the
+	 * reader count, just make it a no-op. This way, we also avoid
+	 * invoking the GC safe point macros below, which could break if
+	 * done from a thread that is currently the initiator of STW.
+	 *
+	 * In other words, we rely on the fact that the GC thread takes
+	 * the exclusive lock in the gc_event () callback when the world
+	 * is about to stop.
+	 */
+	if (InterlockedRead (&buffer_lock_state) != get_thread ()->small_id << 16) {
+		MONO_ENTER_GC_SAFE;
+
+		gint32 old, new_;
+
+		do {
+		restart:
+			// Hold off if a thread wants to take the exclusive lock.
+			while (InterlockedRead (&buffer_lock_exclusive_intent))
+				mono_thread_info_yield ();
+
+			old = InterlockedRead (&buffer_lock_state);
+
+			// Is a thread holding the exclusive lock?
+			if (old >> 16) {
+				mono_thread_info_yield ();
+				goto restart;
+			}
+
+			new_ = old + 1;
+		} while (InterlockedCompareExchange (&buffer_lock_state, new_, old) != old);
+
+		MONO_EXIT_GC_SAFE;
+	}
+
+	mono_memory_barrier ();
+}
+
+static void
+buffer_unlock (void)
+{
+	mono_memory_barrier ();
+
+	gint32 state = InterlockedRead (&buffer_lock_state);
+
+	// See the comment in buffer_lock ().
+	if (state == PROF_TLS_GET ()->small_id << 16)
+		return;
+
+	g_assert (state && "Why are we decrementing a zero reader count?");
+	g_assert (!(state >> 16) && "Why is the exclusive lock held?");
+
+	InterlockedDecrement (&buffer_lock_state);
+}
+
+// Cannot be used recursively.
+static void
+buffer_lock_excl (void)
+{
+	gint32 new_ = get_thread ()->small_id << 16;
+
+	g_assert (InterlockedRead (&buffer_lock_state) != new_ && "Why are we taking the exclusive lock twice?");
+
+	InterlockedIncrement (&buffer_lock_exclusive_intent);
+
+	MONO_ENTER_GC_SAFE;
+
+	while (InterlockedCompareExchange (&buffer_lock_state, new_, 0))
+		mono_thread_info_yield ();
+
+	MONO_EXIT_GC_SAFE;
+
+	mono_memory_barrier ();
+}
+
+static void
+buffer_unlock_excl (void)
+{
+	mono_memory_barrier ();
+
+	gint32 state = InterlockedRead (&buffer_lock_state);
+	gint32 excl = state >> 16;
+
+	g_assert (excl && "Why is the exclusive lock not held?");
+	g_assert (excl == PROF_TLS_GET ()->small_id && "Why does another thread hold the exclusive lock?");
+	g_assert (!(state & 0xFFFF) && "Why are there readers when the exclusive lock is held?");
+
+	InterlockedWrite (&buffer_lock_state, 0);
+	InterlockedDecrement (&buffer_lock_exclusive_intent);
 }
 
 static void
@@ -1014,7 +1083,7 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 static void
 register_method_local (MonoMethod *method, MonoJitInfo *ji)
 {
-	MonoProfilerThread *thread = PROF_TLS_GET ();
+	MonoProfilerThread *thread = get_thread ();
 
 	if (!mono_conc_hashtable_lookup (thread->profiler->method_table, method)) {
 		MethodInfo *info = (MethodInfo *) g_malloc (sizeof (MethodInfo));
@@ -1023,8 +1092,12 @@ register_method_local (MonoMethod *method, MonoJitInfo *ji)
 		info->ji = ji;
 		info->time = current_time ();
 
+		buffer_lock ();
+
 		GPtrArray *arr = thread->methods ? thread->methods : (thread->methods = g_ptr_array_new ());
 		g_ptr_array_add (arr, info);
+
+		buffer_unlock ();
 	}
 }
 
@@ -1294,7 +1367,7 @@ send_log_unsafe (gboolean if_needed)
 static void
 sync_point_flush (void)
 {
-	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
+	g_assert (InterlockedRead (&buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
 		g_assert (thread->attached && "Why is a thread in the LLS not attached?");
@@ -1308,7 +1381,7 @@ sync_point_flush (void)
 static void
 sync_point_mark (MonoProfilerSyncPointType type)
 {
-	g_assert (InterlockedReadPointer (&buffer_rwlock_exclusive) == (gpointer) thread_id () && "Why don't we hold the exclusive lock?");
+	g_assert (InterlockedRead (&buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -1586,24 +1659,18 @@ collect_bt (FrameData *data)
 static void
 emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 {
-	/* FIXME: this is actually tons of data and we should
-	 * just output it the first time and use an id the next
-	 */
 	if (data->count > num_frames)
 		printf ("bad num frames: %d\n", data->count);
+
 	emit_value (logbuffer, data->count);
-	//if (*p != data.count) {
-	//	printf ("bad num frames enc at %d: %d -> %d\n", count, data.count, *p); printf ("frames end: %p->%p\n", p, logbuffer->cursor); exit(0);}
-	while (data->count) {
+
+	while (data->count)
 		emit_method (logbuffer, data->methods [--data->count]);
-	}
 }
 
 static void
 gc_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
 {
-	init_thread (prof, TRUE);
-
 	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_ALLOC_BT : 0;
 	FrameData data;
 	uintptr_t len = mono_object_get_size (obj);
@@ -1980,7 +2047,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 {
 	process_method_enter_coverage (prof, method);
 
-	if (!only_coverage && PROF_TLS_GET ()->call_depth++ <= max_call_depth) {
+	if (!only_coverage && get_thread ()->call_depth++ <= max_call_depth) {
 		ENTER_LOG (&method_entries_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -1996,7 +2063,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (!only_coverage && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
+	if (!only_coverage && --get_thread ()->call_depth <= max_call_depth) {
 		ENTER_LOG (&method_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2012,7 +2079,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (!only_coverage && !nocalls && --PROF_TLS_GET ()->call_depth <= max_call_depth) {
+	if (!only_coverage && !nocalls && --get_thread ()->call_depth <= max_call_depth) {
 		ENTER_LOG (&method_exception_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2153,8 +2220,6 @@ monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEv
 static void
 thread_start (MonoProfiler *prof, uintptr_t tid)
 {
-	init_thread (prof, TRUE);
-
 	if (ENABLED (PROFLOG_THREAD_EVENTS)) {
 		ENTER_LOG (&thread_starts_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
@@ -2187,7 +2252,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 		EXIT_LOG_EXPLICIT (NO_SEND);
 	}
 
-	MonoProfilerThread *thread = PROF_TLS_GET ();
+	MonoProfilerThread *thread = get_thread ();
 
 	thread->ended = TRUE;
 	remove_thread (thread);
@@ -3901,8 +3966,10 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	mono_thread_hazardous_try_free_all ();
 
-	g_assert (!InterlockedRead (&buffer_rwlock_count) && "Why is the reader count still non-zero?");
-	g_assert (!InterlockedReadPointer (&buffer_rwlock_exclusive) && "Why does someone still hold the exclusive lock?");
+	gint32 state = InterlockedRead (&buffer_lock_state);
+
+	g_assert (!(state & 0xFFFF) && "Why is the reader count still non-zero?");
+	g_assert (!(state >> 16) && "Why is the exclusive lock still held?");
 
 #if defined (HAVE_SYS_ZLIB)
 	if (prof->gzfile)
@@ -4255,8 +4322,10 @@ handle_writer_queue_entry (MonoProfiler *prof)
 		g_ptr_array_free (entry->methods, TRUE);
 
 		if (wrote_methods) {
-			dump_buffer_threadless (prof, PROF_TLS_GET ()->buffer);
-			init_buffer_state (PROF_TLS_GET ());
+			MonoProfilerThread *thread = PROF_TLS_GET ();
+
+			dump_buffer_threadless (prof, thread->buffer);
+			init_buffer_state (thread);
 		}
 
 	no_methods:
@@ -4392,7 +4461,13 @@ dumper_thread (void *arg)
 	MonoProfilerThread *thread = init_thread (prof, FALSE);
 
 	while (InterlockedRead (&prof->run_dumper_thread)) {
-		mono_os_sem_wait (&prof->dumper_queue_sem, MONO_SEM_FLAGS_NONE);
+		/*
+		 * Flush samples every second so it doesn't seem like the profiler is
+		 * not working if the program is mostly idle.
+		 */
+		if (mono_os_sem_timedwait (&prof->dumper_queue_sem, 1000, MONO_SEM_FLAGS_NONE) == MONO_SEM_TIMEDWAIT_RET_TIMEDOUT)
+			send_log_unsafe (FALSE);
+
 		handle_dumper_queue_entry (prof);
 	}
 
@@ -4493,16 +4568,16 @@ runtime_initialized (MonoProfiler *profiler)
 	start_dumper_thread (profiler);
 }
 
-static MonoProfiler*
+static void
 create_profiler (const char *args, const char *filename, GPtrArray *filters)
 {
-	MonoProfiler *prof;
 	char *nf;
 	int force_delete = 0;
-	prof = (MonoProfiler *) g_calloc (1, sizeof (MonoProfiler));
 
-	prof->args = pstrdup (args);
-	prof->command_port = command_port;
+	log_profiler = (MonoProfiler *) g_calloc (1, sizeof (MonoProfiler));
+	log_profiler->args = pstrdup (args);
+	log_profiler->command_port = command_port;
+
 	if (filename && *filename == '-') {
 		force_delete = 1;
 		filename++;
@@ -4531,24 +4606,24 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		}
 	}
 	if (*nf == '|') {
-		prof->file = popen (nf + 1, "w");
-		prof->pipe_output = 1;
+		log_profiler->file = popen (nf + 1, "w");
+		log_profiler->pipe_output = 1;
 	} else if (*nf == '#') {
 		int fd = strtol (nf + 1, NULL, 10);
-		prof->file = fdopen (fd, "a");
+		log_profiler->file = fdopen (fd, "a");
 	} else {
 		if (force_delete)
 			unlink (nf);
-		prof->file = fopen (nf, "wb");
+		log_profiler->file = fopen (nf, "wb");
 	}
-	if (!prof->file) {
+	if (!log_profiler->file) {
 		fprintf (stderr, "Cannot create profiler output: %s\n", nf);
 		exit (1);
 	}
 
 #if defined (HAVE_SYS_ZLIB)
 	if (use_zip)
-		prof->gzfile = gzdopen (fileno (prof->file), "wb");
+		log_profiler->gzfile = gzdopen (fileno (log_profiler->file), "wb");
 #endif
 
 	/*
@@ -4558,32 +4633,31 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	g_assert (SAMPLE_SLOT_SIZE (MAX_FRAMES) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (SAMPLE_BLOCK_SIZE));
 
 	// FIXME: We should free this stuff too.
-	mono_lock_free_allocator_init_size_class (&prof->sample_size_class, SAMPLE_SLOT_SIZE (num_frames), SAMPLE_BLOCK_SIZE);
-	mono_lock_free_allocator_init_allocator (&prof->sample_allocator, &prof->sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
+	mono_lock_free_allocator_init_size_class (&log_profiler->sample_size_class, SAMPLE_SLOT_SIZE (num_frames), SAMPLE_BLOCK_SIZE);
+	mono_lock_free_allocator_init_allocator (&log_profiler->sample_allocator, &log_profiler->sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
-	mono_lock_free_queue_init (&prof->sample_reuse_queue);
+	mono_lock_free_queue_init (&log_profiler->sample_reuse_queue);
 
 	g_assert (sizeof (WriterQueueEntry) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (WRITER_ENTRY_BLOCK_SIZE));
 
 	// FIXME: We should free this stuff too.
-	mono_lock_free_allocator_init_size_class (&prof->writer_entry_size_class, sizeof (WriterQueueEntry), WRITER_ENTRY_BLOCK_SIZE);
-	mono_lock_free_allocator_init_allocator (&prof->writer_entry_allocator, &prof->writer_entry_size_class, MONO_MEM_ACCOUNT_PROFILER);
+	mono_lock_free_allocator_init_size_class (&log_profiler->writer_entry_size_class, sizeof (WriterQueueEntry), WRITER_ENTRY_BLOCK_SIZE);
+	mono_lock_free_allocator_init_allocator (&log_profiler->writer_entry_allocator, &log_profiler->writer_entry_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
-	mono_lock_free_queue_init (&prof->writer_queue);
-	mono_os_sem_init (&prof->writer_queue_sem, 0);
+	mono_lock_free_queue_init (&log_profiler->writer_queue);
+	mono_os_sem_init (&log_profiler->writer_queue_sem, 0);
 
-	mono_lock_free_queue_init (&prof->dumper_queue);
-	mono_os_sem_init (&prof->dumper_queue_sem, 0);
+	mono_lock_free_queue_init (&log_profiler->dumper_queue);
+	mono_os_sem_init (&log_profiler->dumper_queue_sem, 0);
 
-	mono_os_mutex_init (&prof->method_table_mutex);
-	prof->method_table = mono_conc_hashtable_new (NULL, NULL);
+	mono_os_mutex_init (&log_profiler->method_table_mutex);
+	log_profiler->method_table = mono_conc_hashtable_new (NULL, NULL);
 
 	if (do_coverage)
-		coverage_init (prof);
-	prof->coverage_filters = filters;
+		coverage_init (log_profiler);
+	log_profiler->coverage_filters = filters;
 
-	prof->startup_time = current_time ();
-	return prof;
+	log_profiler->startup_time = current_time ();
 }
 
 /*
@@ -4610,7 +4684,6 @@ void
 mono_profiler_startup (const char *desc)
 {
 	GPtrArray *filters = NULL;
-	MonoProfiler *prof;
 
 	proflog_parse_args (&config, desc [3] == ':' ? desc + 4 : "");
 
@@ -4647,21 +4720,15 @@ mono_profiler_startup (const char *desc)
 
 	PROF_TLS_INIT ();
 
-	prof = create_profiler (desc, config.output_filename, filters);
-	if (!prof) {
-		PROF_TLS_FREE ();
-		return;
-	}
+	create_profiler (desc, config.output_filename, filters);
 
 	mono_lls_init (&profiler_thread_list, NULL);
-
-	init_thread (prof, TRUE);
 
 	//This two events are required for the profiler to work
 	int events = MONO_PROFILE_THREADS | MONO_PROFILE_GC;
 
 	//Required callbacks
-	mono_profiler_install (prof, log_shutdown);
+	mono_profiler_install (log_profiler, log_shutdown);
 	mono_profiler_install_runtime_initialized (runtime_initialized);
 
 	mono_profiler_install_gc (gc_event, gc_resize);

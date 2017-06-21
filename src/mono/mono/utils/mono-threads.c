@@ -66,7 +66,7 @@ static MonoThreadInfoCallbacks threads_callbacks;
 static MonoThreadInfoRuntimeCallbacks runtime_callbacks;
 static MonoNativeTlsKey thread_info_key, thread_exited_key;
 #ifdef HAVE_KW_THREAD
-static __thread guint32 tls_small_id;
+static __thread gint32 tls_small_id = -1;
 #else
 static MonoNativeTlsKey small_id_key;
 #endif
@@ -330,10 +330,23 @@ free_thread_info (gpointer mem)
 	g_free (info);
 }
 
+/*
+ * mono_thread_info_register_small_id
+ *
+ * Registers a small ID for the current thread. This is a 16-bit value uniquely
+ * identifying the current thread. If the current thread already has a small ID
+ * assigned, that small ID will be returned; otherwise, the newly assigned small
+ * ID is returned.
+ */
 int
 mono_thread_info_register_small_id (void)
 {
-	int small_id = mono_thread_small_id_alloc ();
+	int small_id = mono_thread_info_get_small_id ();
+
+	if (small_id != -1)
+		return small_id;
+
+	small_id = mono_thread_small_id_alloc ();
 #ifdef HAVE_KW_THREAD
 	tls_small_id = small_id;
 #else
@@ -381,6 +394,8 @@ register_thread (MonoThreadInfo *info)
 	info->stackdata = g_byte_array_new ();
 
 	info->internal_thread_gchandle = G_MAXUINT32;
+
+	info->profiler_signal_ack = 1;
 
 	mono_threads_suspend_register (info);
 
@@ -553,6 +568,16 @@ mono_thread_info_current (void)
 	return info;
 }
 
+/*
+ * mono_thread_info_get_small_id
+ *
+ * Retrieve the small ID for the current thread. This is a 16-bit value uniquely
+ * identifying the current thread. Returns -1 if the current thread doesn't have
+ * a small ID assigned.
+ *
+ * To ensure that the calling thread has a small ID assigned, call either
+ * mono_thread_info_attach or mono_thread_info_register_small_id.
+ */
 int
 mono_thread_info_get_small_id (void)
 {

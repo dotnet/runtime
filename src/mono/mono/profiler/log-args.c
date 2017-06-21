@@ -141,8 +141,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 			if (!strcmp (arg, event_list [i].event_name)) {
 				config->enable_mask |= event_list [i].mask;
 				break;
-			} else if (arg [0] == 'n' && arg [1] == 'o' && !strcmp (arg + 2, event_list [i].event_name)) {
+			} else if (!strncmp (arg, "no", 2) && !strcmp (arg + 2, event_list [i].event_name)) {
 				config->disable_mask |= event_list [i].mask;
+				break;
 			}
 		}
 		if (i == G_N_ELEMENTS (event_list)) {

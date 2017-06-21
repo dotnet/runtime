@@ -142,19 +142,28 @@ int
 mono_threads_pthread_kill (MonoThreadInfo *info, int signum)
 {
 	THREADS_SUSPEND_DEBUG ("sending signal %d to %p[%p]\n", signum, info, mono_thread_info_get_tid (info));
+
+	int result;
+
 #ifdef USE_TKILL_ON_ANDROID
-	int result, old_errno = errno;
+	int old_errno = errno;
+
 	result = tkill (info->native_handle, signum);
+
 	if (result < 0) {
 		result = errno;
 		errno = old_errno;
 	}
-	return result;
-#elif !defined(HAVE_PTHREAD_KILL)
-	g_error ("pthread_kill() is not supported by this platform");
+#elif defined (HAVE_PTHREAD_KILL)
+	result = pthread_kill (mono_thread_info_get_tid (info), signum);
 #else
-	return pthread_kill (mono_thread_info_get_tid (info), signum);
+	g_error ("pthread_kill () is not supported by this platform");
 #endif
+
+	if (result && result != ESRCH)
+		g_error ("%s: pthread_kill failed with error %d - potential kernel OOM or signal queue overflow", __func__, result);
+
+	return result;
 }
 
 MonoNativeThreadId
