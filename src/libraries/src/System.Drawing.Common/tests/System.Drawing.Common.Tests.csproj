@@ -26,6 +26,7 @@
     <Compile Include="RegionTests.cs" />
     <Compile Include="StringFormatTests.cs" />
     <Compile Include="SystemBrushesTests.cs" />
+    <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
