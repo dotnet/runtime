@@ -4770,7 +4770,7 @@ void LinearScan::buildIntervals()
         for (GenTree* node : blockRange.NonPhiNodes())
         {
             assert(node->gtLsraInfo.loc >= currentLoc);
-            assert(((node->gtLIRFlags & LIR::Flags::IsUnusedValue) == 0) || node->gtLsraInfo.isLocalDefUse);
+            assert(!node->IsValue() || ((node->gtLIRFlags & LIR::Flags::IsUnusedValue) == 0) || node->gtLsraInfo.isLocalDefUse);
 
             currentLoc = node->gtLsraInfo.loc;
             buildRefPositionsForNode(node, block, listNodePool, operandToLocationInfoMap, currentLoc);
