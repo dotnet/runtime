@@ -3947,7 +3947,7 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     DisplayWriteFieldInt( numElementsHot, ctorInfo->numElementsHot,
                           ModuleCtorInfo, SLIM_MODULE_TBLS );
     DisplayWriteFieldAddress( ppMT, DPtrToPreferredAddr(ctorInfo->ppMT),
-                              ctorInfo->numElements * sizeof(MethodTable*),
+                              ctorInfo->numElements * sizeof(RelativePointer<MethodTable*>),
                               ModuleCtorInfo, SLIM_MODULE_TBLS );
     /* REVISIT_TODO Tue 03/21/2006
      * is cctorInfoHot and cctorInfoCold actually have anything interesting
@@ -7259,7 +7259,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
     {
         PTR_InterfaceInfo ifMap = mt->GetInterfaceMap();
         m_display->StartArrayWithOffset( "InterfaceMap",
-                                         offsetof(MethodTable, m_pMultipurposeSlot2),
+                                         offsetof(MethodTable, m_pInterfaceMap),
                                          sizeof(void*),
                                          NULL );
         for( unsigned i = 0; i < mt->GetNumInterfaces(); ++i )
@@ -7293,7 +7293,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                              DPtrToPreferredAddr(genStatics),
                                              sizeof(*genStatics) );
 
-        PTR_FieldDesc fieldDescs = genStatics->m_pFieldDescs;
+        PTR_FieldDesc fieldDescs = ReadPointerMaybeNull((GenericsStaticsInfo *) genStatics, &GenericsStaticsInfo::m_pFieldDescs);
         if( fieldDescs == NULL )
         {
             DisplayWriteFieldPointer( m_pFieldDescs, NULL, GenericsStaticsInfo,
