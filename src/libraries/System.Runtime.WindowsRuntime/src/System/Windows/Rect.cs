@@ -86,22 +86,6 @@ namespace Windows.Foundation
             }
         }
 
-        internal static Rect Create(double x,
-                                    double y,
-                                    double width,
-                                    double height)
-        {
-            if (x == EmptyX && y == EmptyY && width == EmptyWidth && height == EmptyHeight)
-            {
-                return Rect.Empty;
-            }
-            else
-            {
-                return new Rect(x, y, width, height);
-            }
-        }
-
-
         public double X
         {
             get { return _x; }
