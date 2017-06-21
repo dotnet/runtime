@@ -23,24 +23,26 @@ inline PTR_EEClass MethodTable::GetClass_NoLogging()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
+
 #ifdef _DEBUG 
-    LowBits lowBits = union_getLowBits(m_pCanonMT);
+    LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
-        return PTR_EEClass(m_pCanonMT);
+        return PTR_EEClass(addr);
     }
     else if (lowBits == UNION_METHODTABLE)
     {
         // pointer to canonical MethodTable.
-        TADDR canonicalMethodTable = union_getPointer(m_pCanonMT);
-        return PTR_EEClass(PTR_MethodTable(canonicalMethodTable)->m_pCanonMT);
+        TADDR canonicalMethodTable = union_getPointer(addr);
+        return PTR_EEClass(ReadPointer((MethodTable *) PTR_MethodTable(canonicalMethodTable), &MethodTable::m_pCanonMT));
     }
 #ifdef FEATURE_PREJIT
     else if (lowBits == UNION_INDIRECTION)
     {
         // pointer to indirection cell that points to canonical MethodTable
-        TADDR canonicalMethodTable = *PTR_TADDR(union_getPointer(m_pCanonMT));
-        return PTR_EEClass(PTR_MethodTable(canonicalMethodTable)->m_pCanonMT);
+        TADDR canonicalMethodTable = *PTR_TADDR(union_getPointer(addr));
+        return PTR_EEClass(ReadPointer((MethodTable *) PTR_MethodTable(canonicalMethodTable), &MethodTable::m_pCanonMT));
     }
 #endif
 #ifdef DACCESS_COMPILE
@@ -51,8 +53,6 @@ inline PTR_EEClass MethodTable::GetClass_NoLogging()
     return NULL;
 
 #else
-
-    TADDR addr = m_pCanonMT;
 
     if ((addr & 2) == 0)
     {
@@ -65,12 +65,12 @@ inline PTR_EEClass MethodTable::GetClass_NoLogging()
     {
         // pointer to indirection cell that points to canonical MethodTable
         TADDR canonicalMethodTable = *PTR_TADDR(addr - 3);
-        return PTR_EEClass(PTR_MethodTable(canonicalMethodTable)->m_pCanonMT);
+        return PTR_EEClass(ReadPointer((MethodTable *) PTR_MethodTable(canonicalMethodTable), &MethodTable::m_pCanonMT));
     }
 #endif
 
     // pointer to canonical MethodTable.
-    return PTR_EEClass(PTR_MethodTable(addr - 2)->m_pCanonMT);
+    return PTR_EEClass(ReadPointer((MethodTable *) PTR_MethodTable(addr - 2), &MethodTable::m_pCanonMT));
 #endif
 }
 
@@ -113,25 +113,27 @@ inline BOOL MethodTable::IsClassPointerValid()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    LowBits lowBits = union_getLowBits(m_pCanonMT);
+    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
+
+    LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
-        return (m_pEEClass != NULL);
+        return !m_pEEClass.IsNull();
     }
     else if (lowBits == UNION_METHODTABLE)
     {
         // pointer to canonical MethodTable.
-        TADDR canonicalMethodTable = union_getPointer(m_pCanonMT);
-        return (PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL);
+        TADDR canonicalMethodTable = union_getPointer(addr);
+        return !PTR_MethodTable(canonicalMethodTable)->m_pEEClass.IsNull();
     }
 #ifdef FEATURE_PREJIT
     else if (lowBits == UNION_INDIRECTION)
     {
         // pointer to indirection cell that points to canonical MethodTable
-        TADDR canonicalMethodTable = *PTR_TADDR(union_getPointer(m_pCanonMT));
+        TADDR canonicalMethodTable = *PTR_TADDR(union_getPointer(addr));
         if (CORCOMPILE_IS_POINTER_TAGGED(canonicalMethodTable))
             return FALSE;
-        return (PTR_MethodTable(canonicalMethodTable)->m_pEEClass != NULL);
+        return !PTR_MethodTable(canonicalMethodTable)->m_pEEClass.IsNull();
     }
 #endif
     _ASSERTE(!"Malformed m_pEEClass in MethodTable");
@@ -161,7 +163,7 @@ inline PTR_Module MethodTable::GetZapModule()
     PTR_Module zapModule = NULL;
     if (IsZapped())
     {
-        zapModule = m_pLoaderModule;
+        zapModule = ReadPointer(this, &MethodTable::m_pLoaderModule);
     }
 
     return zapModule;
@@ -171,7 +173,7 @@ inline PTR_Module MethodTable::GetZapModule()
 inline PTR_Module MethodTable::GetLoaderModule() 
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_pLoaderModule;
+    return ReadPointer(this, &MethodTable::m_pLoaderModule);
 }
 
 inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator() 
@@ -187,7 +189,7 @@ inline PTR_LoaderAllocator MethodTable::GetLoaderAllocator()
 inline void MethodTable::SetLoaderModule(Module* pModule) 
 {
     WRAPPER_NO_CONTRACT;
-    m_pLoaderModule = pModule;
+    m_pLoaderModule.SetValue(pModule);
 }
 
 inline void MethodTable::SetLoaderAllocator(LoaderAllocator* pAllocator) 
@@ -1145,8 +1147,10 @@ inline PTR_MethodTable MethodTable::GetCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
+    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
+
 #ifdef _DEBUG
-    LowBits lowBits = union_getLowBits(m_pCanonMT);
+    LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_EECLASS)
     {
         return dac_cast<PTR_MethodTable>(this);
@@ -1154,18 +1158,17 @@ inline PTR_MethodTable MethodTable::GetCanonicalMethodTable()
     else if (lowBits == UNION_METHODTABLE)
     {
         // pointer to canonical MethodTable.
-        return PTR_MethodTable(union_getPointer(m_pCanonMT));
+        return PTR_MethodTable(union_getPointer(addr));
     }
 #ifdef FEATURE_PREJIT
     else if (lowBits == UNION_INDIRECTION)
     {
-        return PTR_MethodTable(*PTR_TADDR(union_getPointer(m_pCanonMT)));
+        return PTR_MethodTable(*PTR_TADDR(union_getPointer(addr)));
     }
 #endif
     _ASSERTE(!"Malformed m_pCanonMT in MethodTable");
     return NULL;
 #else
-    TADDR addr = m_pCanonMT;
 
     if ((addr & 2) == 0)
         return dac_cast<PTR_MethodTable>(this);
@@ -1185,11 +1188,12 @@ inline TADDR MethodTable::GetCanonicalMethodTableFixup()
     LIMITED_METHOD_DAC_CONTRACT;
 
 #ifdef FEATURE_PREJIT
-    LowBits lowBits = union_getLowBits(m_pCanonMT);
+    TADDR addr = ReadPointer(this, &MethodTable::m_pCanonMT);
+    LowBits lowBits = union_getLowBits(addr);
     if (lowBits == UNION_INDIRECTION)
     {
         // pointer to canonical MethodTable.
-        return *PTR_TADDR(union_getPointer(m_pCanonMT));
+        return *PTR_TADDR(union_getPointer(addr));
     }
     else
 #endif
@@ -1304,7 +1308,7 @@ inline BOOL MethodTable::IsCanonicalMethodTable()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return (union_getLowBits(m_pCanonMT) == UNION_EECLASS);
+    return (union_getLowBits(ReadPointer(this, &MethodTable::m_pCanonMT)) == UNION_EECLASS);
 }
 
 //==========================================================================================
@@ -1338,7 +1342,7 @@ inline PTR_InterfaceInfo MethodTable::GetInterfaceMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return dac_cast<PTR_InterfaceInfo>(m_pMultipurposeSlot2); // m_pInterfaceMap
+    return ReadPointer(this, &MethodTable::m_pInterfaceMap);
 }
 
 //==========================================================================================

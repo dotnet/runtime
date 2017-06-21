@@ -2883,7 +2883,7 @@ BOOL Module::IsPreV4Assembly()
 }
 
 
-ArrayDPTR(FixupPointer<PTR_MethodTable>) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
+ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -8252,6 +8252,8 @@ void Module::SaveTypeHandle(DataImage *  image,
 #endif // _DEBUG
 }
 
+#ifndef DACCESS_COMPILE
+
 void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
 {
     STANDARD_VM_CONTRACT;
@@ -8273,7 +8275,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     // items numElementsHot...i-1 are cold
     for (i = 0; i < numElements; i++)
     {
-        MethodTable *ppMTTemp = ppMT[i];
+        MethodTable *ppMTTemp = ppMT[i].GetValue();
 
         // Count the number of boxed statics along the way
         totalBoxedStatics += ppMTTemp->GetNumBoxedRegularStatics();
@@ -8287,8 +8289,8 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
         if (hot)
         {
             // swap ppMT[i] and ppMT[numElementsHot] to maintain the loop invariant
-            ppMT[i] = ppMT[numElementsHot];
-            ppMT[numElementsHot] = ppMTTemp;
+            ppMT[i].SetValue(ppMT[numElementsHot].GetValue());
+            ppMT[numElementsHot].SetValue(ppMTTemp);
 
             numElementsHot++;
         }
@@ -8313,11 +8315,11 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
 
     for (i = 0; i < numElementsHot; i++)
     {
-        hashArray[i] = GenerateHash(ppMT[i], HOT);
+        hashArray[i] = GenerateHash(ppMT[i].GetValue(), HOT);
     }
     for (i = numElementsHot; i < numElements; i++)
     {
-        hashArray[i] = GenerateHash(ppMT[i], COLD);
+        hashArray[i] = GenerateHash(ppMT[i].GetValue(), COLD);
     }
 
     // Sort the two arrays by hash values to create regions with the same hash values.
@@ -8380,7 +8382,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     // make cctorInfoCold point to the first cold element
     cctorInfoCold   = cctorInfoHot + numElementsHot;
 
-    ppHotGCStaticsMTs   = (totalBoxedStatics != 0) ? new FixupPointer<PTR_MethodTable>[totalBoxedStatics] : NULL;
+    ppHotGCStaticsMTs   = (totalBoxedStatics != 0) ? new RelativeFixupPointer<PTR_MethodTable>[totalBoxedStatics] : NULL;
     numHotGCStaticsMTs  = totalBoxedStatics;
 
     DWORD iGCStaticMT = 0;
@@ -8396,7 +8398,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
             ppColdGCStaticsMTs = ppHotGCStaticsMTs + numHotGCStaticsMTs;
         }
 
-        MethodTable* pMT = ppMT[i];
+        MethodTable* pMT = ppMT[i].GetValue();
         ClassCtorInfoEntry* pEntry = &cctorInfoHot[i];
 
         WORD numBoxedStatics = pMT->GetNumBoxedRegularStatics();
@@ -8426,7 +8428,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
                     == (iGCStaticMT - pEntry->firstBoxedStaticMTIndex) * sizeof(MethodTable*));
 
                 TypeHandle th = pField->GetFieldTypeHandleThrowing();
-                ppHotGCStaticsMTs[iGCStaticMT++].SetValue(th.GetMethodTable());
+                ppHotGCStaticsMTs[iGCStaticMT++].SetValueMaybeNull(th.GetMethodTable());
 
                 numFoundBoxedStatics++;
             }
@@ -8449,7 +8451,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
 
     if (numElements > 0)
         image->StoreStructure(ppMT,
-                                sizeof(MethodTable *) * numElements,
+                                sizeof(RelativePointer<MethodTable *>) * numElements,
                                 DataImage::ITEM_MODULE_CCTOR_INFO_HOT);
 
     if (numElements > numElementsHot)
@@ -8466,7 +8468,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     if ( numHotGCStaticsMTs )
     {
         // Save the mt templates
-        image->StoreStructure( ppHotGCStaticsMTs, numHotGCStaticsMTs * sizeof(MethodTable*),
+        image->StoreStructure( ppHotGCStaticsMTs, numHotGCStaticsMTs * sizeof(RelativeFixupPointer<MethodTable*>),
                                 DataImage::ITEM_GC_STATIC_HANDLES_HOT);
     }
     else
@@ -8477,7 +8479,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     if ( numColdGCStaticsMTs )
     {
         // Save the hot mt templates
-        image->StoreStructure( ppColdGCStaticsMTs, numColdGCStaticsMTs * sizeof(MethodTable*),
+        image->StoreStructure( ppColdGCStaticsMTs, numColdGCStaticsMTs * sizeof(RelativeFixupPointer<MethodTable*>),
                                 DataImage::ITEM_GC_STATIC_HANDLES_COLD);
     }
     else
@@ -8486,6 +8488,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     }
 }
 
+#endif // !DACCESS_COMPILE
 
 bool Module::AreAllClassesFullyLoaded()
 {
@@ -9622,7 +9625,7 @@ void ModuleCtorInfo::Fixup(DataImage *image)
 
         for (DWORD i=0; i<numElements; i++)
         {
-            image->FixupPointerField(ppMT, i * sizeof(ppMT[0]));
+            image->FixupRelativePointerField(ppMT, i * sizeof(ppMT[0]));
         }
     }
     else
@@ -14018,7 +14021,7 @@ ModuleCtorInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // This class is contained so do not enumerate 'this'.
     DacEnumMemoryRegion(dac_cast<TADDR>(ppMT), numElements *
-                        sizeof(TADDR));
+                        sizeof(RelativePointer<MethodTable *>));
     DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoHot), numElementsHot *
                         sizeof(ClassCtorInfoEntry));
     DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoCold),
