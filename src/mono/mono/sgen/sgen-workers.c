@@ -41,7 +41,6 @@ static volatile gboolean workers_finished;
 static int worker_awakenings;
 
 static SgenSectionGrayQueue workers_distribute_gray_queue;
-static gboolean workers_distribute_gray_queue_inited;
 
 /*
  * Allowed transitions:
@@ -352,23 +351,8 @@ marker_idle_func (void *data_untyped)
 static void
 init_distribute_gray_queue (void)
 {
-	if (workers_distribute_gray_queue_inited) {
-		g_assert (sgen_section_gray_queue_is_empty (&workers_distribute_gray_queue));
-		g_assert (workers_distribute_gray_queue.locked);
-		return;
-	}
-
 	sgen_section_gray_queue_init (&workers_distribute_gray_queue, TRUE,
 			sgen_get_major_collector ()->is_concurrent ? concurrent_enqueue_check : NULL);
-	workers_distribute_gray_queue_inited = TRUE;
-}
-
-void
-sgen_workers_init_distribute_gray_queue (void)
-{
-	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent || sgen_get_minor_collector ()->is_parallel,
-			"Why should we init the distribute gray queue if we don't need it?");
-	init_distribute_gray_queue ();
 }
 
 void

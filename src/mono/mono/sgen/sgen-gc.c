@@ -1546,10 +1546,8 @@ workers_finish_callback (void)
 }
 
 static void
-init_gray_queue (SgenGrayQueue *gc_thread_gray_queue, gboolean use_workers)
+init_gray_queue (SgenGrayQueue *gc_thread_gray_queue)
 {
-	if (use_workers)
-		sgen_workers_init_distribute_gray_queue ();
 	sgen_gray_object_queue_init (gc_thread_gray_queue, NULL, TRUE);
 }
 
@@ -1700,7 +1698,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	sgen_memgov_minor_collection_start ();
 
-	init_gray_queue (&gc_thread_gray_queue, is_parallel);
+	init_gray_queue (&gc_thread_gray_queue);
 	ctx = CONTEXT_FROM_OBJECT_OPERATIONS (object_ops_nopar, &gc_thread_gray_queue);
 
 	gc_stats.minor_gc_count ++;
@@ -2286,7 +2284,7 @@ major_do_collection (const char *reason, gboolean is_overflow, gboolean forced)
 	/* world must be stopped already */
 	TV_GETTIME (time_start);
 
-	init_gray_queue (&gc_thread_gray_queue, FALSE);
+	init_gray_queue (&gc_thread_gray_queue);
 	major_start_collection (&gc_thread_gray_queue, reason, FALSE, &old_next_pin_slot);
 	major_finish_collection (&gc_thread_gray_queue, reason, is_overflow, old_next_pin_slot, forced);
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
@@ -2320,7 +2318,7 @@ major_start_concurrent_collection (const char *reason)
 
 	binary_protocol_concurrent_start ();
 
-	init_gray_queue (&gc_thread_gray_queue, TRUE);
+	init_gray_queue (&gc_thread_gray_queue);
 	// FIXME: store reason and pass it when finishing
 	major_start_collection (&gc_thread_gray_queue, reason, TRUE, NULL);
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
@@ -2388,7 +2386,7 @@ major_finish_concurrent_collection (gboolean forced)
 
 	current_collection_generation = GENERATION_OLD;
 	sgen_cement_reset ();
-	init_gray_queue (&gc_thread_gray_queue, FALSE);
+	init_gray_queue (&gc_thread_gray_queue);
 	major_finish_collection (&gc_thread_gray_queue, "finishing", FALSE, -1, forced);
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
 
