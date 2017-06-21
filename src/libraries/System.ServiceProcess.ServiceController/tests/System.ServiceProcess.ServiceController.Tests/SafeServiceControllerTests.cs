@@ -6,6 +6,7 @@ using Xunit;
 
 namespace System.ServiceProcess.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Appx doesn't allow to access ServiceController")]
     public static class SafeServiceControllerTests
     {
         private const string KeyIsoSvcName = "KEYISO";
