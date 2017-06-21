@@ -215,6 +215,30 @@ CreateMutexWExit:
 
 /*++
 Function:
+CreateMutexW
+
+Note:
+lpMutexAttributes currentely ignored:
+-- Win32 object security not supported
+-- handles to mutex objects are not inheritable
+
+Parameters:
+See MSDN doc.
+--*/
+
+HANDLE
+PALAPI
+CreateMutexExW(
+    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
+    IN LPCWSTR lpName,
+    IN DWORD dwFlags,
+    IN DWORD dwDesiredAccess)
+{
+    return CreateMutexW(lpMutexAttributes, (dwFlags & CREATE_MUTEX_INITIAL_OWNER) != 0, lpName);
+}
+
+/*++
+Function:
   InternalCreateMutex
 
 Note:

@@ -1917,7 +1917,7 @@ HANDLE OpenStartupNotificationEvent()
     WCHAR szEventName[cchEventNameBufferSize];
     swprintf_s(szEventName, cchEventNameBufferSize, StartupNotifyEventNamePrefix W("%08x"), debuggeePID);
 
-    return WszOpenEvent(EVENT_ALL_ACCESS, FALSE, szEventName);
+    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, szEventName);
 }
 
 void NotifyDebuggerOfTelestoStartup()

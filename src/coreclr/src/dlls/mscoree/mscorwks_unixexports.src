@@ -29,9 +29,12 @@ CoTaskMemRealloc
 CoTaskMemFree
 CreateDirectoryW
 CreateEventW
+CreateEventExW
 CreateFileW
 CreateMutexW
+CreateMutexExW
 CreateSemaphoreW
+CreateSemaphoreExW
 DeleteFileW
 DuplicateHandle
 FindClose

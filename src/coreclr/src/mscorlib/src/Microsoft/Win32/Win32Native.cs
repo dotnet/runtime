@@ -327,6 +327,7 @@ namespace Microsoft.Win32
         // Win32 ACL-related constants:
         internal const int READ_CONTROL = 0x00020000;
         internal const int SYNCHRONIZE = 0x00100000;
+        internal const int MAXIMUM_ALLOWED = 0x02000000;
 
         internal const int STANDARD_RIGHTS_READ = READ_CONTROL;
         internal const int STANDARD_RIGHTS_WRITE = READ_CONTROL;
@@ -342,8 +343,13 @@ namespace Microsoft.Win32
         internal const int SEMAPHORE_MODIFY_STATE = 0x00000002;
         internal const int EVENT_MODIFY_STATE = 0x00000002;
         internal const int MUTEX_MODIFY_STATE = 0x00000001;
-        internal const int MUTEX_ALL_ACCESS = 0x001F0001;
 
+        // CreateEventEx: flags
+        internal const uint CREATE_EVENT_MANUAL_RESET = 0x1;
+        internal const uint CREATE_EVENT_INITIAL_SET = 0x2;
+
+        // CreateMutexEx: flags
+        internal const uint CREATE_MUTEX_INITIAL_OWNER = 0x1;
 
         internal const int LMEM_FIXED = 0x0000;
         internal const int LMEM_ZEROINIT = 0x0040;
@@ -554,16 +560,16 @@ namespace Microsoft.Win32
         internal static extern bool ResetEvent(SafeWaitHandle handle);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle CreateEvent(SECURITY_ATTRIBUTES lpSecurityAttributes, bool isManualReset, bool initialState, String name);
+        internal static extern SafeWaitHandle CreateEventEx(SECURITY_ATTRIBUTES lpSecurityAttributes, string name, uint flags, uint desiredAccess);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle OpenEvent(/* DWORD */ int desiredAccess, bool inheritHandle, String name);
+        internal static extern SafeWaitHandle OpenEvent(uint desiredAccess, bool inheritHandle, string name);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle CreateMutex(SECURITY_ATTRIBUTES lpSecurityAttributes, bool initialOwner, String name);
+        internal static extern SafeWaitHandle CreateMutexEx(SECURITY_ATTRIBUTES lpSecurityAttributes, string name, uint flags, uint desiredAccess);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle OpenMutex(/* DWORD */ int desiredAccess, bool inheritHandle, String name);
+        internal static extern SafeWaitHandle OpenMutex(uint desiredAccess, bool inheritHandle, string name);
 
         [DllImport(KERNEL32, SetLastError = true)]
         internal static extern bool ReleaseMutex(SafeWaitHandle handle);
@@ -575,14 +581,14 @@ namespace Microsoft.Win32
         internal static unsafe extern int WriteFile(SafeFileHandle handle, byte* bytes, int numBytesToWrite, out int numBytesWritten, IntPtr mustBeZero);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle CreateSemaphore(SECURITY_ATTRIBUTES lpSecurityAttributes, int initialCount, int maximumCount, String name);
+        internal static extern SafeWaitHandle CreateSemaphoreEx(SECURITY_ATTRIBUTES lpSecurityAttributes, int initialCount, int maximumCount, string name, uint flags, uint desiredAccess);
 
         [DllImport(KERNEL32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool ReleaseSemaphore(SafeWaitHandle handle, int releaseCount, out int previousCount);
 
         [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal static extern SafeWaitHandle OpenSemaphore(/* DWORD */ int desiredAccess, bool inheritHandle, String name);
+        internal static extern SafeWaitHandle OpenSemaphore(uint desiredAccess, bool inheritHandle, string name);
 
         // Will be in winnls.h
         internal const int FIND_STARTSWITH = 0x00100000; // see if value is at the beginning of source
