@@ -195,7 +195,10 @@ namespace System.Net.NetworkInformation
             try
             {
                 string path = Path.Combine(NetworkFiles.SysClassNetFolder, name, NetworkFiles.SpeedFileName);
-                return StringParsingHelpers.ParseRawLongFile(path);
+                long megabitsPerSecond = StringParsingHelpers.ParseRawLongFile(path);
+                return megabitsPerSecond == -1
+                    ? megabitsPerSecond
+                    : megabitsPerSecond * 1_000_000; // Value must be returned in bits per second, not megabits.
             }
             catch (Exception) // Ignore any problems accessing or parsing the file.
             {
