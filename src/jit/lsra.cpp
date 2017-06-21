@@ -6823,6 +6823,15 @@ bool LinearScan::canRestorePreviousInterval(RegRecord* regRec, Interval* assigne
     return retVal;
 }
 
+bool LinearScan::isAssignedToInterval(Interval* interval, RegRecord* regRec)
+{
+    bool isAssigned = (interval->assignedReg == regRec);
+#ifdef _TARGET_ARM_
+    isAssigned |= isSecondHalfReg(regRec, interval);
+#endif
+    return isAssigned;
+}
+
 //------------------------------------------------------------------------
 // processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
 //                             registers.
@@ -7005,15 +7014,17 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                 // Is there another interval currently assigned to this register?  If so unassign it.
                 if (assignedInterval != nullptr)
                 {
-                    if (assignedInterval->assignedReg == targetRegRecord)
+                    if (isAssignedToInterval(assignedInterval, targetRegRecord))
                     {
+                        regNumber assignedRegNum = assignedInterval->assignedReg->regNum;
+
                         // If the interval is active, it will be set to active when we reach its new
                         // register assignment (which we must not yet have done, or it wouldn't still be
                         // assigned to this register).
                         assignedInterval->isActive = false;
-                        unassignPhysReg(targetRegRecord, nullptr);
+                        unassignPhysReg(assignedInterval->assignedReg, nullptr);
                         if (allocationPass && assignedInterval->isLocalVar &&
-                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] == targetReg)
+                            inVarToRegMap[assignedInterval->getVarIndex(compiler)] == assignedRegNum)
                         {
                             inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
                         }
@@ -7021,7 +7032,7 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                     else
                     {
                         // This interval is no longer assigned to this register.
-                        targetRegRecord->assignedInterval = nullptr;
+                        updateAssignedInterval(targetRegRecord, nullptr, assignedInterval->registerType);
                     }
                 }
                 assignPhysReg(targetRegRecord, interval);
@@ -8012,11 +8023,8 @@ void LinearScan::allocateRegisters()
 #endif // DEBUG
 }
 
-#ifdef _TARGET_ARM_
 //-----------------------------------------------------------------------------
-// updateAssignedInterval: Update assigned interval of register for ARM32
-// considering register type. When register type is TYP_DOUBLE, update
-// two float registers consisting a double register.
+// updateAssignedInterval: Update assigned interval of register.
 //
 // Arguments:
 //    reg      -    register to be updated
@@ -8027,13 +8035,18 @@ void LinearScan::allocateRegisters()
 //    None
 //
 // Assumptions:
-//    When "regType" is TYP_DOUBLE, "reg" should be a even-numbered float register,
-//    i.e. lower half of double register.
+//    For ARM32, when "regType" is TYP_DOUBLE, "reg" should be a even-numbered
+//    float register, i.e. lower half of double register.
+//
+// Note:
+//    For ARM32, two float registers consisting a double register are updated
+//    together when "regType" is TYP_DOUBLE.
 //
 void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType)
 {
     reg->assignedInterval = interval;
 
+#ifdef _TARGET_ARM_
     // Update overlapping floating point register for TYP_DOUBLE
     if (regType == TYP_DOUBLE)
     {
@@ -8043,8 +8056,8 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
 
         anotherHalfReg->assignedInterval = interval;
     }
-}
 #endif
+}
 
 // LinearScan::resolveLocalRef
 // Description:
@@ -8121,11 +8134,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
         varDsc->lvRegNum = REG_STK;
         if (interval->assignedReg != nullptr && interval->assignedReg->assignedInterval == interval)
         {
-#ifdef _TARGET_ARM_
             updateAssignedInterval(interval->assignedReg, nullptr, interval->registerType);
-#else
-            interval->assignedReg->assignedInterval = nullptr;
-#endif
         }
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
@@ -8153,11 +8162,7 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
             RegRecord* oldRegRecord = getRegisterRecord(oldAssignedReg);
             if (oldRegRecord->assignedInterval == interval)
             {
-#ifdef _TARGET_ARM_
                 updateAssignedInterval(oldRegRecord, nullptr, interval->registerType);
-#else
-                oldRegRecord->assignedInterval      = nullptr;
-#endif
             }
         }
     }
@@ -8312,22 +8317,14 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
         interval->assignedReg = nullptr;
         interval->physReg     = REG_NA;
 
-#ifdef _TARGET_ARM_
         updateAssignedInterval(physRegRecord, nullptr, interval->registerType);
-#else
-        physRegRecord->assignedInterval             = nullptr;
-#endif
     }
     else
     {
         interval->isActive    = true;
         interval->assignedReg = physRegRecord;
 
-#ifdef _TARGET_ARM_
         updateAssignedInterval(physRegRecord, interval, interval->registerType);
-#else
-        physRegRecord->assignedInterval             = interval;
-#endif
     }
 }
 
@@ -10092,7 +10089,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
         }
 #else
-        tempRegFlt                                  = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
 #endif
     }
 
