@@ -12,7 +12,7 @@
         {
           "Name": "DotNet-CoreClr-Trusted-Linux",
           "Parameters": {
-            "DockerTag": "rhel7_prereqs_2",
+            "DockerTag": "rhel-7-dd8aa64-20170320090348",
             "Rid": "linux"
           },
           "ReportingParameters": {
