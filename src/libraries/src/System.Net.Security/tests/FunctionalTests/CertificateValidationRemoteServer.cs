@@ -16,7 +16,6 @@ namespace System.Net.Security.Tests
     public class CertificateValidationRemoteServer
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task CertificateValidationRemoteServer_EndToEnd_Ok()
         {
             using (var client = new TcpClient(AddressFamily.InterNetwork))
