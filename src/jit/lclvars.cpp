@@ -2152,6 +2152,18 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
             JITDUMP("live across unmanaged call\n");
             varDsc->lvLiveAcrossUCall = 1;
             break;
+        case DNER_DepField:
+            JITDUMP("field of a dependently promoted struct\n");
+            assert(varDsc->lvIsStructField && (lvaGetParentPromotionType(varNum) != PROMOTION_TYPE_INDEPENDENT));
+            break;
+        case DNER_NoRegVars:
+            JITDUMP("opts.compFlags & CLFLG_REGVAR is not set\n");
+            assert((opts.compFlags & CLFLG_REGVAR) == 0);
+            break;
+        case DNER_MinOptsGC:
+            JITDUMP("It is a GC Ref and we are compiling MinOpts\n");
+            assert(!JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()));
+            break;
 #ifdef JIT32_GCENCODER
         case DNER_PinningRef:
             JITDUMP("pinning ref\n");
@@ -3281,6 +3293,7 @@ void Compiler::lvaSortByRefCount()
             // untracked when a blockOp is used to assign the struct.
             //
             varDsc->lvTracked = 0; // so, don't mark as tracked
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_DepField));
         }
         else if (varDsc->lvPinned)
         {
@@ -3292,6 +3305,11 @@ void Compiler::lvaSortByRefCount()
         else if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
         {
             varDsc->lvTracked = 0;
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_MinOptsGC));
+        }
+        else if ((opts.compFlags & CLFLG_REGVAR) == 0)
+        {
+            lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_NoRegVars));
         }
 #if defined(JIT32_GCENCODER) && defined(WIN64EXCEPTIONS)
         else if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
