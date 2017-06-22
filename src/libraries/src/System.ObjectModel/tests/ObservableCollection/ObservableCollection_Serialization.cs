@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.Serialization.Formatters.Tests;
 using Xunit;
 
@@ -25,6 +26,18 @@ namespace System.Collections.ObjectModel.Tests
             ObservableCollection<int> clone = BinaryFormatterHelpers.Clone(c);
             Assert.NotSame(c, clone);
             Assert.Equal(c, clone);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public void OnDeserialized_MonitorNotInitialized_ExpectSuccess()
+        {
+            var observableCollection = new ObservableCollection<int>();
+            MethodInfo onDeserializedMethodInfo = observableCollection.GetType().GetMethod("OnDeserialized",
+                BindingFlags.Instance | Reflection.BindingFlags.NonPublic);
+
+            Assert.NotNull(onDeserializedMethodInfo);
+            onDeserializedMethodInfo.Invoke(observableCollection, new object[] { null });
         }
     }
 }
