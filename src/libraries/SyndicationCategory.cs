@@ -17,13 +17,13 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationCategory : IExtensibleSyndicationObject
     {
-        ExtensibleSyndicationObject extensions = new ExtensibleSyndicationObject();
-        string label;
-        string name;
-        string scheme;
+        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private string _label;
+        private string _name;
+        private string _scheme;
 
         public SyndicationCategory()
-            : this((string) null)
+            : this((string)null)
         {
         }
 
@@ -34,9 +34,9 @@ namespace Microsoft.ServiceModel.Syndication
 
         public SyndicationCategory(string name, string scheme, string label)
         {
-            this.name = name;
-            this.scheme = scheme;
-            this.label = label;
+            _name = name;
+            _scheme = scheme;
+            _label = label;
         }
 
         protected SyndicationCategory(SyndicationCategory source)
@@ -45,38 +45,38 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
-            this.label = source.label;
-            this.name = source.name;
-            this.scheme = source.scheme;
-            this.extensions = source.extensions.Clone();
+            _label = source._label;
+            _name = source._name;
+            _scheme = source._scheme;
+            _extensions = source._extensions.Clone();
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get { return this.extensions.AttributeExtensions; }
+            get { return _extensions.AttributeExtensions; }
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get { return this.extensions.ElementExtensions; }
+            get { return _extensions.ElementExtensions; }
         }
 
         public string Label
         {
-            get { return this.label; }
-            set { this.label = value; }
+            get { return _label; }
+            set { _label = value; }
         }
 
         public string Name
         {
-            get { return this.name; }
-            set { this.name = value; }
+            get { return _name; }
+            set { _name = value; }
         }
 
         public string Scheme
         {
-            get { return this.scheme; }
-            set { this.scheme = value; }
+            get { return _scheme; }
+            set { _scheme = value; }
         }
 
         public virtual SyndicationCategory Clone()
@@ -96,23 +96,22 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteAttributeExtensions(writer);
+            _extensions.WriteAttributeExtensions(writer);
         }
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            this.extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
+            _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.extensions.LoadElementExtensions(buffer);
+            _extensions.LoadElementExtensions(buffer);
         }
     }
-
 }

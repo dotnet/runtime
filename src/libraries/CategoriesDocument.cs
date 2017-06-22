@@ -12,14 +12,14 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Runtime.Serialization;
     using System.Xml.Serialization;
     using System.Runtime.CompilerServices;
-    
+
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public abstract class CategoriesDocument : IExtensibleSyndicationObject
     {
-        Uri baseUri;
-        ExtensibleSyndicationObject extensions = new ExtensibleSyndicationObject();
-        string language;
+        private Uri _baseUri;
+        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private string _language;
 
         internal CategoriesDocument()
         {
@@ -29,28 +29,28 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                return this.extensions.AttributeExtensions;
+                return _extensions.AttributeExtensions;
             }
         }
 
         public Uri BaseUri
         {
-            get { return this.baseUri; }
-            set { this.baseUri = value; }
+            get { return _baseUri; }
+            set { _baseUri = value; }
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
             get
             {
-                return this.extensions.ElementExtensions;
+                return _extensions.ElementExtensions;
             }
         }
 
         public string Language
         {
-            get { return this.language; }
-            set { this.language = value; }
+            get { return _language; }
+            set { _language = value; }
         }
 
         internal abstract bool IsInline
@@ -102,22 +102,22 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteAttributeExtensions(writer);
+            _extensions.WriteAttributeExtensions(writer);
         }
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            this.extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
+            _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.extensions.LoadElementExtensions(buffer);
+            _extensions.LoadElementExtensions(buffer);
         }
     }
 }

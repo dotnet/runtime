@@ -17,7 +17,7 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public abstract class SyndicationContent
     {
-        Dictionary<XmlQualifiedName, string> attributeExtensions;
+        private Dictionary<XmlQualifiedName, string> _attributeExtensions;
 
         protected SyndicationContent()
         {
@@ -32,11 +32,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                if (this.attributeExtensions == null)
+                if (_attributeExtensions == null)
                 {
-                    this.attributeExtensions = new Dictionary<XmlQualifiedName, string>();
+                    _attributeExtensions = new Dictionary<XmlQualifiedName, string>();
                 }
-                return this.attributeExtensions;
+                return _attributeExtensions;
             }
         }
 
@@ -67,7 +67,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject)
         {
-            return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, (DataContractSerializer) null);
+            return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, (DataContractSerializer)null);
         }
 
         public static XmlSyndicationContent CreateXmlContent(object dataContractObject, XmlObjectSerializer dataContractSerializer)
@@ -99,16 +99,16 @@ namespace Microsoft.ServiceModel.Syndication
             }
             writer.WriteStartElement(outerElementName, outerElementNamespace);
             writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, this.Type);
-            if (this.attributeExtensions != null)
+            if (_attributeExtensions != null)
             {
-                foreach (XmlQualifiedName key in this.attributeExtensions.Keys)
+                foreach (XmlQualifiedName key in _attributeExtensions.Keys)
                 {
                     if (key.Name == Atom10Constants.TypeTag && key.Namespace == string.Empty)
                     {
                         continue;
                     }
                     string attrValue;
-                    if (this.attributeExtensions.TryGetValue(key, out attrValue))
+                    if (_attributeExtensions.TryGetValue(key, out attrValue))
                     {
                         writer.WriteAttributeString(key.Name, key.Namespace, attrValue);
                     }
@@ -124,11 +124,11 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
-            if (source.attributeExtensions != null)
+            if (source._attributeExtensions != null)
             {
-                foreach (XmlQualifiedName key in source.attributeExtensions.Keys)
+                foreach (XmlQualifiedName key in source._attributeExtensions.Keys)
                 {
-                    this.AttributeExtensions.Add(key, source.attributeExtensions[key]);
+                    this.AttributeExtensions.Add(key, source._attributeExtensions[key]);
                 }
             }
         }
