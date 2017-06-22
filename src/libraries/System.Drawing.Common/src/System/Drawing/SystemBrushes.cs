@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Drawing
 {
-    public sealed class SystemBrushes
+    public static class SystemBrushes
     {
         private static readonly object s_systemBrushesKey = new object();
 

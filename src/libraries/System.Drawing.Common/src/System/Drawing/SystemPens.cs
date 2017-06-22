@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Drawing
 {
-    public sealed class SystemPens
+    public static class SystemPens
     {
         private static readonly object s_systemPensKey = new object();
 

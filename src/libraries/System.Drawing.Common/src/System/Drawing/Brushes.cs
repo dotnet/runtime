@@ -4,7 +4,7 @@
 
 namespace System.Drawing
 {
-    public sealed class Brushes
+    public static class Brushes
     {
         private static readonly object s_transparentKey = new object();
         private static readonly object s_aliceBlueKey = new object();

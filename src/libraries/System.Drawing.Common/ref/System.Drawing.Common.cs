@@ -59,9 +59,8 @@ namespace System.Drawing
         ~Brush() { }
         protected internal void SetNativeBrush(System.IntPtr brush) { }
     }
-    public sealed partial class Brushes
+    public static partial class Brushes
     {
-        internal Brushes() { }
         public static System.Drawing.Brush AliceBlue { get { throw null; } }
         public static System.Drawing.Brush AntiqueWhite { get { throw null; } }
         public static System.Drawing.Brush Aqua { get { throw null; } }
@@ -800,9 +799,8 @@ namespace System.Drawing
         public void TranslateTransform(float dx, float dy) { }
         public void TranslateTransform(float dx, float dy, System.Drawing.Drawing2D.MatrixOrder order) { }
     }
-    public sealed partial class Pens
+    public static partial class Pens
     {
-        internal Pens() { }
         public static System.Drawing.Pen AliceBlue { get { throw null; } }
         public static System.Drawing.Pen AntiqueWhite { get { throw null; } }
         public static System.Drawing.Pen Aqua { get { throw null; } }
@@ -1101,9 +1099,8 @@ namespace System.Drawing
         Point = 3,
         World = 0,
     }
-    public sealed partial class SystemBrushes
+    public static partial class SystemBrushes
     {
-        internal SystemBrushes() { }
         public static System.Drawing.Brush ActiveBorder { get { throw null; } }
         public static System.Drawing.Brush ActiveCaption { get { throw null; } }
         public static System.Drawing.Brush ActiveCaptionText { get { throw null; } }
@@ -1139,9 +1136,8 @@ namespace System.Drawing
         public static System.Drawing.Brush WindowText { get { throw null; } }
         public static System.Drawing.Brush FromSystemColor(System.Drawing.Color c) { throw null; }
     }
-    public sealed partial class SystemColors
+    public static partial class SystemColors
     {
-        internal SystemColors() { }
         public static System.Drawing.Color ActiveBorder { get { throw null; } }
         public static System.Drawing.Color ActiveCaption { get { throw null; } }
         public static System.Drawing.Color ActiveCaptionText { get { throw null; } }
@@ -1176,9 +1172,8 @@ namespace System.Drawing
         public static System.Drawing.Color WindowFrame { get { throw null; } }
         public static System.Drawing.Color WindowText { get { throw null; } }
     }
-    public sealed partial class SystemFonts
+    public static partial class SystemFonts
     {
-        internal SystemFonts() { }
         public static System.Drawing.Font CaptionFont { get { throw null; } }
         public static System.Drawing.Font DefaultFont { get { throw null; } }
         public static System.Drawing.Font DialogFont { get { throw null; } }
@@ -1189,9 +1184,8 @@ namespace System.Drawing
         public static System.Drawing.Font StatusFont { get { throw null; } }
         public static System.Drawing.Font GetFontByName(string systemFontName) { throw null; }
     }
-    public sealed partial class SystemIcons
+    public static partial class SystemIcons
     {
-        internal SystemIcons() { }
         public static System.Drawing.Icon Application { get { throw null; } }
         public static System.Drawing.Icon Asterisk { get { throw null; } }
         public static System.Drawing.Icon Error { get { throw null; } }
@@ -1203,9 +1197,8 @@ namespace System.Drawing
         public static System.Drawing.Icon Warning { get { throw null; } }
         public static System.Drawing.Icon WinLogo { get { throw null; } }
     }
-    public sealed partial class SystemPens
+    public static partial class SystemPens
     {
-        internal SystemPens() { }
         public static System.Drawing.Pen ActiveBorder { get { throw null; } }
         public static System.Drawing.Pen ActiveCaption { get { throw null; } }
         public static System.Drawing.Pen ActiveCaptionText { get { throw null; } }
