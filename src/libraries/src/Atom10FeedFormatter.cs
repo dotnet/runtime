@@ -6,18 +6,17 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
+    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
-    using System.Xml;
-    using System.Xml.Serialization;
     using System.Diagnostics.CodeAnalysis;
-    using System.Xml.Schema;
-    using System.ServiceModel;
-    using System.ServiceModel.Channels;
+    using System.Globalization;
     using System.Runtime.CompilerServices;
-    using Microsoft.ServiceModel.Syndication.Resources;
+    using System.ServiceModel.Channels;
+    using System.Xml;
+    using System.Xml.Schema;
+    using System.Xml.Serialization;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Atom10Constants.FeedTag, Namespace = Atom10Constants.Atom10Namespace)]

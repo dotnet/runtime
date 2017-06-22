@@ -4,13 +4,11 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    using System.Collections.ObjectModel;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Runtime.Serialization;
-    using System.Globalization;
-    using System;
     using Microsoft.ServiceModel.Syndication.Resources;
+    using System;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Xml;
 
     internal static class FeedUtils
     {

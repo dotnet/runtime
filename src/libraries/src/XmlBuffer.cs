@@ -12,13 +12,11 @@
 
 namespace Microsoft.ServiceModel
 {
+    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
-    using System.Xml;
     using System.IO; // added to use buffered stream
-    using System.Runtime;
-    using System.ServiceModel.Channels;
-    using Microsoft.ServiceModel.Syndication.Resources;
+    using System.Xml;
 
 
     internal class XmlBuffer

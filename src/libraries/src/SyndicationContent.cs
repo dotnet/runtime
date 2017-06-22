@@ -4,15 +4,13 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
+    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
-    using System.Text;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.Serialization;
     using System.Xml;
     using System.Xml.Serialization;
-    using System.Runtime.Serialization;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.CompilerServices;
-    using Microsoft.ServiceModel.Syndication.Resources;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public abstract class SyndicationContent
