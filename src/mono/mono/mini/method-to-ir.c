@@ -7701,18 +7701,25 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 		if ((cfg->method == method) && cfg->coverage_info) {
 			guint32 cil_offset = ip - header->code;
+			gpointer counter = &cfg->coverage_info->data [cil_offset].count;
 			cfg->coverage_info->data [cil_offset].cil_code = ip;
 
-			/* TODO: Use an increment here */
-#if defined(TARGET_X86)
-			MONO_INST_NEW (cfg, ins, OP_STORE_MEM_IMM);
-			ins->inst_p0 = &(cfg->coverage_info->data [cil_offset].count);
-			ins->inst_imm = 1;
-			MONO_ADD_INS (cfg->cbb, ins);
-#else
-			EMIT_NEW_PCONST (cfg, ins, &(cfg->coverage_info->data [cil_offset].count));
-			MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, ins->dreg, 0, 1);
-#endif
+			if (mono_arch_opcode_supported (OP_ATOMIC_ADD_I4)) {
+				MonoInst *one_ins, *load_ins;
+
+				EMIT_NEW_PCONST (cfg, load_ins, counter);
+				EMIT_NEW_ICONST (cfg, one_ins, 1);
+				MONO_INST_NEW (cfg, ins, OP_ATOMIC_ADD_I4);
+				ins->dreg = mono_alloc_ireg (cfg);
+				ins->inst_basereg = load_ins->dreg;
+				ins->inst_offset = 0;
+				ins->sreg2 = one_ins->dreg;
+				ins->type = STACK_I4;
+				MONO_ADD_INS (cfg->cbb, ins);
+			} else {
+				EMIT_NEW_PCONST (cfg, ins, counter);
+				MONO_EMIT_NEW_STORE_MEMBASE_IMM (cfg, OP_STORE_MEMBASE_IMM, ins->dreg, 0, 1);
+			}
 		}
 
 		if (cfg->verbose_level > 3)
