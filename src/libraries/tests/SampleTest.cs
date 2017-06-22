@@ -27,12 +27,32 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 return new DateTimeOffset(DateTime.Now);
             };
 
+            rssformater.ItemParser = delegate (XmlReader reader1, SyndicationFeed result)
+            {
+                while (reader1.Name != "item" || reader1.NodeType != XmlNodeType.EndElement)
+                    reader1.Read();
+
+                SyndicationItem item = new SyndicationItem();
+
+                item.Title = new TextSyndicationContent("My title is not the original one!");
+                item.Summary = new TextSyndicationContent("I'm not supposed to show a summary...");
+                return item;
+            };
+
+            rssformater.ImageParser = delegate (XmlReader readerD, SyndicationFeed feed)
+            {
+                feed.ImageUrl = new Uri("http://www.customParsedImage.com");
+                readerD.Skip();
+                return true;
+            };
 
             XmlReader reader = XmlReader.Create("feed.xml");
             SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
-
+            
             Assert.True(sf != null);
         }
+
+        
 
         [Fact]
         public static void SyndicationFeed_CreateNewFeed()
@@ -41,6 +61,9 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             SyndicationFeed sf = new SyndicationFeed("First feed on .net core ever!!", "This is the first feed on .net core ever!", new Uri(" https://github.com/dotnet/wcf"));
 
             XmlWriter xmlw = XmlWriter.Create("FirstFeedEver.xml");
+
+            
+
             Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
 
             // *** EXECUTE *** \\

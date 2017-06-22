@@ -5,10 +5,7 @@
 namespace Microsoft.ServiceModel.Syndication
 {
     using System;
-    using System.Collections.ObjectModel;
     using System.Collections.Generic;
-    using System.Runtime.Serialization;
-    using System.Xml.Serialization;
     using System.Xml;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor

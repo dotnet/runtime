@@ -9,7 +9,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
-    using System.Runtime.CompilerServices;
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;
@@ -42,15 +41,11 @@ namespace Microsoft.ServiceModel.Syndication
         public Func<XmlReader, string> GeneratorParser { get; set; }
         public Func<XmlReader, Uri, SyndicationLink> LinkParser { get; set; }
         public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
-
         public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
+        public Func<XmlReader,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
+        public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
 
-
-        //We need to declare our delegate to use the out keyword
-        public delegate bool ItemParserType(XmlReader reader, SyndicationFeed result, out bool areAllItemsRead);
-        public ItemParserType ItemParser { get; set; }
-
-        public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
+        //public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
 
 
 
@@ -73,38 +68,36 @@ namespace Microsoft.ServiceModel.Syndication
             return true;
         }
 
-        private bool ItemParserAction(XmlReader reader, SyndicationFeed result, out bool areAllItemsRead)
+        private SyndicationItem ItemParserAction(XmlReader reader, SyndicationFeed result)
         {
-            result.Items = ReadItems(reader, result, out areAllItemsRead);
-
-            return true;
+            return ReadItem(reader,result);
         }
-        private TextSyndicationContent titleParserAction(XmlReader reader)
+        private TextSyndicationContent TitleParserAction(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private TextSyndicationContent descriptionParserAction(XmlReader reader)
+        private TextSyndicationContent DescriptionParserAction(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private String languageParserAction(XmlReader reader)
+        private String LanguageParserAction(XmlReader reader)
         {
             return reader.ReadElementString();
         }
 
-        private TextSyndicationContent copyrightParserAction(XmlReader reader)
+        private TextSyndicationContent CopyrightParserAction(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private string generatorParserAction(XmlReader reader)
+        private string GeneratorParserAction(XmlReader reader)
         {
             return reader.ReadElementString();
         }
 
-        private SyndicationPerson managingEditorParserAction(XmlReader reader, SyndicationFeed feed)
+        private SyndicationPerson ManagingEditorParserAction(XmlReader reader, SyndicationFeed feed)
         {
             //person = new SyndicationPerson();
             SyndicationPerson result = CreatePerson(feed);
@@ -112,23 +105,23 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private SyndicationLink linkParserAction(XmlReader reader, Uri baseUri)
+        private SyndicationLink LinkParserAction(XmlReader reader, Uri baseUri)
         {
             return ReadAlternateLink(reader, baseUri);
         }
 
 
-        private void loadDefaultParsers()
+        private void LoadDefaultParsers()
         {
             DateParser = DateParserAction;
-            TitleParser = titleParserAction;
-            DescriptionParser = descriptionParserAction;
-            LanguageParser = languageParserAction;
-            CopyrightParser = copyrightParserAction;
-            GeneratorParser = generatorParserAction;
-            ManagingEditorParser = managingEditorParserAction;
-            LinkParser = linkParserAction;
-            CategoryParser = ReadCategory;
+            TitleParser = TitleParserAction;
+            DescriptionParser = DescriptionParserAction;
+            LanguageParser = LanguageParserAction;
+            CopyrightParser = CopyrightParserAction;
+            GeneratorParser = GeneratorParserAction;
+            ManagingEditorParser = ManagingEditorParserAction;
+            LinkParser = LinkParserAction;
+            FeedCategoryParser = ReadCategory;
             ItemParser = ItemParserAction;
             ImageParser = ImageParserAction;
         }
@@ -137,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
             : this(typeof(SyndicationFeed))
         {
             //Setting default parsers
-            loadDefaultParsers();
+            LoadDefaultParsers();
         }
 
         public Rss20FeedFormatter(Type feedTypeToCreate)
@@ -158,7 +151,7 @@ namespace Microsoft.ServiceModel.Syndication
             _atomSerializer = new Atom10FeedFormatter(feedTypeToCreate);
             _feedType = feedTypeToCreate;
 
-            loadDefaultParsers();
+            LoadDefaultParsers();
         }
 
         public Rss20FeedFormatter(SyndicationFeed feedToWrite)
@@ -316,7 +309,7 @@ namespace Microsoft.ServiceModel.Syndication
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
             while (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
             {
-                items.Add(ReadItem(reader, feed));
+                items.Add(ItemParser(reader, feed));
             }
             areAllItemsRead = true;
             return items;
@@ -970,22 +963,19 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
                         {
-                            ItemParseOptions options = new ItemParseOptions(readItemsAtLeastOnce, areAllItemsRead);
                             if (readItemsAtLeastOnce)
                             {
                                 throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
                             }
 
-
-                            //result.Items = ReadItems(reader, result, out areAllItemsRead);
-                            ItemParser(reader, result, out areAllItemsRead);
-
+                            result.Items = ReadItems(reader, result, out areAllItemsRead);
                             readItemsAtLeastOnce = true;
                             // if the derived class is reading the items lazily, then stop reading from the stream
                             if (!areAllItemsRead)
                             {
                                 break;
                             }
+
                         }
                         else
                         {

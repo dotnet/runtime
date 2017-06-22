@@ -4,18 +4,13 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
+    using Microsoft.ServiceModel;
+    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
-    using System.Xml;
-    using System.Runtime.Serialization;
-    using System.Globalization;
-    using System.Xml.Serialization;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
-    using Microsoft.ServiceModel;
-    using Microsoft.ServiceModel.Syndication.Resources;
+    using System.Xml;
 
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
@@ -262,12 +257,12 @@ namespace Microsoft.ServiceModel.Syndication
             return Load(reader, formatter, new Atom10FeedFormatter());
         }
 
-        public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter) // edited by J
+        public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter)
         {
             return Load(reader, new Rss20FeedFormatter(), formatter);
         }
 
-        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) // edited by J
+        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
         {
             if (reader == null)
             {
