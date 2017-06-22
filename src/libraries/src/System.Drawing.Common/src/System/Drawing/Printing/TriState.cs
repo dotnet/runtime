@@ -4,8 +4,7 @@
 
 namespace System.Drawing.Printing
 {
-    [Serializable]
-    internal struct TriState
+    internal partial struct TriState
     {
         private byte _value; // 0 is "default", not false
 

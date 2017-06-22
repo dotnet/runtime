@@ -15,8 +15,7 @@ namespace System.Drawing.Printing
     ///       settings that apply to a single page.
     ///    </para>
     /// </devdoc>
-    [Serializable]
-    public class PageSettings : ICloneable
+    public partial class PageSettings : ICloneable
     {
         internal PrinterSettings printerSettings;
 
