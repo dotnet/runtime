@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Reflection;
 using System.Security;
 
@@ -54,6 +55,8 @@ namespace System.Runtime.InteropServices
 
         public override MethodInfo GetAddMethod(bool nonPublic) => _innerEventInfo.GetAddMethod(nonPublic);
 
+        public override MethodInfo[] GetOtherMethods(bool nonPublic) => _innerEventInfo.GetOtherMethods(nonPublic);
+
         public override MethodInfo GetRaiseMethod(bool nonPublic) => _innerEventInfo.GetRaiseMethod(nonPublic);
 
         public override MethodInfo GetRemoveMethod(bool nonPublic) => _innerEventInfo.GetRemoveMethod(nonPublic);
@@ -70,10 +73,16 @@ namespace System.Runtime.InteropServices
             return _innerEventInfo.GetCustomAttributes(inherit);
         }
 
+        public override IList<CustomAttributeData> GetCustomAttributesData() => _innerEventInfo.GetCustomAttributesData();
+
         public override bool IsDefined(Type attributeType, bool inherit)
         {
             return _innerEventInfo.IsDefined(attributeType, inherit);
         }
+
+        public override int MetadataToken => _innerEventInfo.MetadataToken;
+
+        public override Module Module => _innerEventInfo.Module;
 
         public override string Name => _innerEventInfo.Name;
 
