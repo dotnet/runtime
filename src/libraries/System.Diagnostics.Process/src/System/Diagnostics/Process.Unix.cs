@@ -449,11 +449,25 @@ namespace System.Diagnostics
         /// </remarks>
         private static void ParseArgumentsIntoList(string arguments, List<string> results)
         {
-            var currentArgument = new StringBuilder();
             bool inQuotes = false;
 
             // Iterate through all of the characters in the argument string.
             for (int i = 0; i < arguments.Length; i++)
+            {
+                for (; i < arguments.Length && (arguments[i] == ' ' || arguments[i] == '\t'); i++) ;
+
+                if (i == arguments.Length)
+                    break;
+
+                results.Add(GetNextArgument(arguments, ref i, ref inQuotes));
+            }
+        }
+
+        private static string GetNextArgument(string arguments, ref int i, ref bool inQuotes)
+        {
+            var currentArgument = new StringBuilder();
+
+            for (; i < arguments.Length; i++)
             {
                 // From the current position, iterate through contiguous backslashes.
                 int backslashCount = 0;
@@ -492,18 +506,10 @@ namespace System.Diagnostics
                 // it contains spaces.
                 if (c == '"')
                 {
-                    // While not in quotes, and currentArgument is empty,
-                    // check for the next two chars, if they are equal to
-                    // a quote and a whitespace or a quote and end of string
-                    // consider that argument as empty argument.
-                    if (!inQuotes && currentArgument.Length == 0 &&
-                        ((i < arguments.Length - 2 &&
-                        (arguments[i + 2] == ' ' || arguments[i + 2] == '\t') &&
-                        arguments[i + 1] == '"') ||
-                        (i == arguments.Length - 2 && arguments[i + 1] == '"')))
+                    if (inQuotes && i < arguments.Length - 1 && arguments[i + 1] == '"')
                     {
-                        results.Add("\"\"");
-                        i += 2;
+                        currentArgument.Append(c);
+                        i++;
                         continue;
                     }
 
@@ -516,24 +522,14 @@ namespace System.Diagnostics
                 // it should be added to the results and then reset for the next one.
                 if ((c == ' ' || c == '\t') && !inQuotes)
                 {
-                    if (currentArgument.Length > 0)
-                    {
-                        results.Add(currentArgument.ToString());
-                        currentArgument.Clear();
-                    }
-                    continue;
+                    break;
                 }
 
                 // Nothing special; add the character to the current argument.
                 currentArgument.Append(c);
             }
 
-            // If we reach the end of the string and we still have anything in our current
-            // argument buffer, treat it as an argument to be added to the results.
-            if (currentArgument.Length > 0)
-            {
-                results.Add(currentArgument.ToString());
-            }
+            return currentArgument.ToString();
         }
 
         /// <summary>Gets the wait state for this Process object.</summary>
