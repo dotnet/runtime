@@ -26,6 +26,7 @@ namespace Microsoft.ServiceModel.Syndication
         public AtomPub10CategoriesDocumentFormatter()
             : this(typeof(InlineCategoriesDocument), typeof(ReferencedCategoriesDocument))
         {
+            
         }
 
         public AtomPub10CategoriesDocumentFormatter(Type inlineDocumentType, Type referencedDocumentType)

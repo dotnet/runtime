@@ -19,4 +19,7 @@
       <LastGenOutput>SR.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="System\ServiceModel\Diagnostics\" />
+  </ItemGroup>
 </Project>

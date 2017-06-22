@@ -16,5 +16,6 @@ namespace Microsoft.ServiceModel.Syndication
         public const string Prefix = "app";
         public const string Service = "service";
         public const string Workspace = "workspace";
+        
     }
 }
