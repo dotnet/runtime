@@ -26,6 +26,13 @@
     <_RunApiCompat Condition="'$(BuildAllConfigurations)' == 'true' and $(TargetGroup.StartsWith('uap'))">false</_RunApiCompat>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Run API compat against the following 1:1 assemblies but don't include them in the list that is used to generate facades -->
+    <NetFxReference Include="System.DirectoryServices" />
+    <NetFxReference Include="System.DirectoryServices.AccountManagement" />
+    <NetFxReference Include="System.DirectoryServices.Protocols" />
+  </ItemGroup>
+
   <!-- Run ApiCompat -->
   <Target Name="RunApiCompat"
           Condition="'$(_RunApiCompat)' == 'true'"
