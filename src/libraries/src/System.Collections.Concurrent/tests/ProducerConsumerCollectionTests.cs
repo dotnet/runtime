@@ -879,7 +879,6 @@ namespace System.Collections.Concurrent.Tests
 
         [Theory]
         [InlineData(ConcurrencyTestSeconds)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20474", TargetFrameworkMonikers.UapAot)]
         public void ManyConcurrentAddsTakes_ForceContentionWithToArray(double seconds)
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();
