@@ -23,7 +23,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run sync.cmd",
+      "displayName": "Run init-tools.cmd",
       "timeoutInMinutes": 0,
       "condition": "succeeded()",
       "task": {
@@ -32,7 +32,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "sync.cmd",
+        "filename": "init-tools.cmd",
         "arguments": "",
         "workingFolder": "$(Build.SourcesDirectory)",
         "failOnStandardError": "false"
