@@ -8,7 +8,6 @@ namespace System.Drawing.Printing
     /// <devdoc>
     ///    <para>Specifies the printer's duplex setting.</para>
     /// </devdoc>
-    [Serializable]
     public enum Duplex
     {
         /// <include file='doc\Duplex.uex' path='docs/doc[@for="Duplex.Default"]/*' />

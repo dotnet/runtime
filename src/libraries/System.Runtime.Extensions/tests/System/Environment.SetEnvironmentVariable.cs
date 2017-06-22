@@ -14,9 +14,9 @@ namespace System.Tests
         private const int MAX_VAR_LENGTH_ALLOWED = 32767;
         private const string NullString = "\u0000";
 
-        private static bool IsSupportedTarget(EnvironmentVariableTarget target)
+        internal static bool IsSupportedTarget(EnvironmentVariableTarget target)
         {
-            return target == EnvironmentVariableTarget.Process || RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            return target == EnvironmentVariableTarget.Process || (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && !PlatformDetection.IsUap);
         }
 
         [Fact]

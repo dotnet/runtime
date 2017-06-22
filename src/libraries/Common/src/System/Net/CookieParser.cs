@@ -554,7 +554,13 @@ namespace System.Net
                     // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
                     // Cookie.set_Name keeps the original name if the string is empty or null.
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
-                    MethodInfo method = typeof(Cookie).GetMethod("InternalSetName", BindingFlags.NonPublic | BindingFlags.Instance);
+                    BindingFlags flags = BindingFlags.Instance;
+#if uap
+                    flags |= BindingFlags.Public;
+#else
+                    flags |= BindingFlags.NonPublic;
+#endif
+                    MethodInfo method = typeof(Cookie).GetMethod("InternalSetName", flags);
                     Debug.Assert(method != null, "We need to use an internal method named InternalSetName that is declared on Cookie.");
                     s_internalSetNameMethod = (Func<Cookie, string, bool>)Delegate.CreateDelegate(typeof(Func<Cookie, string, bool>), method);
                 }

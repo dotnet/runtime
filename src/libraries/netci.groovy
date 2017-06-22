@@ -25,8 +25,6 @@ def osGroupMap = ['Windows 7':'Windows_NT',
                   'OpenSUSE13.2': 'Linux',
                   'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
-                  'Tizen': 'Linux',
-                  'LinuxARMEmulator': 'Linux',
                   'PortableLinux': 'Linux']
 
 def osShortName = ['Windows 7' : 'win7',
@@ -47,12 +45,10 @@ def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
 
 def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1',
-                                        'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'],
-                        'netfx': ['Windows_NT']]
+                                        'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux']]
 
 def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1',
-                                        'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'],
-                        'netfx': ['Windows_NT']]
+                                        'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux']]
 
 // **************************
 // Define code coverage build
@@ -127,7 +123,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['netcoreapp', 'netfx'].each { targetGroup ->
+    ['netcoreapp'].each { targetGroup ->
         (targetGroupOsMapOuterloop[targetGroup]).each { osName ->
             ['Debug', 'Release'].each { configurationGroup ->
 
@@ -210,81 +206,13 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
     }
 }
 
-// **************************
-// Define target group vertical builds that will run on every merge.
-// **************************
-[true, false].each { isPR ->
-    ['uap', 'uapaot'].each { targetGroup ->
-        ['Debug'].each { configurationGroup ->
-            ['Windows_NT'].each { osName ->
-                def osGroup = osGroupMap[osName]
-                def osForMachineAffinity = osName
-
-                def newJobName = "${targetGroup}_${configurationGroup.toLowerCase()}"
-
-                def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                    // On Windows we use the packer to put together everything. On *nix we use tar
-                    steps {
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -framework:${targetGroup}")
-                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -framework:${targetGroup} -SkipTests")
-                    }
-                }
-                // Set the affinity.
-                Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto')
-                // Set up standard options.
-                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-                // Set up triggers
-                if (isPR) {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Vertical ${targetGroup} Build")
-                }
-                else {
-                    // Set a push trigger
-                    Utilities.addGithubPushTrigger(newJob)
-                }
-            }
-        }
-    }
-}
-
-// **************************
-// Define AllConfigurations builds that will run on every merge.
-// **************************
-[true, false].each { isPR ->
-    ['Debug'].each { configurationGroup ->
-        ['Windows_NT'].each { osName ->
-            def osGroup = osGroupMap[osName]
-            def osForMachineAffinity = osName
-
-            def newJobName = "AllConfigurations_${configurationGroup.toLowerCase()}"
-
-            def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
-                // On Windows we use the packer to put together everything. On *nix we use tar
-                steps {
-                    batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -allConfigurations")
-                }
-            }
-            // Set the affinity.
-            Utilities.setMachineAffinity(newJob, osForMachineAffinity, 'latest-or-auto')
-            // Set up standard options.
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-            // Set up triggers
-            if (isPR) {
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${configurationGroup} AllConfigurations Build")
-            }
-            else {
-                // Set a push trigger
-                Utilities.addGithubPushTrigger(newJob)
-            }
-        }
-    }
-}
 
 // **************************
 // Define innerloop testing.  These jobs run on every merge and a subset of them run on every PR, the ones
 // that don't run per PR can be requested via a magic phrase.
 // **************************
 [true, false].each { isPR ->
-    ['netcoreapp', 'netfx'].each { targetGroup ->
+    ['netcoreapp'].each { targetGroup ->
         (targetGroupOsMapInnerloop[targetGroup]).each { osName ->
             ['Debug', 'Release'].each { configurationGroup ->
                 def osGroup = osGroupMap[osName]
@@ -341,13 +269,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                 // Set up triggers
                 if (isPR) {
                     targetGroupString = targetGroupString.replaceAll('_', ' ');
-                    // Set PR trigger only run netfx jobs automatically on every PR, the other legs except OSX10.12 are covered by the new portable pipeline legs
-                    if (targetGroup == 'netfx' || osName == 'OSX10.12') {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${targetGroupString}${osName} ${configurationGroup} ${archGroup} Build and Test")
-                    }
-                    else {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${targetGroupString}${osName} ${configurationGroup} ${archGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${targetGroupString}${osName}\\W+${configurationGroup}.*")
-                    }
+                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${targetGroupString}${osName} ${configurationGroup} ${archGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${targetGroupString}${osName}\\W+${configurationGroup}.*")
                 }
                 else {
                     // Set a push trigger
@@ -365,12 +287,8 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Ubuntu14.04', 'Ubuntu16.04', 'Tizen'].each { osName ->
-                if (osName == "Ubuntu14.04") {
-                    linuxCodeName="trusty"
-                    abi = "arm"
-                }
-                else if (osName == "Ubuntu16.04") {
+            ['Linux', 'Tizen'].each { osName ->
+                if (osName == "Linux") {
                     linuxCodeName="xenial"
                     abi = "arm"
                 }
@@ -379,7 +297,7 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
                     abi = "armel"
                 }
 
-                def osGroup = osGroupMap[osName]
+                def osGroup = "Linux"
                 def newJobName = "${osName.toLowerCase()}_${abi.toLowerCase()}_cross_${configurationGroup.toLowerCase()}"
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
@@ -406,12 +324,12 @@ def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ub
 
                 // Set up triggers
                 if (isPR) {
-                    // We run Tizen release/debug, Ubuntu 14.04 release and Ubuntu 16.04 debug for ARM on every PR.
-                    if (osName == "Tizen" || (osName == "Ubuntu14.04" && configurationGroup == "Release") || (osName == "Ubuntu16.04" && configurationGroup == "Debug")) {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${abi} ${configurationGroup} Cross Build")
+                    // We run Tizen Debug and Linux Release as default PR builds
+                    if ((osName == "Tizen" && configurationGroup == "Debug") || (osName == "Linux" && configurationGroup == "Release") ) {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build")
                     }
                     else {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "${osName} ${abi} ${configurationGroup} Build", "(?i).*test\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
                     }
                 }
                 else {

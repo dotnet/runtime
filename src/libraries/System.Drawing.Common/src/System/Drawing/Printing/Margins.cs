@@ -13,8 +13,7 @@ namespace System.Drawing.Printing
     ///       Specifies the margins of a printed page.
     ///    </para>
     /// </devdoc>
-    [Serializable]
-    public class Margins : ICloneable
+    public partial class Margins : ICloneable
     {
         private int _left;
         private int _right;
@@ -202,30 +201,6 @@ namespace System.Drawing.Printing
             {
                 Bottom = (int)Math.Round(value);
                 _doubleBottom = value;
-            }
-        }
-
-        [OnDeserialized()]
-        private void OnDeserializedMethod(StreamingContext context)
-        {
-            if (_doubleLeft == 0 && _left != 0)
-            {
-                _doubleLeft = (double)_left;
-            }
-
-            if (_doubleRight == 0 && _right != 0)
-            {
-                _doubleRight = (double)_right;
-            }
-
-            if (_doubleTop == 0 && _top != 0)
-            {
-                _doubleTop = (double)_top;
-            }
-
-            if (_doubleBottom == 0 && _bottom != 0)
-            {
-                _doubleBottom = (double)_bottom;
             }
         }
 

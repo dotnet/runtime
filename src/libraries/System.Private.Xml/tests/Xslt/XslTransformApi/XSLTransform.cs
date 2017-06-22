@@ -66,7 +66,7 @@ namespace System.Xml.Tests
         private bool _fTrace;            // Should we write out the results of the transform?
 
         // Other global variables
-        protected string _strOutFile = null;        // File to create when using write transforms
+        protected string _strOutFile;        // File to create when using write transforms
 
 #pragma warning disable 0618
         protected XslTransform xslt;                           // Main XslTransform instance

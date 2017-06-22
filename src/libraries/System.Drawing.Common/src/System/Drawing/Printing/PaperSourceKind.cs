@@ -10,7 +10,6 @@ namespace System.Drawing.Printing
     ///       Standard paper sources.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public enum PaperSourceKind
     {
         // Please keep these in SafeNativeMethods.cs order

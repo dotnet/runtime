@@ -266,7 +266,7 @@ namespace System.Tests
                 {
                     // We return string.Empty by reference as an optimization
                     // in .NET core if there is no work to do.
-                    if (PlatformDetection.IsFullFramework)
+                    if (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative)
                     {
                         Assert.Equal(string.Empty, result);
                     }

@@ -11,7 +11,6 @@ namespace System.Drawing.Printing
     ///       designate the part of the document to print.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public enum PrintRange
     {
         /// <include file='doc\PrintRange.uex' path='docs/doc[@for="PrintRange.AllPages"]/*' />

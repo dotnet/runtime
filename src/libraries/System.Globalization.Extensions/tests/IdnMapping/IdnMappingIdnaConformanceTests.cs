@@ -70,7 +70,7 @@ namespace System.Globalization.Tests
         /// from the 6.0\IdnaTest.txt.  To find them, search for "GETASCII DOES NOT FAIL ON WINDOWS 8.1"
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </remarks>
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/21332
         public void GetAscii_Invalid()
         {
             foreach (IConformanceIdnaTest entry in Factory.GetDataset())

@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26228.9
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.Extensions.Tests", "tests\System.Runtime.Extensions.Tests.csproj", "{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -89,6 +89,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{E60AFAE8-2EA7-471C-9E24-52A99453B26B} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{978FA427-F87B-46E2-B276-F5B727C50A01} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{24BCEC6B-B9D2-47BC-9D66-725BD6B526FA} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{C44B33E3-F89F-40B9-B353-D380C1524988} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}

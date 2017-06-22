@@ -27,6 +27,7 @@ namespace System.ComponentModel
         ///      Retrieves the "default" name for our culture.
         /// </summary>
         private string DefaultCultureString => SR.CultureInfoConverterDefaultCultureString;
+        const string DefaultInvariantCultureString = "(Default)";
 
         /// <summary>
         ///      Retrieves the Name for a input CultureInfo.
@@ -86,68 +87,58 @@ namespace System.ComponentModel
                 }
                 CultureInfo retVal = null;
 
-                CultureInfo currentUICulture = CultureInfo.CurrentUICulture;
-
+                string defaultCultureString = DefaultCultureString;
                 if (culture != null && culture.Equals(CultureInfo.InvariantCulture))
                 {
-                    CultureInfo.CurrentUICulture = culture;
+                    defaultCultureString = DefaultInvariantCultureString;
                 }
 
-                try
+                // Look for the default culture info.
+                //
+                if (text == null || text.Length == 0 || string.Compare(text, defaultCultureString, StringComparison.Ordinal) == 0)
                 {
-                    // Look for the default culture info.
-                    //
-                    if (text == null || text.Length == 0 || string.Compare(text, DefaultCultureString, StringComparison.Ordinal) == 0)
-                    {
-                        retVal = CultureInfo.InvariantCulture;
-                    }
+                    retVal = CultureInfo.InvariantCulture;
+                }
 
-                    // Now look in our set of installed cultures.
-                    //
-                    if (retVal == null)
+                // Now look in our set of installed cultures.
+                //
+                if (retVal == null)
+                {
+                    foreach (CultureInfo info in GetStandardValues(context))
                     {
-                        foreach (CultureInfo info in GetStandardValues(context))
+                        if (info != null && string.Compare(GetCultureName(info), text, StringComparison.Ordinal) == 0)
                         {
-                            if (info != null && string.Compare(GetCultureName(info), text, StringComparison.Ordinal) == 0)
-                            {
-                                retVal = info;
-                                break;
-                            }
+                            retVal = info;
+                            break;
                         }
-                       
-                    }
-
-                    // Now try to create a new culture info from this value
-                    //
-                    if (retVal == null)
-                    {
-                        try
-                        {
-                            retVal = new CultureInfo(text);
-                        }
-                        catch { }
-                    }
-
-                    // Finally, try to find a partial match
-                    //
-                    if (retVal == null)
-                    {
-                        text = text.ToLower(CultureInfo.CurrentCulture);
-                        foreach (CultureInfo info in _values)
-                        {
-                            if (info != null && GetCultureName(info).ToLower(CultureInfo.CurrentCulture).StartsWith(text))
-                            {
-                                retVal = info;
-                                break;
-                            }
-                        }
-                        
                     }
                 }
 
-                finally
+                // Now try to create a new culture info from this value
+                //
+                if (retVal == null)
                 {
-                    CultureInfo.CurrentUICulture = culture;
+                    try
+                    {
+                        retVal = new CultureInfo(text);
+                    }
+                    catch { }
+                }
+
+                // Finally, try to find a partial match
+                //
+                if (retVal == null)
+                {
+                    text = text.ToLower(CultureInfo.CurrentCulture);
+                    foreach (CultureInfo info in _values)
+                    {
+                        if (info != null && GetCultureName(info).ToLower(CultureInfo.CurrentCulture).StartsWith(text))
+                        {
+                            retVal = info;
+                            break;
+                        }
+                    }
+
                 }
 
                 // No good.  We can't support it.
@@ -179,27 +170,19 @@ namespace System.ComponentModel
             if (destinationType == typeof(string))
             {
                 string retVal;
-                CultureInfo currentUICulture = CultureInfo.CurrentUICulture;
-
+                string defaultCultureString = DefaultCultureString;
                 if (culture != null && culture.Equals(CultureInfo.InvariantCulture))
                 {
-                    CultureInfo.CurrentUICulture = culture;
+                    defaultCultureString = DefaultInvariantCultureString;
                 }
 
-                try
+                if (value == null || value == CultureInfo.InvariantCulture)
                 {
-                    if (value == null || value == CultureInfo.InvariantCulture)
-                    {
-                        retVal = DefaultCultureString;
-                    }
-                    else
-                    {
-                        retVal = GetCultureName(((CultureInfo)value));
-                    }
+                    retVal = defaultCultureString;
                 }
-                finally
+                else
                 {
-                    CultureInfo.CurrentUICulture = culture;
+                    retVal = GetCultureName(((CultureInfo)value));
                 }
 
                 return retVal;

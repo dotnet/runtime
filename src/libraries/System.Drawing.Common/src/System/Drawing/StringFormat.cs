@@ -246,7 +246,6 @@ namespace System.Drawing
             }
             set
             {
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatFlags(new HandleRef(this, nativeFormat), value);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -279,7 +278,6 @@ namespace System.Drawing
             get
             {
                 StringAlignment alignment = 0;
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipGetStringFormatAlign(new HandleRef(this, nativeFormat), out alignment);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -295,7 +293,6 @@ namespace System.Drawing
                     throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(StringAlignment));
                 }
 
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatAlign(new HandleRef(this, nativeFormat), value);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -313,7 +310,6 @@ namespace System.Drawing
             get
             {
                 StringAlignment alignment = 0;
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipGetStringFormatLineAlign(new HandleRef(this, nativeFormat), out alignment);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -328,7 +324,6 @@ namespace System.Drawing
                     throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(StringAlignment));
                 }
 
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatLineAlign(new HandleRef(this, nativeFormat), value);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -347,7 +342,6 @@ namespace System.Drawing
             get
             {
                 HotkeyPrefix hotkeyPrefix;
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipGetStringFormatHotkeyPrefix(new HandleRef(this, nativeFormat), out hotkeyPrefix);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -363,7 +357,6 @@ namespace System.Drawing
                     throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(HotkeyPrefix));
                 }
 
-                Debug.Assert(nativeFormat != IntPtr.Zero, "NativeFormat is null!");
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatHotkeyPrefix(new HandleRef(this, nativeFormat), value);
 
                 if (status != SafeNativeMethods.Gdip.Ok)

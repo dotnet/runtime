@@ -10,8 +10,6 @@ namespace System.Drawing
     using System.Drawing.Internal;
     using System.IO;
     using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
     using System.Text;
 
     /// <include file='doc\Icon.uex' path='docs/doc[@for="Icon"]/*' />
@@ -20,8 +18,7 @@ namespace System.Drawing
     ///     represent an object.  Icons can be thought of as transparent bitmaps, although
     ///     their size is determined by the system.
     /// </devdoc>
-    [Serializable]
-    public sealed class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
+    public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -36,7 +33,7 @@ namespace System.Drawing
 
         // Icon data
         //
-        private byte[] _iconData;
+        private readonly byte[] _iconData;
         private int _bestImageOffset;
         private int _bestBitDepth;
         private int _bestBytesInRes;
@@ -173,28 +170,6 @@ namespace System.Drawing
             _iconData = new byte[(int)stream.Length];
             stream.Read(_iconData, 0, _iconData.Length);
             Initialize(width, height);
-        }
-
-
-
-        /// <include file='doc\Icon.uex' path='docs/doc[@for="Icon.Icon6"]/*' />
-        /// <devdoc>
-        ///     Constructor used in deserialization
-        /// </devdoc>
-        /// <internalonly/>        
-        private Icon(SerializationInfo info, StreamingContext context)
-        {
-            _iconData = (byte[])info.GetValue("IconData", typeof(byte[]));
-            _iconSize = (Size)info.GetValue("IconSize", typeof(Size));
-
-            if (_iconSize.IsEmpty)
-            {
-                Initialize(0, 0);
-            }
-            else
-            {
-                Initialize(_iconSize.Width, _iconSize.Height);
-            }
         }
 
         /// <include file='doc\Icon.uex' path='docs/doc[@for="Icon.ExtractAssociatedIcon"]/*' />
@@ -1042,16 +1017,12 @@ namespace System.Drawing
 
         private Bitmap PngFrame()
         {
-            Bitmap bitmap = null;
-            if (_iconData != null)
+            Debug.Assert(_iconData != null);
+            using (var stream = new MemoryStream())
             {
-                using (MemoryStream stream = new MemoryStream())
-                {
-                    stream.Write(_iconData, _bestImageOffset, _bestBytesInRes);
-                    bitmap = new Bitmap(stream);
-                }
+                stream.Write(_iconData, _bestImageOffset, _bestBytesInRes);
+                return new Bitmap(stream);
             }
-            return bitmap;
         }
 
         private bool HasPngSignature()
@@ -1080,27 +1051,6 @@ namespace System.Drawing
         public override string ToString()
         {
             return SR.Format(SR.toStringIcon);
-        }
-
-        /// <include file='doc\Icon.uex' path='docs/doc[@for="Icon.ISerializable.GetObjectData"]/*' />
-        /// <devdoc>
-        ///     ISerializable private implementation
-        /// </devdoc>
-        /// <internalonly/>
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            if (_iconData != null)
-            {
-                si.AddValue("IconData", _iconData, typeof(byte[]));
-            }
-            else
-            {
-                MemoryStream stream = new MemoryStream();
-                Save(stream);
-                si.AddValue("IconData", stream.ToArray(), typeof(byte[]));
-            }
-            si.AddValue("IconSize", _iconSize, typeof(Size));
         }
     }
 }

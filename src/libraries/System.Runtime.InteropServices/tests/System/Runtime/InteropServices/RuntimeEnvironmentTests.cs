@@ -16,7 +16,6 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
-        [ActiveIssue(20600, TargetFrameworkMonikers.UapAot)]
         public void RuntimeEnvironmentSysVersion()
         {            
             Assert.NotEmpty(RuntimeEnvironment.GetSystemVersion());

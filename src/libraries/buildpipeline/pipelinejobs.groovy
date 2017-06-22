@@ -10,40 +10,50 @@ def project = GithubProject
 def branch = GithubBranchName
 
 // **************************
-// Define innerloop testing.  These jobs run on every merge and a subset of them run on every PR, the ones
-// that don't run per PR can be requested via a magic phrase.
+// Define innerloop testing. Any configuration in ForPR will run for every PR but all other configurations
+// will have a trigger that can be
 // **************************
-def linuxPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/portable-linux.groovy')
 
-['netcoreapp'].each { targetGroup ->
-	['Debug', 'Release'].each { configurationGroup ->
-		['Linux x64'].each { osName ->
-            // Runs the portable-linux.groovy pipeline on the target Helix queues mentioned in the pipeline.  Currently:
-            // CentOS 7.3, RedHat 7.3, Debian 8.7, Ubuntu 14.04, Ubuntu 16.04, Ubuntu 16.10, openSuSE 42.2 and Fedora 25
+def linPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/linux.groovy')
+def osxPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/osx.groovy')
+def winPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/windows.groovy')
 
-            // One for just innerloop.
-            linuxPipeline.triggerPipelineOnEveryGithubPR("Portable ${osName} ${configurationGroup} Build", ['Config':configurationGroup, 'OuterLoop':false])
-            // Add one for outerloop
-            linuxPipeline.triggerPipelineOnGithubPRComment("Portable Outerloop ${osName} ${configurationGroup} Build", ['Config':configurationGroup, 'OuterLoop':true])
-		}
-	}
-}
+def configurations = [
+    ['TGroup':"netcoreapp", 'Pipeline':linPipeline, 'Name':'Linux' ,'ForPR':"Release-x64", 'Arch':['x64']],
+    ['TGroup':"netcoreapp", 'Pipeline':osxPipeline, 'Name':'OSX', 'ForPR':"Debug-x64", 'Arch':['x64']],
+    ['TGroup':"netcoreapp", 'Pipeline':winPipeline, 'Name':'Windows' , 'ForPR':"Debug-x64|Release-x86"],
+    ['TGroup':"netfx",      'Pipeline':winPipeline, 'Name':'NETFX', 'ForPR':"Release-x86"],
+    ['TGroup':"uap",        'Pipeline':winPipeline, 'Name':'UWP CoreCLR', 'ForPR':"Debug-x64"],
+    ['TGroup':"uapaot",     'Pipeline':winPipeline, 'Name':'UWP NETNative', 'ForPR':"Release-x86"],
+    ['TGroup':"all",        'Pipeline':winPipeline, 'Name':'Packaging All Configurations', 'ForPR':"Debug-x64"],
+]
 
-// Create a pipeline for portable windows
-def windowsPipeline = Pipeline.createPipelineForGithub(this, project, branch, 'buildpipeline/portable-windows.groovy')
-['netcoreapp'].each { targetGroup ->
-	['Debug', 'Release'].each { configurationGroup ->
-		['Windows x64'].each { osName ->
-            // Runs the portable-windows.groovy pipeline on the target Helix queues mentioned in the pipeline.  Currently:
-            // Windows 10, Windows 7, Windows 8.1 and Windows Nano
+configurations.each { config ->
+ ['Debug', 'Release'].each { configurationGroup ->
+  (config.Arch ?: ['x64', 'x86']).each { archGroup ->
+    def triggerName = "${config.Name} ${archGroup} ${configurationGroup} Build"
 
-            // One for just innerloop
-            windowsPipeline.triggerPipelineOnEveryGithubPR("Portable ${osName} ${configurationGroup} Build", ['Config':configurationGroup, 'OuterLoop':false])
-            // Add one for outerloop
-            windowsPipeline.triggerPipelineOnGithubPRComment("Portable Outerloop ${osName} ${configurationGroup} Build", ['Config':configurationGroup, 'OuterLoop':true])
-		}
-	}
-}
+    def pipeline = config.Pipeline
+    def params = ['TGroup':config.TGroup,
+                  'CGroup':configurationGroup,
+                  'AGroup':archGroup,
+                  'TestOuter': false]
+
+    // Add default PR triggers for particular configurations but manual triggers for all
+    if (config.ForPR.contains("${configurationGroup}-${archGroup}")) {
+        pipeline.triggerPipelineOnEveryGithubPR(triggerName, params)
+    }
+    else {
+        pipeline.triggerPipelineOnGithubPRComment(triggerName, params)
+    }
+
+    // Add trigger for all configurations to run on merge
+    pipeline.triggerPipelineOnGithubPush(params)
+
+    // Add optional PR trigger for Outerloop test runs
+    params.TestOuter = true
+    pipeline.triggerPipelineOnGithubPRComment("Outerloop ${triggerName}", params)
+}}}
 
 JobReport.Report.generateJobReport(out)
 
