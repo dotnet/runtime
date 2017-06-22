@@ -3007,12 +3007,20 @@ public:
     // must have a dictionary entry. On the other hand, for instantiations shared with Dict<string,double> the opposite holds.
     //
 
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+    typedef RelativePointer<PTR_Dictionary> PerInstInfoElem_t;
+    typedef RelativePointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
+#else
+    typedef PlainPointer<PTR_Dictionary> PerInstInfoElem_t;
+    typedef PlainPointer<DPTR(PerInstInfoElem_t)> PerInstInfo_t;
+#endif
+
     // Return a pointer to the per-instantiation information. See field itself for comments.
-    DPTR(PTR_Dictionary) GetPerInstInfo()
+    DPTR(PerInstInfoElem_t) GetPerInstInfo()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(HasPerInstInfo());
-        return dac_cast<DPTR(PTR_Dictionary)>(m_pMultipurposeSlot1);
+        return ReadPointer(this, &MethodTable::m_pPerInstInfo);
     }
     BOOL HasPerInstInfo()
     {
@@ -3020,15 +3028,20 @@ public:
         return GetFlag(enum_flag_HasPerInstInfo) && !IsArray();
     }
 #ifndef DACCESS_COMPILE
+    static inline bool IsPerInstInfoRelative()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return decltype(m_pPerInstInfo)::isRelative;
+    }
     static inline DWORD GetOffsetOfPerInstInfo()
     {
         LIMITED_METHOD_CONTRACT;
         return offsetof(MethodTable, m_pPerInstInfo);
     }
-    void SetPerInstInfo(Dictionary** pPerInstInfo)
+    void SetPerInstInfo(PerInstInfoElem_t *pPerInstInfo)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pPerInstInfo = pPerInstInfo;
+        m_pPerInstInfo.SetValue(pPerInstInfo);
     }
     void SetDictInfo(WORD numDicts, WORD numTyPars)
     {
@@ -3048,7 +3061,7 @@ public:
     // Get a pointer to the dictionary for this instantiated type
     // (The instantiation is stored in the initial slots of the dictionary)
     // If not instantiated, return NULL
-    Dictionary* GetDictionary();
+    PTR_Dictionary GetDictionary();
 
 #ifdef FEATURE_PREJIT
     // 
@@ -4108,9 +4121,9 @@ private:
 
     union
     {
-        PTR_Dictionary *    m_pPerInstInfo;
-        TADDR               m_ElementTypeHnd;
-        TADDR               m_pMultipurposeSlot1;
+        PerInstInfo_t m_pPerInstInfo;
+        TADDR         m_ElementTypeHnd;
+        TADDR         m_pMultipurposeSlot1;
     };
     public:
     union

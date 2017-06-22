@@ -5084,7 +5084,10 @@ void NativeImageDumper::MethodTableToString( PTR_MethodTable mt, SString& buf )
             {
                 numDicts = (DWORD)CountDictionariesInClass(token, dependency->pImport);
             }
-            PTR_Dictionary dictionary( mt->GetPerInstInfo()[numDicts-1] );
+
+            TADDR base = dac_cast<TADDR>(&(mt->GetPerInstInfo()[numDicts-1]));
+
+            PTR_Dictionary dictionary( MethodTable::PerInstInfoElem_t::GetValueAtPtr(base) );
             unsigned numArgs = mt->GetNumGenericArgs();
 
             DictionaryToArgString( dictionary, numArgs, buf );
@@ -7049,8 +7052,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                 GenericsDictInfo, METHODTABLES);
         DisplayEndStructure( METHODTABLES ); //GenericsDictInfo
 
-
-        DPTR(PTR_Dictionary) perInstInfo = mt->GetPerInstInfo();
+        DPTR(MethodTable::PerInstInfoElem_t) perInstInfo = mt->GetPerInstInfo();
 
         DisplayStartStructure( "PerInstInfo",
                                DPtrToPreferredAddr(perInstInfo),
