@@ -657,7 +657,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public async Task SendRecv_0ByteReceive_Success()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

@@ -14,7 +14,7 @@ namespace System.Net.Sockets.Tests
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Socket).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -29,7 +29,7 @@ namespace System.Net.Sockets.Tests
         [OuterLoop]
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21391, TargetFrameworkMonikers.UapAot)]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>
