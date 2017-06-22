@@ -18,8 +18,22 @@ namespace System.Net.Test.Common
         {
             private const string CertificatePassword = "testcertificate";
             private const string TestDataFolder = "TestData";
-            private static Mutex m = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+
+            private static Mutex m;
             private const int MutexTimeout = 120 * 1000;
+
+            static Certificates()
+            {
+                if (PlatformDetection.IsUap)
+                {
+                    // TODO: dotnet/coreclr#11306
+                    m = new Mutex(false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+                }
+                else
+                {
+                    m = new Mutex(false, "Global\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
+                }
+            }
 
             public static X509Certificate2 GetServerCertificate() => GetCertWithPrivateKey(GetServerCertificateCollection());
 

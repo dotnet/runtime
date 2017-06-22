@@ -21,7 +21,6 @@
 // LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
 
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
@@ -37,10 +36,12 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Default()
         {
-            var region = new Region();
-            Assert.False(region.IsEmpty(s_graphic));
-            Assert.True(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF(-4194304, -4194304, 8388608, 8388608), region.GetBounds(s_graphic));
+            using (var region = new Region())
+            {
+                Assert.False(region.IsEmpty(s_graphic));
+                Assert.True(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF(-4194304, -4194304, 8388608, 8388608), region.GetBounds(s_graphic));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -50,11 +51,13 @@ namespace System.Drawing.Tests
         public void Ctor_Rectangle(int x, int y, int width, int height, bool isEmpty)
         {
             var rectangle = new Rectangle(x, y, width, height);
-            
-            var region = new Region(rectangle);
-            Assert.Equal(isEmpty, region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF(x, y, width, height), region.GetBounds(s_graphic));
+
+            using (var region = new Region(rectangle))
+            {
+                Assert.Equal(isEmpty, region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF(x, y, width, height), region.GetBounds(s_graphic));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -67,10 +70,12 @@ namespace System.Drawing.Tests
         {
             var rectangle = new RectangleF(x, y, width, height);
 
-            var region = new Region(rectangle);
-            Assert.Equal(isEmpty, region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(rectangle, region.GetBounds(s_graphic));
+            using (var region = new Region(rectangle))
+            {
+                Assert.Equal(isEmpty, region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(rectangle, region.GetBounds(s_graphic));
+            }
         }
 
         public static IEnumerable<object[]> Region_TestData()
@@ -84,10 +89,19 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Region_TestData))]
         public void Ctor_RegionData(Region region)
         {
-            var otherRegion = new Region(region.GetRegionData());
-
-            Assert.Equal(region.GetBounds(s_graphic), otherRegion.GetBounds(s_graphic));
-            Assert.Equal(region.GetRegionScans(new Matrix()), otherRegion.GetRegionScans(new Matrix()));
+            try
+            {
+                using (var otherRegion = new Region(region.GetRegionData()))
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(region.GetBounds(s_graphic), otherRegion.GetBounds(s_graphic));
+                    Assert.Equal(region.GetRegionScans(matrix), otherRegion.GetRegionScans(matrix));
+                }
+            }
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -102,50 +116,68 @@ namespace System.Drawing.Tests
         [InlineData(256)]
         public void Ctor_InvalidRegionData_ThrowsExternalException(int dataLength)
         {
-            RegionData regionData = new Region().GetRegionData();
-            regionData.Data = new byte[dataLength];
-            Assert.Throws<ExternalException>(() => new Region(regionData));
+            using (var region = new Region())
+            {
+                RegionData regionData = region.GetRegionData();
+                regionData.Data = new byte[dataLength];
+                Assert.Throws<ExternalException>(() => new Region(regionData));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_EmptyGraphicsPath_ThrowsExternalException()
         {
-            var region = new Region(new GraphicsPath());
-            RegionData regionData = region.GetRegionData();
-            Assert.Throws<ExternalException>(() => new Region(regionData));
+            using (var graphicsPath = new GraphicsPath())
+            using (var region = new Region(graphicsPath))
+            {
+                RegionData regionData = region.GetRegionData();
+                Assert.Throws<ExternalException>(() => new Region(regionData));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullDataInRegionData_ThrowsNullReferenceException()
         {
-            RegionData regionData = new Region().GetRegionData();
-            regionData.Data = null;
-            Assert.Throws<NullReferenceException>(() => new Region(regionData));
+            using (var region = new Region())
+            {
+                RegionData regionData = region.GetRegionData();
+                regionData.Data = null;
+                Assert.Throws<NullReferenceException>(() => new Region(regionData));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_GraphicsPath()
         {
-            var graphicsPath = new GraphicsPath();
-            graphicsPath.AddRectangle(new Rectangle(1, 2, 3, 4));
-            graphicsPath.AddRectangle(new Rectangle(4, 5, 6, 7));
-
-            var region = new Region(graphicsPath);
-            Assert.Equal(new RectangleF[]
+            using (var graphicsPath = new GraphicsPath())
             {
-                new RectangleF(1, 2, 3, 3),
-                new RectangleF(1, 5, 9, 1),
-                new RectangleF(4, 6, 6, 6)
-            }, region.GetRegionScans(new Matrix()));
-            Assert.Equal(new RectangleF(1, 2, 9, 10), region.GetBounds(s_graphic));
+                graphicsPath.AddRectangle(new Rectangle(1, 2, 3, 4));
+                graphicsPath.AddRectangle(new Rectangle(4, 5, 6, 7));
+
+                using (var region = new Region(graphicsPath))
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(new RectangleF[]
+                    {
+                        new RectangleF(1, 2, 3, 3),
+                        new RectangleF(1, 5, 9, 1),
+                        new RectangleF(4, 6, 6, 6)
+                    }, region.GetRegionScans(matrix));
+                    Assert.Equal(new RectangleF(1, 2, 9, 10), region.GetBounds(s_graphic));
+                }
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_EmptyGraphicsPath()
         {
-            var region = new Region(new GraphicsPath());
-            Assert.True(region.IsEmpty(s_graphic));
-            Assert.Empty(region.GetRegionScans(new Matrix()));
+            using (var graphicsPath = new GraphicsPath())
+            using (var region = new Region(graphicsPath))
+            using (var matrix = new Matrix())
+            {
+                Assert.True(region.IsEmpty(s_graphic));
+                Assert.Empty(region.GetRegionScans(matrix));
+            }
         }
 
         public static IEnumerable<object[]> Ctor_InfiniteGraphicsPath_TestData()
@@ -181,18 +213,32 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Ctor_InfiniteGraphicsPath_TestData))]
         public void Ctor_InfiniteGraphicsPath_IsInfinite(GraphicsPath path, bool isInfinite)
         {
-            var region = new Region(path);
-            Assert.Equal(isInfinite, region.IsInfinite(s_graphic));
+            try
+            {
+                using (var region = new Region(path))
+                {
+                    Assert.Equal(isInfinite, region.IsInfinite(s_graphic));
+                }
+            }
+            finally
+            {
+                path.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_GraphicsPathTooLarge_SetsToEmpty()
         {
-            var path = new GraphicsPath();
-            path.AddCurve(new Point[] { new Point(-4194304, -4194304), new Point(4194304, 4194304) });
+            using (var path = new GraphicsPath())
+            {
+                path.AddCurve(new Point[] { new Point(-4194304, -4194304), new Point(4194304, 4194304) });
 
-            var rect = new Region(path);
-            Assert.Empty(rect.GetRegionScans(new Matrix()));
+                using (var region = new Region(path))
+                using (var matrix = new Matrix())
+                {
+                    Assert.Empty(region.GetRegionScans(matrix));
+                }
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -206,6 +252,7 @@ namespace System.Drawing.Tests
         {
             var path = new GraphicsPath();
             path.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Region(path));
         }
 
@@ -213,11 +260,21 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Region_TestData))]
         public void Clone(Region region)
         {
-            Region clone = Assert.IsType<Region>(region.Clone());
-            Assert.NotSame(region, clone);
+            try
+            {
+                using (Region clone = Assert.IsType<Region>(region.Clone()))
+                using (var matrix = new Matrix())
+                {
+                    Assert.NotSame(region, clone);
 
-            Assert.Equal(region.GetBounds(s_graphic), clone.GetBounds(s_graphic));
-            Assert.Equal(region.GetRegionScans(new Matrix()), clone.GetRegionScans(new Matrix()));
+                    Assert.Equal(region.GetBounds(s_graphic), clone.GetBounds(s_graphic));
+                    Assert.Equal(region.GetRegionScans(matrix), clone.GetRegionScans(matrix));
+                }
+            }
+            finally
+            {
+                region.Clone();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -270,7 +327,6 @@ namespace System.Drawing.Tests
                 new RectangleF[] { new RectangleF(170, 260, 10, 10) }
             };
 
-
             yield return new object[]
             {
                 new Region(),
@@ -290,65 +346,90 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Complement_TestData))]
         public void Complement_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Complement(new Region(rect));
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var other = new Region(rect))
+                    {
+                        region.Complement(other);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_UnionRegion_Success()
         {
-            var complement = new Region(new Rectangle(20, 80, 20, 10));
-            complement.Union(new Rectangle(60, 60, 30, 10));
-
-            var region = new Region(new Rectangle(20, 20, 20, 20));
-            region.Complement(complement);
-
-            Assert.Equal(new RectangleF[]
+            using (var region = new Region(new Rectangle(20, 20, 20, 20)))
+            using (var other = new Region(new Rectangle(20, 80, 20, 10)))
+            using (var matrix = new Matrix())
             {
-                new RectangleF(60, 60, 30, 10),
-                new RectangleF(20, 80, 20, 10)
-            }, region.GetRegionScans(new Matrix()));
+                other.Union(new Rectangle(60, 60, 30, 10));
+
+                region.Complement(other);
+                Assert.Equal(new RectangleF[]
+                {
+                    new RectangleF(60, 60, 30, 10),
+                    new RectangleF(20, 80, 20, 10)
+                }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_InfiniteAndWithIntersectRegion_Success()
         {
-            var region = new Region();
-            region.Intersect(new Rectangle(5, 5, -10, -10));
-            region.Complement(new Rectangle(-5, -5, 12, 12));
-
-            Assert.False(region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[]
+            using (var region = new Region())
+            using (var matrix = new Matrix())
             {
-                new RectangleF(5, -5, 2, 10),
-                new RectangleF(-5, 5, 12, 2)
-            }, region.GetRegionScans(new Matrix()));
+                region.Intersect(new Rectangle(5, 5, -10, -10));
+                region.Complement(new Rectangle(-5, -5, 12, 12));
+
+                Assert.False(region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[]
+                {
+                    new RectangleF(5, -5, 2, 10),
+                    new RectangleF(-5, 5, 12, 2)
+                }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_InfiniteRegion_Success()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            region.Complement(new Region());
-
-            Assert.Equal(new RectangleF[]
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            using (var other = new Region())
             {
-                new RectangleF(-4194304, -4194304, 8388608, 4194306),
-                new RectangleF(-4194304, 2, 4194305, 4),
-                new RectangleF(4, 2, 4194300, 4),
-                new RectangleF(-4194304, 6, 8388608, 4194298)
-            }, region.GetRegionScans(new Matrix()));
+                region.Complement(other);
+
+                Assert.Equal(new RectangleF[]
+                {
+                    new RectangleF(-4194304, -4194304, 8388608, 4194306),
+                    new RectangleF(-4194304, 2, 4194305, 4),
+                    new RectangleF(4, 2, 4194300, 4),
+                    new RectangleF(-4194304, 6, 8388608, 4194298)
+                }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_NullRegion_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("region", () => region.Complement((Region)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("region", () => region.Complement((Region)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -356,36 +437,61 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Region().Complement(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_SameRegion_ThrowsInvalidOperationException()
         {
-            var region = new Region();
-            Assert.Throws<InvalidOperationException>(() => region.Complement(region));
+            using (var region = new Region())
+            {
+                Assert.Throws<InvalidOperationException>(() => region.Complement(region));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Complement_TestData))]
         public void Complement_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Complement(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Complement(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Complement_TestData))]
         public void Complement_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Complement(rect);
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Complement(rect);
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -394,11 +500,17 @@ namespace System.Drawing.Tests
         {
             foreach (RectangleF rect in rectangles)
             {
-                var path = new GraphicsPath();
-                path.AddRectangle(rect);
-                region.Complement(path);
+                using (var path = new GraphicsPath())
+                {
+                    path.AddRectangle(rect);
+                    region.Complement(path);
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+
+            using (var matrix = new Matrix())
+            {
+                Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -408,35 +520,43 @@ namespace System.Drawing.Tests
 
             var rect1 = new Rectangle(20, 30, 60, 80);
             var rect2 = new Rectangle(50, 40, 60, 80);
-            var region1 = new Region(rect1);
-            var region2 = new Region(rect2);
-            graphics.DrawRectangle(Pens.Green, rect1);
-            graphics.DrawRectangle(Pens.Red, rect2);
-
-            region1.Complement(region2);
-            graphics.FillRegion(Brushes.Blue, region1);
-            graphics.DrawRectangles(Pens.Yellow, region1.GetRegionScans(new Matrix()));
-
-            Assert.Equal(new RectangleF[]
+            using (var region1 = new Region(rect1))
+            using (var region2 = new Region(rect2))
+            using (var matrix = new Matrix())
             {
-                new RectangleF(80, 40, 30, 70),
-                new RectangleF(50, 110, 60, 10)
-            }, region1.GetRegionScans(new Matrix()));
+                graphics.DrawRectangle(Pens.Green, rect1);
+                graphics.DrawRectangle(Pens.Red, rect2);
+
+                region1.Complement(region2);
+                graphics.FillRegion(Brushes.Blue, region1);
+                graphics.DrawRectangles(Pens.Yellow, region1.GetRegionScans(matrix));
+
+                Assert.Equal(new RectangleF[]
+                {
+                    new RectangleF(80, 40, 30, 70),
+                    new RectangleF(50, 110, 60, 10)
+                }, region1.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_EmptyPathWithInfiniteRegion_MakesEmpty()
         {
-            var region = new Region();
-            region.Complement(new GraphicsPath());
-            Assert.True(region.IsEmpty(s_graphic));
+            using (var region = new Region())
+            using (var graphicsPath = new GraphicsPath())
+            {
+                region.Complement(graphicsPath);
+                Assert.True(region.IsEmpty(s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Complement_NullGraphicsPath_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("path", () => region.Complement((GraphicsPath)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("path", () => region.Complement((GraphicsPath)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -444,10 +564,15 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Complement(new GraphicsPath()));
-            Assert.Throws<ArgumentException>(null, () => region.Complement(new Rectangle()));
-            Assert.Throws<ArgumentException>(null, () => region.Complement(new RectangleF()));
-            Assert.Throws<ArgumentException>(null, () => region.Complement(new Region()));
+
+            using (var graphicPath = new GraphicsPath())
+            using (var other = new Region())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.Complement(graphicPath));
+                Assert.Throws<ArgumentException>(null, () => region.Complement(new Rectangle()));
+                Assert.Throws<ArgumentException>(null, () => region.Complement(new RectangleF()));
+                Assert.Throws<ArgumentException>(null, () => region.Complement(region));
+            }
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -459,11 +584,11 @@ namespace System.Drawing.Tests
                 return emptyRegion;
             };
 
-            var region = new Region();
-            yield return new object[] { region, region, true };
-            yield return new object[] { region, new Region(), true };
-            yield return new object[] { region, empty(), false };
-            yield return new object[] { region, new Region(new Rectangle(1, 2, 3, 4)), false };
+            var createdRegion = new Region();
+            yield return new object[] { createdRegion, createdRegion, true };
+            yield return new object[] { new Region(), new Region(), true };
+            yield return new object[] { new Region(), empty(), false };
+            yield return new object[] { new Region(), new Region(new Rectangle(1, 2, 3, 4)), false };
 
             yield return new object[] { empty(), empty(), true };
             yield return new object[] { empty(), new Region(new Rectangle(0, 0, 0, 0)), true };
@@ -506,21 +631,33 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Valid_ReturnsExpected(Region region, Region other, bool expected)
         {
-            Assert.Equal(expected, region.Equals(other, s_graphic));
+            try
+            {
+                Assert.Equal(expected, region.Equals(other, s_graphic));
+            }
+            finally
+            {
+                region.Dispose();
+                other.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Equals_NullRegion_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("region", () => region.Equals(null, s_graphic));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("region", () => region.Equals(null, s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Equals_NullGraphics_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("g", () => region.Equals(new Region(), null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("g", () => region.Equals(region, null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -528,6 +665,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.Equals(new Region(), s_graphic));
             Assert.Throws<ArgumentException>(null, () => new Region().Equals(region, s_graphic));
         }
@@ -687,36 +825,50 @@ namespace System.Drawing.Tests
         {
             foreach (RectangleF rect in rectangles)
             {
-                region.Exclude(new Region(rect));
+                using (var other = new Region(rect))
+                {
+                    region.Exclude(other);
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+
+            using (var matrix = new Matrix())
+            {
+                Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Exclude_UnionRegion_Success()
         {
-            var union = new Region(new RectangleF(20, 80, 20, 10));
-            union.Union(new RectangleF(60, 60, 30, 10));
-
-            var region = new Region(new RectangleF(20, 20, 20, 20));
-            region.Exclude(union);
-            Assert.Equal(new RectangleF[] { new RectangleF(20, 20, 20, 20) }, region.GetRegionScans(new Matrix()));
+            using (var region = new Region(new RectangleF(20, 20, 20, 20)))
+            using (var union = new Region(new RectangleF(20, 80, 20, 10)))
+            using (var matrix = new Matrix())
+            {
+                union.Union(new RectangleF(60, 60, 30, 10));
+                region.Exclude(union);
+                Assert.Equal(new RectangleF[] { new RectangleF(20, 20, 20, 20) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Exclude_InfiniteRegion_Success()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            region.Exclude(new Region());
-
-            Assert.Equal(new RectangleF[0], region.GetRegionScans(new Matrix()));
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            using (var other = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Exclude(other);
+                Assert.Equal(new RectangleF[0], region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Exclude_NullRegion_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("region", () => region.Exclude((Region)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("region", () => region.Exclude((Region)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -724,64 +876,107 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Region().Exclude(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Exclude_SameRegion_ThrowsInvalidOperationException()
         {
-            var region = new Region();
-            Assert.Throws<InvalidOperationException>(() => region.Exclude(region));
+            using (var region = new Region())
+            {
+                Assert.Throws<InvalidOperationException>(() => region.Exclude(region));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Exclude(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Exclude(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Exclude(rect);
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Exclude(rect);
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Exclude_TestData))]
         public void Exclude_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                var path = new GraphicsPath();
-                path.AddRectangle(rect);
-                region.Exclude(path);
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var path = new GraphicsPath())
+                    {
+                        path.AddRectangle(rect);
+                        region.Exclude(path);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Exclude_EmptyPathWithInfiniteRegion_MakesInfinite()
         {
-            var region = new Region();
-            region.Exclude(new GraphicsPath());
-            Assert.True(region.IsInfinite(s_graphic));
+            using (var region = new Region())
+            using (var graphicsPath = new GraphicsPath())
+            {
+                region.Exclude(graphicsPath);
+                Assert.True(region.IsInfinite(s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Exclude_NullGraphicsPath_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("path", () => region.Exclude((GraphicsPath)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("path", () => region.Exclude((GraphicsPath)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -789,29 +984,36 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Exclude(new GraphicsPath()));
-            Assert.Throws<ArgumentException>(null, () => region.Exclude(new Rectangle()));
-            Assert.Throws<ArgumentException>(null, () => region.Exclude(new RectangleF()));
-            Assert.Throws<ArgumentException>(null, () => region.Exclude(new Region()));
+
+            using (var graphicsPath = new GraphicsPath())
+            using (var other = new Region())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.Exclude(graphicsPath));
+                Assert.Throws<ArgumentException>(null, () => region.Exclude(new Rectangle()));
+                Assert.Throws<ArgumentException>(null, () => region.Exclude(new RectangleF()));
+                Assert.Throws<ArgumentException>(null, () => region.Exclude(other));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void FromHrgn_ValidHrgn_ReturnsExpected()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            IntPtr handle1 = region.GetHrgn(s_graphic);
-            IntPtr handle2 = region.GetHrgn(s_graphic);
-            Assert.NotEqual(IntPtr.Zero, handle1);
-            Assert.NotEqual(handle1, handle2);
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            {
+                IntPtr handle1 = region.GetHrgn(s_graphic);
+                IntPtr handle2 = region.GetHrgn(s_graphic);
+                Assert.NotEqual(IntPtr.Zero, handle1);
+                Assert.NotEqual(handle1, handle2);
 
-            Region newRegion = Region.FromHrgn(handle1);
-            IntPtr handle3 = newRegion.GetHrgn(s_graphic);
-            Assert.NotEqual(handle3, handle1);
-            Assert.Equal(new RectangleF(1, 2, 3, 4), newRegion.GetBounds(s_graphic));
+                Region newRegion = Region.FromHrgn(handle1);
+                IntPtr handle3 = newRegion.GetHrgn(s_graphic);
+                Assert.NotEqual(handle3, handle1);
+                Assert.Equal(new RectangleF(1, 2, 3, 4), newRegion.GetBounds(s_graphic));
 
-            region.ReleaseHrgn(handle1);
-            region.ReleaseHrgn(handle2);
-            newRegion.ReleaseHrgn(handle3);
+                region.ReleaseHrgn(handle1);
+                region.ReleaseHrgn(handle2);
+                newRegion.ReleaseHrgn(handle3);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -823,32 +1025,38 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetHrgn_Infinite_ReturnsZero()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            IntPtr handle = region.GetHrgn(s_graphic);
-            Assert.NotEqual(IntPtr.Zero, handle);
-            region.ReleaseHrgn(handle);
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            {
+                IntPtr handle = region.GetHrgn(s_graphic);
+                Assert.NotEqual(IntPtr.Zero, handle);
+                region.ReleaseHrgn(handle);
 
-            region.MakeInfinite();
-            Assert.Equal(IntPtr.Zero, region.GetHrgn(s_graphic));
+                region.MakeInfinite();
+                Assert.Equal(IntPtr.Zero, region.GetHrgn(s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetHrgn_Empty_ReturnsNonZero()
         {
-            var region = new Region();
-            Assert.Equal(IntPtr.Zero, region.GetHrgn(s_graphic));
+            using (var region = new Region())
+            {
+                Assert.Equal(IntPtr.Zero, region.GetHrgn(s_graphic));
 
-            region.MakeEmpty();
-            IntPtr handle = region.GetHrgn(s_graphic);
-            Assert.NotEqual(IntPtr.Zero, handle);
-            region.ReleaseHrgn(handle);
+                region.MakeEmpty();
+                IntPtr handle = region.GetHrgn(s_graphic);
+                Assert.NotEqual(IntPtr.Zero, handle);
+                region.ReleaseHrgn(handle);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetHrgn_NullGraphics_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("g", () => region.GetHrgn(null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("g", () => region.GetHrgn(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -856,21 +1064,26 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.GetHrgn(s_graphic));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void ReleaseHrgn_ZeroHandle_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("regionHandle", () => region.ReleaseHrgn(IntPtr.Zero));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("regionHandle", () => region.ReleaseHrgn(IntPtr.Zero));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetBounds_NullGraphics_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("g", () => region.GetBounds(null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("g", () => region.GetBounds(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -878,6 +1091,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.GetBounds(s_graphic));
         }
 
@@ -886,27 +1100,32 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.GetRegionData());
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetRegionScans_CustomMatrix_TransformsRegionScans()
         {
-            var matrix = new Matrix();
-            matrix.Translate(10, 11);
-            matrix.Scale(5, 6);
+            using (var matrix = new Matrix())
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            using (var emptyMatrix = new Matrix())
+            {
+                matrix.Translate(10, 11);
+                matrix.Scale(5, 6);
 
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            Assert.Equal(new RectangleF[] { new RectangleF(1, 2, 3, 4) }, region.GetRegionScans(new Matrix()));
-            Assert.Equal(new RectangleF[] { new RectangleF(15, 23, 15, 24) }, region.GetRegionScans(matrix));
+                Assert.Equal(new RectangleF[] { new RectangleF(1, 2, 3, 4) }, region.GetRegionScans(emptyMatrix));
+                Assert.Equal(new RectangleF[] { new RectangleF(15, 23, 15, 24) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetRegionScans_NullMatrix_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            region.Dispose();
-            Assert.Throws<ArgumentNullException>("matrix", () => region.GetRegionScans(null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("matrix", () => region.GetRegionScans(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -914,32 +1133,40 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.GetRegionScans(new Matrix()));
+
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetRegionScans_DisposedMatrix_ThrowsArgumentException()
         {
-            var region = new Region();
-            var matrix = new Matrix();
-            matrix.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
+            using (var region = new Region())
+            {
+                var matrix = new Matrix();
+                matrix.Dispose();
+                Assert.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Test()
+        public void Intersect_SmallerRect_Success()
         {
-            var clipRegion = new Region();
+            using (var clipRegion = new Region())
+            using (var matrix = new Matrix())
+            {
+                Rectangle smaller = new Rectangle(5, 5, -10, -10);
 
-            Rectangle smaller = new Rectangle(5, 5, -10, -10);
+                clipRegion.Intersect(smaller);
+                Assert.False(clipRegion.IsEmpty(s_graphic));
+                Assert.False(clipRegion.IsInfinite(s_graphic));
 
-            clipRegion.Intersect(smaller);
-            Assert.False(clipRegion.IsEmpty(s_graphic), "IsEmpty");
-            Assert.False(clipRegion.IsInfinite(s_graphic), "IsInfinite");
-
-            RectangleF[] rects = clipRegion.GetRegionScans(new Matrix());
-            Assert.Equal(1, rects.Length);
-            Assert.Equal(new RectangleF(-5, -5, 10, 10), rects[0]);
+                RectangleF[] rects = clipRegion.GetRegionScans(matrix);
+                Assert.Equal(1, rects.Length);
+                Assert.Equal(new RectangleF(-5, -5, 10, 10), rects[0]);
+            }
         }
 
         public static IEnumerable<object[]> Intersect_TestData()
@@ -1002,27 +1229,43 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Intersect(new Region(rect));
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Intersect(new Region(rect));
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_InfiniteRegion_Success()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            region.Intersect(new Region());
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            {
+                region.Intersect(new Region());
 
-            Assert.Equal(new RectangleF[] { new Rectangle(1, 2, 3, 4) }, region.GetRegionScans(new Matrix()));
+                Assert.Equal(new RectangleF[] { new Rectangle(1, 2, 3, 4) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_NullRegion_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("region", () => region.Intersect((Region)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("region", () => region.Intersect((Region)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1030,86 +1273,135 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Region().Intersect(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_SameRegion_ThrowsInvalidOperationException()
         {
-            var region = new Region();
-            Assert.Throws<InvalidOperationException>(() => region.Intersect(region));
+            using (var region = new Region())
+            {
+                Assert.Throws<InvalidOperationException>(() => region.Intersect(region));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Intersect(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Intersect(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_InfiniteRegionWithSmallerRectangle_Success()
         {
-            var region = new Region();
-            region.Intersect(new Rectangle(5, 5, -10, -10));
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Intersect(new Rectangle(5, 5, -10, -10));
 
-            Assert.False(region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(-5, -5, 10, 10) }, region.GetRegionScans(new Matrix()));
+                Assert.False(region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(-5, -5, 10, 10) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Intersect(rect);
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Intersect(rect);
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_InfiniteRegionWithSmallerRectangleF_Success()
         {
-            var region = new Region();
-            region.Intersect(new RectangleF(5, 5, -10, -10));
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Intersect(new RectangleF(5, 5, -10, -10));
 
-            Assert.False(region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(-5, -5, 10, 10) }, region.GetRegionScans(new Matrix()));
+                Assert.False(region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(-5, -5, 10, 10) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Intersect_TestData))]
         public void Intersect_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                var path = new GraphicsPath();
-                path.AddRectangle(rect);
-                region.Intersect(path);
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var path = new GraphicsPath())
+                    {
+                        path.AddRectangle(rect);
+                        region.Intersect(path);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_EmptyPathWithInfiniteRegion_MakesEmpty()
         {
-            var region = new Region();
-            region.Intersect(new GraphicsPath());
-            Assert.True(region.IsEmpty(s_graphic));
+            using (var region = new Region())
+            using (var graphicsPath = new GraphicsPath())
+            {
+                region.Intersect(graphicsPath);
+                Assert.True(region.IsEmpty(s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Intersect_NullGraphicsPath_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("path", () => region.Intersect((GraphicsPath)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("path", () => region.Intersect((GraphicsPath)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1117,17 +1409,24 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Intersect(new GraphicsPath()));
-            Assert.Throws<ArgumentException>(null, () => region.Intersect(new Rectangle()));
-            Assert.Throws<ArgumentException>(null, () => region.Intersect(new RectangleF()));
-            Assert.Throws<ArgumentException>(null, () => region.Intersect(new Region()));
+
+            using (var graphicsPath = new GraphicsPath())
+            using (var other = new Region())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.Intersect(graphicsPath));
+                Assert.Throws<ArgumentException>(null, () => region.Intersect(new Rectangle()));
+                Assert.Throws<ArgumentException>(null, () => region.Intersect(new RectangleF()));
+                Assert.Throws<ArgumentException>(null, () => region.Intersect(other));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void IsEmpty_NullGraphics_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("g", () => region.IsEmpty(null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("g", () => region.IsEmpty(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1135,14 +1434,17 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.IsEmpty(s_graphic));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void IsInfinite_NullGraphics_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("g", () => region.IsInfinite(null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("g", () => region.IsInfinite(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1150,6 +1452,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.IsInfinite(s_graphic));
         }
 
@@ -1179,19 +1482,26 @@ namespace System.Drawing.Tests
         [MemberData(nameof(IsVisible_Rectangle_TestData))]
         public void IsVisible_Rectangle_ReturnsExpected(Region region, Rectangle rectangle, bool expected)
         {
-            Assert.Equal(expected, region.IsVisible(rectangle));
-            Assert.Equal(expected, region.IsVisible((RectangleF)rectangle));
-            Assert.Equal(expected, region.IsVisible(rectangle, s_graphic));
-            Assert.Equal(expected, region.IsVisible(rectangle, null));
-            Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, s_graphic));
-            Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, null));
+            try
+            {
+                Assert.Equal(expected, region.IsVisible(rectangle));
+                Assert.Equal(expected, region.IsVisible((RectangleF)rectangle));
+                Assert.Equal(expected, region.IsVisible(rectangle, s_graphic));
+                Assert.Equal(expected, region.IsVisible(rectangle, null));
+                Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, s_graphic));
+                Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, null));
 
-            Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
-            Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
-            Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
-            Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
-            Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
-            Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
+                Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
+                Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
+                Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
+                Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
+                Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
+                Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
+            }
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         public static IEnumerable<object[]> IsVisible_Point_TestData()
@@ -1222,21 +1532,28 @@ namespace System.Drawing.Tests
         [MemberData(nameof(IsVisible_Point_TestData))]
         public void IsVisible_Point_ReturnsExpected(Region region, Point point, bool expected)
         {
-            Assert.Equal(expected, region.IsVisible(point));
-            Assert.Equal(expected, region.IsVisible((PointF)point));
-            Assert.Equal(expected, region.IsVisible(point, s_graphic));
-            Assert.Equal(expected, region.IsVisible(point, null));
-            Assert.Equal(expected, region.IsVisible((PointF)point, s_graphic));
-            Assert.Equal(expected, region.IsVisible((PointF)point, null));
-            
-            Assert.Equal(expected, region.IsVisible(point.X, point.Y));
-            Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
-            Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
+            try
+            {
+                Assert.Equal(expected, region.IsVisible(point));
+                Assert.Equal(expected, region.IsVisible((PointF)point));
+                Assert.Equal(expected, region.IsVisible(point, s_graphic));
+                Assert.Equal(expected, region.IsVisible(point, null));
+                Assert.Equal(expected, region.IsVisible((PointF)point, s_graphic));
+                Assert.Equal(expected, region.IsVisible((PointF)point, null));
 
-            Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
-            Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
-            Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, s_graphic));
-            Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, null));
+                Assert.Equal(expected, region.IsVisible(point.X, point.Y));
+                Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
+                Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
+
+                Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
+                Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
+                Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, s_graphic));
+                Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, null));
+            }
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1244,6 +1561,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f));
             Assert.Throws<ArgumentException>(null, () => region.IsVisible(new PointF(1, 2)));
             Assert.Throws<ArgumentException>(null, () => region.IsVisible(new Point(1, 2)));
@@ -1269,14 +1587,25 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Region_TestData))]
         public void MakeEmpty_NonEmpty_Success(Region region)
         {
-            region.MakeEmpty();
-            Assert.True(region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(RectangleF.Empty, region.GetBounds(s_graphic));
-            Assert.Empty(region.GetRegionScans(new Matrix()));
+            try
+            {
+                region.MakeEmpty();
+                Assert.True(region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(RectangleF.Empty, region.GetBounds(s_graphic));
 
-            region.MakeEmpty();
-            Assert.True(region.IsEmpty(s_graphic));
+                using (var matrix = new Matrix())
+                {
+                    Assert.Empty(region.GetRegionScans(matrix));
+                }
+
+                region.MakeEmpty();
+                Assert.True(region.IsEmpty(s_graphic));
+            }
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1284,6 +1613,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.MakeEmpty());
         }
 
@@ -1291,14 +1621,21 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Region_TestData))]
         public void MakeInfinite_NonInfinity_Success(Region region)
         {
-            region.MakeInfinite();
-            Assert.False(region.IsEmpty(s_graphic));
-            Assert.True(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF(-4194304, -4194304, 8388608, 8388608), region.GetBounds(s_graphic));
+            try
+            {
+                region.MakeInfinite();
+                Assert.False(region.IsEmpty(s_graphic));
+                Assert.True(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF(-4194304, -4194304, 8388608, 8388608), region.GetBounds(s_graphic));
 
-            region.MakeInfinite();
-            Assert.False(region.IsEmpty(s_graphic));
-            Assert.True(region.IsInfinite(s_graphic));
+                region.MakeInfinite();
+                Assert.False(region.IsEmpty(s_graphic));
+                Assert.True(region.IsInfinite(s_graphic));
+            }
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1306,6 +1643,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.MakeInfinite());
         }
 
@@ -1503,27 +1841,47 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Union_TestData))]
         public void Union_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Union(new Region(rect));
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var other = new Region(rect))
+                    {
+                        region.Union(other);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Union_InfiniteRegion_Success()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            region.Union(new Region());
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            using (var other = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Union(other);
 
-            Assert.Equal(new RectangleF[] { new Rectangle(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(new Matrix()));
+                Assert.Equal(new RectangleF[] { new Rectangle(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Union_NullRegion_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("region", () => region.Union((Region)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("region", () => region.Union((Region)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1531,64 +1889,107 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Region().Union(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Union_SameRegion_ThrowsInvalidOperationException()
         {
-            var region = new Region();
-            Assert.Throws<InvalidOperationException>(() => region.Union(region));
+            using (var region = new Region())
+            {
+                Assert.Throws<InvalidOperationException>(() => region.Union(region));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Union_TestData))]
         public void Union_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Union(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Union(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Union_TestData))]
         public void Union_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Union(rect);
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Union(rect);
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Union_TestData))]
         public void Union_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                var path = new GraphicsPath();
-                path.AddRectangle(rect);
-                region.Union(path);
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var path = new GraphicsPath())
+                    {
+                        path.AddRectangle(rect);
+                        region.Union(path);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Union_EmptyPathWithInfiniteRegion_MakesInfinite()
         {
-            var region = new Region();
-            region.Union(new GraphicsPath());
-            Assert.True(region.IsInfinite(s_graphic));
+            using (var region = new Region())
+            using (var graphicsPath = new GraphicsPath())
+            {
+                region.Union(graphicsPath);
+                Assert.True(region.IsInfinite(s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Union_NullGraphicsPath_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("path", () => region.Union((GraphicsPath)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("path", () => region.Union((GraphicsPath)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1596,30 +1997,41 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Union(new GraphicsPath()));
-            Assert.Throws<ArgumentException>(null, () => region.Union(new Rectangle()));
-            Assert.Throws<ArgumentException>(null, () => region.Union(new RectangleF()));
-            Assert.Throws<ArgumentException>(null, () => region.Union(new Region()));
+
+            using (var graphicsPath = new GraphicsPath())
+            using (var other = new Region())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.Union(graphicsPath));
+                Assert.Throws<ArgumentException>(null, () => region.Union(new Rectangle()));
+                Assert.Throws<ArgumentException>(null, () => region.Union(new RectangleF()));
+                Assert.Throws<ArgumentException>(null, () => region.Union(region));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_EmptyMatrix_Nop()
         {
-            var region = new Region(new RectangleF(1, 2, 3, 4));
-            region.Transform(new Matrix());
-            Assert.Equal(new RectangleF[] { new RectangleF(1, 2, 3, 4) }, region.GetRegionScans(new Matrix()));
+            using (var region = new Region(new RectangleF(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            {
+                region.Transform(matrix);
+                Assert.Equal(new RectangleF[] { new RectangleF(1, 2, 3, 4) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_CustomMatrix_Success()
         {
-            var matrix = new Matrix();
-            matrix.Translate(10, 11);
-            matrix.Scale(5, 6);
+            using (var region = new Region(new RectangleF(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            using (var emptyMatrix = new Matrix())
+            {
+                matrix.Translate(10, 11);
+                matrix.Scale(5, 6);
 
-            var region = new Region(new RectangleF(1, 2, 3, 4));
-            region.Transform(matrix);
-            Assert.Equal(new RectangleF[] { new RectangleF(15, 23, 15, 24) }, region.GetRegionScans(new Matrix()));
+                region.Transform(matrix);
+                Assert.Equal(new RectangleF[] { new RectangleF(15, 23, 15, 24) }, region.GetRegionScans(emptyMatrix));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1629,49 +2041,58 @@ namespace System.Drawing.Tests
         [InlineData(0, 0, 1, 1, 45)]
         public void Transform_Infinity_Nop(int x, int y, float scaleX, float scaleY, int angle)
         {
-            var matrix = new Matrix();
-            matrix.Translate(10, 11);
-            matrix.Scale(scaleX, scaleY);
-            matrix.Rotate(angle);
-
-            var region = new Region();
-            region.Transform(matrix);
-
-            Assert.True(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(new Matrix()));
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            using (var emptyMatrix = new Matrix())
+            {
+                matrix.Translate(10, 11);
+                matrix.Scale(scaleX, scaleY);
+                matrix.Rotate(angle);
+                
+                region.Transform(matrix);
+                Assert.True(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(emptyMatrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Tranform_InfinityIntersectScale_Success()
         {
-            var matrix = new Matrix();
-            matrix.Scale(2, 0.5f);
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            using (var emptyMatrix = new Matrix())
+            {
+                matrix.Scale(2, 0.5f);
 
-            var region = new Region();
-            region.Intersect(new Rectangle(-10, -10, 20, 20));
-            region.Transform(matrix);
-
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(-20, -5, 40, 10) }, region.GetRegionScans(new Matrix()));
+                region.Intersect(new Rectangle(-10, -10, 20, 20));
+                region.Transform(matrix);
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(-20, -5, 40, 10) }, region.GetRegionScans(emptyMatrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Tranform_InfinityIntersectTransform_Success()
         {
-            var region = new Region();
-            region.Intersect(new Rectangle(-10, -10, 20, 20));
-            region.Transform(new Matrix(2, 0, 0, 0.5f, 10, 10));
+            using (var region = new Region())
+            using (var matrix = new Matrix(2, 0, 0, 0.5f, 10, 10))
+            using (var emptyMatrix = new Matrix())
+            {
+                region.Intersect(new Rectangle(-10, -10, 20, 20));
+                region.Transform(matrix);
 
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(-10, 5, 40, 10) }, region.GetRegionScans(new Matrix()));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(-10, 5, 40, 10) }, region.GetRegionScans(emptyMatrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_NullMatrix_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            region.Dispose();
-            Assert.Throws<ArgumentNullException>("matrix", () => region.Transform(null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("matrix", () => region.Transform(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1679,7 +2100,11 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Transform(new Matrix()));
+
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.Transform(matrix));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1688,20 +2113,26 @@ namespace System.Drawing.Tests
         [InlineData(-2, -3)]
         public void Translate_Int_Success(float dx, float dy)
         {
-            var region = new Region(new RectangleF(1, 2, 3, 4));
-            region.Translate(dx, dy);
-            Assert.Equal(new RectangleF[] { new RectangleF(1 + dx, 2 + dy, 3, 4) }, region.GetRegionScans(new Matrix()));
+            using (var region = new Region(new RectangleF(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            {
+                region.Translate(dx, dy);
+                Assert.Equal(new RectangleF[] { new RectangleF(1 + dx, 2 + dy, 3, 4) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Translate_IntInfinityIntersect_Success()
         {
-            var region = new Region();
-            region.Intersect(new Rectangle(-10, -10, 20, 20));
-            region.Translate(10, 10);
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Intersect(new Rectangle(-10, -10, 20, 20));
+                region.Translate(10, 10);
 
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(0, 0, 20, 20) }, region.GetRegionScans(new Matrix()));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(0, 0, 20, 20) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1709,31 +2140,40 @@ namespace System.Drawing.Tests
         [InlineData(2, 3)]
         public void Translate_Float_Success(int dx, int dy)
         {
-            var region = new Region(new RectangleF(1, 2, 3, 4));
-            region.Translate(dx, dy);
-            Assert.Equal(new RectangleF[] { new RectangleF(1 + dx, 2 + dy, 3, 4) }, region.GetRegionScans(new Matrix()));
+            using (var region = new Region(new RectangleF(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            {
+                region.Translate(dx, dy);
+                Assert.Equal(new RectangleF[] { new RectangleF(1 + dx, 2 + dy, 3, 4) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Translate_FloatInfinityIntersect_Success()
         {
-            var region = new Region();
-            region.Intersect(new Rectangle(-10, -10, 20, 20));
-            region.Translate(10f, 10f);
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Intersect(new Rectangle(-10, -10, 20, 20));
+                region.Translate(10f, 10f);
 
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(0, 0, 20, 20) }, region.GetRegionScans(new Matrix()));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(0, 0, 20, 20) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Translate_Infinity_Nop()
         {
-            var region = new Region();
-            region.Translate(10, 10);
-            region.Translate(10f, 10f);
+            using (var region = new Region())
+            using (var matrix = new Matrix())
+            {
+                region.Translate(10, 10);
+                region.Translate(10f, 10f);
 
-            Assert.True(region.IsInfinite(s_graphic));
-            Assert.Equal(new RectangleF[] { new RectangleF(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(new Matrix()));
+                Assert.True(region.IsInfinite(s_graphic));
+                Assert.Equal(new RectangleF[] { new RectangleF(-4194304, -4194304, 8388608, 8388608) }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1744,12 +2184,15 @@ namespace System.Drawing.Tests
         [InlineData(float.NegativeInfinity)]
         public void Translate_InvalidFloatValue_EmptiesRegion(float f)
         {
-            var region = new Region(new RectangleF(1, 2, 3, 4));
-            region.Translate(f, 0);
+            using (var region = new Region(new RectangleF(1, 2, 3, 4)))
+            using (var matrix = new Matrix())
+            {
+                region.Translate(f, 0);
 
-            Assert.True(region.IsEmpty(s_graphic));
-            Assert.False(region.IsInfinite(s_graphic));
-            Assert.Empty(region.GetRegionScans(new Matrix()));
+                Assert.True(region.IsEmpty(s_graphic));
+                Assert.False(region.IsInfinite(s_graphic));
+                Assert.Empty(region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1757,6 +2200,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => region.Translate(1, 2));
             Assert.Throws<ArgumentException>(null, () => region.Translate(1f, 2f));
         }
@@ -1822,33 +2266,53 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Xor_TestData))]
         public void Xor_Region_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Xor(new Region(rect));
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var other = new Region(rect))
+                    {
+                        region.Xor(other);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Xor_InfiniteRegion_Success()
         {
-            var region = new Region(new Rectangle(1, 2, 3, 4));
-            region.Xor(new Region());
-
-            Assert.Equal(new RectangleF[]
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            using (var other = new Region())
+            using (var matrix = new Matrix())
             {
-                new RectangleF(-4194304, -4194304, 8388608, 4194306),
-                new RectangleF(-4194304, 2, 4194305, 4),
-                new RectangleF(4, 2, 4194300, 4),
-                new RectangleF(-4194304, 6, 8388608, 4194298)
-            }, region.GetRegionScans(new Matrix()));
+                region.Xor(other);
+
+                Assert.Equal(new RectangleF[]
+                {
+                    new RectangleF(-4194304, -4194304, 8388608, 4194306),
+                    new RectangleF(-4194304, 2, 4194305, 4),
+                    new RectangleF(4, 2, 4194300, 4),
+                    new RectangleF(-4194304, 6, 8388608, 4194298)
+                }, region.GetRegionScans(matrix));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Xor_NullRegion_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("region", () => region.Xor((Region)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("region", () => region.Xor((Region)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1856,64 +2320,107 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Region().Xor(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Xor_SameRegion_ThrowsInvalidOperationException()
         {
-            var region = new Region();
-            Assert.Throws<InvalidOperationException>(() => region.Xor(region));
+            using (var region = new Region())
+            {
+                Assert.Throws<InvalidOperationException>(() => region.Xor(region));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_Rectangle_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Xor(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Xor(new Rectangle((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_RectangleF_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                region.Xor(rect);
+                foreach (RectangleF rect in rectangles)
+                {
+                    region.Xor(rect);
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Xor_TestData))]
         public void Xor_GraphicsPath_Success(Region region, RectangleF[] rectangles, RectangleF[] expectedScans)
         {
-            foreach (RectangleF rect in rectangles)
+            try
             {
-                var path = new GraphicsPath();
-                path.AddRectangle(rect);
-                region.Xor(path);
+                foreach (RectangleF rect in rectangles)
+                {
+                    using (var path = new GraphicsPath())
+                    {
+                        path.AddRectangle(rect);
+                        region.Xor(path);
+                    }
+                }
+
+                using (var matrix = new Matrix())
+                {
+                    Assert.Equal(expectedScans, region.GetRegionScans(matrix));
+                }
             }
-            Assert.Equal(expectedScans, region.GetRegionScans(new Matrix()));
+            finally
+            {
+                region.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Xor_EmptyPathWithInfiniteRegion_MakesInfinite()
         {
-            var region = new Region();
-            region.Xor(new GraphicsPath());
-            Assert.True(region.IsInfinite(s_graphic));
+            using (var region = new Region())
+            using (var graphicsPath = new GraphicsPath())
+            {
+                region.Xor(graphicsPath);
+                Assert.True(region.IsInfinite(s_graphic));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Xor_NullGraphicsPath_ThrowsArgumentNullException()
         {
-            var region = new Region();
-            Assert.Throws<ArgumentNullException>("path", () => region.Xor((GraphicsPath)null));
+            using (var region = new Region())
+            {
+                Assert.Throws<ArgumentNullException>("path", () => region.Xor((GraphicsPath)null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1921,10 +2428,15 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Xor(new GraphicsPath()));
-            Assert.Throws<ArgumentException>(null, () => region.Xor(new Rectangle()));
-            Assert.Throws<ArgumentException>(null, () => region.Xor(new RectangleF()));
-            Assert.Throws<ArgumentException>(null, () => region.Xor(new Region()));
+
+            using (var graphicsPath = new GraphicsPath())
+            using (var other = new Region())
+            {
+                Assert.Throws<ArgumentException>(null, () => region.Xor(graphicsPath));
+                Assert.Throws<ArgumentException>(null, () => region.Xor(new Rectangle()));
+                Assert.Throws<ArgumentException>(null, () => region.Xor(new RectangleF()));
+                Assert.Throws<ArgumentException>(null, () => region.Xor(other));
+            }
         }
     }
 }

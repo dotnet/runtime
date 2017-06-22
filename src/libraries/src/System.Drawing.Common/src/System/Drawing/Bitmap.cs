@@ -10,7 +10,6 @@ namespace System.Drawing
     using System.Drawing.Internal;
     using System.IO;
     using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
     using System.Security.Permissions;
 
     /// <include file='doc\Bitmap.uex' path='docs/doc[@for="Bitmap"]/*' />
@@ -20,11 +19,8 @@ namespace System.Drawing
     /**
      * Represent a bitmap image
      */
-    [
-    Serializable,
-    ComVisible(true)
-    ]
-    public sealed class Bitmap : Image
+    [ComVisible(true)]
+    public sealed partial class Bitmap : Image
     {
         private static Color s_defaultTransparentColor = Color.LightGray;
 
@@ -317,13 +313,6 @@ namespace System.Drawing
                     g.Dispose();
                 }
             }
-        }
-
-        /**
-         * Constructor used in deserialization
-         */
-        private Bitmap(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
         }
 
         /// <include file='doc\Bitmap.uex' path='docs/doc[@for="Bitmap.FromHicon"]/*' />

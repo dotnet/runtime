@@ -7,7 +7,7 @@ using System.Security;
 
 namespace System.Runtime.InteropServices
 {
-    public static class MarshalTests
+    public partial class MarshalTests
     {
         public static readonly object[][] StringData =
         {
@@ -446,5 +446,18 @@ namespace System.Runtime.InteropServices
             }        
         }    
         
+        [Theory]
+        [InlineData(0)]
+        [InlineData("String")]
+        public void IsComObject_NonComObject_ReturnsFalse(object value)
+        {
+            Assert.False(Marshal.IsComObject(value));
+        }
+
+        [Fact]
+        public void IsComObject_NullObject_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.IsComObject(null));
+        }
     }
 }

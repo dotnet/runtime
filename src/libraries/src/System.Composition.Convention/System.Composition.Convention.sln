@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Convention.Tests", "tests\System.Composition.Convention.Tests.csproj", "{853BB14F-8A5B-42B4-A053-21DE1AEBB335}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Composition.Convention.Tests", "tests\System.Composition.Convention.Tests.csproj", "{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}"
 	ProjectSection(ProjectDependencies) = postProject
 		{E6592FAD-10B5-4B56-9287-D72DD136992F} = {E6592FAD-10B5-4B56-9287-D72DD136992F}
 	EndProjectSection
@@ -19,10 +19,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{853BB14F-8A5B-42B4-A053-21DE1AEBB335}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{853BB14F-8A5B-42B4-A053-21DE1AEBB335}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{853BB14F-8A5B-42B4-A053-21DE1AEBB335}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{853BB14F-8A5B-42B4-A053-21DE1AEBB335}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{E6592FAD-10B5-4B56-9287-D72DD136992F}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{E6592FAD-10B5-4B56-9287-D72DD136992F}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{E6592FAD-10B5-4B56-9287-D72DD136992F}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
@@ -32,7 +32,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{853BB14F-8A5B-42B4-A053-21DE1AEBB335} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{17DBE1D4-FCB5-4D55-805C-C4A22EE8C032} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{E6592FAD-10B5-4B56-9287-D72DD136992F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 	EndGlobalSection
 EndGlobal

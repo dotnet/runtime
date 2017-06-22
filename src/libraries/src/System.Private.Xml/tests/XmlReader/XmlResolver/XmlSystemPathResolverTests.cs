@@ -13,14 +13,16 @@ namespace System.Xml.Tests
         private const int k_getUniqueFileNameAttempts = 10;
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]  //[ActiveIssue(13121)]  // Access to path is denied in UWP
         public static void TestResolveRelativePaths()
         {
+            string curDir = Directory.GetCurrentDirectory();
             string path = Path.GetRandomFileName();
             bool shouldDelete = !File.Exists(path);
-            File.Open(path, FileMode.OpenOrCreate).Dispose();
             try
             {
+                Directory.SetCurrentDirectory(Path.GetTempPath()); // Workaround for System.UnauthorizedAccessException on relative path in File.Open on UWP F5
+                File.Open(path, FileMode.OpenOrCreate).Dispose();
+
                 XmlReader.Create(path).Dispose();
                 XmlReader.Create(Path.Combine(".", path)).Dispose();
             }
@@ -30,6 +32,8 @@ namespace System.Xml.Tests
                 {
                     File.Delete(path);
                 }
+
+                Directory.SetCurrentDirectory(curDir);
             }
         }
 
@@ -86,7 +90,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]    //[ActiveIssue(13121)]  // Access to path is denied in UWP
         public static void TestResolveInvalidPath()
         {
             Assert.Throws<System.Net.WebException>(() => XmlReader.Create("ftp://www.bing.com"));

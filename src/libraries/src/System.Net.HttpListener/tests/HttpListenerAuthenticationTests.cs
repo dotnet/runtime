@@ -435,7 +435,6 @@ namespace System.Net.Tests
             var tokenSource = new CancellationTokenSource();
             Task<HttpListenerContext> serverTask = Task.Run(() => _listener.GetContext(), tokenSource.Token);
 
-            // The client task should complete first - the server should send a 401 response.
             Task resultTask = await Task.WhenAny(clientTask, serverTask);
             tokenSource.Cancel();
             if (resultTask == serverTask)
@@ -454,7 +453,6 @@ namespace System.Net.Tests
             Task<HttpResponseMessage> clientTask = client.GetAsync(_factory.ListeningUrl);
             Task<HttpListenerContext> serverTask = _listener.GetContextAsync();
 
-            // The client task should complete first - the server should send a 401 response.
             Task resultTask = await Task.WhenAny(clientTask, serverTask);
             if (resultTask == serverTask)
             {

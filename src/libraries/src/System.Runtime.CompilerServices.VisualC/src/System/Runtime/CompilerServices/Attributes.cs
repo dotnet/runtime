@@ -8,75 +8,86 @@ namespace System.Runtime.CompilerServices
     public class CallConvCdecl
     {
     }
+
     public class CallConvStdcall
     {
     }
+
     public class CallConvThiscall
     {
     }
+
     public class CallConvFastcall
     {
     }
+
     // Indicates that the modified instance is pinned in memory.
     public static class IsPinned
     {
     }
+
     public static partial class IsBoxed
     {
     }
+
     public static partial class IsByValue
     {
     }
+
     public static partial class IsCopyConstructed
     {
     }
+
     public static partial class IsExplicitlyDereferenced
     {
     }
+
     public static partial class IsImplicitlyDereferenced
     {
     }
+
     public static partial class IsJitIntrinsic
     {
     }
+
     public static partial class IsLong
     {
     }
+
     public static partial class IsSignUnspecifiedByte
     {
     }
+
     public static partial class IsUdtReturn
     {
     }
+
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class HasCopySemanticsAttribute : Attribute
     {
-        public HasCopySemanticsAttribute(){}
+        public HasCopySemanticsAttribute() { }
     }
+
     [AttributeUsage(AttributeTargets.Enum)]
     public sealed class ScopelessEnumAttribute : Attribute
     {
-        public ScopelessEnumAttribute(){}
+        public ScopelessEnumAttribute() { }
     }
+
     [AttributeUsage(AttributeTargets.Struct, Inherited = true)]
     public sealed class NativeCppClassAttribute : Attribute
     {
-        public NativeCppClassAttribute(){}
+        public NativeCppClassAttribute() { }
     }
+
     [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface,AllowMultiple=true, Inherited=false)]
     public sealed class RequiredAttributeAttribute : Attribute
     {
-        private Type requiredContract;
+        public RequiredAttributeAttribute(Type requiredContract) => RequiredContract = requiredContract;
 
-        public RequiredAttributeAttribute (Type requiredContract)
-        {
-            this.requiredContract= requiredContract;
-        }
-        public Type RequiredContract
-        {
-            get { return this.requiredContract; }
-        }
+        public Type RequiredContract { get; }
     }
+
     // The CLR data marshaler has some behaviors that are incompatible with
     // C++. Specifically, C++ treats boolean variables as byte size, whereas 
     // the marshaller treats them as 4-byte size.  Similarly, C++ treats

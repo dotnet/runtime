@@ -549,8 +549,20 @@ namespace System.Tests
             // File with host
             yield return new object[] { "file://path1/path2", "/path2", "", "" };
             yield return new object[] { "file:///path1/path2", "/path1/path2", "", "" };
-            yield return new object[] { @"file:///path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            yield return new object[] { @"file:///path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+            if (s_isWindowsSystem)
+            {
+                yield return new object[] { @"file:///path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                yield return new object[] { @"file:///path1\path2/path3%5Cpath4\", "/path1/path2/path3/path4/", "", "" };
+                yield return new object[] { @"file://localhost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+                yield return new object[] { @"file://localhost/path1%5Cpath2", "/path1/path2", "", ""};
+            }
+            else // Unix paths preserve backslash
+            {
+                yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
+                yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+                yield return new object[] { @"file://localhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
+            }
             // Implicit file with empty path
             yield return new object[] { "C:/", "C:/", "", "" };
             yield return new object[] { "C|/", "C:/", "", "" };
@@ -643,16 +655,6 @@ namespace System.Tests
             yield return new object[] { "file:////unchost/path1/path2?query#fragment", "/path1/path2", "?query", "#fragment" };
             yield return new object[] { @"file:///\unchost/path1/path2?query#fragment", "/path1/path2", "?query", "#fragment" };
             yield return new object[] { @"file://\/unchost/path1/path2?query#fragment", "/path1/path2", "?query", "#fragment" };
-            // Explicit UNC with backslash in path
-            yield return new object[] { @"file://\\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            yield return new object[] { @"file:////unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            yield return new object[] { @"file:///\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            yield return new object[] { @"file://\/unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            // Explicit UNC ending with backslash
-            yield return new object[] { @"file://\\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-            yield return new object[] { @"file:////unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-            yield return new object[] { @"file:///\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-            yield return new object[] { @"file://\/unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
             // Explicit UNC with a windows drive as host
             yield return new object[] { @"file://\\C:/path1/path2", "C:/path1/path2", "", "" };
             yield return new object[] { "file:////C:/path1/path2", "C:/path1/path2", "", "" };
@@ -662,8 +664,20 @@ namespace System.Tests
             yield return new object[] { "C|/path|path/path2", "C:/path%7Cpath/path2", "", "" };
             yield return new object[] { "file://host/path?query#fragment", "/path", "?query", "#fragment" };
 
-            // Unix path
-            if (!s_isWindowsSystem)
+            if (s_isWindowsSystem)
+            {
+                // Explicit UNC with backslash in path
+                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                yield return new object[] { @"file:////unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                // Explicit UNC ending with backslash
+                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+                yield return new object[] { @"file:////unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+            }
+            else if(!s_isWindowsSystem)
             {
                 // Implicit file with path
                 yield return new object[] { "/", "/", "", "" };
@@ -672,6 +686,16 @@ namespace System.Tests
                 yield return new object[] { @"/path1\path2/path3\path4", "/path1%5Cpath2/path3%5Cpath4", "", "" };
                 // Implicit file ending with backlash
                 yield return new object[] { @"/path1\path2/path3\path4\", "/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
+                // Explicit UNC with backslash in path
+                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file:////unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                // Explicit UNC ending with backslash
+                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+                yield return new object[] { @"file:////unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
             }
 
             // Mailto
@@ -796,6 +820,8 @@ namespace System.Tests
                     {
                         localPath = @"\\" + uri.Host + path;
                         localPath = localPath.Replace('/', '\\');
+                        // Unescape '\\'
+                        localPath = localPath.Replace("%5C", "\\");
                         if (path == "/")
                         {
                             localPath = localPath.Substring(0, localPath.Length - 1);

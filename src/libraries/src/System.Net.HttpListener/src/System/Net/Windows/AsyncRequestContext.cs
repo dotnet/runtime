@@ -50,18 +50,14 @@ namespace System.Net
                 _boundHandle.FreeNativeOverlapped(nativeOverlapped);
             }
 
-            if (_nativeOverlapped == null)
-            {
 #if DEBUG
-                DebugRefCountAllocNativeOverlapped();
+            DebugRefCountAllocNativeOverlapped();
 #endif
-                SetBuffer(checked((int)newSize));
-                _boundHandle = boundHandle;
-                _nativeOverlapped = boundHandle.AllocateNativeOverlapped(ListenerAsyncResult.IOCallback, state: _result, pinData: RequestBuffer);
-                return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
-            }
+            SetBuffer(checked((int)newSize));
+            _boundHandle = boundHandle;
+            _nativeOverlapped = boundHandle.AllocateNativeOverlapped(ListenerAsyncResult.IOCallback, state: _result, pinData: RequestBuffer);
 
-            return RequestBlob;
+            return (Interop.HttpApi.HTTP_REQUEST*)Marshal.UnsafeAddrOfPinnedArrayElement(RequestBuffer, 0);
         }
 
         internal void Reset(ThreadPoolBoundHandle boundHandle, ulong requestId, uint size)

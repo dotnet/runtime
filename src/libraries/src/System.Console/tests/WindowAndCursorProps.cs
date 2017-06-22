@@ -339,11 +339,11 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
         Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowPosition(50, 50));
     }
 
-    [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
+    [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
-        if (PlatformDetection.IsNotWindowsNanoServer && !Console.IsInputRedirected && !Console.IsOutputRedirected)
+        if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("width", () => Console.SetWindowSize(-1, Console.WindowHeight));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => Console.SetWindowSize(Console.WindowHeight, -1));

@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <ProjectGuid>{30CAB353-089E-4294-B23B-F2DD1D945654}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <ItemGroup>
+    <Compile Include="Windows\UI\Xaml\CornerRadiusTests.cs" />
+    <Compile Include="Windows\UI\Xaml\DurationTests.cs" />
+    <Compile Include="Windows\UI\Xaml\GridLengthTests.cs" />
+    <Compile Include="Windows\UI\Xaml\LayoutCycleExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\ThicknessTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Automation\ElementNotEnabledExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Automation\ElementNotAvailableExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Controls\Primitives\GeneratorPositionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Markup\XamlParseExceptionTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media\MatrixTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media\Animation\KeyTimeTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media\Animation\RepeatBehaviorTests.cs" />
+    <Compile Include="Windows\UI\Xaml\Media3D\Matrix3DTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.UI.Xaml.csproj">
+      <Project>{263DA4F1-C3BC-4B43-98E7-9F38B419A131}</Project>
+      <Name>System.Runtime.WindowsRuntime.UI.Xaml</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

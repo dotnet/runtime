@@ -245,6 +245,12 @@
     <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)symbols/</SymbolPackageOutputPath>
   </PropertyGroup>
 
+  <!-- Properties related to multi-file mode for ILC tests -->
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <!-- Only enable multi-file for Release-x64 and Debug-x86 for now -->
+    <EnableMultiFileILCTests Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x86'">true</EnableMultiFileILCTests>
+  </PropertyGroup>
+
   <PropertyGroup>
     <OptionalToolingJsonPath>$(ProjectDir)\external\test-runtime\optional.json</OptionalToolingJsonPath>
   </PropertyGroup>

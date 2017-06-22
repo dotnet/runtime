@@ -39,4 +39,10 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
+  <!-- Generate the shared library for running ILC tests for configuration Release-x64 -->
+  <Target Name="GenerateSharedLibraryForILC" AfterTargets="BuildAllProjects" Condition="'$(EnableMultiFileILCTests)' == 'true'">
+    <Message Importance="High" Text="Generating shared library for running ILC tests." Condition="Exists('$(TestHostRootPath)\TestILC\ilc.exe')" />
+    <Exec Command="$(TestHostRootPath)\TestILC\ilc.exe -buildSharedAssemblies -buildType ret -frameworkPath &quot;$(ILCFXInputFolder)&quot;" StandardOutputImportance="Low" Condition="Exists('$(TestHostRootPath)\TestILC\ilc.exe')" />
+  </Target>
+
 </Project>

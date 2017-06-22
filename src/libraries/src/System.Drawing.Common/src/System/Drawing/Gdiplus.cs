@@ -2627,6 +2627,14 @@ namespace System.Drawing
             internal const int PropertyNotFound = 19;
             internal const int PropertyNotSupported = 20;
 
+            internal static void CheckStatus(int status)
+            {
+                if (status != Ok)
+                {
+                    throw StatusException(status);
+                }
+            }
+
             internal static Exception StatusException(int status)
             {
                 Debug.Assert(status != Ok, "Throwing an exception for an 'Ok' return code");

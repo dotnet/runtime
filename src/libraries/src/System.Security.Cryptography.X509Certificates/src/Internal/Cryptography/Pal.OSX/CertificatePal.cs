@@ -155,9 +155,6 @@ namespace Internal.Cryptography.Pal
     internal sealed class AppleCertificatePal : ICertificatePal
     {
         private SafeSecIdentityHandle _identityHandle;
-        // Do not give out this reference, it's only needed in certain cases to prevent temporary keychains
-        // from being deleted.
-        private SafeSecKeyRefHandle _privateKeyHolder;
         private SafeSecCertificateHandle _certHandle;
         private CertificateData _certData;
         private bool _readCertData;
@@ -181,11 +178,9 @@ namespace Internal.Cryptography.Pal
         {
             _certHandle?.Dispose();
             _identityHandle?.Dispose();
-            _privateKeyHolder?.Dispose();
 
             _certHandle = null;
             _identityHandle = null;
-            _privateKeyHolder = null;
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;
@@ -401,12 +396,6 @@ namespace Internal.Cryptography.Pal
             return new ECDsaImplementation.ECDsaSecurityTransforms(publicKey, privateKey);
         }
 
-        private void HoldPrivateKey()
-        {
-            _privateKeyHolder = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
-            Debug.Assert(!_privateKeyHolder.IsInvalid);
-        }
-
         public ICertificatePal CopyWithPrivateKey(DSA privateKey)
         {
             var typedKey = privateKey as DSAImplementation.DSASecurityTransforms;
@@ -480,20 +469,57 @@ namespace Internal.Cryptography.Pal
 
             SafeKeychainHandle keychain = Interop.AppleCrypto.SecKeychainItemCopyKeychain(keyPair.PrivateKey);
 
+            // If we're using a key already in a keychain don't add the certificate to that keychain here,
+            // do it in the temporary add/remove in the shim.
+            SafeKeychainHandle cloneKeychain = SafeTemporaryKeychainHandle.InvalidHandle;
+
             if (keychain.IsInvalid)
             {
                 keychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+                cloneKeychain = keychain;
+            }
+
+            // Because SecIdentityRef only has private constructors we need to have the cert and the key
+            // in the same keychain.  That almost certainly means we're going to need to add this cert to a
+            // keychain, and when a cert that isn't part of a keychain gets added to a keychain then the
+            // interior pointer of "what keychain did I come from?" used by SecKeychainItemCopyKeychain gets
+            // set. That makes this function have side effects, which is not desired.
+            //
+            // It also makes reference tracking on temporary keychains broken, since the cert can
+            // DangerousRelease a handle it didn't DangerousAddRef on.  And so CopyWithPrivateKey makes
+            // a temporary keychain, then deletes it before anyone has a chance to (e.g.) export the
+            // new identity as a PKCS#12 blob.
+            //
+            // Solution: Clone the cert, like we do in Windows.
+            SafeSecCertificateHandle tempHandle;
+
+            {
+                byte[] export = RawData;
+                const bool exportable = false;
+                SafeSecIdentityHandle identityHandle;
+                tempHandle = Interop.AppleCrypto.X509ImportCertificate(
+                    export,
+                    X509ContentType.Cert,
+                    SafePasswordHandle.InvalidHandle,
+                    cloneKeychain,
+                    exportable,
+                    out identityHandle);
+
+                Debug.Assert(identityHandle.IsInvalid, "identityHandle should be IsInvalid");
+                identityHandle.Dispose();
+
+                Debug.Assert(!tempHandle.IsInvalid, "tempHandle should not be IsInvalid");
             }
 
             using (keychain)
+            using (tempHandle)
             {
                 SafeSecIdentityHandle identityHandle = Interop.AppleCrypto.X509CopyWithPrivateKey(
-                    _certHandle,
+                    tempHandle,
                     keyPair.PrivateKey,
                     keychain);
 
                 AppleCertificatePal newPal = new AppleCertificatePal(identityHandle);
-                newPal.HoldPrivateKey();
                 return newPal;
             }
         }

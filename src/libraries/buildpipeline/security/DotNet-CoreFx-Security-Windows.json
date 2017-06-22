@@ -357,7 +357,7 @@
             "enabled": true,
             "continueOnError": true,
             "alwaysRun": false,
-            "displayName": "TSA upload to Codebase: DotNet-CoreFx-Trusted_master Stamp: Azure",
+            "displayName": "TSA upload to Codebase: DotNet-CoreFx-Trusted_$(CodeBase) Stamp: Azure",
             "timeoutInMinutes": 0,
             "condition": "succeeded()",
             "task": {
@@ -369,8 +369,8 @@
                 "codebase": "NewOrUpdate",
                 "tsaStamp": "Azure",
                 "tsaWebApiUrl": "$(TSAStamp)",
-                "codeBaseName": "DotNet-CoreFx-Trusted_master",
-                "notificationAlias": "dncsec@microsoft.com",
+                "codeBaseName": "DotNet-CoreFx-Trusted_$(CodeBase)",
+                "notificationAlias": "$(NotificationAlias)",
                 "codeBaseAdmins": "NORTHAMERICA\\raeda",
                 "instanceUrlAzure": "MSAZURE",
                 "instanceUrlDevDiv": "DEVDIV",
@@ -528,7 +528,7 @@
         "checkoutSubmodules": false
     },
     "processParameters": {},
-    "quality": 1,
+    "quality": "definition",
     "authoredBy": {
         "id": "9d5fdf9f-36b6-4d0c-a12e-2737a673af94",
         "displayName": "Ravi Eda",

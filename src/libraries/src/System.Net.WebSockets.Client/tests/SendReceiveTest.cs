@@ -19,7 +19,7 @@ namespace System.Net.WebSockets.Client.Tests
         [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(9296)]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task SendReceive_PartialMessage_Success(Uri server)
+        public async Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
             var sendBuffer = new byte[1024];
             var sendSegment = new ArraySegment<byte>(sendBuffer);
@@ -48,7 +48,49 @@ namespace System.Net.WebSockets.Client.Tests
                     recvResult = await cws.ReceiveAsync(receiveSegment, ctsDefault.Token);
                 }
 
-                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "PartialMessageTest", ctsDefault.Token);
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "PartialMessageDueToSmallReceiveBufferTest", ctsDefault.Token);
+            }
+        }
+
+        [ActiveIssue(21102, TargetFrameworkMonikers.Uap)]
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
+        {
+            var rand = new Random();
+            var sendBuffer = new byte[ushort.MaxValue + 1];
+            rand.NextBytes(sendBuffer);
+            var sendSegment = new ArraySegment<byte>(sendBuffer);
+
+            // Ask the remote server to echo back received messages without ever signaling "end of message".
+            var ub = new UriBuilder(server);
+            ub.Query = "replyWithPartialMessages";
+
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(ub.Uri, TimeOutMilliseconds, _output))
+            {
+                var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
+
+                // Send data to the server; the server will reply back with one or more partial messages. We should be
+                // able to consume that data as it arrives, without having to wait for "end of message" to be signaled.
+                await cws.SendAsync(sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
+
+                int totalBytesReceived = 0;
+                var receiveBuffer = new byte[sendBuffer.Length];
+                while (totalBytesReceived < receiveBuffer.Length)
+                {
+                    WebSocketReceiveResult recvResult = await cws.ReceiveAsync(
+                        new ArraySegment<byte>(receiveBuffer, totalBytesReceived, receiveBuffer.Length - totalBytesReceived),
+                        ctsDefault.Token);
+
+                    Assert.Equal(false, recvResult.EndOfMessage);
+                    Assert.InRange(recvResult.Count, 0, receiveBuffer.Length - totalBytesReceived);
+                    totalBytesReceived += recvResult.Count;
+                }
+
+                Assert.Equal(receiveBuffer.Length, totalBytesReceived);
+                Assert.Equal<byte>(sendBuffer, receiveBuffer);
+
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, "PartialMessageBeforeCompleteMessageArrives", ctsDefault.Token);
             }
         }
 
