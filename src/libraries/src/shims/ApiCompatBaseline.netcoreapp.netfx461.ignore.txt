@@ -758,6 +758,26 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Net.PeerToPeer.PnrpPermissionAttr
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaborationPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.DistributedTransactionPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlClientPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.CallbackValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationCollectionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationErrorsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Configuration.ConfigurationPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Configuration.ConfigurationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationPropertyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.ConfigurationValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.IntegerValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.LongValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.PositiveTimeSpanValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.RegexStringValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.StringValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.SubclassTypeValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.TimeSpanValidatorAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Configuration.Provider.ProviderException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.BitmapSuffixInSameAssemblyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.BitmapSuffixInSatelliteAssemblyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.ToolboxBitmapAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Printing.InvalidPrinterException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileFormatException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 
 // TypesMustExist isn't a goal for netcore20:
 TypesMustExist : Type 'System._AppDomain' does not exist in the implementation but it does exist in the contract.
