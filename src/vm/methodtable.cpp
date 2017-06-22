@@ -4331,7 +4331,14 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
         ZapStoredStructure * pPerInstInfoNode;
         if (CanEagerBindToParentDictionaries(image, NULL))
         {
-            pPerInstInfoNode = image->StoreInternedStructure((BYTE *)GetPerInstInfo() - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo), DataImage::ITEM_DICTIONARY);
+            if (PerInstInfoElem_t::isRelative)
+            {
+                pPerInstInfoNode = image->StoreStructure((BYTE *)GetPerInstInfo() - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo), DataImage::ITEM_DICTIONARY);
+            }
+            else
+            {
+                pPerInstInfoNode = image->StoreInternedStructure((BYTE *)GetPerInstInfo() - sizeof(GenericsDictInfo), GetPerInstInfoSize() + sizeof(GenericsDictInfo), DataImage::ITEM_DICTIONARY);
+            }
         }
         else
         {
@@ -4678,14 +4685,21 @@ BOOL MethodTable::IsWriteable()
 // target module.  Thus we want to call CanEagerBindToMethodTable
 // to check we can hardbind to the containing structure.
 static
-void HardBindOrClearDictionaryPointer(DataImage *image, MethodTable *pMT, void * p, SSIZE_T offset)
+void HardBindOrClearDictionaryPointer(DataImage *image, MethodTable *pMT, void * p, SSIZE_T offset, bool isRelative)
 {
     WRAPPER_NO_CONTRACT;
 
     if (image->CanEagerBindToMethodTable(pMT) &&
         image->CanHardBindToZapModule(pMT->GetLoaderModule()))
     {
-        image->FixupPointerField(p, offset);
+        if (isRelative)
+        {
+            image->FixupRelativePointerField(p, offset);
+        }
+        else
+        {
+            image->FixupPointerField(p, offset);
+        }
     }
     else
     {
@@ -5020,7 +5034,7 @@ void MethodTable::Fixup(DataImage *image)
     if (HasPerInstInfo())
     {
         // Fixup the pointer to the per-inst table
-        image->FixupPointerField(this, offsetof(MethodTable, m_pPerInstInfo));
+        image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pPerInstInfo);
 
         for (MethodTable *pChain = this; pChain != NULL; pChain = pChain->GetParentMethodTable())
         {
@@ -5033,10 +5047,23 @@ void MethodTable::Fixup(DataImage *image)
 
                 // We special-case the dictionary for this method table because we must always
                 // hard bind to it even if it's not in its preferred zap module
+                size_t sizeDict = sizeof(PerInstInfoElem_t);
+
                 if (pChain == this)
-                    image->FixupPointerField(GetPerInstInfo(), dictNum * sizeof(Dictionary *));
+                {
+                    if (PerInstInfoElem_t::isRelative)
+                    {
+                        image->FixupRelativePointerField(GetPerInstInfo(), dictNum * sizeDict);
+                    }
+                    else
+                    {
+                        image->FixupPointerField(GetPerInstInfo(), dictNum * sizeDict);
+                    }
+                }
                 else
-                    HardBindOrClearDictionaryPointer(image, pChain, GetPerInstInfo(), dictNum * sizeof(Dictionary *));
+                {
+                    HardBindOrClearDictionaryPointer(image, pChain, GetPerInstInfo(), dictNum * sizeDict, PerInstInfoElem_t::isRelative);
+                }
             }
         }
     }
@@ -6221,7 +6248,7 @@ BOOL MethodTable::IsWinRTObjectType()
 //==========================================================================================
 // Return a pointer to the dictionary for an instantiated type
 // Return NULL if not instantiated
-Dictionary* MethodTable::GetDictionary()
+PTR_Dictionary MethodTable::GetDictionary()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
@@ -6229,7 +6256,8 @@ Dictionary* MethodTable::GetDictionary()
     {
         // The instantiation for this class is stored in the type slots table
         // *after* any inherited slots
-        return GetPerInstInfo()[GetNumDicts()-1];
+        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[GetNumDicts()-1]));
+        return PerInstInfoElem_t::GetValueMaybeNullAtPtr(base);
     }
     else
     {
@@ -6246,7 +6274,8 @@ Instantiation MethodTable::GetInstantiation()
     if (HasInstantiation())
     {
         PTR_GenericsDictInfo  pDictInfo = GetGenericsDictInfo();
-        return Instantiation(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]->GetInstantiation(), pDictInfo->m_wNumTyPars);
+        TADDR base = dac_cast<TADDR>(&(GetPerInstInfo()[pDictInfo->m_wNumDicts-1]));
+        return Instantiation(PerInstInfoElem_t::GetValueMaybeNullAtPtr(base)->GetInstantiation(), pDictInfo->m_wNumTyPars);
     }
     else
     {

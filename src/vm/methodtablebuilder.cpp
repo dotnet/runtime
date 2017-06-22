@@ -9842,7 +9842,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     if (dwNumDicts != 0)
     {
         cbTotalSize += sizeof(GenericsDictInfo);
-        cbTotalSize += S_SIZE_T(dwNumDicts) * S_SIZE_T(sizeof(TypeHandle*));
+        cbTotalSize += S_SIZE_T(dwNumDicts) * S_SIZE_T(sizeof(MethodTable::PerInstInfoElem_t));
         cbTotalSize += cbInstAndDict;
     }
 
@@ -9995,14 +9995,15 @@ MethodTable * MethodTableBuilder::AllocateNewMT(Module *pLoaderModule,
     // the dictionary pointers follow the interface map
     if (dwNumDicts)
     {
-        Dictionary** pPerInstInfo = (Dictionary**)(pData + offsetOfInstAndDict.Value() + sizeof(GenericsDictInfo));
+        MethodTable::PerInstInfoElem_t *pPerInstInfo = (MethodTable::PerInstInfoElem_t *)(pData + offsetOfInstAndDict.Value() + sizeof(GenericsDictInfo));
 
         pMT->SetPerInstInfo ( pPerInstInfo);
 
         // Fill in the dictionary for this type, if it's instantiated
         if (cbInstAndDict)
         {
-            *(pPerInstInfo + (dwNumDicts-1)) = (Dictionary*) (pPerInstInfo + dwNumDicts);
+            MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *)(pPerInstInfo + (dwNumDicts-1));
+            pPInstInfo->SetValueMaybeNull((Dictionary*) (pPerInstInfo + dwNumDicts));
         }
     }
 
