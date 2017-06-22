@@ -3134,36 +3134,39 @@ public:
     // Private part of MethodTable
     // ------------------------------------------------------------------
 
+#ifndef DACCESS_COMPILE
     inline void SetWriteableData(PTR_MethodTableWriteableData pMTWriteableData)
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(pMTWriteableData);
-        m_pWriteableData = pMTWriteableData;
+        m_pWriteableData.SetValue(pMTWriteableData);
     }
-    
+#endif
+
     inline PTR_Const_MethodTableWriteableData GetWriteableData() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
         g_IBCLogger.LogMethodTableWriteableDataAccess(this);
-        return m_pWriteableData;
+        return GetWriteableData_NoLogging();
     }
 
     inline PTR_Const_MethodTableWriteableData GetWriteableData_NoLogging() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pWriteableData;
+        return ReadPointer(this, &MethodTable::m_pWriteableData);
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite()
     {
-        LIMITED_METHOD_CONTRACT;
+        LIMITED_METHOD_DAC_CONTRACT;
         g_IBCLogger.LogMethodTableWriteableDataWriteAccess(this);
-        return m_pWriteableData;
+        return GetWriteableDataForWrite_NoLogging();
     }
 
     inline PTR_MethodTableWriteableData GetWriteableDataForWrite_NoLogging()
     {
-        return m_pWriteableData;
+        LIMITED_METHOD_DAC_CONTRACT;
+        return ReadPointer(this, &MethodTable::m_pWriteableData);
     }
 
     //-------------------------------------------------------------------
@@ -4061,7 +4064,11 @@ private:
 
     RelativePointer<PTR_Module> m_pLoaderModule;    // LoaderModule. It is equal to the ZapModule in ngened images
     
-    PTR_MethodTableWriteableData m_pWriteableData;
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+    RelativePointer<PTR_MethodTableWriteableData> m_pWriteableData;
+#else
+    PlainPointer<PTR_MethodTableWriteableData> m_pWriteableData;
+#endif
     
     // The value of lowest two bits describe what the union contains
     enum LowBits {

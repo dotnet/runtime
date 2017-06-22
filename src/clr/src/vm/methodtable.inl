@@ -1737,7 +1737,7 @@ FORCEINLINE PTR_Module MethodTable::GetGenericsStaticsModuleAndID(DWORD * pID)
     _ASSERTE(!IsStringOrArray());
     if (m_dwFlags & enum_flag_StaticsMask_IfGenericsThenCrossModule)
     {
-        CrossModuleGenericsStaticsInfo *pInfo = m_pWriteableData->GetCrossModuleGenericsStaticsInfo();
+        CrossModuleGenericsStaticsInfo *pInfo = ReadPointer(this, &MethodTable::m_pWriteableData)->GetCrossModuleGenericsStaticsInfo();
         _ASSERTE(FitsIn<DWORD>(pInfo->m_DynamicTypeID) || pInfo->m_DynamicTypeID == (SIZE_T)-1);
         *pID = static_cast<DWORD>(pInfo->m_DynamicTypeID);
         return pInfo->m_pModuleForStatics;
