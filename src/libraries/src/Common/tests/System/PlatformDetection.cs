@@ -152,6 +152,9 @@ namespace System
             }
         }
 
+        public static bool IsWinRTSupported => IsWinRT || (IsWindows && !IsWindows7);
+        public static bool IsNotWinRTSupported => !IsWinRTSupported;
+
         private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
 
         public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
