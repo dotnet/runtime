@@ -1409,10 +1409,10 @@ static inline void
 sweep_block_for_size (MSBlockInfo *block, int count, int obj_size)
 {
 	int obj_index;
+	void *obj = MS_BLOCK_OBJ_FOR_SIZE (block, 0, obj_size);
 
-	for (obj_index = 0; obj_index < count; ++obj_index) {
+	for (obj_index = 0; obj_index < count; ++obj_index, obj = (void*)((mword)obj + obj_size)) {
 		int word, bit;
-		void *obj = MS_BLOCK_OBJ_FOR_SIZE (block, obj_index, obj_size);
 
 		MS_CALC_MARK_BIT (word, bit, obj);
 		if (MS_MARK_BIT (block, word, bit)) {
