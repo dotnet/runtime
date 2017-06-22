@@ -39,7 +39,16 @@ public class WindowsIdentityTests
             string authenticationType = "WindowsAuthentication";
             WindowsIdentity windowsIdentity2 = new WindowsIdentity(logonToken, authenticationType);
             Assert.NotNull(windowsIdentity2);
-            Assert.True(windowsIdentity2.IsAuthenticated);
+
+            if (PlatformDetection.IsWinRT)
+            {
+                Assert.False(windowsIdentity2.IsAuthenticated);
+            }
+            else
+            {
+                Assert.True(windowsIdentity2.IsAuthenticated);
+            }
+
             Assert.Equal(authenticationType, windowsIdentity2.AuthenticationType);
             CheckDispose(windowsIdentity2);
         }
