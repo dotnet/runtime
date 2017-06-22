@@ -1,4 +1,3 @@
-ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.ServiceModel.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Web.ApplicationServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
 ApiCompat Error: 0 : Unable to resolve assembly 'Assembly(Name=System.ServiceModel, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)' referenced by the contract assembly 'Assembly(Name=System.Xml.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
@@ -80,6 +79,39 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.get()'
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.set(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Data.SqlDbType, System.Int32, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.DirectoryServices:
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionEntry' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermissionEntryCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.DSDescriptionAttribute' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.DirectoryServices.Protocols:
+MembersMustExist : Member 'System.DirectoryServices.Protocols.AddRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+CannotMakeTypeAbstract : Type 'System.DirectoryServices.Protocols.BerConverter' is abstract in the implementation but is not abstract in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.CompareRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.DeleteRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.DirectoryRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.DsmlAuthRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlAuthResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlDirectoryIdentifier' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlDocument' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlDocumentProcessing' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlErrorProcessing' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlErrorResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlInvalidDocumentException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlRequestDocument' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlResponseDocument' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlResponseOrder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlSoapConnection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.DsmlSoapHttpConnection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.ErrorResponseCategory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.DirectoryServices.Protocols.ErrorResponseException' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.ExtendedRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyDNRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest..ctor(System.String, System.Xml.XmlDocument, System.DirectoryServices.Protocols.SearchScope, System.String[])' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security:
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
@@ -286,4 +318,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 295
+Total Issues: 306

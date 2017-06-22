@@ -10,7 +10,6 @@
     <Compile Include="System.DirectoryServices.Protocols.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
     <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

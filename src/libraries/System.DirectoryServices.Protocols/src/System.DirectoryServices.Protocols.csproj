@@ -46,7 +46,6 @@
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\SafeHandles.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\Wldap32UnsafeMethods.cs" />
-    <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />

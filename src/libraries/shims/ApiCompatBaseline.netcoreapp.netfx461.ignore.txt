@@ -19,6 +19,15 @@ MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment..ct
 // Activator changed to static class intentionally. See here: https://github.com/dotnet/corefx/issues/11869
 CannotMakeTypeAbstract : Type 'System.Activator' is abstract in the implementation but is not abstract in the contract.
 
+// System.Drawing types changed to static intentionally.  Change is source and binary compatible.  https://github.com/dotnet/corefx/commit/ad215be2fa28a7d2f19a90c1ba04c50c3b677253
+CannotMakeTypeAbstract : Type 'System.Drawing.Brushes' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.Pens' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemBrushes' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemColors' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemFonts' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemIcons' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemPens' is abstract in the implementation but is not abstract in the contract.
+
 // Won't came back into netcoreapp. See here: https://github.com/dotnet/corefx/issues/18075
 MembersMustExist : Member 'System.ComponentModel.DataAnnotations.ValidationContext.ServiceContainer.get()' does not exist in the implementation but it does exist in the contract.
 
@@ -778,6 +787,28 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.BitmapSuffixInSatelliteAs
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.ToolboxBitmapAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Printing.InvalidPrinterException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.FileFormatException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.DirectoryServicesCOMException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryObjectExistsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryObjectNotFoundException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ActiveDirectoryServerDownException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.ForestTrustCollisionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.ActiveDirectory.SyncFromAllServersOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.MultipleMatchesException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.NoMatchingPrincipalException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PasswordException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalExistsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.PrincipalServerDownException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.BerConversionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.DirectoryException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.DirectoryOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.LdapException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.Protocols.TlsOperationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.DirectoryObjectClassAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.DirectoryPropertyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.DirectoryServices.AccountManagement.DirectoryRdnPrefixAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 
 // TypesMustExist isn't a goal for netcore20:
 TypesMustExist : Type 'System._AppDomain' does not exist in the implementation but it does exist in the contract.

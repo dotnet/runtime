@@ -92,10 +92,10 @@
     <Compile Include="System\DirectoryServices\AccountManagement\IdentityClaim.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\IdentityReference.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\UnknownPrincipal.cs" />
-    <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
-    <ProjectReference Include="..\..\System.DirectoryServices.Protocols\ref\System.DirectoryServices.Protocols.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="System.DirectoryServices" />
+    <Reference Include="System.DirectoryServices.Protocols" />
     <Reference Include="System.Configuration.ConfigurationManager" />
     <Reference Include="System.IO.FileSystem.AccessControl" />
     <Reference Include="System.Runtime" />
