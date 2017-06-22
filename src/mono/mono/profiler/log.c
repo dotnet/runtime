@@ -82,7 +82,6 @@ static int do_mono_sample = 0;
 static int do_debug = 0;
 static int do_coverage = 0;
 static gboolean no_counters = FALSE;
-static gboolean only_coverage = FALSE;
 static gboolean debug_coverage = FALSE;
 static int max_allocated_sample_hits;
 
@@ -2006,14 +2005,10 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 		g_free (name);
 }
 
-static void process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method);
-
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method)
 {
-	process_method_enter_coverage (prof, method);
-
-	if (!only_coverage && get_thread ()->call_depth++ <= max_call_depth) {
+	if (get_thread ()->call_depth++ <= max_call_depth) {
 		ENTER_LOG (&method_entries_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2029,7 +2024,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (!only_coverage && --get_thread ()->call_depth <= max_call_depth) {
+	if (--get_thread ()->call_depth <= max_call_depth) {
 		ENTER_LOG (&method_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2045,7 +2040,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
-	if (!only_coverage && !nocalls && --get_thread ()->call_depth <= max_call_depth) {
+	if (!nocalls && --get_thread ()->call_depth <= max_call_depth) {
 		ENTER_LOG (&method_exception_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -3223,7 +3218,6 @@ static MonoConcurrentHashTable *coverage_assemblies = NULL;
 static MonoConcurrentHashTable *coverage_classes = NULL;
 
 static MonoConcurrentHashTable *filtered_classes = NULL;
-static MonoConcurrentHashTable *entered_methods = NULL;
 static MonoConcurrentHashTable *image_to_methods = NULL;
 static MonoConcurrentHashTable *suppressed_assemblies = NULL;
 static gboolean coverage_initialized = FALSE;
@@ -3537,26 +3531,6 @@ dump_coverage (MonoProfiler *prof)
 	COVERAGE_DEBUG(fprintf (stderr, "Coverage: Finished dump\n");)
 }
 
-static void
-process_method_enter_coverage (MonoProfiler *prof, MonoMethod *method)
-{
-	MonoClass *klass;
-	MonoImage *image;
-
-	if (!coverage_initialized)
-		return;
-
-	klass = mono_method_get_class (method);
-	image = mono_class_get_image (klass);
-
-	if (mono_conc_hashtable_lookup (suppressed_assemblies, (gpointer) mono_image_get_name (image)))
-		return;
-
-	mono_os_mutex_lock (&coverage_mutex);
-	mono_conc_hashtable_insert (entered_methods, method, method);
-	mono_os_mutex_unlock (&coverage_mutex);
-}
-
 static MonoLockFreeQueueNode *
 create_method_node (MonoMethod *method)
 {
@@ -3845,7 +3819,6 @@ coverage_init (MonoProfiler *prof)
 	coverage_assemblies = mono_conc_hashtable_new (NULL, NULL);
 	coverage_classes = mono_conc_hashtable_new (NULL, NULL);
 	filtered_classes = mono_conc_hashtable_new (NULL, NULL);
-	entered_methods = mono_conc_hashtable_new (NULL, NULL);
 	image_to_methods = mono_conc_hashtable_new (NULL, NULL);
 	init_suppressed_assemblies ();
 
@@ -3981,7 +3954,6 @@ log_shutdown (MonoProfiler *prof)
 		mono_conc_hashtable_destroy (coverage_classes);
 		mono_conc_hashtable_destroy (filtered_classes);
 
-		mono_conc_hashtable_destroy (entered_methods);
 		mono_conc_hashtable_destroy (image_to_methods);
 		mono_conc_hashtable_destroy (suppressed_assemblies);
 		mono_os_mutex_destroy (&coverage_mutex);
@@ -4693,7 +4665,6 @@ mono_profiler_init (const char *desc)
 	max_call_depth = config.max_call_depth;
 	do_coverage = (config.effective_mask & PROFLOG_CODE_COV_FEATURE);
 	debug_coverage = config.debug_coverage;
-	only_coverage = config.only_coverage;
 
 	if (config.cov_filter_files) {
 		filters = g_ptr_array_new ();
