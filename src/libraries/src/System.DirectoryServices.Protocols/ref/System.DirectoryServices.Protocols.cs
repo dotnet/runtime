@@ -38,8 +38,7 @@ namespace System.DirectoryServices.Protocols {
     public BerConversionException(string message) { }
     public BerConversionException(string message, System.Exception inner) { }
   }
-  public sealed partial class BerConverter {
-    internal BerConverter() { }
+  public static partial class BerConverter {
     public static object[] Decode(string format, byte[] value) { return default(object[]); }
     public static byte[] Encode(string format, params object[] value) { return default(byte[]); }
   }

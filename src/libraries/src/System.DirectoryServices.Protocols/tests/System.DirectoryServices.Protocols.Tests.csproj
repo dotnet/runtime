@@ -11,6 +11,7 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="BerConverterTests.cs" />
     <Compile Include="LdapSessionOptionsTests.cs" />
     <Compile Include="PermissiveModifyControlTests.cs" />
     <Compile Include="ModifyDNRequestTests.cs" />

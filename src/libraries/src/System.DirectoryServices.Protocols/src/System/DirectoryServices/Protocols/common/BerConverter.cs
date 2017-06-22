@@ -2,19 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Collections;
+using System.Text;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Text;
-
-    public sealed class BerConverter
+    public static class BerConverter
     {
-        private BerConverter() { }
-
         public static byte[] Encode(string format, params object[] value)
         {
             if (format == null)
