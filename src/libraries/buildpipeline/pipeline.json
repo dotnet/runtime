@@ -64,7 +64,7 @@
           "Parameters": {
             "PB_BuildArguments": "-buildArch=x64 -Release",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "OSX.1012.Amd64",
+            "PB_TargetQueue": "OSX.1012.Amd64+OSX.1013.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=OSX"
           },
           "ReportingParameters": {
@@ -362,7 +362,7 @@
       "Definitions": [{
         "Name": "DotNet-CoreFx-Trusted-OSX",
         "Parameters": {
-          "PB_TargetQueue": "OSX.1012.Amd64"
+          "PB_TargetQueue": "OSX.1012.Amd64+OSX.1013.Amd64"
         },
         "ReportingParameters": {
           "OperatingSystem": "OSX",
