@@ -10839,6 +10839,14 @@ void TreeNodeInfo::dump(LinearScan* lsra)
     {
         printf(" P");
     }
+    if (regOptional)
+    {
+        printf(" O");
+    }
+    if (isInternalRegDelayFree)
+    {
+        printf(" ID");
+    }
     printf(">\n");
 }
 

@@ -1094,7 +1094,7 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
 
     // This routine uses the following heuristics:
     //
-    // a) If both are tracked locals, marking the one with lower weighted
+    // a) If both are register candidates, marking the one with lower weighted
     // ref count as reg-optional would likely be beneficial as it has
     // higher probability of not getting a register.
     //
@@ -1131,9 +1131,11 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
         LclVarDsc* v1 = comp->lvaTable + op1->AsLclVarCommon()->GetLclNum();
         LclVarDsc* v2 = comp->lvaTable + op2->AsLclVarCommon()->GetLclNum();
 
-        if (v1->lvTracked && v2->lvTracked)
+        bool v1IsRegCandidate = !v1->lvDoNotEnregister && v1->lvTracked;
+        bool v2IsRegCandidate = !v2->lvDoNotEnregister && v2->lvTracked;
+        if (v1IsRegCandidate && v2IsRegCandidate)
         {
-            // Both are tracked locals.  The one with lower weight is less likely
+            // Both are tracked enregisterable locals.  The one with lower weight is less likely
             // to get a register and hence beneficial to mark the one with lower
             // weight as reg optional.
             if (v1->lvRefCntWtd < v2->lvRefCntWtd)
@@ -1145,15 +1147,14 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
                 preferredOp = op2;
             }
         }
-        else if (v2->lvTracked)
+        else if (v2IsRegCandidate)
         {
-            // v1 is an untracked lcl and it is use position is less likely to
-            // get a register.
+            // v1 is not a reg candidate and its use position is less likely to get a register.
             preferredOp = op1;
         }
-        else if (v1->lvTracked)
+        else if (v1IsRegCandidate)
         {
-            // v2 is an untracked lcl and its def position always
+            // v2 is not a reg candidate and its def position always
             // needs a reg.  Hence it is better to mark v1 as
             // reg optional.
             preferredOp = op1;
