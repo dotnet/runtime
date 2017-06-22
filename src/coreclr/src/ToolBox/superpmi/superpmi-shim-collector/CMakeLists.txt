@@ -33,6 +33,7 @@ set(SUPERPMI_SHIM_COLLECTOR_SOURCES
     ../superpmi-shared/spmiutil.cpp
     ../superpmi-shared/tocfile.cpp
     ../superpmi-shared/typeutils.cpp
+    ../superpmi-shared/spmidumphelper.cpp
 )
 
 add_precompiled_header(
