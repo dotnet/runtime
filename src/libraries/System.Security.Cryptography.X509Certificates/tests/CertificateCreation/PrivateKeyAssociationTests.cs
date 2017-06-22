@@ -240,9 +240,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
-                using (RSA rsa = cert.GetRSAPrivateKey())
                 {
-                    signature = rsa.SignData(data, hashAlgorithm, RSASignaturePadding.Pkcs1);
+                    using (RSA rsa = cert.GetRSAPrivateKey())
+                    {
+                        signature = rsa.SignData(data, hashAlgorithm, RSASignaturePadding.Pkcs1);
+                    }
+
+                    // RSAOther is exportable, so ensure PFX export succeeds
+                    byte[] pfxBytes = cert.Export(X509ContentType.Pkcs12, request.SubjectName.Name);
+                    Assert.InRange(pfxBytes.Length, 100, int.MaxValue);
                 }
 
                 Assert.True(rsaOther.VerifyData(data, signature, hashAlgorithm, RSASignaturePadding.Pkcs1));
@@ -444,9 +450,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 using (X509Certificate2 cert = request.Create(request.SubjectName, dsaGen, now, now.AddDays(1), new byte[1]))
                 using (X509Certificate2 certWithPrivateKey = cert.CopyWithPrivateKey(dsaOther))
-                using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
                 {
-                    signature = dsa.SignData(data, hashAlgorithm);
+                    using (DSA dsa = certWithPrivateKey.GetDSAPrivateKey())
+                    {
+                        signature = dsa.SignData(data, hashAlgorithm);
+                    }
+
+                    // DSAOther is exportable, so ensure PFX export succeeds
+                    byte[] pfxBytes = certWithPrivateKey.Export(X509ContentType.Pkcs12, request.SubjectName.Name);
+                    Assert.InRange(pfxBytes.Length, 100, int.MaxValue);
                 }
 
                 Assert.True(dsaOther.VerifyData(data, signature, hashAlgorithm));
@@ -523,9 +535,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 DateTimeOffset now = DateTimeOffset.UtcNow;
 
                 using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
-                using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
                 {
-                    signature = ecdsa.SignData(data, hashAlgorithm);
+                    using (ECDsa ecdsa = cert.GetECDsaPrivateKey())
+                    {
+                        signature = ecdsa.SignData(data, hashAlgorithm);
+                    }
+
+                    // ECDsaOther is exportable, so ensure PFX export succeeds
+                    byte[] pfxBytes = cert.Export(X509ContentType.Pkcs12, request.SubjectName.Name);
+                    Assert.InRange(pfxBytes.Length, 100, int.MaxValue);
                 }
 
                 Assert.True(ecdsaOther.VerifyData(data, signature, hashAlgorithm));
