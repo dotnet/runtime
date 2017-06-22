@@ -546,7 +546,7 @@
         "checkoutSubmodules": false
     },
     "processParameters": {},
-    "quality": 1,
+    "quality": "definition",
     "authoredBy": {
         "id": "9d5fdf9f-36b6-4d0c-a12e-2737a673af94",
         "displayName": "Ravi Eda",
