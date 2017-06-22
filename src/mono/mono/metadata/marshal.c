@@ -7692,7 +7692,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_add_local (mb, sig->ret);
 	}
 
-	if (mono_threads_is_coop_enabled ()) {
+	if (mono_threads_is_blocking_transition_enabled ()) {
 		/* local 4, dummy local used to get a stack address for suspend funcs */
 		coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		/* local 5, the local to be used when calling the suspend funcs */
@@ -7733,7 +7733,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	}
 
 	// In coop mode need to register blocking state during native call
-	if (mono_threads_is_coop_enabled ()) {
+	if (mono_threads_is_blocking_transition_enabled ()) {
 		// Perform an extra, early lookup of the function address, so any exceptions
 		// potentially resulting from the lookup occur before entering blocking mode.
 		if (!func_param && !MONO_CLASS_IS_IMPORT (mb->method->klass) && aot) {
@@ -7818,7 +7818,7 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	}
 
 	/* Unblock before converting the result, since that can involve calls into the runtime */
-	if (mono_threads_is_coop_enabled ()) {
+	if (mono_threads_is_blocking_transition_enabled ()) {
 		mono_mb_emit_ldloc (mb, coop_gc_var);
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_exit_gc_safe_region_unbalanced);
@@ -8587,7 +8587,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	/* try { */
 	clause_catch->try_offset = clause_finally->try_offset = mono_mb_get_label (mb);
 
-	if (!mono_threads_is_coop_enabled ()) {
+	if (!mono_threads_is_blocking_transition_enabled ()) {
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_JIT_ATTACH);
 	} else {
@@ -8769,7 +8769,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 	clause_finally->try_len = mono_mb_get_label (mb) - clause_finally->try_offset;
 	clause_finally->handler_offset = mono_mb_get_label (mb);
 
-	if (!mono_threads_is_coop_enabled ()) {
+	if (!mono_threads_is_blocking_transition_enabled ()) {
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_byte (mb, CEE_MONO_JIT_DETACH);
 	} else {

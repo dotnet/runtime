@@ -519,6 +519,7 @@ OPDEF(MINT_MONO_ATOMIC_STORE_I4, "mono_atomic.store.i4", 1, MintOpNoArgs)
 OPDEF(MINT_MONO_MEMORY_BARRIER, "mono_memory_barrier", 1, MintOpNoArgs)
 OPDEF(MINT_MONO_JIT_ATTACH, "mono_jit_attach", 1, MintOpNoArgs)
 OPDEF(MINT_MONO_JIT_DETACH, "mono_jit_detach", 1, MintOpNoArgs)
+OPDEF(MINT_MONO_LDDOMAIN, "mono_lddomain", 1, MintOpNoArgs)
 
 // FIXME: MintOp
 OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, MintOpNoArgs)

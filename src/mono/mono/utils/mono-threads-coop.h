@@ -28,6 +28,9 @@ extern volatile size_t mono_polling_required;
 gboolean
 mono_threads_is_coop_enabled (void);
 
+gboolean
+mono_threads_is_blocking_transition_enabled (void);
+
 /* Internal API */
 
 void

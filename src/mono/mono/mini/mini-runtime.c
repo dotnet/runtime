@@ -840,7 +840,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 	MonoDomain *orig;
 	gboolean attached;
 
-	g_assert (!mono_threads_is_coop_enabled ());
+	g_assert (!mono_threads_is_blocking_transition_enabled ());
 
 	if (!domain) {
 		/* Happens when called from AOTed code which is only used in the root domain. */
@@ -873,7 +873,7 @@ mono_jit_thread_attach (MonoDomain *domain)
 void
 mono_jit_set_domain (MonoDomain *domain)
 {
-	g_assert (!mono_threads_is_coop_enabled ());
+	g_assert (!mono_threads_is_blocking_transition_enabled ());
 
 	if (domain)
 		mono_domain_set (domain, TRUE);

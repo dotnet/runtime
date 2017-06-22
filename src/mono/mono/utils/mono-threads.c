@@ -965,7 +965,7 @@ suspend_sync (MonoNativeThreadId tid, gboolean interrupt_kernel)
 		if (interrupt_kernel)
 			mono_threads_suspend_abort_syscall (info);
 
-		break;
+		return info;
 	default:
 		g_assert_not_reached ();
 	}
@@ -1086,27 +1086,35 @@ STW to make sure no unsafe pending suspend is in progress.
 static void
 mono_thread_info_suspend_lock_with_info (MonoThreadInfo *info)
 {
-	if (mono_threads_is_coop_enabled ()) {
-		g_assert (info);
-		g_assert (mono_thread_info_is_current (info));
-		g_assert (mono_thread_info_is_live (info));
+	g_assert (info);
+	g_assert (mono_thread_info_is_current (info));
+	g_assert (mono_thread_info_is_live (info));
 
-		MONO_ENTER_GC_SAFE_WITH_INFO(info);
+	MONO_ENTER_GC_SAFE_WITH_INFO(info);
 
-		int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
-		g_assert (res != -1);
+	int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+	g_assert (res != -1);
 
-		MONO_EXIT_GC_SAFE_WITH_INFO;
-	} else {
-		int res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
-		g_assert (res != -1);
-	}
+	MONO_EXIT_GC_SAFE_WITH_INFO;
 }
 
 void
 mono_thread_info_suspend_lock (void)
 {
-	mono_thread_info_suspend_lock_with_info (mono_thread_info_current_unchecked ());
+	MonoThreadInfo *info;
+	gint res;
+
+	info = mono_thread_info_current_unchecked ();
+	if (info && mono_thread_info_is_live (info)) {
+		mono_thread_info_suspend_lock_with_info (info);
+		return;
+	}
+
+	/* mono_thread_info_suspend_lock () can be called from boehm-gc.c on_gc_notification before the new thread's
+	 * start_wrapper calls mono_thread_info_attach but after pthread_create calls the start wrapper. */
+
+	res = mono_os_sem_wait (&global_suspend_semaphore, MONO_SEM_FLAGS_NONE);
+	g_assert (res != -1);
 }
 
 void

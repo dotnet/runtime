@@ -3585,6 +3585,12 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				ADD_CODE (&td, MINT_MONO_JIT_DETACH);
 				++td.ip;
 				break;
+			case CEE_MONO_LDDOMAIN:
+				ADD_CODE (&td, MINT_MONO_LDDOMAIN);
+				td.sp [0].type = STACK_TYPE_I;
+				++td.sp;
+				++td.ip;
+				break;
 			default:
 				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td.ip, td.ip-header->code);
 			}

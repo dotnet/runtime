@@ -4522,6 +4522,11 @@ array_constructed:
 			++ip;
 			mono_jit_set_domain (context->original_domain);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_MONO_LDDOMAIN)
+			sp->data.p = mono_domain_get ();
+			++sp;
+			++ip;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_INTR_LOC)
 			if (G_UNLIKELY (ss_enabled)) {
 				static void (*ss_tramp) (void);

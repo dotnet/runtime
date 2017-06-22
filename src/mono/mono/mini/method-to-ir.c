@@ -11765,7 +11765,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				MonoInst *ad_ins, *jit_tls_ins;
 				MonoBasicBlock *next_bb = NULL, *call_bb = NULL;
 
-				g_assert (!mono_threads_is_coop_enabled ());
+				g_assert (!mono_threads_is_blocking_transition_enabled ());
 
 				cfg->orig_domain_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 

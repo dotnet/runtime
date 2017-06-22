@@ -117,7 +117,7 @@ mono_threads_state_poll (void)
 static void
 mono_threads_state_poll_with_info (MonoThreadInfo *info)
 {
-	g_assert (mono_threads_is_coop_enabled ());
+	g_assert (mono_threads_is_blocking_transition_enabled ());
 
 	++coop_do_polling_count;
 
@@ -206,7 +206,7 @@ mono_threads_enter_gc_safe_region_with_info (MonoThreadInfo *info, gpointer *sta
 {
 	gpointer cookie;
 
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return NULL;
 
 	cookie = mono_threads_enter_gc_safe_region_unbalanced_with_info (info, stackdata);
@@ -228,7 +228,7 @@ mono_threads_enter_gc_safe_region_unbalanced (gpointer *stackdata)
 static gpointer
 mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata)
 {
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return NULL;
 
 	++coop_do_blocking_count;
@@ -255,7 +255,7 @@ retry:
 void
 mono_threads_exit_gc_safe_region (gpointer cookie, gpointer *stackdata)
 {
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return;
 
 #ifdef ENABLE_CHECKED_BUILD_GC
@@ -271,7 +271,7 @@ mono_threads_exit_gc_safe_region_unbalanced (gpointer cookie, gpointer *stackdat
 {
 	MonoThreadInfo *info;
 
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return;
 
 	info = (MonoThreadInfo *)cookie;
@@ -314,7 +314,7 @@ mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *info, gpointer 
 {
 	gpointer cookie;
 
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return NULL;
 
 	cookie = mono_threads_enter_gc_unsafe_region_unbalanced_with_info (info, stackdata);
@@ -336,7 +336,7 @@ mono_threads_enter_gc_unsafe_region_unbalanced (gpointer *stackdata)
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_with_info (MonoThreadInfo *info, gpointer *stackdata)
 {
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return NULL;
 
 	++coop_reset_blocking_count;
@@ -376,7 +376,7 @@ mono_threads_enter_gc_unsafe_region_cookie (void)
 {
 	MonoThreadInfo *info;
 
-	g_assert (mono_threads_is_coop_enabled ());
+	g_assert (mono_threads_is_blocking_transition_enabled ());
 
 	info = mono_thread_info_current_unchecked ();
 
@@ -393,7 +393,7 @@ mono_threads_enter_gc_unsafe_region_cookie (void)
 void
 mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer *stackdata)
 {
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return;
 
 #ifdef ENABLE_CHECKED_BUILD_GC
@@ -407,7 +407,7 @@ mono_threads_exit_gc_unsafe_region (gpointer cookie, gpointer *stackdata)
 void
 mono_threads_exit_gc_unsafe_region_unbalanced (gpointer cookie, gpointer *stackdata)
 {
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_blocking_transition_enabled ())
 		return;
 
 	if (!cookie)
@@ -435,11 +435,24 @@ mono_threads_is_coop_enabled (void)
 #endif
 }
 
+gboolean
+mono_threads_is_blocking_transition_enabled (void)
+{
+#if defined(USE_COOP_GC)
+	return TRUE;
+#else
+	static int is_blocking_transition_enabled = -1;
+	if (G_UNLIKELY (is_blocking_transition_enabled == -1))
+		is_blocking_transition_enabled = (g_hasenv ("MONO_ENABLE_COOP") || g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION")) ? 1 : 0;
+	return is_blocking_transition_enabled == 1;
+#endif
+}
+
 
 void
 mono_threads_coop_init (void)
 {
-	if (!mono_threads_is_coop_enabled ())
+	if (!mono_threads_is_coop_enabled () && !mono_threads_is_blocking_transition_enabled ())
 		return;
 
 	mono_counters_register ("Coop Reset Blocking", MONO_COUNTER_GC | MONO_COUNTER_INT, &coop_reset_blocking_count);
