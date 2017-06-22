@@ -9,6 +9,7 @@
       net462-Windows_NT;
       net47-Windows_NT;
       uap-Windows_NT;
+      uapaot-Windows_NT;
       netstandard1.1-AnyOS;
       netstandard1.1-Unix;
       netstandard1.1-Windows_NT;

@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-#if uap
+#if uapaot
         private const string FrameworkName = ".NET Native";
 #elif netfx || win8
         private const string FrameworkName = ".NET Framework";

@@ -10,6 +10,7 @@
     <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">$(DefineConstants);wpa81</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='win8'">$(DefineConstants);win8</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">$(DefineConstants);uapaot</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.1'">$(DefineConstants);netstandard11</DefineConstants>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)'=='netstandard1.1' AND '$(OSGroup)'=='AnyOS'">SR.PlatformNotSupported_RuntimeInformation</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- use netstandard1.1 refs for win8 and wpa81 -->
@@ -66,7 +67,7 @@
     </Compile>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81' and '$(TargetGroup)' != 'netstandard1.1' and '$(TargetGroup)' != 'uap')">
+  <ItemGroup Condition="'$(TargetsWindows)'=='true' And ('$(TargetGroup)' != 'win8' AND '$(TargetGroup)' != 'wpa81' and '$(TargetGroup)' != 'netstandard1.1' and '$(TargetGroup)' != 'uap' and '$(TargetGroup)' != 'uapaot')">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>

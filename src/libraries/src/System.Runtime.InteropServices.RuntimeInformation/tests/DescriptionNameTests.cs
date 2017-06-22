@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         public void VerifyRuntimeDebugNameOnNetCoreUwp()
         {
             AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
-            string expected = string.Format(".NET Native {0}", attr.Version);
+            string expected = string.Format(PlatformDetection.IsNetNative ? ".NET Native {0}" : ".NET Core {0}", attr.Version);
             Assert.Equal(expected, RuntimeInformation.FrameworkDescription);
             Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
         }
