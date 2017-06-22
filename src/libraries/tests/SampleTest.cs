@@ -48,11 +48,21 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
             XmlReader reader = XmlReader.Create("feed.xml");
             SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
-            
+
             Assert.True(sf != null);
         }
 
         
+        //[Fact]
+        //public static void serializeAsItem()
+        //{
+        //    SyndicationItem item = new SyndicationItem();
+        //    item.Title = new TextSyndicationContent("Item Only");
+        //    item.Summary = new TextSyndicationContent("Brief Sumarry");
+
+        //    Rss20ItemFormatter rssf = item.GetRss20Formatter();
+        //    XmlWriter xmlw = 
+        //}
 
         [Fact]
         public static void SyndicationFeed_CreateNewFeed()
