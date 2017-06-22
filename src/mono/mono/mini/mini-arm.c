@@ -121,7 +121,6 @@ static int vfp_scratch2 = ARM_VFP_D1;
 static int i8_align;
 
 static gpointer single_step_tramp, breakpoint_tramp;
-static gpointer get_tls_tramp;
 
 /*
  * The code generated for sequence points reads from this location, which is
@@ -212,6 +211,19 @@ emit_big_add (guint8 *code, int dreg, int sreg, int imm)
 	} else {
 		code = mono_arm_emit_load_imm (code, dreg, imm);
 		ARM_ADD_REG_REG (code, dreg, dreg, sreg);
+	}
+	return code;
+}
+
+static guint8*
+emit_ldr_imm (guint8 *code, int dreg, int sreg, int imm)
+{
+	if (!arm_is_imm12 (imm)) {
+		g_assert (dreg != sreg);
+		code = emit_big_add (code, dreg, sreg, imm);
+		ARM_LDR_IMM (code, dreg, dreg, 0);
+	} else {
+		ARM_LDR_IMM (code, dreg, sreg, imm);
 	}
 	return code;
 }
@@ -764,7 +776,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	const char *cpu_arch;
+	char *cpu_arch;
 
 #ifdef TARGET_WATCHOS
 	mini_get_debug_options ()->soft_breakpoints = TRUE;
@@ -813,7 +825,7 @@ mono_arch_init (void)
 	 * works. Most ARM devices have VFP units these days, so
 	 * normally soft float code would not be exercised much.
 	 */
-	const char *soft = g_getenv ("MONO_ARM_FORCE_SOFT_FLOAT");
+	char *soft = g_getenv ("MONO_ARM_FORCE_SOFT_FLOAT");
 
 	if (soft && !strncmp (soft, "1", 1))
 		arm_fpu = MONO_ARM_FPU_NONE;
@@ -4562,7 +4574,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot) {
 				g_assert (info_var);
 				g_assert (info_var->opcode == OP_REGOFFSET);
-				g_assert (arm_is_imm12 (info_var->inst_offset));
 			}
 
 			if (!cfg->soft_breakpoints && !cfg->compile_aot) {
@@ -4582,9 +4593,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					var = ss_method_var;
 					g_assert (var);
 					g_assert (var->opcode == OP_REGOFFSET);
-					g_assert (arm_is_imm12 (var->inst_offset));
-					ARM_LDR_IMM (code, dreg, var->inst_basereg, var->inst_offset);
-
+					code = emit_ldr_imm (code, dreg, var->inst_basereg, var->inst_offset);
 					/* Read the value and check whether it is non-zero. */
 					ARM_LDR_IMM (code, dreg, dreg, 0);
 					ARM_CMP_REG_IMM (code, dreg, 0, 0);
@@ -4596,8 +4605,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 						var = ss_trigger_page_var;
 						g_assert (var);
 						g_assert (var->opcode == OP_REGOFFSET);
-						g_assert (arm_is_imm12 (var->inst_offset));
-						ARM_LDR_IMM (code, dreg, var->inst_basereg, var->inst_offset);
+						code = emit_ldr_imm (code, dreg, var->inst_basereg, var->inst_offset);
 					} else {
 						ARM_LDR_IMM (code, dreg, ARMREG_PC, 0);
 						ARM_B (code, 0);
@@ -4615,7 +4623,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				guint32 offset = code - cfg->native_code;
 				guint32 val;
 
-				ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
+				var = info_var;
+				code = emit_ldr_imm (code, dreg, var->inst_basereg, var->inst_offset);
 				/* Add the offset */
 				val = ((offset / 4) * sizeof (guint8*)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [offset], which is either 0 or the address of a trigger page */
@@ -6441,9 +6450,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 		if (info_var) {
 			g_assert (info_var->opcode == OP_REGOFFSET);
-			g_assert (arm_is_imm12 (info_var->inst_offset));
 
-			ARM_LDR_IMM (code, dreg, info_var->inst_basereg, info_var->inst_offset);
+			code = emit_ldr_imm (code, dreg, info_var->inst_basereg, info_var->inst_offset);
 			/* Load the trigger page addr */
 			ARM_LDR_IMM (code, dreg, dreg, MONO_STRUCT_OFFSET (SeqPointInfo, ss_trigger_page));
 			ARM_STR_IMM (code, dreg, ss_trigger_page_var->inst_basereg, ss_trigger_page_var->inst_offset);
