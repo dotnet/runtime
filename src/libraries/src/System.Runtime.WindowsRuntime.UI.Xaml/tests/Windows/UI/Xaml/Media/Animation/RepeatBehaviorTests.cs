@@ -157,6 +157,7 @@ namespace Windows.UI.Xaml.Media.Animation.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
+        [ActiveIssue(21351, TargetFrameworkMonikers.UapAot)]
         public void Equals_Object_ReturnsExpected(RepeatBehavior repeatBehaviour, object other, bool expected)
         {
             Assert.Equal(expected, repeatBehaviour.Equals(other));
