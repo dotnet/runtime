@@ -13,8 +13,7 @@ namespace System.Drawing.Printing
     ///       the size of a piece of paper.
     ///    </para>
     /// </devdoc>
-    [Serializable]
-    public class PaperSize
+    public partial class PaperSize
     {
         private PaperKind _kind;
         private string _name;

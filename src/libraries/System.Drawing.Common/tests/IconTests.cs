@@ -737,63 +737,6 @@ namespace System.Drawing.Tests
             Assert.Throws<ObjectDisposedException>(() => icon.Size);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Serialize_RoundtripFromData_Success()
-        {
-            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
-            {
-                Roundtrip(icon);
-            }
-        }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Serialize_RoundtripWithSize_Success()
-        {
-            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
-            {
-                Assert.Equal(new Size(32, 32), icon.Size);
-                Roundtrip(icon);
-            }
-        }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Serialize_RoundtripWithUnownedHandle_Success()
-        {
-            using (var sourceIcon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
-            using (var icon = Icon.FromHandle(sourceIcon.Handle))
-            {
-                Roundtrip(icon);
-            }
-        }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The hardcoded bytes depend on the existence of the System.Drawing.Common assembly.")]
-        public void Deserialize_InvalidBytes_ThrowsInvalidOperationException()
-        {
-            // In these bytes, IconData is set to null.
-            const string InvalidBytes = "AAEAAAD/////AQAAAAAAAAAMAgAAAFhTeXN0ZW0uRHJhd2luZy5Db21tb24sIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1jYzdiMTNmZmNkMmRkZDUxDAMAAABAU3lzdGVtLkRyYXdpbmcsIFZlcnNpb249NC4wLjAuMCwgUHVibGljS2V5VG9rZW49YjAzZjVmN2YxMWQ1MGEzYQUBAAAAE1N5c3RlbS5EcmF3aW5nLkljb24CAAAACEljb25EYXRhCEljb25TaXplBwQCE1N5c3RlbS5EcmF3aW5nLlNpemUDAAAAAgAAAAoF/P///xNTeXN0ZW0uRHJhd2luZy5TaXplAgAAAAV3aWR0aAZoZWlnaHQAAAgIAwAAAAAAAAAAAAAACw==";
-
-            using (var memoryStream = new MemoryStream(Convert.FromBase64String(InvalidBytes)))
-            {
-                var formatter = new BinaryFormatter();
-                TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => formatter.Deserialize(memoryStream));
-                Assert.IsType<InvalidOperationException>(ex.InnerException);
-            }
-        }
-
-        private static void Roundtrip(Icon icon)
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                var formatter = new BinaryFormatter();
-                formatter.Serialize(memoryStream, icon);
-                memoryStream.Position = 0;
-
-                Icon deserializedIcon = (Icon)formatter.Deserialize(memoryStream);
-                Assert.Equal(icon.Size, deserializedIcon.Size);
-            }
-        }
-
         private static void SaveAndCompare(Icon icon, bool alpha)
         {
             using (MemoryStream outputStream = new MemoryStream())

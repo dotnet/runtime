@@ -12,8 +12,7 @@ namespace System.Drawing.Printing
     ///    <para> Retrieves
     ///       the resolution supported by a printer.</para>
     /// </devdoc>
-    [Serializable]
-    public class PrinterResolution
+    public partial class PrinterResolution
     {
         private int _x;
         private int _y;

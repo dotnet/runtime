@@ -7,7 +7,6 @@ namespace System.Drawing.Imaging
     using System.Runtime.InteropServices;
     using System.IO;
     using System.Drawing.Internal;
-    using System.Runtime.Serialization;
 
     /**
      * Represent a metafile image
@@ -18,8 +17,7 @@ namespace System.Drawing.Imaging
     ///    contains records that describe a sequence of graphics operations that can be
     ///    recorded and played back.
     /// </devdoc>
-    [Serializable]
-    public sealed class Metafile : Image
+    public sealed partial class Metafile : Image
     {
         /*
          * Create a new metafile object from a metafile handle (WMF)
@@ -663,13 +661,6 @@ namespace System.Drawing.Imaging
                 throw SafeNativeMethods.Gdip.StatusException(status);
 
             SetNativeImage(metafile);
-        }
-
-        /**
-         * Constructor used in deserialization
-         */
-        private Metafile(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
         }
 
         /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetMetafileHeader"]/*' />

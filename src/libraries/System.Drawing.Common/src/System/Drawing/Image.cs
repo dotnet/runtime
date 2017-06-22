@@ -23,9 +23,8 @@ namespace System.Drawing
     ///    functionality for 'Bitmap', 'Icon', 'Cursor', and 'Metafile' descended classes.
     /// </devdoc>
     [ImmutableObject(true)]
-    [Serializable]
     [ComVisible(true)]
-    public abstract class Image : MarshalByRefObject, ISerializable, ICloneable, IDisposable
+    public abstract partial class Image : MarshalByRefObject, ICloneable, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -64,59 +63,6 @@ namespace System.Drawing
          */
         internal Image()
         {
-        }
-
-        /**
-         * Constructor used in deserialization
-         */
-        // We don't care about serialiation constructors.
-#pragma warning disable CA2229
-        internal Image(SerializationInfo info, StreamingContext context)
-        {
-#pragma warning restore CA2229
-            SerializationInfoEnumerator sie = info.GetEnumerator();
-            if (sie == null)
-            {
-                return;
-            }
-            for (; sie.MoveNext();)
-            {
-                if (String.Equals(sie.Name, "Data", StringComparison.OrdinalIgnoreCase))
-                {
-                    try
-                    {
-                        byte[] dat = (byte[])sie.Value;
-                        if (dat != null)
-                        {
-                            InitializeFromStream(new MemoryStream(dat));
-                        }
-                    }
-                    catch (ExternalException e)
-                    {
-                        Debug.Fail("failure: " + e.ToString());
-                    }
-                    catch (ArgumentException e)
-                    {
-                        Debug.Fail("failure: " + e.ToString());
-                    }
-                    catch (OutOfMemoryException e)
-                    {
-                        Debug.Fail("failure: " + e.ToString());
-                    }
-                    catch (InvalidOperationException e)
-                    {
-                        Debug.Fail("failure: " + e.ToString());
-                    }
-                    catch (NotImplementedException e)
-                    {
-                        Debug.Fail("failure: " + e.ToString());
-                    }
-                    catch (FileNotFoundException e)
-                    {
-                        Debug.Fail("failure: " + e.ToString());
-                    }
-                }
-            }
         }
 
         /// <include file='doc\Image.uex' path='docs/doc[@for="Image.Tag"]/*' />
@@ -512,21 +458,6 @@ namespace System.Drawing
             }
 
             return image;
-        }
-
-        /// <include file='doc\Image.uex' path='docs/doc[@for="Image.ISerializable.GetObjectData"]/*' />
-        /// <devdoc>
-        ///     ISerializable private implementation
-        /// </devdoc>
-        /// <internalonly/>
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            using (MemoryStream stream = new MemoryStream())
-            {
-                Save(stream);
-                si.AddValue("Data", stream.ToArray(), typeof(byte[]));
-            }
         }
 
         /// <include file='doc\Image.uex' path='docs/doc[@for="Image.GetEncoderParameterList"]/*' />

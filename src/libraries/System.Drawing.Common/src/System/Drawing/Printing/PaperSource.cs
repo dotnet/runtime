@@ -10,8 +10,7 @@ namespace System.Drawing.Printing
     ///       Specifies the paper tray from which the printer gets paper.
     ///    </para>
     /// </devdoc>
-    [Serializable]
-    public class PaperSource
+    public partial class PaperSource
     {
         private string _name;
         private PaperSourceKind _kind;

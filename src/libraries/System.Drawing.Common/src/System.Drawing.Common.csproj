@@ -229,7 +229,6 @@
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
     <Compile Include="misc\HandleCollector.cs" />
-    <Compile Include="misc\InvariantComparer.cs" />
     <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
