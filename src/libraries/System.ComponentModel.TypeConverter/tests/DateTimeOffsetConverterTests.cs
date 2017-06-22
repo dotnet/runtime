@@ -48,20 +48,27 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo));
-            string formatWithTime = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern + " zzz";
-            string format = formatInfo.ShortDatePattern + " zzz";
-            DateTimeOffset testDateAndTime = new DateTimeOffset(new DateTime(1998, 12, 5, 22, 30, 30));
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
 
-            ConvertTo_WithContext(new object[5, 3]
-                {
+                DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo));
+                string formatWithTime = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern + " zzz";
+                string format = formatInfo.ShortDatePattern + " zzz";
+                DateTimeOffset testDateAndTime = new DateTimeOffset(new DateTime(1998, 12, 5, 22, 30, 30));
+
+                ConvertTo_WithContext(new object[5, 3]
+                    {
                     { DateTimeOffsetConverterTests.s_testOffset, DateTimeOffsetConverterTests.s_testOffset.ToString(format, CultureInfo.CurrentCulture), null },
                     { testDateAndTime, testDateAndTime.ToString(formatWithTime, CultureInfo.CurrentCulture), null },
                     { DateTimeOffset.MinValue, string.Empty, null },
                     { DateTimeOffsetConverterTests.s_testOffset, DateTimeOffsetConverterTests.s_testOffset.ToString("yyyy-MM-dd zzz", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture },
                     { testDateAndTime, testDateAndTime.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture }
-                },
-                DateTimeOffsetConverterTests.s_converter);
+                    },
+                    DateTimeOffsetConverterTests.s_converter);
+
+                return SuccessExitCode;
+            });
         }
     }
 }
