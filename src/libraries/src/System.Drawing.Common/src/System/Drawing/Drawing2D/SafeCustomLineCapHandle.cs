@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Security;
+
 namespace System.Drawing.Drawing2D
 {
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Security;
-
     [SecurityCritical]
     internal class SafeCustomLineCapHandle : SafeHandle
     {
@@ -17,14 +17,13 @@ namespace System.Drawing.Drawing2D
         // and therefore SafeHandle should call
         // our ReleaseHandle method when the SafeHandle
         // is no longer in use.
-        internal SafeCustomLineCapHandle(IntPtr h)
-            : base(IntPtr.Zero, true)
+        internal SafeCustomLineCapHandle(IntPtr h) : base(IntPtr.Zero, true)
         {
             SetHandle(h);
         }
 
         [SecurityCritical]
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             int status = SafeNativeMethods.Gdip.Ok;
             if (!IsInvalid)
@@ -51,19 +50,10 @@ namespace System.Drawing.Drawing2D
             return status == SafeNativeMethods.Gdip.Ok;
         }
 
-        public override bool IsInvalid
-        {
-            get { return handle == IntPtr.Zero; }
-        }
+        public override bool IsInvalid => handle == IntPtr.Zero;
 
-        public static implicit operator IntPtr(SafeCustomLineCapHandle handle)
-        {
-            return (handle == null) ? IntPtr.Zero : handle.handle;
-        }
+        public static implicit operator IntPtr(SafeCustomLineCapHandle handle) => handle?.handle ?? IntPtr.Zero;
 
-        public static explicit operator SafeCustomLineCapHandle(IntPtr handle)
-        {
-            return new SafeCustomLineCapHandle(handle);
-        }
+        public static explicit operator SafeCustomLineCapHandle(IntPtr handle) => new SafeCustomLineCapHandle(handle);
     }
 }

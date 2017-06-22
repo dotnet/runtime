@@ -4,9 +4,6 @@
 
 namespace System.Drawing.Drawing2D
 {
-    /**
-     * Various custom line cap types
-     */
     internal enum CustomLineCapType
     {
         Default = 0,
