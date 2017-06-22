@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.Tests
     public partial class ComAwareEventInfoTests
     {
         [Fact]
-        [ActiveIssue(21348, TargetFrameworkMonikers.UapAot)]
         public void Ctor_Type_EventName()
         {
             EventInfo expectedEvent = typeof(NonComObject).GetEvent(nameof(NonComObject.Event));
