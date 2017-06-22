@@ -13,16 +13,16 @@ namespace System.Net.Http
             if (credential.UserName.IndexOf(':') != -1)
             {
                 // TODO: What's the right way to handle this?
-                //              throw new NotImplementedException($"Basic auth: can't handle ':' in username \"{credential.UserName}\"");
+                throw new NotImplementedException($"Basic auth: can't handle ':' in username \"{credential.UserName}\"");
             }
 
             string userPass = credential.UserName + ":" + credential.Password;
             if (!string.IsNullOrEmpty(credential.Domain))
             {
-                if (credential.UserName.IndexOf(':') != -1)
+                if (credential.Domain.IndexOf(':') != -1)
                 {
                     // TODO: What's the right way to handle this?
-                    //                  throw new NotImplementedException($"Basic auth: can't handle ':' in domain \"{credential.Domain}\"");
+                    throw new NotImplementedException($"Basic auth: can't handle ':' in domain \"{credential.Domain}\"");
                 }
 
                 userPass = credential.Domain + "\\" + userPass;
