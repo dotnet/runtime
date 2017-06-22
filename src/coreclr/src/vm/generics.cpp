@@ -499,7 +499,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     _ASSERTE(pOldMT->HasPerInstInfo());
 
     // Fill in per-inst map pointer (which points to the array of generic dictionary pointers)
-    pMT->SetPerInstInfo ((Dictionary**) (pMemory + cbMT + cbOptional + cbIMap + sizeof(GenericsDictInfo)));
+    pMT->SetPerInstInfo((MethodTable::PerInstInfoElem_t *) (pMemory + cbMT + cbOptional + cbIMap + sizeof(GenericsDictInfo)));
     _ASSERTE(FitsIn<WORD>(pOldMT->GetNumDicts()));
     _ASSERTE(FitsIn<WORD>(pOldMT->GetNumGenericArgs()));
     pMT->SetDictInfo(static_cast<WORD>(pOldMT->GetNumDicts()), static_cast<WORD>(pOldMT->GetNumGenericArgs()));
@@ -508,7 +508,8 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // The others are filled in by LoadExactParents which copied down any inherited generic
     // dictionary pointers.
     Dictionary * pDict = (Dictionary*) (pMemory + cbMT + cbOptional + cbIMap + cbPerInst);
-    *(pMT->GetPerInstInfo() + (pOldMT->GetNumDicts()-1)) = pDict;
+    MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *) (pMT->GetPerInstInfo() + (pOldMT->GetNumDicts()-1));
+    pPInstInfo->SetValueMaybeNull(pDict);
 
     // Fill in the instantiation section of the generic dictionary.  The remainder of the
     // generic dictionary will be zeroed, which is the correct initial state.

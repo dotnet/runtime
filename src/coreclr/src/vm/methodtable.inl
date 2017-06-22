@@ -1256,7 +1256,7 @@ inline BOOL MethodTable::HasExplicitSize()
 inline DWORD MethodTable::GetPerInstInfoSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return GetNumDicts() * sizeof(TypeHandle*);
+    return GetNumDicts() * sizeof(PerInstInfoElem_t);
 }
 
 //==========================================================================================

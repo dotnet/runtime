@@ -3093,6 +3093,7 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
     pResult->signature = NULL;
 
     pResult->indirectFirstOffset = 0;
+    pResult->indirectSecondOffset = 0;
 
     // Unless we decide otherwise, just do the lookup via a helper function
     pResult->indirections = CORINFO_USEHELPER;
@@ -3306,6 +3307,12 @@ void CEEInfo::ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind entr
                 ULONG data;
                 IfFailThrow(sigptr.GetData(&data));
                 pResult->offsets[2] = sizeof(TypeHandle) * data;
+
+                if (MethodTable::IsPerInstInfoRelative())
+                {
+                    pResult->indirectFirstOffset = 1;
+                    pResult->indirectSecondOffset = 1;
+                }
 
                 return;
             }
@@ -3554,6 +3561,12 @@ NoSpecialCase:
 
             // Next indirect through the dictionary appropriate to this instantiated type
             pResult->offsets[1] = sizeof(TypeHandle*) * (pContextMT->GetNumDicts() - 1);
+
+            if (MethodTable::IsPerInstInfoRelative())
+            {
+                pResult->indirectFirstOffset = 1;
+                pResult->indirectSecondOffset = 1;
+            }
         }
     }
 }
