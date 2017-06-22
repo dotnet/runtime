@@ -235,7 +235,7 @@ free_chunklist (CodeChunk *chunk)
 
 	for (; chunk; ) {
 		dead = chunk;
-		mono_profiler_code_chunk_destroy ((gpointer) dead->data);
+		MONO_PROFILER_RAISE (jit_chunk_destroyed, ((mono_byte *) dead->data));
 		if (code_manager_callbacks.chunk_destroy)
 			code_manager_callbacks.chunk_destroy ((gpointer)dead->data);
 		chunk = chunk->next;
@@ -423,7 +423,7 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 	chunk->bsize = bsize;
 	if (code_manager_callbacks.chunk_new)
 		code_manager_callbacks.chunk_new ((gpointer)chunk->data, chunk->size);
-	mono_profiler_code_chunk_new((gpointer) chunk->data, chunk->size);
+	MONO_PROFILER_RAISE (jit_chunk_created, ((mono_byte *) chunk->data, chunk->size));
 
 	code_memory_used += chunk_size;
 	mono_runtime_resource_check_limit (MONO_RESOURCE_JIT_CODE, code_memory_used);

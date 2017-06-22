@@ -824,12 +824,12 @@ static guint32 WINAPI start_wrapper_internal(StartInfo *start_info, gsize *stack
 	 * to lock the thread, and the lock is held by thread_start () which waits for
 	 * start_notify.
 	 */
-	mono_profiler_thread_start (tid);
+	MONO_PROFILER_RAISE (thread_started, (tid));
 
 	/* if the name was set before starting, we didn't invoke the profiler callback */
 	if (internal->name) {
 		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
-		mono_profiler_thread_name (internal->tid, tname);
+		MONO_PROFILER_RAISE (thread_name, (internal->tid, tname));
 		mono_native_thread_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
 		g_free (tname);
 	}
@@ -1124,8 +1124,7 @@ mono_thread_attach_full (MonoDomain *domain, gboolean force_attach)
 
 	/* Can happen when we attach the profiler helper thread in order to heapshot. */
 	if (!mono_thread_info_current ()->tools_thread)
-		// FIXME: Need a separate callback
-		mono_profiler_thread_start (MONO_NATIVE_THREAD_ID_TO_UINT (tid));
+		MONO_PROFILER_RAISE (thread_started, (MONO_NATIVE_THREAD_ID_TO_UINT (tid)));
 
 	return thread;
 }
@@ -1236,7 +1235,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	/* Can happen when we attach the profiler helper thread in order to heapshot. */
 	if (!mono_thread_info_lookup (MONO_UINT_TO_NATIVE_THREAD_ID (thread->tid))->tools_thread)
-		mono_profiler_thread_end (thread->tid);
+		MONO_PROFILER_RAISE (thread_stopped, (thread->tid));
 
 	mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
 
@@ -1625,7 +1624,7 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, g
 	if (this_obj->name && this_obj->tid) {
 		char *tname = mono_string_to_utf8_checked (name, error);
 		return_if_nok (error);
-		mono_profiler_thread_name (this_obj->tid, tname);
+		MONO_PROFILER_RAISE (thread_name, (this_obj->tid, tname));
 		mono_native_thread_set_name (thread_get_tid (this_obj), tname);
 		mono_free (tname);
 	}
@@ -2905,7 +2904,7 @@ mono_threads_register_app_context (MonoAppContext *ctx, MonoError *error)
 
 	mono_threads_unlock ();
 
-	mono_profiler_context_loaded (ctx);
+	MONO_PROFILER_RAISE (context_loaded, (ctx));
 }
 
 void
@@ -2926,7 +2925,7 @@ mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error)
 
 	//g_print ("Releasing context %d in domain %d\n", ctx->context_id, ctx->domain_id);
 
-	mono_profiler_context_unloaded (ctx);
+	MONO_PROFILER_RAISE (context_unloaded, (ctx));
 }
 
 void

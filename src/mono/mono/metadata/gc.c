@@ -305,11 +305,11 @@ mono_gc_run_finalize (void *obj, void *data)
 	if (log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Calling finalizer.", o->vtable->klass->name, o);
 
-	mono_profiler_gc_finalize_object_begin (o);
+	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 	runtime_invoke (o, NULL, &exc, NULL);
 
-	mono_profiler_gc_finalize_object_end (o);
+	MONO_PROFILER_RAISE (gc_finalized_object, (o));
 
 	if (log_finalizers)
 		g_log ("mono-gc-finalizers", G_LOG_LEVEL_MESSAGE, "<%s at %p> Returned from finalizer.", o->vtable->klass->name, o);
@@ -873,14 +873,14 @@ finalizer_thread (gpointer unused)
 
 		finalize_domain_objects ();
 
-		mono_profiler_gc_finalize_begin ();
+		MONO_PROFILER_RAISE (gc_finalizing, ());
 
 		/* If finished == TRUE, mono_gc_cleanup has been called (from mono_runtime_cleanup),
 		 * before the domain is unloaded.
 		 */
 		mono_gc_invoke_finalizers ();
 
-		mono_profiler_gc_finalize_end ();
+		MONO_PROFILER_RAISE (gc_finalized, ());
 
 		mono_threads_join_threads ();
 

@@ -104,11 +104,11 @@ sgen_client_stop_world (int generation)
 {
 	TV_DECLARE (end_handshake);
 
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD, generation));
 
 	acquire_gc_locks ();
 
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, generation));
 
 	/* We start to scan after locks are taking, this ensures we won't be interrupted. */
 	sgen_process_togglerefs ();
@@ -123,7 +123,7 @@ sgen_client_stop_world (int generation)
 
 	SGEN_LOG (3, "world stopped");
 
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_STOP_WORLD, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_STOP_WORLD, generation));
 
 	TV_GETTIME (end_handshake);
 	time_stop_world += TV_ELAPSED (stop_world_time, end_handshake);
@@ -143,10 +143,10 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 
 	/* notify the profiler of the leftovers */
 	/* FIXME this is the wrong spot at we can STW for non collection reasons. */
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
+	if (MONO_PROFILER_ENABLED (gc_moves))
 		mono_sgen_gc_event_moves ();
 
-	mono_profiler_gc_event (MONO_GC_EVENT_PRE_START_WORLD, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_START_WORLD, generation));
 
 	FOREACH_THREAD (info) {
 		info->client_info.stack_start = NULL;
@@ -165,7 +165,7 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 
 	SGEN_LOG (2, "restarted (pause time: %d usec, max: %d)", (int)usec, (int)max_pause_usec);
 
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD, generation));
 
 	/*
 	 * We must release the thread info suspend lock after doing
@@ -179,7 +179,7 @@ sgen_client_restart_world (int generation, gint64 *stw_time)
 	 */
 	release_gc_locks ();
 
-	mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, generation));
 
 	*stw_time = usec;
 }

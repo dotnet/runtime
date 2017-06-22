@@ -316,7 +316,7 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 
 	image = g_new0 (MonoDynamicImage, 1);
 
-	mono_profiler_module_event (&image->image, MONO_PROFILE_START_LOAD);
+	MONO_PROFILER_RAISE (image_loading, (&image->image));
 	
 	/*g_print ("created image %p\n", image);*/
 	/* keep in sync with image.c */
@@ -375,7 +375,7 @@ mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, c
 	image->pe_kind = 0x1; /* ILOnly */
 	image->machine = 0x14c; /* I386 */
 	
-	mono_profiler_module_loaded (&image->image, MONO_PROFILE_OK);
+	MONO_PROFILER_RAISE (image_loaded, (&image->image));
 
 	dynamic_images_lock ();
 

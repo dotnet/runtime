@@ -1272,7 +1272,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	GSList *errors = NULL;
 	GSList *l;
 
-	mono_profiler_module_event (image, MONO_PROFILE_START_LOAD);
+	MONO_PROFILER_RAISE (image_loading, (image));
 
 	mono_image_init (image);
 
@@ -1336,7 +1336,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	load_modules (image);
 
 done:
-	mono_profiler_module_loaded (image, MONO_PROFILE_OK);
+	MONO_PROFILER_RAISE (image_loaded, (image));
 	if (status)
 		*status = MONO_IMAGE_OK;
 
@@ -1348,7 +1348,7 @@ invalid_image:
 		g_warning ("Could not load image %s due to %s", image->name, info->message);
 		mono_free_verify_list (errors);
 	}
-	mono_profiler_module_loaded (image, MONO_PROFILE_FAILED);
+	MONO_PROFILER_RAISE (image_failed, (image));
 	mono_image_close (image);
 	return NULL;
 }
@@ -1978,7 +1978,7 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 #endif
 
-	mono_profiler_module_event (image, MONO_PROFILE_START_UNLOAD);
+	MONO_PROFILER_RAISE (image_unloading, (image));
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Unloading image %s [%p].", image->name, image);
 
@@ -2139,7 +2139,7 @@ mono_image_close_except_pools (MonoImage *image)
 		mono_dynamic_image_free ((MonoDynamicImage*)image);
 	}
 
-	mono_profiler_module_event (image, MONO_PROFILE_END_UNLOAD);
+	MONO_PROFILER_RAISE (image_unloaded, (image));
 
 	return TRUE;
 }

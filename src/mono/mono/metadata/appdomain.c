@@ -636,7 +636,7 @@ mono_domain_create_appdomain_internal (char *friendly_name, MonoAppDomainSetupHa
 	data->domain = MONO_HANDLE_RAW (ad);
 	data->friendly_name = g_strdup (friendly_name);
 
-	mono_profiler_appdomain_name (data, data->friendly_name);
+	MONO_PROFILER_RAISE (domain_name, (data, data->friendly_name));
 
 	MonoStringHandle app_base = MONO_HANDLE_NEW_GET (MonoString, setup, application_base);
 	if (MONO_HANDLE_IS_NULL (app_base)) {

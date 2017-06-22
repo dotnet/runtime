@@ -76,7 +76,7 @@ if ($report ne "missing binary") {
 	report_errors ();
 }
 # test traces
-$report = run_test ("test-traces.exe", "legacy,calls,alloc,output=-traces.mlpd", "--traces traces.mlpd");
+$report = run_test ("test-traces.exe", "legacy,calls,alloc,output=-traces.mlpd", "--maxframes=7 --traces traces.mlpd");
 check_report_basics ($report);
 check_call_traces ($report,
 	"T:level3 (int)" => [2020, "T:Main (string[])"],
@@ -317,8 +317,10 @@ sub check_alloc_traces
 			while (@desc) {
 				my $dm = pop @desc;
 				my $fm = pop @frames;
-				$fm = pop @frames if $fm =~ /wrapper/;
-				push @errors, "Wrong frame $fm for alloc of $type." unless $dm eq $fm;
+				while ($fm =~ /wrapper/) {
+					$fm = pop @frames;
+				}
+				push @errors, "Wrong frame $fm for alloc of $type (expected $dm)." unless $dm eq $fm;
 			}
 		} else {
 			push @errors, "No alloc frames for $type.";

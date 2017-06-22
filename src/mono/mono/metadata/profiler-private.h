@@ -1,96 +1,139 @@
-/**
- * \file
+/*
+ * Licensed to the .NET Foundation under one or more agreements.
+ * The .NET Foundation licenses this file to you under the MIT license.
+ * See the LICENSE file in the project root for more information.
  */
 
 #ifndef __MONO_PROFILER_PRIVATE_H__
 #define __MONO_PROFILER_PRIVATE_H__
 
 #include <mono/metadata/profiler.h>
-#include "mono/utils/mono-compiler.h"
-#include <glib.h>
+#include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-os-semaphore.h>
 
-extern MonoProfileFlags mono_profiler_events;
+struct _MonoProfilerDesc {
+	MonoProfilerHandle next;
+	MonoProfiler *prof;
+	volatile gpointer coverage_filter;
+	volatile gpointer call_instrumentation_filter;
 
-enum {
-	MONO_PROFILE_START_LOAD,
-	MONO_PROFILE_END_LOAD,
-	MONO_PROFILE_START_UNLOAD,
-	MONO_PROFILE_END_UNLOAD
+#define _MONO_PROFILER_EVENT(name) \
+	volatile gpointer name ## _cb;
+#define MONO_PROFILER_EVENT_0(name, type) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
+	_MONO_PROFILER_EVENT(name)
+#include <mono/metadata/profiler-events.h>
+#undef MONO_PROFILER_EVENT_0
+#undef MONO_PROFILER_EVENT_1
+#undef MONO_PROFILER_EVENT_2
+#undef MONO_PROFILER_EVENT_3
+#undef MONO_PROFILER_EVENT_4
+#undef _MONO_PROFILER_EVENT
 };
 
 typedef struct {
-	int entries;
+	gboolean startup_done;
+	MonoProfilerHandle profilers;
+	mono_lazy_init_t coverage_status;
+	mono_mutex_t coverage_mutex;
+	GHashTable *coverage_hash;
+	MonoProfilerHandle sampling_owner;
+	MonoSemType sampling_semaphore;
+	MonoProfilerSampleMode sample_mode;
+	uint64_t sample_freq;
+	gboolean allocations;
+
+#define _MONO_PROFILER_EVENT(name) \
+	volatile gint32 name ## _count;
+#define MONO_PROFILER_EVENT_0(name, type) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
+	_MONO_PROFILER_EVENT(name)
+#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
+	_MONO_PROFILER_EVENT(name)
+#include <mono/metadata/profiler-events.h>
+#undef MONO_PROFILER_EVENT_0
+#undef MONO_PROFILER_EVENT_1
+#undef MONO_PROFILER_EVENT_2
+#undef MONO_PROFILER_EVENT_3
+#undef MONO_PROFILER_EVENT_4
+#undef _MONO_PROFILER_EVENT
+} MonoProfilerState;
+
+extern MonoProfilerState mono_profiler_state;
+
+typedef struct {
+	guint32 entries;
 	struct {
-                guchar* cil_code;
-                int count;
-        } data [1];
-} MonoProfileCoverageInfo;
+		guchar *cil_code;
+		guint32 count;
+	} data [1];
+} MonoProfilerCoverageInfo;
 
-void mono_profiler_shutdown        (void);
+void mono_profiler_started (void);
+void mono_profiler_cleanup (void);
 
-void mono_profiler_method_enter    (MonoMethod *method);
-void mono_profiler_method_leave    (MonoMethod *method);
-void mono_profiler_method_jit      (MonoMethod *method);
-void mono_profiler_method_end_jit  (MonoMethod *method, MonoJitInfo* jinfo, int result);
-void mono_profiler_method_free     (MonoMethod *method);
-void mono_profiler_method_start_invoke (MonoMethod *method);
-void mono_profiler_method_end_invoke   (MonoMethod *method);
+static inline gboolean
+mono_profiler_installed (void)
+{
+	return !!mono_profiler_state.profilers;
+}
 
-void mono_profiler_code_transition (MonoMethod *method, int result);
-void mono_profiler_allocation      (MonoObject *obj);
-void mono_profiler_monitor_event   (MonoObject *obj, MonoProfilerMonitorEvent event);
-void mono_profiler_stat_hit        (guchar *ip, void *context);
-void mono_profiler_stat_call_chain (int call_chain_depth, guchar **ips, void *context);
-int  mono_profiler_stat_get_call_chain_depth (void);
-MonoProfilerCallChainStrategy  mono_profiler_stat_get_call_chain_strategy (void);
-void mono_profiler_thread_start    (gsize tid);
-void mono_profiler_thread_end      (gsize tid);
-void mono_profiler_thread_name     (gsize tid, const char *name);
+MonoProfilerCoverageInfo *mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries);
+void mono_profiler_coverage_free (MonoMethod *method);
 
-void mono_profiler_exception_thrown         (MonoObject *exception);
-void mono_profiler_exception_method_leave   (MonoMethod *method);
-void mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int clause_num, MonoObject *exc);
+gboolean mono_profiler_should_instrument_method (MonoMethod *method, gboolean entry);
 
-void mono_profiler_assembly_event  (MonoAssembly *assembly, int code);
-void mono_profiler_assembly_loaded (MonoAssembly *assembly, int result);
+gboolean mono_profiler_sampling_enabled (void);
+void mono_profiler_sampling_thread_sleep (void);
 
-void mono_profiler_module_event  (MonoImage *image, int code);
-void mono_profiler_module_loaded (MonoImage *image, int result);
+static inline gboolean
+mono_profiler_allocations_enabled (void)
+{
+	return mono_profiler_state.allocations;
+}
 
-void mono_profiler_class_event  (MonoClass *klass, int code);
-void mono_profiler_class_loaded (MonoClass *klass, int result);
+#define _MONO_PROFILER_EVENT(name, ...) \
+	void mono_profiler_raise_ ## name (__VA_ARGS__);
+#define MONO_PROFILER_EVENT_0(name, type) \
+	_MONO_PROFILER_EVENT(name, void)
+#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
+	_MONO_PROFILER_EVENT(name, arg1_type arg1_name)
+#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
+	_MONO_PROFILER_EVENT(name, arg1_type arg1_name, arg2_type arg2_name)
+#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
+	_MONO_PROFILER_EVENT(name, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name)
+#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
+	_MONO_PROFILER_EVENT(name, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name, arg4_type arg4_name)
+#include <mono/metadata/profiler-events.h>
+#undef MONO_PROFILER_EVENT_0
+#undef MONO_PROFILER_EVENT_1
+#undef MONO_PROFILER_EVENT_2
+#undef MONO_PROFILER_EVENT_3
+#undef MONO_PROFILER_EVENT_4
+#undef _MONO_PROFILER_EVENT
 
-void mono_profiler_appdomain_event  (MonoDomain *domain, int code);
-void mono_profiler_appdomain_loaded (MonoDomain *domain, int result);
-void mono_profiler_appdomain_name   (MonoDomain *domain, const char *name);
+// These are the macros the rest of the runtime should use.
 
-void mono_profiler_context_loaded (MonoAppContext *context);
-void mono_profiler_context_unloaded (MonoAppContext *context);
+#define MONO_PROFILER_ENABLED(name) \
+	G_UNLIKELY (mono_profiler_state.name ## _count)
 
-void mono_profiler_iomap (char *report, const char *pathname, const char *new_pathname);
+#define MONO_PROFILER_RAISE(name, args) \
+	do { \
+		if (MONO_PROFILER_ENABLED (name)) \
+			mono_profiler_raise_ ## name args; \
+	} while (0)
 
-MonoProfileCoverageInfo* mono_profiler_coverage_alloc (MonoMethod *method, int entries);
-void                     mono_profiler_coverage_free  (MonoMethod *method);
-
-void mono_profiler_gc_event       (MonoGCEvent e, int generation);
-void mono_profiler_gc_heap_resize (gint64 new_size);
-void mono_profiler_gc_moves       (void **objects, int num);
-void mono_profiler_gc_handle      (int op, int type, uintptr_t handle, MonoObject *obj);
-void mono_profiler_gc_roots       (int num, void **objects, int *root_types, uintptr_t *extra_info);
-
-void mono_profiler_gc_finalize_begin (void);
-void mono_profiler_gc_finalize_object_begin (MonoObject *obj);
-void mono_profiler_gc_finalize_object_end (MonoObject *obj);
-void mono_profiler_gc_finalize_end (void);
-
-void mono_profiler_code_chunk_new (gpointer chunk, int size);
-void mono_profiler_code_chunk_destroy (gpointer chunk);
-void mono_profiler_code_buffer_new (gpointer buffer, int size, MonoProfilerCodeBufferType type, gconstpointer data);
-
-void mono_profiler_runtime_initialized (void);
-
-int64_t mono_profiler_get_sampling_rate (void);
-MonoProfileSamplingMode mono_profiler_get_sampling_mode (void);
-
-#endif /* __MONO_PROFILER_PRIVATE_H__ */
-
+#endif // __MONO_PROFILER_PRIVATE_H__

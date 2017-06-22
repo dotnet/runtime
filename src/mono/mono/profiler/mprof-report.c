@@ -1357,7 +1357,7 @@ heap_shot_mark_objects (HeapShot *hs)
 		}
 		obj = hs->objects_hash [oi];
 		cd = obj->hklass;
-		if (hs->roots_types [i] & MONO_PROFILE_GC_ROOT_PINNING)
+		if (hs->roots_types [i] & MONO_PROFILER_GC_ROOT_PINNING)
 			cd->pinned_references++;
 		cd->root_references++;
 	}
@@ -1959,12 +1959,12 @@ get_handle_name (int htype)
 static const char*
 get_root_name (int rtype)
 {
-	switch (rtype & MONO_PROFILE_GC_ROOT_TYPEMASK) {
-	case MONO_PROFILE_GC_ROOT_STACK: return "stack";
-	case MONO_PROFILE_GC_ROOT_FINALIZER: return "finalizer";
-	case MONO_PROFILE_GC_ROOT_HANDLE: return "handle";
-	case MONO_PROFILE_GC_ROOT_OTHER: return "other";
-	case MONO_PROFILE_GC_ROOT_MISC: return "misc";
+	switch (rtype & MONO_PROFILER_GC_ROOT_TYPEMASK) {
+	case MONO_PROFILER_GC_ROOT_STACK: return "stack";
+	case MONO_PROFILER_GC_ROOT_FINALIZER: return "finalizer";
+	case MONO_PROFILER_GC_ROOT_HANDLE: return "handle";
+	case MONO_PROFILER_GC_ROOT_OTHER: return "other";
+	case MONO_PROFILER_GC_ROOT_MISC: return "misc";
 	default: return "unknown";
 	}
 }

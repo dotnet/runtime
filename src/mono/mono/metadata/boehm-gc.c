@@ -428,7 +428,7 @@ static gint64 gc_start_time;
 static void
 on_gc_notification (GC_EventType event)
 {
-	MonoGCEvent e = (MonoGCEvent)event;
+	MonoProfilerGCEvent e = (MonoProfilerGCEvent)event;
 
 	switch (e) {
 	case MONO_GC_EVENT_PRE_STOP_WORLD:
@@ -483,16 +483,16 @@ on_gc_notification (GC_EventType event)
 		break;
 	}
 
-	mono_profiler_gc_event (e, 0);
+	MONO_PROFILER_RAISE (gc_event, (e, 0));
 
 	switch (e) {
 	case MONO_GC_EVENT_PRE_STOP_WORLD:
 		mono_thread_info_suspend_lock ();
-		mono_profiler_gc_event (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, 0);
+		MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, 0));
 		break;
 	case MONO_GC_EVENT_POST_START_WORLD:
 		mono_thread_info_suspend_unlock ();
-		mono_profiler_gc_event (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, 0);
+		MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, 0));
 		break;
 	default:
 		break;
@@ -511,7 +511,8 @@ on_gc_heap_resize (size_t new_size)
 		mono_perfcounters->gc_gen0size = heap_size;
 	}
 #endif
-	mono_profiler_gc_heap_resize (new_size);
+
+	MONO_PROFILER_RAISE (gc_resize, (new_size));
 }
 
 typedef struct {
@@ -689,8 +690,8 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		obj->vtable = vtable;
 	}
 
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
-		mono_profiler_allocation (obj);
+	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
+		MONO_PROFILER_RAISE (gc_allocation, (obj));
 
 	return obj;
 }
@@ -723,8 +724,8 @@ mono_gc_alloc_vector (MonoVTable *vtable, size_t size, uintptr_t max_length)
 
 	obj->max_length = max_length;
 
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
-		mono_profiler_allocation (&obj->obj);
+	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
+		MONO_PROFILER_RAISE (gc_allocation, (&obj->obj));
 
 	return obj;
 }
@@ -760,8 +761,8 @@ mono_gc_alloc_array (MonoVTable *vtable, size_t size, uintptr_t max_length, uint
 	if (bounds_size)
 		obj->bounds = (MonoArrayBounds *) ((char *) obj + size - bounds_size);
 
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
-		mono_profiler_allocation (&obj->obj);
+	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
+		MONO_PROFILER_RAISE (gc_allocation, (&obj->obj));
 
 	return obj;
 }
@@ -778,8 +779,8 @@ mono_gc_alloc_string (MonoVTable *vtable, size_t size, gint32 len)
 	obj->length = len;
 	obj->chars [len] = 0;
 
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_ALLOCATIONS))
-		mono_profiler_allocation (&obj->object);
+	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
+		MONO_PROFILER_RAISE (gc_allocation, (&obj->object));
 
 	return obj;
 }
@@ -1175,7 +1176,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 		return NULL;
 	if (mono_class_has_finalizer (klass) || mono_class_is_marshalbyref (klass))
 		return NULL;
-	if (mono_profiler_get_events () & (MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_STATISTICAL))
+	if (G_UNLIKELY (mono_profiler_allocations_enabled ()))
 		return NULL;
 	if (klass->rank)
 		return NULL;
@@ -1726,7 +1727,7 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 #endif
 	unlock_handles (handles);
 	res = MONO_GC_HANDLE (slot, handles->type);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_CREATED, handles->type, res, obj);
+	MONO_PROFILER_RAISE (gc_handle_created, (res, handles->type, obj));
 	return res;
 }
 
@@ -1924,7 +1925,7 @@ mono_gchandle_free (guint32 gchandle)
 #endif
 	/*g_print ("freed entry %d of type %d\n", slot, handles->type);*/
 	unlock_handles (handles);
-	mono_profiler_gc_handle (MONO_PROFILER_GC_HANDLE_DESTROYED, handles->type, gchandle, NULL);
+	MONO_PROFILER_RAISE (gc_handle_deleted, (gchandle, handles->type));
 }
 
 /**

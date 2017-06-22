@@ -63,3 +63,4 @@ PATCH_INFO(SET_TLS_TRAMP, "set_tls_tramp")
  * Same as JIT_ICALL_ADDR, but not treated as a call.
  */
 PATCH_INFO(JIT_ICALL_ADDR_NOCALL, "jit_icall_addr_nocall")
+PATCH_INFO(PROFILER_ALLOCATION_COUNT, "profiler_allocation_count")

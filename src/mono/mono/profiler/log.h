@@ -150,6 +150,17 @@ typedef enum {
 	SYNC_POINT_WORLD_START
 } MonoProfilerSyncPointType;
 
+typedef enum {
+	MONO_PROFILER_MONITOR_CONTENTION = 1,
+	MONO_PROFILER_MONITOR_DONE = 2,
+	MONO_PROFILER_MONITOR_FAIL = 3,
+} MonoProfilerMonitorEvent;
+
+enum {
+	MONO_PROFILER_GC_HANDLE_CREATED,
+	MONO_PROFILER_GC_HANDLE_DESTROYED,
+};
+
 // Sampling sources
 // Unless you have compiled with --enable-perf-events, only SAMPLE_CYCLES is available
 enum {
@@ -265,7 +276,7 @@ typedef struct {
 	//Max size of the sample hit buffer, we'll drop frames if it's reached
 	int max_allocated_sample_hits;
 
-	MonoProfileSamplingMode sampling_mode;
+	MonoProfilerSampleMode sampling_mode;
 } ProfilerConfig;
 
 void proflog_parse_args (ProfilerConfig *config, const char *desc);

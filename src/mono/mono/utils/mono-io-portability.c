@@ -121,7 +121,7 @@ static inline void do_mono_profiler_iomap (GString **report, const char *pathnam
 		*report = NULL;
 	}
 
-	mono_profiler_iomap (rep, pathname, new_pathname);
+	MONO_PROFILER_RAISE (iomap_report, (rep, pathname, new_pathname));
 	g_free (rep);
 }
 
@@ -148,7 +148,7 @@ static inline gchar *mono_portability_find_file_internal (GString **report, cons
 	DIR *scanning = NULL;
 	size_t len;
 	gboolean drive_stripped = FALSE;
-	gboolean do_report = (mono_profiler_get_events () & MONO_PROFILE_IOMAP_EVENTS) != 0;
+	gboolean do_report = MONO_PROFILER_ENABLED (iomap_report);
 
 	if (IS_PORTABILITY_NONE) {
 		return(NULL);

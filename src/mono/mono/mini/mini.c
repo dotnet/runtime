@@ -2230,9 +2230,6 @@ mono_codegen (MonoCompile *cfg)
 			mono_bb_deduplicate_op_il_seq_points (cfg, bb);
 	}
 
-	if (cfg->prof_options & MONO_PROFILE_COVERAGE)
-		cfg->coverage_info = mono_profiler_coverage_alloc (cfg->method, cfg->num_bblocks);
-
 	code = mono_arch_emit_prolog (cfg);
 
 	cfg->code_len = code - cfg->native_code;
@@ -2378,7 +2375,7 @@ mono_codegen (MonoCompile *cfg)
 	} else {
 		mono_domain_code_commit (code_domain, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
-	mono_profiler_code_buffer_new (cfg->native_code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method);
+	MONO_PROFILER_RAISE (jit_code_buffer, (cfg->native_code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method));
 	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
 
@@ -3097,8 +3094,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	static char *verbose_method_name;
 
 	InterlockedIncrement (&mono_jit_stats.methods_compiled);
-	if (mono_profiler_get_events () & MONO_PROFILE_JIT_COMPILATION)
-		mono_profiler_method_jit (method);
+	MONO_PROFILER_RAISE (jit_begin, (method));
 	if (MONO_METHOD_COMPILE_BEGIN_ENABLED ())
 		MONO_PROBE_METHOD_COMPILE_BEGIN (method);
 
@@ -3161,7 +3157,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->method = method_to_compile;
 	cfg->mempool = mono_mempool_new ();
 	cfg->opt = opts;
-	cfg->prof_options = mono_profiler_get_events ();
 	cfg->run_cctors = run_cctors;
 	cfg->domain = domain;
 	cfg->verbose_level = mini_verbose;
@@ -4039,7 +4034,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	MonoJitInfo *jinfo, *info;
 	MonoVTable *vtable;
 	MonoException *ex = NULL;
-	guint32 prof_options;
 	GTimer *jit_timer;
 	MonoMethod *prof_method, *shared;
 
@@ -4070,7 +4064,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		if (!jinfo)
 			jinfo = mono_jit_info_table_find (mono_domain_get (), (char *)code);
 		if (jinfo)
-			mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
+			MONO_PROFILER_RAISE (jit_done, (method, jinfo));
 		return code;
 	} else if ((method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		const char *name = method->name;
@@ -4211,8 +4205,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 
 	if (ex) {
-		if (cfg->prof_options & MONO_PROFILE_JIT_COMPILATION)
-			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_FAILED);
+		MONO_PROFILER_RAISE (jit_failed, (method));
 
 		mono_destroy_compile (cfg);
 		mono_error_set_exception_instance (error, ex);
@@ -4254,8 +4247,6 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 	}
 
 	jinfo = cfg->jit_info;
-
-	prof_options = cfg->prof_options;
 
 	/*
 	 * Update global stats while holding a lock, instead of doing many
@@ -4321,19 +4312,16 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		return NULL;
 	}
 
-	if (prof_options & MONO_PROFILE_JIT_COMPILATION) {
-		if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-			if (mono_marshal_method_from_wrapper (method)) {
-				/* Native func wrappers have no method */
-				/* The profiler doesn't know about wrappers, so pass the original icall method */
-				mono_profiler_method_end_jit (mono_marshal_method_from_wrapper (method), jinfo, MONO_PROFILE_OK);
-			}
-		}
-		mono_profiler_method_end_jit (method, jinfo, MONO_PROFILE_OK);
-		if (prof_method != method) {
-			mono_profiler_method_end_jit (prof_method, jinfo, MONO_PROFILE_OK);
+	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
+		if (mono_marshal_method_from_wrapper (method)) {
+			/* Native func wrappers have no method */
+			/* The profiler doesn't know about wrappers, so pass the original icall method */
+			MONO_PROFILER_RAISE (jit_done, (mono_marshal_method_from_wrapper (method), jinfo));
 		}
 	}
+	MONO_PROFILER_RAISE (jit_done, (method, jinfo));
+	if (prof_method != method)
+		MONO_PROFILER_RAISE (jit_done, (prof_method, jinfo));
 
 	if (!(method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE ||
 		  method->wrapper_type == MONO_WRAPPER_REMOTING_INVOKE_WITH_CHECK ||

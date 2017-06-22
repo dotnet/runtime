@@ -2822,13 +2822,11 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
 
 	error_init (error);
 	
-	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
-		mono_profiler_method_start_invoke (method);
+	MONO_PROFILER_RAISE (method_begin_invoke, (method));
 
 	result = callbacks.runtime_invoke (method, obj, params, exc, error);
 
-	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
-		mono_profiler_method_end_invoke (method);
+	MONO_PROFILER_RAISE (method_end_invoke, (method));
 
 	if (!mono_error_ok (error))
 		return NULL;

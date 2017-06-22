@@ -92,7 +92,7 @@ static inline gchar *build_hint (SavedString *head);
 static inline gchar *build_hint_from_stack (MonoDomain *domain, void **stack, gint stack_entries);
 static inline void store_string_location (MonoProfiler *prof, const gchar *string, guint32 hash, size_t len);
 static void mono_portability_remember_string (MonoProfiler *prof, MonoDomain *domain, MonoString *str);
-void mono_profiler_startup (const char *desc);
+void mono_profiler_init (const char *desc);
 
 static void mismatched_stats_foreach_func (gpointer key, gpointer value, gpointer user_data)
 {
@@ -477,9 +477,9 @@ static void mono_portability_remember_string (MonoProfiler *prof, MonoDomain *do
 
 static MonoClass *string_class = NULL;
 
-static void mono_portability_remember_alloc (MonoProfiler *prof, MonoObject *obj, MonoClass *klass)
+static void mono_portability_remember_alloc (MonoProfiler *prof, MonoObject *obj)
 {
-	if (klass != string_class)
+	if (mono_object_get_class (obj) != string_class)
 		return;
 	mono_portability_remember_string (prof, mono_object_get_domain (obj), (MonoString*)obj);
 }
@@ -531,7 +531,7 @@ static void profiler_shutdown (MonoProfiler *prof)
 	mono_os_mutex_destroy (&mismatched_files_section);
 }
 
-void mono_profiler_startup (const char *desc)
+void mono_profiler_init (const char *desc)
 {
 	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
 
@@ -540,10 +540,10 @@ void mono_profiler_startup (const char *desc)
 	prof->saved_strings_hash = g_hash_table_new (NULL, NULL);
 	prof->string_locations_hash = g_hash_table_new (mismatched_files_guint32_hash, mismatched_files_guint32_equal);
 
-	mono_profiler_install (prof, profiler_shutdown);
-	mono_profiler_install_runtime_initialized (runtime_initialized_cb);
-	mono_profiler_install_iomap (mono_portability_iomap_event);
-	mono_profiler_install_allocation (mono_portability_remember_alloc);
-
-	mono_profiler_set_events ((MonoProfileFlags)(MONO_PROFILE_ALLOCATIONS | MONO_PROFILE_IOMAP_EVENTS));
+	MonoProfilerHandle handle = mono_profiler_install (prof);
+	mono_profiler_set_runtime_shutdown_callback (handle, profiler_shutdown);
+	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized_cb);
+	mono_profiler_set_iomap_report_callback (handle, mono_portability_iomap_event);
+	mono_profiler_enable_allocations ();
+	mono_profiler_set_gc_allocation_callback (handle, mono_portability_remember_alloc);
 }

@@ -1,250 +1,310 @@
-/**
- * \file
+/*
+ * Licensed to the .NET Foundation under one or more agreements.
+ * The .NET Foundation licenses this file to you under the MIT license.
+ * See the LICENSE file in the project root for more information.
  */
 
 #ifndef __MONO_PROFILER_H__
 #define __MONO_PROFILER_H__
 
-#include <mono/metadata/object.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-gc.h>
+#include <mono/metadata/object.h>
 
 MONO_BEGIN_DECLS
 
-#define MONO_PROFILER_MAX_STAT_CALL_CHAIN_DEPTH 128
-
-typedef enum {
-	MONO_PROFILE_NONE = 0,
-	MONO_PROFILE_APPDOMAIN_EVENTS = 1 << 0,
-	MONO_PROFILE_ASSEMBLY_EVENTS  = 1 << 1,
-	MONO_PROFILE_MODULE_EVENTS    = 1 << 2,
-	MONO_PROFILE_CLASS_EVENTS     = 1 << 3,
-	MONO_PROFILE_JIT_COMPILATION  = 1 << 4,
-	MONO_PROFILE_INLINING         = 1 << 5,
-	MONO_PROFILE_EXCEPTIONS       = 1 << 6,
-	MONO_PROFILE_ALLOCATIONS      = 1 << 7,
-	MONO_PROFILE_GC               = 1 << 8,
-	MONO_PROFILE_THREADS          = 1 << 9,
-	MONO_PROFILE_REMOTING         = 1 << 10,
-	MONO_PROFILE_TRANSITIONS      = 1 << 11,
-	MONO_PROFILE_ENTER_LEAVE      = 1 << 12,
-	MONO_PROFILE_COVERAGE         = 1 << 13,
-	MONO_PROFILE_INS_COVERAGE     = 1 << 14,
-	MONO_PROFILE_STATISTICAL      = 1 << 15,
-	MONO_PROFILE_METHOD_EVENTS    = 1 << 16,
-	MONO_PROFILE_MONITOR_EVENTS   = 1 << 17,
-	MONO_PROFILE_IOMAP_EVENTS     = 1 << 18, /* this should likely be removed, too */
-	MONO_PROFILE_GC_MOVES         = 1 << 19,
-	MONO_PROFILE_GC_ROOTS         = 1 << 20,
-	MONO_PROFILE_CONTEXT_EVENTS   = 1 << 21,
-	MONO_PROFILE_GC_FINALIZATION  = 1 << 22
-} MonoProfileFlags;
-
-typedef enum {
-	MONO_PROFILE_OK,
-	MONO_PROFILE_FAILED
-} MonoProfileResult;
-
-// Keep somewhat in sync with libgc/include/gc.h:enum GC_EventType
-typedef enum {
-	MONO_GC_EVENT_START,
-	MONO_GC_EVENT_MARK_START,
-	MONO_GC_EVENT_MARK_END,
-	MONO_GC_EVENT_RECLAIM_START,
-	MONO_GC_EVENT_RECLAIM_END,
-	MONO_GC_EVENT_END,
-	/*
-	 * This is the actual arrival order of the following events:
-	 *
-	 * MONO_GC_EVENT_PRE_STOP_WORLD
-	 * MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED
-	 * MONO_GC_EVENT_POST_STOP_WORLD
-	 * MONO_GC_EVENT_PRE_START_WORLD
-	 * MONO_GC_EVENT_POST_START_WORLD_UNLOCKED
-	 * MONO_GC_EVENT_POST_START_WORLD
-	 *
-	 * The LOCKED and UNLOCKED events guarantee that, by the time they arrive,
-	 * the GC and suspend locks will both have been acquired and released,
-	 * respectively.
-	 */
-	MONO_GC_EVENT_PRE_STOP_WORLD,
-	MONO_GC_EVENT_POST_STOP_WORLD,
-	MONO_GC_EVENT_PRE_START_WORLD,
-	MONO_GC_EVENT_POST_START_WORLD,
-	MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED,
-	MONO_GC_EVENT_POST_START_WORLD_UNLOCKED
-} MonoGCEvent;
-
-/* coverage info */
-typedef struct {
-	MonoMethod *method;
-	int iloffset;
-	int counter;
-	const char *filename;
-	int line;
-	int col;
-} MonoProfileCoverageEntry;
-
-/* executable code buffer info */
-typedef enum {
-	MONO_PROFILER_CODE_BUFFER_UNKNOWN,
-	MONO_PROFILER_CODE_BUFFER_METHOD,
-	MONO_PROFILER_CODE_BUFFER_METHOD_TRAMPOLINE,
-	MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE,
-	MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE,
-	MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE,
-	MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE,
-	MONO_PROFILER_CODE_BUFFER_HELPER,
-	MONO_PROFILER_CODE_BUFFER_MONITOR,
-	MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE,
-	MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING,
-	MONO_PROFILER_CODE_BUFFER_LAST
-} MonoProfilerCodeBufferType;
+/*
+ * Loads a profiler module based on the specified description. The description
+ * can be of the form "name:args" or just "name". For example, "log:sample" and
+ * "log" will both load "libmono-profiler-log.so". The description is passed to
+ * the module after it has been loaded. If the specified module has already
+ * been loaded, this function has no effect.
+ *
+ * A module should declare an entry point like so:
+ *
+ * void mono_profiler_init (const char *desc)
+ * {
+ * }
+ *
+ * This function is not async safe.
+ */
+MONO_API void mono_profiler_load (const char *desc);
 
 typedef struct _MonoProfiler MonoProfiler;
-
-typedef enum {
-	MONO_PROFILER_MONITOR_CONTENTION = 1,
-	MONO_PROFILER_MONITOR_DONE = 2,
-	MONO_PROFILER_MONITOR_FAIL = 3
-} MonoProfilerMonitorEvent;
-
-typedef enum {
-	MONO_PROFILER_CALL_CHAIN_NONE = 0,
-	MONO_PROFILER_CALL_CHAIN_NATIVE = 1,
-	MONO_PROFILER_CALL_CHAIN_GLIBC = 2,
-	MONO_PROFILER_CALL_CHAIN_MANAGED = 3,
-	MONO_PROFILER_CALL_CHAIN_INVALID = 4
-} MonoProfilerCallChainStrategy;
-
-typedef enum {
-	MONO_PROFILER_GC_HANDLE_CREATED,
-	MONO_PROFILER_GC_HANDLE_DESTROYED
-} MonoProfileGCHandleEvent;
-
-typedef enum {
-	MONO_PROFILE_GC_ROOT_PINNING  = 1 << 8,
-	MONO_PROFILE_GC_ROOT_WEAKREF  = 2 << 8,
-	MONO_PROFILE_GC_ROOT_INTERIOR = 4 << 8,
-	/* the above are flags, the type is in the low 2 bytes */
-	MONO_PROFILE_GC_ROOT_STACK = 0,
-	MONO_PROFILE_GC_ROOT_FINALIZER = 1,
-	MONO_PROFILE_GC_ROOT_HANDLE = 2,
-	MONO_PROFILE_GC_ROOT_OTHER = 3,
-	MONO_PROFILE_GC_ROOT_MISC = 4, /* could be stack, handle, etc. */
-	MONO_PROFILE_GC_ROOT_TYPEMASK = 0xff
-} MonoProfileGCRootType;
+typedef struct _MonoProfilerDesc *MonoProfilerHandle;
 
 /*
- * Functions that the runtime will call on the profiler.
+ * Installs a profiler and returns a handle for it. The handle is used with the
+ * other functions in the profiler API (e.g. for setting up callbacks).
+ *
+ * This function may only be called from your profiler's init function.
+ *
+ * Example usage:
+ *
+ * struct _MonoProfiler {
+ * 	int my_stuff;
+ * 	// ...
+ * };
+ *
+ * MonoProfiler *prof = calloc (1, sizeof (MonoProfiler));
+ * MonoProfilerHandle handle = mono_profiler_install (prof);
+ * mono_profiler_set_shutdown_callback (handle, my_shutdown_cb);
+ *
+ * This function is not async safe.
  */
+MONO_API MonoProfilerHandle mono_profiler_install (MonoProfiler *prof);
 
-typedef void (*MonoProfileFunc) (MonoProfiler *prof);
-
-typedef void (*MonoProfileAppDomainFunc) (MonoProfiler *prof, MonoDomain   *domain);
-typedef void (*MonoProfileContextFunc)   (MonoProfiler *prof, MonoAppContext *context);
-typedef void (*MonoProfileMethodFunc)   (MonoProfiler *prof, MonoMethod   *method);
-typedef void (*MonoProfileClassFunc)    (MonoProfiler *prof, MonoClass    *klass);
-typedef void (*MonoProfileModuleFunc)   (MonoProfiler *prof, MonoImage    *module);
-typedef void (*MonoProfileAssemblyFunc) (MonoProfiler *prof, MonoAssembly *assembly);
-typedef void (*MonoProfileMonitorFunc)  (MonoProfiler *prof, MonoObject *obj, MonoProfilerMonitorEvent event);
-
-typedef void (*MonoProfileExceptionFunc) (MonoProfiler *prof, MonoObject *object);
-typedef void (*MonoProfileExceptionClauseFunc) (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
-typedef void (*MonoProfileExceptionClauseFunc2) (MonoProfiler *prof, MonoMethod *method, int clause_type, int clause_num, MonoObject *exc);
-
-typedef void (*MonoProfileAppDomainResult)(MonoProfiler *prof, MonoDomain   *domain,   int result);
-typedef void (*MonoProfileAppDomainFriendlyNameFunc) (MonoProfiler *prof, MonoDomain *domain, const char *name);
-typedef void (*MonoProfileMethodResult)   (MonoProfiler *prof, MonoMethod   *method,   int result);
-typedef void (*MonoProfileJitResult)      (MonoProfiler *prof, MonoMethod   *method,   MonoJitInfo* jinfo,   int result);
-typedef void (*MonoProfileClassResult)    (MonoProfiler *prof, MonoClass    *klass,    int result);
-typedef void (*MonoProfileModuleResult)   (MonoProfiler *prof, MonoImage    *module,   int result);
-typedef void (*MonoProfileAssemblyResult) (MonoProfiler *prof, MonoAssembly *assembly, int result);
-
-typedef void (*MonoProfileMethodInline)   (MonoProfiler *prof, MonoMethod   *parent, MonoMethod *child, int *ok);
-
-typedef void (*MonoProfileThreadFunc)     (MonoProfiler *prof, uintptr_t tid);
-typedef void (*MonoProfileThreadNameFunc) (MonoProfiler *prof, uintptr_t tid, const char *name);
-typedef void (*MonoProfileAllocFunc)      (MonoProfiler *prof, MonoObject *obj, MonoClass *klass);
-typedef void (*MonoProfileStatFunc)       (MonoProfiler *prof, mono_byte *ip, void *context);
-typedef void (*MonoProfileStatCallChainFunc) (MonoProfiler *prof, int call_chain_depth, mono_byte **ip, void *context);
-typedef void (*MonoProfileGCFunc)         (MonoProfiler *prof, MonoGCEvent event, int generation);
-typedef void (*MonoProfileGCMoveFunc)     (MonoProfiler *prof, void **objects, int num);
-typedef void (*MonoProfileGCResizeFunc)   (MonoProfiler *prof, int64_t new_size);
-typedef void (*MonoProfileGCHandleFunc)   (MonoProfiler *prof, int op, int type, uintptr_t handle, MonoObject *obj);
-typedef void (*MonoProfileGCRootFunc)     (MonoProfiler *prof, int num_roots, void **objects, int *root_types, uintptr_t *extra_info);
-
-typedef void (*MonoProfileGCFinalizeFunc)  (MonoProfiler *prof);
-typedef void (*MonoProfileGCFinalizeObjectFunc) (MonoProfiler *prof, MonoObject *obj);
-
-typedef void (*MonoProfileIomapFunc) (MonoProfiler *prof, const char *report, const char *pathname, const char *new_pathname);
-
-typedef mono_bool (*MonoProfileCoverageFilterFunc)   (MonoProfiler *prof, MonoMethod *method);
-
-typedef void (*MonoProfileCoverageFunc)   (MonoProfiler *prof, const MonoProfileCoverageEntry *entry);
-
-typedef void (*MonoProfilerCodeChunkNew) (MonoProfiler *prof, void* chunk, int size);
-typedef void (*MonoProfilerCodeChunkDestroy) (MonoProfiler *prof, void* chunk);
-typedef void (*MonoProfilerCodeBufferNew) (MonoProfiler *prof, void* buffer, int size, MonoProfilerCodeBufferType type, void *data);
+typedef mono_bool (*MonoProfilerCoverageFilterCallback) (MonoProfiler *prof, MonoMethod *method);
 
 /*
- * Function the profiler may call.
+ * Sets a code coverage filter function. The profiler API will invoke filter
+ * functions from all installed profilers. If any of them return TRUE, then the
+ * given method will be instrumented for coverage analysis. All filters are
+ * guaranteed to be called exactly once per method, even if an earlier filter
+ * has already returned TRUE.
+ *
+ * Note that filter functions must be installed before a method is compiled in
+ * order to have any effect, i.e. you should register your filter function in
+ * your profiler's init function.
+ *
+ * This function is async safe.
  */
-MONO_API void mono_profiler_install       (MonoProfiler *prof, MonoProfileFunc shutdown_callback);
-MONO_API void mono_profiler_set_events    (MonoProfileFlags events);
+MONO_API void mono_profiler_set_coverage_filter_callback (MonoProfilerHandle handle, MonoProfilerCoverageFilterCallback cb);
 
-MONO_API MonoProfileFlags mono_profiler_get_events (void);
+typedef struct {
+	MonoMethod *method;
+	uint32_t il_offset;
+	uint32_t counter;
+	const char *file_name;
+	uint32_t line;
+	uint32_t column;
+} MonoProfilerCoverageData;
 
-MONO_API void mono_profiler_install_appdomain   (MonoProfileAppDomainFunc start_load, MonoProfileAppDomainResult end_load,
-                                        MonoProfileAppDomainFunc start_unload, MonoProfileAppDomainFunc end_unload);
-MONO_API void mono_profiler_install_appdomain_name (MonoProfileAppDomainFriendlyNameFunc domain_name_cb);
-MONO_API void mono_profiler_install_context     (MonoProfileContextFunc load, MonoProfileContextFunc unload);
-MONO_API void mono_profiler_install_assembly    (MonoProfileAssemblyFunc start_load, MonoProfileAssemblyResult end_load,
-                                        MonoProfileAssemblyFunc start_unload, MonoProfileAssemblyFunc end_unload);
-MONO_API void mono_profiler_install_module      (MonoProfileModuleFunc start_load, MonoProfileModuleResult end_load,
-                                        MonoProfileModuleFunc start_unload, MonoProfileModuleFunc end_unload);
-MONO_API void mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoProfileClassResult end_load,
-                                        MonoProfileClassFunc start_unload, MonoProfileClassFunc end_unload);
+typedef void (*MonoProfilerCoverageCallback) (MonoProfiler *prof, const MonoProfilerCoverageData *data);
 
-MONO_API void mono_profiler_install_jit_compile (MonoProfileMethodFunc start, MonoProfileMethodResult end);
-MONO_API void mono_profiler_install_jit_end (MonoProfileJitResult end);
-MONO_API void mono_profiler_install_method_free (MonoProfileMethodFunc callback);
-MONO_API void mono_profiler_install_method_invoke (MonoProfileMethodFunc start, MonoProfileMethodFunc end);
-MONO_API void mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave);
-MONO_API void mono_profiler_install_thread      (MonoProfileThreadFunc start, MonoProfileThreadFunc end);
-MONO_API void mono_profiler_install_thread_name (MonoProfileThreadNameFunc thread_name_cb);
-MONO_API void mono_profiler_install_transition  (MonoProfileMethodResult callback);
-MONO_API void mono_profiler_install_allocation  (MonoProfileAllocFunc callback);
-MONO_API void mono_profiler_install_monitor     (MonoProfileMonitorFunc callback);
-MONO_API void mono_profiler_install_statistical (MonoProfileStatFunc callback);
-MONO_API void mono_profiler_install_statistical_call_chain (MonoProfileStatCallChainFunc callback, int call_chain_depth, MonoProfilerCallChainStrategy call_chain_strategy);
-MONO_API void mono_profiler_install_exception   (MonoProfileExceptionFunc throw_callback, MonoProfileMethodFunc exc_method_leave, MonoProfileExceptionClauseFunc clause_callback);
-MONO_API void mono_profiler_install_exception_clause (MonoProfileExceptionClauseFunc2 clause_callback);
-MONO_API void mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback);
-MONO_API void mono_profiler_coverage_get  (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func);
-MONO_API void mono_profiler_install_gc    (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback);
-MONO_API void mono_profiler_install_gc_moves    (MonoProfileGCMoveFunc callback);
-MONO_API void mono_profiler_install_gc_roots    (MonoProfileGCHandleFunc handle_callback, MonoProfileGCRootFunc roots_callback);
-MONO_API void mono_profiler_install_gc_finalize (MonoProfileGCFinalizeFunc begin, MonoProfileGCFinalizeObjectFunc begin_obj, MonoProfileGCFinalizeObjectFunc end_obj, MonoProfileGCFinalizeFunc end);
-MONO_API void mono_profiler_install_runtime_initialized (MonoProfileFunc runtime_initialized_callback);
-
-MONO_API void mono_profiler_install_code_chunk_new (MonoProfilerCodeChunkNew callback);
-MONO_API void mono_profiler_install_code_chunk_destroy (MonoProfilerCodeChunkDestroy callback);
-MONO_API void mono_profiler_install_code_buffer_new (MonoProfilerCodeBufferNew callback);
-
-MONO_API void mono_profiler_install_iomap (MonoProfileIomapFunc callback);
-
-MONO_API void mono_profiler_load             (const char *desc);
+/*
+ * Retrieves all coverage data for the specified method and invokes the given
+ * callback for each entry.
+ *
+ * This function is not async safe.
+ */
+MONO_API void mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb);
 
 typedef enum {
-	/* Elapsed time is tracked by user+kernel time of the process - this is the default*/
-	MONO_PROFILER_STAT_MODE_PROCESS = 0,
-	/* Elapsed time is tracked by wallclock time */
-	MONO_PROFILER_STAT_MODE_REAL = 1,
-} MonoProfileSamplingMode;
+	/*
+	 * Do not perform sampling. Will make the sampling thread sleep until the
+	 * sampling mode is changed to one of the below modes.
+	 */
+	MONO_PROFILER_SAMPLE_MODE_NONE = 0,
+	/*
+	 * Try to base sampling frequency on process activity. Falls back to
+	 * MONO_PROFILER_SAMPLE_MODE_REAL if such a clock is not available.
+	 */
+	MONO_PROFILER_SAMPLE_MODE_PROCESS = 1,
+	/*
+	 * Base sampling frequency on wall clock time. Uses a monotonic clock when
+	 * available (all major platforms).
+	 */
+	MONO_PROFILER_SAMPLE_MODE_REAL = 2,
+} MonoProfilerSampleMode;
 
-MONO_API void mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampling_frequency_hz);
+/*
+ * Enables the sampling thread. You must call this function if you intend to use
+ * statistical sampling; mono_profiler_set_sample_mode will have no effect if
+ * this function has not been called. The first profiler to call this function
+ * will get ownership over sampling settings (mode and frequency) so that no
+ * other profiler can change those settings. Returns TRUE if the sampling
+ * thread was enabled, or FALSE if the function was called too late for this
+ * to be possible.
+ *
+ * Note that you still need to call mono_profiler_set_sample_mode with a mode
+ * other than MONO_PROFILER_SAMPLE_MODE_NONE to actually start sampling.
+ *
+ * This function may only be called from your profiler's init function.
+ *
+ * This function is not async safe.
+ */
+MONO_API mono_bool mono_profiler_enable_sampling (MonoProfilerHandle handle);
+
+/*
+ * Sets the sampling mode and frequency (in Hz). If the calling profiler has
+ * ownership over sampling settings, the settings will be changed and this
+ * function will return TRUE; otherwise, it returns FALSE without changing any
+ * settings.
+ *
+ * This function is async safe.
+ */
+MONO_API mono_bool mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode mode, uint64_t freq);
+
+/*
+ * Retrieves the current sampling mode and/or frequency (in Hz). Returns TRUE if
+ * the calling profiler is allowed to change the sampling settings; otherwise,
+ * FALSE.
+ *
+ * This function is async safe.
+ */
+MONO_API mono_bool mono_profiler_get_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode *mode, uint64_t *freq);
+
+/*
+ * Enables instrumentation of GC allocations. This is necessary so that managed
+ * allocators can be instrumented with a call into the profiler API. Allocations
+ * will not be reported unless this function is called. Returns TRUE if
+ * allocation instrumentation was enabled, or FALSE if the function was called
+ * too late for this to be possible.
+ *
+ * This function may only be called from your profiler's init function.
+ *
+ * This function is not async safe.
+ */
+MONO_API mono_bool mono_profiler_enable_allocations (void);
+
+typedef enum {
+	/* Do not instrument calls. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_NONE = 1 << 0,
+	/* Instrument method prologues. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE = 1 << 1,
+	/* Instrument method epilogues. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE = 1 << 2,
+} MonoProfilerCallInstrumentationFlags;
+
+typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFilterCallback) (MonoProfiler *prof, MonoMethod *method);
+
+/*
+ * Sets a call instrumentation filter function. The profiler API will invoke
+ * filter functions from all installed profilers. If any of them return flags
+ * other than MONO_PROFILER_CALL_INSTRUMENTATION_NONE, then the given method
+ * will be instrumented as requested. All filters are guaranteed to be called
+ * at least once (possibly more) per method entry and exit, even if earlier
+ * filters have already specified all flags.
+ *
+ * Note that filter functions must be installed before a method is compiled in
+ * order to have any effect, i.e. you should register your filter function in
+ * your profiler's init function.
+ *
+ * Keep in mind that method instrumentation is extremely heavy and will slow
+ * down most applications to a crawl. Consider using sampling instead if it
+ * would work for your use case.
+ *
+ * This function is async safe.
+ */
+MONO_API void mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handle, MonoProfilerCallInstrumentationFilterCallback cb);
+
+typedef enum {
+	/* Upper 2 bytes. */
+	MONO_PROFILER_GC_ROOT_PINNING = 1 << 8,
+	MONO_PROFILER_GC_ROOT_WEAKREF = 2 << 8,
+	MONO_PROFILER_GC_ROOT_INTERIOR = 4 << 8,
+
+	/* Lower 2 bytes (flags). */
+	MONO_PROFILER_GC_ROOT_STACK = 1 << 0,
+	MONO_PROFILER_GC_ROOT_FINALIZER = 1 << 1,
+	MONO_PROFILER_GC_ROOT_HANDLE = 1 << 2,
+	MONO_PROFILER_GC_ROOT_OTHER = 1 << 3,
+	MONO_PROFILER_GC_ROOT_MISC = 1 << 4,
+
+	MONO_PROFILER_GC_ROOT_TYPEMASK = 0xff,
+} MonoProfilerGCRootType;
+
+typedef enum {
+	/* data = MonoMethod *method */
+	MONO_PROFILER_CODE_BUFFER_METHOD = 0,
+	MONO_PROFILER_CODE_BUFFER_METHOD_TRAMPOLINE = 1,
+	MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE = 2,
+	MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE = 3,
+	MONO_PROFILER_CODE_BUFFER_GENERICS_TRAMPOLINE = 4,
+	/* data = const char *name */
+	MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE = 5,
+	MONO_PROFILER_CODE_BUFFER_HELPER = 6,
+	MONO_PROFILER_CODE_BUFFER_MONITOR = 7,
+	MONO_PROFILER_CODE_BUFFER_DELEGATE_INVOKE = 8,
+	MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING = 9,
+} MonoProfilerCodeBufferType;
+
+// Keep somewhat in sync with libgc/include/gc.h : GC_EventType.
+typedef enum {
+	MONO_GC_EVENT_START = 0,
+	MONO_GC_EVENT_MARK_START = 1,
+	MONO_GC_EVENT_MARK_END = 2,
+	MONO_GC_EVENT_RECLAIM_START = 3,
+	MONO_GC_EVENT_RECLAIM_END = 4,
+	MONO_GC_EVENT_END = 5,
+	MONO_GC_EVENT_PRE_STOP_WORLD = 6,
+	/* When this event arrives, the GC and suspend locks are acquired. */
+	MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED = 10,
+	MONO_GC_EVENT_POST_STOP_WORLD = 7,
+	MONO_GC_EVENT_PRE_START_WORLD = 8,
+	/* When this event arrives, the GC and suspend locks are released. */
+	MONO_GC_EVENT_POST_START_WORLD_UNLOCKED = 11,
+	MONO_GC_EVENT_POST_START_WORLD = 9,
+} MonoProfilerGCEvent;
+
+/*
+ * The macros below will generate the majority of the callback API. Refer to
+ * mono/metadata/profiler-events.h for a list of callbacks. They are expanded
+ * like so:
+ *
+ * typedef void (*MonoProfilerRuntimeInitializedCallback (MonoProfiler *prof);
+ * MONO_API void mono_profiler_set_runtime_initialized_callback (MonoProfiler *prof, MonoProfilerRuntimeInitializedCallback cb);
+ *
+ * typedef void (*MonoProfilerRuntimeShutdownCallback (MonoProfiler *prof);
+ * MONO_API void mono_profiler_set_runtime_shutdown_callback (MonoProfiler *prof, MonoProfilerRuntimeShutdownCallback cb);
+ *
+ * typedef void (*MonoProfilerContextLoadedCallback (MonoProfiler *prof);
+ * MONO_API void mono_profiler_set_context_loaded_callback (MonoProfiler *prof, MonoProfilerContextLoadedCallback cb);
+ *
+ * typedef void (*MonoProfilerContextUnloadedCallback (MonoProfiler *prof);
+ * MONO_API void mono_profiler_set_context_unloaded_callback (MonoProfiler *prof, MonoProfilerContextUnloadedCallback cb);
+ *
+ * Etc.
+ *
+ * To remove a callback, pass NULL instead of a valid function pointer.
+ * Callbacks can be changed at any point, but note that doing so is inherently
+ * racy with respect to threads that aren't suspended, i.e. you may still see a
+ * call from another thread right after you change a callback.
+ *
+ * These functions are async safe.
+ */
+
+#define _MONO_PROFILER_EVENT(type, ...) \
+	typedef void (*MonoProfiler ## type ## Callback) (__VA_ARGS__);
+#define MONO_PROFILER_EVENT_0(name, type) \
+		_MONO_PROFILER_EVENT(type, MonoProfiler *prof)
+#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
+		_MONO_PROFILER_EVENT(type, MonoProfiler *prof, arg1_type arg1_name)
+#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
+		_MONO_PROFILER_EVENT(type, MonoProfiler *prof, arg1_type arg1_name, arg2_type arg2_name)
+#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
+		_MONO_PROFILER_EVENT(type, MonoProfiler *prof, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name)
+#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
+		_MONO_PROFILER_EVENT(type, MonoProfiler *prof, arg1_type arg1_name, arg2_type arg2_name, arg3_type arg3_name, arg4_type arg4_name)
+#include <mono/metadata/profiler-events.h>
+#undef MONO_PROFILER_EVENT_0
+#undef MONO_PROFILER_EVENT_1
+#undef MONO_PROFILER_EVENT_2
+#undef MONO_PROFILER_EVENT_3
+#undef MONO_PROFILER_EVENT_4
+#undef _MONO_PROFILER_EVENT
+
+#define _MONO_PROFILER_EVENT(name, type) \
+	MONO_API void mono_profiler_set_ ## name ## _callback (MonoProfilerHandle handle, MonoProfiler ## type ## Callback cb);
+#define MONO_PROFILER_EVENT_0(name, type) \
+	_MONO_PROFILER_EVENT(name, type)
+#define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
+	_MONO_PROFILER_EVENT(name, type)
+#define MONO_PROFILER_EVENT_2(name, type, arg1_type, arg1_name, arg2_type, arg2_name) \
+	_MONO_PROFILER_EVENT(name, type)
+#define MONO_PROFILER_EVENT_3(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name) \
+	_MONO_PROFILER_EVENT(name, type)
+#define MONO_PROFILER_EVENT_4(name, type, arg1_type, arg1_name, arg2_type, arg2_name, arg3_type, arg3_name, arg4_type, arg4_name) \
+	_MONO_PROFILER_EVENT(name, type)
+#include <mono/metadata/profiler-events.h>
+#undef MONO_PROFILER_EVENT_0
+#undef MONO_PROFILER_EVENT_1
+#undef MONO_PROFILER_EVENT_2
+#undef MONO_PROFILER_EVENT_3
+#undef MONO_PROFILER_EVENT_4
+#undef _MONO_PROFILER_EVENT
 
 MONO_END_DECLS
 
-#endif /* __MONO_PROFILER_H__ */
-
+#endif // __MONO_PROFILER_H__
