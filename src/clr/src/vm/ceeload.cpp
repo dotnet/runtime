@@ -9289,13 +9289,20 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
         {
             if (pMT->HasPerInstInfo())
             {
-                Dictionary ** pPerInstInfo = pMT->GetPerInstInfo();
+                DPTR(MethodTable::PerInstInfoElem_t) pPerInstInfo = pMT->GetPerInstInfo();
 
                 BOOL fIsEagerBound = pMT->CanEagerBindToParentDictionaries(image, NULL);
 
                 if (fIsEagerBound)
                 {
-                    image->PlaceInternedStructureForAddress(pPerInstInfo, CORCOMPILE_SECTION_READONLY_SHARED_HOT, CORCOMPILE_SECTION_READONLY_HOT);
+                    if (MethodTable::PerInstInfoElem_t::isRelative)
+                    {
+                        image->PlaceStructureForAddress(pPerInstInfo, CORCOMPILE_SECTION_READONLY_HOT);
+                    }
+                    else
+                    {
+                        image->PlaceInternedStructureForAddress(pPerInstInfo, CORCOMPILE_SECTION_READONLY_SHARED_HOT, CORCOMPILE_SECTION_READONLY_HOT);
+                    }
                 }
                 else
                 {
