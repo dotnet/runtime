@@ -110,25 +110,40 @@ struct InterfaceInfo_t
     friend class NativeImageDumper;
 #endif
 
-    FixupPointer<PTR_MethodTable> m_pMethodTable;        // Method table of the interface
+    // Method table of the interface
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+    RelativeFixupPointer<PTR_MethodTable> m_pMethodTable;
+#else
+    FixupPointer<PTR_MethodTable> m_pMethodTable;
+#endif
 
 public:
     FORCEINLINE PTR_MethodTable GetMethodTable()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_pMethodTable.GetValue();
+        return ReadPointerMaybeNull(this, &InterfaceInfo_t::m_pMethodTable);
     }
 
 #ifndef DACCESS_COMPILE
     void SetMethodTable(MethodTable * pMT)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pMethodTable.SetValue(pMT);
+        m_pMethodTable.SetValueMaybeNull(pMT);
     }
 
     // Get approximate method table. This is used by the type loader before the type is fully loaded.
     PTR_MethodTable GetApproxMethodTable(Module * pContainingModule);
-#endif
+#endif // !DACCESS_COMPILE
+
+#ifndef DACCESS_COMPILE
+    InterfaceInfo_t(InterfaceInfo_t &right)
+    {
+        m_pMethodTable.SetValueMaybeNull(right.m_pMethodTable.GetValueMaybeNull());
+    }
+#else // !DACCESS_COMPILE
+private:
+    InterfaceInfo_t(InterfaceInfo_t &right);
+#endif // !DACCESS_COMPILE
 };  // struct InterfaceInfo_t
 
 typedef DPTR(InterfaceInfo_t) PTR_InterfaceInfo;

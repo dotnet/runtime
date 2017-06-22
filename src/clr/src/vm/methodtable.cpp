@@ -1236,7 +1236,12 @@ void MethodTable::AddDynamicInterface(MethodTable *pItfMT)
     if (TotalNumInterfaces > 0) {
         InterfaceInfo_t *pInterfaceMap = GetInterfaceMap();
         PREFIX_ASSUME(pInterfaceMap != NULL);
-        memcpy(pNewItfMap, pInterfaceMap, TotalNumInterfaces * sizeof(InterfaceInfo_t));
+
+        for (unsigned index = 0; index < TotalNumInterfaces; ++index)
+        {
+          InterfaceInfo_t *pIntInfo = (InterfaceInfo_t *) (pNewItfMap + index);
+          pIntInfo->SetMethodTable((pInterfaceMap + index)->GetMethodTable());
+        }
     }
 
     // Add the new interface at the end of the map.
@@ -4284,16 +4289,32 @@ void MethodTable::Save(DataImage *image, DWORD profilingFlags)
         // Dynamic interface maps have an additional DWORD_PTR preceding the InterfaceInfo_t array
         if (HasDynamicInterfaceMap())
         {
-            ZapStoredStructure * pInterfaceMapNode = image->StoreInternedStructure(((DWORD_PTR *)GetInterfaceMap()) - 1, 
-                                                                                   GetInterfaceMapSize(), 
-                                                                                   DataImage::ITEM_INTERFACE_MAP);
-                                                                                   
+            ZapStoredStructure * pInterfaceMapNode;
+            if (decltype(InterfaceInfo_t::m_pMethodTable)::isRelative)
+            {
+                pInterfaceMapNode = image->StoreStructure(((DWORD_PTR *)GetInterfaceMap()) - 1,
+                                                          GetInterfaceMapSize(),
+                                                          DataImage::ITEM_INTERFACE_MAP);
+            }
+            else
+            {
+                pInterfaceMapNode = image->StoreInternedStructure(((DWORD_PTR *)GetInterfaceMap()) - 1,
+                                                                  GetInterfaceMapSize(),
+                                                                  DataImage::ITEM_INTERFACE_MAP);
+            }
             image->BindPointer(GetInterfaceMap(), pInterfaceMapNode, sizeof(DWORD_PTR));
         }
         else
 #endif // FEATURE_COMINTEROP
         {
-            image->StoreInternedStructure(GetInterfaceMap(), GetInterfaceMapSize(), DataImage::ITEM_INTERFACE_MAP);
+            if (decltype(InterfaceInfo_t::m_pMethodTable)::isRelative)
+            {
+                image->StoreStructure(GetInterfaceMap(), GetInterfaceMapSize(), DataImage::ITEM_INTERFACE_MAP);
+            }
+            else
+            {
+                image->StoreInternedStructure(GetInterfaceMap(), GetInterfaceMapSize(), DataImage::ITEM_INTERFACE_MAP);
+            }
         }
 
         SaveExtraInterfaceInfo(image);
