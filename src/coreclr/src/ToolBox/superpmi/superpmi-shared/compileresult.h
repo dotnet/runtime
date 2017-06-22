@@ -140,7 +140,7 @@ public:
         DWORD     sigInst_methInstCount;
         DWORD     sigInst_methInst_Index;
         DWORDLONG args;
-        DWORD     pSig;
+        DWORD     pSig_Index;
         DWORD     cbSig;
         DWORDLONG scope;
         DWORD     token;

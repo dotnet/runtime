@@ -37,7 +37,7 @@ public:
         DWORD     sigInst_methInstCount;
         DWORD     sigInst_methInst_Index;
         DWORDLONG args;
-        DWORD     pSig;
+        DWORD     pSig_Index;
         DWORD     cbSig;
         DWORDLONG scope;
         DWORD     token;
@@ -114,7 +114,7 @@ public:
         DWORD     sigInst_classInst_Index;
         DWORD     sigInst_methInstCount;
         DWORD     sigInst_methInst_Index;
-        DWORDLONG     scope;
+        DWORDLONG scope;
         DWORDLONG args;
     };
     struct GetArgClassValue
@@ -290,7 +290,7 @@ public:
     struct PInvokeMarshalingRequiredValue
     {
         DWORDLONG method;
-        DWORD     pSig;
+        DWORD     pSig_Index;
         DWORD     cbSig;
         DWORDLONG scope;
     };
@@ -474,7 +474,7 @@ public:
     struct GetVarArgsHandleValue
     {
         DWORD     cbSig;
-        DWORD     pSig;
+        DWORD     pSig_Index;
         DWORDLONG scope;
         DWORD     token;
     };
@@ -488,7 +488,7 @@ public:
     struct GetCookieForPInvokeCalliSigValue
     {
         DWORD     cbSig;
-        DWORD     pSig;
+        DWORD     pSig_Index;
         DWORDLONG scope;
         DWORD     token;
     };

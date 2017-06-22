@@ -15,6 +15,7 @@
 #include "lightweightmap.h"
 #include "callutils.h"
 #include "spmirecordhelper.h"
+#include "spmidumphelper.h"
 
 struct
 {
@@ -769,7 +770,7 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
                                  info->args.sigInst.methInstCount * 8); // porting issue
     value.info.args.args           = (DWORDLONG)info->args.args;
     value.info.args.cbSig          = (DWORD)info->args.cbSig;
-    value.info.args.pSig           = (DWORD)CompileMethod->AddBuffer((unsigned char*)info->args.pSig, info->args.cbSig);
+    value.info.args.pSig_Index     = (DWORD)CompileMethod->AddBuffer((unsigned char*)info->args.pSig, info->args.cbSig);
     value.info.args.scope          = (DWORDLONG)info->args.scope;
     value.info.args.token          = (DWORD)info->args.token;
     value.info.locals.callConv     = (DWORD)info->locals.callConv;
@@ -788,7 +789,8 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
                                  info->locals.sigInst.methInstCount * 8); // porting issue
     value.info.locals.args  = (DWORDLONG)info->locals.args;
     value.info.locals.cbSig = (DWORD)info->locals.cbSig;
-    value.info.locals.pSig  = (DWORD)CompileMethod->AddBuffer((unsigned char*)info->locals.pSig, info->locals.cbSig);
+    value.info.locals.pSig_Index =
+        (DWORD)CompileMethod->AddBuffer((unsigned char*)info->locals.pSig, info->locals.cbSig);
     value.info.locals.scope = (DWORDLONG)info->locals.scope;
     value.info.locals.token = (DWORD)info->locals.token;
     value.flags             = (DWORD)flags;
@@ -800,9 +802,9 @@ void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& va
 {
     printf("CompiledMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u "
            "args{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u "
-           "pSig-%u scp-%016llX tok-%08X} "
+           "pSig_Index-%u scp-%016llX tok-%08X} "
            "locals{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u "
-           "pSig-%u scp-%016llX tok-%08X} "
+           "pSig_Index-%u scp-%016llX tok-%08X} "
            "flg-%08X",
            key, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize, value.info.maxStack,
            value.info.EHcount, value.info.options, value.info.regionKind, value.info.args.callConv,
@@ -810,13 +812,13 @@ void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& va
            toString((CorInfoType)value.info.args.retType), value.info.args.flags, value.info.args.numArgs,
            value.info.args.sigInst_classInstCount, value.info.args.sigInst_classInst_Index,
            value.info.args.sigInst_methInstCount, value.info.args.sigInst_methInst_Index, value.info.args.args,
-           value.info.args.cbSig, value.info.args.pSig, value.info.args.scope, value.info.args.token,
+           value.info.args.cbSig, value.info.args.pSig_Index, value.info.args.scope, value.info.args.token,
            value.info.locals.callConv, value.info.locals.retTypeClass, value.info.locals.retTypeSigClass,
            value.info.locals.retType, toString((CorInfoType)value.info.locals.retType), value.info.locals.flags,
            value.info.locals.numArgs, value.info.locals.sigInst_classInstCount,
            value.info.locals.sigInst_classInst_Index, value.info.locals.sigInst_methInstCount,
            value.info.locals.sigInst_methInst_Index, value.info.locals.args, value.info.locals.cbSig,
-           value.info.locals.pSig, value.info.locals.scope, value.info.locals.token, value.flags);
+           value.info.locals.pSig_Index, value.info.locals.scope, value.info.locals.token, value.flags);
 }
 void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
 {
@@ -847,7 +849,7 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
         (CORINFO_CLASS_HANDLE*)CompileMethod->GetBuffer(value.info.args.sigInst_methInst_Index);
     info->args.args                     = (CORINFO_ARG_LIST_HANDLE)value.info.args.args;
     info->args.cbSig                    = (unsigned int)value.info.args.cbSig;
-    info->args.pSig                     = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.args.pSig);
+    info->args.pSig                     = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.args.pSig_Index);
     info->args.scope                    = (CORINFO_MODULE_HANDLE)value.info.args.scope;
     info->args.token                    = (mdToken)value.info.args.token;
     info->locals.callConv               = (CorInfoCallConv)value.info.locals.callConv;
@@ -864,7 +866,7 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
         (CORINFO_CLASS_HANDLE*)CompileMethod->GetBuffer(value.info.locals.sigInst_methInst_Index);
     info->locals.args  = (CORINFO_ARG_LIST_HANDLE)value.info.locals.args;
     info->locals.cbSig = (unsigned int)value.info.locals.cbSig;
-    info->locals.pSig  = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.locals.pSig);
+    info->locals.pSig  = (PCCOR_SIGNATURE)CompileMethod->GetBuffer(value.info.locals.pSig_Index);
     info->locals.scope = (CORINFO_MODULE_HANDLE)value.info.locals.scope;
     info->locals.token = (mdToken)value.info.locals.token;
     *flags             = (unsigned)value.flags;
@@ -1293,11 +1295,9 @@ void MethodContext::recResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
 }
 void MethodContext::dmpResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const ResolveTokenValue& value)
 {
-    printf("ResolveToken key tc-%016llX ts-%016llX tok-%08X tt-%u", key.tokenContext, key.tokenScope, key.token,
-           key.tokenType);
-    printf(", value cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u excp-%08X", value.tokenOut.hClass,
-           value.tokenOut.hMethod, value.tokenOut.hField, value.tokenOut.pTypeSpec_Index, value.tokenOut.cbTypeSpec,
-           value.tokenOut.pMethodSpec_Index, value.tokenOut.cbMethodSpec, value.exceptionCode);
+    printf("ResolveToken key: %s\n", SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(key).c_str());
+    printf(", value: %s excp-%08X", SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(value.tokenOut).c_str(),
+           value.exceptionCode);
 }
 void MethodContext::repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWORD* exceptionCode)
 {
@@ -1310,14 +1310,8 @@ void MethodContext::repResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, DWOR
 
     ResolveTokenValue value = ResolveToken->Get(key);
 
-    pResolvedToken->hClass       = (CORINFO_CLASS_HANDLE)value.tokenOut.hClass;
-    pResolvedToken->hMethod      = (CORINFO_METHOD_HANDLE)value.tokenOut.hMethod;
-    pResolvedToken->hField       = (CORINFO_FIELD_HANDLE)value.tokenOut.hField;
-    pResolvedToken->pTypeSpec    = (PCCOR_SIGNATURE)ResolveToken->GetBuffer(value.tokenOut.pTypeSpec_Index);
-    pResolvedToken->cbTypeSpec   = (ULONG)value.tokenOut.cbTypeSpec;
-    pResolvedToken->pMethodSpec  = (PCCOR_SIGNATURE)ResolveToken->GetBuffer(value.tokenOut.pMethodSpec_Index);
-    pResolvedToken->cbMethodSpec = (ULONG)value.tokenOut.cbMethodSpec;
-    *exceptionCode               = (DWORD)value.exceptionCode;
+    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
+    *exceptionCode  = (DWORD)value.exceptionCode;
 
     DEBUG_REP(dmpResolveToken(key, value));
 }
@@ -1342,11 +1336,9 @@ void MethodContext::recTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken, b
 }
 void MethodContext::dmpTryResolveToken(const Agnostic_CORINFO_RESOLVED_TOKENin& key, const TryResolveTokenValue& value)
 {
-    printf("TryResolveToken key tc-%016llX ts-%016llX tok-%08X tt-%u", key.tokenContext, key.tokenScope, key.token,
-           key.tokenType);
-    printf(", value cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u failed-%u", value.tokenOut.hClass,
-           value.tokenOut.hMethod, value.tokenOut.hField, value.tokenOut.pTypeSpec_Index, value.tokenOut.cbTypeSpec,
-           value.tokenOut.pMethodSpec_Index, value.tokenOut.cbMethodSpec, value.success);
+    printf("TryResolveToken key: %s\n", SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENin(key).c_str());
+    printf(", value: %s failed-%u", SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKENout(value.tokenOut).c_str(),
+           value.success);
 }
 bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 {
@@ -1358,13 +1350,7 @@ bool MethodContext::repTryResolveToken(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     TryResolveTokenValue value = TryResolveToken->Get(key);
 
-    pResolvedToken->hClass       = (CORINFO_CLASS_HANDLE)value.tokenOut.hClass;
-    pResolvedToken->hMethod      = (CORINFO_METHOD_HANDLE)value.tokenOut.hMethod;
-    pResolvedToken->hField       = (CORINFO_FIELD_HANDLE)value.tokenOut.hField;
-    pResolvedToken->pTypeSpec    = (PCCOR_SIGNATURE)ResolveToken->GetBuffer(value.tokenOut.pTypeSpec_Index);
-    pResolvedToken->cbTypeSpec   = (ULONG)value.tokenOut.cbTypeSpec;
-    pResolvedToken->pMethodSpec  = (PCCOR_SIGNATURE)ResolveToken->GetBuffer(value.tokenOut.pMethodSpec_Index);
-    pResolvedToken->cbMethodSpec = (ULONG)value.tokenOut.cbMethodSpec;
+    SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKENout(pResolvedToken, value.tokenOut, ResolveToken);
 
     DEBUG_REP(dmpTryResolveToken(key, value));
     return (DWORD)value.success == 0;
@@ -1395,72 +1381,18 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     key.flags        = (DWORD)flags;
 
     Agnostic_CORINFO_CALL_INFO value;
+    ZeroMemory(&value, sizeof(Agnostic_CORINFO_CALL_INFO)); // init verSig with 0.
+
     if (exceptionCode == 0)
     {
-        value.hMethod                    = (DWORDLONG)pResult->hMethod;
-        value.methodFlags                = (DWORD)pResult->methodFlags;
-        value.classFlags                 = (DWORD)pResult->classFlags;
-        value.sig.callConv               = (DWORD)pResult->sig.callConv;
-        value.sig.retTypeClass           = (DWORDLONG)pResult->sig.retTypeClass;
-        value.sig.retTypeSigClass        = (DWORDLONG)pResult->sig.retTypeSigClass;
-        value.sig.retType                = (DWORD)pResult->sig.retType;
-        value.sig.flags                  = (DWORD)pResult->sig.flags;
-        value.sig.numArgs                = (DWORD)pResult->sig.numArgs;
-        value.sig.sigInst_classInstCount = (DWORD)pResult->sig.sigInst.classInstCount;
-        value.sig.sigInst_classInst_Index =
-            GetCallInfo->AddBuffer((unsigned char*)pResult->sig.sigInst.classInst,
-                                   pResult->sig.sigInst.classInstCount * 8); // porting issue
-        value.sig.sigInst_methInstCount = (DWORD)pResult->sig.sigInst.methInstCount;
-        value.sig.sigInst_methInst_Index =
-            GetCallInfo->AddBuffer((unsigned char*)pResult->sig.sigInst.methInst,
-                                   pResult->sig.sigInst.methInstCount * 8); // porting issue
-        value.sig.args  = (DWORDLONG)pResult->sig.args;
-        value.sig.cbSig = (DWORD)pResult->sig.cbSig;
-        value.sig.pSig  = (DWORD)GetCallInfo->AddBuffer((unsigned char*)pResult->sig.pSig, pResult->sig.cbSig);
-        value.sig.scope = (DWORDLONG)pResult->sig.scope;
-        value.sig.token = (DWORD)pResult->sig.token;
+        value.hMethod     = (DWORDLONG)pResult->hMethod;
+        value.methodFlags = (DWORD)pResult->methodFlags;
+        value.classFlags  = (DWORD)pResult->classFlags;
+        value.sig         = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(pResult->sig, GetCallInfo);
         if (flags & CORINFO_CALLINFO_VERIFICATION)
         {
-            value.verMethodFlags                = (DWORD)pResult->verMethodFlags;
-            value.verSig.callConv               = (DWORD)pResult->verSig.callConv;
-            value.verSig.retTypeClass           = (DWORDLONG)pResult->verSig.retTypeClass;
-            value.verSig.retTypeSigClass        = (DWORDLONG)pResult->verSig.retTypeSigClass;
-            value.verSig.retType                = (DWORD)pResult->verSig.retType;
-            value.verSig.flags                  = (DWORD)pResult->verSig.flags;
-            value.verSig.numArgs                = (DWORD)pResult->verSig.numArgs;
-            value.verSig.sigInst_classInstCount = (DWORD)pResult->verSig.sigInst.classInstCount;
-            value.verSig.sigInst_classInst_Index =
-                GetCallInfo->AddBuffer((unsigned char*)pResult->verSig.sigInst.classInst,
-                                       pResult->verSig.sigInst.classInstCount * 8); // porting issue
-            value.verSig.sigInst_methInstCount = (DWORD)pResult->verSig.sigInst.methInstCount;
-            value.verSig.sigInst_methInst_Index =
-                GetCallInfo->AddBuffer((unsigned char*)pResult->verSig.sigInst.methInst,
-                                       pResult->verSig.sigInst.methInstCount * 8); // porting issue
-            value.verSig.args  = (DWORDLONG)pResult->verSig.args;
-            value.verSig.cbSig = (DWORD)pResult->verSig.cbSig;
-            value.verSig.pSig =
-                (DWORD)GetCallInfo->AddBuffer((unsigned char*)pResult->verSig.pSig, pResult->verSig.cbSig);
-            value.verSig.scope = (DWORDLONG)pResult->verSig.scope;
-            value.verSig.token = (DWORD)pResult->verSig.token;
-        }
-        else
-        {
-            value.verMethodFlags                 = (DWORD)0;
-            value.verSig.callConv                = (DWORD)0;
-            value.verSig.retTypeClass            = (DWORDLONG)0;
-            value.verSig.retTypeSigClass         = (DWORDLONG)0;
-            value.verSig.retType                 = (DWORD)0;
-            value.verSig.flags                   = (DWORD)0;
-            value.verSig.numArgs                 = (DWORD)0;
-            value.verSig.sigInst_classInstCount  = (DWORD)0;
-            value.verSig.sigInst_classInst_Index = (DWORD)0;
-            value.verSig.sigInst_methInstCount   = (DWORD)0;
-            value.verSig.sigInst_methInst_Index  = (DWORD)0;
-            value.verSig.args                    = (DWORDLONG)0;
-            value.verSig.cbSig                   = (DWORD)0;
-            value.verSig.pSig                    = (DWORD)0;
-            value.verSig.scope                   = (DWORDLONG)0;
-            value.verSig.token                   = (DWORD)0;
+            value.verMethodFlags = (DWORD)pResult->verMethodFlags;
+            value.verSig         = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(pResult->verSig, GetCallInfo);
         }
 
         value.accessAllowed                   = (DWORD)pResult->accessAllowed;
@@ -1524,21 +1456,10 @@ void MethodContext::recGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 void MethodContext::dmpGetCallInfo(const Agnostic_GetCallInfo& key, const Agnostic_CORINFO_CALL_INFO& value)
 {
-    printf("GetCallInfo key"
-           " rt{tc-%016llX ts-%016llX tok-%08X tt-%u cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u}"
-           " crt{tc-%016llX ts-%016llX tok-%08X tt-%u cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u mi-%u ms-%u}"
-           " ch-%016llX flg-%08X",
-           key.ResolvedToken.inValue.tokenContext, key.ResolvedToken.inValue.tokenScope,
-           key.ResolvedToken.inValue.token, key.ResolvedToken.inValue.tokenType, key.ResolvedToken.outValue.hClass,
-           key.ResolvedToken.outValue.hMethod, key.ResolvedToken.outValue.hField,
-           key.ResolvedToken.outValue.pTypeSpec_Index, key.ResolvedToken.outValue.cbTypeSpec,
-           key.ResolvedToken.outValue.pMethodSpec_Index, key.ResolvedToken.outValue.cbMethodSpec,
-           key.ConstrainedResolvedToken.inValue.tokenContext, key.ConstrainedResolvedToken.inValue.tokenScope,
-           key.ConstrainedResolvedToken.inValue.token, key.ConstrainedResolvedToken.inValue.tokenType,
-           key.ConstrainedResolvedToken.outValue.hClass, key.ConstrainedResolvedToken.outValue.hMethod,
-           key.ConstrainedResolvedToken.outValue.hField, key.ConstrainedResolvedToken.outValue.pTypeSpec_Index,
-           key.ConstrainedResolvedToken.outValue.cbTypeSpec, key.ConstrainedResolvedToken.outValue.pMethodSpec_Index,
-           key.ConstrainedResolvedToken.outValue.cbMethodSpec, key.callerHandle, key.flags);
+    printf("GetCallInfo key rt{%s} crt{%s} ch-%016llX flg-%08X\n",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ConstrainedResolvedToken).c_str(), key.callerHandle,
+           key.flags);
     printf(", value mth-%016llX, mf-%08X cf-%08X"
            " sig{flg-%08X na-%u cc-%u ci-%u mc-%u mi-%u args-%016llX scp-%016llX tok-%08X}"
            " vsig{flg-%08X na-%u cc-%u ci-%u mc-%u mi-%u args-%016llX scp-%016llX tok-%08X}"
@@ -1580,44 +1501,14 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 
     value = GetCallInfo->Get(key);
 
-    pResult->hMethod                    = (CORINFO_METHOD_HANDLE)value.hMethod;
-    pResult->methodFlags                = (unsigned)value.methodFlags;
-    pResult->classFlags                 = (unsigned)value.classFlags;
-    pResult->sig.callConv               = (CorInfoCallConv)value.sig.callConv;
-    pResult->sig.retTypeClass           = (CORINFO_CLASS_HANDLE)value.sig.retTypeClass;
-    pResult->sig.retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.sig.retTypeSigClass;
-    pResult->sig.retType                = (CorInfoType)value.sig.retType;
-    pResult->sig.flags                  = (unsigned)value.sig.flags;
-    pResult->sig.numArgs                = (unsigned)value.sig.numArgs;
-    pResult->sig.sigInst.classInstCount = (unsigned)value.sig.sigInst_classInstCount;
-    pResult->sig.sigInst.classInst = (CORINFO_CLASS_HANDLE*)GetCallInfo->GetBuffer(value.sig.sigInst_classInst_Index);
-    pResult->sig.sigInst.methInstCount = (unsigned)value.sig.sigInst_methInstCount;
-    pResult->sig.sigInst.methInst = (CORINFO_CLASS_HANDLE*)GetCallInfo->GetBuffer(value.sig.sigInst_methInst_Index);
-    pResult->sig.args             = (CORINFO_ARG_LIST_HANDLE)value.sig.args;
-    pResult->sig.cbSig            = (unsigned int)value.sig.cbSig;
-    pResult->sig.pSig             = (PCCOR_SIGNATURE)GetCallInfo->GetBuffer(value.sig.pSig);
-    pResult->sig.scope            = (CORINFO_MODULE_HANDLE)value.sig.scope;
-    pResult->sig.token            = (mdToken)value.sig.token;
+    pResult->hMethod     = (CORINFO_METHOD_HANDLE)value.hMethod;
+    pResult->methodFlags = (unsigned)value.methodFlags;
+    pResult->classFlags  = (unsigned)value.classFlags;
+    pResult->sig         = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.sig, GetCallInfo);
     if (flags & CORINFO_CALLINFO_VERIFICATION)
     {
-        pResult->verMethodFlags                = (unsigned)value.verMethodFlags;
-        pResult->verSig.callConv               = (CorInfoCallConv)value.verSig.callConv;
-        pResult->verSig.retTypeClass           = (CORINFO_CLASS_HANDLE)value.verSig.retTypeClass;
-        pResult->verSig.retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.verSig.retTypeSigClass;
-        pResult->verSig.retType                = (CorInfoType)value.verSig.retType;
-        pResult->verSig.flags                  = (unsigned)value.verSig.flags;
-        pResult->verSig.numArgs                = (unsigned)value.verSig.numArgs;
-        pResult->verSig.sigInst.classInstCount = (unsigned)value.verSig.sigInst_classInstCount;
-        pResult->verSig.sigInst.classInst =
-            (CORINFO_CLASS_HANDLE*)GetCallInfo->GetBuffer(value.verSig.sigInst_classInst_Index);
-        pResult->verSig.sigInst.methInstCount = (unsigned)value.verSig.sigInst_methInstCount;
-        pResult->verSig.sigInst.methInst =
-            (CORINFO_CLASS_HANDLE*)GetCallInfo->GetBuffer(value.verSig.sigInst_methInst_Index);
-        pResult->verSig.args  = (CORINFO_ARG_LIST_HANDLE)value.verSig.args;
-        pResult->verSig.cbSig = (unsigned int)value.verSig.cbSig;
-        pResult->verSig.pSig  = (PCCOR_SIGNATURE)GetCallInfo->GetBuffer(value.verSig.pSig);
-        pResult->verSig.scope = (CORINFO_MODULE_HANDLE)value.verSig.scope;
-        pResult->verSig.token = (mdToken)value.verSig.token;
+        pResult->verMethodFlags = (unsigned)value.verMethodFlags;
+        pResult->verSig         = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.verSig, GetCallInfo);
     }
     pResult->accessAllowed                   = (CorInfoIsAccessAllowedResult)value.accessAllowed;
     pResult->callsiteCalloutHelper.helperNum = (CorInfoHelpFunc)value.callsiteCalloutHelper.helperNum;
@@ -2655,28 +2546,10 @@ void MethodContext::recGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
                                     // out padding too
-    Agnostic_CORINFO_SIG_INFO value;
-
     key.A = (DWORDLONG)ftn;
     key.B = (DWORDLONG)memberParent;
 
-    value.callConv                = (DWORD)sig->callConv;
-    value.retTypeClass            = (DWORDLONG)sig->retTypeClass;
-    value.retTypeSigClass         = (DWORDLONG)sig->retTypeSigClass;
-    value.retType                 = (DWORD)sig->retType;
-    value.flags                   = (DWORD)sig->flags;
-    value.numArgs                 = (DWORD)sig->numArgs;
-    value.sigInst_classInstCount  = (DWORD)sig->sigInst.classInstCount;
-    value.sigInst_classInst_Index = GetMethodSig->AddBuffer((unsigned char*)sig->sigInst.classInst,
-                                                            sig->sigInst.classInstCount * 8); // porting issue
-    value.sigInst_methInstCount = (DWORD)sig->sigInst.methInstCount;
-    value.sigInst_methInst_Index =
-        GetMethodSig->AddBuffer((unsigned char*)sig->sigInst.methInst, sig->sigInst.methInstCount * 8); // porting issue
-    value.args  = (DWORDLONG)sig->args;
-    value.cbSig = (DWORD)sig->cbSig;
-    value.pSig  = (DWORD)GetMethodSig->AddBuffer((unsigned char*)sig->pSig, sig->cbSig);
-    value.scope = (DWORDLONG)sig->scope;
-    value.token = (DWORD)sig->token;
+    Agnostic_CORINFO_SIG_INFO value = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*sig, GetMethodSig);
 
     GetMethodSig->Add(key, value);
     DEBUG_REC(dmpGetMethodSig(key, value));
@@ -2684,11 +2557,11 @@ void MethodContext::recGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
 void MethodContext::dmpGetMethodSig(DLDL key, const Agnostic_CORINFO_SIG_INFO& value)
 {
     printf("GetMethodSig key ftn-%016llX prt-%016llX, value cc-%u rtc-%016llX rts-%016llX rt-%u(%s) flg-%08X na-%u "
-           "cc-%u ci-%u mc-%u mi-%u args-%016llX sig-%u pSig-%u scp-%016llX tok-%08X",
+           "cc-%u ci-%u mc-%u mi-%u args-%016llX sig-%u pSig_Index-%u scp-%016llX tok-%08X",
            key.A, key.B, value.callConv, value.retTypeClass, value.retTypeSigClass, value.retType,
            toString((CorInfoType)value.retType), value.flags, value.numArgs, value.sigInst_classInstCount,
            value.sigInst_classInst_Index, value.sigInst_methInstCount, value.sigInst_methInst_Index, value.args,
-           value.cbSig, value.pSig, value.scope, value.token);
+           value.cbSig, value.pSig_Index, value.scope, value.token);
 }
 void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_HANDLE memberParent)
 {
@@ -2702,21 +2575,7 @@ void MethodContext::repGetMethodSig(CORINFO_METHOD_HANDLE ftn, CORINFO_SIG_INFO*
 
     value = GetMethodSig->Get(key);
 
-    sig->callConv               = (CorInfoCallConv)value.callConv;
-    sig->retTypeClass           = (CORINFO_CLASS_HANDLE)value.retTypeClass;
-    sig->retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.retTypeSigClass;
-    sig->retType                = (CorInfoType)value.retType;
-    sig->flags                  = (unsigned)value.flags;
-    sig->numArgs                = (unsigned)value.numArgs;
-    sig->sigInst.classInstCount = (unsigned)value.sigInst_classInstCount;
-    sig->sigInst.classInst      = (CORINFO_CLASS_HANDLE*)GetMethodSig->GetBuffer(value.sigInst_classInst_Index);
-    sig->sigInst.methInstCount  = (unsigned)value.sigInst_methInstCount;
-    sig->sigInst.methInst       = (CORINFO_CLASS_HANDLE*)GetMethodSig->GetBuffer(value.sigInst_methInst_Index);
-    sig->args                   = (CORINFO_ARG_LIST_HANDLE)value.args;
-    sig->cbSig                  = (unsigned int)value.cbSig;
-    sig->pSig                   = (PCCOR_SIGNATURE)GetMethodSig->GetBuffer(value.pSig);
-    sig->scope                  = (CORINFO_MODULE_HANDLE)value.scope;
-    sig->token                  = (mdToken)value.token;
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, GetMethodSig);
 
     DEBUG_REP(dmpGetMethodSig(key, value));
 }
@@ -2851,7 +2710,7 @@ void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
                                             info->args.sigInst.methInstCount * 8); // porting issue
         value.info.args.args       = (DWORDLONG)info->args.args;
         value.info.args.cbSig      = (DWORD)info->args.cbSig;
-        value.info.args.pSig       = (DWORD)GetMethodInfo->AddBuffer((unsigned char*)info->args.pSig, info->args.cbSig);
+        value.info.args.pSig_Index = (DWORD)GetMethodInfo->AddBuffer((unsigned char*)info->args.pSig, info->args.cbSig);
         value.info.args.scope      = (DWORDLONG)info->args.scope;
         value.info.args.token      = (DWORD)info->args.token;
         value.info.locals.callConv = (DWORD)info->locals.callConv;
@@ -2870,7 +2729,8 @@ void MethodContext::recGetMethodInfo(CORINFO_METHOD_HANDLE ftn,
                                             info->locals.sigInst.methInstCount * 8); // porting issue
         value.info.locals.args  = (DWORDLONG)info->locals.args;
         value.info.locals.cbSig = (DWORD)info->locals.cbSig;
-        value.info.locals.pSig = (DWORD)GetMethodInfo->AddBuffer((unsigned char*)info->locals.pSig, info->locals.cbSig);
+        value.info.locals.pSig_Index =
+            (DWORD)GetMethodInfo->AddBuffer((unsigned char*)info->locals.pSig, info->locals.cbSig);
         value.info.locals.scope = (DWORDLONG)info->locals.scope;
         value.info.locals.token = (DWORD)info->locals.token;
     }
@@ -2885,9 +2745,9 @@ void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo
     printf("GetMethodInfo key ftn-%016llX", key);
     printf(", value res-%u ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%08X rk-%u "
            "args{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u "
-           "pSig-%u scp-%016llX tok-%08X} "
+           "pSig_Index-%u scp-%016llX tok-%08X} "
            "locals{cc-%u rc-%016llX rts-%016llX rt-%u(%s) flg-%08X nA-%u cc-%u ci-%u mc-%u mi-%u arg-%016llX cb-%u "
-           "pSig-%u scp-%016llX tok-%08X} "
+           "pSig_Index-%u scp-%016llX tok-%08X} "
            "excp-%08X",
            value.result, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize,
            value.info.maxStack, value.info.EHcount, value.info.options, value.info.regionKind, value.info.args.callConv,
@@ -2895,13 +2755,13 @@ void MethodContext::dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo
            toString((CorInfoType)value.info.args.retType), value.info.args.flags, value.info.args.numArgs,
            value.info.args.sigInst_classInstCount, value.info.args.sigInst_classInst_Index,
            value.info.args.sigInst_methInstCount, value.info.args.sigInst_methInst_Index, value.info.args.args,
-           value.info.args.cbSig, value.info.args.pSig, value.info.args.scope, value.info.args.token,
+           value.info.args.cbSig, value.info.args.pSig_Index, value.info.args.scope, value.info.args.token,
            value.info.locals.callConv, value.info.locals.retTypeClass, value.info.locals.retTypeSigClass,
            value.info.locals.retType, toString((CorInfoType)value.info.locals.retType), value.info.locals.flags,
            value.info.locals.numArgs, value.info.locals.sigInst_classInstCount,
            value.info.locals.sigInst_classInst_Index, value.info.locals.sigInst_methInstCount,
            value.info.locals.sigInst_methInst_Index, value.info.locals.args, value.info.locals.cbSig,
-           value.info.locals.pSig, value.info.locals.scope, value.info.locals.token, value.exceptionCode);
+           value.info.locals.pSig_Index, value.info.locals.scope, value.info.locals.token, value.exceptionCode);
 }
 bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode)
 {
@@ -2936,7 +2796,7 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
             (CORINFO_CLASS_HANDLE*)GetMethodInfo->GetBuffer(value.info.args.sigInst_methInst_Index);
         info->args.args                     = (CORINFO_ARG_LIST_HANDLE)value.info.args.args;
         info->args.cbSig                    = (unsigned int)value.info.args.cbSig;
-        info->args.pSig                     = (PCCOR_SIGNATURE)GetMethodInfo->GetBuffer(value.info.args.pSig);
+        info->args.pSig                     = (PCCOR_SIGNATURE)GetMethodInfo->GetBuffer(value.info.args.pSig_Index);
         info->args.scope                    = (CORINFO_MODULE_HANDLE)value.info.args.scope;
         info->args.token                    = (mdToken)value.info.args.token;
         info->locals.callConv               = (CorInfoCallConv)value.info.locals.callConv;
@@ -2953,7 +2813,7 @@ bool MethodContext::repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_I
             (CORINFO_CLASS_HANDLE*)GetMethodInfo->GetBuffer(value.info.locals.sigInst_methInst_Index);
         info->locals.args  = (CORINFO_ARG_LIST_HANDLE)value.info.locals.args;
         info->locals.cbSig = (unsigned int)value.info.locals.cbSig;
-        info->locals.pSig  = (PCCOR_SIGNATURE)GetMethodInfo->GetBuffer(value.info.locals.pSig);
+        info->locals.pSig  = (PCCOR_SIGNATURE)GetMethodInfo->GetBuffer(value.info.locals.pSig_Index);
         info->locals.scope = (CORINFO_MODULE_HANDLE)value.info.locals.scope;
         info->locals.token = (mdToken)value.info.locals.token;
     }
@@ -3052,13 +2912,8 @@ void MethodContext::recEmbedGenericHandle(CORINFO_RESOLVED_TOKEN*       pResolve
 void MethodContext::dmpEmbedGenericHandle(const Agnostic_EmbedGenericHandle&           key,
                                           const Agnostic_CORINFO_GENERICHANDLE_RESULT& value)
 {
-    printf("EmbedGenericHandle key rt{tokCon-%016llX tokScp-%016llX tok-%08X tokTyp-%08X cls-%016llX ftn-%016llX "
-           "fld-%016llX tsi-%u cbts-%u msi-%u cbms-%u} emb-%u",
-           key.ResolvedToken.inValue.tokenContext, key.ResolvedToken.inValue.tokenScope,
-           key.ResolvedToken.inValue.token, key.ResolvedToken.inValue.tokenType, key.ResolvedToken.outValue.hClass,
-           key.ResolvedToken.outValue.hMethod, key.ResolvedToken.outValue.hField,
-           key.ResolvedToken.outValue.pTypeSpec_Index, key.ResolvedToken.outValue.cbTypeSpec,
-           key.ResolvedToken.outValue.pMethodSpec_Index, key.ResolvedToken.outValue.cbMethodSpec, key.fEmbedParent);
+    printf("EmbedGenericHandle key rt{%s} emb-%u\n",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(), key.fEmbedParent);
     printf(", value nrl-%u rlk-%u", value.lookup.lookupKind.needsRuntimeLookup,
            value.lookup.lookupKind.runtimeLookupKind);
     if (value.lookup.lookupKind.needsRuntimeLookup)
@@ -3312,13 +3167,8 @@ void MethodContext::recGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 }
 void MethodContext::dmpGetFieldInfo(const Agnostic_GetFieldInfo& key, const Agnostic_CORINFO_FIELD_INFO& value)
 {
-    printf("GetFieldInfo key ch-%016llX flg-%08X rt{tc-%016llX ts-%016llX tok-%08X tt-%u cls-%016llX meth-%016llX "
-           "fld-%016llX tsi-%u cbts-%u msi-%u cbms-%u}",
-           key.callerHandle, key.flags, key.ResolvedToken.inValue.tokenContext, key.ResolvedToken.inValue.tokenScope,
-           key.ResolvedToken.inValue.token, key.ResolvedToken.inValue.tokenType, key.ResolvedToken.outValue.hClass,
-           key.ResolvedToken.outValue.hMethod, key.ResolvedToken.outValue.hField,
-           key.ResolvedToken.outValue.pTypeSpec_Index, key.ResolvedToken.outValue.cbTypeSpec,
-           key.ResolvedToken.outValue.pMethodSpec_Index, key.ResolvedToken.outValue.cbMethodSpec);
+    printf("GetFieldInfo key ch-%016llX flg-%08X rt{%s}\n", key.callerHandle, key.flags,
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str());
 
     printf(", value fa-%u fflg-%08X hlp-%u off-%u fT-%u(%s) sT-%016llX aa-%u hnum-%u na-%u {", value.fieldAccessor,
            value.fieldFlags, value.helper, value.offset, value.fieldType, toString((CorInfoType)value.fieldType),
@@ -3644,7 +3494,7 @@ void MethodContext::recCanAccessClass(CORINFO_RESOLVED_TOKEN*      pResolvedToke
     ZeroMemory(&key, sizeof(Agnostic_CanAccessClassIn)); // We use the input structs as a key and use memcmp to
                                                          // compare.. so we need to zero out padding too
     key.ResolvedToken = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, CanAccessClass);
-    key.callerHandle = (DWORDLONG)callerHandle;
+    key.callerHandle  = (DWORDLONG)callerHandle;
 
     Agnostic_CanAccessClassOut value;
     value.AccessHelper.helperNum = (DWORD)pAccessHelper->helperNum;
@@ -3661,13 +3511,8 @@ void MethodContext::recCanAccessClass(CORINFO_RESOLVED_TOKEN*      pResolvedToke
 }
 void MethodContext::dmpCanAccessClass(const Agnostic_CanAccessClassIn& key, const Agnostic_CanAccessClassOut& value)
 {
-    printf("CanAccessClass key tc-%016llX ts-%016llX tok-%08X tt-%u cls-%016llX meth-%016llX fld-%016llX ti-%u ts-%u "
-           "mi-%u ms-%u",
-           key.ResolvedToken.inValue.tokenContext, key.ResolvedToken.inValue.tokenScope,
-           key.ResolvedToken.inValue.token, key.ResolvedToken.inValue.tokenType, key.ResolvedToken.outValue.hClass,
-           key.ResolvedToken.outValue.hMethod, key.ResolvedToken.outValue.hField,
-           key.ResolvedToken.outValue.pTypeSpec_Index, key.ResolvedToken.outValue.cbTypeSpec,
-           key.ResolvedToken.outValue.pMethodSpec_Index, key.ResolvedToken.outValue.cbMethodSpec);
+    printf("CanAccessClass key rt{%s}, callerHandle %016llX\n",
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(), key.callerHandle);
     printf(", value hnum-%u na-%u {", value.AccessHelper.helperNum, value.AccessHelper.numArgs);
     for (int i = 0; i < CORINFO_ACCESS_ALLOWED_MAX_ARGS; i++)
     {
@@ -3809,10 +3654,10 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
     ZeroMemory(&key, sizeof(PInvokeMarshalingRequiredValue)); // We use the input structs as a key and use memcmp to
                                                               // compare.. so we need to zero out padding too
 
-    key.method = (DWORDLONG)method;
-    key.pSig   = (DWORD)PInvokeMarshalingRequired->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
-    key.cbSig  = (DWORD)callSiteSig->cbSig;
-    key.scope  = (DWORDLONG)callSiteSig->scope;
+    key.method     = (DWORDLONG)method;
+    key.pSig_Index = (DWORD)PInvokeMarshalingRequired->AddBuffer((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+    key.cbSig      = (DWORD)callSiteSig->cbSig;
+    key.scope      = (DWORDLONG)callSiteSig->scope;
 
     PInvokeMarshalingRequired->Add(key, (DWORD)result);
     DEBUG_REC(dmpPInvokeMarshalingRequired(key, (DWORD)result));
@@ -3820,7 +3665,7 @@ void MethodContext::recPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
 void MethodContext::dmpPInvokeMarshalingRequired(const PInvokeMarshalingRequiredValue& key, DWORD value)
 {
     printf("PInvokeMarshalingRequired key mth-%016llX scp-%016llX sig-%u, value res-%u", key.method, key.scope,
-           key.pSig, value);
+           key.pSig_Index, value);
 }
 // Note the jit interface implementation seems to only care about scope and pSig from callSiteSig
 BOOL MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* callSiteSig)
@@ -3832,10 +3677,10 @@ BOOL MethodContext::repPInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, C
     ZeroMemory(&key, sizeof(PInvokeMarshalingRequiredValue)); // We use the input structs as a key and use memcmp to
                                                               // compare.. so we need to zero out padding too
 
-    key.method = (DWORDLONG)method;
-    key.pSig   = (DWORD)PInvokeMarshalingRequired->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
-    key.cbSig  = (DWORD)callSiteSig->cbSig;
-    key.scope  = (DWORDLONG)callSiteSig->scope;
+    key.method     = (DWORDLONG)method;
+    key.pSig_Index = (DWORD)PInvokeMarshalingRequired->Contains((unsigned char*)callSiteSig->pSig, callSiteSig->cbSig);
+    key.cbSig      = (DWORD)callSiteSig->cbSig;
+    key.scope      = (DWORDLONG)callSiteSig->scope;
 
     DWORD value = PInvokeMarshalingRequired->Get(key);
     DEBUG_REP(dmpPInvokeMarshalingRequired(key, value));
@@ -3853,29 +3698,11 @@ void MethodContext::recFindSig(CORINFO_MODULE_HANDLE  module,
     Agnostic_FindSig key;
     ZeroMemory(&key, sizeof(Agnostic_FindSig)); // We use the input structs as a key and use memcmp to compare.. so we
                                                 // need to zero out padding too
-    Agnostic_CORINFO_SIG_INFO value;
-
     key.module  = (DWORDLONG)module;
     key.sigTOK  = (DWORD)sigTOK;
     key.context = (DWORDLONG)context;
 
-    value.callConv               = (DWORD)sig->callConv;
-    value.retTypeClass           = (DWORDLONG)sig->retTypeClass;
-    value.retTypeSigClass        = (DWORDLONG)sig->retTypeSigClass;
-    value.retType                = (DWORD)sig->retType;
-    value.flags                  = (DWORD)sig->flags;
-    value.numArgs                = (DWORD)sig->numArgs;
-    value.sigInst_classInstCount = (DWORD)sig->sigInst.classInstCount;
-    value.sigInst_classInst_Index =
-        FindSig->AddBuffer((unsigned char*)sig->sigInst.classInst, sig->sigInst.classInstCount * 8); // porting issue
-    value.sigInst_methInstCount = (DWORD)sig->sigInst.methInstCount;
-    value.sigInst_methInst_Index =
-        FindSig->AddBuffer((unsigned char*)sig->sigInst.methInst, sig->sigInst.methInstCount * 8); // porting issue
-    value.args  = (DWORDLONG)sig->args;
-    value.cbSig = (DWORD)sig->cbSig;
-    value.pSig  = (DWORD)FindSig->AddBuffer((unsigned char*)sig->pSig, sig->cbSig);
-    value.scope = (DWORDLONG)sig->scope;
-    value.token = (DWORD)sig->token;
+    Agnostic_CORINFO_SIG_INFO value = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*sig, FindSig);
 
     FindSig->Add(key, value);
     DEBUG_REC(dmpFindSig(key, value));
@@ -3885,11 +3712,11 @@ void MethodContext::dmpFindSig(const Agnostic_FindSig& key, const Agnostic_CORIN
     printf("FindSig key module-%016llX sigTOK-%08X context-%016llX", key.module, key.sigTOK, key.context);
     printf(", value callConv-%08X retTypeClass-%016llX retTypeSigClass-%016llX retType-%u(%s) flags-%08X numArgs-%08X "
            "classInstCount-%08X classInd-%08X "
-           "methInstCount-%08X methInd-%08X args-%016llX cbSig-%08X pSig-%08X scope-%016llX token-%08X",
+           "methInstCount-%08X methInd-%08X args-%016llX cbSig-%08X pSig_Index-%08X scope-%016llX token-%08X",
            value.callConv, value.retTypeClass, value.retTypeSigClass, value.retType,
            toString((CorInfoType)value.retType), value.flags, value.numArgs, value.sigInst_classInstCount,
            value.sigInst_classInst_Index, value.sigInst_methInstCount, value.sigInst_methInst_Index, value.args,
-           value.cbSig, value.pSig, value.scope, value.token);
+           value.cbSig, value.pSig_Index, value.scope, value.token);
 }
 void MethodContext::repFindSig(CORINFO_MODULE_HANDLE  module,
                                unsigned               sigTOK,
@@ -3907,21 +3734,7 @@ void MethodContext::repFindSig(CORINFO_MODULE_HANDLE  module,
 
     value = FindSig->Get(key);
 
-    sig->callConv               = (CorInfoCallConv)value.callConv;
-    sig->retTypeClass           = (CORINFO_CLASS_HANDLE)value.retTypeClass;
-    sig->retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.retTypeSigClass;
-    sig->retType                = (CorInfoType)value.retType;
-    sig->flags                  = (unsigned)value.flags;
-    sig->numArgs                = (unsigned)value.numArgs;
-    sig->sigInst.classInstCount = (unsigned)value.sigInst_classInstCount;
-    sig->sigInst.classInst      = (CORINFO_CLASS_HANDLE*)FindSig->GetBuffer(value.sigInst_classInst_Index);
-    sig->sigInst.methInstCount  = (unsigned)value.sigInst_methInstCount;
-    sig->sigInst.methInst       = (CORINFO_CLASS_HANDLE*)FindSig->GetBuffer(value.sigInst_methInst_Index);
-    sig->args                   = (CORINFO_ARG_LIST_HANDLE)value.args;
-    sig->cbSig                  = (unsigned int)value.cbSig;
-    sig->pSig                   = (PCCOR_SIGNATURE)FindSig->GetBuffer(value.pSig);
-    sig->scope                  = (CORINFO_MODULE_HANDLE)value.scope;
-    sig->token                  = (mdToken)value.token;
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindSig);
     DEBUG_REP(dmpFindSig(key, value));
 }
 
@@ -4165,7 +3978,7 @@ void MethodContext::recGetInlinedCallFrameVptr(void** ppIndirection, const void*
 }
 void MethodContext::dmpGetInlinedCallFrameVptr(DWORD key, DLDL value)
 {
-    printf("GetInlinedCallFrameVptr key 0, value ppIndirection-%016llX result-%016llX\n", value.A, value.B);
+    printf("GetInlinedCallFrameVptr key 0, value ppIndirection-%016llX result-%016llX", value.A, value.B);
 }
 const void* MethodContext::repGetInlinedCallFrameVptr(void** ppIndirection)
 {
@@ -5061,29 +4874,11 @@ void MethodContext::recFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     Agnostic_FindCallSiteSig key;
     ZeroMemory(&key, sizeof(Agnostic_FindCallSiteSig)); // We use the input structs as a key and use memcmp to compare..
                                                         // so we need to zero out padding too
-    Agnostic_CORINFO_SIG_INFO value;
-
     key.module  = (DWORDLONG)module;
     key.methTok = (DWORD)methTOK;
     key.context = (DWORDLONG)context;
 
-    value.callConv                = (DWORD)sig->callConv;
-    value.retTypeClass            = (DWORDLONG)sig->retTypeClass;
-    value.retTypeSigClass         = (DWORDLONG)sig->retTypeSigClass;
-    value.retType                 = (DWORD)sig->retType;
-    value.flags                   = (DWORD)sig->flags;
-    value.numArgs                 = (DWORD)sig->numArgs;
-    value.sigInst_classInstCount  = (DWORD)sig->sigInst.classInstCount;
-    value.sigInst_classInst_Index = FindCallSiteSig->AddBuffer((unsigned char*)sig->sigInst.classInst,
-                                                               sig->sigInst.classInstCount * 8); // porting issue
-    value.sigInst_methInstCount  = (DWORD)sig->sigInst.methInstCount;
-    value.sigInst_methInst_Index = FindCallSiteSig->AddBuffer((unsigned char*)sig->sigInst.methInst,
-                                                              sig->sigInst.methInstCount * 8); // porting issue
-    value.args  = (DWORDLONG)sig->args;
-    value.cbSig = (DWORD)sig->cbSig;
-    value.pSig  = (DWORD)FindCallSiteSig->AddBuffer((unsigned char*)sig->pSig, sig->cbSig);
-    value.scope = (DWORDLONG)sig->scope;
-    value.token = (DWORD)sig->token;
+    Agnostic_CORINFO_SIG_INFO value = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*sig, FindCallSiteSig);
 
     FindCallSiteSig->Add(key, value);
     DEBUG_REC(dmpFindCallSiteSig(key, value));
@@ -5093,11 +4888,11 @@ void MethodContext::dmpFindCallSiteSig(const Agnostic_FindCallSiteSig& key, cons
     printf("dmpFindCallSiteSig key module-%016llX methTok-%08X context-%016llX", key.module, key.methTok, key.context);
     printf(", value callConv-%08X retTypeClass-%016llX retTypeSigClass-%016llX retType-%u(%s) flags-%08X numArgs-%08X "
            "classInstCount-%08X classInd-%08X "
-           "methInstCount-%08X methInd-%08X args-%016llX cbSig-%08X pSig-%08X scope-%016llX token-%08X",
+           "methInstCount-%08X methInd-%08X args-%016llX cbSig-%08X pSig_Index-%08X scope-%016llX token-%08X",
            value.callConv, value.retTypeClass, value.retTypeSigClass, value.retType,
            toString((CorInfoType)value.retType), value.flags, value.numArgs, value.sigInst_classInstCount,
            value.sigInst_classInst_Index, value.sigInst_methInstCount, value.sigInst_methInst_Index, value.args,
-           value.cbSig, value.pSig, value.scope, value.token);
+           value.cbSig, value.pSig_Index, value.scope, value.token);
 }
 void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
                                        unsigned               methTOK,
@@ -5117,21 +4912,8 @@ void MethodContext::repFindCallSiteSig(CORINFO_MODULE_HANDLE  module,
     AssertCodeMsg(FindCallSiteSig->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %08X", (DWORD)key.methTok);
     value = FindCallSiteSig->Get(key);
 
-    sig->callConv               = (CorInfoCallConv)value.callConv;
-    sig->retTypeClass           = (CORINFO_CLASS_HANDLE)value.retTypeClass;
-    sig->retTypeSigClass        = (CORINFO_CLASS_HANDLE)value.retTypeSigClass;
-    sig->retType                = (CorInfoType)value.retType;
-    sig->flags                  = (unsigned)value.flags;
-    sig->numArgs                = (unsigned)value.numArgs;
-    sig->sigInst.classInstCount = (unsigned)value.sigInst_classInstCount;
-    sig->sigInst.classInst      = (CORINFO_CLASS_HANDLE*)FindCallSiteSig->GetBuffer(value.sigInst_classInst_Index);
-    sig->sigInst.methInstCount  = (unsigned)value.sigInst_methInstCount;
-    sig->sigInst.methInst       = (CORINFO_CLASS_HANDLE*)FindCallSiteSig->GetBuffer(value.sigInst_methInst_Index);
-    sig->args                   = (CORINFO_ARG_LIST_HANDLE)value.args;
-    sig->cbSig                  = (unsigned int)value.cbSig;
-    sig->pSig                   = (PCCOR_SIGNATURE)FindCallSiteSig->GetBuffer(value.pSig);
-    sig->scope                  = (CORINFO_MODULE_HANDLE)value.scope;
-    sig->token                  = (mdToken)value.token;
+    *sig = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value, FindCallSiteSig);
+
     DEBUG_REP(dmpFindCallSiteSig(key, value));
 }
 
@@ -5194,10 +4976,10 @@ void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirec
     GetVarArgsHandleValue key;
     ZeroMemory(&key, sizeof(GetVarArgsHandleValue)); // We use the input structs as a key and use memcmp to
                                                      // compare.. so we need to zero out padding too
-    key.cbSig = (DWORD)pSig->cbSig;
-    key.pSig  = (DWORD)GetVarArgsHandle->AddBuffer((unsigned char*)pSig->pSig, pSig->cbSig);
-    key.scope = (DWORDLONG)pSig->scope;
-    key.token = (DWORD)pSig->token;
+    key.cbSig      = (DWORD)pSig->cbSig;
+    key.pSig_Index = (DWORD)GetVarArgsHandle->AddBuffer((unsigned char*)pSig->pSig, pSig->cbSig);
+    key.scope      = (DWORDLONG)pSig->scope;
+    key.token      = (DWORD)pSig->token;
 
     DLDL value;
     if (ppIndirection != nullptr)
@@ -5210,8 +4992,8 @@ void MethodContext::recGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirec
 }
 void MethodContext::dmpGetVarArgsHandle(const GetVarArgsHandleValue& key, DLDL value)
 {
-    printf("GetVarArgsHandle key cbSig-%08X pSig-%08X scope-%016llX token-%08X", key.cbSig, key.pSig, key.scope,
-           key.token);
+    printf("GetVarArgsHandle key cbSig-%08X pSig_Index-%08X scope-%016llX token-%08X", key.cbSig, key.pSig_Index,
+           key.scope, key.token);
     printf(", value ppIndirection-%016llX result-%016llX", value.A, value.B);
 }
 CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig, void** ppIndirection)
@@ -5220,10 +5002,10 @@ CORINFO_VARARGS_HANDLE MethodContext::repGetVarArgsHandle(CORINFO_SIG_INFO* pSig
     ZeroMemory(&key, sizeof(GetVarArgsHandleValue)); // We use the input structs as a key and use memcmp to
                                                      // compare.. so we need to zero out padding too
 
-    key.cbSig = (DWORD)pSig->cbSig;
-    key.pSig  = (DWORD)GetVarArgsHandle->Contains((unsigned char*)pSig->pSig, pSig->cbSig);
-    key.scope = (DWORDLONG)pSig->scope;
-    key.token = (DWORD)pSig->token;
+    key.cbSig      = (DWORD)pSig->cbSig;
+    key.pSig_Index = (DWORD)GetVarArgsHandle->Contains((unsigned char*)pSig->pSig, pSig->cbSig);
+    key.scope      = (DWORDLONG)pSig->scope;
+    key.token      = (DWORD)pSig->token;
 
     DLDL value = (DLDL)GetVarArgsHandle->Get(key);
 
@@ -5387,10 +5169,10 @@ void MethodContext::recGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, 
     GetCookieForPInvokeCalliSigValue key;
     ZeroMemory(&key, sizeof(GetCookieForPInvokeCalliSigValue)); // We use the input structs as a key and use memcmp to
                                                                 // compare.. so we need to zero out padding too
-    key.cbSig = (DWORD)szMetaSig->cbSig;
-    key.pSig  = (DWORD)GetCookieForPInvokeCalliSig->AddBuffer((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
-    key.scope = (DWORDLONG)szMetaSig->scope;
-    key.token = (DWORD)szMetaSig->token;
+    key.cbSig      = (DWORD)szMetaSig->cbSig;
+    key.pSig_Index = (DWORD)GetCookieForPInvokeCalliSig->AddBuffer((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
+    key.scope      = (DWORDLONG)szMetaSig->scope;
+    key.token      = (DWORD)szMetaSig->token;
 
     DLDL value;
     if (ppIndirection != nullptr)
@@ -5410,10 +5192,10 @@ LPVOID MethodContext::repGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig
     GetCookieForPInvokeCalliSigValue key;
     ZeroMemory(&key, sizeof(GetCookieForPInvokeCalliSigValue)); // We use the input structs as a key and use memcmp to
                                                                 // compare.. so we need to zero out padding too
-    key.cbSig = (DWORD)szMetaSig->cbSig;
-    key.pSig  = (DWORD)GetCookieForPInvokeCalliSig->Contains((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
-    key.scope = (DWORDLONG)szMetaSig->scope;
-    key.token = (DWORD)szMetaSig->token;
+    key.cbSig      = (DWORD)szMetaSig->cbSig;
+    key.pSig_Index = (DWORD)GetCookieForPInvokeCalliSig->Contains((unsigned char*)szMetaSig->pSig, szMetaSig->cbSig);
+    key.scope      = (DWORDLONG)szMetaSig->scope;
+    key.token      = (DWORD)szMetaSig->token;
 
     DLDL value = (DLDL)GetCookieForPInvokeCalliSig->Get(key);
     if (ppIndirection != nullptr)
@@ -5918,27 +5700,8 @@ void MethodContext::recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO*               
     Agnostic_GetTailCallCopyArgsThunk key;
     ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
                                                                  // compare.. so we need to zero out padding too
-
-    key.Sig.callConv               = (DWORD)pSig->callConv;
-    key.Sig.retTypeClass           = (DWORDLONG)pSig->retTypeClass;
-    key.Sig.retTypeSigClass        = (DWORDLONG)pSig->retTypeSigClass;
-    key.Sig.retType                = (DWORD)pSig->retType;
-    key.Sig.flags                  = (DWORD)pSig->flags;
-    key.Sig.numArgs                = (DWORD)pSig->numArgs;
-    key.Sig.sigInst_classInstCount = (DWORD)pSig->sigInst.classInstCount;
-    key.Sig.sigInst_classInst_Index =
-        (DWORD)GetTailCallCopyArgsThunk->AddBuffer((unsigned char*)pSig->sigInst.classInst,
-                                                   pSig->sigInst.classInstCount * 8); // porting issue
-    key.Sig.sigInst_methInstCount = (DWORD)pSig->sigInst.methInstCount;
-    key.Sig.sigInst_methInst_Index =
-        (DWORD)GetTailCallCopyArgsThunk->AddBuffer((unsigned char*)pSig->sigInst.methInst,
-                                                   pSig->sigInst.methInstCount * 8); // porting issue
-    key.Sig.args  = (DWORDLONG)pSig->args;
-    key.Sig.cbSig = (DWORD)pSig->cbSig;
-    key.Sig.pSig  = (DWORD)GetTailCallCopyArgsThunk->AddBuffer((unsigned char*)pSig->pSig, pSig->cbSig);
-    key.Sig.scope = (DWORDLONG)pSig->scope;
-    key.Sig.token = (DWORD)pSig->token;
-    key.flags     = (DWORD)flags;
+    key.Sig   = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
+    key.flags = (DWORD)flags;
 
     GetTailCallCopyArgsThunk->Add(key, (DWORDLONG)result);
     DEBUG_REC(dmpGetTailCallCopyArgsThunk(key, (DWORDLONG)result));
@@ -5946,40 +5709,22 @@ void MethodContext::recGetTailCallCopyArgsThunk(CORINFO_SIG_INFO*               
 void MethodContext::dmpGetTailCallCopyArgsThunk(const Agnostic_GetTailCallCopyArgsThunk& key, DWORDLONG value)
 {
     printf("GetTailCallCopyArgsThunk key sig{cc-%u rtc-%016llX rts-%016llX rt-%u flg-%08X na-%u cc-%u ci-%u mc-%u "
-           "mi-%u sig-%u pSig-%u scp-%016llX tok-%08X} flg-%08X",
+           "mi-%u sig-%u pSig_Index-%u scp-%016llX tok-%08X} flg-%08X",
            key.Sig.callConv, key.Sig.retTypeClass, key.Sig.retTypeSigClass, key.Sig.retType, key.Sig.flags,
            key.Sig.numArgs, key.Sig.sigInst_classInstCount, key.Sig.sigInst_classInst_Index,
-           key.Sig.sigInst_methInstCount, key.Sig.sigInst_methInst_Index, key.Sig.cbSig, key.Sig.pSig, key.Sig.scope,
-           key.Sig.token, key.flags);
+           key.Sig.sigInst_methInstCount, key.Sig.sigInst_methInst_Index, key.Sig.cbSig, key.Sig.pSig_Index,
+           key.Sig.scope, key.Sig.token, key.flags);
     printf(", value res-%016llX", value);
 }
 void* MethodContext::repGetTailCallCopyArgsThunk(CORINFO_SIG_INFO* pSig, CorInfoHelperTailCallSpecialHandling flags)
 {
+    AssertCodeMsg(GetTailCallCopyArgsThunk != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
+
     Agnostic_GetTailCallCopyArgsThunk key;
     ZeroMemory(&key, sizeof(Agnostic_GetTailCallCopyArgsThunk)); // We use the input structs as a key and use memcmp to
                                                                  // compare.. so we need to zero out padding too
-
-    AssertCodeMsg(GetTailCallCopyArgsThunk != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for ...");
-    key.Sig.callConv               = (DWORD)pSig->callConv;
-    key.Sig.retTypeClass           = (DWORDLONG)pSig->retTypeClass;
-    key.Sig.retTypeSigClass        = (DWORDLONG)pSig->retTypeSigClass;
-    key.Sig.retType                = (DWORD)pSig->retType;
-    key.Sig.flags                  = (DWORD)pSig->flags;
-    key.Sig.numArgs                = (DWORD)pSig->numArgs;
-    key.Sig.sigInst_classInstCount = (DWORD)pSig->sigInst.classInstCount;
-    key.Sig.sigInst_classInst_Index =
-        (DWORD)GetTailCallCopyArgsThunk->Contains((unsigned char*)pSig->sigInst.classInst,
-                                                  pSig->sigInst.classInstCount * 8); // porting issue
-    key.Sig.sigInst_methInstCount = (DWORD)pSig->sigInst.methInstCount;
-    key.Sig.sigInst_methInst_Index =
-        (DWORD)GetTailCallCopyArgsThunk->Contains((unsigned char*)pSig->sigInst.methInst,
-                                                  pSig->sigInst.methInstCount * 8); // porting issue
-    key.Sig.args  = (DWORDLONG)pSig->args;
-    key.Sig.cbSig = (DWORD)pSig->cbSig;
-    key.Sig.pSig  = (DWORD)GetTailCallCopyArgsThunk->Contains((unsigned char*)pSig->pSig, pSig->cbSig);
-    key.Sig.scope = (DWORDLONG)pSig->scope;
-    key.Sig.token = (DWORD)pSig->token;
-    key.flags     = (DWORD)flags;
+    key.Sig   = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(*pSig, GetTailCallCopyArgsThunk);
+    key.flags = (DWORD)flags;
 
     AssertCodeMsg(GetTailCallCopyArgsThunk->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX",
                   (DWORDLONG)key.Sig.retTypeClass);

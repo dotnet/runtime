@@ -101,7 +101,7 @@ void CompileResult::AddCall(const char* name)
     if (CallLog == nullptr)
         CallLog = new DenseLightWeightMap<DWORD>();
     // if(name[0] != '+')
-     //CallLog->Append(CallLog->AddBuffer((const unsigned char *)name, (DWORD)strlen(name)+1));
+    // CallLog->Append(CallLog->AddBuffer((const unsigned char *)name, (DWORD)strlen(name)+1));
 }
 unsigned int CompileResult::CallLog_GetCount()
 {
@@ -131,7 +131,7 @@ void CompileResult::dumpToConsole()
 }
 
 // Note - EE allocates these blocks (and the exception blocks) in a single linear region.
- //Note - EE assures that RoBlock is 8 byte aligned
+// Note - EE assures that RoBlock is 8 byte aligned
 void CompileResult::recAllocMem(ULONG              hotCodeSize,
                                 ULONG              coldCodeSize,
                                 ULONG              roDataSize,
@@ -977,7 +977,7 @@ void CompileResult::dmpRecordCallSite(DWORD key, const Agnostic_RecordCallSite& 
            key, value.callSig.callConv, value.callSig.retTypeClass, value.callSig.retTypeSigClass,
            value.callSig.retType, value.callSig.flags, value.callSig.numArgs, value.callSig.sigInst_classInstCount,
            value.callSig.sigInst_classInst_Index, value.callSig.sigInst_methInstCount,
-           value.callSig.sigInst_methInst_Index, value.callSig.cbSig, value.callSig.pSig, value.callSig.scope,
+           value.callSig.sigInst_methInst_Index, value.callSig.cbSig, value.callSig.pSig_Index, value.callSig.scope,
            value.callSig.token, value.methodHandle);
 }
 
@@ -1005,11 +1005,11 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
         value.callSig.sigInst_methInst_Index =
             RecordCallSite->AddBuffer((unsigned char*)callSig->sigInst.methInst,
                                       callSig->sigInst.methInstCount * 8); // porting issue
-        value.callSig.args  = (DWORDLONG)callSig->args;
-        value.callSig.cbSig = (DWORD)callSig->cbSig;
-        value.callSig.pSig  = (DWORD)RecordCallSite->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
-        value.callSig.scope = (DWORDLONG)callSig->scope;
-        value.callSig.token = (DWORD)callSig->token;
+        value.callSig.args       = (DWORDLONG)callSig->args;
+        value.callSig.cbSig      = (DWORD)callSig->cbSig;
+        value.callSig.pSig_Index = (DWORD)RecordCallSite->AddBuffer((unsigned char*)callSig->pSig, callSig->cbSig);
+        value.callSig.scope      = (DWORDLONG)callSig->scope;
+        value.callSig.token      = (DWORD)callSig->token;
     }
     else
     {
@@ -1025,7 +1025,7 @@ void CompileResult::repRecordCallSite(ULONG instrOffset, CORINFO_SIG_INFO* callS
         value.callSig.sigInst_methInst_Index  = (DWORD)-1;
         value.callSig.args                    = (DWORDLONG)-1;
         value.callSig.cbSig                   = (DWORD)-1;
-        value.callSig.pSig                    = (DWORD)-1;
+        value.callSig.pSig_Index              = (DWORD)-1;
         value.callSig.scope                   = (DWORDLONG)-1;
         value.callSig.token                   = (DWORD)-1;
     }
@@ -1061,7 +1061,7 @@ bool CompileResult::fndRecordCallSiteSigInfo(ULONG instrOffset, CORINFO_SIG_INFO
     pCallSig->sigInst.methInst = (CORINFO_CLASS_HANDLE*)RecordCallSite->GetBuffer(value.callSig.sigInst_methInst_Index);
     pCallSig->args             = (CORINFO_ARG_LIST_HANDLE)value.callSig.args;
     pCallSig->cbSig            = (unsigned int)value.callSig.cbSig;
-    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSite->GetBuffer(value.callSig.pSig);
+    pCallSig->pSig             = (PCCOR_SIGNATURE)RecordCallSite->GetBuffer(value.callSig.pSig_Index);
     pCallSig->scope            = (CORINFO_MODULE_HANDLE)value.callSig.scope;
     pCallSig->token            = (mdToken)value.callSig.token;
 
