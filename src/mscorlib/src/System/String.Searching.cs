@@ -16,6 +16,12 @@ namespace System
             return (IndexOf(value, StringComparison.Ordinal) >= 0);
         }
 
+        [Pure]
+        public bool Contains(string value, StringComparison comparisonType)
+        {
+            return (IndexOf(value, comparisonType) >= 0);
+        }
+
         // Returns the index of the first occurrence of a specified character in the current instance.
         // The search starts at startIndex and runs thorough the next count characters.
         //
