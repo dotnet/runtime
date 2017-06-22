@@ -148,6 +148,7 @@ namespace System.DirectoryServices.Tests
         }
 
         [Fact]
+        [ActiveIssue(21346, TargetFrameworkMonikers.UapAot)]
         public void DeleteTree_DisposedObject_ObjectDisposedException()
         {
             var entry = new DirectoryEntry("path");

@@ -81,15 +81,15 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [Fact]
         public void Ctor_NullName_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, null));
-            Assert.Throws<ArgumentNullException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, null, "userName", "password"));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, null));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, null, "userName", "password"));
         }
 
         [Fact]
         public void Ctor_EmptyName_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, string.Empty));
-            Assert.Throws<ArgumentException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, string.Empty, "userName", "password"));
+            AssertExtensions.Throws<ArgumentException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, string.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", () => new DirectoryContext(DirectoryContextType.ConfigurationSet, string.Empty, "userName", "password"));
         }
     }
 }
