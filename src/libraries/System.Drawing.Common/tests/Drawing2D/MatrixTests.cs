@@ -34,12 +34,14 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Default()
         {
-            var matrix = new Matrix();
-            Assert.Equal(new float[] { 1, 0, 0, 1, 0, 0 }, matrix.Elements);
-            Assert.True(matrix.IsIdentity);
-            Assert.True(matrix.IsInvertible);
-            Assert.Equal(0, matrix.OffsetX);
-            Assert.Equal(0, matrix.OffsetY);
+            using (var matrix = new Matrix())
+            {
+                Assert.Equal(new float[] { 1, 0, 0, 1, 0, 0 }, matrix.Elements);
+                Assert.True(matrix.IsIdentity);
+                Assert.True(matrix.IsInvertible);
+                Assert.Equal(0, matrix.OffsetX);
+                Assert.Equal(0, matrix.OffsetY);
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -73,12 +75,14 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(1.0009f, 0.0009f, -0.0009f, 0.99995f, 0, 0, false, true)]
         public void Ctor_Elements(float m11, float m12, float m21, float m22, float dx, float dy, bool isIdentity, bool isInvertible)
         {
-            var matrix = new Matrix(m11, m12, m21, m22, dx, dy);
-            Assert.Equal(new float[] { m11, m12, m21, m22, dx, dy }, matrix.Elements);
-            Assert.Equal(isIdentity, matrix.IsIdentity);
-            Assert.Equal(isInvertible, matrix.IsInvertible);
-            Assert.Equal(dx, matrix.OffsetX);
-            Assert.Equal(dy, matrix.OffsetY);
+            using (var matrix = new Matrix(m11, m12, m21, m22, dx, dy))
+            {
+                Assert.Equal(new float[] { m11, m12, m21, m22, dx, dy }, matrix.Elements);
+                Assert.Equal(isIdentity, matrix.IsIdentity);
+                Assert.Equal(isInvertible, matrix.IsInvertible);
+                Assert.Equal(dx, matrix.OffsetX);
+                Assert.Equal(dy, matrix.OffsetY);
+            }
         }
 
         public static IEnumerable<object[]> Ctor_Rectangle_Points_TestData()
@@ -93,24 +97,28 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Ctor_Rectangle_Points_TestData))]
         public void Ctor_Rectangle_Points(Rectangle rect, Point[] plgpnts, float[] expectedElements, bool isIdentity, bool isInvertible)
         {
-            var matrix = new Matrix(rect, plgpnts);
-            Assert.Equal(expectedElements, matrix.Elements);
-            Assert.Equal(isIdentity, matrix.IsIdentity);
-            Assert.Equal(isInvertible, matrix.IsInvertible);
-            Assert.Equal(expectedElements[4], matrix.OffsetX);
-            Assert.Equal(expectedElements[5], matrix.OffsetY);
+            using (var matrix = new Matrix(rect, plgpnts))
+            {
+                Assert.Equal(expectedElements, matrix.Elements);
+                Assert.Equal(isIdentity, matrix.IsIdentity);
+                Assert.Equal(isInvertible, matrix.IsInvertible);
+                Assert.Equal(expectedElements[4], matrix.OffsetX);
+                Assert.Equal(expectedElements[5], matrix.OffsetY);
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Ctor_Rectangle_Points_TestData))]
         public void Ctor_RectangleF_Points(Rectangle rect, Point[] plgpnts, float[] expectedElements, bool isIdentity, bool isInvertible)
         {
-            var matrix = new Matrix(rect, plgpnts.Select(p => (PointF)p).ToArray());
-            Assert.Equal(expectedElements, matrix.Elements);
-            Assert.Equal(isIdentity, matrix.IsIdentity);
-            Assert.Equal(isInvertible, matrix.IsInvertible);
-            Assert.Equal(expectedElements[4], matrix.OffsetX);
-            Assert.Equal(expectedElements[5], matrix.OffsetY);
+            using (var matrix = new Matrix(rect, plgpnts.Select(p => (PointF)p).ToArray()))
+            {
+                Assert.Equal(expectedElements, matrix.Elements);
+                Assert.Equal(isIdentity, matrix.IsIdentity);
+                Assert.Equal(isInvertible, matrix.IsInvertible);
+                Assert.Equal(expectedElements[4], matrix.OffsetX);
+                Assert.Equal(expectedElements[5], matrix.OffsetY);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -147,10 +155,12 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Clone_Matrix_ReturnsExpected()
         {
-            var matrix = new Matrix(1, 2, 3, 4, 5, 6);
-            Matrix clone = Assert.IsType<Matrix>(matrix.Clone());
-            Assert.NotSame(matrix, clone);
-            Assert.Equal(new float[] { 1, 2, 3, 4, 5, 6 }, clone.Elements);
+            using (var matrix = new Matrix(1, 2, 3, 4, 5, 6))
+            using (Matrix clone = Assert.IsType<Matrix>(matrix.Clone()))
+            {
+                Assert.NotSame(matrix, clone);
+                Assert.Equal(new float[] { 1, 2, 3, 4, 5, 6 }, clone.Elements);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -158,6 +168,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Clone());
         }
 
@@ -173,14 +184,14 @@ namespace System.Drawing.Drawing2D.Tests
 
             var matrix = new Matrix(1, 2, 3, 4, 5, 6);
             yield return new object[] { matrix, matrix, true };
-            yield return new object[] { matrix, matrix.Clone(), true };
-            yield return new object[] { matrix, new Matrix(1, 2, 3, 4, 5, 6), true };
-            yield return new object[] { matrix, new Matrix(2, 2, 3, 4, 5, 6), false };
-            yield return new object[] { matrix, new Matrix(1, 3, 3, 4, 5, 6), false };
-            yield return new object[] { matrix, new Matrix(1, 2, 4, 4, 5, 6), false };
-            yield return new object[] { matrix, new Matrix(1, 2, 3, 5, 5, 6), false };
-            yield return new object[] { matrix, new Matrix(1, 2, 3, 4, 6, 6), false };
-            yield return new object[] { matrix, new Matrix(1, 2, 3, 4, 5, 7), false };
+            yield return new object[] { matrix.Clone(), matrix.Clone(), true };
+            yield return new object[] { matrix.Clone(), new Matrix(1, 2, 3, 4, 5, 6), true };
+            yield return new object[] { matrix.Clone(), new Matrix(2, 2, 3, 4, 5, 6), false };
+            yield return new object[] { matrix.Clone(), new Matrix(1, 3, 3, 4, 5, 6), false };
+            yield return new object[] { matrix.Clone(), new Matrix(1, 2, 4, 4, 5, 6), false };
+            yield return new object[] { matrix.Clone(), new Matrix(1, 2, 3, 5, 5, 6), false };
+            yield return new object[] { matrix.Clone(), new Matrix(1, 2, 3, 4, 6, 6), false };
+            yield return new object[] { matrix.Clone(), new Matrix(1, 2, 3, 4, 5, 7), false };
 
             yield return new object[] { new Matrix(), null, false };
             yield return new object[] { new Matrix(), new object(), false };
@@ -190,10 +201,18 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Other_ReturnsExpected(Matrix matrix, object other, bool expected)
         {
-            Assert.Equal(expected, matrix.Equals(other));
-            if (other is Matrix otherMatrix)
+            try
             {
-                Assert.Equal(object.ReferenceEquals(matrix, other), matrix.GetHashCode().Equals(other.GetHashCode()));
+                Assert.Equal(expected, matrix.Equals(other));
+                if (other is Matrix otherMatrix)
+                {
+                    Assert.Equal(ReferenceEquals(matrix, other), matrix.GetHashCode().Equals(other.GetHashCode()));
+                }
+            }
+            finally
+            {
+                matrix.Dispose();
+                (other as IDisposable)?.Dispose();
             }
         }
 
@@ -202,6 +221,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Equals(new Matrix()));
         }
 
@@ -210,6 +230,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => new Matrix().Equals(matrix));
         }
 
@@ -218,6 +239,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Elements);
         }
 
@@ -232,8 +254,15 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Invert_TestData))]
         public void Invert_Matrix_Success(Matrix matrix, float[] expectedElements)
         {
-            matrix.Invert();
-            Assert.Equal(expectedElements, matrix.Elements);
+            try
+            {
+                matrix.Invert();
+                Assert.Equal(expectedElements, matrix.Elements);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -242,13 +271,20 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(float.NegativeInfinity)]
         public void Invert_FloatBounds_ThrowsArgumentException(float f)
         {
-            Assert.Throws<ArgumentException>(null, () => new Matrix(f, 2, 3, 4, 5, 6).Invert());
-            Assert.Throws<ArgumentException>(null, () => new Matrix(1, f, 3, 4, 5, 6).Invert());
-            Assert.Throws<ArgumentException>(null, () => new Matrix(1, 2, f, 4, 5, 6).Invert());
-            Assert.Throws<ArgumentException>(null, () => new Matrix(1, 2, 3, f, 5, 6).Invert());
-            Assert.Throws<ArgumentException>(null, () => new Matrix(1, 2, 3, 4, f, 6).Invert());
-            Assert.Throws<ArgumentException>(null, () => new Matrix(1, 2, 3, 4, 5, f).Invert());
-
+            using (var matrix1 = new Matrix(f, 2, 3, 4, 5, 6))
+            using (var matrix2 = new Matrix(1, f, 3, 4, 5, 6))
+            using (var matrix3 = new Matrix(1, 2, f, 4, 5, 6))
+            using (var matrix4 = new Matrix(1, 2, 3, f, 5, 6))
+            using (var matrix5 = new Matrix(1, 2, 3, 4, f, 6))
+            using (var matrix6 = new Matrix(1, 2, 3, 4, 5, f))
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix1.Invert());
+                Assert.Throws<ArgumentException>(null, () => matrix2.Invert());
+                Assert.Throws<ArgumentException>(null, () => matrix3.Invert());
+                Assert.Throws<ArgumentException>(null, () => matrix4.Invert());
+                Assert.Throws<ArgumentException>(null, () => matrix5.Invert());
+                Assert.Throws<ArgumentException>(null, () => matrix6.Invert());
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -256,6 +292,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Invert());
         }
 
@@ -264,6 +301,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.IsIdentity);
         }
 
@@ -272,6 +310,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.IsInvertible);
         }
 
@@ -306,22 +345,34 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Multiply_TestData))]
         public void Multiply_Matrix_Success(Matrix matrix, Matrix multiple, MatrixOrder order, float[] expected)
         {
-            if (order == MatrixOrder.Prepend)
+            try
             {
-                Matrix clone1 = matrix.Clone();
-                clone1.Multiply(multiple);
-                Assert.Equal(expected, clone1.Elements);
+                if (order == MatrixOrder.Prepend)
+                {
+                    using (Matrix clone1 = matrix.Clone())
+                    {
+                        clone1.Multiply(multiple);
+                        Assert.Equal(expected, clone1.Elements);
+                    }
+                }
+                matrix.Multiply(multiple, order);
+                Assert.Equal(expected, matrix.Elements);
             }
-            matrix.Multiply(multiple, order);
-            Assert.Equal(expected, matrix.Elements);
+            finally
+            {
+                matrix.Dispose();
+                multiple.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Multiply_NullMatrix_ThrowsArgumentNullException()
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null));
-            Assert.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null, MatrixOrder.Prepend));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null));
+                Assert.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null, MatrixOrder.Prepend));
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -329,8 +380,11 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(MatrixOrder.Append + 1)]
         public void Multiply_InvalidMatrixOrder_ThrowsArgumentException(MatrixOrder order)
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.Multiply(new Matrix(), order));
+            using (var matrix = new Matrix())
+            using (var other = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other, order));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -338,28 +392,38 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
-            Assert.Throws<ArgumentException>(null, () => matrix.Multiply(new Matrix()));
-            Assert.Throws<ArgumentException>(null, () => matrix.Multiply(new Matrix(), MatrixOrder.Prepend));
+
+            using (var other = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other));
+                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other, MatrixOrder.Prepend));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Multiply_DisposedMatrix_ThrowsArgumentException()
         {
-            var matrix = new Matrix();
-            matrix.Dispose();
-            Assert.Throws<ArgumentException>(null, () => new Matrix().Multiply(matrix));
-            Assert.Throws<ArgumentException>(null, () => new Matrix().Multiply(matrix, MatrixOrder.Prepend));
+            using (var matrix = new Matrix())
+            {
+                var other = new Matrix();
+                other.Dispose();
+
+                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other));
+                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other, MatrixOrder.Prepend));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Reset_Matrix_ReturnsExpected()
         {
-            var matrix = new Matrix(1, 2, 3, 4, 5, 6);
-            matrix.Reset();
-            Assert.Equal(new float[] { 1, 0, 0, 1, 0, 0 }, matrix.Elements);
+            using (var matrix = new Matrix(1, 2, 3, 4, 5, 6))
+            {
+                matrix.Reset();
+                Assert.Equal(new float[] { 1, 0, 0, 1, 0, 0 }, matrix.Elements);
 
-            matrix.Reset();
-            Assert.Equal(new float[] { 1, 0, 0, 1, 0, 0 }, matrix.Elements);
+                matrix.Reset();
+                Assert.Equal(new float[] { 1, 0, 0, 1, 0, 0 }, matrix.Elements);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -367,6 +431,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Reset());
         }
 
@@ -383,16 +448,16 @@ namespace System.Drawing.Drawing2D.Tests
 
             var rotated45 = new Matrix();
             rotated45.Rotate(45);
-            yield return new object[] { rotated45, 135, PointF.Empty, MatrixOrder.Prepend, new float[] { -1, 0, 0, -1, 0, 0 }, null, false };
-            yield return new object[] { rotated45, 135, PointF.Empty, MatrixOrder.Append, new float[] { -1, 0, 0, -1, 0, 0 }, null, false };
+            yield return new object[] { rotated45.Clone(), 135, PointF.Empty, MatrixOrder.Prepend, new float[] { -1, 0, 0, -1, 0, 0 }, null, false };
+            yield return new object[] { rotated45.Clone(), 135, PointF.Empty, MatrixOrder.Append, new float[] { -1, 0, 0, -1, 0, 0 }, null, false };
 
             yield return new object[] { new Matrix(), 90, PointF.Empty, MatrixOrder.Prepend, new float[] { 0, 1, -1, 0, 0, 0 }, null, false };
             yield return new object[] { new Matrix(), 90, PointF.Empty, MatrixOrder.Append, new float[] { 0, 1, -1, 0, 0, 0 }, null, false };
 
             var rotated90 = new Matrix();
             rotated90.Rotate(90);
-            yield return new object[] { rotated90, 270, PointF.Empty, MatrixOrder.Prepend, new float[] { 1, 0, 0, 1, 0, 0 }, null, true };
-            yield return new object[] { rotated90, 270, PointF.Empty, MatrixOrder.Append, new float[] { 1, 0, 0, 1, 0, 0 }, null, true };
+            yield return new object[] { rotated90.Clone(), 270, PointF.Empty, MatrixOrder.Prepend, new float[] { 1, 0, 0, 1, 0, 0 }, null, true };
+            yield return new object[] { rotated90.Clone(), 270, PointF.Empty, MatrixOrder.Append, new float[] { 1, 0, 0, 1, 0, 0 }, null, true };
 
             yield return new object[] { new Matrix(10, 20, 30, 40, 50, 60), 180, new PointF(10, 10), MatrixOrder.Prepend, new float[] { -10, -20, -30, -40, 850, 1260 }, null, false };
             yield return new object[] { new Matrix(10, 20, 30, 40, 50, 60), 180, new PointF(10, 10), MatrixOrder.Append, new float[] { -10, -20, -30, -40, -30, -40 }, null, false };
@@ -411,34 +476,49 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Rotate_TestData))]
         public void Rotate_Matrix_Success(Matrix matrix, float angle, PointF point, MatrixOrder order, float[] expectedElements, float[] expectedElementsRotateAt, bool isIdentity)
         {
-            if (order == MatrixOrder.Prepend)
+            try
             {
-                if (point == Point.Empty)
+                if (order == MatrixOrder.Prepend)
                 {
-                    Matrix clone1 = matrix.Clone();
-                    clone1.Rotate(angle);
-                    AssertEqualFloatArray(expectedElements, clone1.Elements);
-                    Assert.Equal(isIdentity, clone1.IsIdentity);
+                    if (point == Point.Empty)
+                    {
+                        using (Matrix clone1 = matrix.Clone())
+                        {
+                            clone1.Rotate(angle);
+                            AssertEqualFloatArray(expectedElements, clone1.Elements);
+                            Assert.Equal(isIdentity, clone1.IsIdentity);
+                        }
+                    }
+
+                    using (Matrix clone2 = matrix.Clone())
+                    {
+                        clone2.RotateAt(angle, point);
+                        AssertEqualFloatArray(expectedElementsRotateAt ?? expectedElements, clone2.Elements);
+                        Assert.False(clone2.IsIdentity);
+                    }
                 }
 
-                Matrix clone2 = matrix.Clone();
-                clone2.RotateAt(angle, point);
-                AssertEqualFloatArray(expectedElementsRotateAt ?? expectedElements, clone2.Elements);
-                Assert.False(clone2.IsIdentity);
-            }
+                if (point == Point.Empty)
+                {
+                    using (Matrix clone3 = matrix.Clone())
+                    {
+                        clone3.Rotate(angle, order);
+                        AssertEqualFloatArray(expectedElements, clone3.Elements);
+                        Assert.Equal(isIdentity, clone3.IsIdentity);
+                    }
+                }
 
-            if (point == Point.Empty)
+                using (Matrix clone4 = matrix.Clone())
+                {
+                    clone4.RotateAt(angle, point, order);
+                    AssertEqualFloatArray(expectedElementsRotateAt ?? expectedElements, clone4.Elements);
+                    Assert.False(clone4.IsIdentity);
+                }
+            }
+            finally
             {
-                Matrix clone3 = matrix.Clone();
-                clone3.Rotate(angle, order);
-                AssertEqualFloatArray(expectedElements, clone3.Elements);
-                Assert.Equal(isIdentity, clone3.IsIdentity);
+                matrix.Dispose();
             }
-
-            Matrix clone4 = matrix.Clone();
-            clone4.RotateAt(angle, point, order);
-            AssertEqualFloatArray(expectedElementsRotateAt ?? expectedElements, clone4.Elements);
-            Assert.False(clone4.IsIdentity);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -446,6 +526,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Rotate(1, MatrixOrder.Append));
         }
 
@@ -454,8 +535,10 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(MatrixOrder.Append + 1)]
         public void Rotate_InvalidMatrixOrder_ThrowsArgumentException(MatrixOrder order)
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.Rotate(1, order));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.Rotate(1, order));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -463,6 +546,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty));
             Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, MatrixOrder.Append));
         }
@@ -472,8 +556,10 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(MatrixOrder.Append + 1)]
         public void RotateAt_InvalidMatrixOrder_ThrowsArgumentException(MatrixOrder order)
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, order));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, order));
+            }
         }
 
         public static IEnumerable<object[]> Scale_TestData()
@@ -510,15 +596,24 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Scale_TestData))]
         public void Scale_Matrix_Succss(Matrix matrix, float scaleX, float scaleY, MatrixOrder order, float[] expectedElements)
         {
-            if (order == MatrixOrder.Prepend)
+            try
             {
-                Matrix clone = matrix.Clone();
-                clone.Scale(scaleX, scaleY);
-                Assert.Equal(expectedElements, clone.Elements);
-            }
+                if (order == MatrixOrder.Prepend)
+                {
+                    using (Matrix clone = matrix.Clone())
+                    {
+                        clone.Scale(scaleX, scaleY);
+                        Assert.Equal(expectedElements, clone.Elements);
+                    }
+                }
 
-            matrix.Scale(scaleX, scaleY, order);
-            Assert.Equal(expectedElements, matrix.Elements);
+                matrix.Scale(scaleX, scaleY, order);
+                Assert.Equal(expectedElements, matrix.Elements);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -526,8 +621,10 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(MatrixOrder.Append + 1)]
         public void Scale_InvalidMatrixOrder_ThrowsArgumentException(MatrixOrder order)
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -535,6 +632,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Scale(1, 2));
             Assert.Throws<ArgumentException>(null, () => matrix.Scale(1, 2, MatrixOrder.Append));
         }
@@ -573,15 +671,24 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Shear_TestData))]
         public void Shear_Matrix_Succss(Matrix matrix, float shearX, float shearY, MatrixOrder order, float[] expectedElements)
         {
-            if (order == MatrixOrder.Prepend)
+            try
             {
-                Matrix clone = matrix.Clone();
-                clone.Shear(shearX, shearY);
-                Assert.Equal(expectedElements, clone.Elements);
-            }
+                if (order == MatrixOrder.Prepend)
+                {
+                    using (Matrix clone = matrix.Clone())
+                    {
+                        clone.Shear(shearX, shearY);
+                        Assert.Equal(expectedElements, clone.Elements);
+                    }
+                }
 
-            matrix.Shear(shearX, shearY, order);
-            Assert.Equal(expectedElements, matrix.Elements);
+                matrix.Shear(shearX, shearY, order);
+                Assert.Equal(expectedElements, matrix.Elements);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
 
@@ -590,8 +697,10 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(MatrixOrder.Append + 1)]
         public void Shear_InvalidMatrixOrder_ThrowsArgumentException(MatrixOrder order)
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -599,6 +708,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2));
             Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, MatrixOrder.Append));
         }
@@ -628,15 +738,24 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(Translate_TestData))]
         public void Translate_Matrix_Success(Matrix matrix, float offsetX, float offsetY, MatrixOrder order, float[] expectedElements)
         {
-            if (order == MatrixOrder.Prepend)
+            try
             {
-                Matrix clone = matrix.Clone();
-                clone.Translate(offsetX, offsetY);
-                AssertEqualFloatArray(expectedElements, clone.Elements);
-            }
+                if (order == MatrixOrder.Prepend)
+                {
+                    using (Matrix clone = matrix.Clone())
+                    {
+                        clone.Translate(offsetX, offsetY);
+                        AssertEqualFloatArray(expectedElements, clone.Elements);
+                    }
+                }
 
-            matrix.Translate(offsetX, offsetY, order);
-            AssertEqualFloatArray(expectedElements, matrix.Elements);
+                matrix.Translate(offsetX, offsetY, order);
+                AssertEqualFloatArray(expectedElements, matrix.Elements);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -644,8 +763,10 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(MatrixOrder.Append + 1)]
         public void Translate_InvalidMatrixOrder_ThrowsArgumentException(MatrixOrder order)
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, order));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, order));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -653,6 +774,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             var matrix = new Matrix();
             matrix.Dispose();
+
             Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2));
             Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, MatrixOrder.Append));
         }
@@ -668,33 +790,51 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(TransformPoints_TestData))]
         public void TransformPoints_Point_Success(Matrix matrix, Point[] points, Point[] expectedPoints)
         {
-            matrix.TransformPoints(points);
-            Assert.Equal(expectedPoints, points);
+            try
+            {
+                matrix.TransformPoints(points);
+                Assert.Equal(expectedPoints, points);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(TransformPoints_TestData))]
         public void TransformPoints_PointF_Success(Matrix matrix, Point[] points, Point[] expectedPoints)
         {
-            PointF[] pointFs = points.Select(p => (PointF)p).ToArray();
-            matrix.TransformPoints(pointFs);
-            Assert.Equal(expectedPoints.Select(p => (PointF)p), pointFs);
+            try
+            {
+                PointF[] pointFs = points.Select(p => (PointF)p).ToArray();
+                matrix.TransformPoints(pointFs);
+                Assert.Equal(expectedPoints.Select(p => (PointF)p), pointFs);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TransformPoints_NullPoints_ThrowsArgumentNullException()
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((Point[])null));
-            Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((PointF[])null));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((Point[])null));
+                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((PointF[])null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TransformPoints_EmptyPoints_ThrowsArgumentException()
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[0]));
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new PointF[0]));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[0]));
+                Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new PointF[0]));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -718,43 +858,68 @@ namespace System.Drawing.Drawing2D.Tests
         [MemberData(nameof(TransformVectors_TestData))]
         public void TransformVectors_Point_Success(Matrix matrix, Point[] points, Point[] expectedPoints)
         {
-            matrix.TransformVectors(points);
-            Assert.Equal(expectedPoints, points);
+            try
+            {
+                matrix.TransformVectors(points);
+                Assert.Equal(expectedPoints, points);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(TransformVectors_TestData))]
         public void TransformVectors_PointF_Success(Matrix matrix, Point[] points, Point[] expectedPoints)
         {
-            PointF[] pointFs = points.Select(p => (PointF)p).ToArray();
-            matrix.TransformVectors(pointFs);
-            Assert.Equal(expectedPoints.Select(p => (PointF)p), pointFs);
+            try
+            {
+                PointF[] pointFs = points.Select(p => (PointF)p).ToArray();
+                matrix.TransformVectors(pointFs);
+                Assert.Equal(expectedPoints.Select(p => (PointF)p), pointFs);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(TransformVectors_TestData))]
         public void VectorTransformPoints_Points_Success(Matrix matrix, Point[] points, Point[] expectedPoints)
         {
-            matrix.VectorTransformPoints(points);
-            Assert.Equal(expectedPoints, points);
+            try
+            {
+                matrix.VectorTransformPoints(points);
+                Assert.Equal(expectedPoints, points);
+            }
+            finally
+            {
+                matrix.Dispose();
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TransformVectors_NullPoints_ThrowsArgumentNullException()
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentNullException>("pts", () => matrix.VectorTransformPoints(null));
-            Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((Point[])null));
-            Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((PointF[])null));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentNullException>("pts", () => matrix.VectorTransformPoints(null));
+                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((Point[])null));
+                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((PointF[])null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TransformVectors_EmptyPoints_ThrowsArgumentException()
         {
-            var matrix = new Matrix();
-            Assert.Throws<ArgumentException>(null, () => matrix.VectorTransformPoints(new Point[0]));
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new Point[0]));
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new PointF[0]));
+            using (var matrix = new Matrix())
+            {
+                Assert.Throws<ArgumentException>(null, () => matrix.VectorTransformPoints(new Point[0]));
+                Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new Point[0]));
+                Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new PointF[0]));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
