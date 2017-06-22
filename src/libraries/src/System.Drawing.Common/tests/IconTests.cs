@@ -41,10 +41,12 @@ namespace System.Drawing.Tests
         [InlineData("256x256_seven_entries_multiple_bits.ico")]
         public void Ctor_FilePath(string name)
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath(name));
-            Assert.Equal(32, icon.Width);
-            Assert.Equal(32, icon.Height);
-            Assert.Equal(new Size(32, 32), icon.Size);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath(name)))
+            {
+                Assert.Equal(32, icon.Width);
+                Assert.Equal(32, icon.Height);
+                Assert.Equal(new Size(32, 32), icon.Size);
+            }
         }
 
         public static IEnumerable<object[]> Size_TestData()
@@ -71,20 +73,24 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Size_TestData))]
         public void Ctor_FilePath_Width_Height(string fileName, Size size, Size expectedSize)
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath(fileName), size.Width, size.Height);
-            Assert.Equal(expectedSize.Width, icon.Width);
-            Assert.Equal(expectedSize.Height, icon.Height);
-            Assert.Equal(expectedSize, icon.Size);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath(fileName), size.Width, size.Height))
+            {
+                Assert.Equal(expectedSize.Width, icon.Width);
+                Assert.Equal(expectedSize.Height, icon.Height);
+                Assert.Equal(expectedSize, icon.Size);
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_FilePath_Size(string fileName, Size size, Size expectedSize)
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath(fileName), size);
-            Assert.Equal(expectedSize.Width, icon.Width);
-            Assert.Equal(expectedSize.Height, icon.Height);
-            Assert.Equal(expectedSize, icon.Size);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath(fileName), size))
+            {
+                Assert.Equal(expectedSize.Width, icon.Width);
+                Assert.Equal(expectedSize.Height, icon.Height);
+                Assert.Equal(expectedSize, icon.Size);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -112,8 +118,8 @@ namespace System.Drawing.Tests
         public void Ctor_Stream_Width_Height(string fileName, Size size, Size expectedSize)
         {
             using (var stream = new FileStream(Helpers.GetTestBitmapPath(fileName), FileMode.Open))
+            using (var icon = new Icon(stream, size.Width, size.Height))
             {
-                var icon = new Icon(stream, size.Width, size.Height);
                 Assert.Equal(expectedSize.Width, icon.Width);
                 Assert.Equal(expectedSize.Height, icon.Height);
                 Assert.Equal(expectedSize, icon.Size);
@@ -125,8 +131,8 @@ namespace System.Drawing.Tests
         public void Ctor_Stream_Size(string fileName, Size size, Size expectedSize)
         {
             using (var stream = new FileStream(Helpers.GetTestBitmapPath(fileName), FileMode.Open))
+            using (var icon = new Icon(stream, size))
             {
-                var icon = new Icon(stream, size);
                 Assert.Equal(expectedSize.Width, icon.Width);
                 Assert.Equal(expectedSize.Height, icon.Height);
                 Assert.Equal(expectedSize, icon.Size);
@@ -202,24 +208,28 @@ namespace System.Drawing.Tests
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Icon_Width_Height(string fileName, Size size, Size expectedSize)
         {
-            var sourceIcon = new Icon(Helpers.GetTestBitmapPath(fileName));
-            var icon = new Icon(sourceIcon, size.Width, size.Height);
-            Assert.Equal(expectedSize.Width, icon.Width);
-            Assert.Equal(expectedSize.Height, icon.Height);
-            Assert.Equal(expectedSize, icon.Size);
-            Assert.NotSame(sourceIcon.Handle, icon.Handle);
+            using (var sourceIcon = new Icon(Helpers.GetTestBitmapPath(fileName)))
+            using (var icon = new Icon(sourceIcon, size.Width, size.Height))
+            {
+                Assert.Equal(expectedSize.Width, icon.Width);
+                Assert.Equal(expectedSize.Height, icon.Height);
+                Assert.Equal(expectedSize, icon.Size);
+                Assert.NotSame(sourceIcon.Handle, icon.Handle);
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Size_TestData))]
         public void Ctor_Icon_Size(string fileName, Size size, Size expectedSize)
         {
-            var sourceIcon = new Icon(Helpers.GetTestBitmapPath(fileName));
-            var icon = new Icon(sourceIcon, size);
-            Assert.Equal(expectedSize.Width, icon.Width);
-            Assert.Equal(expectedSize.Height, icon.Height);
-            Assert.Equal(expectedSize, icon.Size);
-            Assert.NotSame(sourceIcon.Handle, icon.Handle);
+            using (var sourceIcon = new Icon(Helpers.GetTestBitmapPath(fileName)))
+            using (var icon = new Icon(sourceIcon, size))
+            {
+                Assert.Equal(expectedSize.Width, icon.Width);
+                Assert.Equal(expectedSize.Height, icon.Height);
+                Assert.Equal(expectedSize, icon.Size);
+                Assert.NotSame(sourceIcon.Handle, icon.Handle);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -243,9 +253,11 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Type_Resource()
         {
-            var icon = new Icon(typeof(IconTests), "48x48_multiple_entries_4bit.ico");
-            Assert.Equal(32, icon.Height);
-            Assert.Equal(32, icon.Width);
+            using (var icon = new Icon(typeof(IconTests), "48x48_multiple_entries_4bit.ico"))
+            {
+                Assert.Equal(32, icon.Height);
+                Assert.Equal(32, icon.Width);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -267,25 +279,29 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Clone_ConstructedIcon_Success()
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            Icon clone = (Icon)icon.Clone();
-            Assert.NotSame(icon, clone);
-            Assert.NotSame(icon.Handle, clone.Handle);
-            Assert.Equal(32, clone.Width);
-            Assert.Equal(32, clone.Height);
-            Assert.Equal(new Size(32, 32), clone.Size);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            using (Icon clone = Assert.IsType<Icon>(icon.Clone()))
+            {
+                Assert.NotSame(icon, clone);
+                Assert.NotSame(icon.Handle, clone.Handle);
+                Assert.Equal(32, clone.Width);
+                Assert.Equal(32, clone.Height);
+                Assert.Equal(new Size(32, 32), clone.Size);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Clone_IconFromHandle_Success()
         {
-            var icon = Icon.FromHandle(SystemIcons.Hand.Handle);
-            Icon clone = (Icon)icon.Clone();
-            Assert.NotSame(icon, clone);
-            Assert.NotSame(icon.Handle, clone.Handle);
-            Assert.Equal(SystemIcons.Hand.Width, clone.Width);
-            Assert.Equal(SystemIcons.Hand.Height, clone.Height);
-            Assert.Equal(SystemIcons.Hand.Size, clone.Size);
+            using (var icon = Icon.FromHandle(SystemIcons.Hand.Handle))
+            using (Icon clone = Assert.IsType<Icon>(icon.Clone()))
+            {
+                Assert.NotSame(icon, clone);
+                Assert.NotSame(icon.Handle, clone.Handle);
+                Assert.Equal(SystemIcons.Hand.Width, clone.Width);
+                Assert.Equal(SystemIcons.Hand.Height, clone.Height);
+                Assert.Equal(SystemIcons.Hand.Size, clone.Size);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -309,14 +325,15 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Dispose_DoesNotOwnHandle_DoesNotDestroyHandle()
         {
-            var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            var icon = Icon.FromHandle(source.Handle);
+            using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            using (var icon = Icon.FromHandle(source.Handle))
+            {
+                IntPtr handle = icon.Handle;
+                Assert.NotEqual(IntPtr.Zero, handle);
 
-            IntPtr handle = icon.Handle;
-            Assert.NotEqual(IntPtr.Zero, handle);
-
-            icon.Dispose();
-            Assert.Equal(handle, icon.Handle);
+                icon.Dispose();
+                Assert.Equal(handle, icon.Handle);
+            }
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -325,23 +342,29 @@ namespace System.Drawing.Tests
         [InlineData(48)]
         public void XpIcon_ToBitmap_Success(int size)
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_32bit.ico"), size, size);
-            Assert.Equal(size, icon.Width);
-            Assert.Equal(size, icon.Height);
-            Assert.Equal(new Size(size, size), icon.Size);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_32bit.ico"), size, size))
+            {
+                Assert.Equal(size, icon.Width);
+                Assert.Equal(size, icon.Height);
+                Assert.Equal(new Size(size, size), icon.Size);
 
-            Bitmap bitmap = icon.ToBitmap();
-            Assert.Equal(size, bitmap.Width);
-            Assert.Equal(size, bitmap.Height);
-            Assert.Equal(new Size(size, size), bitmap.Size);
+                using (Bitmap bitmap = icon.ToBitmap())
+                {
+                    Assert.Equal(size, bitmap.Width);
+                    Assert.Equal(size, bitmap.Height);
+                    Assert.Equal(new Size(size, size), bitmap.Size);
+                }
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void ExtractAssociatedIcon_FilePath_Success()
         {
-            Icon icon = Icon.ExtractAssociatedIcon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            Assert.Equal(32, icon.Width);
-            Assert.Equal(32, icon.Height);
+            using (Icon icon = Icon.ExtractAssociatedIcon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                Assert.Equal(32, icon.Width);
+                Assert.Equal(32, icon.Height);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -381,7 +404,7 @@ namespace System.Drawing.Tests
         public void Save_OutputStream_ProducesIdenticalBytes()
         {
             string filePath = Helpers.GetTestBitmapPath("256x256_seven_entries_multiple_bits.ico");
-            var icon = new Icon(filePath);
+            using (var icon = new Icon(filePath))
             using (var outputStream = new MemoryStream())
             {
                 icon.Save(outputStream);
@@ -405,39 +428,47 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Save_NullOutputStreamIconData_ThrowsNullReferenceException()
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            Assert.Throws<NullReferenceException>(() => icon.Save(null));
+            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                Assert.Throws<NullReferenceException>(() => icon.Save(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Save_NullOutputStreamNoIconData_ThrowsArgumentNullException()
         {
-            var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            var icon = Icon.FromHandle(source.Handle);
-            icon.Dispose();
+            using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                var icon = Icon.FromHandle(source.Handle);
+                icon.Dispose();
 
-            Assert.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
+                Assert.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Save_ClosedOutputStreamIconData_ThrowsException()
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            var stream = new MemoryStream();
-            stream.Close();
+            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                var stream = new MemoryStream();
+                stream.Close();
 
-            Assert.Throws<ObjectDisposedException>(() => icon.Save(stream));
+                Assert.Throws<ObjectDisposedException>(() => icon.Save(stream));
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Save_ClosedOutputStreamNoIconData_DoesNothing()
         {
-            var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            var icon = Icon.FromHandle(source.Handle);
-            var stream = new MemoryStream();
-            stream.Close();
+            using (var source = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            using (var icon = Icon.FromHandle(source.Handle))
+            {
+                var stream = new MemoryStream();
+                stream.Close();
 
-            icon.Save(stream);
+                icon.Save(stream);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -613,13 +644,11 @@ namespace System.Drawing.Tests
         public void FromHandle_IconHandleOneTime_Success()
         {
             using (var icon1 = new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")))
+            using (Icon icon2 = Icon.FromHandle(icon1.Handle))
             {
-                using (Icon icon2 = Icon.FromHandle(icon1.Handle))
-                {
-                    Assert.Equal(icon1.Handle, icon2.Handle);
-                    Assert.Equal(icon1.Size, icon2.Size);
-                    SaveAndCompare(icon2, false);
-                }
+                Assert.Equal(icon1.Handle, icon2.Handle);
+                Assert.Equal(icon1.Size, icon2.Size);
+                SaveAndCompare(icon2, false);
             }
         }
 
@@ -711,24 +740,28 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Serialize_RoundtripFromData_Success()
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            Roundtrip(icon);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                Roundtrip(icon);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Serialize_RoundtripWithSize_Success()
         {
-            var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
-            Assert.Equal(new Size(32, 32), icon.Size);
-            Roundtrip(icon);
+            using (var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            {
+                Assert.Equal(new Size(32, 32), icon.Size);
+                Roundtrip(icon);
+            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Serialize_RoundtripWithUnownedHandle_Success()
         {
             using (var sourceIcon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico")))
+            using (var icon = Icon.FromHandle(sourceIcon.Handle))
             {
-                var icon = Icon.FromHandle(sourceIcon.Handle);
                 Roundtrip(icon);
             }
         }
