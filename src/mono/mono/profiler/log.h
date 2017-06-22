@@ -66,6 +66,7 @@
                changed address field in TYPE_SAMPLE_UBIN to be based on ptr_base
                added an image pointer field to assembly load events
                added an exception object field to TYPE_CLAUSE
+               class unload events no longer exist (they were never emitted)
  */
 
 enum {

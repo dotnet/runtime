@@ -258,7 +258,8 @@ static MonoLinkedListSet profiler_thread_list;
  *
  * type metadata format:
  * type: TYPE_METADATA
- * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN)
+ * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN,
+ * doesn't occur for TYPE_CLASS)
  * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
  * TYPE_THREAD, TYPE_CONTEXT
  * [pointer: sleb128] pointer of the metadata type depending on mtype
@@ -1987,42 +1988,6 @@ class_loaded (MonoProfiler *prof, MonoClass *klass, int result)
 	);
 
 	emit_event (logbuffer, TYPE_END_LOAD | TYPE_METADATA);
-	emit_byte (logbuffer, TYPE_CLASS);
-	emit_ptr (logbuffer, klass);
-	emit_ptr (logbuffer, image);
-	memcpy (logbuffer->cursor, name, nlen);
-	logbuffer->cursor += nlen;
-
-	EXIT_LOG;
-
-	if (runtime_inited)
-		mono_free (name);
-	else
-		g_free (name);
-}
-
-static void
-class_unloaded (MonoProfiler *prof, MonoClass *klass)
-{
-	char *name;
-
-	if (InterlockedRead (&runtime_inited))
-		name = mono_type_get_name (mono_class_get_type (klass));
-	else
-		name = type_name (klass);
-
-	int nlen = strlen (name) + 1;
-	MonoImage *image = mono_class_get_image (klass);
-
-	ENTER_LOG (&class_unloads_ctr, logbuffer,
-		EVENT_SIZE /* event */ +
-		BYTE_SIZE /* type */ +
-		LEB128_SIZE /* klass */ +
-		LEB128_SIZE /* image */ +
-		nlen /* name */
-	);
-
-	emit_event (logbuffer, TYPE_END_UNLOAD | TYPE_METADATA);
 	emit_byte (logbuffer, TYPE_CLASS);
 	emit_ptr (logbuffer, klass);
 	emit_ptr (logbuffer, image);
@@ -4757,7 +4722,7 @@ mono_profiler_startup (const char *desc)
 
 	if (config.effective_mask & PROFLOG_CLASS_EVENTS) {
 		events |= MONO_PROFILE_CLASS_EVENTS;
-		mono_profiler_install_class (NULL, class_loaded, class_unloaded, NULL);
+		mono_profiler_install_class (NULL, class_loaded, NULL, NULL);
 	}
 
 	if (config.effective_mask & PROFLOG_JIT_COMPILATION_EVENTS) {
