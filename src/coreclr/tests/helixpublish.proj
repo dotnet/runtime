@@ -1,4 +1,9 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <__BuildArch>$(Platform)</__BuildArch>
+  </PropertyGroup>
+  
   <Import Project="..\dir.props" />
   <!-- CoreClr-Specific Helix test submission project. -->
 
