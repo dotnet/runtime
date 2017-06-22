@@ -2182,8 +2182,7 @@ printf("%s %4d cookine %x\n",__FUNCTION__,__LINE__,cfg->sig_cookie);
 	/*------------------------------------------------------*/
 	/* Allow space for the trace method stack area if needed*/
 	/*------------------------------------------------------*/
-	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) 
-	    || (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)))
 		offset += S390_TRACE_STACK_SIZE;
 
 	/*------------------------------------------------------*/
@@ -5611,8 +5610,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
 		tracing         = 1;
 		cfg->code_size += 256;
-	} else if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		cfg->code_size += 256;
+	}
 
 	if (method->save_lmf)
 		cfg->code_size += 200;
@@ -5905,9 +5903,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
 	}
 
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		argsClobbered = TRUE;
-
 	/*
 	 * Optimize the common case of the first bblock making a call with the same
 	 * arguments as the method. This works because the arguments are still in their
@@ -6007,8 +6002,6 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		max_epilog_size += 128;
 	
 	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 128;
-	else if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
 		max_epilog_size += 128;
 	
 	while ((cfg->code_len + max_epilog_size) > (cfg->code_size - 16)) {

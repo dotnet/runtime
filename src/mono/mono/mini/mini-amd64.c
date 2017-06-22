@@ -1333,8 +1333,7 @@ mono_arch_compute_omit_fp (MonoCompile *cfg)
 		cfg->arch.omit_fp = FALSE;
 	if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		cfg->arch.omit_fp = FALSE;
-	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
-		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)))
 		cfg->arch.omit_fp = FALSE;
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = &cinfo->args [i];
@@ -6509,9 +6508,6 @@ get_max_epilog_size (MonoCompile *cfg)
 	if (mono_jit_trace_calls != NULL)
 		max_epilog_size += 50;
 
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		max_epilog_size += 50;
-
 	max_epilog_size += (AMD64_NREG * 2);
 
 	return max_epilog_size;
@@ -6950,9 +6946,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		args_clobbered = TRUE;
 		code = (guint8 *)mono_arch_instrument_prolog (cfg, mono_trace_enter_method, code, TRUE);
 	}
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		args_clobbered = TRUE;
 
 	/*
 	 * Optimize the common case of the first bblock making a call with the same
