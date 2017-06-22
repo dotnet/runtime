@@ -5,7 +5,7 @@
 namespace System.Drawing.Printing
 {
     [Serializable]
-    public partial class PrinterSettings : ICloneable
+    partial class PrinterSettings
     {
     }
 }

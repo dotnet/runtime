@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+using System.Security.Permissions;
+
 namespace System.Drawing.Printing
 {
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-
     [Serializable]
-    public partial class InvalidPrinterException : SystemException
+    partial class InvalidPrinterException
     {
         protected InvalidPrinterException(SerializationInfo info, StreamingContext context) : base(info, context)
         {

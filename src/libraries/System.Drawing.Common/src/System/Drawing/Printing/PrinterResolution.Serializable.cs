@@ -5,7 +5,7 @@
 namespace System.Drawing.Printing
 {
     [Serializable]
-    public partial class PrinterResolution
+    partial class PrinterResolution
     {
     }
 }
