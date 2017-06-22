@@ -337,7 +337,8 @@ namespace System.Reflection.Tests
             );
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindows))]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor()
         {
             // HasSameMetadataDefinitionAs on a GetTypeFromCLSID type is uninteresting (they'll never be an actual member of a type)
