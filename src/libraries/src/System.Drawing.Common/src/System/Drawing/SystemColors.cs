@@ -4,7 +4,7 @@
 
 namespace System.Drawing
 {
-    public sealed class SystemColors
+    public static class SystemColors
     {
         public static Color ActiveBorder => Color.FromKnownColor(KnownColor.ActiveBorder);
         public static Color ActiveCaption => Color.FromKnownColor(KnownColor.ActiveCaption);

@@ -8,10 +8,8 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    public sealed class SystemFonts
+    public static class SystemFonts
     {
-        private SystemFonts() { }
-
         private static readonly object s_systemFontsKey = new object();
 
         public static Font CaptionFont
