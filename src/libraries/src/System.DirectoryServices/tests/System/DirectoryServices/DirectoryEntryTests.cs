@@ -141,6 +141,7 @@ namespace System.DirectoryServices.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(21346, TargetFrameworkMonikers.UapAot)]
         public void DeleteTree_NoObject_ThrowsCOMException()
         {
             var entry = new DirectoryEntry("path");
