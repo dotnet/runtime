@@ -848,11 +848,12 @@ ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
  * exclusive lock, and we need those to arrive with a reasonably
  * consistent frequency so that readers don't have to queue up too many
  * events between sync points.
+ *
+ * The lock does not support recursion.
  */
 static volatile gint32 buffer_lock_state;
 static volatile gint32 buffer_lock_exclusive_intent;
 
-// Can be used recursively.
 static void
 buffer_lock (void)
 {
@@ -911,7 +912,6 @@ buffer_unlock (void)
 	InterlockedDecrement (&buffer_lock_state);
 }
 
-// Cannot be used recursively.
 static void
 buffer_lock_excl (void)
 {
@@ -1080,6 +1080,7 @@ emit_method_inner (LogBuffer *logbuffer, void *method)
 	g_assert (logbuffer->cursor <= logbuffer->buf_end && "Why are we writing past the buffer end?");
 }
 
+// The reader lock must be held.
 static void
 register_method_local (MonoMethod *method, MonoJitInfo *ji)
 {
@@ -1092,12 +1093,8 @@ register_method_local (MonoMethod *method, MonoJitInfo *ji)
 		info->ji = ji;
 		info->time = current_time ();
 
-		buffer_lock ();
-
 		GPtrArray *arr = thread->methods ? thread->methods : (thread->methods = g_ptr_array_new ());
 		g_ptr_array_add (arr, info);
-
-		buffer_unlock ();
 	}
 }
 
@@ -2098,7 +2095,11 @@ method_jitted (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *ji, int resu
 	if (result != MONO_PROFILE_OK)
 		return;
 
+	buffer_lock ();
+
 	register_method_local (method, ji);
+
+	buffer_unlock ();
 }
 
 static void
