@@ -4835,8 +4835,8 @@ void MethodTable::Fixup(DataImage *image)
     }
 
     _ASSERTE(GetWriteableData());
-    image->FixupPointerField(this, offsetof(MethodTable, m_pWriteableData));
-    m_pWriteableData->Fixup(image, this, needsRestore);
+    image->FixupPlainOrRelativePointerField(this, &MethodTable::m_pWriteableData);
+    m_pWriteableData.GetValue()->Fixup(image, this, needsRestore);
 
 #ifdef FEATURE_COMINTEROP
     if (HasGuidInfo())
@@ -5077,12 +5077,12 @@ void MethodTable::Fixup(DataImage *image)
 
         if (NeedsCrossModuleGenericsStaticsInfo())
         {
-            MethodTableWriteableData * pNewWriteableData = (MethodTableWriteableData *)image->GetImagePointer(m_pWriteableData);
+            MethodTableWriteableData * pNewWriteableData = (MethodTableWriteableData *)image->GetImagePointer(m_pWriteableData.GetValue());
             CrossModuleGenericsStaticsInfo * pNewCrossModuleGenericsStaticsInfo = pNewWriteableData->GetCrossModuleGenericsStaticsInfo();
 
             pNewCrossModuleGenericsStaticsInfo->m_DynamicTypeID = pInfo->m_DynamicTypeID;
 
-            image->ZeroPointerField(m_pWriteableData, sizeof(MethodTableWriteableData) + offsetof(CrossModuleGenericsStaticsInfo, m_pModuleForStatics));
+            image->ZeroPointerField(m_pWriteableData.GetValue(), sizeof(MethodTableWriteableData) + offsetof(CrossModuleGenericsStaticsInfo, m_pModuleForStatics));
 
             pNewMT->SetFlag(enum_flag_StaticsMask_IfGenericsThenCrossModule);
         }
@@ -9197,9 +9197,10 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         DacEnumMemoryRegion(dac_cast<TADDR>(it.GetIndirectionSlot()), it.GetSize());
     }
 
-    if (m_pWriteableData.IsValid())
+    PTR_MethodTableWriteableData pWriteableData = ReadPointer(this, &MethodTable::m_pWriteableData);
+    if (pWriteableData.IsValid())
     {
-        m_pWriteableData.EnumMem();
+        pWriteableData.EnumMem();
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
@@ -9662,8 +9663,6 @@ bool MethodTable::ClassRequiresUnmanagedCodeCheck()
     return false;
 }
 
-#endif // !DACCESS_COMPILE
-
 
 
 BOOL MethodTable::Validate()
@@ -9673,13 +9672,14 @@ BOOL MethodTable::Validate()
     ASSERT_AND_CHECK(SanityCheck());
     
 #ifdef _DEBUG    
-    if (m_pWriteableData == NULL)
+    if (m_pWriteableData.IsNull())
     {
         _ASSERTE(IsAsyncPinType());
         return TRUE;
     }
 
-    DWORD dwLastVerifiedGCCnt = m_pWriteableData->m_dwLastVerifedGCCnt;
+    MethodTableWriteableData *pWriteableData = m_pWriteableData.GetValue();
+    DWORD dwLastVerifiedGCCnt = pWriteableData->m_dwLastVerifedGCCnt;
     // Here we used to assert that (dwLastVerifiedGCCnt <= GCHeapUtilities::GetGCHeap()->GetGcCount()) but 
     // this is no longer true because with background gc. Since the purpose of having 
     // m_dwLastVerifedGCCnt is just to only verify the same method table once for each GC
@@ -9710,12 +9710,14 @@ BOOL MethodTable::Validate()
 #ifdef _DEBUG    
     // It is not a fatal error to fail the update the counter. We will run slower and retry next time, 
     // but the system will function properly.
-    if (EnsureWritablePagesNoThrow(m_pWriteableData, sizeof(MethodTableWriteableData)))
-        m_pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
+    if (EnsureWritablePagesNoThrow(pWriteableData, sizeof(MethodTableWriteableData)))
+        pWriteableData->m_dwLastVerifedGCCnt = GCHeapUtilities::GetGCHeap()->GetGcCount();
 #endif //_DEBUG
 
     return TRUE;
 }
+
+#endif // !DACCESS_COMPILE
 
 NOINLINE BYTE *MethodTable::GetLoaderAllocatorObjectForGC()
 {
