@@ -5,7 +5,7 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    static class App10Constants
+    internal static class App10Constants
     {
         public const string Accept = "accept";
         public const string Categories = "categories";
@@ -16,6 +16,5 @@ namespace Microsoft.ServiceModel.Syndication
         public const string Prefix = "app";
         public const string Service = "service";
         public const string Workspace = "workspace";
-        
     }
 }

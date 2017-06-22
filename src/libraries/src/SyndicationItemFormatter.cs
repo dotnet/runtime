@@ -19,11 +19,11 @@ namespace Microsoft.ServiceModel.Syndication
     [DataContract]
     public abstract class SyndicationItemFormatter
     {
-        SyndicationItem item;
+        private SyndicationItem _item;
 
         protected SyndicationItemFormatter()
         {
-            this.item = null;
+            _item = null;
         }
 
         protected SyndicationItemFormatter(SyndicationItem itemToWrite)
@@ -32,14 +32,14 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("itemToWrite");
             }
-            this.item = itemToWrite;
+            _item = itemToWrite;
         }
 
         public SyndicationItem Item
         {
             get
             {
-                return this.item;
+                return _item;
             }
         }
 
@@ -63,7 +63,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("item");
             }
-            this.item = item;
+            _item = item;
         }
 
         internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlDictionaryReader reader, int maxExtensionSize)

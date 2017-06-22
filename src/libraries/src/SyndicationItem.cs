@@ -19,20 +19,20 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationItem : IExtensibleSyndicationObject
     {
-        Collection<SyndicationPerson> authors;
-        Uri baseUri;
-        Collection<SyndicationCategory> categories;
-        SyndicationContent content;
-        Collection<SyndicationPerson> contributors;
-        TextSyndicationContent copyright;
-        ExtensibleSyndicationObject extensions = new ExtensibleSyndicationObject();
-        string id;
-        DateTimeOffset lastUpdatedTime;
-        Collection<SyndicationLink> links;
-        DateTimeOffset publishDate;
-        SyndicationFeed sourceFeed;
-        TextSyndicationContent summary;
-        TextSyndicationContent title;
+        private Collection<SyndicationPerson> _authors;
+        private Uri _baseUri;
+        private Collection<SyndicationCategory> _categories;
+        private SyndicationContent _content;
+        private Collection<SyndicationPerson> _contributors;
+        private TextSyndicationContent _copyright;
+        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private string _id;
+        private DateTimeOffset _lastUpdatedTime;
+        private Collection<SyndicationLink> _links;
+        private DateTimeOffset _publishDate;
+        private SyndicationFeed _sourceFeed;
+        private TextSyndicationContent _summary;
+        private TextSyndicationContent _title;
 
         public SyndicationItem()
             : this(null, null, null)
@@ -55,13 +55,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 this.Title = new TextSyndicationContent(title);
             }
-            this.content = content;
+            _content = content;
             if (itemAlternateLink != null)
             {
                 this.Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
             }
-            this.id = id;
-            this.lastUpdatedTime = lastUpdatedTime;
+            _id = id;
+            _lastUpdatedTime = lastUpdatedTime;
         }
 
         protected SyndicationItem(SyndicationItem source)
@@ -70,136 +70,136 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
-            this.extensions = source.extensions.Clone();
-            this.authors = FeedUtils.ClonePersons(source.authors);
-            this.categories = FeedUtils.CloneCategories(source.categories);
-            this.content = (source.content != null) ? source.content.Clone() : null;
-            this.contributors = FeedUtils.ClonePersons(source.contributors);
-            this.copyright = FeedUtils.CloneTextContent(source.copyright);
-            this.id = source.id;
-            this.lastUpdatedTime = source.lastUpdatedTime;
-            this.links = FeedUtils.CloneLinks(source.links);
-            this.publishDate = source.publishDate;
+            _extensions = source._extensions.Clone();
+            _authors = FeedUtils.ClonePersons(source._authors);
+            _categories = FeedUtils.CloneCategories(source._categories);
+            _content = (source._content != null) ? source._content.Clone() : null;
+            _contributors = FeedUtils.ClonePersons(source._contributors);
+            _copyright = FeedUtils.CloneTextContent(source._copyright);
+            _id = source._id;
+            _lastUpdatedTime = source._lastUpdatedTime;
+            _links = FeedUtils.CloneLinks(source._links);
+            _publishDate = source._publishDate;
             if (source.SourceFeed != null)
             {
-                this.sourceFeed = source.sourceFeed.Clone(false);
-                this.sourceFeed.Items = new Collection<SyndicationItem>();
+                _sourceFeed = source._sourceFeed.Clone(false);
+                _sourceFeed.Items = new Collection<SyndicationItem>();
             }
-            this.summary = FeedUtils.CloneTextContent(source.summary);
-            this.baseUri = source.baseUri;
-            this.title = FeedUtils.CloneTextContent(source.title);
+            _summary = FeedUtils.CloneTextContent(source._summary);
+            _baseUri = source._baseUri;
+            _title = FeedUtils.CloneTextContent(source._title);
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get { return this.extensions.AttributeExtensions; }
+            get { return _extensions.AttributeExtensions; }
         }
 
         public Collection<SyndicationPerson> Authors
         {
             get
             {
-                if (this.authors == null)
+                if (_authors == null)
                 {
-                    this.authors = new NullNotAllowedCollection<SyndicationPerson>();
+                    _authors = new NullNotAllowedCollection<SyndicationPerson>();
                 }
-                return this.authors;
+                return _authors;
             }
         }
 
         public Uri BaseUri
         {
-            get { return this.baseUri; }
-            set { this.baseUri = value; }
+            get { return _baseUri; }
+            set { _baseUri = value; }
         }
 
         public Collection<SyndicationCategory> Categories
         {
             get
             {
-                if (this.categories == null)
+                if (_categories == null)
                 {
-                    this.categories = new NullNotAllowedCollection<SyndicationCategory>();
+                    _categories = new NullNotAllowedCollection<SyndicationCategory>();
                 }
-                return this.categories;
+                return _categories;
             }
         }
 
         public SyndicationContent Content
         {
-            get { return content; }
-            set { content = value; }
+            get { return _content; }
+            set { _content = value; }
         }
 
         public Collection<SyndicationPerson> Contributors
         {
             get
             {
-                if (this.contributors == null)
+                if (_contributors == null)
                 {
-                    this.contributors = new NullNotAllowedCollection<SyndicationPerson>();
+                    _contributors = new NullNotAllowedCollection<SyndicationPerson>();
                 }
-                return this.contributors;
+                return _contributors;
             }
         }
 
         public TextSyndicationContent Copyright
         {
-            get { return this.copyright; }
-            set { this.copyright = value; }
+            get { return _copyright; }
+            set { _copyright = value; }
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get { return this.extensions.ElementExtensions; }
+            get { return _extensions.ElementExtensions; }
         }
 
         public string Id
         {
-            get { return id; }
-            set { id = value; }
+            get { return _id; }
+            set { _id = value; }
         }
 
         public DateTimeOffset LastUpdatedTime
         {
-            get { return lastUpdatedTime; }
-            set { lastUpdatedTime = value; }
+            get { return _lastUpdatedTime; }
+            set { _lastUpdatedTime = value; }
         }
 
         public Collection<SyndicationLink> Links
         {
             get
             {
-                if (this.links == null)
+                if (_links == null)
                 {
-                    this.links = new NullNotAllowedCollection<SyndicationLink>();
+                    _links = new NullNotAllowedCollection<SyndicationLink>();
                 }
-                return this.links;
+                return _links;
             }
         }
 
         public DateTimeOffset PublishDate
         {
-            get { return publishDate; }
-            set { publishDate = value; }
+            get { return _publishDate; }
+            set { _publishDate = value; }
         }
 
         public SyndicationFeed SourceFeed
         {
-            get { return this.sourceFeed; }
-            set { this.sourceFeed = value; }
+            get { return _sourceFeed; }
+            set { _sourceFeed = value; }
         }
 
         public TextSyndicationContent Summary
         {
-            get { return this.summary; }
-            set { this.summary = value; }
+            get { return _summary; }
+            set { _summary = value; }
         }
 
         public TextSyndicationContent Title
         {
-            get { return this.title; }
-            set { this.title = value; }
+            get { return _title; }
+            set { _title = value; }
         }
 
         public static SyndicationItem Load(XmlReader reader)
@@ -208,7 +208,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader)
-            where TSyndicationItem : SyndicationItem, new ()
+            where TSyndicationItem : SyndicationItem, new()
         {
             if (reader == null)
             {
@@ -305,22 +305,22 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteAttributeExtensions(writer);
+            _extensions.WriteAttributeExtensions(writer);
         }
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            this.extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
+            _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.extensions.LoadElementExtensions(buffer);
+            _extensions.LoadElementExtensions(buffer);
         }
     }
 }

@@ -19,11 +19,11 @@ namespace Microsoft.ServiceModel.Syndication
     [DataContract]
     public abstract class SyndicationFeedFormatter
     {
-        SyndicationFeed feed;
+        private SyndicationFeed _feed;
 
         protected SyndicationFeedFormatter()
         {
-            this.feed = null;
+            _feed = null;
         }
 
         protected SyndicationFeedFormatter(SyndicationFeed feedToWrite)
@@ -32,14 +32,14 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("feedToWrite");
             }
-            this.feed = feedToWrite;
+            _feed = feedToWrite;
         }
 
         public SyndicationFeed Feed
         {
-             get
+            get
             {
-                return this.feed;
+                return _feed;
             }
         }
 
@@ -152,7 +152,6 @@ namespace Microsoft.ServiceModel.Syndication
             if (link == null)
             {
                 throw new ArgumentNullException("link");
-                
             }
             link.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -161,8 +160,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person"); 
-                
+                throw new ArgumentNullException("person");
             }
             person.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -197,7 +195,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category"); 
+                throw new ArgumentNullException("category");
             }
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -223,7 +221,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person"); 
+                throw new ArgumentNullException("person");
             }
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -259,7 +257,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category"); 
+                throw new ArgumentNullException("category");
             }
             return category.TryParseElement(reader, version);
         }
@@ -268,7 +266,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link"); 
+                throw new ArgumentNullException("link");
             }
             return link.TryParseElement(reader, version);
         }
@@ -277,7 +275,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person"); 
+                throw new ArgumentNullException("person");
             }
             return person.TryParseElement(reader, version);
         }
@@ -304,7 +302,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category"); 
+                throw new ArgumentNullException("category");
             }
             category.WriteAttributeExtensions(writer, version);
         }
@@ -313,7 +311,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link"); 
+                throw new ArgumentNullException("link");
             }
             link.WriteAttributeExtensions(writer, version);
         }
@@ -322,7 +320,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person"); 
+                throw new ArgumentNullException("person");
             }
             person.WriteAttributeExtensions(writer, version);
         }
@@ -349,7 +347,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category"); 
+                throw new ArgumentNullException("category");
             }
             category.WriteElementExtensions(writer, version);
         }
@@ -358,7 +356,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link"); 
+                throw new ArgumentNullException("link");
             }
             link.WriteElementExtensions(writer, version);
         }
@@ -367,7 +365,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person"); 
+                throw new ArgumentNullException("person");
             }
             person.WriteElementExtensions(writer, version);
         }
@@ -378,7 +376,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("feed");
             }
-            this.feed = feed;
+            _feed = feed;
         }
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
@@ -411,7 +409,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                return (SyndicationFeed) Activator.CreateInstance(feedType);
+                return (SyndicationFeed)Activator.CreateInstance(feedType);
             }
         }
 
@@ -449,7 +447,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link"); 
+                throw new ArgumentNullException("link");
             }
             CloseBuffer(buffer, writer);
             link.LoadElementExtensions(buffer);
@@ -459,7 +457,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person"); 
+                throw new ArgumentNullException("person");
             }
             CloseBuffer(buffer, writer);
             person.LoadElementExtensions(buffer);
@@ -467,26 +465,24 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void MoveToStartElement(XmlReader reader)
         {
-            
             if (!reader.IsStartElement())
             {
                 XmlExceptionHelper.ThrowStartElementExpected(XmlDictionaryReader.CreateDictionaryReader(reader));
             }
         }
 
-       
+
 
         protected abstract SyndicationFeed CreateFeedInstance();
 
-        static T GetNonNullValue<T>(T value, string errorMsg)
+        private static T GetNonNullValue<T>(T value, string errorMsg)
         {
-            
             return value;
         }
 
-        static class XmlExceptionHelper
+        private static class XmlExceptionHelper
         {
-            static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
+            private static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
             {
                 string s = String.Format(res, arg1);
                 IXmlLineInfo lineInfo = reader as IXmlLineInfo;
@@ -498,7 +494,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new XmlException(s);
             }
 
-            static string GetName(string prefix, string localName)
+            private static string GetName(string prefix, string localName)
             {
                 if (prefix.Length == 0)
                     return localName;
@@ -506,7 +502,7 @@ namespace Microsoft.ServiceModel.Syndication
                     return string.Concat(prefix, ":", localName);
             }
 
-            static string GetWhatWasFound(XmlDictionaryReader reader)
+            private static string GetWhatWasFound(XmlDictionaryReader reader)
             {
                 if (reader.EOF)
                     return SR.XmlFoundEndOfFile;

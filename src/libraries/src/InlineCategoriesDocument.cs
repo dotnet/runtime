@@ -15,9 +15,9 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class InlineCategoriesDocument : CategoriesDocument
     {
-        Collection<SyndicationCategory> categories;
-        bool isFixed;
-        string scheme;
+        private Collection<SyndicationCategory> _categories;
+        private bool _isFixed;
+        private string _scheme;
 
         public InlineCategoriesDocument()
         {
@@ -32,38 +32,38 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (categories != null)
             {
-                this.categories = new NullNotAllowedCollection<SyndicationCategory>();
+                _categories = new NullNotAllowedCollection<SyndicationCategory>();
                 foreach (SyndicationCategory category in categories)
                 {
-                    this.categories.Add(category);
+                    _categories.Add(category);
                 }
             }
-            this.isFixed = isFixed;
-            this.scheme = scheme;
+            _isFixed = isFixed;
+            _scheme = scheme;
         }
 
         public Collection<SyndicationCategory> Categories
         {
             get
             {
-                if (this.categories == null)
+                if (_categories == null)
                 {
-                    this.categories = new NullNotAllowedCollection<SyndicationCategory>();
+                    _categories = new NullNotAllowedCollection<SyndicationCategory>();
                 }
-                return this.categories;
+                return _categories;
             }
         }
 
         public bool IsFixed
         {
-            get { return this.isFixed; }
-            set { this.isFixed = value; }
+            get { return _isFixed; }
+            set { _isFixed = value; }
         }
 
         public string Scheme
         {
-            get { return this.scheme; }
-            set { this.scheme = value; }
+            get { return _scheme; }
+            set { _scheme = value; }
         }
 
         internal override bool IsInline

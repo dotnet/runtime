@@ -16,7 +16,7 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ReferencedCategoriesDocument : CategoriesDocument
     {
-        Uri link;
+        private Uri _link;
 
         public ReferencedCategoriesDocument()
         {
@@ -29,13 +29,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("link");
             }
-            this.link = link;
+            _link = link;
         }
 
         public Uri Link
         {
-            get { return this.link; }
-            set { this.link = value; }
+            get { return _link; }
+            set { _link = value; }
         }
 
         internal override bool IsInline

@@ -9,10 +9,10 @@ namespace System.ServiceModel.Channels
     using Microsoft.ServiceModel;
     using Microsoft.ServiceModel.Syndication.Resources;
 
-    class UriGenerator
+    internal class UriGenerator
     {
-        long id;
-        string prefix;
+        private long _id;
+        private string _prefix;
 
         public UriGenerator()
             : this("uuid")
@@ -27,19 +27,19 @@ namespace System.ServiceModel.Channels
         public UriGenerator(string scheme, string delimiter)
         {
             if (scheme == null)
-                throw new ArgumentException("scheme");  
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("scheme"));
+                throw new ArgumentException("scheme");
+            //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("scheme"));
 
             if (scheme.Length == 0)
                 throw new ArgumentException(String.Format(SR.UriGeneratorSchemeMustNotBeEmpty, "scheme"));
 
-            prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
+            _prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
         }
 
         public string Next()
         {
-            long nextId = Interlocked.Increment(ref id);
-            return prefix + nextId.ToString(CultureInfo.InvariantCulture);
+            long nextId = Interlocked.Increment(ref _id);
+            return _prefix + nextId.ToString(CultureInfo.InvariantCulture);
         }
     }
 }

@@ -12,8 +12,8 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class UrlSyndicationContent : SyndicationContent
     {
-        string mediaType;
-        Uri url;
+        private string _mediaType;
+        private Uri _url;
 
         public UrlSyndicationContent(Uri url, string mediaType) : base()
         {
@@ -21,8 +21,8 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("url");
             }
-            this.url = url;
-            this.mediaType = mediaType;
+            _url = url;
+            _mediaType = mediaType;
         }
 
         protected UrlSyndicationContent(UrlSyndicationContent source)
@@ -32,18 +32,18 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
-            this.url = source.url;
-            this.mediaType = source.mediaType;
+            _url = source._url;
+            _mediaType = source._mediaType;
         }
 
         public override string Type
         {
-            get { return this.mediaType; }
+            get { return _mediaType; }
         }
 
         public Uri Url
         {
-            get { return this.url; }
+            get { return _url; }
         }
 
         public override SyndicationContent Clone()
@@ -53,7 +53,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            writer.WriteAttributeString(Atom10Constants.SourceTag, string.Empty, FeedUtils.GetUriString(this.url));
+            writer.WriteAttributeString(Atom10Constants.SourceTag, string.Empty, FeedUtils.GetUriString(_url));
         }
     }
 }

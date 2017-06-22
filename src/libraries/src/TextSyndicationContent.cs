@@ -16,8 +16,8 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class TextSyndicationContent : SyndicationContent
     {
-        string text;
-        TextSyndicationContentKind textKind;
+        private string _text;
+        private TextSyndicationContentKind _textKind;
 
         public TextSyndicationContent(string text) : this(text, TextSyndicationContentKind.Plaintext)
         {
@@ -29,8 +29,8 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentOutOfRangeException("textKind");
             }
-            this.text = text;
-            this.textKind = textKind;
+            _text = text;
+            _textKind = textKind;
         }
 
         protected TextSyndicationContent(TextSyndicationContent source)
@@ -40,20 +40,20 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
-            this.text = source.text;
-            this.textKind = source.textKind;
+            _text = source._text;
+            _textKind = source._textKind;
         }
 
         public string Text
         {
-            get { return this.text; }
+            get { return _text; }
         }
 
         public override string Type
         {
             get
             {
-                switch (this.textKind)
+                switch (_textKind)
                 {
                     case TextSyndicationContentKind.Html:
                         return Atom10Constants.HtmlType;
@@ -72,8 +72,8 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            string val = this.text ?? string.Empty;
-            if (this.textKind == TextSyndicationContentKind.XHtml)
+            string val = _text ?? string.Empty;
+            if (_textKind == TextSyndicationContentKind.XHtml)
             {
                 writer.WriteRaw(val);
             }
