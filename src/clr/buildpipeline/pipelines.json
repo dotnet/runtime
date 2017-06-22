@@ -354,6 +354,41 @@
         {
           "Name": "Dotnet-CoreClr-Trusted-BuildTests",
           "Parameters": {
+            "Architecture": "arm",
+            "HelixJobType": "test/functional/cli/",
+            "TargetsWindows": "true",
+            "Rid": "win-arm",
+            "TargetQueues": "windows.10.arm64",
+            "TestContainerSuffix": "windows",
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType":  "Build-Tests",
+            "Type": "build/product/",
+            "PB_BuildType": "Release"
+          }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "Architecture": "arm",
+            "HelixJobType": "test/functional/r2r/cli/",
+            "TargetsWindows": "true",
+            "Rid": "win-arm",
+            "TargetQueues": "windows.10.arm64",
+            "TestContainerSuffix": "windows-r2r",
+            "CrossgenArg": "Crossgen "
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType":  "Build-Tests-R2R",
+            "Type": "build/product/",
+            "PB_BuildType": "Release"
+          }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
             "HelixJobType": "test/functional/cli/",
             "TargetsWindows": "false",
             "Rid": "osx-x64",
