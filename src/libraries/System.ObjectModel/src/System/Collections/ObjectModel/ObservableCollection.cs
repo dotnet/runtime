@@ -375,8 +375,11 @@ namespace System.Collections.ObjectModel
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
-            _blockReentrancyCount = _monitor._busyCount;
-            _monitor._collection = this;
+            if (_monitor != null)
+            {
+                _blockReentrancyCount = _monitor._busyCount;
+                _monitor._collection = this;
+            }
         }
         #endregion Private Methods
 
