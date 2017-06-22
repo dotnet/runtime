@@ -117,29 +117,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Assert.Equal(expectedHex, cert.RawData.ByteArrayToHex());
         }
 
-        [Fact]
-        public static void SimpleSelfSign_RSA()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SimpleSelfSign_RSA(bool exportPfx)
         {
             using (RSA rsa = RSA.Create())
             {
                 SimpleSelfSign(
                     new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
-                    "1.2.840.113549.1.1.1");
+                    "1.2.840.113549.1.1.1",
+                    exportPfx);
             }
         }
 
-        [Fact]
-        public static void SimpleSelfSign_ECC()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void SimpleSelfSign_ECC(bool exportPfx)
         {
             using (ECDsa ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP521))
             {
                 SimpleSelfSign(
                     new CertificateRequest("CN=localhost", ecdsa, HashAlgorithmName.SHA512),
-                    "1.2.840.10045.2.1");
+                    "1.2.840.10045.2.1",
+                    exportPfx);
             }
         }
 
-        private static void SimpleSelfSign(CertificateRequest request, string expectedKeyOid)
+        private static void SimpleSelfSign(CertificateRequest request, string expectedKeyOid, bool exportPfx)
         {
             request.CertificateExtensions.Add(
                 new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
@@ -168,6 +174,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 Assert.True(
                     serialNumber.Length >= 8 && serialNumber.Length <= 18,
                     $"Serial number ({serialNumber}) should be between 4 and 9 bytes, inclusive");
+
+                if (exportPfx)
+                {
+                    byte[] pfx = newCert.Export(X509ContentType.Pkcs12, nameof(SimpleSelfSign));
+                    Assert.InRange(pfx.Length, 100, int.MaxValue);
+                }
             }
         }
 
