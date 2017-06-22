@@ -175,7 +175,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=uap -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=uap -buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=uap -buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=uap /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64.ClientRS3\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/uwp/\""
           },
@@ -192,7 +192,7 @@
           "Parameters": {
             "PB_Platform": "x86",
             "PB_BuildArguments": "-framework=uap -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=uap -buildArch=x86 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=uap -buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=uap",
             "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=uap /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64.ClientRS3\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/uwp/\""
           },
@@ -209,7 +209,7 @@
           "Parameters": {
             "PB_Platform": "arm",
             "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
             "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uapaot /p:ConfigurationGroup=Release /p:TargetQueues=Windows.10.Amd64 /p:SecondaryQueue=Windows.10.Arm64 /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
@@ -226,7 +226,7 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=uapaot -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=uapaot /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64.ClientRS3\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
@@ -243,7 +243,7 @@
           "Parameters": {
             "PB_Platform": "x86",
             "PB_BuildArguments": "-framework=uapaot -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x86 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=uapaot -buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
             "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=uapaot /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64.ClientRS3\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
