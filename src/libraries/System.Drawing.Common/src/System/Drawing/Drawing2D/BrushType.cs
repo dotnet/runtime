@@ -4,9 +4,6 @@
 
 namespace System.Drawing.Drawing2D
 {
-    /**
-     * BrushType Type
-     */
     internal enum BrushType
     {
         SolidColor = 0,
