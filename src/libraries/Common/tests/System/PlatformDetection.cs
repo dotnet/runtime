@@ -428,7 +428,7 @@ namespace System
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit
-        public static bool IsXmlDsigXsltTransformSupported => PlatformDetection.IsReflectionEmitSupported;
+        public static bool IsXmlDsigXsltTransformSupported => !PlatformDetection.IsUap;
 
         public static Range[] FrameworkRanges => new Range[]{
           new Range(new Version(4, 7, 2500, 0), null, new Version(4, 7, 1)),
