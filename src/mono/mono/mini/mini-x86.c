@@ -971,8 +971,7 @@ needs_stack_frame (MonoCompile *cfg)
 		result = TRUE;
 	else if (!sig->pinvoke && (sig->call_convention == MONO_CALL_VARARG))
 		result = TRUE;
-	else if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)) ||
-		(cfg->prof_options & MONO_PROFILE_ENTER_LEAVE))
+	else if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)))
 		result = TRUE;
 
 	set_needs_stack_frame (cfg, result);
@@ -5018,9 +5017,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	gboolean need_stack_frame;
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 10240);
-
-	if (cfg->prof_options & MONO_PROFILE_ENTER_LEAVE)
-		cfg->code_size += 512;
 
 	code = cfg->native_code = g_malloc (cfg->code_size);
 
