@@ -492,6 +492,21 @@ namespace System.Diagnostics
                 // it contains spaces.
                 if (c == '"')
                 {
+                    // While not in quotes, and currentArgument is empty,
+                    // check for the next two chars, if they are equal to
+                    // a quote and a whitespace or a quote and end of string
+                    // consider that argument as empty argument.
+                    if (!inQuotes && currentArgument.Length == 0 &&
+                        ((i < arguments.Length - 2 &&
+                        (arguments[i + 2] == ' ' || arguments[i + 2] == '\t') &&
+                        arguments[i + 1] == '"') ||
+                        (i == arguments.Length - 2 && arguments[i + 1] == '"')))
+                    {
+                        results.Add("\"\"");
+                        i += 2;
+                        continue;
+                    }
+
                     inQuotes = !inQuotes;
                     continue;
                 }
