@@ -10248,11 +10248,11 @@ void Module::RestoreMethodTablePointer(RelativeFixupPointer<PTR_MethodTable> * p
 
     if (ppMT->IsTagged((TADDR)ppMT))
     {
-        RestoreMethodTablePointerRaw(ppMT->GetValuePtr((TADDR)ppMT), pContainingModule, level);
+        RestoreMethodTablePointerRaw(ppMT->GetValuePtr(), pContainingModule, level);
     }
     else
     {
-        ClassLoader::EnsureLoaded(ppMT->GetValue((TADDR)ppMT), level);
+        ClassLoader::EnsureLoaded(ppMT->GetValue(), level);
     }
 }
 
@@ -10387,7 +10387,7 @@ PTR_Module Module::RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Mo
         return ppModule->GetValue(dac_cast<TADDR>(ppModule));
 
 #ifndef DACCESS_COMPILE 
-    PTR_Module * ppValue = ppModule->GetValuePtr(dac_cast<TADDR>(ppModule));
+    PTR_Module * ppValue = ppModule->GetValuePtr();
 
     // Ensure that the compiler won't fetch the value twice
     TADDR fixup = VolatileLoadWithoutBarrier((TADDR *)ppValue);
@@ -10440,7 +10440,7 @@ void Module::RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, M
     if (!ppModule->IsTagged((TADDR)ppModule))
         return;
 
-    PTR_Module * ppValue = ppModule->GetValuePtr((TADDR)ppModule);
+    PTR_Module * ppValue = ppModule->GetValuePtr();
 
     // Ensure that the compiler won't fetch the value twice
     TADDR fixup = VolatileLoadWithoutBarrier((TADDR *)ppValue);
@@ -10594,7 +10594,7 @@ void Module::RestoreTypeHandlePointer(RelativeFixupPointer<TypeHandle> * pHandle
 
     if (pHandle->IsTagged((TADDR)pHandle))
     {
-        RestoreTypeHandlePointerRaw(pHandle->GetValuePtr((TADDR)pHandle), pContainingModule, level);
+        RestoreTypeHandlePointerRaw(pHandle->GetValuePtr(), pContainingModule, level);
     }
     else
     {
@@ -10696,7 +10696,7 @@ void Module::RestoreMethodDescPointer(RelativeFixupPointer<PTR_MethodDesc> * ppM
 
     if (ppMD->IsTagged((TADDR)ppMD))
     {
-        RestoreMethodDescPointerRaw(ppMD->GetValuePtr((TADDR)ppMD), pContainingModule, level);
+        RestoreMethodDescPointerRaw(ppMD->GetValuePtr(), pContainingModule, level);
     }
     else
     {
