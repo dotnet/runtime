@@ -7003,7 +7003,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                               DPtrToPreferredAddr(mt->GetLoaderModule()),
                               MethodTable, METHODTABLES );
 
-    PTR_MethodTableWriteableData wd = mt->m_pWriteableData;
+    PTR_MethodTableWriteableData wd = ReadPointer((MethodTable *)mt, &MethodTable::m_pWriteableData);
     _ASSERTE(wd != NULL);
     DisplayStartStructureWithOffset( m_pWriteableData, DPtrToPreferredAddr(wd),
                                      sizeof(*wd), MethodTable, METHODTABLES );
