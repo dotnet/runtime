@@ -76,7 +76,10 @@ namespace System.Net.Http
                 }
 
                 // Disallow automatic redirection from https to http
-                if (request.RequestUri.Scheme == "https" && location.Scheme == "http")
+                bool allowed =
+                    (request.RequestUri.Scheme == "http" && (location.Scheme == "http" || location.Scheme == "https")) ||
+                    (request.RequestUri.Scheme == "https" && location.Scheme == "https");
+                if (!allowed)
                 {
                     break;
                 }
