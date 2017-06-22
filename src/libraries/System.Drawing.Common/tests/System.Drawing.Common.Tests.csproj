@@ -8,6 +8,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="BrushTests.cs" />
     <Compile Include="BrushesTests.cs" />
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
@@ -24,10 +25,12 @@
     <Compile Include="Imaging\MetaHeaderTests.cs" />
     <Compile Include="Imaging\WmfPlaceableFileHeaderTests.cs" />
     <Compile Include="RegionTests.cs" />
+    <Compile Include="SolidBrushTests.cs" />
     <Compile Include="StringFormatTests.cs" />
     <Compile Include="SystemBrushesTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="Drawing2D\HatchBrushTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
