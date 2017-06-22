@@ -2328,7 +2328,7 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
     assert(varDsc->lvClassHnd == nullptr);
     assert(!varDsc->lvClassIsExact);
 
-    JITDUMP("\nlvaSetClass: setting class for V%02i to (%p) %s %s\n", varNum, clsHnd,
+    JITDUMP("\nlvaSetClass: setting class for V%02i to (%p) %s %s\n", varNum, dspPtr(clsHnd),
             info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
 
     varDsc->lvClassHnd     = clsHnd;
