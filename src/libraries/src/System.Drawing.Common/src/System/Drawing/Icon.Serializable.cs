@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
+
 namespace System.Drawing
 {
-    using System.IO;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-
     [Serializable]
-    public sealed partial class Icon : ISerializable
+    partial class Icon : ISerializable
     {
-        /// <summary>
-        /// Constructor used in deserialization
-        /// </summary>
         private Icon(SerializationInfo info, StreamingContext context)
         {
             _iconData = (byte[])info.GetValue("IconData", typeof(byte[]));
@@ -29,9 +26,6 @@ namespace System.Drawing
             }
         }
 
-        /// <summary>
-        /// ISerializable private implementation
-        /// </summary>
         [SecurityPermissionAttribute(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.SerializationFormatter)]
         void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
         {

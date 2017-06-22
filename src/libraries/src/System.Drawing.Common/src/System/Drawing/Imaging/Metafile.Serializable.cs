@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.Serialization;
-
     [Serializable]
-    public sealed partial class Metafile : Image
+    partial class Metafile
     {
-        /// <summary>
-        /// Constructor used in deserialization
-        /// </summary>
         private Metafile(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

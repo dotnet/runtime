@@ -5,7 +5,7 @@
 namespace System.Drawing.Printing
 {
     [Serializable]
-    internal partial struct TriState
+    partial struct TriState
     {
     }
 }

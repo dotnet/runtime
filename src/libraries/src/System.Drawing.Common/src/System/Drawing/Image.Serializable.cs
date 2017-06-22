@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
+
 namespace System.Drawing
 {
-    using System.Diagnostics;
-    using System.IO;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-
     [Serializable]
-    public abstract partial class Image : ISerializable
+    partial class Image : ISerializable
     {
-        /// <summary>
-        /// Constructor used in deserialization
-        /// </summary>
 #pragma warning disable CA2229
         internal Image(SerializationInfo info, StreamingContext context)
         {

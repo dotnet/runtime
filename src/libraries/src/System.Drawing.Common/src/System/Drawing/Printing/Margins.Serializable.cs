@@ -7,9 +7,9 @@ using System.Runtime.Serialization;
 namespace System.Drawing.Printing
 {
     [Serializable]
-    public partial class Margins : ICloneable
+    partial class Margins
     {
-        [OnDeserialized()]
+        [OnDeserialized]
         private void OnDeserializedMethod(StreamingContext context)
         {
             if (_doubleLeft == 0 && _left != 0)
