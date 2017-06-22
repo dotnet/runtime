@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Globalization;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class TypeConverterTests : TypeConverter
+    public class TypeConverterTests : RemoteExecutorTestBase
     {
         public static TypeConverter s_converter = new TypeConverter();
         public static ITypeDescriptorContext s_context = new MyTypeDescriptorContext();
@@ -82,28 +83,34 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            Assert.Throws<ArgumentNullException>(
+            RemoteInvoke(() =>
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
+
+                Assert.Throws<ArgumentNullException>(
                 () => TypeConverterTests.s_converter.ConvertTo(TypeConverterTests.s_context, null, TypeConverterTests.c_conversionInputValue, null));
 
-            Assert.Throws<NotSupportedException>(
-                () => TypeConverterTests.s_converter.ConvertTo(TypeConverterTests.s_context, null, TypeConverterTests.c_conversionInputValue, typeof(int)));
+                Assert.Throws<NotSupportedException>(
+                    () => TypeConverterTests.s_converter.ConvertTo(TypeConverterTests.s_context, null, TypeConverterTests.c_conversionInputValue, typeof(int)));
 
-            object o = TypeConverterTests.s_converter.ConvertTo(
-                TypeConverterTests.s_context, null, TypeConverterTests.c_conversionInputValue, typeof(string));
-            TypeConverterTests.VerifyConversionToString(o);
+                object o = TypeConverterTests.s_converter.ConvertTo(
+                    TypeConverterTests.s_context, null, TypeConverterTests.c_conversionInputValue, typeof(string));
+                TypeConverterTests.VerifyConversionToString(o);
 
-            o = TypeConverterTests.s_converter.ConvertTo(
-                TypeConverterTests.s_context, CultureInfo.CurrentCulture, TypeConverterTests.c_conversionInputValue, typeof(string));
-            TypeConverterTests.VerifyConversionToString(o);
+                o = TypeConverterTests.s_converter.ConvertTo(
+                    TypeConverterTests.s_context, CultureInfo.CurrentCulture, TypeConverterTests.c_conversionInputValue, typeof(string));
+                TypeConverterTests.VerifyConversionToString(o);
 
-            o = TypeConverterTests.s_converter.ConvertTo(
-                TypeConverterTests.s_context, CultureInfo.InvariantCulture, TypeConverterTests.c_conversionInputValue, typeof(string));
-            TypeConverterTests.VerifyConversionToString(o);
+                o = TypeConverterTests.s_converter.ConvertTo(
+                    TypeConverterTests.s_context, CultureInfo.InvariantCulture, TypeConverterTests.c_conversionInputValue, typeof(string));
+                TypeConverterTests.VerifyConversionToString(o);
 
-            string s = TypeConverterTests.s_converter.ConvertTo(
-                TypeConverterTests.s_context, CultureInfo.InvariantCulture, new FormattableClass(), typeof(string)) as string;
-            Assert.NotNull(s);
-            Assert.Equal(FormattableClass.Token, s);
+                string s = TypeConverterTests.s_converter.ConvertTo(
+                    TypeConverterTests.s_context, CultureInfo.InvariantCulture, new FormattableClass(), typeof(string)) as string;
+                Assert.NotNull(s);
+                Assert.Equal(FormattableClass.Token, s);
+                return SuccessExitCode;
+            });
         }
 
         [Fact]
@@ -138,18 +145,29 @@ namespace System.ComponentModel.Tests
 
         private void RunProtectedMethods()
         {
-            Assert.Throws<NotSupportedException>(() => GetConvertFromException(null));
-            Assert.Throws<NotSupportedException>(() => GetConvertFromException("1"));
-            Assert.Throws<NotSupportedException>(() => GetConvertFromException(new BaseClass()));
-            Assert.Throws<NotSupportedException>(() => GetConvertToException(null, typeof(int)));
-            Assert.Throws<NotSupportedException>(() => GetConvertToException("1", typeof(int)));
-            Assert.Throws<NotSupportedException>(() => GetConvertToException(new BaseClass(), typeof(BaseClass)));
+            var tc = new TypeConverterHelper();
+            tc.RunProtectedMethods();
         }
 
         private static void VerifyConversionToString(object o)
         {
             Assert.True(o is string);
             Assert.Equal(TypeConverterTests.c_conversionResult, (string)o);
+        }
+
+        private class TypeConverterHelper : TypeConverter
+        {
+            public void RunProtectedMethods()
+            {
+                var tc = new TypeConverter();
+
+                Assert.Throws<NotSupportedException>(() => GetConvertFromException(null));
+                Assert.Throws<NotSupportedException>(() => GetConvertFromException("1"));
+                Assert.Throws<NotSupportedException>(() => GetConvertFromException(new BaseClass()));
+                Assert.Throws<NotSupportedException>(() => GetConvertToException(null, typeof(int)));
+                Assert.Throws<NotSupportedException>(() => GetConvertToException("1", typeof(int)));
+                Assert.Throws<NotSupportedException>(() => GetConvertToException(new BaseClass(), typeof(BaseClass)));
+            }
         }
     }
 }
