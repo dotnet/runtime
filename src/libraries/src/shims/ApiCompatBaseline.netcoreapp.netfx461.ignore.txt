@@ -19,6 +19,15 @@ MembersMustExist : Member 'System.Runtime.InteropServices.RuntimeEnvironment..ct
 // Activator changed to static class intentionally. See here: https://github.com/dotnet/corefx/issues/11869
 CannotMakeTypeAbstract : Type 'System.Activator' is abstract in the implementation but is not abstract in the contract.
 
+// System.Drawing types changed to static intentionally.  Change is source and binary compatible.  https://github.com/dotnet/corefx/commit/ad215be2fa28a7d2f19a90c1ba04c50c3b677253
+CannotMakeTypeAbstract : Type 'System.Drawing.Brushes' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.Pens' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemBrushes' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemColors' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemFonts' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemIcons' is abstract in the implementation but is not abstract in the contract.
+CannotMakeTypeAbstract : Type 'System.Drawing.SystemPens' is abstract in the implementation but is not abstract in the contract.
+
 // Won't came back into netcoreapp. See here: https://github.com/dotnet/corefx/issues/18075
 MembersMustExist : Member 'System.ComponentModel.DataAnnotations.ValidationContext.ServiceContainer.get()' does not exist in the implementation but it does exist in the contract.
 
