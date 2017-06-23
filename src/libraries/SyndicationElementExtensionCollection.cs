@@ -4,57 +4,57 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
+    using Microsoft.ServiceModel.Syndication.Resources;
+    using System;
     using System.Collections.ObjectModel;
-    using System.Runtime;
+    using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Xml;
     using System.Xml.Serialization;
-    using System.Runtime.CompilerServices;
-    using Microsoft.ServiceModel.Syndication.Resources;
 
     // sealed because the ctor results in a call to the virtual InsertItem method
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public sealed class SyndicationElementExtensionCollection : Collection<SyndicationElementExtension>
     {
-        XmlBuffer buffer;
-        bool initialized;
+        private XmlBuffer _buffer;
+        private bool _initialized;
 
         internal SyndicationElementExtensionCollection()
-            : this((XmlBuffer) null)
+            : this((XmlBuffer)null)
         {
         }
 
         internal SyndicationElementExtensionCollection(XmlBuffer buffer)
             : base()
         {
-            this.buffer = buffer;
-            if (this.buffer != null)
+            _buffer = buffer;
+            if (_buffer != null)
             {
                 PopulateElements();
             }
-            initialized = true;
+            _initialized = true;
         }
 
         internal SyndicationElementExtensionCollection(SyndicationElementExtensionCollection source)
             : base()
         {
-            this.buffer = source.buffer;
+            _buffer = source._buffer;
             for (int i = 0; i < source.Items.Count; ++i)
             {
                 base.Add(source.Items[i]);
             }
-            initialized = true;
+            _initialized = true;
         }
 
         public void Add(object extension)
         {
             if (extension is SyndicationElementExtension)
             {
-                base.Add((SyndicationElementExtension) extension);
+                base.Add((SyndicationElementExtension)extension);
             }
             else
             {
-                this.Add(extension, (DataContractSerializer) null);
+                this.Add(extension, (DataContractSerializer)null);
             }
         }
 
@@ -72,7 +72,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("dataContractExtension");
+                throw new ArgumentNullException("dataContractExtension");
             }
             if (dataContractSerializer == null)
             {
@@ -85,7 +85,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlSerializerExtension");
+                throw new ArgumentNullException("xmlSerializerExtension");
             }
             if (serializer == null)
             {
@@ -98,7 +98,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (xmlReader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("xmlReader");
+                throw new ArgumentNullException("xmlReader");
             }
             base.Add(new SyndicationElementExtension(xmlReader));
         }
@@ -120,7 +120,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw new ArgumentNullException("serializer");
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
@@ -129,16 +129,16 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("serializer");
+                throw new ArgumentNullException("serializer");
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
 
         internal void WriteTo(XmlWriter writer)
         {
-            if (this.buffer != null)
+            if (_buffer != null)
             {
-                using (XmlDictionaryReader reader = this.buffer.GetReader(0))
+                using (XmlDictionaryReader reader = _buffer.GetReader(0))
                 {
                     reader.ReadStartElement();
                     while (reader.IsStartElement())
@@ -160,9 +160,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             base.ClearItems();
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
@@ -170,13 +170,13 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             base.InsertItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
@@ -184,9 +184,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             base.RemoveItem(index);
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
@@ -194,21 +194,21 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
             base.SetItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
-        XmlBuffer GetOrCreateBufferOverExtensions()
+        private XmlBuffer GetOrCreateBufferOverExtensions()
         {
-            if (this.buffer != null)
+            if (_buffer != null)
             {
-                return this.buffer;
+                return _buffer;
             }
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
             using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
@@ -222,32 +222,31 @@ namespace Microsoft.ServiceModel.Syndication
             }
             newBuffer.CloseSection();
             newBuffer.Close();
-            this.buffer = newBuffer;
+            _buffer = newBuffer;
             return newBuffer;
         }
 
-        void PopulateElements()
+        private void PopulateElements()
         {
-            using (XmlDictionaryReader reader = this.buffer.GetReader(0))
+            using (XmlDictionaryReader reader = _buffer.GetReader(0))
             {
                 reader.ReadStartElement();
                 int index = 0;
                 while (reader.IsStartElement())
                 {
-                    base.Add(new SyndicationElementExtension(this.buffer, index, reader.LocalName, reader.NamespaceURI));
+                    base.Add(new SyndicationElementExtension(_buffer, index, reader.LocalName, reader.NamespaceURI));
                     reader.Skip();
                     ++index;
                 }
             }
         }
 
-        Collection<TExtension> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
+        private Collection<TExtension> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
         {
             if (string.IsNullOrEmpty(extensionName))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.GetString(SR.ExtensionNameNotSpecified));
+                throw new ArgumentNullException(SR.ExtensionNameNotSpecified);
             }
-            //Fx.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace
             if (extensionNamespace == null)
             {

@@ -5,41 +5,36 @@
 namespace Microsoft.ServiceModel.Syndication
 {
     using System;
-    using System.Collections.Generic;
-    using System.Xml;
-    using System.Runtime.Serialization;
     using System.Globalization;
-    using System.Xml.Serialization;
-    using System.Xml.Schema;
-    using System.Diagnostics.CodeAnalysis;
-    using DiagnosticUtility = Microsoft.ServiceModel.DiagnosticUtility;
     using System.Runtime.CompilerServices;
+    using System.Runtime.Serialization;
+    using System.Xml;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [DataContract]
     public abstract class SyndicationItemFormatter
     {
-        SyndicationItem item;
+        private SyndicationItem _item;
 
         protected SyndicationItemFormatter()
         {
-            this.item = null;
+            _item = null;
         }
 
         protected SyndicationItemFormatter(SyndicationItem itemToWrite)
         {
             if (itemToWrite == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("itemToWrite");
+                throw new ArgumentNullException("itemToWrite");
             }
-            this.item = itemToWrite;
+            _item = itemToWrite;
         }
 
         public SyndicationItem Item
         {
             get
             {
-                return this.item;
+                return _item;
             }
         }
 
@@ -61,9 +56,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("item");
+                throw new ArgumentNullException("item");
             }
-            this.item = item;
+            _item = item;
         }
 
         internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlDictionaryReader reader, int maxExtensionSize)

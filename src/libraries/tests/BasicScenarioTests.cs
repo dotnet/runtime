@@ -132,6 +132,64 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 File.Delete(RssPath);
                 File.Delete(AtomPath);            
             }
-        }         
+        }
+
+
+        [Fact]
+        public static void SyndicationFeed_RSS20FeedFormatter_UsingCustomParser()
+        {
+            //this test will override the default date parser and assign just a new date to the feed
+
+            // *** SETUP *** \\
+            Rss20FeedFormatter rssformater = new Rss20FeedFormatter();
+            string newTitle = "My title is not the original one!";
+            DateTime timeNow = DateTime.Now;
+
+            rssformater.DateParser = delegate (string date, XmlReader xmlr)
+            {
+                return new DateTimeOffset(timeNow);
+            };
+
+            rssformater.ItemParser = delegate (XmlReader reader1, SyndicationFeed result)
+            {
+                while (reader1.Name != "item" || reader1.NodeType != XmlNodeType.EndElement)
+                    reader1.Read();
+
+                SyndicationItem item = new SyndicationItem();
+
+                item.Title = new TextSyndicationContent(newTitle);
+                item.Summary = new TextSyndicationContent("I'm not supposed to show a summary...");
+                return item;
+            };
+
+            rssformater.ImageParser = delegate (XmlReader readerD, SyndicationFeed feed)
+            {
+                feed.ImageUrl = new Uri("http://www.customParsedImage.com");
+                readerD.Skip();
+                return true;
+            };
+
+
+            try
+            {
+                // *** EXECUTE *** \\
+                XmlReader reader = XmlReader.Create(@"TestFeeds\SimpleRssFeed.xml");
+                SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
+
+                // *** ASSERT *** \\
+                foreach (var item in sf.Items) {
+                    Assert.True(item.Title.Text == newTitle);
+                    Assert.True(sf.LastUpdatedTime == timeNow);
+                }
+
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                
+            }
+
+
+        }
     }
 }

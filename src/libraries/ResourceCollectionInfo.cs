@@ -5,23 +5,21 @@
 namespace Microsoft.ServiceModel.Syndication
 {
     using System;
-    using System.Collections.ObjectModel;
-    using System.Runtime.Serialization;
-    using System.Xml.Serialization;
     using System.Collections.Generic;
-    using System.Xml;
+    using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
+    using System.Xml;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ResourceCollectionInfo : IExtensibleSyndicationObject
     {
-        static IEnumerable<string> singleEmptyAccept;
-        Collection<string> accepts;
-        Uri baseUri;
-        Collection<CategoriesDocument> categories;
-        ExtensibleSyndicationObject extensions = new ExtensibleSyndicationObject();
-        Uri link;
-        TextSyndicationContent title;
+        private static IEnumerable<string> s_singleEmptyAccept;
+        private Collection<string> _accepts;
+        private Uri _baseUri;
+        private Collection<CategoriesDocument> _categories;
+        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private Uri _link;
+        private TextSyndicationContent _title;
 
         public ResourceCollectionInfo()
         {
@@ -46,28 +44,28 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (title == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("title");
+                throw new ArgumentNullException("title");
             }
             if (link == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("link");
+                throw new ArgumentNullException("link");
             }
-            this.title = title;
-            this.link = link;
+            _title = title;
+            _link = link;
             if (categories != null)
             {
-                this.categories = new NullNotAllowedCollection<CategoriesDocument>();
+                _categories = new NullNotAllowedCollection<CategoriesDocument>();
                 foreach (CategoriesDocument category in categories)
                 {
-                    this.categories.Add(category);
+                    _categories.Add(category);
                 }
             }
             if (accepts != null)
             {
-                this.accepts = new NullNotAllowedCollection<string>();
+                _accepts = new NullNotAllowedCollection<string>();
                 foreach (string accept in accepts)
                 {
-                    this.accepts.Add(accept);
+                    _accepts.Add(accept);
                 }
             }
         }
@@ -76,11 +74,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                if (this.accepts == null)
+                if (_accepts == null)
                 {
-                    this.accepts = new NullNotAllowedCollection<string>();
+                    _accepts = new NullNotAllowedCollection<string>();
                 }
-                return this.accepts;
+                return _accepts;
             }
         }
 
@@ -88,25 +86,25 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                return this.extensions.AttributeExtensions;
+                return _extensions.AttributeExtensions;
             }
         }
 
         public Uri BaseUri
         {
-            get { return this.baseUri; }
-            set { this.baseUri = value; }
+            get { return _baseUri; }
+            set { _baseUri = value; }
         }
 
         public Collection<CategoriesDocument> Categories
         {
             get
             {
-                if (this.categories == null)
+                if (_categories == null)
                 {
-                    this.categories = new NullNotAllowedCollection<CategoriesDocument>();
+                    _categories = new NullNotAllowedCollection<CategoriesDocument>();
                 }
-                return this.categories;
+                return _categories;
             }
         }
 
@@ -114,20 +112,20 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                return this.extensions.ElementExtensions;
+                return _extensions.ElementExtensions;
             }
         }
 
         public Uri Link
         {
-            get { return this.link; }
-            set { this.link = value; }
+            get { return _link; }
+            set { _link = value; }
         }
 
         public TextSyndicationContent Title
         {
-            get { return this.title; }
-            set { this.title = value; }
+            get { return _title; }
+            set { _title = value; }
         }
 
         protected internal virtual InlineCategoriesDocument CreateInlineCategoriesDocument()
@@ -152,33 +150,33 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteAttributeExtensions(writer);
+            _extensions.WriteAttributeExtensions(writer);
         }
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            this.extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
+            _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.extensions.LoadElementExtensions(buffer);
+            _extensions.LoadElementExtensions(buffer);
         }
 
-        static IEnumerable<string> CreateSingleEmptyAccept()
+        private static IEnumerable<string> CreateSingleEmptyAccept()
         {
-            if (singleEmptyAccept == null)
+            if (s_singleEmptyAccept == null)
             {
                 List<string> tmp = new List<string>(1);
                 tmp.Add(string.Empty);
-                singleEmptyAccept = tmp.AsReadOnly();
+                s_singleEmptyAccept = tmp.AsReadOnly();
             }
-            return singleEmptyAccept;
+            return s_singleEmptyAccept;
         }
     }
 }

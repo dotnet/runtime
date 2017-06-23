@@ -7,49 +7,47 @@ namespace Microsoft.ServiceModel.Syndication
     using System;
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
-    using System.Runtime.Serialization;
-    using System.Xml.Serialization;
     using System.Xml;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
-    struct ExtensibleSyndicationObject : IExtensibleSyndicationObject
+    internal struct ExtensibleSyndicationObject : IExtensibleSyndicationObject
     {
-        Dictionary<XmlQualifiedName, string> attributeExtensions;
-        SyndicationElementExtensionCollection elementExtensions;
+        private Dictionary<XmlQualifiedName, string> _attributeExtensions;
+        private SyndicationElementExtensionCollection _elementExtensions;
 
-        ExtensibleSyndicationObject(ExtensibleSyndicationObject source)
+        private ExtensibleSyndicationObject(ExtensibleSyndicationObject source)
         {
-            if (source.attributeExtensions != null)
+            if (source._attributeExtensions != null)
             {
-                this.attributeExtensions = new Dictionary<XmlQualifiedName, string>();
-                foreach (XmlQualifiedName key in source.attributeExtensions.Keys)
+                _attributeExtensions = new Dictionary<XmlQualifiedName, string>();
+                foreach (XmlQualifiedName key in source._attributeExtensions.Keys)
                 {
-                    this.attributeExtensions.Add(key, source.attributeExtensions[key]);
+                    _attributeExtensions.Add(key, source._attributeExtensions[key]);
                 }
             }
             else
             {
-                this.attributeExtensions = null;
+                _attributeExtensions = null;
             }
-            if (source.elementExtensions != null)
+            if (source._elementExtensions != null)
             {
-                this.elementExtensions = new SyndicationElementExtensionCollection(source.elementExtensions);
+                _elementExtensions = new SyndicationElementExtensionCollection(source._elementExtensions);
             }
             else
             {
-                this.elementExtensions = null;
+                _elementExtensions = null;
             }
         }
 
-        public Dictionary<XmlQualifiedName, string> AttributeExtensions 
+        public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
             get
             {
-                if (this.attributeExtensions == null)
+                if (_attributeExtensions == null)
                 {
-                    this.attributeExtensions = new Dictionary<XmlQualifiedName, string>();
+                    _attributeExtensions = new Dictionary<XmlQualifiedName, string>();
                 }
-                return this.attributeExtensions;
+                return _attributeExtensions;
             }
         }
 
@@ -57,15 +55,15 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                if (this.elementExtensions == null)
+                if (_elementExtensions == null)
                 {
-                    this.elementExtensions = new SyndicationElementExtensionCollection();
+                    _elementExtensions = new SyndicationElementExtensionCollection();
                 }
-                return this.elementExtensions;
+                return _elementExtensions;
             }
         }
 
-        static XmlBuffer CreateXmlBuffer(XmlDictionaryReader unparsedExtensionsReader, int maxExtensionSize)
+        private static XmlBuffer CreateXmlBuffer(XmlDictionaryReader unparsedExtensionsReader, int maxExtensionSize)
         {
             XmlBuffer buffer = new XmlBuffer(maxExtensionSize);
             using (XmlDictionaryWriter writer = buffer.OpenSection(unparsedExtensionsReader.Quotas))
@@ -86,33 +84,33 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (readerOverUnparsedExtensions == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("readerOverUnparsedExtensions");
+                throw new ArgumentNullException("readerOverUnparsedExtensions");
             }
             if (maxExtensionSize < 0)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException("maxExtensionSize"));
+                throw new ArgumentOutOfRangeException("maxExtensionSize");
             }
             XmlDictionaryReader r = XmlDictionaryReader.CreateDictionaryReader(readerOverUnparsedExtensions);
-            this.elementExtensions = new SyndicationElementExtensionCollection(CreateXmlBuffer(r, maxExtensionSize));
+            _elementExtensions = new SyndicationElementExtensionCollection(CreateXmlBuffer(r, maxExtensionSize));
         }
 
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.elementExtensions = new SyndicationElementExtensionCollection(buffer);
+            _elementExtensions = new SyndicationElementExtensionCollection(buffer);
         }
 
         internal void WriteAttributeExtensions(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
-            if (this.attributeExtensions != null)
+            if (_attributeExtensions != null)
             {
-                foreach (XmlQualifiedName qname in this.attributeExtensions.Keys)
+                foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
                 {
-                    string value = this.attributeExtensions[qname];
+                    string value = _attributeExtensions[qname];
                     writer.WriteAttributeString(qname.Name, qname.Namespace, value);
                 }
             }
@@ -122,11 +120,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
-            if (this.elementExtensions != null)
+            if (_elementExtensions != null)
             {
-                this.elementExtensions.WriteTo(writer);
+                _elementExtensions.WriteTo(writer);
             }
         }
 
