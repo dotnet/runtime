@@ -50,7 +50,7 @@ namespace System.Net.Http
                 TrySetBasicAuthToken(request);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (!_preAuthenticate && response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -67,7 +67,7 @@ namespace System.Net.Http
                         }
 
                         response.Dispose();
-                        response = await _innerHandler.SendAsync(request, cancellationToken);
+                        response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
                         break;
                     }
                 }

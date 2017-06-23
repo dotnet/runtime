@@ -51,10 +51,10 @@ namespace System.Net.Http
             if (connection == null)
             {
                 // No connection available in pool.  Create a new one.
-                connection = await CreateConnection(request, key, pool);
+                connection = await CreateConnection(request, key, pool).ConfigureAwait(false);
             }
 
-            return await connection.SendAsync(request, cancellationToken);
+            return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<SslStream> EstablishSslConnection(string host, HttpRequestMessage request, Stream stream)
@@ -73,7 +73,7 @@ namespace System.Net.Http
             try
             {
                 // TODO: No cancellationToken?
-                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, _sslProtocols, _checkCertificateRevocationList);
+                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, _sslProtocols, _checkCertificateRevocationList).ConfigureAwait(false);
             }
             catch (AuthenticationException ae)
             {
@@ -100,13 +100,13 @@ namespace System.Net.Http
         {
             Uri uri = request.RequestUri;
 
-            Stream stream = await ConnectHelper.ConnectAsync(uri.Host, uri.Port);
+            Stream stream = await ConnectHelper.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
 
             TransportContext transportContext = null;
 
             if (uri.Scheme == "https")
             {
-                SslStream sslStream = await EstablishSslConnection(uri.Host, request, stream);
+                SslStream sslStream = await EstablishSslConnection(uri.Host, request, stream).ConfigureAwait(false);
 
                 stream = sslStream;
                 transportContext = sslStream.TransportContext;

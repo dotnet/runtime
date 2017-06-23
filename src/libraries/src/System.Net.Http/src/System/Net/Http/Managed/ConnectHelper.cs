@@ -25,12 +25,12 @@ namespace System.Net.Http
                 if (IPAddress.TryParse(host, out ipAddress))
                 {
                     client = new TcpClient(ipAddress.AddressFamily);
-                    await client.ConnectAsync(ipAddress, port);
+                    await client.ConnectAsync(ipAddress, port).ConfigureAwait(false);
                 }
                 else
                 {
                     client = new TcpClient();
-                    await client.ConnectAsync(host, port);
+                    await client.ConnectAsync(host, port).ConfigureAwait(false);
                 }
             }
             catch (SocketException se)
