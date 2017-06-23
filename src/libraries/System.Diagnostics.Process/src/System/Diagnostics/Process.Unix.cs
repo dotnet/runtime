@@ -449,29 +449,34 @@ namespace System.Diagnostics
         /// </remarks>
         private static void ParseArgumentsIntoList(string arguments, List<string> results)
         {
-            bool inQuotes = false;
-
             // Iterate through all of the characters in the argument string.
             for (int i = 0; i < arguments.Length; i++)
             {
-                for (; i < arguments.Length && (arguments[i] == ' ' || arguments[i] == '\t'); i++) ;
+                while (i < arguments.Length && (arguments[i] == ' ' || arguments[i] == '\t'))
+                    i++;
 
                 if (i == arguments.Length)
                     break;
 
-                results.Add(GetNextArgument(arguments, ref i, ref inQuotes));
+                results.Add(GetNextArgument(arguments, ref i));
             }
         }
 
-        private static string GetNextArgument(string arguments, ref int i, ref bool inQuotes)
+        private static string GetNextArgument(string arguments, ref int i)
         {
-            var currentArgument = new StringBuilder();
+            var currentArgument = StringBuilderCache.Acquire();
+            bool inQuotes = false;
 
-            for (; i < arguments.Length; i++)
+            while (i < arguments.Length)
             {
                 // From the current position, iterate through contiguous backslashes.
                 int backslashCount = 0;
-                for (; i < arguments.Length && arguments[i] == '\\'; i++, backslashCount++) ;
+                while (i < arguments.Length && arguments[i] == '\\')
+                {
+                    i++;
+                    backslashCount++;
+                }
+
                 if (backslashCount > 0)
                 {
                     if (i >= arguments.Length || arguments[i] != '"')
@@ -479,7 +484,6 @@ namespace System.Diagnostics
                         // Backslashes not followed by a double quote:
                         // they should all be treated as literal backslashes.
                         currentArgument.Append('\\', backslashCount);
-                        i--;
                     }
                     else
                     {
@@ -487,15 +491,13 @@ namespace System.Diagnostics
                         // - Output a literal slash for each complete pair of slashes
                         // - If one remains, use it to make the subsequent quote a literal.
                         currentArgument.Append('\\', backslashCount / 2);
-                        if (backslashCount % 2 == 0)
-                        {
-                            i--;
-                        }
-                        else
+                        if (backslashCount % 2 != 0)
                         {
                             currentArgument.Append('"');
+                            i++;
                         }
                     }
+
                     continue;
                 }
 
@@ -508,18 +510,20 @@ namespace System.Diagnostics
                 {
                     if (inQuotes && i < arguments.Length - 1 && arguments[i + 1] == '"')
                     {
-                        currentArgument.Append(c);
+                        currentArgument.Append('"');
                         i++;
-                        continue;
+                    }
+                    else
+                    {
+                        inQuotes = !inQuotes;
                     }
 
-                    inQuotes = !inQuotes;
+                    i++;
                     continue;
                 }
 
                 // If this is a space/tab and we're not in quotes, we're done with the current
-                // argument, and if we've built up any characters in the current argument,
-                // it should be added to the results and then reset for the next one.
+                // argument, it should be added to the results and then reset for the next one.
                 if ((c == ' ' || c == '\t') && !inQuotes)
                 {
                     break;
@@ -527,9 +531,10 @@ namespace System.Diagnostics
 
                 // Nothing special; add the character to the current argument.
                 currentArgument.Append(c);
+                i++;
             }
 
-            return currentArgument.ToString();
+            return StringBuilderCache.GetStringAndRelease(currentArgument);
         }
 
         /// <summary>Gets the wait state for this Process object.</summary>
