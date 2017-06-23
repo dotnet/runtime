@@ -42,8 +42,7 @@ namespace System.Net.Http
 
             // Try to get a connection from the connection pool
             HttpConnectionKey key = new HttpConnectionKey(request.RequestUri);
-            HttpConnectionPool pool;
-            if (_connectionPoolTable.TryGetValue(key, out pool))
+            if (_connectionPoolTable.TryGetValue(key, out HttpConnectionPool pool))
             {
                 connection = pool.GetConnection();
             }
@@ -51,13 +50,13 @@ namespace System.Net.Http
             if (connection == null)
             {
                 // No connection available in pool.  Create a new one.
-                connection = await CreateConnection(request, key, pool);
+                connection = await CreateConnection(request, key, pool).ConfigureAwait(false);
             }
 
-            return await connection.SendAsync(request, cancellationToken);
+            return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<SslStream> EstablishSslConnection(string host, HttpRequestMessage request, Stream stream)
+        private async ValueTask<SslStream> EstablishSslConnection(string host, HttpRequestMessage request, Stream stream)
         {
             RemoteCertificateValidationCallback callback = null;
             if (_serverCertificateCustomValidationCallback != null)
@@ -73,40 +72,33 @@ namespace System.Net.Http
             try
             {
                 // TODO: No cancellationToken?
-                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, _sslProtocols, _checkCertificateRevocationList);
+                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, _sslProtocols, _checkCertificateRevocationList).ConfigureAwait(false);
             }
-            catch (AuthenticationException ae)
-            {
-                // TODO: Tests expect HttpRequestException here.  Is that correct behavior?
-                sslStream.Dispose();
-                throw new HttpRequestException("could not establish SSL connection", ae);
-            }
-            catch (IOException ie)
-            {
-                // TODO: Tests expect HttpRequestException here.  Is that correct behavior?
-                sslStream.Dispose();
-                throw new HttpRequestException("could not establish SSL connection", ie);
-            }
-            catch (Exception)
+            catch (Exception e)
             {
                 sslStream.Dispose();
+                if (e is AuthenticationException || e is IOException)
+                {
+                    // TODO: Tests expect HttpRequestException here.  Is that correct behavior?
+                    throw new HttpRequestException("could not establish SSL connection", e);
+                }
                 throw;
             }
 
             return sslStream;
         }
 
-        private async Task<HttpConnection> CreateConnection(HttpRequestMessage request, HttpConnectionKey key, HttpConnectionPool pool)
+        private async ValueTask<HttpConnection> CreateConnection(HttpRequestMessage request, HttpConnectionKey key, HttpConnectionPool pool)
         {
             Uri uri = request.RequestUri;
 
-            Stream stream = await ConnectHelper.ConnectAsync(uri.Host, uri.Port);
+            Stream stream = await ConnectHelper.ConnectAsync(uri.Host, uri.Port).ConfigureAwait(false);
 
             TransportContext transportContext = null;
 
             if (uri.Scheme == "https")
             {
-                SslStream sslStream = await EstablishSslConnection(uri.Host, request, stream);
+                SslStream sslStream = await EstablishSslConnection(uri.Host, request, stream).ConfigureAwait(false);
 
                 stream = sslStream;
                 transportContext = sslStream.TransportContext;
@@ -114,7 +106,7 @@ namespace System.Net.Http
 
             if (pool == null)
             {
-                pool = _connectionPoolTable.GetOrAdd(key, new HttpConnectionPool());
+                pool = _connectionPoolTable.GetOrAdd(key, _ => new HttpConnectionPool());
             }
 
             var connection = new HttpConnection(pool, key, stream, transportContext, false);

@@ -16,19 +16,9 @@ namespace System.Net.Http
 
         public AuthenticationHandler(bool preAuthenticate, ICredentials credentials, HttpMessageHandler innerHandler)
         {
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
-
-            if (credentials == null)
-            {
-                throw new ArgumentNullException(nameof(credentials));
-            }
-
             _preAuthenticate = preAuthenticate;
-            _credentials = credentials;
-            _innerHandler = innerHandler;
+            _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
         }
 
         private bool TrySetBasicAuthToken(HttpRequestMessage request)
@@ -50,7 +40,7 @@ namespace System.Net.Http
                 TrySetBasicAuthToken(request);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             if (!_preAuthenticate && response.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -67,7 +57,7 @@ namespace System.Net.Http
                         }
 
                         response.Dispose();
-                        response = await _innerHandler.SendAsync(request, cancellationToken);
+                        response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
                         break;
                     }
                 }

@@ -14,23 +14,18 @@ namespace System.Net.Http
 
         public AutoRedirectHandler(int maxAutomaticRedirections, HttpMessageHandler innerHandler)
         {
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
 
             if (maxAutomaticRedirections < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxAutomaticRedirections));
             }
-
             _maxAutomaticRedirections = maxAutomaticRedirections;
-            _innerHandler = innerHandler;
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             int redirectCount = 0;
             while (true)
@@ -101,7 +96,7 @@ namespace System.Net.Http
 
                 // Do the redirect.
                 response.Dispose();
-                response = await _innerHandler.SendAsync(request, cancellationToken);
+                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             return response;

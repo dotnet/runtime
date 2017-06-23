@@ -12,51 +12,29 @@ namespace System.Net.Http
 
         public HttpConnectionKey(Uri uri)
         {
-            if (uri.Scheme == "http")
-            {
-                UsingSSL = false;
-            }
-            else if (uri.Scheme == "https")
-            {
-                UsingSSL = true;
-            }
-            else
-            {
+            UsingSSL = 
+                uri.Scheme == "http" ? false :
+                uri.Scheme == "https" ? true :
                 throw new ArgumentException("Invalid Uri scheme", nameof(uri));
-            }
 
             Host = uri.Host;
             Port = uri.Port;
         }
 
-        public override int GetHashCode()
-        {
-            return UsingSSL.GetHashCode() ^ Host.GetHashCode() ^ Port.GetHashCode();
-        }
+        public override int GetHashCode() =>
+            UsingSSL.GetHashCode() ^ Host.GetHashCode() ^ Port.GetHashCode();
 
-        public override bool Equals(object obj)
-        {
-            if (obj == null || obj.GetType() != typeof(HttpConnectionKey))
-            {
-                return false;
-            }
+        public override bool Equals(object obj) =>
+            obj != null &&
+            obj is HttpConnectionKey &&
+            Equals((HttpConnectionKey)obj);
 
-            return Equals((HttpConnectionKey)obj);
-        }
+        public bool Equals(HttpConnectionKey other) =>
+            UsingSSL == other.UsingSSL &&
+            Host == other.Host &&
+            Port == other.Port;
 
-        public bool Equals(HttpConnectionKey other)
-        {
-            return (UsingSSL == other.UsingSSL && Host == other.Host && Port == other.Port);
-        }
-
-        public static bool operator ==(HttpConnectionKey key1, HttpConnectionKey key2)
-        {
-            return key1.Equals(key2);
-        }
-
-        public static bool operator !=(HttpConnectionKey key1, HttpConnectionKey key2)
-        {
-            return !key1.Equals(key2);
-        }
+        public static bool operator ==(HttpConnectionKey key1, HttpConnectionKey key2) => key1.Equals(key2);
+        public static bool operator !=(HttpConnectionKey key1, HttpConnectionKey key2) => !key1.Equals(key2);
     }
 }

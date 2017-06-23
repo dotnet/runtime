@@ -8,9 +8,9 @@ namespace System.Net.Http
 {
     internal sealed class HttpConnectionPool : IDisposable
     {
-        ConcurrentDictionary<HttpConnection, HttpConnection> _activeConnections;
-        ConcurrentBag<HttpConnection> _idleConnections;
-        bool _disposed;
+        private readonly ConcurrentDictionary<HttpConnection, HttpConnection> _activeConnections;
+        private readonly ConcurrentBag<HttpConnection> _idleConnections;
+        private bool _disposed;
 
         public HttpConnectionPool()
         {
