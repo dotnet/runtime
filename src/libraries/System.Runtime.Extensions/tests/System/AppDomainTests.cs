@@ -17,27 +17,6 @@ namespace System.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18718")]
     public class AppDomainTests : RemoteExecutorTestBase
     {
-        public AppDomainTests()
-        {
-            string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests.dll");
-            string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests", "AssemblyResolveTests.dll");
-            if (File.Exists(sourceTestAssemblyPath))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
-                File.Copy(sourceTestAssemblyPath, destTestAssemblyPath, true);
-                File.Delete(sourceTestAssemblyPath);
-            }
-
-            sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe");
-            destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
-            if (File.Exists(sourceTestAssemblyPath))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
-                File.Copy(sourceTestAssemblyPath, destTestAssemblyPath, true);
-                File.Delete(sourceTestAssemblyPath);
-            }
-        }
-
         [Fact]
         public void CurrentDomain_Not_Null()
         {
@@ -196,6 +175,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21410", TargetFrameworkMonikers.Uap)]
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();
@@ -242,8 +222,11 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18718", TargetFrameworkMonikers.Uap)] // Need to copy files out of execution directory
         public void ExecuteAssembly()
         {
+            CopyTestAssemblies();
+
             string name = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
             Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
@@ -316,7 +299,12 @@ namespace System.Tests
             assemblyName.CodeBase = null;
             Assert.NotNull(AppDomain.CurrentDomain.Load(assemblyName));
             Assert.NotNull(AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.FullName));
+        }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.Load(byte[])")] 
+        public void LoadBytes()
+        {
             Assembly assembly = typeof(AppDomainTests).Assembly;
             byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
             Assert.NotNull(AppDomain.CurrentDomain.Load(aBytes));
@@ -411,6 +399,7 @@ namespace System.Tests
 #pragma warning restore 618
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void GetAssemblies()
         {
             Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
@@ -445,6 +434,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void AssemblyLoad()
         {
             bool AssemblyLoadFlag = false;
@@ -470,8 +460,11 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18718", TargetFrameworkMonikers.Uap)] // Need to copy files out of execution directory'
         public void AssemblyResolve()
         {
+            CopyTestAssemblies();
+
             RemoteInvoke(() =>
             {
                 ResolveEventHandler handler = (sender, e) =>
@@ -488,8 +481,11 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/18718", TargetFrameworkMonikers.Uap)] // Need to copy files out of execution directory
         public void AssemblyResolve_RequestingAssembly()
         {
+            CopyTestAssemblies();
+
             RemoteInvoke(() =>
             {
                 Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe"));
@@ -566,6 +562,25 @@ namespace System.Tests
             var principal = new System.Security.Principal.GenericPrincipal(identity, null);
             AppDomain.CurrentDomain.SetThreadPrincipal(principal);
         }
+
+        private void CopyTestAssemblies()
+        {
+            string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTests", "AssemblyResolveTests.dll");
+            if (File.Exists("AssemblyResolveTests.dll"))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+                File.Copy("AssemblyResolveTests.dll", destTestAssemblyPath, true);
+                File.Delete("AssemblyResolveTests.dll");
+            }
+
+            destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA", "TestAppOutsideOfTPA.exe");
+            if (File.Exists("TestAppOutsideOfTPA.exe"))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
+                File.Copy("TestAppOutsideOfTPA.exe", destTestAssemblyPath, true);
+                File.Delete("TestAppOutsideOfTPA.exe");
+            }
+        }        
     }
 }
 
