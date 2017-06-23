@@ -254,7 +254,9 @@
       <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
-    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico" />
+    <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico">
+      <LogicalName>System.Drawing.ShieldIcon.ico</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

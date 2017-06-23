@@ -17,8 +17,7 @@ namespace System.Drawing.Tests
             yield return Icon(() => SystemIcons.Hand);
             yield return Icon(() => SystemIcons.Information);
             yield return Icon(() => SystemIcons.Question);
-            //[ActiveIssue(21310)]
-            //yield return Icon(() => SystemIcons.Shield);
+            yield return Icon(() => SystemIcons.Shield);
             yield return Icon(() => SystemIcons.Warning);
             yield return Icon(() => SystemIcons.WinLogo);
         }
