@@ -65,6 +65,8 @@ BYTE *g_groupToCpuCount = NULL;
 
 // Total number of processors in the system
 int g_cpuCount = 0;
+// Total number of possible processors in the system
+int g_possibleCpuCount = 0;
 // Total number of CPU groups
 int g_groupCount = 0;
 // The highest NUMA node available
@@ -83,12 +85,12 @@ VOID
 AllocateLookupArrays()
 {
     g_groupAndIndexToCpu = (short*)malloc(g_groupCount * MaxCpusPerGroup * sizeof(short));
-    g_cpuToAffinity = (CpuAffinity*)malloc(g_cpuCount * sizeof(CpuAffinity));
+    g_cpuToAffinity = (CpuAffinity*)malloc(g_possibleCpuCount * sizeof(CpuAffinity));
     g_groupToCpuMask = (KAFFINITY*)malloc(g_groupCount * sizeof(KAFFINITY));
     g_groupToCpuCount = (BYTE*)malloc(g_groupCount * sizeof(BYTE));
 
     memset(g_groupAndIndexToCpu, 0xff, g_groupCount * MaxCpusPerGroup * sizeof(short));
-    memset(g_cpuToAffinity, 0xff, g_cpuCount * sizeof(CpuAffinity));
+    memset(g_cpuToAffinity, 0xff, g_possibleCpuCount * sizeof(CpuAffinity));
     memset(g_groupToCpuMask, 0, g_groupCount * sizeof(KAFFINITY));
     memset(g_groupToCpuCount, 0, g_groupCount * sizeof(BYTE));
 }
@@ -143,7 +145,8 @@ NUMASupportInitialize()
         struct bitmask *mask = numa_allocate_cpumask();
         int numaNodesCount = numa_max_node() + 1;
 
-        g_cpuCount = numa_num_possible_cpus();
+        g_possibleCpuCount = numa_num_possible_cpus();
+        g_cpuCount = 0;
         g_groupCount = 0;
 
         for (int i = 0; i < numaNodesCount; i++)
@@ -153,6 +156,7 @@ NUMASupportInitialize()
             // but that cannot happen since the mask was allocated by numa_allocate_cpumask
             _ASSERTE(st == 0);
             unsigned int nodeCpuCount = numa_bitmask_weight(mask);
+            g_cpuCount += nodeCpuCount;
             unsigned int nodeGroupCount = (nodeCpuCount + MaxCpusPerGroup - 1) / MaxCpusPerGroup;
             g_groupCount += nodeGroupCount;
         }
@@ -170,7 +174,7 @@ NUMASupportInitialize()
             _ASSERTE(st == 0);
             unsigned int nodeCpuCount = numa_bitmask_weight(mask);
             unsigned int nodeGroupCount = (nodeCpuCount + MaxCpusPerGroup - 1) / MaxCpusPerGroup;
-            for (int j = 0; j < g_cpuCount; j++)
+            for (int j = 0; j < g_possibleCpuCount; j++)
             {
                 if (numa_bitmask_isbitset(mask, j))
                 {
@@ -206,13 +210,14 @@ NUMASupportInitialize()
 #endif // HAVE_NUMA_H
     {
         // No NUMA
+        g_possibleCpuCount = PAL_GetLogicalCpuCountFromOS();
         g_cpuCount = PAL_GetLogicalCpuCountFromOS();
         g_groupCount = 1;
         g_highestNumaNode = 0;
 
         AllocateLookupArrays();
 
-        for (int i = 0; i < g_cpuCount; i++)
+        for (int i = 0; i < g_possibleCpuCount; i++)
         {
             g_cpuToAffinity[i].Number = i;
             g_cpuToAffinity[i].Group = 0;
@@ -383,7 +388,7 @@ GetThreadGroupAffinityInternal(
         WORD group = NO_GROUP;
         KAFFINITY mask = 0;
 
-        for (int i = 0; i < g_cpuCount; i++)
+        for (int i = 0; i < g_possibleCpuCount; i++)
         {
             if (CPU_ISSET(i, &cpuSet))
             {
@@ -411,7 +416,7 @@ GetThreadGroupAffinityInternal(
     // There is no API to manage thread affinity, so let's return a group affinity
     // with all the CPUs on the system.
     GroupAffinity->Group = 0;
-    GroupAffinity->Mask = GetFullAffinityMask(g_cpuCount);
+    GroupAffinity->Mask = GetFullAffinityMask(g_possibleCpuCount);
     success = TRUE;
 #endif // HAVE_PTHREAD_GETAFFINITY_NP
 
@@ -536,7 +541,7 @@ GetCurrentProcessorNumberEx(
     ENTRY("GetCurrentProcessorNumberEx(ProcNumber=%p\n", ProcNumber);
 
     DWORD cpu = GetCurrentProcessorNumber();
-    _ASSERTE(cpu < g_cpuCount);
+    _ASSERTE(cpu < g_possibleCpuCount);
     ProcNumber->Group = g_cpuToAffinity[cpu].Group;
     ProcNumber->Number = g_cpuToAffinity[cpu].Number;
 
@@ -576,7 +581,7 @@ GetProcessAffinityMask(
             WORD group = NO_GROUP;
             DWORD_PTR processMask = 0;
 
-            for (int i = 0; i < g_cpuCount; i++)
+            for (int i = 0; i < g_possibleCpuCount; i++)
             {
                 if (CPU_ISSET(i, &cpuSet))
                 {
