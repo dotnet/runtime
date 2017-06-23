@@ -2461,11 +2461,6 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] // 3 = Unicode
             internal static extern int GdipCreateFontFromDC(HandleRef hdc, ref IntPtr font);
 
-            [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Ansi)] // DIFFERENT: ANSI, not Unicode
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            internal static extern int GdipCreateFontFromLogfontA(HandleRef hdc, [In, Out, MarshalAs(UnmanagedType.AsAny)] object lf, out IntPtr font);
-#pragma warning restore CS0618
-
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] // 3 = Unicode
 #pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
             internal static extern int GdipCreateFontFromLogfontW(HandleRef hdc, [In, Out, MarshalAs(UnmanagedType.AsAny)] object lf, out IntPtr font);
@@ -2477,11 +2472,6 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] // 3 = Unicode
 #pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
             internal static extern int GdipGetLogFontW(HandleRef font, HandleRef graphics, [In, Out, MarshalAs(UnmanagedType.AsAny)] object lf);
-#pragma warning restore CS0618
-
-            [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Ansi)] // 3 = Unicode
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            internal static extern int GdipGetLogFontA(HandleRef font, HandleRef graphics, [In, Out, MarshalAs(UnmanagedType.AsAny)] object lf);
 #pragma warning restore CS0618
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] // 3 = Unicode
@@ -3536,12 +3526,6 @@ namespace System.Drawing
 
         public static int AddFontFile(string fileName)
         {
-            // This is not supported in Win9x systems.
-            if (Marshal.SystemDefaultCharSize == 1)
-            {
-                return 0;
-            }
-
             return AddFontResourceEx(fileName, /*FR_PRIVATE*/ 0x10, IntPtr.Zero);
         }
 
@@ -4617,44 +4601,8 @@ namespace System.Drawing
         [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
         public static extern int GetTextMetricsW(HandleRef hDC, [In, Out] ref SafeNativeMethods.TEXTMETRIC lptm);
 
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet = System.Runtime.InteropServices.CharSet.Ansi)]
-        public static extern int GetTextMetricsA(HandleRef hDC, [In, Out] ref SafeNativeMethods.TEXTMETRICA lptm);
-
         public static int GetTextMetrics(HandleRef hDC, ref SafeNativeMethods.TEXTMETRIC lptm) {
-            if (Marshal.SystemDefaultCharSize == 1)
-            {
-                // ANSI
-                SafeNativeMethods.TEXTMETRICA lptmA = new SafeNativeMethods.TEXTMETRICA();
-                int retVal = SafeNativeMethods.GetTextMetricsA(hDC, ref lptmA);
-
-                lptm.tmHeight           = lptmA.tmHeight; 
-                lptm.tmAscent           = lptmA.tmAscent; 
-                lptm.tmDescent          = lptmA.tmDescent; 
-                lptm.tmInternalLeading  = lptmA.tmInternalLeading; 
-                lptm.tmExternalLeading  = lptmA.tmExternalLeading; 
-                lptm.tmAveCharWidth     = lptmA.tmAveCharWidth; 
-                lptm.tmMaxCharWidth     = lptmA.tmMaxCharWidth; 
-                lptm.tmWeight           = lptmA.tmWeight; 
-                lptm.tmOverhang         = lptmA.tmOverhang; 
-                lptm.tmDigitizedAspectX = lptmA.tmDigitizedAspectX; 
-                lptm.tmDigitizedAspectY = lptmA.tmDigitizedAspectY; 
-                lptm.tmFirstChar        = (char) lptmA.tmFirstChar; 
-                lptm.tmLastChar         = (char) lptmA.tmLastChar; 
-                lptm.tmDefaultChar      = (char) lptmA.tmDefaultChar; 
-                lptm.tmBreakChar        = (char) lptmA.tmBreakChar; 
-                lptm.tmItalic           = lptmA.tmItalic; 
-                lptm.tmUnderlined       = lptmA.tmUnderlined; 
-                lptm.tmStruckOut        = lptmA.tmStruckOut; 
-                lptm.tmPitchAndFamily   = lptmA.tmPitchAndFamily; 
-                lptm.tmCharSet          = lptmA.tmCharSet; 
-
-                return retVal;
-            }
-            else
-            {
-                // Unicode
-                return SafeNativeMethods.GetTextMetricsW(hDC, ref lptm);
-            }
+            return SafeNativeMethods.GetTextMetricsW(hDC, ref lptm);
         }
 
         [DllImport(ExternDll.Kernel32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]

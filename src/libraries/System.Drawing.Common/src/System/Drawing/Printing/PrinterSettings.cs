@@ -25,7 +25,7 @@ namespace System.Drawing.Printing
         // though.
         //
         // Also, all properties have hidden tri-state logic -- yes/no/default
-        private const int PADDING_IA64 = 4;
+        private const int Padding64Bit = 4;
 
         private string _printerName; // default printer.
         private string _driverName = "";
@@ -213,42 +213,28 @@ namespace System.Drawing.Printing
         {
             get
             {
-                int returnCode;
-                int bufferSize;
-                int count;
-                int level, sizeofstruct;
-                // Note: Level 5 doesn't seem to work properly on NT platforms
-                // (atleast the call to get the size of the buffer reqd.),
-                // and Level 4 doesn't work on Win9x.
-                //
-                if (Environment.OSVersion.Platform == System.PlatformID.Win32NT)
+                int sizeofstruct;
+                // Note: The call to get the size of the buffer required for level 5 does not work properly on NT platforms.
+                const int Level = 4;
+                // PRINTER_INFO_4 is 12 or 24 bytes in size depending on the architecture.
+                if (IntPtr.Size == 8)
                 {
-                    level = 4;
-                    // PRINTER_INFO_4 are 12 bytes in size
-                    if (IntPtr.Size == 8)
-                    {
-                        sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 1) + PADDING_IA64;
-                    }
-                    else
-                    {
-                        sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 1);
-                    }
+                    sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 1) + Padding64Bit;
                 }
                 else
                 {
-                    level = 5;
-                    // PRINTER_INFO_5 are 20 bytes in size
-                    sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 3);
+                    sizeofstruct = (IntPtr.Size * 2) + (Marshal.SizeOf(typeof(int)) * 1);
                 }
-                string[] array;
 
-                SafeNativeMethods.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, level, IntPtr.Zero, 0, out bufferSize, out count);
+                int bufferSize;
+                int count;
+                SafeNativeMethods.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS, null, Level, IntPtr.Zero, 0, out bufferSize, out count);
 
                 IntPtr buffer = Marshal.AllocCoTaskMem(bufferSize);
-                returnCode = SafeNativeMethods.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS,
-                                                        null, level, buffer,
+                int returnCode = SafeNativeMethods.EnumPrinters(SafeNativeMethods.PRINTER_ENUM_LOCAL | SafeNativeMethods.PRINTER_ENUM_CONNECTIONS,
+                                                        null, Level, buffer,
                                                         bufferSize, out bufferSize, out count);
-                array = new string[count];
+                var array = new string[count];
 
                 if (returnCode == 0)
                 {
@@ -1399,18 +1385,9 @@ namespace System.Drawing.Printing
             if (str == null) str = "";
             IntPtr address = (IntPtr)(checked((long)bufferStart + index * Marshal.SystemDefaultCharSize));
 
-            if (Marshal.SystemDefaultCharSize == 1)
-            {
-                byte[] bytes = System.Text.Encoding.Default.GetBytes(str);
-                Marshal.Copy(bytes, 0, address, bytes.Length);
-                Marshal.WriteByte(checked((IntPtr)((long)address + bytes.Length)), 0);
-            }
-            else
-            {
-                char[] data = str.ToCharArray();
-                Marshal.Copy(data, 0, address, data.Length);
-                Marshal.WriteInt16((IntPtr)(checked((long)address + data.Length * 2)), 0);
-            }
+            char[] data = str.ToCharArray();
+            Marshal.Copy(data, 0, address, data.Length);
+            Marshal.WriteInt16((IntPtr)(checked((long)address + data.Length * 2)), 0);
 
             return checked((short)(str.Length + 1));
         }

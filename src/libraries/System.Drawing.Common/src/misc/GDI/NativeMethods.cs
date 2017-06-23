@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Internal
 {
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-
     internal partial class IntNativeMethods
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
-        public const int MaxTextLengthInWin9x = 8192;
+        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
 
         public const int
         DT_TOP = 0x00000000,
