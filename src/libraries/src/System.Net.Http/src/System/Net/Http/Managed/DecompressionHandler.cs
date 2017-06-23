@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal class DecompressionHandler : HttpMessageHandler
+    internal sealed class DecompressionHandler : HttpMessageHandler
     {
         private readonly HttpMessageHandler _innerHandler;
         private readonly DecompressionMethods _decompressionMethods;
