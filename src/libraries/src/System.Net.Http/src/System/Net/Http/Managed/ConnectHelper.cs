@@ -9,7 +9,7 @@ namespace System.Net.Http
 {
     internal static class ConnectHelper
     {
-        public static async Task<NetworkStream> ConnectAsync(string host, int port)
+        public static async ValueTask<NetworkStream> ConnectAsync(string host, int port)
         {
             TcpClient client;
             try
