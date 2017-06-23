@@ -54,7 +54,7 @@ namespace System.Net.Http
 
             if (proxyUri == null)
             {
-                return await _innerHandler.SendAsync(request, cancellationToken);
+                return await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             if (proxyUri.Scheme != "http")
@@ -68,9 +68,9 @@ namespace System.Net.Http
                 throw new NotImplementedException("no support for SSL tunneling through proxy");
             }
 
-            HttpConnection connection = await GetOrCreateConnection(request, proxyUri);
+            HttpConnection connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
 
-            HttpResponseMessage response = await connection.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // Handle proxy authentication
             if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired &&
@@ -89,8 +89,8 @@ namespace System.Net.Http
                             request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic",
                                 BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
 
-                            connection = await GetOrCreateConnection(request, proxyUri);
-                            response = await connection.SendAsync(request, cancellationToken);
+                            connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
+                            response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
                         }
 
                         break;
@@ -115,7 +115,7 @@ namespace System.Net.Http
                 }
             }
 
-            Stream stream = await ConnectHelper.ConnectAsync(proxyUri.Host, proxyUri.Port);
+            Stream stream = await ConnectHelper.ConnectAsync(proxyUri.Host, proxyUri.Port).ConfigureAwait(false);
 
             if (pool == null)
             {

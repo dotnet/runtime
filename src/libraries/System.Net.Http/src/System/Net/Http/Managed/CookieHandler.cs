@@ -38,7 +38,7 @@ namespace System.Net.Http
                 request.Headers.Add("Cookie", cookieHeader);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // Handle Set-Cookie
             IEnumerable<string> setCookies;

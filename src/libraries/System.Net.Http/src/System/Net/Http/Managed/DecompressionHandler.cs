@@ -51,7 +51,7 @@ namespace System.Net.Http
                 request.Headers.AcceptEncoding.Add(s_deflateHeaderValue);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             while (true)
             {
@@ -127,8 +127,8 @@ namespace System.Net.Http
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                Stream decompressedStream = await CreateContentReadStreamAsync();
-                await decompressedStream.CopyToAsync(stream);
+                Stream decompressedStream = await CreateContentReadStreamAsync().ConfigureAwait(false);
+                await decompressedStream.CopyToAsync(stream).ConfigureAwait(false);
                 decompressedStream.Dispose();
             }
 
@@ -141,7 +141,7 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                Stream originalStream = await _originalContent.ReadAsStreamAsync();
+                Stream originalStream = await _originalContent.ReadAsStreamAsync().ConfigureAwait(false);
                 return GetDecompressedStream(originalStream);
             }
 

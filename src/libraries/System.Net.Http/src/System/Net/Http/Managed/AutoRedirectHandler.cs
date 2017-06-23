@@ -30,7 +30,7 @@ namespace System.Net.Http
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             int redirectCount = 0;
             while (true)
@@ -101,7 +101,7 @@ namespace System.Net.Http
 
                 // Do the redirect.
                 response.Dispose();
-                response = await _innerHandler.SendAsync(request, cancellationToken);
+                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             return response;
