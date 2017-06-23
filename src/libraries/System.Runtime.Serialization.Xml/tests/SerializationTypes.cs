@@ -5231,6 +5231,16 @@ public class Manager : EmployeeC
     public EmployeeC[] emps;
 }
 
+public class TypeWithVirtualGenericProperty<T>
+{
+    public virtual T Value { get; set; }
+}
+
+public class TypeWithVirtualGenericPropertyDerived<T> : TypeWithVirtualGenericProperty<T>
+{
+    public override T Value { get; set; }
+}
+
 [Serializable]
 public class MyArgumentException : Exception, ISerializable
 {
