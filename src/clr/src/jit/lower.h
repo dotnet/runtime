@@ -134,6 +134,8 @@ private:
 
     void TreeNodeInfoInitCheckByteable(GenTree* tree);
 
+    void SetDelayFree(GenTree* delayUseSrc);
+
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree);
 
