@@ -13,7 +13,7 @@ using System.Runtime.Versioning;
 namespace System.Xml.Xsl.Xslt
 {
     using TypeFactory = XmlQueryTypeFactory;
-#if DEBUG && !uap
+#if DEBUG && !uap && !uapaot
     using XmlILTrace = System.Xml.Xsl.IlGen.XmlILTrace;
 #endif
 

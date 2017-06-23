@@ -64,7 +64,7 @@ namespace System.Xml.Xsl
         private XmlWriterSettings _outputSettings = null;
         private QilExpression _qil = null;
 
-#if !uap
+#if !uap && !uapaot
         // Executable command for the compiled stylesheet
         private XmlILCommand _command = null;
 #endif
@@ -84,7 +84,7 @@ namespace System.Xml.Xsl
             _compilerErrorColl = null;
             _outputSettings = null;
             _qil = null;
-#if !uap
+#if !uap && !uapaot
             _command = null;
 #endif
         }
@@ -201,7 +201,7 @@ namespace System.Xml.Xsl
 
         private void CompileQilToMsil(XsltSettings settings)
         {
-#if !uap
+#if !uap && !uapaot
             _command = new XmlILGenerator().Generate(_qil, /*typeBuilder:*/null);
             _outputSettings = _command.StaticData.DefaultWriterSettings;
             _qil = null;
@@ -216,7 +216,7 @@ namespace System.Xml.Xsl
 
         public void Load(Type compiledStylesheet)
         {
-#if !uap
+#if !uap && !uapaot
             Reset();
             if (compiledStylesheet == null)
                 throw new ArgumentNullException(nameof(compiledStylesheet));
@@ -263,7 +263,7 @@ namespace System.Xml.Xsl
 
         public void Load(MethodInfo executeMethod, byte[] queryData, Type[] earlyBoundTypes)
         {
-#if !uap
+#if !uap && !uapaot
             Reset();
 
             if (executeMethod == null)
@@ -431,7 +431,7 @@ namespace System.Xml.Xsl
         // It's OK to suppress the SxS warning.
         public void Transform(XmlReader input, XsltArgumentList arguments, XmlWriter results, XmlResolver documentResolver)
         {
-#if !uap
+#if !uap && !uapaot
             CheckArguments(input, results);
             CheckCommand();
             _command.Execute((object)input, documentResolver, arguments, results);
@@ -444,7 +444,7 @@ namespace System.Xml.Xsl
         // It's OK to suppress the SxS warning.
         public void Transform(IXPathNavigable input, XsltArgumentList arguments, XmlWriter results, XmlResolver documentResolver)
         {
-#if !uap
+#if !uap && !uapaot
             CheckArguments(input, results);
             CheckCommand();
             _command.Execute((object)input.CreateNavigator(), documentResolver, arguments, results);
@@ -477,7 +477,7 @@ namespace System.Xml.Xsl
 
         private void CheckCommand()
         {
-#if !uap
+#if !uap && !uapaot
             if (_command == null)
             {
                 throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
@@ -516,7 +516,7 @@ namespace System.Xml.Xsl
             CompileQilToMsil(settings);
         }
 
-#if !uap
+#if !uap && !uapaot
         private void Transform(string inputUri, XsltArgumentList arguments, XmlWriter results, XmlResolver documentResolver)
         {
             _command.Execute(inputUri, documentResolver, arguments, results);

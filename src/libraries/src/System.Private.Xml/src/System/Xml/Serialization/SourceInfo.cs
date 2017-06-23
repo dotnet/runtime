@@ -10,7 +10,7 @@ using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using System.Xml.Extensions;
 
-#if !uap
+#if !uapaot
 #if XMLSERIALIZERGENERATOR
 namespace Microsoft.XmlSerializer.Generator
 #else

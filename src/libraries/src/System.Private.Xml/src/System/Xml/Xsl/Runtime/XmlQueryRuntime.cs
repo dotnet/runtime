@@ -15,7 +15,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Xml.Xsl.Qil;
-#if !uap
+#if !uap && !uapaot
 using System.Xml.Xsl.IlGen;
 #endif
 using System.ComponentModel;
@@ -494,7 +494,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
         {
-#if !uap
+#if !uap && !uapaot
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()),
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
 #endif
@@ -695,7 +695,7 @@ namespace System.Xml.Xsl.Runtime
                     }
             }
 
-#if !uap
+#if !uap && !uapaot
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()), "Xml type " + xmlType + " is not represented in ILGen as " + value.GetType().Name);
 #endif
             return value;
