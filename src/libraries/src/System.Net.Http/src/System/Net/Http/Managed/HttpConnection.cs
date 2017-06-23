@@ -206,15 +206,15 @@ namespace System.Net.Http
                 while (true)
                 {
                     // Get hex digit
-                    if (c >= '0' && c <= '9')
+                    if ((uint)(c - '0') <= '9' - '0')
                     {
                         chunkSize = chunkSize * 16 + (c - '0');
                     }
-                    else if (c >= 'a' && c <= 'f')
+                    else if ((uint)(c - 'a') <= ('f' - 'a'))
                     {
                         chunkSize = chunkSize * 16 + (c - 'a' + 10);
                     }
-                    else if (c >= 'A' && c <= 'F')
+                    else if ((uint)(c - 'A') <= ('F' - 'A'))
                     {
                         chunkSize = chunkSize * 16 + (c - 'A' + 10);
                     }
