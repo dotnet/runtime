@@ -28,6 +28,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream()
         {
             string pipeName = GetUniquePipeName();
@@ -45,6 +46,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream_BeforeWaitingToConnect()
         {
             string pipeName = GetUniquePipeName();
@@ -59,6 +61,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream_ClientDisposed()
         {
             string pipeName = GetUniquePipeName();
@@ -79,6 +82,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream_ClientHandleClosed()
         {
             string pipeName = GetUniquePipeName();
@@ -99,6 +103,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream_ServerDisconnected()
         {
             string pipeName = GetUniquePipeName();
@@ -119,6 +124,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream_ServerDisposed()
         {
             string pipeName = GetUniquePipeName();
@@ -139,6 +145,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NamedPipeStream_ServerHandleClosed()
         {
             string pipeName = GetUniquePipeName();
