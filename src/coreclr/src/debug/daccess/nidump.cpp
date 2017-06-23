@@ -6012,7 +6012,7 @@ PTR_MethodTable NativeImageDumper::GetParent( PTR_MethodTable mt )
     /* REVISIT_TODO Thu 12/01/2005
      * Handle fixups
      */
-    PTR_MethodTable parent( mt->m_pParentMethodTable );
+    PTR_MethodTable parent( ReadPointerMaybeNull((MethodTable *) mt, &MethodTable::m_pParentMethodTable) );
     _ASSERTE(!CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(parent)));
     return parent;
 }
@@ -6986,7 +6986,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
 
 
 
-    PTR_MethodTable parent = mt->m_pParentMethodTable;
+    PTR_MethodTable parent = ReadPointerMaybeNull((MethodTable *) mt, &MethodTable::m_pParentMethodTable);
     if( parent == NULL )
     {
         DisplayWriteFieldPointer( m_pParentMethodTable, NULL, MethodTable,

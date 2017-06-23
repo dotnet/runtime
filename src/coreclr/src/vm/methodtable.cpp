@@ -1790,7 +1790,7 @@ TypeHandle::CastResult MethodTable::CanCastToClassNoGC(MethodTable *pTargetMT)
             if (pMT == pTargetMT)
                 return TypeHandle::CanCast;
 
-            pMT = MethodTable::GetParentMethodTableOrIndirection(pMT);
+            pMT = MethodTable::GetParentMethodTable(pMT);
         } while (pMT);
     }
 
@@ -4781,7 +4781,17 @@ void MethodTable::Fixup(DataImage *image)
 #endif // _DEBUG
 
     MethodTable * pParentMT = GetParentMethodTable();
-    _ASSERTE(!pNewMT->GetFlag(enum_flag_HasIndirectParent));
+    _ASSERTE(!pNewMT->m_pParentMethodTable.IsIndirectPtrMaybeNull());
+
+    ZapRelocationType relocType;
+    if (decltype(MethodTable::m_pParentMethodTable)::isRelative)
+    {
+        relocType = IMAGE_REL_BASED_RELPTR;
+    }
+    else
+    {
+        relocType = IMAGE_REL_BASED_PTR;
+    }
 
     if (pParentMT != NULL)
     {
@@ -4793,7 +4803,8 @@ void MethodTable::Fixup(DataImage *image)
         {
             if (image->CanHardBindToZapModule(pParentMT->GetLoaderModule()))
             {
-                image->FixupPointerField(this, offsetof(MethodTable, m_pParentMethodTable));
+                _ASSERTE(!m_pParentMethodTable.IsIndirectPtr());
+                image->FixupField(this, offsetof(MethodTable, m_pParentMethodTable), pParentMT, 0, relocType);
             }
             else
             {
@@ -4829,8 +4840,7 @@ void MethodTable::Fixup(DataImage *image)
 
         if (pImport != NULL)
         {
-            image->FixupFieldToNode(this, offsetof(MethodTable, m_pParentMethodTable), pImport, -(SSIZE_T)offsetof(MethodTable, m_pParentMethodTable));
-            pNewMT->SetFlag(enum_flag_HasIndirectParent);
+            image->FixupFieldToNode(this, offsetof(MethodTable, m_pParentMethodTable), pImport, FIXUP_POINTER_INDIRECTION, relocType);
         }
     }
 
@@ -6087,7 +6097,7 @@ void MethodTable::Restore()
     //
     // Restore parent method table
     //
-    Module::RestoreMethodTablePointerRaw(GetParentMethodTablePtr(), GetLoaderModule(), CLASS_LOAD_APPROXPARENTS);
+    Module::RestoreMethodTablePointer(&m_pParentMethodTable, GetLoaderModule(), CLASS_LOAD_APPROXPARENTS);
 
     //
     // Restore interface classes
@@ -7845,13 +7855,8 @@ BOOL MethodTable::IsParentMethodTablePointerValid()
     if (!GetWriteableData_NoLogging()->IsParentMethodTablePointerValid())
         return FALSE;
 
-    if (!GetFlag(enum_flag_HasIndirectParent))
-    {
-        return TRUE;
-    }
-    TADDR pMT;
-    pMT = *PTR_TADDR(m_pParentMethodTable + offsetof(MethodTable, m_pParentMethodTable));
-    return !CORCOMPILE_IS_POINTER_TAGGED(pMT);
+    TADDR base = dac_cast<TADDR>(this) + offsetof(MethodTable, m_pParentMethodTable);
+    return !m_pParentMethodTable.IsTagged(base);
 }
 #endif
 
