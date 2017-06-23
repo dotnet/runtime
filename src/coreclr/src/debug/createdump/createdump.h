@@ -33,6 +33,8 @@ extern bool g_diagnostics;
 #include <xcordebug.h>
 #include <mscoree.h>
 #include <dumpcommon.h>
+typedef int T_CONTEXT;
+#include <dacprivate.h>
 #include <arrayholder.h>
 #include <releaseholder.h>
 #include <unistd.h>

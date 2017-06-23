@@ -69,9 +69,3 @@ private:
         );
     }
 };
-
-static inline int sex()
-{
-  int probe = 1;
-  return !*(char *)&probe;
-}
