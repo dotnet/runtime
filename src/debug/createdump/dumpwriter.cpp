@@ -91,14 +91,9 @@ DumpWriter::WriteDump()
     ehdr.e_ident[1] = ELFMAG1;
     ehdr.e_ident[2] = ELFMAG2;
     ehdr.e_ident[3] = ELFMAG3;
-    ehdr.e_ident[4] = ELF_CLASS;
-
-    // Note: The sex is the current system running minidump-2-core
-    //       Big or Little endian.  This means you have to create
-    //       the core (minidump-2-core) on the system that matches
-    //       your intent to debug properly.
-    ehdr.e_ident[5] = sex() ? ELFDATA2MSB : ELFDATA2LSB;
-    ehdr.e_ident[6] = EV_CURRENT;
+    ehdr.e_ident[EI_CLASS] = ELF_CLASS;
+    ehdr.e_ident[EI_DATA] = ELFDATA2LSB;
+    ehdr.e_ident[EI_VERSION] = EV_CURRENT;
     ehdr.e_ident[EI_OSABI] = ELFOSABI_LINUX;
 
     ehdr.e_type = ET_CORE;
@@ -180,9 +175,17 @@ DumpWriter::WriteDump()
         phdr.p_vaddr = memoryRegion.StartAddress();
         phdr.p_memsz = memoryRegion.Size();
 
-        offset += filesz;
-        phdr.p_filesz = filesz = memoryRegion.Size();
-        phdr.p_offset = offset;
+        if (memoryRegion.IsBackedByMemory())
+        {
+            offset += filesz;
+            phdr.p_filesz = filesz = memoryRegion.Size();
+            phdr.p_offset = offset;
+        }
+        else 
+        {
+            phdr.p_filesz = 0;
+            phdr.p_offset = 0;
+        }
 
         if (!WriteData(&phdr, sizeof(phdr))) {
             return false;
@@ -230,26 +233,30 @@ DumpWriter::WriteDump()
     uint64_t total = 0;
     for (const MemoryRegion& memoryRegion : m_crashInfo.MemoryRegions())
     {
-        uint32_t size = memoryRegion.Size();
-        uint64_t address = memoryRegion.StartAddress();
-        total += size;
-
-        while (size > 0)
+        // Only write the regions that are backed by memory
+        if (memoryRegion.IsBackedByMemory())
         {
-            uint32_t bytesToRead = std::min(size, (uint32_t)sizeof(m_tempBuffer));
-            uint32_t read = 0;
+            uint32_t size = memoryRegion.Size();
+            uint64_t address = memoryRegion.StartAddress();
+            total += size;
 
-            if (FAILED(m_crashInfo.DataTarget()->ReadVirtual(address, m_tempBuffer, bytesToRead, &read))) {
-                fprintf(stderr, "ReadVirtual(%016lx, %08x) FAILED\n", address, bytesToRead);
-                return false;
+            while (size > 0)
+            {
+                uint32_t bytesToRead = std::min(size, (uint32_t)sizeof(m_tempBuffer));
+                uint32_t read = 0;
+
+                if (FAILED(m_crashInfo.DataTarget()->ReadVirtual(address, m_tempBuffer, bytesToRead, &read))) {
+                    fprintf(stderr, "ReadVirtual(%016lx, %08x) FAILED\n", address, bytesToRead);
+                    return false;
+                }
+
+                if (!WriteData(m_tempBuffer, read)) {
+                    return false;
+                }
+
+                address += read;
+                size -= read;
             }
-
-            if (!WriteData(m_tempBuffer, read)) {
-                return false;
-            }
-
-            address += read;
-            size -= read;
         }
     }
 
