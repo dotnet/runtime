@@ -271,7 +271,7 @@ namespace System.Xml.Tests
 
         //====================TFS_298991 XMLSchemaSet.Compile of an XSD containing with a large number of elements results in a System.StackOverflow error
 
-        private static void GenerateSequenceXsdFile(int size, string xsdFileName)
+        private void GenerateSequenceXsdFile(int size, string xsdFileName)
         {
             // generate the xsd file, the file is some thing like this
             //-------------------------------------------------------
@@ -291,7 +291,7 @@ namespace System.Xml.Tests
             //</xsd:element>
             //</xsd:schema>
             //------------------------------------------------------
-            StreamWriter sw = new StreamWriter(new FileStream(xsdFileName, FileMode.Create, FileAccess.Write));
+            StreamWriter sw = new StreamWriter(new FileStream(Path.Combine(TestDirectory, xsdFileName), FileMode.Create, FileAccess.Write));
 
             string head = @"<?xml version='1.0'?>
             <xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema' >";
@@ -320,7 +320,7 @@ namespace System.Xml.Tests
             sw.Dispose();
         }
 
-        private static void GenerateChoiceXsdFile(int size, string xsdFileName)
+        private void GenerateChoiceXsdFile(int size, string xsdFileName)
         {
             // generate the xsd file, the file is some thing like this
             //-------------------------------------------------------
@@ -340,7 +340,7 @@ namespace System.Xml.Tests
             //</xsd:element>
             //</xsd:schema>
             //------------------------------------------------------
-            StreamWriter sw = new StreamWriter(new FileStream(xsdFileName, FileMode.Create, FileAccess.Write));
+            StreamWriter sw = new StreamWriter(new FileStream(Path.Combine(TestDirectory, xsdFileName), FileMode.Create, FileAccess.Write));
 
             string head = @"<?xml version='1.0'?>
             <xsd:schema xmlns:xsd='http://www.w3.org/2001/XMLSchema' >";
