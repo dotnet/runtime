@@ -12,6 +12,7 @@
     <Compile Include="BrushesTests.cs" />
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
+    <Compile Include="GraphicsTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="PensTests.cs" />
@@ -59,6 +60,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="bitmaps\96x96_one_entry_8bit.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bitmaps\telescope_01.wmf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <EmbeddedResource Include="bitmaps\48x48_multiple_entries_4bit.ico">
