@@ -23,6 +23,8 @@ void sgen_pinning_init (void);
 void sgen_pin_stage_ptr (void *ptr);
 void sgen_optimize_pin_queue (void);
 void sgen_init_pinning (void);
+void sgen_init_pinning_for_conc (void);
+void sgen_finish_pinning_for_conc (void);
 void sgen_finish_pinning (void);
 void sgen_pinning_register_pinned_in_nursery (GCObject *obj);
 void sgen_scan_pin_queue_objects (ScanCopyContext ctx);

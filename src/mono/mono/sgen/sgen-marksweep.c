@@ -32,6 +32,7 @@
 #include "mono/sgen/sgen-thread-pool.h"
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-proclib.h"
 
 static int ms_block_size;
 
@@ -193,8 +194,7 @@ static volatile int sweep_state = SWEEP_STATE_SWEPT;
 static gboolean concurrent_mark;
 static gboolean concurrent_sweep = TRUE;
 
-SgenThreadPool sweep_pool_inst;
-SgenThreadPool *sweep_pool;
+int sweep_pool_context = -1;
 
 #define BLOCK_IS_TAGGED_HAS_REFERENCES(bl)	SGEN_POINTER_IS_TAGGED_1 ((bl))
 #define BLOCK_TAG_HAS_REFERENCES(bl)		SGEN_POINTER_TAG_1 ((bl))
@@ -927,7 +927,7 @@ major_finish_sweep_checking (void)
  wait:
 	job = sweep_job;
 	if (job)
-		sgen_thread_pool_job_wait (sweep_pool, job);
+		sgen_thread_pool_job_wait (sweep_pool_context, job);
 	SGEN_ASSERT (0, !sweep_job, "Why did the sweep job not null itself?");
 	SGEN_ASSERT (0, sweep_state == SWEEP_STATE_SWEPT, "How is the sweep job done but we're not swept?");
 }
@@ -1599,7 +1599,8 @@ sweep_start (void)
 			free_blocks [j] = NULL;
 	}
 
-	sgen_workers_foreach (sgen_worker_clear_free_block_lists);
+	sgen_workers_foreach (GENERATION_NURSERY, sgen_worker_clear_free_block_lists);
+	sgen_workers_foreach (GENERATION_OLD, sgen_worker_clear_free_block_lists);
 }
 
 static void sweep_finish (void);
@@ -1815,7 +1816,7 @@ sweep_job_func (void *thread_data_untyped, SgenThreadPoolJob *job)
 	 */
 	if (concurrent_sweep && lazy_sweep) {
 		sweep_blocks_job = sgen_thread_pool_job_alloc ("sweep_blocks", sweep_blocks_job_func, sizeof (SgenThreadPoolJob));
-		sgen_thread_pool_job_enqueue (sweep_pool, sweep_blocks_job);
+		sgen_thread_pool_job_enqueue (sweep_pool_context, sweep_blocks_job);
 	}
 
 	sweep_finish ();
@@ -1864,7 +1865,7 @@ major_sweep (void)
 	SGEN_ASSERT (0, !sweep_job, "We haven't finished the last sweep?");
 	if (concurrent_sweep) {
 		sweep_job = sgen_thread_pool_job_alloc ("sweep", sweep_job_func, sizeof (SgenThreadPoolJob));
-		sgen_thread_pool_job_enqueue (sweep_pool, sweep_job);
+		sgen_thread_pool_job_enqueue (sweep_pool_context, sweep_job);
 	} else {
 		sweep_job_func (NULL, NULL);
 	}
@@ -2067,7 +2068,8 @@ major_start_major_collection (void)
 	}
 
 	/* We expect workers to have very few blocks on the freelist, just evacuate them */
-	sgen_workers_foreach (sgen_worker_clear_free_block_lists_evac);
+	sgen_workers_foreach (GENERATION_NURSERY, sgen_worker_clear_free_block_lists_evac);
+	sgen_workers_foreach (GENERATION_OLD, sgen_worker_clear_free_block_lists_evac);
 
 	if (lazy_sweep && concurrent_sweep) {
 		/*
@@ -2077,7 +2079,7 @@ major_start_major_collection (void)
 		 */
 		SgenThreadPoolJob *job = sweep_blocks_job;
 		if (job)
-			sgen_thread_pool_job_wait (sweep_pool, job);
+			sgen_thread_pool_job_wait (sweep_pool_context, job);
 	}
 
 	if (lazy_sweep && !concurrent_sweep)
@@ -2115,12 +2117,6 @@ major_finish_major_collection (ScannedObjectCounts *counts)
 		sgen_pointer_queue_clear (&scanned_objects_list);
 	}
 #endif
-}
-
-static SgenThreadPool*
-major_get_sweep_pool (void)
-{
-	return sweep_pool;
 }
 
 static int
@@ -2736,26 +2732,36 @@ post_param_init (SgenMajorCollector *collector)
 	collector->sweeps_lazily = lazy_sweep;
 }
 
-/* We are guaranteed to be called by the worker in question */
+/*
+ * We are guaranteed to be called by the worker in question.
+ * This provides initialization for threads that plan to do
+ * parallel object allocation. We need to store these lists
+ * in additional data structures so we can traverse them
+ * at major/sweep start.
+ */
 static void
-sgen_worker_init_callback (gpointer worker_untyped)
+sgen_init_block_free_lists (gpointer *list_p)
 {
 	int i;
-	WorkerData *worker = (WorkerData*) worker_untyped;
-	MSBlockInfo ***worker_free_blocks = (MSBlockInfo ***) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo**) * MS_BLOCK_TYPE_MAX, INTERNAL_MEM_MS_TABLES, TRUE);
+	MSBlockInfo ***worker_free_blocks = (MSBlockInfo ***) mono_native_tls_get_value (worker_block_free_list_key);
+
+	/*
+	 * For simplification, a worker thread uses the same free block lists,
+	 * regardless of the context it is part of (major/minor).
+	 */
+	if (worker_free_blocks) {
+		*list_p = (gpointer)worker_free_blocks;
+		return;
+	}
+
+	worker_free_blocks = (MSBlockInfo ***) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo**) * MS_BLOCK_TYPE_MAX, INTERNAL_MEM_MS_TABLES, TRUE);
 
 	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++)
 		worker_free_blocks [i] = (MSBlockInfo **) sgen_alloc_internal_dynamic (sizeof (MSBlockInfo*) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
 
-	worker->free_block_lists = worker_free_blocks;
+	*list_p = (gpointer)worker_free_blocks;
 
 	mono_native_tls_set_value (worker_block_free_list_key, worker_free_blocks);
-}
-
-static void
-thread_pool_init_func (void *data_untyped)
-{
-	sgen_client_thread_register_worker ();
 }
 
 static void
@@ -2769,6 +2775,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		ms_block_size = MS_BLOCK_SIZE_MIN;
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_MS_BLOCK_INFO, SIZEOF_MS_BLOCK_INFO);
+
+	if (mono_cpu_count () <= 1)
+		is_parallel = FALSE;
 
 	num_block_obj_sizes = ms_calculate_block_obj_sizes (MS_BLOCK_OBJ_SIZE_FACTOR, NULL);
 	block_obj_sizes = (int *)sgen_alloc_internal_dynamic (sizeof (int) * num_block_obj_sizes, INTERNAL_MEM_MS_TABLES, TRUE);
@@ -2800,10 +2809,8 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
 
 	/* We can do this because we always init the minor before the major */
-	if (is_parallel || sgen_get_minor_collector ()->is_parallel) {
+	if (is_parallel || sgen_get_minor_collector ()->is_parallel)
 		mono_native_tls_alloc (&worker_block_free_list_key, NULL);
-		collector->worker_init_cb = sgen_worker_init_callback;
-	}
 
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed);
@@ -2863,7 +2870,7 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->is_valid_object = major_is_valid_object;
 	collector->describe_pointer = major_describe_pointer;
 	collector->count_cards = major_count_cards;
-	collector->get_sweep_pool = major_get_sweep_pool;
+	collector->init_block_free_lists = sgen_init_block_free_lists;
 
 	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;
 	collector->major_ops_serial.scan_object = major_scan_object_with_evacuation;
@@ -2924,11 +2931,13 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	/*cardtable requires major pages to be 8 cards aligned*/
 	g_assert ((ms_block_size % (8 * CARD_SIZE_IN_BYTES)) == 0);
 
-	if (concurrent_sweep) {
-		SgenThreadPool **thread_datas = &sweep_pool;
-		sweep_pool = &sweep_pool_inst;
-		sgen_thread_pool_init (sweep_pool, 1, thread_pool_init_func, NULL, NULL, NULL, (SgenThreadPoolData**)&thread_datas);
-	}
+	if (is_concurrent && is_parallel)
+		sgen_workers_create_context (GENERATION_OLD, mono_cpu_count ());
+	else if (is_concurrent)
+		sgen_workers_create_context (GENERATION_OLD, 1);
+
+	if (concurrent_sweep)
+		sweep_pool_context = sgen_thread_pool_create_context (1, NULL, NULL, NULL, NULL, NULL);
 }
 
 void

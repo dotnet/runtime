@@ -41,9 +41,14 @@ sgen_pinning_init (void)
 void
 sgen_init_pinning (void)
 {
-	mono_os_mutex_lock (&pin_queue_mutex);
 	memset (pin_hash_filter, 0, sizeof (pin_hash_filter));
 	pin_queue.mem_type = INTERNAL_MEM_PIN_QUEUE;
+}
+
+void
+sgen_init_pinning_for_conc (void)
+{
+	mono_os_mutex_lock (&pin_queue_mutex);
 	sgen_pointer_queue_clear (&pin_queue_objs);
 }
 
@@ -52,6 +57,11 @@ sgen_finish_pinning (void)
 {
 	last_num_pinned = pin_queue.next_slot;
 	sgen_pointer_queue_clear (&pin_queue);
+}
+
+void
+sgen_finish_pinning_for_conc (void)
+{
 	mono_os_mutex_unlock (&pin_queue_mutex);
 }
 
