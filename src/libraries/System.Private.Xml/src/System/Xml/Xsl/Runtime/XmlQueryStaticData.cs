@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-#if !uap
+#if !uap && !uapaot
 using System.Xml.Xsl.IlGen;
 #endif
 using System.Xml.Xsl.Qil;
@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.Runtime
         private string[] _globalNames;
         private EarlyBoundInfo[] _earlyBound;
 
-#if !uap
+#if !uap && !uapaot
         /// <summary>
         /// Constructor.
         /// </summary>
