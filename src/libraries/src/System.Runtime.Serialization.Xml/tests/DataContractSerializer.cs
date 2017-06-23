@@ -1312,7 +1312,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(deserializedValue.GetPrivatePropertyValue(), value.GetPrivatePropertyValue());
     }
 
-    #region private type has to be in with in the class
+#region private type has to be in with in the class
     [DataContract]
     private class PrivateType
     {
@@ -1338,7 +1338,7 @@ public static partial class DataContractSerializerTests
             return PrivateProperty;
         }
     }
-    #endregion
+#endregion
 
     [Fact]
     public static void DCS_RootNameAndNamespaceThroughConstructorAsString()
@@ -2773,7 +2773,7 @@ public static partial class DataContractSerializerTests
         Assert.Equal(value.IntProperty, actual.IntProperty);
     }
 
-    #region DesktopTest
+#region DesktopTest
 
     [Fact]
     public static void DCS_ResolveNameReturnsEmptyNamespace()
@@ -3055,7 +3055,21 @@ public static partial class DataContractSerializerTests
         SerializationTestTypes.ComparisonHelper.CompareRecursively(defaultCollections, actual);
     }
 
-    #endregion
+#endregion
+
+    [Fact]
+    public static void DCS_TypeWithVirtualGenericProperty()
+    {
+        var value1 = new TypeWithVirtualGenericProperty<int>() { Value = 1 };
+        var actual1 = SerializeAndDeserialize(value1, string.Empty, skipStringCompare: true);
+        Assert.NotNull(actual1);
+        Assert.Equal(value1.Value, actual1.Value);
+
+        var value2 = new TypeWithVirtualGenericPropertyDerived<int>() { Value = 2 };
+        var actual2 = SerializeAndDeserialize(value2, string.Empty, skipStringCompare: true);
+        Assert.NotNull(actual2);
+        Assert.Equal(value2.Value, actual2.Value);
+    }
 
     [Fact]
     public static void DCS_MyPersonSurrogate()
