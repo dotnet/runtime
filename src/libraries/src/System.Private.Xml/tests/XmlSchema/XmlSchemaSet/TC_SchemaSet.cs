@@ -34,7 +34,7 @@ namespace System.Xml.Tests
         internal static string _SchemaXdr = Path.Combine(_Root, "schema1.xdr");
     }
 
-    public class TC_SchemaSetBase
+    public class TC_SchemaSetBase : FileCleanupTestBase
     {
         static TC_SchemaSetBase()
         {
