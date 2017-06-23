@@ -12,8 +12,7 @@ namespace System.ComponentModel
     {
         /// <summary>
         ///    <para>
-        ///       Indicates all properties should
-        ///       be refreshed if the property value is changed. This field is
+        ///       Indicates all properties should be refreshed if the property value is changed. This field is
         ///       read-only.
         ///    </para>
         /// </summary>
@@ -21,8 +20,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///    <para>
-        ///       Indicates all properties should
-        ///       be invalidated and repainted if the
+        ///       Indicates all properties should be invalidated and repainted if the
         ///       property value is changed. This field is read-only.
         ///    </para>
         /// </summary>
@@ -30,35 +28,21 @@ namespace System.ComponentModel
 
         /// <summary>
         ///    <para>
-        ///       Indicates that by default
-        ///       no
-        ///       properties should be refreshed if the property value
+        ///       Indicates that by default no properties should be refreshed if the property value
         ///       is changed. This field is read-only.
         ///    </para>
         /// </summary>
         public static readonly RefreshPropertiesAttribute Default = new RefreshPropertiesAttribute(RefreshProperties.None);
 
-        /// <summary>
-        /// </summary>
-        /// <internalonly/>
-        public RefreshPropertiesAttribute(RefreshProperties refresh)
-        {
-            RefreshProperties = refresh;
-        }
+        public RefreshPropertiesAttribute(RefreshProperties refresh) => RefreshProperties = refresh;
 
         /// <summary>
         ///    <para>
-        ///       Gets or sets
-        ///       the refresh properties for the member.
+        ///       Gets the refresh properties for the member.
         ///    </para>
         /// </summary>
         public RefreshProperties RefreshProperties { get; }
 
-        /// <summary>
-        ///    <para>
-        ///       Overrides object's Equals method.
-        ///    </para>
-        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -67,22 +51,11 @@ namespace System.ComponentModel
             }
 
             RefreshPropertiesAttribute other = obj as RefreshPropertiesAttribute;
-            return (other != null) && other.RefreshProperties == RefreshProperties;
+            return other?.RefreshProperties == RefreshProperties;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(RefreshPropertiesAttribute.Default);
-        }
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }

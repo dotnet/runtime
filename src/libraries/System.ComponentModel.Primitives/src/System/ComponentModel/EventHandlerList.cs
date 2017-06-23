@@ -16,10 +16,7 @@ namespace System.ComponentModel
         ///     Creates a new event handler list.  The parent component is used to check the component's
         ///     CanRaiseEvents property.
         /// </summary>
-        internal EventHandlerList(Component parent)
-        {
-            _parent = parent;
-        }
+        internal EventHandlerList(Component parent) => _parent = parent;
 
         /// <summary>
         ///    Creates a new event handler list.
@@ -41,21 +38,14 @@ namespace System.ComponentModel
                     e = Find(key);
                 }
 
-                if (e != null)
-                {
-                    return e.Handler;
-                }
-                else
-                {
-                    return null;
-                }
+                return e?._handler;
             }
             set
             {
                 ListEntry e = Find(key);
                 if (e != null)
                 {
-                    e.Handler = value;
+                    e._handler = value;
                 }
                 else
                 {
@@ -72,7 +62,7 @@ namespace System.ComponentModel
             ListEntry e = Find(key);
             if (e != null)
             {
-                e.Handler = Delegate.Combine(e.Handler, value);
+                e._handler = Delegate.Combine(e._handler, value);
             }
             else
             {
@@ -86,42 +76,33 @@ namespace System.ComponentModel
             ListEntry currentListEntry = listToAddFrom._head;
             while (currentListEntry != null)
             {
-                AddHandler(currentListEntry.Key, currentListEntry.Handler);
-                currentListEntry = currentListEntry.Next;
+                AddHandler(currentListEntry._key, currentListEntry._handler);
+                currentListEntry = currentListEntry._next;
             }
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        public void Dispose()
-        {
-            _head = null;
-        }
+        public void Dispose() => _head = null;
 
         private ListEntry Find(object key)
         {
             ListEntry found = _head;
             while (found != null)
             {
-                if (found.Key == key)
+                if (found._key == key)
                 {
                     break;
                 }
-                found = found.Next;
+                found = found._next;
             }
             return found;
         }
 
-        /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
         public void RemoveHandler(object key, Delegate value)
         {
             ListEntry e = Find(key);
             if (e != null)
             {
-                e.Handler = Delegate.Remove(e.Handler, value);
+                e._handler = Delegate.Remove(e._handler, value);
             }
             // else... no error for removal of non-existent delegate
             //
@@ -129,15 +110,15 @@ namespace System.ComponentModel
 
         private sealed class ListEntry
         {
-            internal ListEntry Next;
-            internal object Key;
-            internal Delegate Handler;
+            internal ListEntry _next;
+            internal object _key;
+            internal Delegate _handler;
 
             public ListEntry(object key, Delegate handler, ListEntry next)
             {
-                Next = next;
-                Key = key;
-                Handler = handler;
+                _next = next;
+                _key = key;
+                _handler = handler;
             }
         }
     }

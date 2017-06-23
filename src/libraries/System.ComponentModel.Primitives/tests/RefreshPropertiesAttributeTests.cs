@@ -9,47 +9,52 @@ namespace System.ComponentModel.Primitives.Tests
 {
     public class RefreshPropertiesAttributeTests
     {
-        [Fact]
-        public void Equals_DifferentValues()
+        [Theory]
+        [InlineData(RefreshProperties.None - 1, false)]
+        [InlineData(RefreshProperties.All, false)]
+        [InlineData(RefreshProperties.None, true)]
+        [InlineData(RefreshProperties.Repaint, false)]
+        public static void Ctor_Refresh(RefreshProperties refresh, bool expectedIsDefaultAttribute)
         {
-            Assert.False(RefreshPropertiesAttribute.All.Equals(RefreshPropertiesAttribute.Repaint));
+            var attribute = new RefreshPropertiesAttribute(refresh);
+            Assert.Equal(refresh, attribute.RefreshProperties);
+            Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
         }
 
-        [Fact]
-        public void Equals_Null()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            Assert.False(RefreshPropertiesAttribute.All.Equals(null));
-        }
+            yield return new object[] { RefreshPropertiesAttribute.All, RefreshPropertiesAttribute.All, true };
+            yield return new object[] { RefreshPropertiesAttribute.All, new RefreshPropertiesAttribute(RefreshProperties.All), true };
+            yield return new object[] { RefreshPropertiesAttribute.All, RefreshPropertiesAttribute.Repaint, false };
 
-        [Fact]
-        public void Equals_SameValue()
-        {
-            Assert.True(RefreshPropertiesAttribute.Default.Equals(RefreshPropertiesAttribute.Default));
+            yield return new object[] { RefreshPropertiesAttribute.All, new object(), false };
+            yield return new object[] { RefreshPropertiesAttribute.All, null, false };
         }
 
         [Theory]
-        [InlineData(RefreshProperties.All)]
-        [InlineData(RefreshProperties.None)]
-        [InlineData(RefreshProperties.Repaint)]
-        public void GetRefreshProperties(RefreshProperties value)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(RefreshPropertiesAttribute attribute, object other, bool expected)
         {
-            var attribute = new RefreshPropertiesAttribute(value);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is RefreshPropertiesAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
+        }
 
-            Assert.Equal(value, attribute.RefreshProperties);
+        public static IEnumerable<object[]> DefaultProperties_TestData()
+        {
+            yield return new object[] { RefreshPropertiesAttribute.Default, RefreshProperties.None, true };
+            yield return new object[] { RefreshPropertiesAttribute.All, RefreshProperties.All, false };
+            yield return new object[] { RefreshPropertiesAttribute.Repaint, RefreshProperties.Repaint, false };
         }
 
         [Theory]
-        [MemberData(nameof(RefreshPropertiesAttributeData))]
-        public void NameTests(RefreshPropertiesAttribute attribute, RefreshProperties refreshProperties)
+        [MemberData(nameof(DefaultProperties_TestData))]
+        public void DefaultProperties_GetRefreshProperties_ReturnsExpected(RefreshPropertiesAttribute attribute, RefreshProperties expectedRefreshProperties, bool expectedIsDefaultAttribute)
         {
-            Assert.Equal(refreshProperties, attribute.RefreshProperties);
-        }
-
-        private static IEnumerable<object[]> RefreshPropertiesAttributeData()
-        {
-            yield return new object[] { RefreshPropertiesAttribute.Default, RefreshProperties.None };
-            yield return new object[] { RefreshPropertiesAttribute.All, RefreshProperties.All };
-            yield return new object[] { RefreshPropertiesAttribute.Repaint, RefreshProperties.Repaint };
+            Assert.Equal(expectedRefreshProperties, attribute.RefreshProperties);
+            Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
         }
     }
 }

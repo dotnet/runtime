@@ -2,33 +2,60 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
     public class DesignerSerializationVisibilityAttributeTests
     {
-        [Fact]
-        public void Equals_DifferentVisibilities()
+        [Theory]
+        [InlineData(DesignerSerializationVisibility.Hidden - 1, false)]
+        [InlineData(DesignerSerializationVisibility.Content, false)]
+        [InlineData(DesignerSerializationVisibility.Hidden, false)]
+        [InlineData(DesignerSerializationVisibility.Visible, true)]
+        public static void Ctor_Visibility(DesignerSerializationVisibility visibility, bool expectedIsDefaultAttribute)
         {
-            Assert.False(DesignerSerializationVisibilityAttribute.Hidden.Equals(DesignerSerializationVisibilityAttribute.Visible));
+            var attribute = new DesignerSerializationVisibilityAttribute(visibility);
+            Assert.Equal(visibility, attribute.Visibility);
+            Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
         }
 
-        [Fact]
-        public void Equals_SameVisibility()
+        public static IEnumerable<object[]> Equals_TestData()
         {
-            Assert.True(DesignerSerializationVisibilityAttribute.Visible.Equals(DesignerSerializationVisibilityAttribute.Visible));
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Visible, DesignerSerializationVisibilityAttribute.Visible, true };
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Visible, new DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility.Visible), true };
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Visible, DesignerSerializationVisibilityAttribute.Hidden, false };
+
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Visible, new object(), false };
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Visible, null, false };
         }
 
         [Theory]
-        [InlineData(DesignerSerializationVisibility.Content)]
-        [InlineData(DesignerSerializationVisibility.Hidden)]
-        [InlineData(DesignerSerializationVisibility.Visible)]
-        public static void Visibility(DesignerSerializationVisibility visibility)
+        [MemberData(nameof(Equals_TestData))]
+        public void Equals_Object_ReturnsExpected(DesignerSerializationVisibilityAttribute attribute, object other, bool expected)
         {
-            var attribute = new DesignerSerializationVisibilityAttribute(visibility);
+            Assert.Equal(expected, attribute.Equals(other));
+            if (other is DesignerSerializationVisibilityAttribute)
+            {
+                Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
+            }
+        }
 
-            Assert.Equal(visibility, attribute.Visibility);
+        public static IEnumerable<object[]> DefaultProperties_TestData()
+        {
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Content, DesignerSerializationVisibility.Content, false };
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Default, DesignerSerializationVisibility.Visible, true };
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Hidden, DesignerSerializationVisibility.Hidden, false };
+            yield return new object[] { DesignerSerializationVisibilityAttribute.Visible, DesignerSerializationVisibility.Visible, true };
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultProperties_TestData))]
+        public void DefaultProperties_GetVisibility_ReturnsExpected(DesignerSerializationVisibilityAttribute attribute, DesignerSerializationVisibility expectedVisibility, bool expectedIsDefaultAttribute)
+        {
+            Assert.Equal(expectedVisibility, attribute.Visibility);
+            Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
         }
     }
 }
