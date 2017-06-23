@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    public static partial class StringBuilderTests
+    public partial class StringBuilderTests : RemoteExecutorTestBase
     {
         [Fact]
         public static void AppendJoin_NullValues_ThrowsArgumentNullException()
