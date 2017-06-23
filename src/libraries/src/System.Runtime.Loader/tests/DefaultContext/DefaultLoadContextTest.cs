@@ -118,6 +118,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20303", TargetFrameworkMonikers.Uap)]
         public static void LoadInDefaultContext()
         {
             Init();
