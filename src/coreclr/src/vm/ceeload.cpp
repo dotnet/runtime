@@ -10263,6 +10263,32 @@ void Module::RestoreMethodTablePointer(RelativeFixupPointer<PTR_MethodTable> * p
     }
 }
 
+/*static*/
+void Module::RestoreMethodTablePointer(PlainPointer<PTR_MethodTable> * ppMT,
+                                       Module *pContainingModule,
+                                       ClassLoadLevel level)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (ppMT->IsNull())
+        return;
+
+    if (ppMT->IsTagged())
+    {
+        RestoreMethodTablePointerRaw(ppMT->GetValuePtr(), pContainingModule, level);
+    }
+    else
+    {
+        ClassLoader::EnsureLoaded(ppMT->GetValue(), level);
+    }
+}
+
 #endif // !DACCESS_COMPILE
 
 BOOL Module::IsZappedCode(PCODE code)
