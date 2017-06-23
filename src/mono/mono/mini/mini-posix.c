@@ -316,8 +316,6 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 {
 	int old_errno = errno;
 
-	InterlockedWrite (&mono_thread_info_current ()->profiler_signal_ack, 1);
-
 	MONO_SIG_HANDLER_GET_CONTEXT;
 
 	/* See the comment in mono_runtime_shutdown_stat_profiler (). */
@@ -335,6 +333,9 @@ MONO_SIG_HANDLER_FUNC (static, profiler_signal_handler)
 		errno = old_errno;
 		return;
 	}
+
+	// See the comment in sampling_thread_func ().
+	InterlockedWrite (&mono_thread_info_current ()->profiler_signal_ack, 1);
 
 	InterlockedIncrement (&profiler_signals_accepted);
 
