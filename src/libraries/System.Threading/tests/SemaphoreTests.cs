@@ -278,8 +278,9 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // names aren't supported on Unix
+        [ActiveIssue(21275, TargetFrameworkMonikers.Uap)]
         public void PingPong()
         {
             // Create names for the two semaphores
