@@ -814,7 +814,7 @@ namespace System.Collections.Tests
                 var arrCopy = new int[arrList2.Count];
 
                 Assert.Throws<ArgumentNullException>(() => arrList2.CopyTo(null)); // Array is null
-                Assert.Throws<ArgumentException>(() => arrList2.CopyTo(new object[10, 10])); // Array is multidimensional
+                AssertExtensions.Throws<ArgumentException>("array", null, () => arrList2.CopyTo(new object[10, 10])); // Array is multidimensional
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(arrCopy, -1)); // Index < 0
                 Assert.Throws<ArgumentException>(() => arrList2.CopyTo(new object[11], 2)); // Invalid index and length
@@ -871,17 +871,17 @@ namespace System.Collections.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(-1, arrCopy, 0, 1)); // Index < 0
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(0, arrCopy, 0, -1)); // Count < 0
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     arrCopy = new string[100];
                     arrList2.CopyTo(arrList2.Count - 1, arrCopy, 0, 24);
                 });
 
                 Assert.Throws<ArgumentNullException>(() => arrList2.CopyTo(0, null, 3, 3)); // Array is null
-                Assert.Throws<ArgumentException>(() => arrList2.CopyTo(0, new object[arrList2.Count, arrList2.Count], 0, arrList2.Count)); // Array is multidimensional
+                AssertExtensions.Throws<ArgumentException>("array", null, () => arrList2.CopyTo(0, new object[arrList2.Count, arrList2.Count], 0, arrList2.Count)); // Array is multidimensional
 
                 // Array index and count is out of bounds
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     arrCopy = new string[1];
                     arrList2.CopyTo(0, arrCopy, 3, 15);

@@ -28,7 +28,7 @@ namespace System.Globalization.Tests
         public void PercentDecimalSeparator_Set_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("PercentDecimalSeparator", () => new NumberFormatInfo().PercentDecimalSeparator = null);
-            Assert.Throws<ArgumentException>(() => new NumberFormatInfo().PercentDecimalSeparator = "");
+            AssertExtensions.Throws<ArgumentException>(null, () => new NumberFormatInfo().PercentDecimalSeparator = "");
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentDecimalSeparator = "string");
         }
     }

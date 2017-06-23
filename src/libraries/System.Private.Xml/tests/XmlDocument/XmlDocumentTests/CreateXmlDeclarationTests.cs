@@ -51,7 +51,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
 
-            Assert.Throws<ArgumentException>(() => xmlDocument.CreateXmlDeclaration("3.0", "UTF-8", "yes"));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument.CreateXmlDeclaration("3.0", "UTF-8", "yes"));
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
 
-            Assert.Throws<ArgumentException>(() => xmlDocument.CreateXmlDeclaration("1.0", "UTF-8", "Wrong"));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument.CreateXmlDeclaration("1.0", "UTF-8", "Wrong"));
         }
 
         [Fact]

@@ -86,14 +86,14 @@ namespace System.IO.Tests
             for (int i = 0; i < randomNumbers.Length; i++)
             {
                 ch = (char)randomNumbers[i];
-                Assert.Throws<ArgumentException>(() => writer.Write(ch));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.Write(ch));
             }
             // between 56320 <= x < 57343
             randomNumbers = new int[] { 56320, 57342, 56431, 57001, 56453, 57245, 57111 };
             for (int i = 0; i < randomNumbers.Length; i++)
             {
                 ch = (char)randomNumbers[i];
-                Assert.Throws<ArgumentException>(() => writer.Write(ch));
+                AssertExtensions.Throws<ArgumentException>(null, () => writer.Write(ch));
             }
 
             writer.Dispose();
@@ -305,9 +305,9 @@ namespace System.IO.Tests
             for (int iLoop = 0; iLoop < iArrLargeValues.Length; iLoop++)
             {
                 // [] Offset out of range
-                Assert.Throws<ArgumentException>(() => dw2.Write(bArr, iArrLargeValues[iLoop], 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => dw2.Write(bArr, iArrLargeValues[iLoop], 0));
                 // [] Invalid count value
-                Assert.Throws<ArgumentException>(() => dw2.Write(bArr, 0, iArrLargeValues[iLoop]));
+                AssertExtensions.Throws<ArgumentException>(null, () => dw2.Write(bArr, 0, iArrLargeValues[iLoop]));
             }
             dw2.Dispose();
             mstr.Dispose();

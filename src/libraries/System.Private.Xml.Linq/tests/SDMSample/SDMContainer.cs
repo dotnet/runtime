@@ -60,7 +60,7 @@ namespace XDocumentTests.SDMSample
 
             // Not allowed to add a document as a child.
             XDocument document = new XDocument();
-            Assert.Throws<ArgumentException>(() => element.Add(document));
+            AssertExtensions.Throws<ArgumentException>(null, () => element.Add(document));
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace XDocumentTests.SDMSample
             // Not allowed to add attributes in the general case.
             // The only general case of a container is a document.
             XDocument document = new XDocument();
-            Assert.Throws<ArgumentException>(() => document.Add(new XAttribute("foo", "bar")));
+            AssertExtensions.Throws<ArgumentException>(null, () => document.Add(new XAttribute("foo", "bar")));
 
             // Can add to elements, but no duplicates allowed.
             XElement e = new XElement("element");
@@ -127,7 +127,7 @@ namespace XDocumentTests.SDMSample
 
             // Can't use to add attributes.
             XAttribute a = new XAttribute("foo", "bar");
-            Assert.Throws<ArgumentException>(() => element.AddFirst(a));
+            AssertExtensions.Throws<ArgumentException>(null, () => element.AddFirst(a));
         }
 
         /// <summary>

@@ -296,7 +296,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MethodInfoDefaultParameters), "OptionalStringParameter").Invoke(new MethodInfoDefaultParameters(), new object[] { Type.Missing }));
+            AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MethodInfoDefaultParameters), "OptionalStringParameter").Invoke(new MethodInfoDefaultParameters(), new object[] { Type.Missing }));
         }
 
         [Theory]
@@ -323,9 +323,9 @@ namespace System.Reflection.Tests
             Assert.Throws<InvalidOperationException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.VoidMethodReturningInt)).MakeGenericMethod(typeof(int))); // Method is non generic
 
             // Number of typeArguments does not match
-            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod());
-            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod(typeof(string), typeof(int)));
-            Assert.Throws<ArgumentException>(() => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2)).MakeGenericMethod(typeof(int)));
+            AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod());
+            AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1)).MakeGenericMethod(typeof(string), typeof(int)));
+            AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2)).MakeGenericMethod(typeof(int)));
         }
 
         [Theory]

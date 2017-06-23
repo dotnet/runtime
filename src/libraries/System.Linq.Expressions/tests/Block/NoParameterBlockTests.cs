@@ -376,7 +376,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentNullException>(() => children.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => children.CopyTo(copyToTest, -1));
             Assert.All(copyToTest, Assert.Null); // assert partial copy didn't happen before exception
-            Assert.Throws<ArgumentException>(() => children.CopyTo(copyToTest, 2));
+            AssertExtensions.Throws<ArgumentException>(parCount >= 2 && parCount <= 5 ? null : "destinationArray", () => children.CopyTo(copyToTest, 2));
             Assert.All(copyToTest, Assert.Null);
             children.CopyTo(copyToTest, 1);
             Assert.Equal(copyToTest, exps.Prepend(null));

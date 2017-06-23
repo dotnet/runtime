@@ -55,8 +55,8 @@ namespace System.Reflection.PortableExecutable.Tests
         [Fact]
         public void Ctor_Streams()
         {
-            Assert.Throws<ArgumentException>(() => new PEReader(new CustomAccessMemoryStream(canRead: false, canSeek: false, canWrite: false)));
-            Assert.Throws<ArgumentException>(() => new PEReader(new CustomAccessMemoryStream(canRead: true, canSeek: false, canWrite: false)));
+            AssertExtensions.Throws<ArgumentException>("peStream", () => new PEReader(new CustomAccessMemoryStream(canRead: false, canSeek: false, canWrite: false)));
+            AssertExtensions.Throws<ArgumentException>("peStream", () => new PEReader(new CustomAccessMemoryStream(canRead: true, canSeek: false, canWrite: false)));
 
             var s = new CustomAccessMemoryStream(canRead: true, canSeek: true, canWrite: false);
 
@@ -756,7 +756,7 @@ namespace System.Reflection.PortableExecutable.Tests
                 string pdbPath;
 
                 // pass-thru:
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                     reader.TryOpenAssociatedPortablePdb(Path.Combine("pedir", "file.exe"), _ => { throw new ArgumentException(); }, out pdbProvider, out pdbPath));
 
                 Assert.Throws<InvalidOperationException>(() =>

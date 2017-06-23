@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void ByRefType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Condition(
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Condition(
                 Expression.Constant(true),
                 Expression.Constant(null),
                 Expression.Constant(null),
@@ -197,7 +197,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void PointerType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Condition(
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Condition(
                 Expression.Constant(true),
                 Expression.Constant(null),
                 Expression.Constant(null),
@@ -207,7 +207,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void GenericType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Condition(
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Condition(
                 Expression.Constant(true),
                 Expression.Constant(null),
                 Expression.Constant(null),
@@ -217,12 +217,12 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void TypeContainsGenericParameters()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Condition(
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Condition(
                 Expression.Constant(true),
                 Expression.Constant(null),
                 Expression.Constant(null),
                 typeof(List<>.Enumerator)));
-            Assert.Throws<ArgumentException>(() => Expression.Condition(
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Condition(
                 Expression.Constant(true),
                 Expression.Constant(null),
                 Expression.Constant(null),

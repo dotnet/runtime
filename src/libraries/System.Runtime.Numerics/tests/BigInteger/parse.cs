@@ -69,11 +69,11 @@ namespace System.Numerics.Tests
                 //invalid number style
                 // ******InvalidNumberStyles
                 NumberStyles invalid = (NumberStyles)0x7c00;
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     BigInteger.Parse("1", invalid).ToString("d");
                 });
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     BigInteger junk;
                     BigInteger.TryParse("1", invalid, null, out junk);

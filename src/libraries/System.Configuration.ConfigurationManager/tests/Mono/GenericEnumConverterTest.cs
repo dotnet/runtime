@@ -88,7 +88,7 @@ namespace MonoTests.System.Configuration
         public void ConvertFrom_Case()
         {
             GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
-            Assert.Throws<ArgumentException>(() => cv.ConvertFrom(null, null, "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertFrom(null, null, "foo"));
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace MonoTests.System.Configuration
             GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
             object o = null;
 
-            Assert.Throws<ArgumentException>(() => o = cv.ConvertFrom(null, null, "baz"));
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, "baz"));
             Assert.Null(o);
         }
 
@@ -107,7 +107,7 @@ namespace MonoTests.System.Configuration
             GenericEnumConverter cv = new GenericEnumConverter(typeof(FooEnum));
             object o = null;
 
-            Assert.Throws<ArgumentException>(() => o = cv.ConvertFrom(null, null, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, null));
             Assert.Null(o);
         }
 

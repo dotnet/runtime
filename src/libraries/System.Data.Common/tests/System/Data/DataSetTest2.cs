@@ -2858,7 +2858,7 @@ namespace System.Data.Tests
             Assert.Equal(2, ds.Relations.Count);
 
             // Checking Relations - get by name case sensetive,ArgumentException
-            Assert.Throws<ArgumentException>(() => ds.Relations["PARENT-CHILD"]);
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Relations["PARENT-CHILD"]);
         }
 
         [Fact]
@@ -2962,7 +2962,7 @@ namespace System.Data.Tests
             Assert.Equal(dt4, ds.Tables[dt4.TableName]);
 
             // Checking get table by name with diferent case, ArgumentException
-            Assert.Throws<ArgumentException>(() => ds.Tables[dt4.TableName.ToLower()]);
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables[dt4.TableName.ToLower()]);
         }
 
         [Fact]

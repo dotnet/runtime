@@ -79,7 +79,7 @@ namespace System.Xml.Tests
             var child2 = xmlDocument.DocumentElement.ChildNodes[1];
             var newChild = xmlDocument.CreateElement("newElem");
 
-            Assert.Throws<ArgumentException>(() => child1.ReplaceChild(newChild, child2));
+            AssertExtensions.Throws<ArgumentException>(null, () => child1.ReplaceChild(newChild, child2));
         }
 
         [Fact]
@@ -93,7 +93,7 @@ namespace System.Xml.Tests
             var child1 = xmlDocument1.DocumentElement.ChildNodes[0];
             var newChild = xmlDocument2.CreateElement("newChild");
 
-            Assert.Throws<ArgumentException>(() => xmlDocument1.DocumentElement.ReplaceChild(newChild, child1));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument1.DocumentElement.ReplaceChild(newChild, child1));
         }
 
         [Fact]

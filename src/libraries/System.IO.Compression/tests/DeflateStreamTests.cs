@@ -131,12 +131,12 @@ namespace System.IO.Compression.Tests
         {
             var ms = new MemoryStream();
             ms.Dispose();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var deflate = new DeflateStream(ms, CompressionMode.Decompress);
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var deflate = new DeflateStream(ms, CompressionMode.Compress);
             });
@@ -148,7 +148,7 @@ namespace System.IO.Compression.Tests
             var ms = new LocalMemoryStream();
             ms.SetCanWrite(false);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var gzip = new DeflateStream(ms, CompressionMode.Compress);
             });
@@ -160,7 +160,7 @@ namespace System.IO.Compression.Tests
             var ms = new LocalMemoryStream();
             ms.SetCanRead(false);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var gzip = new DeflateStream(ms, CompressionMode.Decompress);
             });
@@ -262,10 +262,10 @@ namespace System.IO.Compression.Tests
             Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionMode.Decompress, false));
             Assert.Throws<ArgumentNullException>(() => new DeflateStream(null, CompressionMode.Compress, true));
 
-            Assert.Throws<ArgumentException>(() => new DeflateStream(new MemoryStream(), (CompressionMode)42));
-            Assert.Throws<ArgumentException>(() => new DeflateStream(new MemoryStream(), (CompressionMode)43, true));
+            AssertExtensions.Throws<ArgumentException>("mode", () => new DeflateStream(new MemoryStream(), (CompressionMode)42));
+            AssertExtensions.Throws<ArgumentException>("mode", () => new DeflateStream(new MemoryStream(), (CompressionMode)43, true));
 
-            Assert.Throws<ArgumentException>(() => new DeflateStream(new MemoryStream(new byte[1], writable: false), CompressionLevel.Optimal));
+            AssertExtensions.Throws<ArgumentException>("stream", () => new DeflateStream(new MemoryStream(new byte[1], writable: false), CompressionLevel.Optimal));
         }
 
         [Fact]
@@ -364,8 +364,8 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<ArgumentNullException>(() => ds.Write(null, 0, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ds.Write(new byte[1], -1, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ds.Write(new byte[1], 0, -1));
-                Assert.Throws<ArgumentException>(() => ds.Write(new byte[1], 0, 2));
-                Assert.Throws<ArgumentException>(() => ds.Write(new byte[1], 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => ds.Write(new byte[1], 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => ds.Write(new byte[1], 1, 1));
                 Assert.Throws<InvalidOperationException>(() => ds.Read(new byte[1], 0, 1));
                 ds.Write(new byte[1], 0, 0);
             }
@@ -374,8 +374,8 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<ArgumentNullException>(() => { ds.WriteAsync(null, 0, 0); });
                 Assert.Throws<ArgumentOutOfRangeException>(() => { ds.WriteAsync(new byte[1], -1, 0); });
                 Assert.Throws<ArgumentOutOfRangeException>(() => { ds.WriteAsync(new byte[1], 0, -1); });
-                Assert.Throws<ArgumentException>(() => { ds.WriteAsync(new byte[1], 0, 2); });
-                Assert.Throws<ArgumentException>(() => { ds.WriteAsync(new byte[1], 1, 1); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { ds.WriteAsync(new byte[1], 0, 2); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { ds.WriteAsync(new byte[1], 1, 1); });
                 Assert.Throws<InvalidOperationException>(() => { ds.Read(new byte[1], 0, 1); });
             }
 
@@ -384,8 +384,8 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<ArgumentNullException>(() => ds.Read(null, 0, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ds.Read(new byte[1], -1, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => ds.Read(new byte[1], 0, -1));
-                Assert.Throws<ArgumentException>(() => ds.Read(new byte[1], 0, 2));
-                Assert.Throws<ArgumentException>(() => ds.Read(new byte[1], 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => ds.Read(new byte[1], 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => ds.Read(new byte[1], 1, 1));
                 Assert.Throws<InvalidOperationException>(() => ds.Write(new byte[1], 0, 1));
 
                 var data = new byte[1] { 42 };
@@ -397,8 +397,8 @@ namespace System.IO.Compression.Tests
                 Assert.Throws<ArgumentNullException>(() => { ds.ReadAsync(null, 0, 0); });
                 Assert.Throws<ArgumentOutOfRangeException>(() => { ds.ReadAsync(new byte[1], -1, 0); });
                 Assert.Throws<ArgumentOutOfRangeException>(() => { ds.ReadAsync(new byte[1], 0, -1); });
-                Assert.Throws<ArgumentException>(() => { ds.ReadAsync(new byte[1], 0, 2); });
-                Assert.Throws<ArgumentException>(() => { ds.ReadAsync(new byte[1], 1, 1); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { ds.ReadAsync(new byte[1], 0, 2); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { ds.ReadAsync(new byte[1], 1, 1); });
                 Assert.Throws<InvalidOperationException>(() => { ds.Write(new byte[1], 0, 1); });
             }
         }

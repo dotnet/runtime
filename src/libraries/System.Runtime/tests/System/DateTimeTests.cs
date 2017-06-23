@@ -894,7 +894,7 @@ namespace System.Tests
             string[] formats = new string[] { "f" };
             IFormatProvider provider = new CultureInfo("en-US");
             DateTimeStyles style = DateTimeStyles.AssumeLocal | DateTimeStyles.AssumeUniversal;
-            Assert.Throws<ArgumentException>(() => DateTime.ParseExact(strDateTime, formats, provider, style));
+            AssertExtensions.Throws<ArgumentException>("style", () => DateTime.ParseExact(strDateTime, formats, provider, style));
         }
     }
 }

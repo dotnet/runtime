@@ -51,9 +51,9 @@ namespace System.Xml.Linq.Tests
         public static void InvalidXNameTest()
         {
             Assert.Throws<XmlException>(() => { TestData.GetDocumentWithContacts().Root.Attribute("*&^%_#@!"); });
-            Assert.Throws<ArgumentException>(() => { TestData.GetDocumentWithContacts().Root.Attribute(""); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { TestData.GetDocumentWithContacts().Root.Attribute(""); });
             Assert.Throws<XmlException>(() => { TestData.GetDocumentWithContacts().Root.Attributes("*&^%_#@!"); });
-            Assert.Throws<ArgumentException>(() => { TestData.GetDocumentWithContacts().Root.Attributes(""); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { TestData.GetDocumentWithContacts().Root.Attributes(""); });
         }
     }
 

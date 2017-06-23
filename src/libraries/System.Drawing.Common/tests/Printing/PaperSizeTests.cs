@@ -62,9 +62,9 @@ namespace System.Drawing.Printing.Tests
         {
             PaperSize ps = new PaperSize("foo", 100, 100);
             ps.RawKind = rawKind;
-            Assert.Throws<ArgumentException>(() => ps.Width = 1);
-            Assert.Throws<ArgumentException>(() => ps.Height = 1);
-            Assert.Throws<ArgumentException>(() => ps.PaperName = "NewName");
+            AssertExtensions.Throws<ArgumentException>(null, () => ps.Width = 1);
+            AssertExtensions.Throws<ArgumentException>(null, () => ps.Height = 1);
+            AssertExtensions.Throws<ArgumentException>(null, () => ps.PaperName = "NewName");
         }
 
         [Theory]

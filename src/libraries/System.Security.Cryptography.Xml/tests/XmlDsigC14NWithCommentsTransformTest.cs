@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void LoadInput_UnsupportedType(object input)
         {
             XmlDsigC14NWithCommentsTransform xmlDsigC14NWithCommentsTransform = new XmlDsigC14NWithCommentsTransform();
-            Assert.Throws<ArgumentException>(() => xmlDsigC14NWithCommentsTransform.LoadInput(input));
+            AssertExtensions.Throws<ArgumentException>("obj", () => xmlDsigC14NWithCommentsTransform.LoadInput(input));
         }
 
         [Theory]
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void GetOutput_UnsupportedType(Type type)
         {
             XmlDsigC14NWithCommentsTransform xmlDsigC14NWithCommentsTransform = new XmlDsigC14NWithCommentsTransform();
-            Assert.Throws<ArgumentException>(() => xmlDsigC14NWithCommentsTransform.GetOutput(type));
+            AssertExtensions.Throws<ArgumentException>("type", () => xmlDsigC14NWithCommentsTransform.GetOutput(type));
         }
 
         [Fact]

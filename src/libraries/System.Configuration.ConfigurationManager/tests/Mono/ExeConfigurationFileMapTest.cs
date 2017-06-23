@@ -73,7 +73,7 @@ namespace MonoTests.System.Configuration
                 var map = new ExeConfigurationFileMap();
                 map.ExeConfigFilename = filename;
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("fileMap.RoamingUserConfigFilename", () =>
                     ConfigurationManager.OpenMappedExeConfiguration(
                         map, ConfigurationUserLevel.PerUserRoaming));
             });
@@ -87,7 +87,7 @@ namespace MonoTests.System.Configuration
                 var map = new ExeConfigurationFileMap();
                 map.LocalUserConfigFilename = filename;
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("fileMap.RoamingUserConfigFilename", () =>
                     ConfigurationManager.OpenMappedExeConfiguration(
                         map, ConfigurationUserLevel.PerUserRoamingAndLocal));
             });
@@ -102,7 +102,7 @@ namespace MonoTests.System.Configuration
                 map.ExeConfigFilename = filename;
                 map.RoamingUserConfigFilename = filename;
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("fileMap.LocalUserConfigFilename", () =>
                     ConfigurationManager.OpenMappedExeConfiguration(
                         map, ConfigurationUserLevel.PerUserRoamingAndLocal));
             });
@@ -117,7 +117,7 @@ namespace MonoTests.System.Configuration
                 map.RoamingUserConfigFilename = roaming;
                 map.LocalUserConfigFilename = local;
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("fileMap.ExeConfigFilename", () =>
                     ConfigurationManager.OpenMappedExeConfiguration(
                         map, ConfigurationUserLevel.PerUserRoamingAndLocal));
             });
@@ -131,7 +131,7 @@ namespace MonoTests.System.Configuration
                 var map = new ExeConfigurationFileMap();
                 map.MachineConfigFilename = machine;
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("fileMap.ExeConfigFilename", () =>
                     ConfigurationManager.OpenMappedExeConfiguration(
                         map, ConfigurationUserLevel.None));
             });

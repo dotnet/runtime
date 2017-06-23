@@ -132,19 +132,19 @@ namespace System.Xml.Linq.Tests
 
         public static IEnumerable<object[]> GetNotXNodes()
         {
-            yield return new object[] { new XAttribute("a", "A"), new XElement("E") };
-            yield return new object[] { new XDeclaration("1.0", "UFT8", "false"), new XElement("E") };
-            yield return new object[] { "", new XElement("E") };
-            yield return new object[] { new XElement("E"), new XAttribute("a", "A") };
-            yield return new object[] { new XElement("E"), new XDeclaration("1.0", "UFT8", "false") };
-            yield return new object[] { new XElement("E"), "" };
+            yield return new object[] { new XAttribute("a", "A"), new XElement("E"), "x" };
+            yield return new object[] { new XDeclaration("1.0", "UFT8", "false"), new XElement("E"), "x" };
+            yield return new object[] { "", new XElement("E"), "x" };
+            yield return new object[] { new XElement("E"), new XAttribute("a", "A"), "y" };
+            yield return new object[] { new XElement("E"), new XDeclaration("1.0", "UFT8", "false"), "y" };
+            yield return new object[] { new XElement("E"), "", "y" };
         }
 
         [Theory]
         [MemberData(nameof(GetNotXNodes))]
-        public void NotXNode(object x, object y)
+        public void NotXNode(object x, object y, string paramName)
         {
-            Assert.Throws<ArgumentException>(() => ((IComparer)XNode.DocumentOrderComparer).Compare(x, y));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => ((IComparer)XNode.DocumentOrderComparer).Compare(x, y));
         }
 
         [Fact]

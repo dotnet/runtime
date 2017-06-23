@@ -61,13 +61,13 @@ namespace MonoTests.System.Configuration
         {
             RegexStringValidator v = new RegexStringValidator("[a-z]+");
 
-            Assert.Throws<ArgumentException>(() => v.Validate("1234"));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate("1234"));
         }
 
         [Fact]
         public void IllegalRegex()
         {
-            Assert.Throws<ArgumentException>(() => new RegexStringValidator("[0-9+"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new RegexStringValidator("[0-9+"));
         }
     }
 }

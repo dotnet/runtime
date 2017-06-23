@@ -15,9 +15,9 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         public static void Ctor()
         {
             var transform = new IdentityTransform(1, 1, true);
-            Assert.Throws<ArgumentException>(() => new CryptoStream(new MemoryStream(), transform, (CryptoStreamMode)12345));
-            Assert.Throws<ArgumentException>(() => new CryptoStream(new MemoryStream(new byte[0], writable: false), transform, CryptoStreamMode.Write));
-            Assert.Throws<ArgumentException>(() => new CryptoStream(new CryptoStream(new MemoryStream(new byte[0]), transform, CryptoStreamMode.Write), transform, CryptoStreamMode.Read));
+            AssertExtensions.Throws<ArgumentException>(null, () => new CryptoStream(new MemoryStream(), transform, (CryptoStreamMode)12345));
+            AssertExtensions.Throws<ArgumentException>(null, "stream", () => new CryptoStream(new MemoryStream(new byte[0], writable: false), transform, CryptoStreamMode.Write));
+            AssertExtensions.Throws<ArgumentException>(null, "stream", () => new CryptoStream(new CryptoStream(new MemoryStream(new byte[0]), transform, CryptoStreamMode.Write), transform, CryptoStreamMode.Read));
         }
 
         [Theory]
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], -1, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], 0, -1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => encryptStream.Write(new byte[0], 0, -1));
-                Assert.Throws<ArgumentException>(() => encryptStream.Write(new byte[3], 1, 4));
+                AssertExtensions.Throws<ArgumentException>(null, () => encryptStream.Write(new byte[3], 1, 4));
 
                 byte[] toWrite = Encoding.UTF8.GetBytes(LoremText);
 
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], -1, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], 0, -1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => decryptStream.Read(new byte[0], 0, -1));
-                Assert.Throws<ArgumentException>(() => decryptStream.Read(new byte[3], 1, 4));
+                AssertExtensions.Throws<ArgumentException>(null, () => decryptStream.Read(new byte[3], 1, 4));
 
                 using (StreamReader reader = new StreamReader(decryptStream))
                 {

@@ -210,7 +210,7 @@ namespace System.Collections.Generic.Tests
             var right = new object();
 
             var comparer = Comparer<object>.Default;
-            Assert.Throws<ArgumentException>(() => comparer.Compare(left, right));
+            AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(left, right));
         }
 
         [Fact]

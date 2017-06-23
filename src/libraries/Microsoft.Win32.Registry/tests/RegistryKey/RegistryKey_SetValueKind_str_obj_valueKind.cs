@@ -172,25 +172,25 @@ namespace Microsoft.Win32.RegistryTests
             // Should throw if key length above 255 characters but prior to V4 the limit is 16383
             const int maxValueNameLength = 16383;
             string tooLongValueName = new string('a', maxValueNameLength + 1);
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(tooLongValueName, ulong.MaxValue, RegistryValueKind.String));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => TestRegistryKey.SetValue(tooLongValueName, ulong.MaxValue, RegistryValueKind.String));
 
             const string valueName = "FooBar";
             // Should throw if passed value is null
             Assert.Throws<ArgumentNullException>(() => TestRegistryKey.SetValue(valueName, null, RegistryValueKind.QWord));
 
             // Should throw because valueKind is equal to -2 which is not an acceptable value
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, int.MinValue, (RegistryValueKind)(-2)));
+            AssertExtensions.Throws<ArgumentException>("valueKind", () => TestRegistryKey.SetValue(valueName, int.MinValue, (RegistryValueKind)(-2)));
 
             // Should throw because passed array contains null
             string[] strArr = { "one", "two", null, "three" };
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, strArr, RegistryValueKind.MultiString));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.SetValue(valueName, strArr, RegistryValueKind.MultiString));
 
             // Should throw because passed array has wrong type
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, new[] { new object() }, RegistryValueKind.MultiString));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.SetValue(valueName, new[] { new object() }, RegistryValueKind.MultiString));
 
             // Should throw because passed array has wrong type
             object[] objTemp = { "my string", "your string", "Any once string" };
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(valueName, objTemp, RegistryValueKind.Unknown));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.SetValue(valueName, objTemp, RegistryValueKind.Unknown));
 
             // Should throw because RegistryKey is readonly
             using (var rk = Registry.CurrentUser.OpenSubKey(TestRegistryKeyName, false))

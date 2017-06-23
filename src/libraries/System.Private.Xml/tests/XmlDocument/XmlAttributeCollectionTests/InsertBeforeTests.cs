@@ -64,7 +64,7 @@ namespace System.Xml.Tests
             XmlAttribute anotherOwnerElementAttr = anotherElement.SetAttributeNode("anotherOwnerElementAttr", string.Empty);
 
             XmlAttributeCollection target = element.Attributes;
-            Assert.Throws<ArgumentException>(() => target.InsertBefore(newAttr, anotherOwnerElementAttr));
+            AssertExtensions.Throws<ArgumentException>(null, () => target.InsertBefore(newAttr, anotherOwnerElementAttr));
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
             XmlAttribute anotherOwnerDocumentAttr = new XmlDocument().CreateAttribute("anotherOwnerDocumentAttr");
 
             XmlAttributeCollection target = element.Attributes;
-            Assert.Throws<ArgumentException>(() => target.InsertBefore(anotherOwnerDocumentAttr, existingAttr));
+            AssertExtensions.Throws<ArgumentException>(null, () => target.InsertBefore(anotherOwnerDocumentAttr, existingAttr));
         }
 
         [Fact]

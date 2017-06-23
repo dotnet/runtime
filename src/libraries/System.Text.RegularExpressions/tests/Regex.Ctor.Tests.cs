@@ -254,7 +254,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("?((a)a|b", RegexOptions.None)]
         public void Ctor_InvalidPattern(string pattern, RegexOptions options)
         {
-            Assert.Throws<ArgumentException>(() => new Regex(pattern, options));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Regex(pattern, options));
         }
 
         [Theory]

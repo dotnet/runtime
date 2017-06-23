@@ -160,7 +160,7 @@ namespace System.Collections.Tests
                 T firstElement = set.ElementAt(0);
                 T lastElement = set.ElementAt(setLength - 1);
                 if (comparer.Compare(firstElement, lastElement) < 0)
-                    Assert.Throws<ArgumentException>(() => set.GetViewBetween(lastElement, firstElement));
+                    AssertExtensions.Throws<ArgumentException>("lowerValue", null, () => set.GetViewBetween(lastElement, firstElement));
             }
         }
 

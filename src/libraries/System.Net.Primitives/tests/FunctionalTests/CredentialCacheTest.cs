@@ -171,7 +171,7 @@ namespace System.Net.Primitives.Functional.Tests
             CredentialCache cc = new CredentialCache();
             cc.Add(uriPrefix1, authenticationType1, credential1);
 
-            Assert.Throws<ArgumentException>(() => cc.Add(uriPrefix1, authenticationType1, credential1));
+            AssertExtensions.Throws<ArgumentException>(null, () => cc.Add(uriPrefix1, authenticationType1, credential1));
         }
 
         [Fact]
@@ -218,7 +218,7 @@ namespace System.Net.Primitives.Functional.Tests
             CredentialCache cc = new CredentialCache();
             cc.Add(host1, port1, authenticationType1, credential1);
 
-            Assert.Throws<ArgumentException>(() => cc.Add(host1, port1, authenticationType1, credential1));
+            AssertExtensions.Throws<ArgumentException>(null, () => cc.Add(host1, port1, authenticationType1, credential1));
         }
 
         [Fact]

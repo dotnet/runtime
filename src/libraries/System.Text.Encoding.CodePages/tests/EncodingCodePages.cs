@@ -472,7 +472,7 @@ namespace System.Text.Tests
                 foreach (object[] mapping in CodePageInfo())
                 {
                     Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding((int)mapping[0]));
-                    Assert.Throws<ArgumentException>(() => Encoding.GetEncoding((string)mapping[2]));
+                    AssertExtensions.Throws<ArgumentException>("name", () => Encoding.GetEncoding((string)mapping[2]));
                 }
 
                 // Currently the class EncodingInfo isn't present in corefx, so this checks none of the code pages are present.

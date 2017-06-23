@@ -58,7 +58,7 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression instance = Expression.Constant(new int[2,3]);
             ConstantExpression index = Expression.Constant(2);
-            Assert.Throws<ArgumentException>(() => Expression.ArrayAccess(instance, index));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ArrayAccess(instance, index));
         }
 
         [Fact]

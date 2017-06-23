@@ -58,8 +58,8 @@ namespace System.SpanTests
             {
                 new ReadOnlySpan<int>((void*)null, 0);
                 new ReadOnlySpan<int?>((void*)null, 0);
-                Assert.Throws<ArgumentException>(() => new ReadOnlySpan<object>((void*)null, 0).DontBox());
-                Assert.Throws<ArgumentException>(() => new ReadOnlySpan<StructWithReferences>((void*)null, 0).DontBox());
+                AssertExtensions.Throws<ArgumentException>(null, () => new ReadOnlySpan<object>((void*)null, 0).DontBox());
+                AssertExtensions.Throws<ArgumentException>(null, () => new ReadOnlySpan<StructWithReferences>((void*)null, 0).DontBox());
             }
         }
 

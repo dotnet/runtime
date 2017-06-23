@@ -17,9 +17,9 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Throws<ArgumentNullException>(() => hmac.ExposedHashCore(null, 0, 0));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", "inputOffset", () => hmac.ExposedHashCore(new byte[1], -1, 1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("count", null, () => hmac.ExposedHashCore(new byte[1], 0, -1));
-                Assert.Throws<ArgumentException>(() => hmac.ExposedHashCore(new byte[1], 0, 2));
-                Assert.Throws<ArgumentException>(() => hmac.ExposedHashCore(new byte[2], 1, 2));
-                Assert.Throws<ArgumentException>(() => hmac.ExposedHashCore(new byte[1], Int32.MaxValue, Int32.MaxValue));
+                AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[1], 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[2], 1, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => hmac.ExposedHashCore(new byte[1], Int32.MaxValue, Int32.MaxValue));
             }
         }
 

@@ -288,7 +288,7 @@ namespace System.Net.Sockets.Tests
                 byte[] buffer = new byte[1];
                 acceptArgs.SetBuffer(buffer, 0, buffer.Length);
 
-                Assert.Throws<ArgumentException>(() => server.AcceptAsync(acceptArgs));
+                AssertExtensions.Throws<ArgumentException>(null, () => server.AcceptAsync(acceptArgs));
             }
         }
 

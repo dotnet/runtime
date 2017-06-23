@@ -43,7 +43,7 @@ public partial class ThreadPoolBoundHandleTests
     [Fact]
     public unsafe void PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws()
     {
-        Assert.Throws<ArgumentException>(() => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
+        AssertExtensions.Throws<ArgumentException>(null, () => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), new NonBlittableType() { s = "foo" }));
 
         // Make sure the PreAllocatedOverlapped finalizer does the right thing in the case where the .ctor failed.
         GC.Collect();
@@ -75,7 +75,7 @@ public partial class ThreadPoolBoundHandleTests
             new NonBlittableType() { s = "foo" },
             new byte[5],
         };
-        Assert.Throws<ArgumentException>(() => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), array));
+        AssertExtensions.Throws<ArgumentException>(null, () => new PreAllocatedOverlapped((_, __, ___) => { }, new object(), array));
 
         // Make sure the PreAllocatedOverlapped finalizer does the right thing in the case where the .ctor failed.
         GC.Collect();

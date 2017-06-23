@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             AsnEncodedData a = new AsnEncodedData(oid, new byte[3]);
             object ign;
-            Assert.Throws<ArgumentException>(() => ign = new Pkcs9AttributeObject(a));
+            AssertExtensions.Throws<ArgumentException>("oid.Value", () => ign = new Pkcs9AttributeObject(a));
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Pkcs9AttributeObject p = new Pkcs9AttributeObject();
             byte[] rawData = "041e4d00790020004400650073006300720069007000740069006f006e000000".HexToByteArray();
             AsnEncodedData a = new AsnEncodedData(Oids.DocumentName, rawData);
-            Assert.Throws<ArgumentException>(() => p.CopyFrom(a));
+            AssertExtensions.Throws<ArgumentException>(null, () => p.CopyFrom(a));
         }
 
         [Fact]

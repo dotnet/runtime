@@ -113,7 +113,7 @@ namespace MonoTests.System.Configuration
         {
             CommaDelimitedStringCollectionConverter cv = new CommaDelimitedStringCollectionConverter();
 
-            Assert.Throws<ArgumentException>(() => cv.ConvertTo(null, null, 59, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertTo(null, null, 59, typeof(string)));
         }
     }
 }

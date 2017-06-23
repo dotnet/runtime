@@ -29,10 +29,10 @@ namespace System.IO.Tests
         public static void EmptyPath_ThrowsArgumentException()
         {
             // No argument name for the empty path exception
-            Assert.Throws<ArgumentException>(() => new StreamWriter(""));
-            Assert.Throws<ArgumentException>(() => new StreamWriter("", true));
-            Assert.Throws<ArgumentException>(() => new StreamWriter("", true, Encoding.UTF8));
-            Assert.Throws<ArgumentException>(() => new StreamWriter("", true, Encoding.UTF8, -1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new StreamWriter(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => new StreamWriter("", true));
+            AssertExtensions.Throws<ArgumentException>(null, () => new StreamWriter("", true, Encoding.UTF8));
+            AssertExtensions.Throws<ArgumentException>(null, () => new StreamWriter("", true, Encoding.UTF8, -1));
         }
 
         [Fact]

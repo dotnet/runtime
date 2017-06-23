@@ -130,7 +130,7 @@ namespace MonoTests.System.Configuration
         {
             TimeSpanMinutesOrInfiniteConverter cv = new TimeSpanMinutesOrInfiniteConverter();
 
-            Assert.Throws<ArgumentException>(() => cv.ConvertTo(null, null, 59, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertTo(null, null, 59, typeof(string)));
         }
 
         [Fact]

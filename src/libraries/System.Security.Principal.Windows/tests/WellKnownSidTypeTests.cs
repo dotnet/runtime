@@ -143,7 +143,7 @@ public class WellKnownSidTypeTests
     public void CreatingSecurityIdentifierOutsideWellKnownSidTypeDefinedRangeThrowsException(WellKnownSidType sidType)
     {
         var currentDomainSid = WindowsIdentity.GetCurrent().Owner.AccountDomainSid;
-        Assert.Throws<ArgumentException>(() => new SecurityIdentifier(sidType, currentDomainSid));
+        AssertExtensions.Throws<ArgumentException>("sidType", () => new SecurityIdentifier(sidType, currentDomainSid));
     }
 
     [Fact]

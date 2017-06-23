@@ -13,21 +13,21 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         {
             var badHandleKind = CustomAttributeHandle.FromRowId(1);
 
-            Assert.Throws<ArgumentException>(() => CodedIndex.HasCustomAttribute(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.HasConstant(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.CustomAttributeType(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.HasDeclSecurity(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.HasFieldMarshal(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.HasSemantics(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.Implementation(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.MemberForwarded(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.MemberRefParent(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.MethodDefOrRef(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.ResolutionScope(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.TypeDefOrRef(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.TypeDefOrRefOrSpec(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.TypeOrMethodDef(badHandleKind));
-            Assert.Throws<ArgumentException>(() => CodedIndex.HasCustomDebugInformation(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.HasCustomAttribute(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.HasConstant(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.CustomAttributeType(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.HasDeclSecurity(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.HasFieldMarshal(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.HasSemantics(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.Implementation(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.MemberForwarded(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.MemberRefParent(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.MethodDefOrRef(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.ResolutionScope(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.TypeDefOrRef(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.TypeDefOrRefOrSpec(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.TypeOrMethodDef(badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => CodedIndex.HasCustomDebugInformation(badHandleKind));
         }
 
         [Fact]

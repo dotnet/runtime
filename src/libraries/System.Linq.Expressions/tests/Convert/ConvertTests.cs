@@ -16643,9 +16643,9 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void ImplicitHalfLiftedReverseConversion(bool useInterpreter)
         {
-            // In the case where there is a conversion from? → to, then if
-            // we want to do from? → to? we should do two conversions;
-            // from? → to → to?, since converting any value to the nullable
+            // In the case where there is a conversion from? -> to, then if
+            // we want to do from? -> to? we should do two conversions;
+            // from? -> to -> to?, since converting any value to the nullable
             // form of its type is always possible and well-defined.
             // The compiler correctly does this double-conversion in such cases.
             // We should probably not allow it to be done as a single lifted operation.
@@ -16871,7 +16871,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
             MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.FromAddition));
-            Assert.Throws<ArgumentException>(() => Expression.Convert(operand, typeof(int), method));
+            AssertExtensions.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
         }
 
         [Fact]

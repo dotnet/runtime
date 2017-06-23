@@ -29,9 +29,9 @@ namespace System.Reflection.PortableExecutable.Tests
         public void AddCodeViewEntry_Args()
         {
             var builder = new DebugDirectoryBuilder();
-            Assert.Throws<ArgumentException>(() => builder.AddCodeViewEntry("", default(BlobContentId), 0x0100));
-            Assert.Throws<ArgumentException>(() => builder.AddCodeViewEntry("\0", default(BlobContentId), 0x0100));
-            Assert.Throws<ArgumentException>(() => builder.AddCodeViewEntry("\0xx", default(BlobContentId), 0x0100));
+            AssertExtensions.Throws<ArgumentException>("pdbPath", () => builder.AddCodeViewEntry("", default(BlobContentId), 0x0100));
+            AssertExtensions.Throws<ArgumentException>("pdbPath", () => builder.AddCodeViewEntry("\0", default(BlobContentId), 0x0100));
+            AssertExtensions.Throws<ArgumentException>("pdbPath", () => builder.AddCodeViewEntry("\0xx", default(BlobContentId), 0x0100));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("xx", default(BlobContentId), 0x0100, int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("xx", default(BlobContentId), 0x0100, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddCodeViewEntry("xx", default(BlobContentId), 0x0100, 0));

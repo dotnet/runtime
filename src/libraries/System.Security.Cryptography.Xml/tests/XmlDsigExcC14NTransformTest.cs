@@ -280,14 +280,14 @@ namespace System.Security.Cryptography.Xml.Tests
         public void LoadInputWithUnsupportedType()
         {
             byte[] bad = { 0xBA, 0xD };
-            Assert.Throws<ArgumentException>(() => transform.LoadInput(bad));
+            AssertExtensions.Throws<ArgumentException>("obj", () => transform.LoadInput(bad));
         }
 
         [Fact]
         public void UnsupportedOutput()
         {
             XmlDocument doc = new XmlDocument();
-            Assert.Throws<ArgumentException>(() => transform.GetOutput(doc.GetType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => transform.GetOutput(doc.GetType()));
         }
 
         [Fact]

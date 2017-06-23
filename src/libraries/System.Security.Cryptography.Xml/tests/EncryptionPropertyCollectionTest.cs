@@ -231,7 +231,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 encPropertyCollection.Add(new EncryptionProperty());
             }
             EncryptionProperty[] encPropertyArray = new EncryptionProperty[1];
-            Assert.Throws<ArgumentException>(() => encPropertyCollection.CopyTo(encPropertyArray, 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => encPropertyCollection.CopyTo(encPropertyArray, 0));
         }
 
         [Fact]

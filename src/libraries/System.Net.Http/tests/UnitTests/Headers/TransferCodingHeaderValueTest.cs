@@ -17,14 +17,14 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ValueNull_Throw()
         {
-            Assert.Throws<ArgumentException>(() => { new TransferCodingHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentException>("value", () => { new TransferCodingHeaderValue(null); });
         }
 
         [Fact]
         public void Ctor_ValueEmpty_Throw()
         {
             // null and empty should be treated the same. So we also throw for empty strings.
-            Assert.Throws<ArgumentException>(() => { new TransferCodingHeaderValue(string.Empty); });
+            AssertExtensions.Throws<ArgumentException>("value", () => { new TransferCodingHeaderValue(string.Empty); });
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace System.Net.Http.Tests
             // When adding values using strongly typed objects, no leading/trailing LWS (whitespace) are allowed.
             AssertFormatException(" custom ");
             AssertFormatException("custom;");
-            AssertFormatException("chänked");
+            AssertFormatException("ch??nked");
             AssertFormatException("\"chunked\"");
             AssertFormatException("custom; name=value");
         }

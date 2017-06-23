@@ -130,8 +130,8 @@ namespace System.Text.RegularExpressions.Tests
             ICollection<Capture> collection = CreateCollection();
             AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo((Capture[])null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], -1));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Capture[1], 0));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Capture[1], 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Capture[1], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Capture[1], 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Capture[1], 2));
         }
 

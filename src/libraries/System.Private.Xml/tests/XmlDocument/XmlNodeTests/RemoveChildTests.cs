@@ -101,7 +101,7 @@ namespace System.Xml.Tests
             var child1 = xmlDocument.DocumentElement.ChildNodes[0];
             var child2 = xmlDocument.DocumentElement.ChildNodes[1];
 
-            Assert.Throws<ArgumentException>(() => child1.RemoveChild(child2));
+            AssertExtensions.Throws<ArgumentException>(null, () => child1.RemoveChild(child2));
         }
 
         [Fact]

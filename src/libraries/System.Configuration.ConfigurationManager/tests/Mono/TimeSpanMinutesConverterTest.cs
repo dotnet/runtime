@@ -120,7 +120,7 @@ namespace MonoTests.System.Configuration
         {
             TimeSpanMinutesConverter cv = new TimeSpanMinutesConverter();
 
-            Assert.Throws<ArgumentException>(() => cv.ConvertTo(null, null, 59, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertTo(null, null, 59, typeof(string)));
         }
 
         [Fact]

@@ -90,7 +90,7 @@ namespace System.Threading.Tests
             wh[0] = new Mutex(false, "test");
             wh[1] = new Mutex(false, "test");
 
-            Assert.Throws<ArgumentException>(() => WaitHandle.WaitAll(wh));
+            AssertExtensions.Throws<ArgumentException>(null, () => WaitHandle.WaitAll(wh));
         }
 
         [Fact]

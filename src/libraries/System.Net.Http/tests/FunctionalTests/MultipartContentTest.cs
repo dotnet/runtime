@@ -15,17 +15,17 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_NullOrEmptySubType_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MultipartContent(null));
-            Assert.Throws<ArgumentException>(() => new MultipartContent(""));
-            Assert.Throws<ArgumentException>(() => new MultipartContent(" "));
+            AssertExtensions.Throws<ArgumentException>("subtype", () => new MultipartContent(null));
+            AssertExtensions.Throws<ArgumentException>("subtype", () => new MultipartContent(""));
+            AssertExtensions.Throws<ArgumentException>("subtype", () => new MultipartContent(" "));
         }
 
         [Fact]
         public void Ctor_NullOrEmptyBoundary_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", null));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", ""));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", " "));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", null));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", ""));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", " "));
         }
 
         [Fact]
@@ -38,23 +38,23 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_BadBoundary_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "EndsInSpace "));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "EndsInSpace "));
 
             // Invalid chars CTLs HT < > @ ; \ " [ ] { } ! # $ % & ^ ~ `
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "a\t"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "<"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "@"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "["));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "{"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "!"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "#"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "$"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "%"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "&"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "^"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "~"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "`"));
-            Assert.Throws<ArgumentException>(() => new MultipartContent("Some", "\"quoted\""));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "a\t"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "<"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "@"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "["));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "{"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "!"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "#"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "$"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "%"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "&"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "^"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "~"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "`"));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartContent("Some", "\"quoted\""));
         }
 
         [Fact]

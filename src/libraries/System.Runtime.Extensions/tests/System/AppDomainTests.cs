@@ -197,7 +197,7 @@ namespace System.Tests
         public void ApplyPolicy()
         {
             AssertExtensions.Throws<ArgumentNullException>("assemblyName", () => { AppDomain.CurrentDomain.ApplyPolicy(null); });
-            Assert.Throws<ArgumentException>(() => { AppDomain.CurrentDomain.ApplyPolicy(""); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { AppDomain.CurrentDomain.ApplyPolicy(""); });
             Assert.Equal(AppDomain.CurrentDomain.ApplyPolicy(Assembly.GetEntryAssembly().FullName), Assembly.GetEntryAssembly().FullName);
         }
 
@@ -261,7 +261,7 @@ namespace System.Tests
         public void IsCompatibilitySwitchSet()
         {
             Assert.Throws<ArgumentNullException>(() => { AppDomain.CurrentDomain.IsCompatibilitySwitchSet(null); });
-            Assert.Throws<ArgumentException>(() => { AppDomain.CurrentDomain.IsCompatibilitySwitchSet("");});
+            AssertExtensions.Throws<ArgumentException>("switchName", () => { AppDomain.CurrentDomain.IsCompatibilitySwitchSet("");});
             Assert.Null(AppDomain.CurrentDomain.IsCompatibilitySwitchSet("randomSwitch"));
         }
 
@@ -320,7 +320,7 @@ namespace System.Tests
         public void MonitoringIsEnabled()
         {
             Assert.False(AppDomain.MonitoringIsEnabled);
-            Assert.Throws<ArgumentException>(() => {AppDomain.MonitoringIsEnabled = false;});
+            AssertExtensions.Throws<ArgumentException>(null, () => {AppDomain.MonitoringIsEnabled = false;});
             Assert.Throws<PlatformNotSupportedException>(() => {AppDomain.MonitoringIsEnabled = true;});
         }
 

@@ -128,10 +128,10 @@ namespace System.Reflection.Tests
         public void AssemblyLoadFromStringNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.Load((string)null));
-            Assert.Throws<ArgumentException>(() => Assembly.Load(string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => Assembly.Load(string.Empty));
         
             string emptyCName = new string('\0', 1);
-            Assert.Throws<ArgumentException>(() => Assembly.Load(emptyCName));
+            AssertExtensions.Throws<ArgumentException>(null, () => Assembly.Load(emptyCName));
         }
 
         [Fact]
@@ -186,7 +186,7 @@ namespace System.Reflection.Tests
         public void AssemblyReflectionOnlyLoadFromNeg()
         {
             Assert.Throws<ArgumentNullException>(() => Assembly.ReflectionOnlyLoad((string)null));
-            Assert.Throws<ArgumentException>(() => Assembly.ReflectionOnlyLoad(string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => Assembly.ReflectionOnlyLoad(string.Empty));
 
             Assert.Throws<ArgumentNullException>(() => Assembly.ReflectionOnlyLoad((byte[])null));
         }
@@ -336,7 +336,7 @@ namespace System.Reflection.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Assembly.LoadFile() not supported on UapAot")]
         public void LoadFile_NoSuchPath_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Assembly.LoadFile("System.Runtime.Tests.dll"));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => Assembly.LoadFile("System.Runtime.Tests.dll"));
         }
 
         [Fact]
@@ -455,7 +455,7 @@ namespace System.Reflection.Tests
         public void GetFile()
         {
             Assert.Throws<ArgumentNullException>(() => typeof(AssemblyTests).Assembly.GetFile(null));
-            Assert.Throws<ArgumentException>(() => typeof(AssemblyTests).Assembly.GetFile(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => typeof(AssemblyTests).Assembly.GetFile(""));
             Assert.Null(typeof(AssemblyTests).Assembly.GetFile("NonExistentfile.dll"));
             Assert.NotNull(typeof(AssemblyTests).Assembly.GetFile("System.Runtime.Tests.dll"));
             Assert.Equal(typeof(AssemblyTests).Assembly.GetFile("System.Runtime.Tests.dll").Name, typeof(AssemblyTests).Assembly.Location);
@@ -670,7 +670,7 @@ namespace System.Reflection.Tests
         {
             Assembly a = typeof(G<int>).Assembly;
             string s = typeof(G<int>).AssemblyQualifiedName;
-            Assert.Throws<ArgumentException>(() => a.GetType(s, throwOnError: true, ignoreCase: false));
+            AssertExtensions.Throws<ArgumentException>(null, () => a.GetType(s, throwOnError: true, ignoreCase: false));
         }
 
         [Fact]

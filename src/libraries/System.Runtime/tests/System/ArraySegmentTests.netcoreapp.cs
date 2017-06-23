@@ -206,13 +206,13 @@ namespace System.Tests
             if (arraySegment.Any())
             {
                 // Destination not large enough
-                Assert.Throws<ArgumentException>(() => arraySegment.CopyTo(new int[count - 1]));
-                Assert.Throws<ArgumentException>(() => arraySegment.CopyTo(new int[count - 1], 0));
-                Assert.Throws<ArgumentException>(() => arraySegment.CopyTo(new ArraySegment<int>(new int[count - 1])));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", () => arraySegment.CopyTo(new int[count - 1]));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", () => arraySegment.CopyTo(new int[count - 1], 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => arraySegment.CopyTo(new ArraySegment<int>(new int[count - 1])));
 
                 // Don't write beyond the limits of the destination in cases where source.Count > destination.Count
-                Assert.Throws<ArgumentException>(() => arraySegment.CopyTo(new ArraySegment<int>(new int[count], 1, 0))); // destination.Array can't fit source at destination.Offset
-                Assert.Throws<ArgumentException>(() => arraySegment.CopyTo(new ArraySegment<int>(new int[count], 0, count - 1))); // destination.Array can fit source at destination.Offset, but destination can't
+                AssertExtensions.Throws<ArgumentException>(null, () => arraySegment.CopyTo(new ArraySegment<int>(new int[count], 1, 0))); // destination.Array can't fit source at destination.Offset
+                AssertExtensions.Throws<ArgumentException>(null, () => arraySegment.CopyTo(new ArraySegment<int>(new int[count], 0, count - 1))); // destination.Array can fit source at destination.Offset, but destination can't
             }
         }
 

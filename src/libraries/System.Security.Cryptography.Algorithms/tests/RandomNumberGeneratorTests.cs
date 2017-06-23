@@ -262,7 +262,7 @@ namespace System.Security.Cryptography.RNG.Tests
             AssertExtensions.Throws<ArgumentNullException>("data", () => rng.GetBytes(null, 0, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => rng.GetBytes(Array.Empty<byte>(), -1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rng.GetBytes(Array.Empty<byte>(), 0, -1));
-            Assert.Throws<ArgumentException>(() => rng.GetBytes(Array.Empty<byte>(), 0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => rng.GetBytes(Array.Empty<byte>(), 0, 1));
             // GetBytes(null) covered in test NullInput()
         }
 

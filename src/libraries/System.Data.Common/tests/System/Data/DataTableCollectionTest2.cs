@@ -312,7 +312,7 @@ namespace System.Data.Tests
             DataSet ds1 = new DataSet();
             ds1.Tables.Add();
 
-            Assert.Throws<ArgumentException>(() => ds.Tables.Add(ds1.Tables[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables.Add(ds1.Tables[0]));
         }
 
         [Fact]
@@ -386,7 +386,7 @@ namespace System.Data.Tests
             var ds = new DataSet();
             DataTable dt = new DataTable("NewTable1");
 
-            Assert.Throws<ArgumentException>(() => ds.Tables.Remove(dt));
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables.Remove(dt));
         }
 
         [Fact]
@@ -417,7 +417,7 @@ namespace System.Data.Tests
         {
             var ds = new DataSet();
 
-            Assert.Throws<ArgumentException>(() => ds.Tables.Remove("NewTable2"));
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables.Remove("NewTable2"));
         }
 
         [Fact]
@@ -425,7 +425,7 @@ namespace System.Data.Tests
         {
             var ds = new DataSet();
 
-            Assert.Throws<ArgumentException>(() => ds.Tables.Remove((string)null));
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables.Remove((string)null));
         }
 
         [Fact]
@@ -455,7 +455,7 @@ namespace System.Data.Tests
         {
             DataSet ds = DataProvider.CreateForigenConstraint();
 
-            Assert.Throws<ArgumentException>(() => ds.Tables.RemoveAt(0)); //Parent table
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables.RemoveAt(0)); //Parent table
         }
 
         [Fact]

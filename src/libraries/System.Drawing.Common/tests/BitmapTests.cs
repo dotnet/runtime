@@ -78,14 +78,14 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData("")]
-        [InlineData("\0")]
-        [InlineData("NoSuchPath")]
-        public void Ctor_InvalidFilePath_ThrowsArgumentException(string filename)
+        [InlineData("", "path")]
+        [InlineData("\0", "path")]
+        [InlineData("NoSuchPath", null)]
+        public void Ctor_InvalidFilePath_ThrowsArgumentException(string filename, string paramName)
         {
-            Assert.Throws<ArgumentException>(() => new Bitmap(filename));
-            Assert.Throws<ArgumentException>(() => new Bitmap(filename, false));
-            Assert.Throws<ArgumentException>(() => new Bitmap(filename, true));
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => new Bitmap(filename));
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => new Bitmap(filename, false));
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => new Bitmap(filename, true));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

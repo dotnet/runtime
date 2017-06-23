@@ -496,7 +496,7 @@ namespace System.Linq.Expressions.Tests
             Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
-            Assert.Throws<ArgumentException>(() => Expression.Property(instance, prop, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("instance", () => Expression.Property(instance, prop, Expression.Constant(0)));
         }
 
         [Fact]
@@ -610,8 +610,8 @@ namespace System.Linq.Expressions.Tests
         public void NoSuchPropertyExplicitlyNoIndices()
         {
             ConstantExpression instance = Expression.Constant("");
-            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "ThisDoesNotExist", Array.Empty<Expression>()));
-            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "ThisDoesNotExist", null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Property(instance, "ThisDoesNotExist", Array.Empty<Expression>()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Property(instance, "ThisDoesNotExist", null));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -628,7 +628,7 @@ namespace System.Linq.Expressions.Tests
         public void FindNothingForNullArgument()
         {
             ConstantExpression instance = Expression.Constant("123");
-            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "Length", new Expression[] {null}));
+            AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Length", new Expression[] {null}));
         }
 
         [Fact]
@@ -636,7 +636,7 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression instance = Expression.Constant(new Dictionary<int, int>());
             PropertyInfo prop = typeof(Dictionary<int, int>).GetProperty("Item");
-            Assert.Throws<ArgumentException>(() => Expression.Property(instance, "Item", new Expression[] {null}));
+            AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(instance, "Item", new Expression[] {null}));
             AssertExtensions.Throws<ArgumentNullException>("arguments[0]", () => Expression.Property(instance, prop, new Expression[] {null}));
         }
 

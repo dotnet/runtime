@@ -275,7 +275,7 @@ namespace System.Data.Tests
         [Fact]
         public void NoTablesTest()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataTableReader reader = new DataTableReader(new DataTable[] { });
                 try

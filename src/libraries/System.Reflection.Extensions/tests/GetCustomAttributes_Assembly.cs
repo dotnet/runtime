@@ -75,7 +75,7 @@ namespace System.Reflection.Tests
             attribute = CustomAttributeExtensions.GetCustomAttribute<SecurityCriticalAttribute>(thisAsm);
             Assert.Null(attribute);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 CustomAttributeExtensions.GetCustomAttributes(thisAsm, typeof(String));
             });

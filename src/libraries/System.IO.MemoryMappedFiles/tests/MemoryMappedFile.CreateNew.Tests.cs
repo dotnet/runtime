@@ -21,9 +21,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         public void InvalidArguments_MapName()
         {
             // Empty string is an invalid map name
-            Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateNew(string.Empty, 4096));
-            Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateNew(string.Empty, 4096, MemoryMappedFileAccess.ReadWrite));
-            Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateNew(string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
+            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateNew(string.Empty, 4096));
+            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateNew(string.Empty, 4096, MemoryMappedFileAccess.ReadWrite));
+            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateNew(string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, HandleInheritability.None));
         }
 
         /// <summary>

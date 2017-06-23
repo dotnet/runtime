@@ -18,11 +18,11 @@ namespace System.IO.Tests
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => uma.ReadChar(-1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => uma.ReadDecimal(capacity));
-                Assert.Throws<ArgumentException>(() => uma.ReadSingle(capacity - 1));
+                AssertExtensions.Throws<ArgumentException>("position", () => uma.ReadSingle(capacity - 1));
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => uma.Write(-1, true));
                 Assert.Throws<ArgumentOutOfRangeException>(() => uma.Write(capacity, 12345));
-                Assert.Throws<ArgumentException>(() => uma.Write(capacity - 1, 0.123));
+                AssertExtensions.Throws<ArgumentException>("position", () => uma.Write(capacity - 1, 0.123));
 
                 uma.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => uma.ReadByte(0));
@@ -53,7 +53,7 @@ namespace System.IO.Tests
                 uma.Write(4, 0); // mid
                 uma.Write(8, 0); // hi
                 uma.Write(12, -1); // flags (all bits are set, so this should raise an exception)
-                Assert.Throws<ArgumentException>(() => uma.ReadDecimal(0)); // Should throw same exception as decimal(int[]) ctor for compat
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.ReadDecimal(0)); // Should throw same exception as decimal(int[]) ctor for compat
             }
         }
 

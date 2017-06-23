@@ -48,7 +48,7 @@ namespace System.Text.Tests
                 bytes[i] = (byte)i;
             }
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("chars", () =>
             {
                 decoder.GetChars(bytes, 0, bytes.Length, chars, chars.Length - 1, false);
             });
@@ -56,7 +56,7 @@ namespace System.Text.Tests
 
             decoder.GetChars(bytes, 0, bytes.Length, chars, 0, false);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("chars", () =>
             {
                 decoder.GetChars(bytes, 0, bytes.Length, chars, chars.Length - 1, true);
             });

@@ -59,7 +59,7 @@ namespace MonoTests.System.Configuration
         {
             StringValidator v = new StringValidator(1);
 
-            Assert.Throws<ArgumentException>(() => v.Validate(null));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(null));
         }
 
         [Fact]
@@ -77,7 +77,7 @@ namespace MonoTests.System.Configuration
         {
             StringValidator v = new StringValidator(5);
 
-            Assert.Throws<ArgumentException>(() => v.Validate("1234"));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate("1234"));
         }
 
         [Fact]
@@ -95,7 +95,7 @@ namespace MonoTests.System.Configuration
         {
             StringValidator v = new StringValidator(5, 7);
 
-            Assert.Throws<ArgumentException>(() => v.Validate("1234"));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate("1234"));
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace MonoTests.System.Configuration
         {
             StringValidator v = new StringValidator(5, 7);
 
-            Assert.Throws<ArgumentException>(() => v.Validate("12345678"));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate("12345678"));
         }
 
         [Fact]
@@ -119,7 +119,7 @@ namespace MonoTests.System.Configuration
         {
             StringValidator v = new StringValidator(5, 7, "345");
 
-            Assert.Throws<ArgumentException>(() => v.Validate("123456"));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate("123456"));
         }
 
         [Fact]
@@ -127,7 +127,7 @@ namespace MonoTests.System.Configuration
         {
             StringValidator v = new StringValidator(5, 7, "890");
 
-            Assert.Throws<ArgumentException>(() => v.Validate("12345678"));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate("12345678"));
         }
     }
 }

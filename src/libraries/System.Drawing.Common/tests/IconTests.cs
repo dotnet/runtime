@@ -374,12 +374,12 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData(null)]
-        [InlineData("")]
-        [InlineData("\\\\uncpath")]
-        public void ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException(string filePath)
+        [InlineData(null, null)]
+        [InlineData("", "path")]
+        [InlineData("\\\\uncpath", null)]
+        public void ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException(string filePath, string paramName)
         {
-            Assert.Throws<ArgumentException>(() => Icon.ExtractAssociatedIcon(filePath));
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => Icon.ExtractAssociatedIcon(filePath));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

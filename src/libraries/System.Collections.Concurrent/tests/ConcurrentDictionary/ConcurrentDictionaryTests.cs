@@ -859,7 +859,7 @@ namespace System.Collections.Concurrent.Tests
 
             //add one item to the dictionary
             ((ConcurrentDictionary<int, int>)dictionary).TryAdd(1, 1);
-            Assert.Throws<ArgumentException>(() => dictionary.CopyTo(new object[] { }, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => dictionary.CopyTo(new object[] { }, 0));
             // "TestICollection:  FAILED.  CopyTo didn't throw AE when the Array size is smaller than the dictionary count");
         }
 

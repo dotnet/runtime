@@ -502,7 +502,7 @@ namespace System.Linq.Expressions.Tests
             Expression q = Expression.Quote(exp);
             Assert.False(q.CanReduce);
             Assert.Same(q, q.Reduce());
-            Assert.Throws<ArgumentException>(() => q.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => q.ReduceAndCheck());
         }
 
         [Fact]

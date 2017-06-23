@@ -32,12 +32,12 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void ZeroLengthPipeName_Throws_ArgumentException(PipeDirection direction)
         {
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream(""));
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", direction));
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", direction, 2));
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte));
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None));
-            Assert.Throws<ArgumentException>(() => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeServerStream("", direction, 3, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));
         }
 
         [Theory]
@@ -247,7 +247,7 @@ namespace System.IO.Pipes.Tests
             // The pipe is already bound
             using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
-                Assert.Throws<ArgumentException>(() => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle));
+                AssertExtensions.Throws<ArgumentException>("handle", () => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle));
             }
         }
 

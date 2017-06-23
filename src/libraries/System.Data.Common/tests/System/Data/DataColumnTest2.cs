@@ -289,7 +289,7 @@ namespace System.Data.Tests
             dt.Rows.Add(new object[] { "a" });
 
             //MaxLength = 5
-            Assert.Throws<ArgumentException>(() => dt.Rows[0][0] = "123456");
+            AssertExtensions.Throws<ArgumentException>(null, () => dt.Rows[0][0] = "123456");
         }
 
         [Fact]
@@ -550,20 +550,20 @@ namespace System.Data.Tests
         public void Expression_Exceptions()
         {
             DataTable dt = DataProvider.CreateParentDataTable();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dt.Columns[0].Unique = true;
                 dt.Columns[0].Expression = "sum(" + dt.Columns[0].ColumnName + ")";
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataTable dt1 = DataProvider.CreateParentDataTable();
                 dt1.Columns[0].AutoIncrement = true;
                 dt1.Columns[0].Expression = "sum(" + dt1.Columns[0].ColumnName + ")";
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataTable dt1 = DataProvider.CreateParentDataTable();
                 dt1.Constraints.Add(new UniqueConstraint(dt1.Columns[0], false));
@@ -576,7 +576,7 @@ namespace System.Data.Tests
                 dt1.Columns[0].Expression = "CONVERT(" + dt1.Columns[1].ColumnName + ",'System.Int32')";
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataTable dt1 = DataProvider.CreateParentDataTable();
                 dt1.Columns[0].Expression = "CONVERT(" + dt1.Columns[0].ColumnName + ",'System.DateTime')";

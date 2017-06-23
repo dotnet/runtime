@@ -57,7 +57,7 @@ namespace System.Collections.Tests
             if (!IsReadOnly)
             {
                 IDictionary dictionary = new SortedDictionary<string, string>();
-                Assert.Throws<ArgumentException>(() => dictionary[23] = CreateTValue(12345));
+                AssertExtensions.Throws<ArgumentException>("key", () => dictionary[23] = CreateTValue(12345));
                 Assert.Empty(dictionary);
             }
         }
@@ -70,7 +70,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = new SortedDictionary<string, string>();
                 object missingKey = GetNewKey(dictionary);
-                Assert.Throws<ArgumentException>(() => dictionary[missingKey] = 324);
+                AssertExtensions.Throws<ArgumentException>("value", () => dictionary[missingKey] = 324);
                 Assert.Empty(dictionary);
             }
         }
@@ -83,7 +83,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = new SortedDictionary<string, string>();
                 object missingKey = 23;
-                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, CreateTValue(12345)));
+                AssertExtensions.Throws<ArgumentException>("key", () => dictionary.Add(missingKey, CreateTValue(12345)));
                 Assert.Empty(dictionary);
             }
         }
@@ -96,7 +96,7 @@ namespace System.Collections.Tests
             {
                 IDictionary dictionary = new SortedDictionary<string, string>();
                 object missingKey = GetNewKey(dictionary);
-                Assert.Throws<ArgumentException>(() => dictionary.Add(missingKey, 324));
+                AssertExtensions.Throws<ArgumentException>("value", () => dictionary.Add(missingKey, 324));
                 Assert.Empty(dictionary);
             }
         }
@@ -142,7 +142,7 @@ namespace System.Collections.Tests
         {
             ICollection collection = NonGenericICollectionFactory(count);
             KeyValuePair<string, int>[] array = new KeyValuePair<string, int>[count * 3 / 2];
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(array, 0));
+            AssertExtensions.Throws<ArgumentException>("array", null, () => collection.CopyTo(array, 0));
         }
 
         [Theory]

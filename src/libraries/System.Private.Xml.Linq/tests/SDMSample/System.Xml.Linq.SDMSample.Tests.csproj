@@ -21,6 +21,9 @@
     <Compile Include="SDMNode.cs" />
     <Compile Include="SDMPI.cs" />
     <Compile Include="SDMXName.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

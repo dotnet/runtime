@@ -276,7 +276,7 @@ namespace System.Data.Tests
             Assert.False(col1.Unique);
 
             table.PrimaryKey = new DataColumn[] { col2 };
-            Assert.Throws<ArgumentException>(() => table.Constraints.Remove(table.Constraints[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => table.Constraints.Remove(table.Constraints[0]));
         }
 
         [Fact]
@@ -362,7 +362,7 @@ namespace System.Data.Tests
             c2 = table1.Constraints.Add("unique2", col2, false);
             c3 = table2.Constraints.Add("fk", col1, col3);
 
-            Assert.Throws<ArgumentException>(() => table1.Constraints.Remove(c1));
+            AssertExtensions.Throws<ArgumentException>(null, () => table1.Constraints.Remove(c1));
 
             Assert.Equal(2, table1.Constraints.Count);
 
@@ -497,7 +497,7 @@ namespace System.Data.Tests
         [Fact]
         public void AddRange_C3()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 var ds = new DataSet();
                 ds.Tables.Add(DataProvider.CreateParentDataTable());
@@ -586,7 +586,7 @@ namespace System.Data.Tests
             DataTable table = new DataTable();
             table.Columns.Add("col1");
             Constraint c = table.Constraints.Add("c", table.Columns[0], false);
-            Assert.Throws<ArgumentException>(() => table.Constraints.Remove("sdfs"));
+            AssertExtensions.Throws<ArgumentException>(null, () => table.Constraints.Remove("sdfs"));
 
             table.Constraints.Remove(c);
             Assert.Equal(0, table.Constraints.Count);

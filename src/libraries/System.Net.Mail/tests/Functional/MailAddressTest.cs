@@ -84,7 +84,7 @@ namespace System.Net.Mail.Tests
         [Fact]
         public void TestConstructorWithEmptyString()
         {
-            Assert.Throws<ArgumentException>(() => new MailAddress(""));
+            AssertExtensions.Throws<ArgumentException>("address", () => new MailAddress(""));
         }
 
         [Fact]

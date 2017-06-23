@@ -20,10 +20,10 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             // error CS1061: 'System.IO.MemoryStream' does not contain a definition for 'Close'.
             // Calling Dispose should have same effect as calling Close.
             closedStream.Dispose();
-            Assert.Throws<ArgumentException>(() => new TextWriterTraceListener(closedStream));
+            AssertExtensions.Throws<ArgumentException>(null, () => new TextWriterTraceListener(closedStream));
 
             var readOnlyStream = new MemoryStream(new byte[256], writable: false);
-            Assert.Throws<ArgumentException>(() => new TextWriterTraceListener(readOnlyStream));
+            AssertExtensions.Throws<ArgumentException>(null, () => new TextWriterTraceListener(readOnlyStream));
         }
 
         [Fact]

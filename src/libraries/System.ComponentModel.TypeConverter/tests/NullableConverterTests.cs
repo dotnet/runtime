@@ -17,7 +17,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void Constructor_Negative()
         {
-            Assert.Throws<ArgumentException>(() => new NullableConverter(typeof(string)));
+            AssertExtensions.Throws<ArgumentException>("type", () => new NullableConverter(typeof(string)));
         }
 
         [Fact]

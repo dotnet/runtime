@@ -65,8 +65,8 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.MoveDirectory("\0bad", "bar"));
-                Assert.Throws<ArgumentException>(() => isf.MoveDirectory("foo", "\0bad"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.MoveDirectory("\0bad", "bar"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.MoveDirectory("foo", "\0bad"));
             }
         }
 

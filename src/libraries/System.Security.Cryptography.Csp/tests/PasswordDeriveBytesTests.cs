@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         {
             using (var deriveBytes = new PasswordDeriveBytes(TestPassword, s_testSalt))
             {
-                Assert.Throws<ArgumentException>(() => deriveBytes.GetBytes(0));
+                AssertExtensions.Throws<ArgumentException>("", () => deriveBytes.GetBytes(0));
             }
         }
 

@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             OSPlatform defaultObj = default(OSPlatform);
             OSPlatform conObj = new OSPlatform();
             Assert.Throws<ArgumentNullException>(() => { OSPlatform nullObj = OSPlatform.Create(null); });
-            Assert.Throws<ArgumentException>(() => { OSPlatform emptyObj = OSPlatform.Create(""); });
+            AssertExtensions.Throws<ArgumentException>("osPlatform", () => { OSPlatform emptyObj = OSPlatform.Create(""); });
 
             Assert.True(winObj == winProp);
             Assert.True(winObj != randomObj);

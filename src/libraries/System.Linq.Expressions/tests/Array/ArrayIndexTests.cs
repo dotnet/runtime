@@ -2759,7 +2759,7 @@ namespace System.Linq.Expressions.Tests
         public static void UnreadableArray()
         {
             Expression array = Expression.Property(null, typeof(Unreadable<int[]>), nameof(Unreadable<int>.WriteOnly));
-            Assert.Throws<ArgumentException>(() => Expression.ArrayIndex(array, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>("array", () => Expression.ArrayIndex(array, Expression.Constant(0)));
         }
 
         [Fact]

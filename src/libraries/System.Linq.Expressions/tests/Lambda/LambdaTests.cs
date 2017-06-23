@@ -437,7 +437,7 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public void NameNeedNotBeValidCSharpLabel(bool useInterpreter)
         {
-            string name = "1, 2, 3, 4. This is not a valid C♯ label!\"'<>.\uffff";
+            string name = "1, 2, 3, 4. This is not a valid C\u266F label!\"'<>.\uffff";
             var exp = (Expression<Func<int>>)Expression.Lambda(Expression.Constant(21), name, Array.Empty<ParameterExpression>());
             Assert.Equal(name, exp.Name);
             Assert.Equal(21, exp.Compile(useInterpreter)());
@@ -540,11 +540,11 @@ namespace System.Linq.Expressions.Tests
         private static void VerifyUpdateDifferentParamsReturnsDifferent<TDelegate>(Expression<TDelegate> lamda, ParameterExpression[] pars)
         {
             // Should try to create new lambda, but should fail as should have wrong number of arguments.
-            Assert.Throws<ArgumentException>(() => lamda.Update(lamda.Body, pars.Append(Expression.Parameter(typeof(int)))));
+            AssertExtensions.Throws<ArgumentException>(null, () => lamda.Update(lamda.Body, pars.Append(Expression.Parameter(typeof(int)))));
 
             if (pars.Length != 0)
             {
-                Assert.Throws<ArgumentException>(() => lamda.Update(lamda.Body, null));
+                AssertExtensions.Throws<ArgumentException>(null, () => lamda.Update(lamda.Body, null));
                 for (int i = 0; i != pars.Length; ++i)
                 {
                     ParameterExpression[] newPars = new ParameterExpression[pars.Length];
@@ -776,7 +776,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentNullException>(() => parameters.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => parameters.CopyTo(copyToTest, -1));
             Assert.All(copyToTest, Assert.Null); // assert partial copy didn't happen before exception
-            Assert.Throws<ArgumentException>(() => parameters.CopyTo(copyToTest, 2));
+            AssertExtensions.Throws<ArgumentException>(parCount >= 1 && parCount <= 3 && name == null && !tailCall ? null : "destinationArray", () => parameters.CopyTo(copyToTest, 2));
             Assert.All(copyToTest, Assert.Null);
             parameters.CopyTo(copyToTest, 1);
             Assert.Equal(copyToTest, pars.Prepend(null));

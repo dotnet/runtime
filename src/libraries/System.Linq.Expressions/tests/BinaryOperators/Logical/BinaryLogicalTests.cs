@@ -785,14 +785,14 @@ namespace System.Linq.Expressions.Tests
         public static void AndAlsoGlobalMethod()
         {
             MethodInfo method = GlobalMethod(typeof(int), new[] { typeof(int), typeof(int) });
-            Assert.Throws<ArgumentException>(() => Expression.AndAlso(Expression.Constant(1), Expression.Constant(2), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(1), Expression.Constant(2), method));
         }
 
         [Fact]
         public static void OrElseGlobalMethod()
         {
             MethodInfo method = GlobalMethod(typeof(int), new [] { typeof(int), typeof(int) });
-            Assert.Throws<ArgumentException>(() => Expression.OrElse(Expression.Constant(1), Expression.Constant(2), method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(1), Expression.Constant(2), method));
         }
 
         private static TypeBuilder GetTypeBuilder()

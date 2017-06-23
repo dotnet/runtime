@@ -16,10 +16,10 @@ namespace Microsoft.Win32.RegistryTests
             const string valueName = "TestValue";
 
             // Should throw if passed subkey name is null
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteValue(null));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.DeleteValue(null));
 
             // Should throw because value doesn't exists
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteValue(valueName));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.DeleteValue(valueName));
 
             TestRegistryKey.SetValue(valueName, 42);
 

@@ -139,7 +139,7 @@ namespace System.Reflection.Tests
             ConstructorInfo[] cis = GetConstructors(typeof(ConstructorInfoInvokeSample));
             //try to invoke Array ctors with one param
             ConstructorInfoInvokeSample obj = null;
-            Assert.Throws<ArgumentException>(() => { obj = (ConstructorInfoInvokeSample)cis[1].Invoke(new object[] { "hello" }); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { obj = (ConstructorInfoInvokeSample)cis[1].Invoke(new object[] { "hello" }); });
         }
 
         [Fact]

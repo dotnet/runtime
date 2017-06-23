@@ -314,9 +314,9 @@ namespace System.Reflection.Tests
             object obj = Activator.CreateInstance(type);
             FieldInfo fieldInfo = GetField(type, "bArray");
 
-            Assert.Throws<ArgumentException>(() => fieldInfo.SetValue(obj, ATypeWithMixedAB));
-            Assert.Throws<ArgumentException>(() => fieldInfo.SetValue(obj, ATypeWithAllA));
-            Assert.Throws<ArgumentException>(() => fieldInfo.SetValue(obj, ATypeWithAllB));
+            AssertExtensions.Throws<ArgumentException>(null, () => fieldInfo.SetValue(obj, ATypeWithMixedAB));
+            AssertExtensions.Throws<ArgumentException>(null, () => fieldInfo.SetValue(obj, ATypeWithAllA));
+            AssertExtensions.Throws<ArgumentException>(null, () => fieldInfo.SetValue(obj, ATypeWithAllB));
 
             fieldInfo.SetValue(obj, BTypeWithAllB);
             Assert.Equal(BTypeWithAllB, fieldInfo.GetValue(obj));
@@ -348,7 +348,7 @@ namespace System.Reflection.Tests
             fieldInfo.SetValue(obj, intArray);
             Assert.Equal(intArray, fieldInfo.GetValue(obj));
 
-            Assert.Throws<ArgumentException>(() => fieldInfo.SetValue(obj, new byte[] { 2, 3, 4 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => fieldInfo.SetValue(obj, new byte[] { 2, 3, 4 }));
         }
 
         [Fact]
@@ -366,8 +366,8 @@ namespace System.Reflection.Tests
             fieldInfo.SetValue(obj, BTypeWithAllB_Contra);
             Assert.Equal(BTypeWithAllB_Contra, fieldInfo.GetValue(obj));
 
-            Assert.Throws<ArgumentException>(() => fieldInfo.SetValue(obj, new int[] { 1, -1, 2, -2 }));
-            Assert.Throws<ArgumentException>(() => fieldInfo.SetValue(obj, new byte[] { 2, 3, 4 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => fieldInfo.SetValue(obj, new int[] { 1, -1, 2, -2 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => fieldInfo.SetValue(obj, new byte[] { 2, 3, 4 }));
         }
 
         public static IEnumerable<object[]> FieldInfoRTGenericTests_TestData()

@@ -114,13 +114,13 @@ namespace System.Linq.Expressions.Tests
         [Theory, MemberData(nameof(VoidTypeArgs), false)]
         public void VoidArgToFuncTypeDelegate(Type[] typeArgs)
         {
-            Assert.Throws<ArgumentException>(() => Expression.GetDelegateType(typeArgs));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.GetDelegateType(typeArgs));
         }
 
         [Theory, MemberData(nameof(VoidTypeArgs), false)]
         public void VoidArgToActionTypeDelegate(Type[] typeArgs)
         {
-            Assert.Throws<ArgumentException>(() => Expression.GetDelegateType(typeArgs.Append(typeof(void)).ToArray()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.GetDelegateType(typeArgs.Append(typeof(void)).ToArray()));
         }
     }
 }

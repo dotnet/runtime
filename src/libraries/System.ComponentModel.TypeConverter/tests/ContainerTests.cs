@@ -304,7 +304,7 @@ namespace System.ComponentModel.Tests
             TestComponent c2 = new TestComponent();
             ArgumentException ex;
 
-            ex = Assert.Throws<ArgumentException>(() => container.Add(c2, "dup"));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => container.Add(c2, "dup"));
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
             if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
@@ -317,7 +317,7 @@ namespace System.ComponentModel.Tests
 
             // new component, different case
             TestComponent c3 = new TestComponent();
-            ex = Assert.Throws<ArgumentException>(() => container.Add(c3, "duP"));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => container.Add(c3, "duP"));
             // Duplicate component name 'duP'.  Component names must be
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
@@ -342,7 +342,7 @@ namespace System.ComponentModel.Tests
             TestContainer container2 = new TestContainer();
             TestComponent c5 = new TestComponent();
             container2.Add(c5, "C5");
-            ex = Assert.Throws<ArgumentException>(() => container.Add(c5, "dup"));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => container.Add(c5, "dup"));
             // Duplicate component name 'dup'.  Component names must be
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
@@ -652,7 +652,7 @@ namespace System.ComponentModel.Tests
             _container.Add(compB, "B");
 
             ArgumentException ex;
-            ex = Assert.Throws<ArgumentException>(() => _container.InvokeValidateName(compB, "dup"));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => _container.InvokeValidateName(compB, "dup"));
             // Duplicate component name 'duP'.  Component names must be
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
@@ -668,7 +668,7 @@ namespace System.ComponentModel.Tests
 
             // new component, different case
             TestComponent compC = new TestComponent();
-            ex = Assert.Throws<ArgumentException>(() => _container.InvokeValidateName(compC, "dup"));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => _container.InvokeValidateName(compC, "dup"));
             // Duplicate component name 'duP'.  Component names must be
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
@@ -686,7 +686,7 @@ namespace System.ComponentModel.Tests
             TestContainer container2 = new TestContainer();
             TestComponent compD = new TestComponent();
             container2.Add(compD, "B");
-            ex = Assert.Throws<ArgumentException>(() => _container.InvokeValidateName(compD, "dup"));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => _container.InvokeValidateName(compD, "dup"));
             // Duplicate component name 'duP'.  Component names must be
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());

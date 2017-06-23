@@ -80,8 +80,8 @@ namespace System.Net.Http.Tests
             range.Unit = "myunit";
             Assert.Equal("myunit", range.Unit); // "Unit (custom value)"
 
-            Assert.Throws<ArgumentException>(() => { range.Unit = null; }); // "<null>"
-            Assert.Throws<ArgumentException>(() => { range.Unit = ""; }); // "empty string"
+            AssertExtensions.Throws<ArgumentException>("value", () => { range.Unit = null; }); // "<null>"
+            AssertExtensions.Throws<ArgumentException>("value", () => { range.Unit = ""; }); // "empty string"
             Assert.Throws<FormatException>(() => { range.Unit = " x"; }); // "leading space"
             Assert.Throws<FormatException>(() => { range.Unit = "x "; }); // "trailing space"
             Assert.Throws<FormatException>(() => { range.Unit = "x y"; }); // "invalid token"

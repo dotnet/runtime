@@ -24,8 +24,8 @@ namespace System.Net.Http.Tests
             range.Unit = "myunit";
             Assert.Equal("myunit", range.Unit);
 
-            Assert.Throws<ArgumentException>(() => { range.Unit = null; });
-            Assert.Throws<ArgumentException>(() => { range.Unit = ""; });
+            AssertExtensions.Throws<ArgumentException>("value", () => { range.Unit = null; });
+            AssertExtensions.Throws<ArgumentException>("value", () => { range.Unit = ""; });
             Assert.Throws<FormatException>(() => { range.Unit = " x"; });
             Assert.Throws<FormatException>(() => { range.Unit = "x "; });
             Assert.Throws<FormatException>(() => { range.Unit = "x y"; });

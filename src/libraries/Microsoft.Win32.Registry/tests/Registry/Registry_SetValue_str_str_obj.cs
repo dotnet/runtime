@@ -30,21 +30,21 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentNullException>(() => Registry.SetValue(keyName: null, valueName: "test", value: "test"));
 
             // Should throw if passed string does NOT start with one of the valid base key names
-            Assert.Throws<ArgumentException>(() => Registry.SetValue("HHHH_MMMM", "test", "test"));
+            AssertExtensions.Throws<ArgumentException>("keyName", null, () => Registry.SetValue("HHHH_MMMM", "test", "test"));
 
             // Should throw if passed string which only starts with one of the valid base key names but actually it isn't valid.
-            Assert.Throws<ArgumentException>(() => Registry.SetValue("HKEY_LOCAL_MACHINE_FOOBAR", "test", "test"));
+            AssertExtensions.Throws<ArgumentException>("keyName", null, () => Registry.SetValue("HKEY_LOCAL_MACHINE_FOOBAR", "test", "test"));
 
             // Should throw if key length above 255 characters but prior to V4, the limit is 16383
             const int maxValueNameLength = 16383;
-            Assert.Throws<ArgumentException>(() => Registry.SetValue(TestRegistryKey.Name, new string('a', maxValueNameLength + 1), 5));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => Registry.SetValue(TestRegistryKey.Name, new string('a', maxValueNameLength + 1), 5));
 
             // Should throw if passed value is array with uninitialized elements
-            Assert.Throws<ArgumentException>(() => Registry.SetValue(TestRegistryKey.Name, "StringArr", value: new string[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Registry.SetValue(TestRegistryKey.Name, "StringArr", value: new string[1]));
 
             // Should throw because only String[] (REG_MULTI_SZ) and byte[] (REG_BINARY) are supported.
             // RegistryKey.SetValue does not support arrays of type UInt32[].
-            Assert.Throws<ArgumentException>(() => Registry.SetValue(TestRegistryKey.Name, "IntArray", new[] { 1, 2, 3 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => Registry.SetValue(TestRegistryKey.Name, "IntArray", new[] { 1, 2, 3 }));
         }
 
         public static IEnumerable<object[]> TestValueTypes { get { return TestData.TestValueTypes; } }

@@ -362,7 +362,7 @@ namespace System.Linq.Tests
         public void UnknownExpressionType()
         {
             IQueryable<bool> q = _prov.CreateQuery<bool>(new BogusExpression());
-            Assert.Throws<ArgumentException>(() => q.GetEnumerator());
+            AssertExtensions.Throws<ArgumentException>(null, () => q.GetEnumerator());
         }
 
         private IQueryable<string> SimpleMethod()

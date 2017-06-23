@@ -31,7 +31,7 @@ namespace System.Numerics.Tests
             
             if (!PlatformDetection.IsNetNative)
             {
-               Assert.Throws<ArgumentException>(() => v1.CopyTo(a, 2));
+               AssertExtensions.Throws<ArgumentException>(null, () => v1.CopyTo(a, 2));
             }
             else
             {

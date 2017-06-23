@@ -98,8 +98,8 @@ namespace System.Net.Primitives.Functional.Tests
         public static void Create_Set_Invalid()
         {
             IPEndPoint ep = new IPEndPoint(testIpV41, 500);
-            Assert.Throws<ArgumentException>(() => ep.Create(new SocketAddress(Sockets.AddressFamily.InterNetworkV6))); //Different address families
-            Assert.Throws<ArgumentException>(() => ep.Create(new SocketAddress(Sockets.AddressFamily.InterNetwork, 7))); //
+            AssertExtensions.Throws<ArgumentException>("socketAddress", () => ep.Create(new SocketAddress(Sockets.AddressFamily.InterNetworkV6))); //Different address families
+            AssertExtensions.Throws<ArgumentException>("socketAddress", () => ep.Create(new SocketAddress(Sockets.AddressFamily.InterNetwork, 7))); //
         }
 
         [Fact]

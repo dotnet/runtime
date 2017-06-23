@@ -3415,7 +3415,7 @@ namespace CoreXml.Test.XLinq
 
                     using (XmlReader reader = doc.CreateReader())
                     {
-                        Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
+                        Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
                         if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
                         {
                             string expectedMsg = "Cannot have ']]>' inside an XML CDATA block.";
@@ -3609,7 +3609,7 @@ namespace CoreXml.Test.XLinq
 
                     using (XmlReader reader = doc.CreateReader())
                     {
-                        Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
+                        Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
                         if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
                         {
                             string expectedMsg = "An XML comment cannot contain '--', and '-' cannot be the last character.";
@@ -4212,7 +4212,7 @@ namespace CoreXml.Test.XLinq
 
                     using (XmlReader reader = doc.CreateReader())
                     {
-                        Exception exception = Assert.Throws<ArgumentException>(() => MoveToFirstElement(reader).ReadOuterXml());
+                        Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
                         if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
                         {
                             string expectedMsg = "Cannot have '?>' inside an XML processing instruction.";

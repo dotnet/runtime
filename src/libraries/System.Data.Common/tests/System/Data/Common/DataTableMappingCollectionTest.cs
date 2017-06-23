@@ -306,7 +306,7 @@ namespace System.Data.Tests.Common
         [Fact]
         public void RemoveException2()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 _tableMapCollection.AddRange(_tabs);
                 DataTableMapping mymap = new DataTableMapping("sourceAge", "dataSetAge");

@@ -153,7 +153,7 @@ namespace System.IO.Tests
             Stream ms = CreateStream();
             StreamWriter sw = new StreamWriter(ms);
 
-            Assert.Throws<ArgumentException>(() => sw.Write(chArr, 1, chArr.Length));
+            AssertExtensions.Throws<ArgumentException>(null, () => sw.Write(chArr, 1, chArr.Length));
             sw.Dispose();
         }
 

@@ -93,9 +93,9 @@ namespace System.Collections.ObjectModel.Tests
             int[] intArray = new int[s_intArray.Length + targetIndex];
 
             Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
-            Assert.Throws<ArgumentException>(() => ((ICollection)collection).CopyTo(new int[s_intArray.Length, s_intArray.Length], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((ICollection)collection).CopyTo(new int[s_intArray.Length, s_intArray.Length], 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(intArray, -1));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(intArray, s_intArray.Length - 1));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(intArray, s_intArray.Length - 1));
 
             collection.CopyTo(intArray, targetIndex);
             for (int i = targetIndex; i < intArray.Length; i++)

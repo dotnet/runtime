@@ -104,7 +104,7 @@ namespace System.Data.Tests
 	</xs:complexType>
 </xs:schema>";
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 var ds = new DataSet();
                 ds.Tables.Add(new DataTable("Root"));
@@ -129,7 +129,7 @@ namespace System.Data.Tests
 	</xs:complexType>
 </xs:schema>";
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 // When explicit msdata:IsDataSet value is "false", then
                 // treat as usual.
@@ -168,7 +168,7 @@ namespace System.Data.Tests
 	</xs:element>
 </xs:schema>";
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 // DataSet element cannot be converted into a DataTable.
                 // (i.e. cannot be referenced in any other elements)

@@ -120,7 +120,7 @@ namespace MonoTests.System.Configuration
         {
             InfiniteIntConverter cv = new InfiniteIntConverter();
 
-            Assert.Throws<ArgumentException>(() => cv.ConvertTo(null, null, "hi", typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertTo(null, null, "hi", typeof(string)));
         }
 
         [Fact]

@@ -15,7 +15,7 @@ namespace System.Diagnostics.Contracts.Tests
             Assert.Throws<ArgumentNullException>(() => Contract.Exists(0, 1, null));
             Assert.Throws<ArgumentNullException>(() => Contract.Exists<int>(null, i => true));
             Assert.Throws<ArgumentNullException>(() => Contract.Exists<int>(Enumerable.Empty<int>(), null));
-            Assert.Throws<ArgumentException>(() => Contract.Exists(1, 0, i => true)); // fromInclusive > toExclusive
+            AssertExtensions.Throws<ArgumentException>(null, () => Contract.Exists(1, 0, i => true)); // fromInclusive > toExclusive
         }
 
         [Fact]

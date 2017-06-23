@@ -94,7 +94,7 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ArgumentException>(null, () => pipe.Write(new byte[0], int.MaxValue, 0));
                 Assert.Throws<ArgumentException>(null, () => pipe.Write(new byte[0], int.MaxValue, int.MaxValue));
 
-                Assert.Throws<ArgumentException>(() => pipe.Write(new byte[5], 3, 4));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Write(new byte[5], 3, 4));
 
                 // offset out of bounds
                 Assert.Throws<ArgumentException>(null, () => { pipe.WriteAsync(new byte[1], 1, 1); });
@@ -112,7 +112,7 @@ namespace System.IO.Pipes.Tests
                 Assert.Throws<ArgumentException>(null, () => { pipe.WriteAsync(new byte[0], int.MaxValue, 0); });
                 Assert.Throws<ArgumentException>(null, () => { pipe.WriteAsync(new byte[0], int.MaxValue, int.MaxValue); });
 
-                Assert.Throws<ArgumentException>(() => { pipe.WriteAsync(new byte[5], 3, 4); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.WriteAsync(new byte[5], 3, 4); });
             }
         }
 

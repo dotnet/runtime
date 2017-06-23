@@ -127,7 +127,7 @@ namespace System.IO.Packaging.Tests
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 Assert.Equal(0, ms.Length);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop= ;"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop= ;"); });
             }
         }
 
@@ -261,7 +261,7 @@ namespace System.IO.Packaging.Tests
                 {
                     sw.Write(s_DocumentXml);
                 }
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                     {
                         package.CreateRelationship(packagePartDocument.Uri, TargetMode.Internal, "");
                     });
@@ -411,7 +411,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=\"\u0022\""); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=\"\u0022\""); });
             }
         }
 
@@ -428,7 +428,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=\"\u0001value2\""); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=\"\u0001value2\""); });
             }
         }
 
@@ -445,7 +445,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "/"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "/"); });
             }
         }
 
@@ -462,7 +462,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=;"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=;"); });
             }
         }
 
@@ -479,7 +479,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=\"   value   \"    ; prop2=\"\u0001value2"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image/jpeg; prop=\"   value   \"    ; prop2=\"\u0001value2"); });
             }
         }
 
@@ -513,7 +513,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image\r\njpeg"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image\r\njpeg"); });
             }
         }
 
@@ -629,7 +629,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     packagePartDocument = package.CreatePart(partUriDocument, "text/text;foo=\"value\";");
                 });
@@ -649,7 +649,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";\"value\"");
                 });
@@ -703,7 +703,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "image\rjpeg"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "image\rjpeg"); });
             }
         }
 
@@ -720,7 +720,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, "imagejpeg;property"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, "imagejpeg;property"); });
             }
         }
 
@@ -737,7 +737,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";property"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";property"); });
             }
         }
 
@@ -754,7 +754,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";"); });
             }
         }
 
@@ -771,7 +771,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => { packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";; param1=value1"); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { packagePartDocument = package.CreatePart(partUriDocument, Mime_MediaTypeNames_Text_Xml + ";; param1=value1"); });
             }
         }
 
@@ -807,7 +807,7 @@ namespace System.IO.Packaging.Tests
                 ms.Write(ba, 0, ba.Length);
                 Package package = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite);
                 PackagePart packagePartDocument = null;
-                Assert.Throws<ArgumentException>(() => packagePartDocument = package.CreatePart(partUriDocument, " " + Mime_MediaTypeNames_Text_Xml));
+                AssertExtensions.Throws<ArgumentException>(null, () => packagePartDocument = package.CreatePart(partUriDocument, " " + Mime_MediaTypeNames_Text_Xml));
             }
         }
 
@@ -2110,7 +2110,7 @@ namespace System.IO.Packaging.Tests
                     Uri uri = new Uri(@"c:/resources/image1.jpg", UriKind.Absolute);
 
                     // Internal relationships cannot use absolute Uris
-                    Assert.Throws<ArgumentException>(() => packagePartDocument.CreateRelationship(uri,
+                    AssertExtensions.Throws<ArgumentException>("targetUri", () => packagePartDocument.CreateRelationship(uri,
                                                                 TargetMode.Internal,
                                                                 ResourceRelationshipType));
                 }
@@ -2407,7 +2407,7 @@ namespace System.IO.Packaging.Tests
             File.WriteAllBytes(tempGuidName.FullName, ba);
 
             // Truncate is invalid
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Truncate, FileAccess.Read);
             });
@@ -2632,7 +2632,7 @@ namespace System.IO.Packaging.Tests
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
             File.WriteAllBytes(tempGuidName.FullName, ba);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.OpenOrCreate, FileAccess.Write);
             });
@@ -2646,7 +2646,7 @@ namespace System.IO.Packaging.Tests
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
             File.WriteAllBytes(tempGuidName.FullName, ba);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.OpenOrCreate, FileAccess.Read);
             });
@@ -2753,7 +2753,7 @@ namespace System.IO.Packaging.Tests
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
             File.WriteAllBytes(tempGuidName.FullName, ba);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Open, FileAccess.Write);
             });
@@ -3039,7 +3039,7 @@ namespace System.IO.Packaging.Tests
                                     CompressionOption.Normal);
 
                 // Truncate is not a supported value
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     using (Stream partStream = packagePartDocument.GetStream(FileMode.Truncate, FileAccess.ReadWrite))
                     using (StreamWriter sw = new StreamWriter(partStream))
@@ -3065,7 +3065,7 @@ namespace System.IO.Packaging.Tests
                                     Mime_MediaTypeNames_Text_Xml,
                                     CompressionOption.Normal);
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     using (Stream partStream = packagePartDocument.GetStream(FileMode.CreateNew, FileAccess.ReadWrite))
                     using (StreamWriter sw = new StreamWriter(partStream))
@@ -3171,7 +3171,7 @@ namespace System.IO.Packaging.Tests
         public void T113_String_CreateNew_Write_Open_Read()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Write);
             });
@@ -3182,7 +3182,7 @@ namespace System.IO.Packaging.Tests
         public void T112_String_CreateNew_Read_Create_Read()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Read);
             });
@@ -3194,7 +3194,7 @@ namespace System.IO.Packaging.Tests
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
             // opening the package attempts to read the package, and no permissions.
-            Assert.Throws<ArgumentException>(() => Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Write));
+            AssertExtensions.Throws<ArgumentException>(null, () => Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Write));
 			tempGuidName.Delete();
         }
 
@@ -3359,7 +3359,7 @@ namespace System.IO.Packaging.Tests
 
                 using (Stream partStream = packagePartDocument.GetStream(FileMode.Open, FileAccess.Write))
                 {
-                    Assert.Throws<ArgumentException>(() =>
+                    AssertExtensions.Throws<ArgumentException>(null, () =>
                     {
                         using (StreamReader sr = new StreamReader(partStream))
                         {
@@ -3432,7 +3432,7 @@ namespace System.IO.Packaging.Tests
                                     Mime_MediaTypeNames_Text_Xml,
                                     CompressionOption.Normal);
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     using (Stream partStream = packagePartDocument.GetStream(FileMode.Open, FileAccess.Read))
                     using (StreamWriter sw = new StreamWriter(partStream))
@@ -3482,7 +3482,7 @@ namespace System.IO.Packaging.Tests
         public void T100_String_Create_Read_Star()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Read);
             });

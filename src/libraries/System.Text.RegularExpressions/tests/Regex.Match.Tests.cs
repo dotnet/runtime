@@ -752,7 +752,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?()|||||)")]
         public void Match_InvalidPattern(string pattern)
         {
-            Assert.Throws<ArgumentException>(() => Regex.Match("input", pattern));
+            AssertExtensions.Throws<ArgumentException>(null, () => Regex.Match("input", pattern));
         }
 
         [Fact]

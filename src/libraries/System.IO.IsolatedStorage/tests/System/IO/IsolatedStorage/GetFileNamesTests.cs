@@ -57,7 +57,7 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.GetFileNames("\0bad"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.GetFileNames("\0bad"));
             }
         }
 

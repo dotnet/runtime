@@ -39,19 +39,19 @@ namespace System.Security.Cryptography.DeriveBytesTests
         [Fact]
         public static void Ctor_EmptySalt()
         {
-            Assert.Throws<ArgumentException>(() => new Rfc2898DeriveBytes(TestPassword, Array.Empty<byte>(), DefaultIterationCount));
+            AssertExtensions.Throws<ArgumentException>("salt", null, () => new Rfc2898DeriveBytes(TestPassword, Array.Empty<byte>(), DefaultIterationCount));
         }
 
         [Fact]
         public static void Ctor_DiminishedSalt()
         {
-            Assert.Throws<ArgumentException>(() => new Rfc2898DeriveBytes(TestPassword, new byte[7], DefaultIterationCount));
+            AssertExtensions.Throws<ArgumentException>("salt", null, () => new Rfc2898DeriveBytes(TestPassword, new byte[7], DefaultIterationCount));
         }
 
         [Fact]
         public static void Ctor_GenerateZeroSalt()
         {
-            Assert.Throws<ArgumentException>(() => new Rfc2898DeriveBytes(TestPassword, 0));
+            AssertExtensions.Throws<ArgumentException>("saltSize", null, () => new Rfc2898DeriveBytes(TestPassword, 0));
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         [Fact]
         public static void Ctor_GenerateDiminishedSalt()
         {
-            Assert.Throws<ArgumentException>(() => new Rfc2898DeriveBytes(TestPassword, 7));
+            AssertExtensions.Throws<ArgumentException>("saltSize", null, () => new Rfc2898DeriveBytes(TestPassword, 7));
         }
 
         [Fact]

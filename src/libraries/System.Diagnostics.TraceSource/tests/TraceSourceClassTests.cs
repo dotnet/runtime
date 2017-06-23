@@ -15,7 +15,7 @@ namespace System.Diagnostics.TraceSourceTests
         public void ConstrutorExceptionTest()
         {
             Assert.Throws<ArgumentNullException>(() => new TraceSource(null));
-            Assert.Throws<ArgumentException>(() => new TraceSource(""));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new TraceSource(""));
         }
 
         [Fact]
@@ -132,20 +132,8 @@ namespace System.Diagnostics.TraceSourceTests
         [Fact]
         public void EmptySourceName()
         {
-            ArgumentException exception1 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty));
-            ArgumentException exception2 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty, SourceLevels.All));
-
-            // In Desktop in TraceSource.ctor we create the ArgumentException without param name, just with Message = "name", so ParamName is null
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.Null(exception1.ParamName);
-                Assert.Null(exception2.ParamName);
-            }
-            else
-            {
-                Assert.Equal("name", exception1.ParamName);
-                Assert.Equal("name", exception2.ParamName);
-            }
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new TraceSource(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new TraceSource(string.Empty, SourceLevels.All));
         }
     }
 

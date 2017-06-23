@@ -82,7 +82,7 @@ namespace MonoTests.System.Configuration
             TimeSpanSecondsOrInfiniteConverter cv = new TimeSpanSecondsOrInfiniteConverter();
             object o = null;
 
-            Assert.Throws<ArgumentException>(() => o = cv.ConvertFrom(null, null, "100.5"));
+            AssertExtensions.Throws<ArgumentException>(null, () => o = cv.ConvertFrom(null, null, "100.5"));
             Assert.Null(o);
         }
 
@@ -127,7 +127,7 @@ namespace MonoTests.System.Configuration
         {
             TimeSpanSecondsOrInfiniteConverter cv = new TimeSpanSecondsOrInfiniteConverter();
 
-            Assert.Throws<ArgumentException>(() => cv.ConvertTo(null, null, 59, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertTo(null, null, 59, typeof(string)));
         }
 
         [Fact]

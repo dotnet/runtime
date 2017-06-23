@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(0, 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => new MetadataBuilder(0, 0, 0, -1));
-            Assert.Throws<ArgumentException>(() => new MetadataBuilder(0, 0, 0, 1));
+            AssertExtensions.Throws<ArgumentException>("guidHeapStartOffset", () => new MetadataBuilder(0, 0, 0, 1));
 
             new MetadataBuilder(userStringHeapStartOffset: 0x00fffffe);
             Assert.Throws<ImageFormatLimitationException>(() => new MetadataBuilder(userStringHeapStartOffset: 0x00ffffff));
@@ -214,25 +214,25 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             
             Assert.Throws<ArgumentNullException>(() => builder.AddAssembly(default(StringHandle), null, default(StringHandle), default(BlobHandle), 0, 0));
             Assert.Throws<ArgumentNullException>(() => builder.AddAssemblyReference(default(StringHandle), null, default(StringHandle), default(BlobHandle), 0, default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddTypeDefinition(0, default(StringHandle), default(StringHandle), badHandleKind, default(FieldDefinitionHandle), default(MethodDefinitionHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddInterfaceImplementation(default(TypeDefinitionHandle), badHandleKind));
-            Assert.Throws<ArgumentException>(() => builder.AddTypeReference(badHandleKind, default(StringHandle), default(StringHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddEvent(0, default(StringHandle), badHandleKind));
-            Assert.Throws<ArgumentException>(() => builder.AddConstant(badHandleKind, 0));
-            Assert.Throws<ArgumentException>(() => builder.AddMethodSemantics(badHandleKind, 0, default(MethodDefinitionHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddCustomAttribute(badHandleKind, default(MethodDefinitionHandle), default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddCustomAttribute(default(TypeDefinitionHandle), badHandleKind, default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddMethodSpecification(badHandleKind, default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddGenericParameter(badHandleKind, 0, default(StringHandle), 0));
-            Assert.Throws<ArgumentException>(() => builder.AddGenericParameterConstraint(default(GenericParameterHandle), badHandleKind));
-            Assert.Throws<ArgumentException>(() => builder.AddMarshallingDescriptor(badHandleKind, default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddMethodImplementation(default(TypeDefinitionHandle), badHandleKind, default(MethodDefinitionHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddMethodImplementation(default(TypeDefinitionHandle), default(MethodDefinitionHandle), badHandleKind));
-            Assert.Throws<ArgumentException>(() => builder.AddMemberReference(badHandleKind, default(StringHandle), default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddManifestResource(0, default(StringHandle), badHandleKind, 0));
-            Assert.Throws<ArgumentException>(() => builder.AddExportedType(0, default(StringHandle), default(StringHandle), badHandleKind, 0));
-            Assert.Throws<ArgumentException>(() => builder.AddDeclarativeSecurityAttribute(badHandleKind, 0, default(BlobHandle)));
-            Assert.Throws<ArgumentException>(() => builder.AddCustomDebugInformation(badHandleKind, default(GuidHandle), default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddTypeDefinition(0, default(StringHandle), default(StringHandle), badHandleKind, default(FieldDefinitionHandle), default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddInterfaceImplementation(default(TypeDefinitionHandle), badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddTypeReference(badHandleKind, default(StringHandle), default(StringHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddEvent(0, default(StringHandle), badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddConstant(badHandleKind, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddMethodSemantics(badHandleKind, 0, default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddCustomAttribute(badHandleKind, default(MethodDefinitionHandle), default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddCustomAttribute(default(TypeDefinitionHandle), badHandleKind, default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddMethodSpecification(badHandleKind, default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddGenericParameter(badHandleKind, 0, default(StringHandle), 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddGenericParameterConstraint(default(GenericParameterHandle), badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddMarshallingDescriptor(badHandleKind, default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddMethodImplementation(default(TypeDefinitionHandle), badHandleKind, default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddMethodImplementation(default(TypeDefinitionHandle), default(MethodDefinitionHandle), badHandleKind));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddMemberReference(badHandleKind, default(StringHandle), default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddManifestResource(0, default(StringHandle), badHandleKind, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddExportedType(0, default(StringHandle), default(StringHandle), badHandleKind, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddDeclarativeSecurityAttribute(badHandleKind, 0, default(BlobHandle)));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.AddCustomDebugInformation(badHandleKind, default(GuidHandle), default(BlobHandle)));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddModule(-1, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle)));
             Assert.Throws<ArgumentOutOfRangeException>(() => builder.AddModule(ushort.MaxValue + 1, default(StringHandle), default(GuidHandle), default(GuidHandle), default(GuidHandle)));

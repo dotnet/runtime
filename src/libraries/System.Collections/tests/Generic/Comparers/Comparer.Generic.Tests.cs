@@ -83,13 +83,13 @@ namespace System.Collections.Generic.Tests
             Task<T> notOfTypeT = Task.FromResult(default(T));
             if (default(T) != null) // if default(T) is null these asserts will fail as IComparer.Compare returns early if either side is null
             {
-                Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, default(T))); // lhs is the problem
-                Assert.Throws<ArgumentException>(() => comparer.Compare(default(T), notOfTypeT)); // rhs is the problem
+                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, default(T))); // lhs is the problem
+                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(default(T), notOfTypeT)); // rhs is the problem
             }
             if (!(notOfTypeT is T)) // catch cases where Task<T> actually is a T, like object or non-generic Task
             {
-                Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, notOfTypeT)); // The implementation should not attempt to short-circuit if both sides have reference equality
-                Assert.Throws<ArgumentException>(() => comparer.Compare(notOfTypeT, Task.FromResult(default(T)))); // And it should also work when they don't
+                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, notOfTypeT)); // The implementation should not attempt to short-circuit if both sides have reference equality
+                AssertExtensions.Throws<ArgumentException>(null, () => comparer.Compare(notOfTypeT, Task.FromResult(default(T)))); // And it should also work when they don't
             }
         }
 

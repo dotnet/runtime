@@ -23,14 +23,14 @@ namespace System.Threading.Tests
         [Fact]
         public void Ctor_InvalidMode()
         {
-            Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, (EventResetMode)12345));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EventWaitHandle(true, (EventResetMode)12345));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // names aren't supported on Unix
         [Fact]
         public void Ctor_InvalidNames()
         {
-            Assert.Throws<ArgumentException>(() => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // names aren't supported on Unix
@@ -145,8 +145,8 @@ namespace System.Threading.Tests
         public void OpenExisting_InvalidNames_Windows()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => EventWaitHandle.OpenExisting(null));
-            Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(string.Empty));
-            Assert.Throws<ArgumentException>(() => EventWaitHandle.OpenExisting(new string('a', 10000)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => EventWaitHandle.OpenExisting(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => EventWaitHandle.OpenExisting(new string('a', 10000)));
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix

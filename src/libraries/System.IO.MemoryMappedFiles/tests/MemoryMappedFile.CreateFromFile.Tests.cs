@@ -57,14 +57,14 @@ namespace System.IO.MemoryMappedFiles.Tests
             AssertExtensions.Throws<ArgumentException>("mode", () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Append, null, 4096, MemoryMappedFileAccess.ReadWrite));
 
             // FileMode.CreateNew/Create/OpenOrCreate can't be used with default capacity, as the file will be empty
-            Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.CreateNew));
-            Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Create));
-            Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.OpenOrCreate));
+            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.CreateNew));
+            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.Create));
+            AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(GetTestFilePath(), FileMode.OpenOrCreate));
 
             // FileMode.Truncate can't be used with default capacity, as resulting file will be empty
             using (TempFile file = new TempFile(GetTestFilePath()))
             {
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Truncate));
+                AssertExtensions.Throws<ArgumentException>("mode", null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Truncate));
             }
         }
 
@@ -188,13 +188,13 @@ namespace System.IO.MemoryMappedFiles.Tests
             using (TempFile file = new TempFile(GetTestFilePath()))
             {
                 // Empty string is an invalid map name
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty));
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty, 4096));
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty, 4096, MemoryMappedFileAccess.Read));
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty, 4096, MemoryMappedFileAccess.Read));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty, 4096));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty, 4096, MemoryMappedFileAccess.Read));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, string.Empty, 4096, MemoryMappedFileAccess.Read));
                 using (FileStream fs = File.Open(file.Path, FileMode.Open))
                 {
-                    Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(fs, string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs, string.Empty, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));
                 }
             }
         }
@@ -234,11 +234,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, CreateUniqueMapName(), -1, MemoryMappedFileAccess.Read));
 
                 // Positive capacity required when creating a map from an empty file
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read));
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, CreateUniqueMapName(), 0, MemoryMappedFileAccess.Read));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, 0, MemoryMappedFileAccess.Read));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, CreateUniqueMapName(), 0, MemoryMappedFileAccess.Read));
 
                 // With Read, the capacity can't be larger than the backing file's size.
-                Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, CreateUniqueMapName(), 1, MemoryMappedFileAccess.Read));
+                AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, CreateUniqueMapName(), 1, MemoryMappedFileAccess.Read));
 
                 // Now with a FileStream...
                 using (FileStream fs = File.Open(file.Path, FileMode.Open))
@@ -251,13 +251,13 @@ namespace System.IO.MemoryMappedFiles.Tests
                     Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMappedFile.CreateFromFile(fs, null, -1, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
 
                     // Default (0) capacity with an empty file
-                    Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(fs, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
-                    Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(fs, CreateUniqueMapName(), 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs, null, 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs, CreateUniqueMapName(), 0, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
 
                     // Larger capacity than the underlying file, but read-only such that we can't expand the file
                     fs.SetLength(4096);
-                    Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(fs, null, 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
-                    Assert.Throws<ArgumentException>(() => MemoryMappedFile.CreateFromFile(fs, CreateUniqueMapName(), 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs, null, 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
+                    AssertExtensions.Throws<ArgumentException>(null, () => MemoryMappedFile.CreateFromFile(fs, CreateUniqueMapName(), 8192, MemoryMappedFileAccess.Read, HandleInheritability.None, true));
 
                     // Capacity can't be less than the file size (for such cases a view can be created with the smaller size)
                     AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => MemoryMappedFile.CreateFromFile(fs, null, 1, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, true));

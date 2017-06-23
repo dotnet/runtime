@@ -333,7 +333,7 @@ namespace System.Data.Tests
             Assert.Equal(typeof(UniqueConstraint), ds.Tables[0].Constraints[0].GetType());
             Assert.Equal(typeof(ForeignKeyConstraint), ds.Tables[1].Constraints[0].GetType());
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Relations.Add(rel);
             });
@@ -420,7 +420,7 @@ namespace System.Data.Tests
             Assert.Equal(2, _changesCounter);
             ds.Relations.Remove((DataRelation)null);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataRelation rel3 = new DataRelation("rel3", ds1.Tables[0].Columns["ParentId"], ds1.Tables[1].Columns["ParentId"]);
                 ds.Relations.Remove(rel3);
@@ -450,12 +450,12 @@ namespace System.Data.Tests
             Assert.Equal(0, ds.Relations.Count);
             Assert.Equal(2, _changesCounter);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Relations.Remove((string)null);
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Relations.Remove("rel3");
             });

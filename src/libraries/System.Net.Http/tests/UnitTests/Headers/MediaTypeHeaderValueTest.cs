@@ -17,14 +17,14 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_MediaTypeNull_Throw()
         {
-            Assert.Throws<ArgumentException>(() => { new MediaTypeHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentException>("mediaType", () => { new MediaTypeHeaderValue(null); });
         }
 
         [Fact]
         public void Ctor_MediaTypeEmpty_Throw()
         {
             // null and empty should be treated the same. So we also throw for empty strings.
-            Assert.Throws<ArgumentException>(() => { new MediaTypeHeaderValue(string.Empty); });
+            AssertExtensions.Throws<ArgumentException>("mediaType", () => { new MediaTypeHeaderValue(string.Empty); });
         }
 
         [Fact]
@@ -39,8 +39,8 @@ namespace System.Net.Http.Tests
             AssertFormatException(" text/plain");
             AssertFormatException("te xt/plain");
             AssertFormatException("te=xt/plain");
-            AssertFormatException("teäxt/plain");
-            AssertFormatException("text/pläin");
+            AssertFormatException("te\u00E4xt/plain");
+            AssertFormatException("text/pl\u00E4in");
             AssertFormatException("text");
             AssertFormatException("\"text/plain\"");
             AssertFormatException("text/plain; charset=utf-8; ");

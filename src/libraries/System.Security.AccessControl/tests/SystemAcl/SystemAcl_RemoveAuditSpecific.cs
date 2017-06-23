@@ -132,7 +132,7 @@ new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(si
 
             //Case 3, accessMask = 0
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("accessMask", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -150,7 +150,7 @@ new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(si
 
             //Case 4, Audit Qualifier None
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("auditFlags", () =>
             {
                 isContainer = true;
                 isDS = false;

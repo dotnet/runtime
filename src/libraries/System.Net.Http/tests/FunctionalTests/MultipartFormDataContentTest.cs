@@ -23,13 +23,13 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_NullBoundary_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MultipartFormDataContent(null));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartFormDataContent(null));
         }
 
         [Fact]
         public void Ctor_EmptyBoundary_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new MultipartFormDataContent(String.Empty));
+            AssertExtensions.Throws<ArgumentException>("boundary", () => new MultipartFormDataContent(String.Empty));
         }
 
         [Fact]
@@ -43,28 +43,28 @@ namespace System.Net.Http.Functional.Tests
         public void Add_NullName_ThrowsArgumentException()
         {
             var content = new MultipartFormDataContent();
-            Assert.Throws<ArgumentException>(() => content.Add(new StringContent("Hello world"), null));
+            AssertExtensions.Throws<ArgumentException>("name", () => content.Add(new StringContent("Hello world"), null));
         }
 
         [Fact]
         public void Add_EmptyName_ThrowsArgumentException()
         {
             var content = new MultipartFormDataContent();
-            Assert.Throws<ArgumentException>(() => content.Add(new StringContent("Hello world"), String.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", () => content.Add(new StringContent("Hello world"), String.Empty));
         }
 
         [Fact]
         public void Add_NullFileName_ThrowsArgumentException()
         {
             var content = new MultipartFormDataContent();
-            Assert.Throws<ArgumentException>(() => content.Add(new StringContent("Hello world"), "name", null));
+            AssertExtensions.Throws<ArgumentException>("fileName", () => content.Add(new StringContent("Hello world"), "name", null));
         }
 
         [Fact]
         public void Add_EmptyFileName_ThrowsArgumentException()
         {
             var content = new MultipartFormDataContent();
-            Assert.Throws<ArgumentException>(() => content.Add(new StringContent("Hello world"), "name", String.Empty));
+            AssertExtensions.Throws<ArgumentException>("fileName", () => content.Add(new StringContent("Hello world"), "name", String.Empty));
         }
 
         [Fact]
@@ -158,7 +158,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Serialize_InvalidName_Encoded()
         {
             var content = new MultipartFormDataContent("test_boundary");
-            content.Add(new StringContent("Hello World"), "testク\r\n namé");
+            content.Add(new StringContent("Hello World"), "test\u30AF\r\n nam\u00E9");
 
             MemoryStream output = new MemoryStream();
             await content.CopyToAsync(output);
@@ -177,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Serialize_InvalidQuotedName_Encoded()
         {
             var content = new MultipartFormDataContent("test_boundary");
-            content.Add(new StringContent("Hello World"), "\"testク\r\n namé\"");
+            content.Add(new StringContent("Hello World"), "\"test\u30AF\r\n nam\u00E9\"");
 
             var output = new MemoryStream();
             await content.CopyToAsync(output);
@@ -196,7 +196,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Serialize_InvalidNamedFileName_Encoded()
         {
             var content = new MultipartFormDataContent("test_boundary");
-            content.Add(new StringContent("Hello World"), "testク\r\n namé", "fileク\r\n namé");
+            content.Add(new StringContent("Hello World"), "test\u30AF\r\n nam\u00E9", "file\u30AF\r\n nam\u00E9");
 
             MemoryStream output = new MemoryStream();
             await content.CopyToAsync(output);

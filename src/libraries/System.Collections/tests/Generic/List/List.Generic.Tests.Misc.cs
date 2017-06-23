@@ -96,7 +96,7 @@ namespace System.Collections.Tests
                     Assert.Throws<ArgumentOutOfRangeException>(() => _ilist.Insert(bad[i], items[0])); //"ArgumentOutOfRangeException expected."
                 }
 
-                Assert.Throws<ArgumentException>(() => _ilist.Insert(0, new LinkedListNode<string>("blargh"))); //"ArgumentException expected."
+                AssertExtensions.Throws<ArgumentException>("value", () => _ilist.Insert(0, new LinkedListNode<string>("blargh"))); //"ArgumentException expected."
             }
 
             #endregion
@@ -285,7 +285,7 @@ namespace System.Collections.Tests
 
                 for (int i = 0; i < bad.Length; i++)
                 {
-                    Assert.Throws<ArgumentException>(() => list.GetRange(bad[i], bad[++i])); //"ArgumentException expected."
+                    AssertExtensions.Throws<ArgumentException>(null, () => list.GetRange(bad[i], bad[++i])); //"ArgumentException expected."
                 }
 
                 bad = new int[] {

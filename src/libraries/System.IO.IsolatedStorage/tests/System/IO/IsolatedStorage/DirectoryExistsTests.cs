@@ -54,7 +54,7 @@ namespace System.IO.IsolatedStorage
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())
             {
-                Assert.Throws<ArgumentException>(() => isf.DirectoryExists("\0bad"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => isf.DirectoryExists("\0bad"));
             }
         }
 
@@ -71,7 +71,8 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory]
+        [MemberData(nameof(ValidStores))]
         [ActiveIssue("dotnet/corefx #18268", TargetFrameworkMonikers.NetFramework)]
         public void DirectoryExists_Existance(PresetScopes scope)
         {

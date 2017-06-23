@@ -35,7 +35,7 @@ namespace System.Resources.ResourceWriterTests
         [Fact]
         public static void ExceptionforResWriter02()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     byte[] buffer = new byte[_RefBuffer.Length];
                     using (var ms2 = new MemoryStream(buffer, false))
@@ -59,7 +59,7 @@ namespace System.Resources.ResourceWriterTests
         [Fact]
         public static void ExceptionforResWriter04()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     byte[] buffer = new byte[_RefBuffer.Length];
                     using (var ms2 = new MemoryStream(buffer, true))

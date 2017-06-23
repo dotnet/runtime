@@ -217,8 +217,8 @@ namespace System.Xml.Linq.Tests
             XStreamingElement se = new XStreamingElement("se", t);
             se.Add(t);
 
-            Assert.Throws<ArgumentException>(() => new XDocument(t));
-            Assert.Throws<ArgumentException>(() => new XDocument(t));
+            AssertExtensions.Throws<ArgumentException>(null, () => new XDocument(t));
+            AssertExtensions.Throws<ArgumentException>(null, () => new XDocument(t));
         }
 
         public static IEnumerable<object[]> GetObjects()

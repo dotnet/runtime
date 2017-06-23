@@ -141,7 +141,7 @@ namespace System.Security.AccessControl.Tests
 
 
             //Case 3, accessMask = 0
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("accessMask", () =>
             {
                 isContainer = true;
                 isDS = false;

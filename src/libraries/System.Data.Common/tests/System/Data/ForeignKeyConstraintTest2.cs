@@ -196,7 +196,7 @@ namespace System.Data.Tests
             ForeignKeyConstraint fc = null;
 
             // Ctor ArgumentException
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 fc = new ForeignKeyConstraint(new DataColumn[] { dtParent.Columns[0] }, new DataColumn[] { dtChild.Columns[0], dtChild.Columns[1] });
             });
@@ -204,7 +204,7 @@ namespace System.Data.Tests
             fc = new ForeignKeyConstraint(new DataColumn[] { dtParent.Columns[0], dtParent.Columns[1] }, new DataColumn[] { dtChild.Columns[0], dtChild.Columns[2] });
 
             // Add constraint to table - ArgumentException
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dtChild.Constraints.Add(fc);
             });
@@ -482,7 +482,7 @@ namespace System.Data.Tests
         [Fact]
         public void ctor_DclmDclm2()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 var ds = new DataSet();
                 ds.Tables.Add(DataProvider.CreateParentDataTable());
@@ -496,7 +496,7 @@ namespace System.Data.Tests
         [Fact]
         public void ctor_DclmDclm3()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 var ds = new DataSet();
                 ds.Tables.Add(DataProvider.CreateParentDataTable());

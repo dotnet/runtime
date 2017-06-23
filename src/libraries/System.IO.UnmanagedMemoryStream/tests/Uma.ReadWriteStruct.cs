@@ -81,10 +81,10 @@ namespace System.IO.Tests
             using (TestSafeBuffer buffer = new TestSafeBuffer(capacity))
             using (UnmanagedMemoryAccessor uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentException>(() => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, ref inStruct));
-                Assert.Throws<ArgumentException>(() => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, ref inStruct));
-                Assert.Throws<ArgumentException>(() => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, out inStruct));
-                Assert.Throws<ArgumentException>(() => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, out inStruct));
+                AssertExtensions.Throws<ArgumentException>("position", () => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, ref inStruct));
+                AssertExtensions.Throws<ArgumentException>("position", () => uma.Write<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, ref inStruct));
+                AssertExtensions.Throws<ArgumentException>("position", () => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, out inStruct));
+                AssertExtensions.Throws<ArgumentException>("position", () => uma.Read<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, out inStruct));
             }
         }
 

@@ -40,7 +40,7 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry entry = archive.GetEntry("first.txt");
 
                 //null/empty string
-                Assert.Throws<ArgumentException>(() => archive.CreateEntry("")); //"Should throw on empty entry name"
+                AssertExtensions.Throws<ArgumentException>("entryName", () => archive.CreateEntry("")); //"Should throw on empty entry name"
                 Assert.Throws<ArgumentNullException>(() => archive.CreateEntry(null)); //"should throw on null entry name"
             }
         }

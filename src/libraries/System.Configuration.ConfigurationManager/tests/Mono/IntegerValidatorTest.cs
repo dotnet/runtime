@@ -77,21 +77,21 @@ namespace MonoTests.System.Configuration
         public void Validate_Exclusive_fail1()
         {
             IntegerValidator v = new IntegerValidator(5000, 10000, true);
-            Assert.Throws<ArgumentException>(() => v.Validate(5000));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(5000));
         }
 
         [Fact]
         public void Validate_Exclusive_fail2()
         {
             IntegerValidator v = new IntegerValidator(5000, 10000, true);
-            Assert.Throws<ArgumentException>(() => v.Validate(10000));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(10000));
         }
 
         [Fact]
         public void Validate_Exclusive_fail3()
         {
             IntegerValidator v = new IntegerValidator(5000, 10000, true);
-            Assert.Throws<ArgumentException>(() => v.Validate(7000));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(7000));
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace MonoTests.System.Configuration
                                    false,
                                    3000);
 
-            Assert.Throws<ArgumentException>(() => v.Validate(40000));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(40000));
         }
 
         #region BNC654721 https://bugzilla.novell.com/show_bug.cgi?id=654721

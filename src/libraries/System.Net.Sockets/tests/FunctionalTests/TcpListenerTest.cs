@@ -91,8 +91,8 @@ namespace System.Net.Sockets.Tests
             Assert.Throws<ArgumentNullException>(() => listener.EndAcceptSocket(null));
             Assert.Throws<ArgumentNullException>(() => listener.EndAcceptTcpClient(null));
 
-            Assert.Throws<ArgumentException>(() => listener.EndAcceptSocket(Task.CompletedTask));
-            Assert.Throws<ArgumentException>(() => listener.EndAcceptTcpClient(Task.CompletedTask));
+            AssertExtensions.Throws<ArgumentException>("asyncResult", () => listener.EndAcceptSocket(Task.CompletedTask));
+            AssertExtensions.Throws<ArgumentException>("asyncResult", () => listener.EndAcceptTcpClient(Task.CompletedTask));
         }
 
         [Fact]

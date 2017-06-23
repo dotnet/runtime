@@ -17,14 +17,14 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ETagNull_Throw()
         {
-            Assert.Throws<ArgumentException>(() => { new EntityTagHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentException>("tag", () => { new EntityTagHeaderValue(null); });
         }
 
         [Fact]
         public void Ctor_ETagEmpty_Throw()
         {
             // null and empty should be treated the same. So we also throw for empty strings.
-            Assert.Throws<ArgumentException>(() => { new EntityTagHeaderValue(string.Empty); });
+            AssertExtensions.Throws<ArgumentException>("tag", () => { new EntityTagHeaderValue(string.Empty); });
         }
 
         [Fact]

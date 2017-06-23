@@ -64,7 +64,7 @@ namespace MonoTests.System.Configuration
         {
             SubclassTypeValidator v = new SubclassTypeValidator(typeof(B));
 
-            Assert.Throws<ArgumentException>(() => v.Validate(typeof(A)));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(typeof(A)));
         }
     }
 }

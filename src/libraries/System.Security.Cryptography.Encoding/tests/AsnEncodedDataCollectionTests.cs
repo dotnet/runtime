@@ -122,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             AsnEncodedData[] a = new AsnEncodedData[3];
             Assert.Throws<ArgumentOutOfRangeException>(() => c.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => c.CopyTo(a, 3));
-            Assert.Throws<ArgumentException>(() => c.CopyTo(a, 1));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", null, () => c.CopyTo(a, 1));
 
             if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
             {

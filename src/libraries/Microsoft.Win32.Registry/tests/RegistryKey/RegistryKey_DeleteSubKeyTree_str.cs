@@ -20,10 +20,10 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentNullException>(() => TestRegistryKey.DeleteSubKeyTree(null));
 
             // Should throw if target subkey is system subkey and name is empty
-            Assert.Throws<ArgumentException>(() => Registry.CurrentUser.DeleteSubKeyTree(string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => Registry.CurrentUser.DeleteSubKeyTree(string.Empty));
 
             // Should throw because subkey doesn't exists
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteSubKeyTree(name));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.DeleteSubKeyTree(name));
 
             // Should throw because RegistryKey is readonly
             using (var rk = TestRegistryKey.OpenSubKey(string.Empty, false))

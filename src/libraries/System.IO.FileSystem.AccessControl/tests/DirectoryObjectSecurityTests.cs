@@ -36,7 +36,7 @@ namespace System.Security.AccessControl
         public void GetAccessRules_InvalidTargetType()
         {
             var activeDirectorySecurity = new ActiveDirectorySecurity();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("targetType", () =>
                activeDirectorySecurity
                .GetAccessRules(false, false, typeof(System.Security.Principal.GenericPrincipal)));
         }

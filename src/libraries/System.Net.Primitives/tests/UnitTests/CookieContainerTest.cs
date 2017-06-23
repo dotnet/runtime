@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -348,7 +348,7 @@ namespace System.Net.Primitives.Unit.Tests
         [Fact]
         public void Ctor_Capacity_Invalid()
         {
-            Assert.Throws<ArgumentException>(() => new CookieContainer(0)); // Capacity <= 0
+            AssertExtensions.Throws<ArgumentException>("Capacity", () => new CookieContainer(0)); // Capacity <= 0
         }
 
         [Fact]
@@ -457,7 +457,7 @@ namespace System.Net.Primitives.Unit.Tests
         {
             CookieContainer cc = new CookieContainer();
             Assert.Throws<ArgumentNullException>(() => cc.Add((Cookie)null)); // Null cookie
-            Assert.Throws<ArgumentException>(() => cc.Add(new Cookie("name", "value", "", ""))); // Empty domain
+            AssertExtensions.Throws<ArgumentException>("cookie.Domain", () => cc.Add(new Cookie("name", "value", "", ""))); // Empty domain
 
             cc.MaxCookieSize = 1;
             Assert.Throws<CookieException>(() => cc.Add(new Cookie("name", "long-text", "", "contoso.com"))); // Value.Length > MaxCookieSize
@@ -487,11 +487,11 @@ namespace System.Net.Primitives.Unit.Tests
         [Fact]
         public void Ctor_CapacityPerDomainCapacityMaxCookieSize_Invalid()
         {
-            Assert.Throws<ArgumentException>(() => new CookieContainer(0, 10, 5)); // Capacity <= 0
+            AssertExtensions.Throws<ArgumentException>("Capacity", () => new CookieContainer(0, 10, 5)); // Capacity <= 0
             Assert.Throws<ArgumentOutOfRangeException>(() => new CookieContainer(5, 0, 5)); // Per domain capacity <= 0
             Assert.Throws<ArgumentOutOfRangeException>(() => new CookieContainer(5, 10, 5)); // Per domain capacity > Capacity
 
-            Assert.Throws<ArgumentException>(() => new CookieContainer(15, 10, 0)); // Max cookie size <= 0
+            AssertExtensions.Throws<ArgumentException>("MaxCookieSize", () => new CookieContainer(15, 10, 0)); // Max cookie size <= 0
         }
 
         [Fact]

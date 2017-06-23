@@ -49,7 +49,7 @@ public class NegativeTesting
         Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(new byte[] { 0, 1 }, 0, -1));
         
         //ConsoleStream.Read() should throw ArgumentException
-        Assert.Throws<ArgumentException>(() => stream.Read(new byte[] { 0, 1 }, 0, 50));
+        AssertExtensions.Throws<ArgumentException>(null, () => stream.Read(new byte[] { 0, 1 }, 0, 50));
         
         //ConsoleStream.Read() should throw NotSupportedException
         Assert.Throws<NotSupportedException>(() => stream.Read(new byte[] { 0, 1 }, 0, 2));
@@ -64,7 +64,7 @@ public class NegativeTesting
         Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(new byte[] { 0, 1 }, 0, -1));
 
         //ConsoleStream.Write() should throw ArgumentException
-        Assert.Throws<ArgumentException>(() => stream.Write(new byte[] { 0, 1 }, 0, 50));
+        AssertExtensions.Throws<ArgumentException>(null, () => stream.Write(new byte[] { 0, 1 }, 0, 50));
         
         //ConsoleStream.Write() should throw NotSupportedException
         Assert.Throws<NotSupportedException>(() => stream.Seek(0L, SeekOrigin.Begin));

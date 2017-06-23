@@ -207,8 +207,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             Assert.Throws<ArgumentOutOfRangeException>(() => fatEncoder.Add((ExceptionRegionKind)5, 1, 2, 4, 5));
             Assert.Throws<ArgumentOutOfRangeException>(() => fatEncoder.Add(ExceptionRegionKind.Filter, 1, 2, 4, 5, filterOffset: -1));
-            Assert.Throws<ArgumentException>(() => fatEncoder.Add(ExceptionRegionKind.Catch, 1, 2, 4, 5, catchType: default(EntityHandle)));
-            Assert.Throws<ArgumentException>(() => fatEncoder.Add(ExceptionRegionKind.Catch, 1, 2, 4, 5, catchType: MetadataTokens.ImportScopeHandle(1)));
+            AssertExtensions.Throws<ArgumentException>("catchType", () => fatEncoder.Add(ExceptionRegionKind.Catch, 1, 2, 4, 5, catchType: default(EntityHandle)));
+            AssertExtensions.Throws<ArgumentException>("catchType", () => fatEncoder.Add(ExceptionRegionKind.Catch, 1, 2, 4, 5, catchType: MetadataTokens.ImportScopeHandle(1)));
         }
     }
 }
