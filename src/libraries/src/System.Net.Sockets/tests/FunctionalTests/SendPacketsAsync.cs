@@ -121,7 +121,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public void NullElement_Ignored(SocketImplementationType type)
         {
             SendPackets(type, (SendPacketsElement)null, 0);
@@ -131,7 +131,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public void EmptyList_Ignored(SocketImplementationType type)
         {
             SendPackets(type, new SendPacketsElement[0], SocketError.Success, 0);
@@ -168,7 +168,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public void EmptyBuffer_Ignored(SocketImplementationType type)
         {
             SendPackets(type, new SendPacketsElement(new byte[0]), 0);
@@ -177,7 +177,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public void BufferZeroCount_Ignored(SocketImplementationType type)
         {
             SendPackets(type, new SendPacketsElement(new byte[10], 4, 0), 0);
@@ -200,7 +200,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [ActiveIssue(20135, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public void BufferZeroCountThenNormal_ZeroCountIgnored(SocketImplementationType type)
         {
             Assert.True(Capability.IPv6Support());
