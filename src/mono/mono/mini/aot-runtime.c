@@ -1969,6 +1969,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 			globals = (void **)info->globals;
 			g_assert (globals);
 		}
+		found_aot_name = g_strdup (aot_name);
 	} else {
 		char *err;
 
