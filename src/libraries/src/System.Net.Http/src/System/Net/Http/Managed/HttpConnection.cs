@@ -67,11 +67,11 @@ namespace System.Net.Http
             {
                 Debug.Assert(stream != null);
 
-                HttpContentReadStream contentStream = ConsumeStream();
-
-                const int BufferSize = 8192;
-                await contentStream.CopyToAsync(stream, BufferSize, _cancellationToken).ConfigureAwait(false);
-                contentStream.Dispose();
+                using (HttpContentReadStream contentStream = ConsumeStream())
+                {
+                    const int BufferSize = 8192;
+                    await contentStream.CopyToAsync(stream, BufferSize, _cancellationToken).ConfigureAwait(false);
+                }
             }
 
             protected internal override bool TryComputeLength(out long length)
@@ -80,10 +80,8 @@ namespace System.Net.Http
                 return false;
             }
 
-            protected override Task<Stream> CreateContentReadStreamAsync()
-            {
-                return Task.FromResult<Stream>(ConsumeStream());
-            }
+            protected override Task<Stream> CreateContentReadStreamAsync() =>
+                Task.FromResult<Stream>(ConsumeStream());
 
             protected override void Dispose(bool disposing)
             {

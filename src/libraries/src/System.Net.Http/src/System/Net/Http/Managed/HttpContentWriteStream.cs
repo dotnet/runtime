@@ -20,15 +20,10 @@ namespace System.Net.Http
         }
 
         public override bool CanRead => false;
-
         public override bool CanSeek => false;
-
         public override bool CanWrite => true;
 
-        public override long Length
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public override long Length => throw new NotSupportedException();
 
         public override long Position
         {
@@ -36,33 +31,17 @@ namespace System.Net.Http
             set { throw new NotSupportedException(); }
         }
 
-        public override void Flush()
-        {
-            FlushAsync().Wait();
-        }
+        public override void Flush() => FlushAsync().GetAwaiter().GetResult();
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException();
-        }
+        public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override int Read(byte[] buffer, int offset, int count)
-        {
-            throw new NotSupportedException();
-        }
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            WriteAsync(buffer, offset, count, CancellationToken.None).Wait();
-        }
+        public override void Write(byte[] buffer, int offset, int count) =>
+            WriteAsync(buffer, offset, count, CancellationToken.None).GetAwaiter().GetResult();
 
-        public abstract override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken);
-        public abstract override Task FlushAsync(CancellationToken cancellationToken);
         public abstract Task FinishAsync(CancellationToken cancellationToken);
 
         protected override void Dispose(bool disposing)
