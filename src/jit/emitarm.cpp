@@ -2459,6 +2459,16 @@ void emitter::emitIns_R_R_I(instruction ins,
                 fmt = IF_T2_M0;
                 sf  = INS_FLAGS_NOT_SET;
             }
+            else if (insDoesNotSetFlags(flags) && reg1 != REG_SP && reg1 != REG_PC)
+            {
+                // movw,movt reg1, imm
+                codeGen->instGen_Set_Reg_To_Imm(attr, reg1, imm);
+
+                // ins reg1, reg2
+                emitIns_R_R(ins, attr, reg1, reg2);
+
+                return;
+            }
             else
             {
                 assert(!"Instruction cannot be encoded");

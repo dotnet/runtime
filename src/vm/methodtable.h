@@ -1513,7 +1513,10 @@ public:
 
         CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
         // Virtual slots live in chunks pointed to by vtable indirections
-        return *(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
+
+        DWORD index = GetIndexOfVtableIndirection(slotNum);
+        TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
+        return *(VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum));
     }
 
     PTR_PCODE GetSlotPtrRaw(UINT32 slotNum)
@@ -1525,7 +1528,9 @@ public:
         if (slotNum < GetNumVirtuals())
         {
             // Virtual slots live in chunks pointed to by vtable indirections
-            return GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum);
+            DWORD index = GetIndexOfVtableIndirection(slotNum);
+            TADDR base = dac_cast<TADDR>(&(GetVtableIndirections()[index]));
+            return VTableIndir_t::GetValueMaybeNullAtPtr(base) + GetIndexAfterVtableIndirection(slotNum);
         }
         else if (HasSingleNonVirtualSlot())
         {
@@ -1609,12 +1614,18 @@ public:
     #define VTABLE_SLOTS_PER_CHUNK 8
     #define VTABLE_SLOTS_PER_CHUNK_LOG2 3
 
+#if defined(PLATFORM_UNIX) && defined(_TARGET_ARM_)
+    typedef RelativePointer<PTR_PCODE> VTableIndir_t;
+#else
+    typedef PlainPointer<PTR_PCODE> VTableIndir_t;
+#endif
+
     static DWORD GetIndexOfVtableIndirection(DWORD slotNum);
     static DWORD GetStartSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static DWORD GetEndSlotForVtableIndirection(UINT32 indirectionIndex, DWORD wNumVirtuals);
     static UINT32 GetIndexAfterVtableIndirection(UINT32 slotNum);
     static DWORD GetNumVtableIndirections(DWORD wNumVirtuals);
-    PTR_PTR_PCODE GetVtableIndirections();
+    DPTR(VTableIndir_t) GetVtableIndirections();
     DWORD GetNumVtableIndirections();
 
     class VtableIndirectionSlotIterator
@@ -1622,7 +1633,7 @@ public:
         friend class MethodTable;
 
     private:
-        PTR_PTR_PCODE m_pSlot;
+        DPTR(VTableIndir_t) m_pSlot;
         DWORD m_i;
         DWORD m_count;
         PTR_MethodTable m_pMT;
