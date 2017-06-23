@@ -14,24 +14,41 @@
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\BestFitMappingAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAliasNameAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComAwareEventInfoTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComCompatibleVersionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComConversionLossAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComDefaultInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComRegisterFunctionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComVisibleAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\DefaultCharSetAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\DefaultDllImportSearchPathsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\DispIdAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\DllImportAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\GuidAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleRefTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\IDispatchImplAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\InterfaceTypeAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\LCIDConversionAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttributeTests.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
@@ -41,6 +58,16 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+    <Compile Include="System\Runtime\InteropServices\AutomationProxyAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibFuncAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibImportClassAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibTypeAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibVarAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttributeTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
