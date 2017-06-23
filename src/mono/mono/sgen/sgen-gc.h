@@ -650,7 +650,7 @@ struct _SgenMajorCollector {
 	void (*free_non_pinned_object) (GCObject *obj, size_t size);
 	void (*pin_objects) (SgenGrayQueue *queue);
 	void (*pin_major_object) (GCObject *obj, SgenGrayQueue *queue);
-	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count);
+	void (*scan_card_table) (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count, int block_count);
 	void (*iterate_live_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*iterate_block_ranges) (sgen_cardtable_block_callback callback);
 	void (*update_cardtable_mod_union) (void);

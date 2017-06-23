@@ -1363,6 +1363,7 @@ typedef struct {
 typedef struct {
 	ScanJob scan_job;
 	int job_index, job_split_count;
+	int data;
 } ParallelScanJob;
 
 static ScanCopyContext
@@ -1446,7 +1447,7 @@ job_scan_major_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
 	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
 
 	SGEN_TV_GETTIME (atv);
-	major_collector.scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, job_data->job_index, job_data->job_split_count);
+	major_collector.scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, job_data->job_index, job_data->job_split_count, job_data->data);
 	SGEN_TV_GETTIME (btv);
 	time_minor_scan_major_blocks += SGEN_TV_ELAPSED (atv, btv);
 
@@ -1481,7 +1482,7 @@ job_scan_major_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJo
 
 	g_assert (concurrent_collection_in_progress);
 	SGEN_TV_GETTIME (atv);
-	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx, job_data->job_index, job_data->job_split_count);
+	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx, job_data->job_index, job_data->job_split_count, job_data->data);
 	SGEN_TV_GETTIME (btv);
 	time_major_scan_mod_union_blocks += SGEN_TV_ELAPSED (atv, btv);
 
@@ -1517,7 +1518,7 @@ job_major_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 
 	g_assert (concurrent_collection_in_progress);
 	SGEN_TV_GETTIME (atv);
-	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx, job_data->job_index, job_data->job_split_count);
+	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx, job_data->job_index, job_data->job_split_count, job_data->data);
 	SGEN_TV_GETTIME (btv);
 
 	g_assert (worker_data_untyped);
@@ -1557,6 +1558,7 @@ workers_finish_callback (void)
 {
 	ParallelScanJob *psj;
 	ScanJob *sj;
+	size_t num_major_sections = major_collector.get_num_major_sections ();
 	int split_count = sgen_workers_get_job_split_count (GENERATION_OLD);
 	int i;
 	/* Mod union preclean jobs */
@@ -1565,6 +1567,7 @@ workers_finish_callback (void)
 		psj->scan_job.gc_thread_gray_queue = NULL;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
+		psj->data = num_major_sections / split_count;
 		sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, TRUE);
 	}
 
@@ -1591,6 +1594,7 @@ static void
 enqueue_scan_remembered_set_jobs (SgenGrayQueue *gc_thread_gray_queue, SgenObjectOperations *ops, gboolean enqueue)
 {
 	int i, split_count = sgen_workers_get_job_split_count (GENERATION_NURSERY);
+	size_t num_major_sections = major_collector.get_num_major_sections ();
 	ScanJob *sj;
 
 	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan wbroots", job_scan_wbroots, sizeof (ScanJob));
@@ -1606,6 +1610,7 @@ enqueue_scan_remembered_set_jobs (SgenGrayQueue *gc_thread_gray_queue, SgenObjec
 		psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 		psj->job_index = i;
 		psj->job_split_count = split_count;
+		psj->data = num_major_sections / split_count;
 		sgen_workers_enqueue_job (GENERATION_NURSERY, &psj->scan_job.job, enqueue);
 
 		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS remsets", job_scan_los_card_table, sizeof (ParallelScanJob));
@@ -2084,6 +2089,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		int i, split_count = sgen_workers_get_job_split_count (GENERATION_OLD);
+		size_t num_major_sections = major_collector.get_num_major_sections ();
 		gboolean parallel = object_ops_par != NULL;
 
 		/* If we're not parallel we finish the collection on the gc thread */
@@ -2099,6 +2105,7 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
 			psj->job_split_count = split_count;
+			psj->data = num_major_sections / split_count;
 			sgen_workers_enqueue_job (GENERATION_OLD, &psj->scan_job.job, parallel);
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ParallelScanJob));
