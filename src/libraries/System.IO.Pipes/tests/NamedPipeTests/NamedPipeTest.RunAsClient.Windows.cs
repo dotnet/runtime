@@ -15,6 +15,7 @@ namespace System.IO.Pipes.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task RunAsClient_Windows()
         {
             string pipeName = Path.GetRandomFileName();

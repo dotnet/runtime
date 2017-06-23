@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
+    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
     public sealed class NamedPipeTest_CrossProcess : RemoteExecutorTestBase
     {
         [Fact]
