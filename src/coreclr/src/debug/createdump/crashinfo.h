@@ -38,6 +38,7 @@ public:
     bool GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType);
     void ResumeThreads();
     static bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char** name);
+    static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, uint64_t start);
 
     const pid_t Pid() const { return m_pid; }
     const pid_t Ppid() const { return m_ppid; }
@@ -46,9 +47,9 @@ public:
     ICLRDataTarget* DataTarget() const { return m_dataTarget; }
 
     const std::vector<ThreadInfo*> Threads() const { return m_threads; }
-    const std::set<MemoryRegion> ModuleMappings()  const { return m_moduleMappings; }
-    const std::set<MemoryRegion> OtherMappings()  const { return m_otherMappings; }
-    const std::set<MemoryRegion> MemoryRegions()  const { return m_memoryRegions; }
+    const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
+    const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
+    const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
     const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
     const size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 
@@ -58,18 +59,21 @@ public:
     STDMETHOD_(ULONG, Release)();
 
     // ICLRDataEnumMemoryRegionsCallback
-    virtual HRESULT STDMETHODCALLTYPE EnumMemoryRegion( 
-        /* [in] */ CLRDATA_ADDRESS address,
-        /* [in] */ ULONG32 size);
+    virtual HRESULT STDMETHODCALLTYPE EnumMemoryRegion(/* [in] */ CLRDATA_ADDRESS address, /* [in] */ ULONG32 size);
 
 private:
     bool GetAuxvEntries();
     bool EnumerateModuleMappings();
     bool GetDSOInfo();
+    bool GetELFInfo(uint64_t baseAddress);
     bool EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType);
+    bool EnumerateManagedModules(IXCLRDataProcess* clrDataProcess);
+    void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName);
     bool ReadMemory(void* address, void* buffer, size_t size);
+    void InsertMemoryBackedRegion(const MemoryRegion& region);
     void InsertMemoryRegion(uint64_t address, size_t size);
     void InsertMemoryRegion(const MemoryRegion& region);
+    uint32_t GetMemoryRegionFlags(uint64_t start);
     bool ValidRegion(const MemoryRegion& region);
     void CombineMemoryRegions();
 };
