@@ -14,6 +14,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private static readonly string _connStr = (new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr) { MultipleActiveResultSets = true }).ConnectionString;
 
         [CheckConnStrSetupFact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public static void NamedPipesMARSTest()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.NpConnStr);
