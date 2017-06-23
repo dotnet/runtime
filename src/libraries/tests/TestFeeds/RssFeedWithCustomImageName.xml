@@ -8,8 +8,8 @@
     <lastBuildDate>Mon, 19 Jun 2017 11:52:39 -0700</lastBuildDate>
     <image>
       <url>http://2.bp.blogspot.com/-NA5Jb-64eUg/URx8CSdcj_I/AAAAAAAAAUo/eCx0irI0rq0/s1600/bg_Contoso_logo3-20120824073001907469-620x349.jpg</url>
-      <title>Contoso News</title>
-      <link>http://www.Contoso.com/news</link>
+      <title>The title is not the same to the original one</title>
+      <link>http://www.contoso.com/notnews</link>
     </image>
     <a10:id>123FeedID</a10:id>
     <CustomElement>asd</CustomElement>
