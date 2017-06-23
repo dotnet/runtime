@@ -60,7 +60,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 // *** EXECUTE *** \\
                 //Write the same feed that was read.
                 XmlWriter xmlw = XmlWriter.Create(path);
-                Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
+                Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
                 atomFeed.WriteTo(xmlw);
                 xmlw.Close();
 
@@ -100,7 +100,8 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
                 //add an image
                 feed.ImageUrl = new Uri("http://2.bp.blogspot.com/-NA5Jb-64eUg/URx8CSdcj_I/AAAAAAAAAUo/eCx0irI0rq0/s1600/bg_Contoso_logo3-20120824073001907469-620x349.jpg");
-            
+                //feed.ImageTitle = new TextSyndicationContent("Titulo loco");
+
                 feed.BaseUri = new Uri("http://mypage.com");
                 Console.WriteLine(feed.BaseUri);
 
@@ -191,5 +192,63 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
 
         }
+        
+        [Fact]
+        public static void SyndicationFeed_RSS20_Load_customImageDataInFeed()
+        {
+            // *** SETUP *** \\
+            XmlReader reader = XmlReader.Create(@"TestFeeds\RssFeedWithCustomImageName.xml");
+
+            // *** EXECUTE *** \\
+            SyndicationFeed sf = SyndicationFeed.Load(reader);
+
+            // *** ASSERT *** \\
+            Assert.True("The title is not the same to the original one" == sf.ImageTitle.Text);
+            Assert.True(sf.ImageLink.AbsoluteUri !=  sf.Links[0].GetAbsoluteUri().AbsoluteUri);
+
+            // *** CLEANUP *** \\
+            reader.Close();
+        }
+
+        [Fact]
+        public static void SyndicationFeed_RSS20_Write_customImageDataInFeed()
+        {
+            // *** SETUP *** \\
+            SyndicationFeed sf = new SyndicationFeed();
+            string feedTitle = "Feed title";
+            string imageTitle = "Image title";
+            string resultPath = "Rss20CustomImageDataFeedWritten.xml";
+
+            sf.Title = new TextSyndicationContent(feedTitle);
+            sf.ImageTitle = new TextSyndicationContent(imageTitle);
+            sf.ImageLink = new Uri("http://myimage.com");
+            sf.ImageUrl = new Uri("http://www.myownimagesrc.com");
+            XmlWriter writer = XmlWriter.Create(resultPath);
+            Rss20FeedFormatter rssff = sf.GetRss20Formatter();
+
+            
+            try
+            {
+                // *** EXECUTE *** \\
+                rssff.WriteTo(writer);
+                writer.Close();
+
+                // *** ASSERT *** \\
+                Assert.True(File.Exists(resultPath));
+
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                File.Delete(resultPath);
+            }
+        }
     }
 }
+
+#if TagsForTests
+// *** SETUP *** \\
+// *** EXECUTE *** \\
+// *** ASSERT *** \\
+// *** CLEANUP *** \\
+#endif

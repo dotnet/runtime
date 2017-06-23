@@ -26,7 +26,11 @@ namespace Microsoft.ServiceModel.Syndication
         private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
         private string _generator;
         private string _id;
+
         private Uri _imageUrl;
+        private TextSyndicationContent _imageTitle;
+        private Uri _imageLink;
+
         private IEnumerable<SyndicationItem> _items;
         private string _language;
         private DateTimeOffset _lastUpdatedTime;
@@ -200,6 +204,18 @@ namespace Microsoft.ServiceModel.Syndication
             set { _imageUrl = value; }
         }
 
+
+        public TextSyndicationContent ImageTitle {
+            get { return _imageTitle; }
+            set { _imageTitle = value; }
+        }
+
+        public Uri ImageLink {
+            get { return _imageLink; }
+            set { _imageLink = value; }
+        }
+
+
         public IEnumerable<SyndicationItem> Items
         {
             get
@@ -251,7 +267,6 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        // This zone of methods are to support custom parsers
         public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
         {
             return Load(reader, formatter, new Atom10FeedFormatter());
@@ -283,7 +298,6 @@ namespace Microsoft.ServiceModel.Syndication
             throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
-        //--------------------------------------------------
 
         public static SyndicationFeed Load(XmlReader reader)
         {

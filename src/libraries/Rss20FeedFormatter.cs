@@ -46,11 +46,10 @@ namespace Microsoft.ServiceModel.Syndication
         public Func<XmlReader,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
         public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
 
-        //public Action<XmlReader, SyndicationCategory> CategoryParser { get; set; }
 
 
 
-        private bool ImageParserAction(XmlReader reader, SyndicationFeed result)
+        private bool OnReadImage(XmlReader reader, SyndicationFeed result)
         {
             reader.ReadStartElement();
             while (reader.IsStartElement())
@@ -59,21 +58,24 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     result.ImageUrl = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
                 }
-                else
+                else if(reader.IsStartElement("link",Rss20Constants.Rss20Namespace))
                 {
-                    // ignore other content
-                    reader.Skip();
+                    result.ImageLink = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
+                }
+                else if (reader.IsStartElement("title", Rss20Constants.Rss20Namespace))
+                {
+                    result.ImageTitle = new TextSyndicationContent(reader.ReadElementString());
                 }
             }
             reader.ReadEndElement(); // image
             return true;
         }
 
-        private SyndicationItem ItemParserAction(XmlReader reader, SyndicationFeed result)
+        private SyndicationItem OnReadItem(XmlReader reader, SyndicationFeed result)
         {
             return ReadItem(reader,result);
         }
-        private TextSyndicationContent TitleParserAction(XmlReader reader)
+        private TextSyndicationContent OnReadTitle(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
@@ -115,7 +117,7 @@ namespace Microsoft.ServiceModel.Syndication
         private void LoadDefaultParsers()
         {
             DateParser = DateParserAction;
-            TitleParser = TitleParserAction;
+            TitleParser = OnReadTitle;
             DescriptionParser = DescriptionParserAction;
             LanguageParser = LanguageParserAction;
             CopyrightParser = CopyrightParserAction;
@@ -123,8 +125,8 @@ namespace Microsoft.ServiceModel.Syndication
             ManagingEditorParser = ManagingEditorParserAction;
             LinkParser = LinkParserAction;
             FeedCategoryParser = ReadCategory;
-            ItemParser = ItemParserAction;
-            ImageParser = ImageParserAction;
+            ItemParser = OnReadItem;
+            ImageParser = OnReadImage;
         }
 
         public Rss20FeedFormatter()
@@ -1139,9 +1141,14 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 writer.WriteStartElement(Rss20Constants.ImageTag);
                 writer.WriteElementString(Rss20Constants.UrlTag, FeedUtils.GetUriString(this.Feed.ImageUrl));
-                writer.WriteElementString(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace, title);
-                string imgAlternateLink = (alternateLink != null) ? FeedUtils.GetUriString(alternateLink.Uri) : string.Empty;
-                writer.WriteElementString(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace, imgAlternateLink);
+
+                string imageTitle = Feed.ImageTitle == null ? title : Feed.ImageTitle.Text;
+                writer.WriteElementString(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace, imageTitle);
+
+                string imgAlternateLink = alternateLink != null ? FeedUtils.GetUriString(alternateLink.Uri) : string.Empty;
+
+                string imageLink = Feed.ImageLink == null ? imgAlternateLink : FeedUtils.GetUriString(Feed.ImageLink);
+                writer.WriteElementString(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace, imageLink);
                 writer.WriteEndElement(); // image
             }
 
@@ -1283,7 +1290,7 @@ namespace Microsoft.ServiceModel.Syndication
             // serialize the enclosures
             SyndicationLink firstEnclosureLink = null;
             bool passedFirstAlternateLink = false;
-            bool isLinkIgnored = false;
+
             for (int i = 0; i < item.Links.Count; ++i)
             {
                 if (item.Links[i].RelationshipType == Rss20Constants.EnclosureTag)
@@ -1306,10 +1313,6 @@ namespace Microsoft.ServiceModel.Syndication
                 if (_serializeExtensionsAsAtom)
                 {
                     _atomSerializer.WriteLink(writer, item.Links[i], item.BaseUri);
-                }
-                else
-                {
-                    isLinkIgnored = true;
                 }
             }
 
