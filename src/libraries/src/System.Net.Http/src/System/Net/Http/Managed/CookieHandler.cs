@@ -8,25 +8,15 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal class CookieHandler : HttpMessageHandler
+    internal sealed class CookieHandler : HttpMessageHandler
     {
         private readonly HttpMessageHandler _innerHandler;
         private readonly CookieContainer _cookieContainer;
 
         public CookieHandler(CookieContainer cookieContainer, HttpMessageHandler innerHandler)
         {
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
-
-            if (cookieContainer == null)
-            {
-                throw new ArgumentNullException(nameof(cookieContainer));
-            }
-
-            _innerHandler = innerHandler;
-            _cookieContainer = cookieContainer;
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
+            _cookieContainer = cookieContainer ?? throw new ArgumentNullException(nameof(cookieContainer));
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -38,7 +28,7 @@ namespace System.Net.Http
                 request.Headers.Add("Cookie", cookieHeader);
             }
 
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken);
+            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // Handle Set-Cookie
             IEnumerable<string> setCookies;
