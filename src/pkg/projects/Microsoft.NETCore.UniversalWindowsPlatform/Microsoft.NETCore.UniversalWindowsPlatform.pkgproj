@@ -31,7 +31,7 @@
     </Dependency>
 
     <ProjectReference Include="..\Microsoft.Net.UWPCoreRuntimeSdk\Microsoft.Net.UWPCoreRuntimeSdk.pkgproj">
-      <TargetFramework>uap10.1</TargetFramework>
+      <TargetFramework>uap10.0.15138</TargetFramework>
     </ProjectReference>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
