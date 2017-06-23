@@ -46,7 +46,7 @@ namespace System.Composition.Hosting.Core
         public CompositionContract(Type contractType, string contractName, IDictionary<string, object> metadataConstraints)
         {
             if (contractType == null) throw new ArgumentNullException(nameof(contractType));
-            if (metadataConstraints != null && metadataConstraints.Count == 0) throw new ArgumentOutOfRangeException(nameof(metadataConstraints));
+            if (metadataConstraints?.Count == 0) throw new ArgumentOutOfRangeException(nameof(metadataConstraints));
 
             _contractType = contractType;
             _contractName = contractName;
@@ -56,18 +56,18 @@ namespace System.Composition.Hosting.Core
         /// <summary>
         /// The type shared between the exporter and importer.
         /// </summary>
-        public Type ContractType { get { return _contractType; } }
+        public Type ContractType => _contractType;
 
         /// <summary>
         /// A name that discriminates this contract from others with the same type.
         /// </summary>
-        public string ContractName { get { return _contractName; } }
+        public string ContractName => _contractName;
 
         /// <summary>
         /// Constraints applied to the contract. Instead of using this collection
         /// directly it is advisable to use the <see cref="TryUnwrapMetadataConstraint"/> method.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object>> MetadataConstraints { get { return _metadataConstraints; } }
+        public IEnumerable<KeyValuePair<string, object>> MetadataConstraints => _metadataConstraints;
 
         /// <summary>
         /// Determines equality between two contracts.
@@ -149,8 +149,7 @@ namespace System.Composition.Hosting.Core
             if (_metadataConstraints == null)
                 return false;
 
-            object value;
-            if (!_metadataConstraints.TryGetValue(constraintName, out value))
+            if (!_metadataConstraints.TryGetValue(constraintName, out object value))
                 return false;
 
             if (!(value is T))
@@ -182,10 +181,9 @@ namespace System.Composition.Hosting.Core
             if (first.Count != second.Count)
                 return false;
 
-            foreach (var firstItem in first)
+            foreach (KeyValuePair<string, object> firstItem in first)
             {
-                object secondValue;
-                if (!second.TryGetValue(firstItem.Key, out secondValue))
+                if (!second.TryGetValue(firstItem.Key, out object secondValue))
                     return false;
 
                 if (firstItem.Value == null && secondValue != null ||
@@ -195,8 +193,7 @@ namespace System.Composition.Hosting.Core
                 }
                 else
                 {
-                    var firstEnumerable = firstItem.Value as IEnumerable;
-                    if (firstEnumerable != null && !(firstEnumerable is string))
+                    if (firstItem.Value is IEnumerable firstEnumerable && !(firstEnumerable is string))
                     {
                         var secondEnumerable = secondValue as IEnumerable;
                         if (secondEnumerable == null || !Enumerable.SequenceEqual(firstEnumerable.Cast<object>(), secondEnumerable.Cast<object>()))
@@ -215,20 +212,18 @@ namespace System.Composition.Hosting.Core
         private static int ConstraintHashCode(IDictionary<string, object> metadata)
         {
             var result = -1;
-            foreach (var kv in metadata)
+            foreach (KeyValuePair<string, object> kv in metadata)
             {
                 result ^= kv.Key.GetHashCode();
                 if (kv.Value != null)
                 {
-                    var sval = kv.Value as string;
-                    if (sval != null)
+                    if (kv.Value is string sval)
                     {
                         result ^= sval.GetHashCode();
                     }
                     else
                     {
-                        var enumerableValue = kv.Value as IEnumerable;
-                        if (enumerableValue != null)
+                        if (kv.Value is IEnumerable enumerableValue)
                         {
                             foreach (var ev in enumerableValue)
                                 if (ev != null)
