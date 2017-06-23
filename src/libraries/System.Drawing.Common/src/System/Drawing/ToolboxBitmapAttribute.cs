@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.IO;
+using DpiHelper = System.Windows.Forms.DpiHelper;
+
 namespace System.Drawing
 {
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
-    using DpiHelper = System.Windows.Forms.DpiHelper;
-
     /// <summary>
     /// ToolboxBitmapAttribute defines the images associated with a specified component.
     /// The component can offer a small and large image (large is optional).
@@ -16,58 +15,27 @@ namespace System.Drawing
     [AttributeUsage(AttributeTargets.Class)]
     public class ToolboxBitmapAttribute : Attribute
     {
-        /// <summary>
-        /// The small image for this component
-        /// </summary>
         private Image _smallImage;
-
-        /// <summary>
-        /// The large image for this component.
-        /// </summary>
         private Image _largeImage;
 
-        /// <summary>
-        /// The original small image for this component, before scaling per DPI.
-        /// </summary>
-        private Bitmap _originalBitmap;
+        private readonly string _imageFile;
+        private readonly Type _imageType;
 
-        /// <summary>
-        /// The path to the image file for this toolbox item, if any.
-        /// </summary>
-        private string _imageFile;
+        private readonly string _imageName;
 
-        /// <summary>
-        /// The Type used to retrieve the toolbox image for this component, if provided upon initialization of this class.
-        /// </summary>
-        private Type _imageType;
-
-        /// <summary>
-        /// The resource name of the toolbox image for the component, if provided upon initialization of this class.
-        /// </summary>
-        private string _imageName;
-
-        /// <summary>
-        /// The default size of the large image.
-        /// </summary>
         private static readonly Size s_largeSize = new Size(32, 32);
-
-        /// <summary>
-        /// The default size of the large image.
-        /// </summary>
         private static readonly Size s_smallSize = new Size(16, 16);
 
-        // Used to help cache the last result of BitmapSelector.GetFileName
+        // Used to help cache the last result of BitmapSelector.GetFileName.
         private static string s_lastOriginalFileName;
         private static string s_lastUpdatedFileName;
 
-        public ToolboxBitmapAttribute(string imageFile)
-            : this(GetImageFromFile(imageFile, false), GetImageFromFile(imageFile, true))
+        public ToolboxBitmapAttribute(string imageFile) : this(GetImageFromFile(imageFile, false), GetImageFromFile(imageFile, true))
         {
             _imageFile = imageFile;
         }
 
-        public ToolboxBitmapAttribute(Type t)
-            : this(GetImageFromResource(t, null, false), GetImageFromResource(t, null, true))
+        public ToolboxBitmapAttribute(Type t) : this(GetImageFromResource(t, null, false), GetImageFromResource(t, null, true))
         {
             _imageType = t;
         }
@@ -92,8 +60,7 @@ namespace System.Drawing
                 return true;
             }
 
-            ToolboxBitmapAttribute attr = value as ToolboxBitmapAttribute;
-            if (attr != null)
+            if (value is ToolboxBitmapAttribute attr)
             {
                 return attr._smallImage == _smallImage && attr._largeImage == _largeImage;
             }
@@ -101,15 +68,9 @@ namespace System.Drawing
             return false;
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public Image GetImage(object component)
-        {
-            return GetImage(component, true);
-        }
+        public Image GetImage(object component) => GetImage(component, true);
 
         public Image GetImage(object component, bool large)
         {
@@ -117,23 +78,17 @@ namespace System.Drawing
             {
                 return GetImage(component.GetType(), large);
             }
+
             return null;
         }
 
-        public Image GetImage(Type type)
-        {
-            return GetImage(type, false);
-        }
+        public Image GetImage(Type type) => GetImage(type, false);
 
-        public Image GetImage(Type type, bool large)
-        {
-            return GetImage(type, null, large);
-        }
-
+        public Image GetImage(Type type, bool large) => GetImage(type, null, large);
+        
         public Image GetImage(Type type, string imgName, bool large)
         {
-            if ((large && _largeImage == null) ||
-                (!large && _smallImage == null))
+            if ((large && _largeImage == null) || (!large && _smallImage == null))
             {
                 Image img = null;
                 if (large)
@@ -150,15 +105,13 @@ namespace System.Drawing
                     img = GetImageFromResource(type, imgName, large);
                 }
 
-                //last resort for large images.
+                // last resort for large images.
                 if (large && _largeImage == null && _smallImage != null)
                 {
                     img = new Bitmap((Bitmap)_smallImage, s_largeSize.Width, s_largeSize.Height);
                 }
 
-                Bitmap b = img as Bitmap;
-
-                if (b != null)
+                if (img is Bitmap b)
                 {
                     MakeBackgroundAlphaZero(b);
                 }
@@ -189,39 +142,7 @@ namespace System.Drawing
             return toReturn;
         }
 
-        internal Bitmap GetOriginalBitmap()
-        {
-            if (_originalBitmap != null)
-            {
-                return _originalBitmap;
-            }
-
-            // If the control does not have a toolbox icon associated with it, then exit. 
-            if (_smallImage == null)
-            {
-                return null;
-            }
-
-            // If we are not scaling for DPI, then the small icon had not been modified
-            if (!DpiHelper.IsScalingRequired)
-            {
-                return null;
-            }
-
-            // Get small unscaled icon (toolbox can handle only 16x16).
-            if (!string.IsNullOrEmpty(_imageFile))
-            {
-                _originalBitmap = GetImageFromFile(_imageFile, false, false) as Bitmap;
-            }
-            else if (_imageType != null)
-            {
-                _originalBitmap = GetImageFromResource(_imageType, _imageName, false, false) as Bitmap;
-            }
-
-            return _originalBitmap;
-        }
-
-        //helper to get the right icon from the given stream that represents an icon
+        // Helper to get the right icon from the given stream that represents an icon.
         private static Image GetIconFromStream(Stream stream, bool large, bool scaled)
         {
             if (stream == null)
@@ -266,17 +187,9 @@ namespace System.Drawing
                     {
                         //ico files support both large and small, so we respect the large flag here.
 
-                        FileStream reader = System.IO.File.Open(imageFile, FileMode.Open);
-                        if (reader != null)
+                        using (FileStream reader = File.Open(imageFile, FileMode.Open))
                         {
-                            try
-                            {
-                                image = GetIconFromStream(reader, large, scaled);
-                            }
-                            finally
-                            {
-                                reader.Close();
-                            }
+                            image = GetIconFromStream(reader, large, scaled);
                         }
                     }
                     else if (!large)
@@ -298,7 +211,7 @@ namespace System.Drawing
             return image;
         }
 
-        static private Image GetBitmapFromResource(Type t, string bitmapname, bool large, bool scaled)
+        private static Image GetBitmapFromResource(Type t, string bitmapname, bool large, bool scaled)
         {
             if (bitmapname == null)
             {
@@ -307,7 +220,7 @@ namespace System.Drawing
 
             Image img = null;
 
-            // load the image from the manifest resources. 
+            // Load the image from the manifest resources.
             Stream stream = BitmapSelector.GetResourceStream(t, bitmapname);
             if (stream != null)
             {
@@ -328,7 +241,7 @@ namespace System.Drawing
             return img;
         }
 
-        static private Image GetIconFromResource(Type t, string bitmapname, bool large, bool scaled)
+        private static Image GetIconFromResource(Type t, string bitmapname, bool large, bool scaled)
         {
             if (bitmapname == null)
             {
@@ -340,7 +253,7 @@ namespace System.Drawing
 
         public static Image GetImageFromResource(Type t, string imageName, bool large)
         {
-            return GetImageFromResource(t, imageName, large, true /*scaled*/);
+            return GetImageFromResource(t, imageName, large, scaled: true);
         }
 
         internal static Image GetImageFromResource(Type t, string imageName, bool large, bool scaled)
@@ -353,8 +266,7 @@ namespace System.Drawing
                 string bmpname = null;
                 string rawbmpname = null;
 
-                // if we didn't get a name, use the class name
-                //
+                // If we didn't get a name, use the class name
                 if (name == null)
                 {
                     name = t.FullName;
@@ -368,20 +280,20 @@ namespace System.Drawing
                 }
                 else
                 {
-                    if (String.Compare(Path.GetExtension(imageName), ".ico", true, CultureInfo.CurrentCulture) == 0)
+                    if (string.Equals(Path.GetExtension(imageName), ".ico", StringComparison.CurrentCultureIgnoreCase))
                     {
                         iconname = name;
                     }
-                    else if (String.Compare(Path.GetExtension(imageName), ".bmp", true, CultureInfo.CurrentCulture) == 0)
+                    else if (string.Equals(Path.GetExtension(imageName), ".bmp", StringComparison.CurrentCultureIgnoreCase))
                     {
                         bmpname = name;
                     }
                     else
                     {
-                        //we dont recognize the name as either bmp or ico. we need to try three things.
-                        //1.  the name as a bitmap (back compat)
-                        //2.  name+.bmp
-                        //3.  name+.ico
+                        // We don't recognize the name as either bmp or ico. we need to try three things.
+                        // 1.  the name as a bitmap (back compat)
+                        // 2.  name+.bmp
+                        // 3.  name+.ico
                         rawbmpname = name;
                         bmpname = name + ".bmp";
                         iconname = name + ".ico";
@@ -413,12 +325,13 @@ namespace System.Drawing
             img.SetPixel(0, img.Height - 1, newBottomLeft);
         }
 
-        public static readonly ToolboxBitmapAttribute Default = new ToolboxBitmapAttribute((Image)null, (Image)null);
+        public static readonly ToolboxBitmapAttribute Default = new ToolboxBitmapAttribute(null, (Image)null);
 
         private static readonly ToolboxBitmapAttribute s_defaultComponent;
+
         static ToolboxBitmapAttribute()
         {
-            // Ensure Gdip type initializer has run.
+            // When we call Gdip.DummyFunction, JIT will make sure Gdip..cctor will be called.
             SafeNativeMethods.Gdip.DummyFunction();
             
             Stream stream = BitmapSelector.GetResourceStream(typeof(ToolboxBitmapAttribute), "DefaultComponent.bmp");
