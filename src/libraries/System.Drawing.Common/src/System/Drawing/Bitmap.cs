@@ -420,8 +420,7 @@ namespace System.Drawing
         ///       existing image, with the specified size.
         ///    </para>
         /// </devdoc>
-        public Bitmap(Image original, Size newSize) :
-        this(original, (object)newSize != null ? newSize.Width : 0, (object)newSize != null ? newSize.Height : 0)
+        public Bitmap(Image original, Size newSize) : this(original, newSize.Width, newSize.Height)
         {
         }
 
