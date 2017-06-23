@@ -1895,7 +1895,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
+#ifdef LEGACY_BACKEND
         compQMarks = nullptr;
+#endif
     }
     else
     {
@@ -1911,7 +1913,9 @@ void Compiler::compInit(ArenaAllocator* pAlloc, InlineInfo* inlineInfo)
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
 
+#ifdef LEGACY_BACKEND
         compQMarks = new (this, CMK_Unknown) ExpandArrayStack<GenTreePtr>(getAllocator());
+#endif
     }
 
 #ifdef FEATURE_TRACELOGGING

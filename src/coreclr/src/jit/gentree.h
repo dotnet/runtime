@@ -3840,9 +3840,11 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
+#ifdef LEGACY_BACKEND
     // Livesets on entry to then and else subtrees
     VARSET_TP gtThenLiveSet;
     VARSET_TP gtElseLiveSet;
+#endif
 
     // The "Compiler*" argument is not a DEBUGARG here because we use it to keep track of the set of
     // (possible) QMark nodes.

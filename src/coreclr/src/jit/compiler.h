@@ -7754,11 +7754,13 @@ public:
     bool compQmarkRationalized;    // Is it allowed to use a GT_QMARK/GT_COLON node.
     bool compUnsafeCastUsed;       // Does the method use LDIND/STIND to cast between scalar/refernce types
 
-    // NOTE: These values are only reliable after
-    //       the importing is completely finished.
+// NOTE: These values are only reliable after
+//       the importing is completely finished.
 
+#ifdef LEGACY_BACKEND
     ExpandArrayStack<GenTreePtr>* compQMarks; // The set of QMark nodes created in the current compilation, so
                                               // we can iterate over these efficiently.
+#endif
 
 #if CPU_USES_BLOCK_MOVE
     bool compBlkOpUsed; // Does the method do a COPYBLK or INITBLK
