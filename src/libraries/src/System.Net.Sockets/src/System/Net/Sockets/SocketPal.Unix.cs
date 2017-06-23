@@ -1434,7 +1434,7 @@ namespace System.Net.Sockets
                 Socket socket = socketList[i] as Socket;
                 if (socket == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socket?.GetType().FullName ?? "null", typeof(Socket).FullName));
+                    throw new ArgumentException(SR.Format(SR.net_sockets_select, socket?.GetType().FullName ?? "null", typeof(Socket).FullName), nameof(socketList));
                 }
 
                 int fd = (int)socket.SafeHandle.DangerousGetHandle();
