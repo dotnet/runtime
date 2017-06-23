@@ -3289,10 +3289,12 @@ void Compiler::lvaSortByRefCount()
             lvaSetVarDoNotEnregister(lclNum DEBUGARG(DNER_PinningRef));
 #endif
         }
+#if !defined(JIT32_GCENCODER) || !defined(LEGACY_BACKEND)
         else if (opts.MinOpts() && !JitConfig.JitMinOptsTrackGCrefs() && varTypeIsGC(varDsc->TypeGet()))
         {
             varDsc->lvTracked = 0;
         }
+#endif // !defined(JIT32_GCENCODER) || !defined(LEGACY_BACKEND)
 #if defined(JIT32_GCENCODER) && defined(WIN64EXCEPTIONS)
         else if (lvaIsOriginalThisArg(lclNum) && (info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)
         {
