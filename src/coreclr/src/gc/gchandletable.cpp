@@ -187,3 +187,8 @@ HandleType GCHandleManager::HandleFetchType(OBJECTHANDLE handle)
     return static_cast<HandleType>(type);
 }
 
+void GCHandleManager::TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2)
+{
+    ::Ref_TraceRefCountHandles(callback, param1, param2);
+}
+

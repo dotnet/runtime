@@ -466,6 +466,8 @@ public:
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject) = 0;
 
     virtual HandleType HandleFetchType(OBJECTHANDLE handle) = 0;
+
+    virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2) = 0;
 };
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
@@ -819,6 +821,14 @@ void updateGCShadow(Object** ptr, Object* val);
 #define GC_ALLOC_CONTAINS_REF 0x2
 #define GC_ALLOC_ALIGN8_BIAS 0x4
 #define GC_ALLOC_ALIGN8 0x8
+
+#if defined(USE_CHECKED_OBJECTREFS) && !defined(_NOVM)
+#define OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)    (*((_UNCHECKED_OBJECTREF*)&(objref)))
+#define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (OBJECTREF(obj))
+#else
+#define OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)    (objref)
+#define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (obj)
+#endif
 
 struct ScanContext
 {

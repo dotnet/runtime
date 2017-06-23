@@ -22,7 +22,6 @@
 #include "comcallablewrapper.h"
 #include "threads.h"
 #include "excep.h"
-#include "objecthandle.h"
 #include "comutilnative.h"
 #include "eeconfig.h"
 #include "interoputil.h"

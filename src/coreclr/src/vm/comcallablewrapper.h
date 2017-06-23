@@ -17,7 +17,6 @@
 #include "vars.hpp"
 #include "stdinterfaces.h"
 #include "threads.h"
-#include "objecthandle.h"
 #include "comutilnative.h"
 #include "spinlock.h"
 #include "comtoclrcall.h"
