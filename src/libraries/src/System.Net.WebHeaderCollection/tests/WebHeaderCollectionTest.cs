@@ -221,7 +221,6 @@ namespace System.Net.Tests
             Assert.Empty(headers);
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -231,7 +230,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("name", () => headers.Remove(name));
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(" \r \t \n")]
         [InlineData("  name  ")]
@@ -470,15 +468,13 @@ namespace System.Net.Tests
             Assert.Equal("value1,,value2,value3,", headers["name"]);
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public void Add_NullName_ThrowsArgumentNullException()
         {
             var headers = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>("name", () => headers.Add(null, "value"));
+            AssertExtensions.Throws<ArgumentNullException>("name", () => headers.Add(null, "value"));
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData("")]
         [InlineData("(")]
@@ -488,16 +484,15 @@ namespace System.Net.Tests
         public void Add_InvalidName_ThrowsArgumentException(string name)
         {
             var headers = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>("name", () => headers.Add(name, "value"));
+            AssertExtensions.Throws<ArgumentException>("name", () => headers.Add(name, "value"));
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [MemberData(nameof(InvalidValues))]
         public void Add_InvalidValue_ThrowsArgumentException(string value)
         {
             var headers = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>("value", () => headers.Add("name", value));
+            AssertExtensions.Throws<ArgumentException>("value", () => headers.Add("name", value));
         }
 
         [Fact]
@@ -513,17 +508,15 @@ namespace System.Net.Tests
             Assert.Equal("value1,,value2,", headers["name"]);
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(null)]
         [InlineData("")]
         public void Add_NullHeader_ThrowsArgumentNullException(string header)
         {
             var headers = new WebHeaderCollection();
-            Assert.Throws<ArgumentNullException>("header", () => headers.Add(header));
+            AssertExtensions.Throws<ArgumentNullException>("header", () => headers.Add(header));
         }
 
-        [ActiveIssue(20465, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(" \r \t \n", "header")]
         [InlineData("nocolon", "header")]
@@ -533,7 +526,7 @@ namespace System.Net.Tests
         public void Add_InvalidHeader_ThrowsArgumentException(string header, string paramName)
         {
             var headers = new WebHeaderCollection();
-            Assert.Throws<ArgumentException>(paramName, () => headers.Add(header));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => headers.Add(header));
         }
 
         [Fact]
