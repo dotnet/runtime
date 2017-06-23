@@ -662,7 +662,8 @@ public:
 
     void getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                unsigned * pOffsetOfIndirection,
-                               unsigned * pOffsetAfterIndirection);
+                               unsigned * pOffsetAfterIndirection,
+                               unsigned * isRelative);
 
     CORINFO_METHOD_HANDLE resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,

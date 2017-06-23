@@ -255,7 +255,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 
     // Bytes are required for the vtable itself
     S_SIZE_T safe_cbMT = S_SIZE_T( cbGC ) + S_SIZE_T( sizeof(MethodTable) );
-    safe_cbMT += MethodTable::GetNumVtableIndirections(cSlots) * sizeof(PTR_PCODE);
+    safe_cbMT += MethodTable::GetNumVtableIndirections(cSlots) * sizeof(MethodTable::VTableIndir_t);
     if (safe_cbMT.IsOverflow())
     {
         ThrowHR(COR_E_OVERFLOW);
@@ -440,7 +440,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         if (canShareVtableChunks)
         {
             // Share the canonical chunk
-            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
+            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
         }
         else
         {

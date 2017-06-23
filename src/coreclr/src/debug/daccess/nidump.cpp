@@ -7188,9 +7188,9 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
     {
         m_display->StartStructureWithOffset("Vtable",
                                             mt->GetVtableOffset(),
-                                            mt->GetNumVtableIndirections() * sizeof(PTR_PCODE),
+                                            mt->GetNumVtableIndirections() * sizeof(MethodTable::VTableIndir_t),
                                             DataPtrToDisplay(PTR_TO_TADDR(mt) + mt->GetVtableOffset()),
-                                            mt->GetNumVtableIndirections() * sizeof(PTR_PCODE));
+                                            mt->GetNumVtableIndirections() * sizeof(MethodTable::VTableIndir_t));
 
 
         MethodTable::VtableIndirectionSlotIterator itIndirect = mt->IterateVtableIndirectionSlots();
@@ -7209,7 +7209,8 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
             {
                 DisplayStartElement( "Slot", ALWAYS );
                 DisplayWriteElementInt( "Index", i, ALWAYS );
-                PTR_PCODE tgt = mt->GetVtableIndirections()[i];
+                TADDR base = dac_cast<TADDR>(&(mt->GetVtableIndirections()[i]));
+                PTR_PCODE tgt = MethodTable::VTableIndir_t::GetValueMaybeNullAtPtr(base);
                 DisplayWriteElementPointer( "Pointer",
                                             DataPtrToDisplay(dac_cast<TADDR>(tgt)),
                                             ALWAYS );
@@ -7245,7 +7246,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         else
         {
             CoverageRead( PTR_TO_TADDR(mt) + mt->GetVtableOffset(),
-                          mt->GetNumVtableIndirections() * sizeof(PTR_PCODE) );
+                          mt->GetNumVtableIndirections() * sizeof(MethodTable::VTableIndir_t) );
 
             if (mt->HasNonVirtualSlotsArray())
             {

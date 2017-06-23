@@ -120,6 +120,12 @@ private:
         return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
     }
 
+    GenTree* OffsetByIndex(GenTree* base, GenTree* index)
+    {
+        var_types resultType = (base->TypeGet() == TYP_REF) ? TYP_BYREF : base->TypeGet();
+        return new (comp, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
+    }
+
     // returns true if the tree can use the read-modify-write memory instruction form
     bool isRMWRegOper(GenTreePtr tree);
 

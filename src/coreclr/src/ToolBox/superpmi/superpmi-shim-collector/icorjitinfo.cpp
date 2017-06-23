@@ -214,12 +214,13 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 // vtable of it's owning class or interface.
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                              unsigned*             offsetOfIndirection,   /* OUT */
-                                             unsigned*             offsetAfterIndirection /* OUT */
+                                             unsigned*             offsetAfterIndirection,/* OUT */
+                                             unsigned*             isRelative             /* OUT */
                                              )
 {
     mc->cr->AddCall("getMethodVTableOffset");
-    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
-    mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection);
+    original_ICorJitInfo->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
+    mc->recGetMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);
 }
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
