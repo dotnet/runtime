@@ -7,9 +7,9 @@
     <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
-    <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
-    <PackageTargetFramework>uap10.1</PackageTargetFramework>
+    <NuGetTargetMoniker>UAP,Version=v10.0.15138</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>uap10.0.15138</NuGetTargetMonikerShort>
+    <PackageTargetFramework>uap10.0.15138</PackageTargetFramework>
     <PrimaryPackage>Microsoft.Private.CoreFx.UAP</PrimaryPackage>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <RestorePackages>true</RestorePackages>
