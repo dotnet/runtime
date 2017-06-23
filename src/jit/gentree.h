@@ -1700,6 +1700,12 @@ public:
     // Otherwise, return false.
     bool TryGetUse(GenTree* def, GenTree*** use);
 
+private:
+    bool TryGetUseList(GenTree* def, GenTree*** use);
+
+    bool TryGetUseBinOp(GenTree* def, GenTree*** use);
+
+public:
     // Get the parent of this node, and optionally capture the pointer to the child so that it can be modified.
     GenTreePtr gtGetParent(GenTreePtr** parentChildPtrPtr) const;
 
