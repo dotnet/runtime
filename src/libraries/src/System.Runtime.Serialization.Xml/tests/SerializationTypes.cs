@@ -5274,3 +5274,72 @@ public class MyArgumentException : Exception, ISerializable
         info.AddValue("ParamName", _paramName, typeof(string));
     }
 }
+
+[DataContract(IsReference = true)]
+public class DC
+{
+    [DataMember]
+    public string Data = new DateTime().ToLongDateString();
+
+    [DataMember]
+    public DC Next;
+}
+
+[CollectionDataContract(Name = "SampleICollectionTExplicitWithoutDC")]
+public class SampleICollectionTExplicitWithoutDC : ICollection<DC>
+{
+    private List<DC> _internalList = new List<DC>();
+    public SampleICollectionTExplicitWithoutDC() { }
+    public SampleICollectionTExplicitWithoutDC(bool init)
+    {
+        DC dc1 = new DC();
+        _internalList.Add(dc1);
+        _internalList.Add(new DC());
+        _internalList.Add(dc1);
+    }
+
+    void ICollection<DC>.Add(DC item)
+    {
+        _internalList.Add(item);
+    }
+
+    void ICollection<DC>.Clear()
+    {
+        _internalList.Clear();
+    }
+
+    bool ICollection<DC>.Contains(DC item)
+    {
+        return _internalList.Contains(item);
+    }
+
+    void ICollection<DC>.CopyTo(DC[] array, int arrayIndex)
+    {
+        _internalList.CopyTo(array, arrayIndex);
+    }
+
+    int ICollection<DC>.Count
+    {
+        get { return _internalList.Count; }
+    }
+
+    bool ICollection<DC>.IsReadOnly
+    {
+        get { return false; }
+    }
+
+    bool ICollection<DC>.Remove(DC item)
+    {
+        return _internalList.Remove(item);
+    }
+
+    IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
+    {
+        return _internalList.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _internalList.GetEnumerator();
+    }
+}
