@@ -2951,6 +2951,10 @@ PROCAbortInitialize()
             {
                 *argv++ = "--triage";
             }
+            else if (strcmp(envvar, "4") == 0)
+            {
+                *argv++ = "--full";
+            }
         }
 
         envvar = getenv("COMPlus_CreateDumpDiagnostics");

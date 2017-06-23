@@ -145,21 +145,19 @@ ThreadInfo::GetThreadStack(const CrashInfo& crashInfo, uint64_t* startAddress, s
     *startAddress = m_gpRegisters.rsp & PAGE_MASK;
     *size = 4 * PAGE_SIZE;
 
-    for (const MemoryRegion& mapping : crashInfo.OtherMappings())
-    {
-        if (*startAddress >= mapping.StartAddress() && *startAddress < mapping.EndAddress())
-        {
-            // Use the mapping found for the size of the thread's stack
-            *size = mapping.EndAddress() - *startAddress;
+    const MemoryRegion* region = CrashInfo::SearchMemoryRegions(crashInfo.OtherMappings(), *startAddress);
+    if (region != nullptr) {
 
-            if (g_diagnostics)
-            {
-                TRACE("Thread %04x stack found in other mapping (size %08lx): ", m_tid, *size);
-                mapping.Print();
-            }
-            break;
+        // Use the mapping found for the size of the thread's stack
+        *size = region->EndAddress() - *startAddress;
+
+        if (g_diagnostics)
+        {
+            TRACE("Thread %04x stack found in other mapping (size %08lx): ", m_tid, *size);
+            region->Trace();
         }
     }
+    
 }
 
 void
