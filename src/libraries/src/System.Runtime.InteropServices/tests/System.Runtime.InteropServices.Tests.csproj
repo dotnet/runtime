@@ -47,7 +47,7 @@
     <Compile Include="System\Runtime\InteropServices\MarshalAsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\MarshalTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
+    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttributeTests.cs" />
