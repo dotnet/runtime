@@ -420,14 +420,12 @@ namespace System.Drawing
         {
             // Ensure Gdip type initializer has run.
             SafeNativeMethods.Gdip.DummyFunction();
-
-            Bitmap bitmap = null;
+            
             Stream stream = BitmapSelector.GetResourceStream(typeof(ToolboxBitmapAttribute), "DefaultComponent.bmp");
-            if (stream != null)
-            {
-                bitmap = new Bitmap(stream);
-                MakeBackgroundAlphaZero(bitmap);
-            }
+            Debug.Assert(stream != null, "DefaultComponent.bmp must be present as an embedded resource.");
+            
+            var bitmap = new Bitmap(stream);
+            MakeBackgroundAlphaZero(bitmap);
             s_defaultComponent = new ToolboxBitmapAttribute(bitmap, null);
         }
     }

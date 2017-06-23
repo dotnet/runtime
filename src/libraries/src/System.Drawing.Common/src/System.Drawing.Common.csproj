@@ -250,7 +250,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp" />
+    <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
+      <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\System\Drawing\Printing\PrintDocument.bmp" />
     <EmbeddedResource Include="Resources\System\Drawing\ShieldIcon.ico" />
   </ItemGroup>
