@@ -218,7 +218,7 @@ namespace System.Composition.TypedParts.Discovery
             while (b != null)
             {
                 yield return b;
-                b = b.BaseType.GetTypeInfo();
+                b = b.BaseType?.GetTypeInfo();
             }
         }
 

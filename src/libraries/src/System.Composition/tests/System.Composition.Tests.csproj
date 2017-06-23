@@ -36,7 +36,6 @@
     <Compile Include="OpenGenericsTests.cs" />
     <Compile Include="OptionalImportTests.cs" />
     <Compile Include="PropertyExportTests.cs" />
-    <Compile Include="RegistrationBuilderCompatibilityTests.cs" />
     <Compile Include="SharingTests.cs" />
     <Compile Include="Util\AssertX.cs" />
   </ItemGroup>
