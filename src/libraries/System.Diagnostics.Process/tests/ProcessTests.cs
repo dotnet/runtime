@@ -1405,7 +1405,7 @@ namespace System.Diagnostics.Tests
             string domain = "thisDomain";
             SecureString password = AsSecureString("Value");
 
-            Process p = Process.Start(currentProcessName, userName, password, domain);
+            Process p = Process.Start(currentProcessName, userName, password, domain); // This writes junk to the Console but with this overload, we can't prevent that.
             Assert.NotNull(p);
             Assert.Equal(currentProcessName, p.StartInfo.FileName);
             Assert.Equal(userName, p.StartInfo.UserName);
