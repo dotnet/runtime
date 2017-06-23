@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal class CookieHandler : HttpMessageHandler
+    internal sealed class CookieHandler : HttpMessageHandler
     {
         private readonly HttpMessageHandler _innerHandler;
         private readonly CookieContainer _cookieContainer;
