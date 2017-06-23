@@ -106,6 +106,7 @@
     <Compile Include="DefaultCredentialsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="ManagedHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
   </ItemGroup>
   <ItemGroup>

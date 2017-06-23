@@ -1,0 +1,3 @@
+#### Enabling the ManagedHandler
+
+The shipping version of HttpClientHandler is a wrapper for WinHTTP on Windows and libcurl on Unix.  This directory contains a managed implementation that's still under development and that's not intended for production use. By default it's disabled, and the WinHTTP/libcurl versions will be used.  However, by setting the "COMPlus_UseManagedHttpClientHandler" environment variable to "true", this managed implementation will be used.

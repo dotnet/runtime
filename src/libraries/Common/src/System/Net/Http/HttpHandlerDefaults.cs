@@ -19,6 +19,8 @@ namespace System.Net.Http
         public const ClientCertificateOption DefaultClientCertificateOption = ClientCertificateOption.Manual;
         public const bool DefaultUseProxy = true;
         public const bool DefaultUseDefaultCredentials = false;
+        public const bool DefaultCheckCertificateRevocationList = false;
+
         public static TimeSpan DefaultConnectTimeout => TimeSpan.FromSeconds(60);
     }
 }

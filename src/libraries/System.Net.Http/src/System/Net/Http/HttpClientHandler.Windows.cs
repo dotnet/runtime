@@ -15,71 +15,197 @@ namespace System.Net.Http
 {
     // This implementation uses the System.Net.Http.WinHttpHandler class on Windows.  Other platforms will need to use
     // their own platform specific implementation.
-    public class HttpClientHandler : HttpMessageHandler
+    public partial class HttpClientHandler : HttpMessageHandler
     {
-        #region Properties
+        private readonly WinHttpHandler _winHttpHandler;
+        private readonly ManagedHandler _managedHandler;
+        private readonly DiagnosticsHandler _diagnosticsHandler;
+        private bool _useProxy;
+        private bool _disposed;
 
-        public virtual bool SupportsAutomaticDecompression
+        public HttpClientHandler()
         {
-            get { return true; }
+            if (UseManagedHandler)
+            {
+                _managedHandler = new ManagedHandler();
+                _diagnosticsHandler = new DiagnosticsHandler(_managedHandler);
+            }
+            else
+            {
+                _winHttpHandler = new WinHttpHandler();
+                _diagnosticsHandler = new DiagnosticsHandler(_winHttpHandler);
+
+                // Adjust defaults to match current .NET Desktop HttpClientHandler (based on HWR stack).
+                AllowAutoRedirect = true;
+                AutomaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
+                UseProxy = true;
+                UseCookies = true;
+                CookieContainer = new CookieContainer();
+                _winHttpHandler.DefaultProxyCredentials = null;
+                _winHttpHandler.ServerCredentials = null;
+
+                // The existing .NET Desktop HttpClientHandler based on the HWR stack uses only WinINet registry
+                // settings for the proxy.  This also includes supporting the "Automatic Detect a proxy" using
+                // WPAD protocol and PAC file. So, for app-compat, we will do the same for the default proxy setting.
+                _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
+                _winHttpHandler.Proxy = null;
+
+                // Since the granular WinHttpHandler timeout properties are not exposed via the HttpClientHandler API,
+                // we need to set them to infinite and allow the HttpClient.Timeout property to have precedence.
+                _winHttpHandler.ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
+                _winHttpHandler.ReceiveDataTimeout = Timeout.InfiniteTimeSpan;
+                _winHttpHandler.SendTimeout = Timeout.InfiniteTimeSpan;
+            }
         }
 
-        public virtual bool SupportsProxy
+        protected override void Dispose(bool disposing)
         {
-            get { return true; }
+            if (disposing && !_disposed)
+            {
+                _disposed = true;
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.Dispose();
+                }
+                else
+                {
+                    _managedHandler.Dispose();
+                }
+            }
+
+            base.Dispose(disposing);
         }
 
-        public virtual bool SupportsRedirectConfiguration
-        {
-            get { return true; }
-        }
+        public virtual bool SupportsAutomaticDecompression => true;
+        public virtual bool SupportsProxy => true;
+        public virtual bool SupportsRedirectConfiguration => true;
 
         public bool UseCookies
         {
-            get { return (_winHttpHandler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer); }
-            set { _winHttpHandler.CookieUsePolicy = value ? CookieUsePolicy.UseSpecifiedCookieContainer : CookieUsePolicy.IgnoreCookies; }
+            get => _winHttpHandler != null ? _winHttpHandler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer : _managedHandler.UseCookies;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.CookieUsePolicy = value ? CookieUsePolicy.UseSpecifiedCookieContainer : CookieUsePolicy.IgnoreCookies;
+                }
+                else
+                {
+                    _managedHandler.UseCookies = value;
+                }
+            }
         }
 
         public CookieContainer CookieContainer
         {
-            get { return _winHttpHandler.CookieContainer; }
-            set { _winHttpHandler.CookieContainer = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.CookieContainer : _managedHandler.CookieContainer;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.CookieContainer = value;
+                }
+                else
+                {
+                    _managedHandler.CookieContainer = value;
+                }
+            }
         }
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get { return _winHttpHandler.ClientCertificateOption; }
-            set { _winHttpHandler.ClientCertificateOption = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.ClientCertificateOption : _managedHandler.ClientCertificateOptions;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.ClientCertificateOption = value;
+                }
+                else
+                {
+                    _managedHandler.ClientCertificateOptions = value;
+                }
+            }
         }
 
         public DecompressionMethods AutomaticDecompression
         {
-            get { return _winHttpHandler.AutomaticDecompression; }
-            set { _winHttpHandler.AutomaticDecompression = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.AutomaticDecompression : _managedHandler.AutomaticDecompression;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.AutomaticDecompression = value;
+                }
+                else
+                {
+                    _managedHandler.AutomaticDecompression = value;
+                }
+            }
         }
 
         public bool UseProxy
         {
-            get { return _useProxy; }
-            set { _useProxy = value; }
+            get => _winHttpHandler != null ? _useProxy : _managedHandler.UseProxy;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _useProxy = value;
+                }
+                else
+                {
+                    _managedHandler.UseProxy = value;
+                }
+            }
         }
 
         public IWebProxy Proxy
         {
-            get { return _winHttpHandler.Proxy; }
-            set { _winHttpHandler.Proxy = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.Proxy : _managedHandler.Proxy;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.Proxy = value;
+                }
+                else
+                {
+                    _managedHandler.Proxy = value;
+                }
+            }
         }
 
         public ICredentials DefaultProxyCredentials
         {
-            get { return _winHttpHandler.DefaultProxyCredentials; }
-            set { _winHttpHandler.DefaultProxyCredentials = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.DefaultProxyCredentials : _managedHandler.DefaultProxyCredentials;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.DefaultProxyCredentials = value;
+                }
+                else
+                {
+                    _managedHandler.DefaultProxyCredentials = value;
+                }
+            }
         }
 
         public bool PreAuthenticate
         {
-            get { return _winHttpHandler.PreAuthenticate; }
-            set { _winHttpHandler.PreAuthenticate = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.PreAuthenticate : _managedHandler.PreAuthenticate;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.PreAuthenticate = value;
+                }
+                else
+                {
+                    _managedHandler.PreAuthenticate = value;
+                }
+            }
         }
 
         public bool UseDefaultCredentials
@@ -89,202 +215,212 @@ namespace System.Net.Http
             //
             // This property only affect .ServerCredentials and not .DefaultProxyCredentials.
 
-            get { return (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials); }
-
+            get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials : _managedHandler.UseDefaultCredentials;
             set
             {
-                if (value)
+                if (_winHttpHandler != null)
                 {
-                    _winHttpHandler.ServerCredentials = CredentialCache.DefaultCredentials;
+                    if (value)
+                    {
+                        _winHttpHandler.ServerCredentials = CredentialCache.DefaultCredentials;
+                    }
+                    else
+                    {
+                        if (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials)
+                        {
+                            // Only clear out the ServerCredentials property if it was a DefaultCredentials.
+                            _winHttpHandler.ServerCredentials = null;
+                        }
+                    }
                 }
                 else
                 {
-                    if (_winHttpHandler.ServerCredentials == CredentialCache.DefaultCredentials)
-                    {
-                        // Only clear out the ServerCredentials property if it was a DefaultCredentials.
-                        _winHttpHandler.ServerCredentials = null;
-                    }
+                    _managedHandler.UseDefaultCredentials = value;
                 }
             }
         }
 
         public ICredentials Credentials
         {
-            get { return _winHttpHandler.ServerCredentials; }
-            set { _winHttpHandler.ServerCredentials = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.ServerCredentials : _managedHandler.Credentials;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.ServerCredentials = value;
+                }
+                else
+                {
+                    _managedHandler.Credentials = value;
+                }
+            }
         }
 
         public bool AllowAutoRedirect
         {
-            get
-            {
-                return _winHttpHandler.AutomaticRedirection;
-            }
+            get => _winHttpHandler != null ? _winHttpHandler.AutomaticRedirection : _managedHandler.AllowAutoRedirect;
             set
             {
-                _winHttpHandler.AutomaticRedirection = value;
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.AutomaticRedirection = value;
+                }
+                else
+                {
+                    _managedHandler.AllowAutoRedirect = value;
+                }
             }
         }
 
         public int MaxAutomaticRedirections
         {
-            get { return _winHttpHandler.MaxAutomaticRedirections; }
-            set { _winHttpHandler.MaxAutomaticRedirections = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.MaxAutomaticRedirections : _managedHandler.MaxAutomaticRedirections;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.MaxAutomaticRedirections = value;
+                }
+                else
+                {
+                    _managedHandler.MaxAutomaticRedirections = value;
+                }
+            }
         }
 
         public int MaxConnectionsPerServer
         {
-            get { return _winHttpHandler.MaxConnectionsPerServer; }
-            set { _winHttpHandler.MaxConnectionsPerServer = value; }
-        }
-
-        public long MaxRequestContentBufferSize
-        {
-            // This property has been deprecated. In the .NET Desktop it was only used when the handler needed to 
-            // automatically buffer the request content. That only happened if neither 'Content-Length' nor 
-            // 'Transfer-Encoding: chunked' request headers were specified. So, the handler thus needed to buffer
-            // in the request content to determine its length and then would choose 'Content-Length' semantics when
-            // POST'ing. In CoreCLR and .NETNative, the handler will resolve the ambiguity by always choosing
-            // 'Transfer-Encoding: chunked'. The handler will never automatically buffer in the request content.
-            get { return 0; }
-            
-            // TODO (#7879): Add message/link to exception explaining the deprecation. 
-            // Update corresponding exception in HttpClientHandler.Unix.cs if/when this is updated.
-            set { throw new PlatformNotSupportedException(); }
+            get => _winHttpHandler != null ? _winHttpHandler.MaxConnectionsPerServer : _managedHandler.MaxConnectionsPerServer;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.MaxConnectionsPerServer = value;
+                }
+                else
+                {
+                    _managedHandler.MaxConnectionsPerServer = value;
+                }
+            }
         }
 
         public int MaxResponseHeadersLength
         {
-            get { return _winHttpHandler.MaxResponseHeadersLength; }
-            set { _winHttpHandler.MaxResponseHeadersLength = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.MaxResponseHeadersLength : _managedHandler.MaxResponseHeadersLength;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.MaxResponseHeadersLength = value;
+                }
+                else
+                {
+                    _managedHandler.MaxResponseHeadersLength = value;
+                }
+            }
         }
 
-        public X509CertificateCollection ClientCertificates
-        {
-            get { return _winHttpHandler.ClientCertificates; }
-        }
-
-        public static Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> DangerousAcceptAnyServerCertificateValidator { get; } = delegate { return true; };
-
+        public X509CertificateCollection ClientCertificates => _winHttpHandler != null ?
+            _winHttpHandler.ClientCertificates :
+            _managedHandler.ClientCertificates;
+        
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
-            get { return _winHttpHandler.ServerCertificateValidationCallback; }
-            set { _winHttpHandler.ServerCertificateValidationCallback = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.ServerCertificateValidationCallback : _managedHandler.ServerCertificateCustomValidationCallback;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.ServerCertificateValidationCallback = value;
+                }
+                else
+                {
+                    _managedHandler.ServerCertificateCustomValidationCallback = value;
+                }
+            }
         }
 
         public bool CheckCertificateRevocationList
         {
-            get { return _winHttpHandler.CheckCertificateRevocationList; }
-            set { _winHttpHandler.CheckCertificateRevocationList = value; }
+            get => _winHttpHandler != null ? _winHttpHandler.CheckCertificateRevocationList : _managedHandler.CheckCertificateRevocationList;
+            set
+            {
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.CheckCertificateRevocationList = value;
+                }
+                else
+                {
+                    _managedHandler.CheckCertificateRevocationList = value;
+                }
+            }
         }
 
         public SslProtocols SslProtocols
         {
-            get { return _winHttpHandler.SslProtocols; }
-            set { _winHttpHandler.SslProtocols = value; }
-        }
-
-        public IDictionary<String, object> Properties
-        {
-            get { return _winHttpHandler.Properties; }
-        }
-
-        #endregion Properties
-
-        #region De/Constructors
-
-        public HttpClientHandler()
-        {
-            _winHttpHandler = new WinHttpHandler();
-            _diagnosticsPipeline = new DiagnosticsHandler(_winHttpHandler);
-
-            // Adjust defaults to match current .NET Desktop HttpClientHandler (based on HWR stack).
-            AllowAutoRedirect = true;
-            AutomaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
-            UseProxy = true;
-            UseCookies = true;
-            CookieContainer = new CookieContainer();
-            _winHttpHandler.DefaultProxyCredentials = null;
-            _winHttpHandler.ServerCredentials = null;
-
-            // The existing .NET Desktop HttpClientHandler based on the HWR stack uses only WinINet registry
-            // settings for the proxy.  This also includes supporting the "Automatic Detect a proxy" using
-            // WPAD protocol and PAC file. So, for app-compat, we will do the same for the default proxy setting.
-            _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
-            _winHttpHandler.Proxy = null;
-            
-            // Since the granular WinHttpHandler timeout properties are not exposed via the HttpClientHandler API,
-            // we need to set them to infinite and allow the HttpClient.Timeout property to have precedence.
-            _winHttpHandler.ReceiveHeadersTimeout = Timeout.InfiniteTimeSpan;
-            _winHttpHandler.ReceiveDataTimeout = Timeout.InfiniteTimeSpan;
-            _winHttpHandler.SendTimeout = Timeout.InfiniteTimeSpan;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && !_disposed)
+            get => _winHttpHandler != null ? _winHttpHandler.SslProtocols : _managedHandler.SslProtocols;
+            set
             {
-                _disposed = true;
-
-                // Release WinHttp session handle.
-                _winHttpHandler.Dispose();
+                if (_winHttpHandler != null)
+                {
+                    _winHttpHandler.SslProtocols = value;
+                }
+                else
+                {
+                    _managedHandler.SslProtocols = value;
+                }
             }
-
-            base.Dispose(disposing);
         }
 
-        #endregion De/Constructors
-
-        #region Request Execution
+        public IDictionary<String, object> Properties => _winHttpHandler != null ?
+            _winHttpHandler.Properties :
+            _managedHandler.Properties;
+        
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            // Get current value of WindowsProxyUsePolicy.  Only call its WinHttpHandler
-            // property setter if the value needs to change.
-            var oldProxyUsePolicy = _winHttpHandler.WindowsProxyUsePolicy;
-
-            if (_useProxy)
+            if (_winHttpHandler != null)
             {
-                if (_winHttpHandler.Proxy == null)
+                // Get current value of WindowsProxyUsePolicy.  Only call its WinHttpHandler
+                // property setter if the value needs to change.
+                var oldProxyUsePolicy = _winHttpHandler.WindowsProxyUsePolicy;
+
+                if (_useProxy)
                 {
-                    if (oldProxyUsePolicy != WindowsProxyUsePolicy.UseWinInetProxy)
+                    if (_winHttpHandler.Proxy == null)
                     {
-                        _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
+                        if (oldProxyUsePolicy != WindowsProxyUsePolicy.UseWinInetProxy)
+                        {
+                            _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinInetProxy;
+                        }
+                    }
+                    else
+                    {
+                        if (oldProxyUsePolicy != WindowsProxyUsePolicy.UseCustomProxy)
+                        {
+                            _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseCustomProxy;
+                        }
                     }
                 }
                 else
                 {
-                    if (oldProxyUsePolicy != WindowsProxyUsePolicy.UseCustomProxy)
+                    if (oldProxyUsePolicy != WindowsProxyUsePolicy.DoNotUseProxy)
                     {
-                        _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.UseCustomProxy;
+                        _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.DoNotUseProxy;
                     }
                 }
+
+                return DiagnosticsHandler.IsEnabled() ?
+                    _diagnosticsHandler.SendAsync(request, cancellationToken) :
+                    _winHttpHandler.SendAsync(request, cancellationToken);
             }
             else
             {
-                if (oldProxyUsePolicy != WindowsProxyUsePolicy.DoNotUseProxy)
-                {
-                    _winHttpHandler.WindowsProxyUsePolicy = WindowsProxyUsePolicy.DoNotUseProxy;
-                }
+                return DiagnosticsHandler.IsEnabled() ?
+                    _diagnosticsHandler.SendAsync(request, cancellationToken) :
+                    _managedHandler.SendAsync(request, cancellationToken);
             }
-
-            if (DiagnosticsHandler.IsEnabled())
-            {
-                return _diagnosticsPipeline.SendAsync(request, cancellationToken);
-            }
-            return _winHttpHandler.SendAsync(request, cancellationToken);
         }
-
-        #endregion Request Execution
-
-        #region Private
-
-        private WinHttpHandler _winHttpHandler;
-        private readonly DiagnosticsHandler _diagnosticsPipeline;
-        private bool _useProxy;
-        private volatile bool _disposed;
-        #endregion Private
-
     }
 }

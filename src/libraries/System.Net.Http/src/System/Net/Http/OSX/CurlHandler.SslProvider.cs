@@ -49,7 +49,7 @@ namespace System.Net.Http
                             CurlSslVersionDescription));
                 }
 
-                if (easy._handler.ServerCertificateValidationCallback != null)
+                if (easy._handler.ServerCertificateCustomValidationCallback != null)
                 {
                     // libcurl (as of 7.49.1) does not have any callback which can be registered which fires
                     // between the time that a TLS/SSL handshake has offered up the server certificate and the
