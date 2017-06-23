@@ -3,12 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization.Formatters.Tests;
 using System.Threading;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -362,24 +358,6 @@ namespace System.Tests
         {
             var e = Assert.ThrowsAny<Exception>(() => x.Value);
             Assert.NotSame(e, Assert.ThrowsAny<Exception>(() => x.Value));
-        }
-
-        [Fact]
-        [ActiveIssue(19119, TargetFrameworkMonikers.Netcoreapp)]
-        public static void Serialization_ValueType()
-        {
-            Lazy<int> fortytwo = BinaryFormatterHelpers.Clone(new Lazy<int>(() => 42));
-            Assert.True(fortytwo.IsValueCreated);
-            Assert.Equal(fortytwo.Value, 42);
-        }
-
-        [Fact]
-        [ActiveIssue(19119, TargetFrameworkMonikers.Netcoreapp)]
-        public static void Serialization_RefType()
-        {
-            Lazy<string> fortytwo = BinaryFormatterHelpers.Clone(new Lazy<string>(() => "42"));
-            Assert.True(fortytwo.IsValueCreated);
-            Assert.Equal(fortytwo.Value, "42");
         }
 
         [Theory]
