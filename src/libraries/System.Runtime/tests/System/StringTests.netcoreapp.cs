@@ -201,26 +201,30 @@ namespace System.Tests
         [ActiveIssue("https://github.com/dotnet/corert/issues/3646 - String.Replace(String, String, StringComparison) not yet ported", TargetFrameworkMonikers.UapAot)]
         public void Replace_StringComparison_TurkishI()
         {
-            string source = "\u0069\u0130";
-            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
+            string src = "\u0069\u0130";
+
+            RemoteInvoke((source) =>
             {
+                CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
+
                 Assert.True("\u0069".Equals("\u0130", StringComparison.CurrentCultureIgnoreCase));
-            
+
                 Assert.Equal("a\u0130", source.Replace("\u0069", "a", StringComparison.CurrentCulture));
                 Assert.Equal("aa", source.Replace("\u0069", "a", StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
                 Assert.Equal("aa", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
-            });
 
-            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
-            {
+                CultureInfo.CurrentCulture = new CultureInfo("en-US");
+
                 Assert.False("\u0069".Equals("\u0130", StringComparison.CurrentCultureIgnoreCase));
 
                 Assert.Equal("a\u0130", source.Replace("\u0069", "a", StringComparison.CurrentCulture));
                 Assert.Equal("a\u0130", source.Replace("\u0069", "a", StringComparison.CurrentCultureIgnoreCase));
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
-            });
+
+                return SuccessExitCode;
+            }, src).Dispose();
         }
 
         public static IEnumerable<object[]> Replace_StringComparisonCulture_TestData()

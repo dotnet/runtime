@@ -4,12 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class SingleTests
+    public class SingleTests : RemoteExecutorTestBase
     {
         [Fact]
         public static void Ctor_Empty()
@@ -237,32 +238,42 @@ namespace System.Tests
             yield return new object[] { float.NegativeInfinity, "G", invariantFormat, "-Infinity" };
         }
 
-        [Theory]
-        [MemberData(nameof(ToString_TestData))]
-        public static void ToString(float f, string format, IFormatProvider provider, string expected)
+        [Fact]
+        public static void Test_ToString()
         {
-            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
+            RemoteInvoke(() =>
             {
-                bool isDefaultProvider = provider == null;
-                if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+
+                foreach (var testdata in ToString_TestData())
                 {
-                    if (isDefaultProvider)
-                    {
-                        Assert.Equal(expected, f.ToString());
-                        Assert.Equal(expected, f.ToString((IFormatProvider)null));
-                    }
-                    Assert.Equal(expected, f.ToString(provider));
+                    ToString((float)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
+                return SuccessExitCode;
+            }).Dispose();
+        }
+        
+        private static void ToString(float f, string format, IFormatProvider provider, string expected)
+        {
+            bool isDefaultProvider = provider == null;
+            if (string.IsNullOrEmpty(format) || format.ToUpperInvariant() == "G")
+            {
                 if (isDefaultProvider)
                 {
-                    Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
-                    Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in lower case
-                    Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), null));
-                    Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), null));
+                    Assert.Equal(expected, f.ToString());
+                    Assert.Equal(expected, f.ToString((IFormatProvider)null));
                 }
-                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
-                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
-            });
+                Assert.Equal(expected, f.ToString(provider));
+            }
+            if (isDefaultProvider)
+            {
+                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant())); // If format is upper case, then exponents are printed in upper case
+                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant())); // If format is lower case, then exponents are printed in lower case
+                Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), null));
+                Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), null));
+            }
+            Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
+            Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
         }
 
         [Fact]
