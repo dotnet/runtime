@@ -11696,8 +11696,14 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options)
 			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->image->name);
 		acfg->fp = fopen (acfg->tmpfname, "w+");
 	} else {
-		int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
-		acfg->fp = fdopen (i, "w+");
+		if (strcmp (acfg->aot_opts.temp_path, "") == 0) {
+			int i = g_file_open_tmp ("mono_aot_XXXXXX", &acfg->tmpfname, NULL);
+			acfg->fp = fdopen (i, "w+");
+		} else {
+			acfg->tmpbasename = g_build_filename (acfg->aot_opts.temp_path, "temp", NULL);
+			acfg->tmpfname = g_strdup_printf ("%s.s", acfg->tmpbasename);
+			acfg->fp = fopen (acfg->tmpfname, "w+");
+		}
 	}
 	if (acfg->fp == 0 && !acfg->aot_opts.llvm_only) {
 		aot_printerrf (acfg, "Unable to open file '%s': %s\n", acfg->tmpfname, strerror (errno));
