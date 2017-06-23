@@ -4,17 +4,14 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    using System.Collections.ObjectModel;
-    using System.Runtime.Serialization;
-    using System.Xml.Serialization;
     using System.Collections.Generic;
     using System.Xml;
 
-    interface IExtensibleSyndicationObject
+    internal interface IExtensibleSyndicationObject
     {
-        Dictionary<XmlQualifiedName, string> AttributeExtensions 
+        Dictionary<XmlQualifiedName, string> AttributeExtensions
         { get; }
-        SyndicationElementExtensionCollection ElementExtensions 
+        SyndicationElementExtensionCollection ElementExtensions
         { get; }
     }
 }

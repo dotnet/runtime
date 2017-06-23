@@ -5,29 +5,24 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    using System.Collections.ObjectModel;
-    using System.Runtime.Serialization;
-    using System.Xml.Serialization;
-    using System.Collections.Generic;
+
+    using Microsoft.ServiceModel.Syndication.Resources;
     using System;
-    using System.Xml;
-    using System.Xml.Schema;
-    //using System.ServiceModel.Channels;
-    //using System.ServiceModel.Diagnostics;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
-    using Microsoft.ServiceModel.Syndication.Resources;
+    using System.Xml;
+    using System.Xml.Schema;
+    using System.Xml.Serialization;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = App10Constants.Categories, Namespace = App10Constants.Namespace)]
     public class AtomPub10CategoriesDocumentFormatter : CategoriesDocumentFormatter, IXmlSerializable
     {
-        Type inlineDocumentType;
-        int maxExtensionSize;
-        bool preserveAttributeExtensions;
-        bool preserveElementExtensions;
-        Type referencedDocumentType;
+        private Type _inlineDocumentType;
+        private int _maxExtensionSize;
+        private bool _preserveAttributeExtensions;
+        private bool _preserveElementExtensions;
+        private Type _referencedDocumentType;
 
         public AtomPub10CategoriesDocumentFormatter()
             : this(typeof(InlineCategoriesDocument), typeof(ReferencedCategoriesDocument))
@@ -39,45 +34,43 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (inlineDocumentType == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("inlineDocumentType");
+                throw new ArgumentNullException("inlineDocumentType");
             }
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("inlineDocumentType",
-                    SR.GetString(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
             }
             if (referencedDocumentType == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("referencedDocumentType");
+                throw new ArgumentNullException("referencedDocumentType");
             }
             if (!typeof(ReferencedCategoriesDocument).IsAssignableFrom(referencedDocumentType))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument("referencedDocumentType",
-                    SR.GetString(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
             }
-            this.maxExtensionSize = int.MaxValue;
-            this.preserveAttributeExtensions = true;
-            this.preserveElementExtensions = true;
-            this.inlineDocumentType = inlineDocumentType;
-            this.referencedDocumentType = referencedDocumentType;
+            _maxExtensionSize = int.MaxValue;
+            _preserveAttributeExtensions = true;
+            _preserveElementExtensions = true;
+            _inlineDocumentType = inlineDocumentType;
+            _referencedDocumentType = referencedDocumentType;
         }
 
         public AtomPub10CategoriesDocumentFormatter(CategoriesDocument documentToWrite)
             : base(documentToWrite)
         {
             // No need to check that the parameter passed is valid - it is checked by the c'tor of the base class
-            this.maxExtensionSize = int.MaxValue;
-            preserveAttributeExtensions = true;
-            preserveElementExtensions = true;
+            _maxExtensionSize = int.MaxValue;
+            _preserveAttributeExtensions = true;
+            _preserveElementExtensions = true;
             if (documentToWrite.IsInline)
             {
-                this.inlineDocumentType = documentToWrite.GetType();
-                this.referencedDocumentType = typeof(ReferencedCategoriesDocument);
+                _inlineDocumentType = documentToWrite.GetType();
+                _referencedDocumentType = typeof(ReferencedCategoriesDocument);
             }
             else
             {
-                this.referencedDocumentType = documentToWrite.GetType();
-                this.inlineDocumentType = typeof(InlineCategoriesDocument);
+                _referencedDocumentType = documentToWrite.GetType();
+                _inlineDocumentType = typeof(InlineCategoriesDocument);
             }
         }
 
@@ -90,7 +83,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             return reader.IsStartElement(App10Constants.Categories, App10Constants.Namespace);
         }
@@ -106,11 +99,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
-            TraceCategoriesDocumentReadBegin();
             ReadDocument(reader);
-            TraceCategoriesDocumentReadEnd();
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
@@ -118,136 +109,98 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
             if (this.Document == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            TraceCategoriesDocumentWriteBegin();
             WriteDocument(writer);
-            TraceCategoriesDocumentWriteEnd();
         }
 
         public override void ReadFrom(XmlReader reader)
         {
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             if (!CanRead(reader))
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.GetString(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI)));
+                throw new XmlException(String.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
-            TraceCategoriesDocumentReadBegin();
             ReadDocument(reader);
-            TraceCategoriesDocumentReadEnd();
         }
 
         public override void WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
+                throw new ArgumentNullException("writer");
             }
             if (this.Document == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.DocumentFormatterDoesNotHaveDocument)));
+                throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            TraceCategoriesDocumentWriteBegin();
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
             WriteDocument(writer);
             writer.WriteEndElement();
-            TraceCategoriesDocumentWriteEnd();
-        }
-
-        internal static void TraceCategoriesDocumentReadBegin()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationReadCategoriesDocumentBegin, SR.GetString(SR.TraceCodeSyndicationReadCategoriesDocumentBegin));
-            }
-        }
-
-        internal static void TraceCategoriesDocumentReadEnd()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationReadCategoriesDocumentEnd, SR.GetString(SR.TraceCodeSyndicationReadCategoriesDocumentEnd));
-            }
-        }
-
-        internal static void TraceCategoriesDocumentWriteBegin()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationWriteCategoriesDocumentBegin, SR.GetString(SR.TraceCodeSyndicationWriteCategoriesDocumentBegin));
-            }
-        }
-
-        internal static void TraceCategoriesDocumentWriteEnd()
-        {
-            if (DiagnosticUtility.ShouldTraceInformation)
-            {
-                //TraceUtility.TraceEvent(TraceEventType.Information, TraceCode.SyndicationWriteCategoriesDocumentEnd, SR.GetString(SR.TraceCodeSyndicationWriteCategoriesDocumentEnd));
-            }
         }
 
         protected override InlineCategoriesDocument CreateInlineCategoriesDocument()
         {
-            if (inlineDocumentType == typeof(InlineCategoriesDocument))
+            if (_inlineDocumentType == typeof(InlineCategoriesDocument))
             {
                 return new InlineCategoriesDocument();
             }
             else
             {
-                return (InlineCategoriesDocument)Activator.CreateInstance(this.inlineDocumentType);
+                return (InlineCategoriesDocument)Activator.CreateInstance(_inlineDocumentType);
             }
         }
 
         protected override ReferencedCategoriesDocument CreateReferencedCategoriesDocument()
         {
-            if (referencedDocumentType == typeof(ReferencedCategoriesDocument))
+            if (_referencedDocumentType == typeof(ReferencedCategoriesDocument))
             {
                 return new ReferencedCategoriesDocument();
             }
             else
             {
-                return (ReferencedCategoriesDocument)Activator.CreateInstance(this.referencedDocumentType);
+                return (ReferencedCategoriesDocument)Activator.CreateInstance(_referencedDocumentType);
             }
         }
 
-        void ReadDocument(XmlReader reader)
+        private void ReadDocument(XmlReader reader)
         {
             try
             {
                 SyndicationFeedFormatter.MoveToStartElement(reader);
                 SetDocument(AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null,
-                    delegate()
+                    delegate ()
                     {
                         return this.CreateInlineCategoriesDocument();
                     },
 
-                    delegate()
+                    delegate ()
                     {
                         return this.CreateReferencedCategoriesDocument();
                     },
                     this.Version,
-                    this.preserveElementExtensions,
-                    this.preserveAttributeExtensions,
-                    this.maxExtensionSize));
+                    _preserveElementExtensions,
+                    _preserveAttributeExtensions,
+                    _maxExtensionSize));
             }
             catch (FormatException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument), e);
             }
             catch (ArgumentException e)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument), e));
+                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDocument), e);
             }
         }
 
-        void WriteDocument(XmlWriter writer)
+        private void WriteDocument(XmlWriter writer)
         {
             // declare the atom10 namespace upfront for compactness
             writer.WriteAttributeString(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);

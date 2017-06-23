@@ -5,7 +5,7 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    static class App10Constants
+    internal static class App10Constants
     {
         public const string Accept = "accept";
         public const string Categories = "categories";

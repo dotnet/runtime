@@ -4,22 +4,20 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    using System.Collections.ObjectModel;
-    using System.Xml;
-    using System.Xml.Serialization;
-    using System.Runtime.Serialization;
-    using System.Globalization;
-    using System;
     using Microsoft.ServiceModel.Syndication.Resources;
+    using System;
+    using System.Collections.ObjectModel;
+    using System.Globalization;
+    using System.Xml;
 
-    static class FeedUtils
+    internal static class FeedUtils
     {
         public static string AddLineInfo(XmlReader reader, string error)
         {
             IXmlLineInfo lineInfo = reader as IXmlLineInfo;
             if (lineInfo != null && lineInfo.HasLineInfo())
             {
-                error = String.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.GetString(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), SR.GetString(error));
+                error = String.Format(CultureInfo.InvariantCulture, "{0} {1}", String.Format(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), error);
             }
             return error;
         }
