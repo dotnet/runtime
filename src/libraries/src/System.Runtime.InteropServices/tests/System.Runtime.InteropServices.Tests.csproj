@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\BestFitMappingAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\BStrWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ClassInterfaceAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CoClassAttributeTests.cs" />
@@ -29,11 +30,14 @@
     <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComVisibleAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\CurrencyWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultCharSetAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultDllImportSearchPathsAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DefaultParameterValueAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\DispatchWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DispIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ErrorWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\GuidAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleRefTests.cs" />
@@ -48,7 +52,9 @@
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnmanagedFunctionPointerAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\VariantWrapperTests.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>

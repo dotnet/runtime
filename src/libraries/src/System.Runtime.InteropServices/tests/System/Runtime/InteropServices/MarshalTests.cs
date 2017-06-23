@@ -285,7 +285,7 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void GenerateProgIdForType()
         {
-             Assert.Throws<ArgumentNullException>(() => Marshal.GenerateProgIdForType(null));
+             AssertExtensions.Throws<ArgumentNullException>("type", () => Marshal.GenerateProgIdForType(null));
              Assert.Equal("TestProgID", Marshal.GenerateProgIdForType(typeof(ClassWithProgID)));       
         }        
 
@@ -298,10 +298,10 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void GetHINSTANCE()
         {
-             Assert.Throws<ArgumentNullException>(() => Marshal.GetHINSTANCE(null));
-             IntPtr ptr = Marshal.GetHINSTANCE(typeof(int).Module);
-             IntPtr ptr2 = Marshal.GetHINSTANCE(typeof(string).Module);
-             Assert.Equal(ptr, ptr2);
+            AssertExtensions.Throws<ArgumentNullException>("m", () => Marshal.GetHINSTANCE(null));
+            IntPtr ptr = Marshal.GetHINSTANCE(typeof(int).Module);
+            IntPtr ptr2 = Marshal.GetHINSTANCE(typeof(string).Module);
+            Assert.Equal(ptr, ptr2);
         }
 
         [Fact]
@@ -315,7 +315,7 @@ namespace System.Runtime.InteropServices
         {
             if(PlatformDetection.IsWindows)
             {
-                Assert.Throws<ArgumentNullException>(() => Marshal.GetTypedObjectForIUnknown(IntPtr.Zero, typeof(int)));
+                AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.GetTypedObjectForIUnknown(IntPtr.Zero, typeof(int)));
             }  
             else 
             {
@@ -333,13 +333,13 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void Prelink()
         {
-            Assert.Throws<ArgumentNullException>(() => Marshal.Prelink(null));
+            AssertExtensions.Throws<ArgumentNullException>("m", () => Marshal.Prelink(null));
         }
 
         [Fact]
         public static void PrelinkAll()
         {
-            Assert.Throws<ArgumentNullException>(() => Marshal.PrelinkAll(null));
+            AssertExtensions.Throws<ArgumentNullException>("c", () => Marshal.PrelinkAll(null));
         }
         
         [Fact]
@@ -349,19 +349,26 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
-        public static void PtrToStringAutoWithLength()
+        public static void StringToCoTaskMemAuto_PtrToStringAuto_ReturnsExpected()
         {
-            Assert.Throws<ArgumentNullException>(() => Marshal.PtrToStringAuto(IntPtr.Zero, 0));
-
-            String s = "Hello World";
+            string s = "Hello World";
             int len = 5;
             IntPtr ptr = Marshal.StringToCoTaskMemAuto(s);
+            try
+            {
+                string actual = Marshal.PtrToStringAuto(ptr, len);
+                Assert.Equal(s.Substring(0, len), actual);
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(ptr);
+            }
+        }
 
-            
-            String s2 = Marshal.PtrToStringAuto(ptr, len);
-            Assert.Equal(s.Substring(0, len), s2);
-
-            Marshal.FreeCoTaskMem(ptr);  
+        [Fact]
+        public void PtrToStringAuto_ZeroPtr_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStringAuto(IntPtr.Zero, 0));
         }
 
         [Fact]
@@ -419,17 +426,16 @@ namespace System.Runtime.InteropServices
         [Fact]        
         public static void BindToMoniker()
         {
-            String monikerName = null;
             if(PlatformDetection.IsWindows && !PlatformDetection.IsNetNative)
             {
                 if (PlatformDetection.IsNotWindowsNanoServer)
                 {
-                    Assert.Throws<ArgumentException>(() => Marshal.BindToMoniker(monikerName));
+                    AssertExtensions.Throws<ArgumentException>(null, () => Marshal.BindToMoniker(null));
                 }
             }  
             else 
             {
-                Assert.Throws<PlatformNotSupportedException>(() => Marshal.BindToMoniker(monikerName));
+                Assert.Throws<PlatformNotSupportedException>(() => Marshal.BindToMoniker(null));
             }        
         }
 
@@ -438,7 +444,7 @@ namespace System.Runtime.InteropServices
         {
             if(PlatformDetection.IsWindows && !PlatformDetection.IsNetNative)
             {
-                Assert.Throws<ArgumentNullException>(() => Marshal.ChangeWrapperHandleStrength(null, true));
+                AssertExtensions.Throws<ArgumentNullException>("otp", () => Marshal.ChangeWrapperHandleStrength(null, true));
             }  
             else 
             {
