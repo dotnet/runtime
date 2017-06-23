@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/corefx/issues/21415", TargetFrameworkMonikers.Uap)]
     public class Environment_Exit : RemoteExecutorTestBase
     {
         public static object[][] ExitCodeValues = new object[][]
