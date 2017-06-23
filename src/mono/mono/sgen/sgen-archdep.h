@@ -39,13 +39,6 @@
 
 #define REDZONE_SIZE	224
 
-/* MS_BLOCK_SIZE must be a multiple of the system pagesize, which for some
-   architectures is 64k.  */
-#if defined(TARGET_POWERPC) || defined(TARGET_POWERPC64)
-#define ARCH_MIN_MS_BLOCK_SIZE	(64*1024)
-#define ARCH_MIN_MS_BLOCK_SIZE_SHIFT	16
-#endif
-
 #elif defined(TARGET_ARM)
 
 #define REDZONE_SIZE	0
