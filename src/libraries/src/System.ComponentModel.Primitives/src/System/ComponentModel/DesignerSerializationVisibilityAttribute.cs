@@ -49,17 +49,12 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly DesignerSerializationVisibilityAttribute Default = Visible;
 
-        private readonly DesignerSerializationVisibility _visibility;
-
         /// <summary>
         ///    <para>
         ///       Initializes a new instance of the System.ComponentModel.PersistContentsAttribute class.
         ///    </para>
         /// </summary>
-        public DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility visibility)
-        {
-            _visibility = visibility;
-        }
+        public DesignerSerializationVisibilityAttribute(DesignerSerializationVisibility visibility) => Visibility = visibility;
 
         /// <summary>
         ///    <para>
@@ -67,17 +62,8 @@ namespace System.ComponentModel
         ///       visual designer must generate special code to persist the value of a property.
         ///    </para>
         /// </summary>
-        public DesignerSerializationVisibility Visibility
-        {
-            get
-            {
-                return _visibility;
-            }
-        }
+        public DesignerSerializationVisibility Visibility { get; }
 
-        /// <internalonly/>
-        /// <summary>
-        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -86,22 +72,11 @@ namespace System.ComponentModel
             }
 
             DesignerSerializationVisibilityAttribute other = obj as DesignerSerializationVisibilityAttribute;
-            return other != null && other.Visibility == _visibility;
+            return other?.Visibility == Visibility;
         }
 
-        /// <summary>
-        ///    <para>
-        ///       Returns the hashcode for this object.
-        ///    </para>
-        /// </summary>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute()
-        {
-            return Equals(DesignerSerializationVisibilityAttribute.Default);
-        }        
+        public override bool IsDefaultAttribute() => Equals(Default);
     }
 }
