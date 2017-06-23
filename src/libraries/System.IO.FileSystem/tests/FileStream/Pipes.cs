@@ -94,6 +94,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task NamedPipeWriteViaAsyncFileStream(bool asyncWrites)
         {
             string name = Guid.NewGuid().ToString("N");
@@ -128,6 +129,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task NamedPipeReadViaAsyncFileStream(bool asyncReads)
         {
             string name = Guid.NewGuid().ToString("N");
