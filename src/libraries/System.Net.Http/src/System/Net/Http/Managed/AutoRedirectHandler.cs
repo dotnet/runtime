@@ -14,18 +14,13 @@ namespace System.Net.Http
 
         public AutoRedirectHandler(int maxAutomaticRedirections, HttpMessageHandler innerHandler)
         {
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
 
             if (maxAutomaticRedirections < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxAutomaticRedirections));
             }
-
             _maxAutomaticRedirections = maxAutomaticRedirections;
-            _innerHandler = innerHandler;
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

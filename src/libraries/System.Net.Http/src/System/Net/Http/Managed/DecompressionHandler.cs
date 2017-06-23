@@ -23,17 +23,11 @@ namespace System.Net.Http
 
         public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandler innerHandler)
         {
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
-
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
             if (decompressionMethods == DecompressionMethods.None)
             {
                 throw new ArgumentOutOfRangeException(nameof(decompressionMethods));
             }
-
-            _innerHandler = innerHandler;
             _decompressionMethods = decompressionMethods;
         }
 
@@ -127,9 +121,10 @@ namespace System.Net.Http
 
             protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
             {
-                Stream decompressedStream = await CreateContentReadStreamAsync().ConfigureAwait(false);
-                await decompressedStream.CopyToAsync(stream).ConfigureAwait(false);
-                decompressedStream.Dispose();
+                using (Stream decompressedStream = await CreateContentReadStreamAsync().ConfigureAwait(false))
+                {
+                    await decompressedStream.CopyToAsync(stream).ConfigureAwait(false);
+                }
             }
 
             protected override async Task<Stream> CreateContentReadStreamAsync()
@@ -167,10 +162,8 @@ namespace System.Net.Http
                 : base(originalContent)
             { }
 
-            protected override Stream GetDecompressedStream(Stream originalStream)
-            {
-                return new GZipStream(originalStream, CompressionMode.Decompress);
-            }
+            protected override Stream GetDecompressedStream(Stream originalStream) =>
+                new GZipStream(originalStream, CompressionMode.Decompress);
         }
 
         private sealed class DeflateDecompressedContent : DecompressedContent
@@ -179,10 +172,8 @@ namespace System.Net.Http
                 : base(originalContent)
             { }
 
-            protected override Stream GetDecompressedStream(Stream originalStream)
-            {
-                return new DeflateStream(originalStream, CompressionMode.Decompress);
-            }
+            protected override Stream GetDecompressedStream(Stream originalStream) =>
+                new DeflateStream(originalStream, CompressionMode.Decompress);
         }
     }
 }

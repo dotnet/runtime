@@ -15,18 +15,8 @@ namespace System.Net.Http
 
         public CookieHandler(CookieContainer cookieContainer, HttpMessageHandler innerHandler)
         {
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
-
-            if (cookieContainer == null)
-            {
-                throw new ArgumentNullException(nameof(cookieContainer));
-            }
-
-            _innerHandler = innerHandler;
-            _cookieContainer = cookieContainer;
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
+            _cookieContainer = cookieContainer ?? throw new ArgumentNullException(nameof(cookieContainer));
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

@@ -20,19 +20,8 @@ namespace System.Net.Http
 
         public HttpProxyConnectionHandler(IWebProxy proxy, HttpMessageHandler innerHandler)
         {
-            if (proxy == null)
-            {
-                throw new ArgumentNullException(nameof(proxy));
-            }
-
-            if (innerHandler == null)
-            {
-                throw new ArgumentNullException(nameof(innerHandler));
-            }
-
-            _proxy = proxy;
-            _innerHandler = innerHandler;
-
+            _proxy = proxy ?? throw new ArgumentNullException(nameof(proxy));
+            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
             _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
         }
 
@@ -119,7 +108,7 @@ namespace System.Net.Http
 
             if (pool == null)
             {
-                pool = _connectionPoolTable.GetOrAdd(key, new HttpConnectionPool());
+                pool = _connectionPoolTable.GetOrAdd(key, _ => new HttpConnectionPool());
             }
 
             return new HttpConnection(pool, key, stream, null, true);
