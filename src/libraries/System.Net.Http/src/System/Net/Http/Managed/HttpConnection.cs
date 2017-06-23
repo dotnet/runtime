@@ -198,7 +198,7 @@ namespace System.Net.Http
                 _chunkBytesRemaining = 0;
             }
 
-            private async Task<bool> TryGetNextChunk(CancellationToken cancellationToken)
+            private async ValueTask<bool> TryGetNextChunk(CancellationToken cancellationToken)
             {
                 Debug.Assert(_chunkBytesRemaining == 0);
 
@@ -564,7 +564,7 @@ namespace System.Net.Http
             }
         }
 
-        private async Task<HttpResponseMessage> ParseResponseAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<HttpResponseMessage> ParseResponseAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             HttpResponseMessage response = new HttpResponseMessage();
             response.RequestMessage = request;
@@ -757,7 +757,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             if (request.Version.Major != 1 || request.Version.Minor != 1)
@@ -966,7 +966,7 @@ namespace System.Net.Http
             _readLength = await _stream.ReadAsync(_readBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<byte> ReadByteSlowAsync(CancellationToken cancellationToken)
+        private async ValueTask<byte> ReadByteSlowAsync(CancellationToken cancellationToken)
         {
             await FillAsync(cancellationToken).ConfigureAwait(false);
 
@@ -987,10 +987,10 @@ namespace System.Net.Http
                 return new ValueTask<byte>(_readBuffer[_readOffset++]);
             }
 
-            return new ValueTask<byte>(ReadByteSlowAsync(cancellationToken));
+            return ReadByteSlowAsync(cancellationToken);
         }
 
-        private async Task<char> ReadCharSlowAsync(CancellationToken cancellationToken)
+        private async ValueTask<char> ReadCharSlowAsync(CancellationToken cancellationToken)
         {
             await FillAsync(cancellationToken).ConfigureAwait(false);
 
@@ -1022,7 +1022,7 @@ namespace System.Net.Http
                 return new ValueTask<char>((char)b);
             }
 
-            return new ValueTask<char>(ReadCharSlowAsync(cancellationToken));
+            return ReadCharSlowAsync(cancellationToken);
         }
 
         private void ReadFromBuffer(byte[] buffer, int offset, int count)
@@ -1033,7 +1033,7 @@ namespace System.Net.Http
             _readOffset += count;
         }
 
-        private async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // This is called when reading the response body
 

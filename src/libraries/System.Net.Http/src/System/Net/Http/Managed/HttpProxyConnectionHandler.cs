@@ -101,7 +101,7 @@ namespace System.Net.Http
             return response;
         }
 
-        private async Task<HttpConnection> GetOrCreateConnection(HttpRequestMessage request, Uri proxyUri)
+        private async ValueTask<HttpConnection> GetOrCreateConnection(HttpRequestMessage request, Uri proxyUri)
         {
             HttpConnectionKey key = new HttpConnectionKey(proxyUri);
 

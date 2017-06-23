@@ -57,7 +57,7 @@ namespace System.Net.Http
             return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<SslStream> EstablishSslConnection(string host, HttpRequestMessage request, Stream stream)
+        private async ValueTask<SslStream> EstablishSslConnection(string host, HttpRequestMessage request, Stream stream)
         {
             RemoteCertificateValidationCallback callback = null;
             if (_serverCertificateCustomValidationCallback != null)
@@ -96,7 +96,7 @@ namespace System.Net.Http
             return sslStream;
         }
 
-        private async Task<HttpConnection> CreateConnection(HttpRequestMessage request, HttpConnectionKey key, HttpConnectionPool pool)
+        private async ValueTask<HttpConnection> CreateConnection(HttpRequestMessage request, HttpConnectionKey key, HttpConnectionPool pool)
         {
             Uri uri = request.RequestUri;
 
