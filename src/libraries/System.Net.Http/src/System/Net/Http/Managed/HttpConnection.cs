@@ -204,7 +204,7 @@ namespace System.Net.Http
                 _chunkBytesRemaining = 0;
             }
 
-            private async ValueTask<bool> TryGetNextChunk(CancellationToken cancellationToken)
+            private async Task<bool> TryGetNextChunk(CancellationToken cancellationToken)
             {
                 Debug.Assert(_chunkBytesRemaining == 0);
 
@@ -893,69 +893,64 @@ namespace System.Net.Http
             }
         }
 
-        private ValueTask<bool> WriteCharAsync(char c, CancellationToken cancellationToken)
+        private Task WriteCharAsync(char c, CancellationToken cancellationToken)
         {
             if ((c & 0xFF80) != 0)
             {
-                throw new HttpRequestException("Non-ASCII characters found");
+                return Task.FromException(new HttpRequestException("Non-ASCII characters found"));
             }
 
             return WriteByteAsync((byte)c, cancellationToken);
         }
 
-        private ValueTask<bool> WriteByteAsync(byte b, CancellationToken cancellationToken)
+        private Task WriteByteAsync(byte b, CancellationToken cancellationToken)
         {
             if (_writeOffset < BufferSize)
             {
                 _writeBuffer[_writeOffset++] = b;
-                return new ValueTask<bool>(true);
+                return Task.CompletedTask;
             }
-
-            return new ValueTask<bool>(WriteByteSlowAsync(b, cancellationToken));
+            return WriteByteSlowAsync(b, cancellationToken);
         }
 
-        private async Task<bool> WriteByteSlowAsync(byte b, CancellationToken cancellationToken)
+        private async Task WriteByteSlowAsync(byte b, CancellationToken cancellationToken)
         {
             await _stream.WriteAsync(_writeBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
 
             _writeBuffer[0] = b;
             _writeOffset = 1;
-
-            return true;
         }
 
-        private ValueTask<bool> WriteTwoBytesAsync(byte b1, byte b2, CancellationToken cancellationToken)
+        private Task WriteTwoBytesAsync(byte b1, byte b2, CancellationToken cancellationToken)
         {
             if (_writeOffset <= BufferSize - 2)
             {
                 byte[] buffer = _writeBuffer;
                 buffer[_writeOffset++] = b1;
                 buffer[_writeOffset++] = b2;
-                return new ValueTask<bool>(true);
+                return Task.CompletedTask;
             }
-            return new ValueTask<bool>(WriteTwoBytesSlowAsync(b1, b2, cancellationToken));
+            return WriteTwoBytesSlowAsync(b1, b2, cancellationToken);
         }
 
-        private async Task<bool> WriteTwoBytesSlowAsync(byte b1, byte b2, CancellationToken cancellationToken)
+        private async Task WriteTwoBytesSlowAsync(byte b1, byte b2, CancellationToken cancellationToken)
         {
             await WriteByteAsync(b1, cancellationToken).ConfigureAwait(false);
             await WriteByteAsync(b2, cancellationToken).ConfigureAwait(false);
-            return true;
         }
 
-        private ValueTask<bool> WriteBytesAsync(byte[] bytes, CancellationToken cancellationToken)
+        private Task WriteBytesAsync(byte[] bytes, CancellationToken cancellationToken)
         {
             if (_writeOffset <= BufferSize - bytes.Length)
             {
                 Buffer.BlockCopy(bytes, 0, _writeBuffer, _writeOffset, bytes.Length);
                 _writeOffset += bytes.Length;
-                return new ValueTask<bool>(true);
+                return Task.CompletedTask;
             }
-
-            return new ValueTask<bool>(WriteBytesSlowAsync(bytes, cancellationToken));
+            return WriteBytesSlowAsync(bytes, cancellationToken);
         }
 
-        private async Task<bool> WriteBytesSlowAsync(byte[] bytes, CancellationToken cancellationToken)
+        private async Task WriteBytesSlowAsync(byte[] bytes, CancellationToken cancellationToken)
         {
             int offset = 0;
             while (true)
@@ -978,7 +973,6 @@ namespace System.Net.Http
                     _writeOffset = 0;
                 }
             }
-            return true;
         }
 
         private async Task WriteStringAsync(string s, CancellationToken cancellationToken)
@@ -1056,7 +1050,7 @@ namespace System.Net.Http
                 byte b = _readBuffer[_readOffset++];
                 if ((b & 0x80) != 0)
                 {
-                    throw new HttpRequestException("Invalid character read from stream");
+                    return new ValueTask<char>(Task.FromException<char>(new HttpRequestException("Invalid character read from stream")));
                 }
 
                 return new ValueTask<char>((char)b);
