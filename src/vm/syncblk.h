@@ -16,7 +16,6 @@
 #include "util.hpp"
 #include "slist.h"
 #include "crst.h"
-#include "handletable.h"
 #include "vars.hpp"
 
 // #SyncBlockOverview

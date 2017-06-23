@@ -72,6 +72,8 @@ public:
     virtual Object* InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE handle, Object* object, Object* comparandObject);
 
     virtual HandleType HandleFetchType(OBJECTHANDLE handle);
+
+    virtual void TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t param1, uintptr_t param2);
 };
 
 #endif  // GCHANDLETABLE_H_

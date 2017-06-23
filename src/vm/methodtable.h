@@ -21,7 +21,6 @@
 #include "cor.h"
 #include "hash.h"
 #include "crst.h"
-#include "objecthandle.h"
 #include "cgensys.h"
 #include "declsec.h"
 #ifdef FEATURE_COMINTEROP

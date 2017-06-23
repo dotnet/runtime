@@ -10,7 +10,6 @@
 #ifndef _FIELD_H_
 #define _FIELD_H_
 
-#include "objecthandle.h"
 #include "excep.h"
 
 // Temporary values stored in FieldDesc m_dwOffset during loading

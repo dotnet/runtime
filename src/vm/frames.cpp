@@ -16,7 +16,6 @@
 #include "security.h"
 #include "stublink.h"
 #include "fieldmarshaler.h"
-#include "objecthandle.h"
 #include "siginfo.hpp"
 #include "gcheaputilities.h"
 #include "dllimportcallback.h"

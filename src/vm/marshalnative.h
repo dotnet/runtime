@@ -239,4 +239,8 @@ private:
 #endif // FEATURE_COMINTEROP
 };
 
+// Check that the supplied object is valid to put in a pinned handle,
+// throwing an exception if not.
+void ValidatePinnedObject(OBJECTREF obj);
+
 #endif
