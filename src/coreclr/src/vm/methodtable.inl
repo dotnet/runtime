@@ -887,10 +887,10 @@ inline DWORD MethodTable::GetNumVtableIndirections(DWORD wNumVirtuals)
 }
 
 //==========================================================================================
-inline PTR_PTR_PCODE MethodTable::GetVtableIndirections()
+inline DPTR(MethodTable::VTableIndir_t) MethodTable::GetVtableIndirections()
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return dac_cast<PTR_PTR_PCODE>(dac_cast<TADDR>(this) + sizeof(MethodTable));
+    return dac_cast<DPTR(VTableIndir_t)>(dac_cast<TADDR>(this) + sizeof(MethodTable));
 }
 
 //==========================================================================================
@@ -952,7 +952,7 @@ inline DWORD MethodTable::VtableIndirectionSlotIterator::GetOffsetFromMethodTabl
     WRAPPER_NO_CONTRACT;
     PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
     
-    return GetVtableOffset() + sizeof(PTR_PCODE) * m_i;
+    return GetVtableOffset() + sizeof(VTableIndir_t) * m_i;
 }
 
 //==========================================================================================
@@ -961,7 +961,7 @@ inline PTR_PCODE MethodTable::VtableIndirectionSlotIterator::GetIndirectionSlot(
     LIMITED_METHOD_DAC_CONTRACT;
     PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
 
-    return *m_pSlot;
+    return m_pSlot->GetValueMaybeNull(dac_cast<TADDR>(m_pSlot));
 }
 
 //==========================================================================================
@@ -969,7 +969,7 @@ inline PTR_PCODE MethodTable::VtableIndirectionSlotIterator::GetIndirectionSlot(
 inline void MethodTable::VtableIndirectionSlotIterator::SetIndirectionSlot(PTR_PCODE pChunk)
 {
     LIMITED_METHOD_CONTRACT;
-    *m_pSlot = pChunk;
+    m_pSlot->SetValueMaybeNull(pChunk);
 }
 #endif
 
@@ -1355,7 +1355,7 @@ FORCEINLINE TADDR MethodTable::GetMultipurposeSlotPtr(WFLAGS2_ENUM flag, const B
     DWORD offset = offsets[GetFlag((WFLAGS2_ENUM)(flag - 1))];
 
     if (offset >= sizeof(MethodTable)) {
-        offset += GetNumVtableIndirections() * sizeof(PTR_PCODE);
+        offset += GetNumVtableIndirections() * sizeof(VTableIndir_t);
     }
 
     return dac_cast<TADDR>(this) + offset;
@@ -1370,7 +1370,7 @@ FORCEINLINE DWORD MethodTable::GetOffsetOfOptionalMember(OptionalMemberId id)
 
     DWORD offset = c_OptionalMembersStartOffsets[GetFlag(enum_flag_MultipurposeSlotsMask)];
 
-    offset += GetNumVtableIndirections() * sizeof(PTR_PCODE);
+    offset += GetNumVtableIndirections() * sizeof(VTableIndir_t);
 
 #undef METHODTABLE_OPTIONAL_MEMBER
 #define METHODTABLE_OPTIONAL_MEMBER(NAME, TYPE, GETTER) \

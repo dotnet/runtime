@@ -310,7 +310,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     DWORD numNonVirtualSlots = numCtors + 3; // 3 for the proper rank Get, Set, Address
 
     size_t cbMT = sizeof(MethodTable);
-    cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(PTR_PCODE);
+    cbMT += MethodTable::GetNumVtableIndirections(numVirtuals) * sizeof(MethodTable::VTableIndir_t);
 
     // GC info
     size_t cbCGCDescData = 0;
@@ -539,7 +539,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
             if (canShareVtableChunks)
             {
                 // Share the parent chunk
-                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
+                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
             }
             else 
             {
