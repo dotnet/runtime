@@ -998,7 +998,8 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // Does not support UseShellExecute
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer),  // Nano does not support UseShellExecute
+                         nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindows8x))]   // https://github.com/dotnet/corefx/issues/20388
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
         // Re-enabling with extra diagnostic info
