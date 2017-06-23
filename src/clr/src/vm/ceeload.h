@@ -2911,6 +2911,10 @@ public:
                                          ClassLoadLevel level = CLASS_LOADED);
     static void RestoreFieldDescPointer(RelativeFixupPointer<PTR_FieldDesc> * ppFD);
 
+    static void RestoreMethodTablePointer(PlainPointer<PTR_MethodTable> * ppMT,
+                                          Module *pContainingModule = NULL,
+                                          ClassLoadLevel level = CLASS_LOADED);
+
     static void RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, Module *pContainingModule);
 
     static PTR_Module RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Module>) ppModule, Module *pContainingModule);
