@@ -4928,7 +4928,14 @@ void MethodTable::Fixup(DataImage *image)
         VtableIndirectionSlotIterator it = IterateVtableIndirectionSlots();
         while (it.Next())
         {
-            image->FixupPointerField(this, it.GetOffsetFromMethodTable());
+            if (VTableIndir_t::isRelative)
+            {
+                image->FixupRelativePointerField(this, it.GetOffsetFromMethodTable());
+            }
+            else
+            {
+                image->FixupPointerField(this, it.GetOffsetFromMethodTable());
+            }
         }
     }
 
@@ -4949,7 +4956,7 @@ void MethodTable::Fixup(DataImage *image)
         {
             // Virtual slots live in chunks pointed to by vtable indirections
 
-            slotBase = (PVOID) GetVtableIndirections()[GetIndexOfVtableIndirection(slotNumber)];
+            slotBase = (PVOID) GetVtableIndirections()[GetIndexOfVtableIndirection(slotNumber)].GetValueMaybeNull();
             slotOffset = GetIndexAfterVtableIndirection(slotNumber) * sizeof(PCODE);
         }
         else if (HasSingleNonVirtualSlot())
@@ -9422,13 +9429,13 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
 
         if (!IsCanonicalMethodTable())
         {
-            if (GetVtableIndirections()[indirectionIndex] == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex])
+            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetCanonicalMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
                 fSharedVtableChunk = TRUE;
         }
 
         if (slotNumber < GetNumParentVirtuals())
         {
-            if (GetVtableIndirections()[indirectionIndex] == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex])
+            if (GetVtableIndirections()[indirectionIndex].GetValueMaybeNull() == GetParentMethodTable()->GetVtableIndirections()[indirectionIndex].GetValueMaybeNull())
                 fSharedVtableChunk = TRUE;
         }
 

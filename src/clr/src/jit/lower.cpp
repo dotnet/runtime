@@ -3458,6 +3458,13 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // We'll introduce another use of this local so increase its ref count.
     comp->lvaTable[lclNum].incRefCnts(comp->compCurBB->getBBWeight(comp), comp);
 
+    // Get hold of the vtable offset (note: this might be expensive)
+    unsigned vtabOffsOfIndirection;
+    unsigned vtabOffsAfterIndirection;
+    unsigned isRelative;
+    comp->info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection,
+                                                  &vtabOffsAfterIndirection, &isRelative);
+
     // If the thisPtr is a local field, then construct a local field type node
     GenTree* local;
     if (thisPtr->isLclField())
@@ -3473,22 +3480,47 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // pointer to virtual table = [REG_CALL_THIS + offs]
     GenTree* result = Ind(Offset(local, VPTR_OFFS));
 
-    // Get hold of the vtable offset (note: this might be expensive)
-    unsigned vtabOffsOfIndirection;
-    unsigned vtabOffsAfterIndirection;
-    comp->info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection,
-                                                  &vtabOffsAfterIndirection);
-
     // Get the appropriate vtable chunk
     if (vtabOffsOfIndirection != CORINFO_VIRTUALCALL_NO_CHUNK)
     {
-        // result = [REG_CALL_IND_SCRATCH + vtabOffsOfIndirection]
-        result = Ind(Offset(result, vtabOffsOfIndirection));
+        if (isRelative)
+        {
+            unsigned lclNumTmp = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
+
+            comp->lvaTable[lclNumTmp].incRefCnts(comp->compCurBB->getBBWeight(comp), comp);
+            GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, result);
+
+            LIR::Range range = LIR::SeqTree(comp, lclvNodeStore);
+            JITDUMP("results of lowering call interm:\n");
+            DISPRANGE(range);
+            BlockRange().InsertBefore(call, std::move(range));
+
+            GenTree* tmpTree = comp->gtNewLclvNode(lclNumTmp, result->TypeGet());
+            tmpTree          = Offset(tmpTree, vtabOffsOfIndirection);
+
+            tmpTree       = comp->gtNewOperNode(GT_IND, TYP_I_IMPL, tmpTree, false);
+            GenTree* offs = comp->gtNewIconNode(vtabOffsOfIndirection + vtabOffsAfterIndirection, TYP_INT);
+            result = comp->gtNewOperNode(GT_ADD, TYP_I_IMPL, comp->gtNewLclvNode(lclNumTmp, result->TypeGet()), offs);
+
+            result = Ind(OffsetByIndex(result, tmpTree));
+        }
+        else
+        {
+            // result = [REG_CALL_IND_SCRATCH + vtabOffsOfIndirection]
+            result = Ind(Offset(result, vtabOffsOfIndirection));
+        }
+    }
+    else
+    {
+        _ASSERTE(!isRelative);
     }
 
     // Load the function address
     // result = [reg+vtabOffs]
-    result = Ind(Offset(result, vtabOffsAfterIndirection));
+    if (!isRelative)
+    {
+        result = Ind(Offset(result, vtabOffsAfterIndirection));
+    }
 
     return result;
 }

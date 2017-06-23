@@ -8586,7 +8586,8 @@ CONTRACTL {
 /*********************************************************************/
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
-                                     unsigned * pOffsetAfterIndirection)
+                                     unsigned * pOffsetAfterIndirection,
+                                     unsigned * isRelative)
 {
     CONTRACTL {
         SO_TOLERANT;
@@ -8607,8 +8608,9 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
     // better be in the vtable
     _ASSERTE(method->GetSlot() < method->GetMethodTable()->GetNumVirtuals());
 
-    *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * sizeof(PTR_PCODE);
+    *pOffsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(method->GetSlot()) * sizeof(MethodTable::VTableIndir_t);
     *pOffsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(method->GetSlot()) * sizeof(PCODE);
+    *isRelative = MethodTable::VTableIndir_t::isRelative ? 1 : 0;
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
