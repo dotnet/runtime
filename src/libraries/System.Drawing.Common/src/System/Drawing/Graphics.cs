@@ -133,7 +133,6 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHdcInternal(IntPtr hdc)
         {
-            Debug.Assert(hdc != IntPtr.Zero, "Must pass in a valid DC");
             IntPtr nativeGraphics = IntPtr.Zero;
 
             int status = SafeNativeMethods.Gdip.GdipCreateFromHDC(new HandleRef(null, hdc), out nativeGraphics);
@@ -156,9 +155,6 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public static Graphics FromHdc(IntPtr hdc, IntPtr hdevice)
         {
-            Debug.Assert(hdc != IntPtr.Zero, "Must pass in a valid DC");
-            Debug.Assert(hdevice != IntPtr.Zero, "Must pass in a valid device");
-
             IntPtr gdipNativeGraphics = IntPtr.Zero;
             int status = SafeNativeMethods.Gdip.GdipCreateFromHDC2(new HandleRef(null, hdc), new HandleRef(null, hdevice), out gdipNativeGraphics);
 
@@ -233,17 +229,7 @@ namespace System.Drawing
         }
 
 
-        /// <devdoc>
-        ///     Gets the GDI+ native graphics pointer.
-        /// </devdoc>
-        internal IntPtr NativeGraphics
-        {
-            get
-            {
-                Debug.Assert(_nativeGraphics != IntPtr.Zero, "NativeGraphics == IntPtr.Zero.");
-                return _nativeGraphics;
-            }
-        }
+        internal IntPtr NativeGraphics => _nativeGraphics;
 
         /// <devdoc>
         ///     Implementation of IDeviceContext.GetHdc().
@@ -265,41 +251,16 @@ namespace System.Drawing
             return _nativeHdc;
         }
 
-
-        /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.ReleaseHdc"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Releases the memory allocated for the handle to a device context.
-        ///    </para>
-        /// </devdoc>
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        public void ReleaseHdc(IntPtr hdc)
-        {
-            ReleaseHdcInternal(hdc);
-        }
+        public void ReleaseHdc(IntPtr hdc) => ReleaseHdcInternal(hdc);
 
-        /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.ReleaseHdc1"]/*' />
-        /// <devdoc>
-        ///     Implementation of IDeviceContext.ReleaseHdc().
-        /// </devdoc>
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
-        public void ReleaseHdc()
-        {
-            ReleaseHdcInternal(_nativeHdc);
-        }
+        public void ReleaseHdc() => ReleaseHdcInternal(_nativeHdc);
 
-        /// <include file='doc\Graphics.uex' path='docs/doc[@for="Graphics.ReleaseHdcInternal"]/*' />
-        /// <devdoc>
-        ///    This method is public but is meant to be used by the .Net Framework only.
-        ///    From MSDN: Internal method. Do not use.
-        /// </devdoc>
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(IntPtr hdc)
         {
-            Debug.Assert(hdc == _nativeHdc, "Invalid hdc.");
-
-
             int status = SafeNativeMethods.Gdip.GdipReleaseDC(new HandleRef(this, NativeGraphics), new HandleRef(null, hdc));
 
             if (status != SafeNativeMethods.Gdip.Ok)

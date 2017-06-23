@@ -661,6 +661,19 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Equals_DisposedGraphics_ThrowsArgumentException()
+        {
+            using (var region = new Region())
+            using (var other = new Region())
+            using (var image = new Bitmap(10, 10))
+            {
+                var graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+                Assert.Throws<ArgumentException>(null, () => region.Equals(region, graphics));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Equals_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1087,6 +1100,18 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void GetBounds_DisposedGraphics_ThrowsArgumentException()
+        {
+            using (var region = new Region())
+            using (var image = new Bitmap(10, 10))
+            {
+                var graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+                Assert.Throws<ArgumentException>(null, () => region.GetBounds(graphics));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetBounds_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1448,6 +1473,18 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void IsInfinite_DisposedGraphics_ThrowsArgumentException()
+        {
+            using (var region = new Region())
+            using (var image = new Bitmap(10, 10))
+            {
+                var graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+                Assert.Throws<ArgumentException>(null, () => region.IsInfinite(graphics));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void IsInfinite_Disposed_ThrowsArgumentException()
         {
             var region = new Region();
@@ -1484,19 +1521,29 @@ namespace System.Drawing.Tests
         {
             try
             {
-                Assert.Equal(expected, region.IsVisible(rectangle));
-                Assert.Equal(expected, region.IsVisible((RectangleF)rectangle));
-                Assert.Equal(expected, region.IsVisible(rectangle, s_graphic));
-                Assert.Equal(expected, region.IsVisible(rectangle, null));
-                Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, s_graphic));
-                Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, null));
+                using (var image = new Bitmap(10, 10))
+                {
+                    var disposedGraphics = Graphics.FromImage(image);
+                    disposedGraphics.Dispose();
 
-                Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
-                Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
-                Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
-                Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
-                Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
-                Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
+                    Assert.Equal(expected, region.IsVisible(rectangle));
+                    Assert.Equal(expected, region.IsVisible((RectangleF)rectangle));
+                    Assert.Equal(expected, region.IsVisible(rectangle, s_graphic));
+                    Assert.Equal(expected, region.IsVisible(rectangle, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible(rectangle, null));
+                    Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, s_graphic));
+                    Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible((RectangleF)rectangle, null));
+
+                    Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
+                    Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height));
+                    Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
+                    Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
+                    Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, s_graphic));
+                    Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible((float)rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, null));
+                }
             }
             finally
             {
@@ -1534,21 +1581,32 @@ namespace System.Drawing.Tests
         {
             try
             {
-                Assert.Equal(expected, region.IsVisible(point));
-                Assert.Equal(expected, region.IsVisible((PointF)point));
-                Assert.Equal(expected, region.IsVisible(point, s_graphic));
-                Assert.Equal(expected, region.IsVisible(point, null));
-                Assert.Equal(expected, region.IsVisible((PointF)point, s_graphic));
-                Assert.Equal(expected, region.IsVisible((PointF)point, null));
+                using (var image = new Bitmap(10, 10))
+                {
+                    var disposedGraphics = Graphics.FromImage(image);
+                    disposedGraphics.Dispose();
 
-                Assert.Equal(expected, region.IsVisible(point.X, point.Y));
-                Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
-                Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
+                    Assert.Equal(expected, region.IsVisible(point));
+                    Assert.Equal(expected, region.IsVisible((PointF)point));
+                    Assert.Equal(expected, region.IsVisible(point, s_graphic));
+                    Assert.Equal(expected, region.IsVisible(point, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible(point, null));
+                    Assert.Equal(expected, region.IsVisible((PointF)point, s_graphic));
+                    Assert.Equal(expected, region.IsVisible((PointF)point, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible((PointF)point, null));
 
-                Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
-                Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
-                Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, s_graphic));
-                Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, null));
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y));
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
+
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y, s_graphic));
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible(point.X, point.Y, null));
+                    Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, s_graphic));
+                    Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, disposedGraphics));
+                    Assert.Equal(expected, region.IsVisible((float)point.X, point.Y, null));
+                }
             }
             finally
             {
