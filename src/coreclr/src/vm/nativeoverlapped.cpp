@@ -20,6 +20,7 @@
 #include "mdaassistants.h"
 #include "comsynchronizable.h"
 #include "comthreadpool.h"
+#include "marshalnative.h"
 
 LONG OverlappedDataObject::s_CleanupRequestCount = 0;
 BOOL OverlappedDataObject::s_CleanupInProgress = FALSE;
@@ -137,7 +138,7 @@ FCIMPL1(void*, AllocateNativeOverlapped, OverlappedDataObject* overlappedUNSAFE)
             SIZE_T i;
             for (i = 0; i < num; i ++)
             {
-                GCHandleValidatePinnedObject(pObj[i]);
+                ValidatePinnedObject(pObj[i]);
             }
             for (i = 0; i < num; i ++)
             {
@@ -147,7 +148,7 @@ FCIMPL1(void*, AllocateNativeOverlapped, OverlappedDataObject* overlappedUNSAFE)
         }
         else
         {
-            GCHandleValidatePinnedObject(userObject);
+            ValidatePinnedObject(userObject);
             AddMTForPinHandle(userObject);
         }
         

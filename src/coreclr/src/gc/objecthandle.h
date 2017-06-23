@@ -72,8 +72,6 @@ uint32_t     GetVariableHandleType(OBJECTHANDLE handle);
 void         UpdateVariableHandleType(OBJECTHANDLE handle, uint32_t type);
 uint32_t     CompareExchangeVariableHandleType(OBJECTHANDLE handle, uint32_t oldType, uint32_t newType);
 
-void GCHandleValidatePinnedObject(OBJECTREF obj);
-
 /*
  * Convenience prototypes for using the global handles
  */

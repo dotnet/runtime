@@ -14,6 +14,11 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
+// This header include will need to be removed as part of GitHub#12170.
+// The only reason it's here now is that this header references the GC-private
+// structure "HandleTableMap".
+#include "../../gc/objecthandle.h"
+
 #if defined(_TARGET_ARM_) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
 // Setting DAC_HASHTABLE tells the DAC to use the hand rolled hashtable for

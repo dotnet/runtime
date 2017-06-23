@@ -130,7 +130,6 @@
 #include "syncblk.h"
 #include "eeconfig.h"
 #include "stublink.h"
-#include "handletable.h"
 #include "method.hpp"
 #include "codeman.h"
 #include "frames.h"
