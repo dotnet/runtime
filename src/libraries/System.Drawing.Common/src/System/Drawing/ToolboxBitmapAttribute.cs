@@ -291,13 +291,8 @@ namespace System.Drawing
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception e) when (!ClientUtils.IsCriticalException(e))
             {
-                if (ClientUtils.IsCriticalException(e))
-                {
-                    throw;
-                }
-                Debug.Fail("Failed to load toolbox image '" + imageFile + "':\r\n" + e.ToString());
             }
 
             return image;
@@ -405,17 +400,7 @@ namespace System.Drawing
                     img = GetIconFromResource(t, iconname, large, scaled);
                 }
             }
-            catch (Exception e)
-            {
-                if (t == null)
-                {
-                    Debug.Fail("Failed to load toolbox image for null type:\r\n" + e.ToString());
-                }
-                else
-                {
-                    Debug.Fail("Failed to load toolbox image for '" + t.FullName + "':\r\n" + e.ToString());
-                }
-            }
+            catch (Exception) { }
             return img;
         }
 
