@@ -34,24 +34,56 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             string testDataFilePath = GetTestDataFilePath();
             IEnumerable<object[]> coreTypeRecords = GetCoreTypeRecords();
-            string[] coreTypeBlobs = GetCoreTypeBlobs(coreTypeRecords).ToArray();
+            string[] coreTypeBlobs = GetCoreTypeBlobs(coreTypeRecords, FormatterAssemblyStyle.Full).ToArray();
 
-            UpdateCoreTypeBlobs(testDataFilePath, coreTypeBlobs);
+            var (numberOfBlobs, numberOfFoundBlobs, numberOfUpdatedBlobs) = UpdateCoreTypeBlobs(testDataFilePath, coreTypeBlobs);
+            Console.WriteLine($"{numberOfBlobs} existing blobs" +
+                $"{Environment.NewLine}{numberOfFoundBlobs} found blobs with regex search" +
+                $"{Environment.NewLine}{numberOfUpdatedBlobs} updated blobs with regex replace");
+        }
+
+        private static void SanityCheckBlob(object obj, string[] blobs)
+        {
+            // Check if runtime generated blob is the same as the stored one
+            int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
+            if (frameworkBlobNumber < blobs.Length &&
+                // WeakReference<Point> and HybridDictionary with default constructor are generating
+                // different blobs at runtime for some obscure reason. Excluding those from the check.
+                !(obj is WeakReference<Point>) &&
+                !(obj is Collections.Specialized.HybridDictionary))
+            {
+                string runtimeBlob = SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full);
+                Assert.True(CreateComparableBlobInfo(blobs[frameworkBlobNumber]) == CreateComparableBlobInfo(runtimeBlob),
+                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}Stored blob: {blobs[frameworkBlobNumber]}{Environment.NewLine}Generated runtime blob: {runtimeBlob}");
+            }
         }
 
         [Theory]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, string[] blobs)
         {
+            bool verifyBlob = false;
+
+            if (obj == null)
+            {
+                throw new ArgumentNullException("The serializable object must not be null", nameof(obj));
+            }
+
             if (blobs == null || blobs.Length == 0)
             {
                 throw new ArgumentOutOfRangeException($"Type {obj} has no blobs to deserialize and test equality against. Blob: " +
-                    SerializeObjectToBlob(obj));
+                    SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full));
+            }
+
+            if (verifyBlob)
+            {
+                SanityCheckBlob(obj, blobs);
             }
 
             foreach (string blob in blobs)
             {
-                CheckForAnyEquals(obj, DeserializeBlobToObject(blob));
+                CheckForAnyEquals(obj, DeserializeBlobToObject(blob, FormatterAssemblyStyle.Simple));
+                CheckForAnyEquals(obj, DeserializeBlobToObject(blob, FormatterAssemblyStyle.Full));
             }
         }
 
@@ -63,8 +95,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             object obj = new ArraySegment<int>();
             string corefxBlob = "AAEAAAD/////AQAAAAAAAAAEAQAAAHJTeXN0ZW0uQXJyYXlTZWdtZW50YDFbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0DAAAABl9hcnJheQdfb2Zmc2V0Bl9jb3VudAcAAAgICAoAAAAAAAAAAAs=";
             string netfxBlob = "AAEAAAD/////AQAAAAAAAAAEAQAAAHJTeXN0ZW0uQXJyYXlTZWdtZW50YDFbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0DAAAABl9hcnJheQdfb2Zmc2V0Bl9jb3VudAcAAAgICAoAAAAAAAAAAAs=";
-            CheckForAnyEquals(obj, DeserializeBlobToObject(corefxBlob));
-            CheckForAnyEquals(obj, DeserializeBlobToObject(netfxBlob));
+            CheckForAnyEquals(obj, DeserializeBlobToObject(corefxBlob, FormatterAssemblyStyle.Full));
+            CheckForAnyEquals(obj, DeserializeBlobToObject(netfxBlob, FormatterAssemblyStyle.Full));
         }
 
         [Fact]
@@ -75,7 +107,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var obj = new SomeType() { SomeField = 7 };
             string serializedObj = @"AAEAAAD/////AQAAAAAAAAAMAgAAAHNTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249OS45OC43Ljk4NywgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj05ZDc3Y2M3YWQzOWI2OGViBQEAAAA2U3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5Gb3JtYXR0ZXJzLlRlc3RzLlNvbWVUeXBlAQAAAAlTb21lRmllbGQACAIAAAAHAAAACw==";
 
-            var deserialized = (SomeType)DeserializeBlobToObject(serializedObj);
+            var deserialized = (SomeType)DeserializeBlobToObject(serializedObj, FormatterAssemblyStyle.Simple);
             Assert.Equal(obj, deserialized);
         }
 
@@ -87,27 +119,38 @@ namespace System.Runtime.Serialization.Formatters.Tests
             var obj = new GenericTypeWithArg<SomeType>() { Test = new SomeType() { SomeField = 9 } };
             string serializedObj = @"AAEAAAD/////AQAAAAAAAAAMAgAAAHNTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249OS45OC43Ljk4NywgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj05ZDc3Y2M3YWQzOWI2OGViBQEAAADxAVN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb24uRm9ybWF0dGVycy5UZXN0cy5HZW5lcmljVHlwZVdpdGhBcmdgMVtbU3lzdGVtLlJ1bnRpbWUuU2VyaWFsaXphdGlvbi5Gb3JtYXR0ZXJzLlRlc3RzLlNvbWVUeXBlLCBTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMsIFZlcnNpb249OS45OC43Ljk4NywgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj05ZDc3Y2M3YWQzOWI2OGViXV0BAAAABFRlc3QENlN5c3RlbS5SdW50aW1lLlNlcmlhbGl6YXRpb24uRm9ybWF0dGVycy5UZXN0cy5Tb21lVHlwZQIAAAACAAAACQMAAAAFAwAAADZTeXN0ZW0uUnVudGltZS5TZXJpYWxpemF0aW9uLkZvcm1hdHRlcnMuVGVzdHMuU29tZVR5cGUBAAAACVNvbWVGaWVsZAAIAgAAAAkAAAAL";
 
-            var deserialized = (GenericTypeWithArg<SomeType>)DeserializeBlobToObject(serializedObj);
+            var deserialized = (GenericTypeWithArg<SomeType>)DeserializeBlobToObject(serializedObj, FormatterAssemblyStyle.Simple);
             Assert.Equal(obj, deserialized);
         }
 
         [Theory]
         [MemberData(nameof(SerializableEqualityComparers_MemberData))]
-        public void ValidateDeserializationOfEqualityComparers(object obj, string[] blobs)
+        public void ValidateEqualityComparersAgainstBlobs(object obj, string[] blobs)
         {
+            if (obj == null)
+            {
+                throw new ArgumentNullException("The serializable object must not be null", nameof(obj));
+            }
+
             if (blobs == null || blobs.Length == 0)
             {
                 throw new ArgumentOutOfRangeException($"Type {obj} has no blobs to deserialize and test equality against. Blob: " +
-                    SerializeObjectToBlob(obj));
+                    SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full));
             }
 
-            foreach (string base64Serialized in blobs)
+            // Check if runtime generated blob is the same as the stored one
+            int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
+            if (frameworkBlobNumber < blobs.Length)
             {
-                object deserializedInstance = DeserializeBlobToObject(base64Serialized);
-                Type objType = deserializedInstance.GetType();
-                Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
-                Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
-                Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
+                string runtimeBlob = SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full);
+                Assert.True(CreateComparableBlobInfo(blobs[frameworkBlobNumber]) == CreateComparableBlobInfo(runtimeBlob),
+                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}Stored blob: {blobs[frameworkBlobNumber]}{Environment.NewLine}Generated runtime blob: {runtimeBlob}");
+            }
+
+            foreach (string blob in blobs)
+            {
+                ValidateEqualityComparer(DeserializeBlobToObject(blob, FormatterAssemblyStyle.Simple));
+                ValidateEqualityComparer(DeserializeBlobToObject(blob, FormatterAssemblyStyle.Full));
             }
         }
 
@@ -371,7 +414,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void Deserialize_FuzzInput(object obj, Random rand)
         {
             // Get the serialized data for the object
-            byte[] data = SerializeObjectToRaw(obj);
+            byte[] data = SerializeObjectToRaw(obj, FormatterAssemblyStyle.Simple);
 
             // Make some "random" changes to it
             for (int i = 1; i < rand.Next(1, 100); i++)
@@ -382,7 +425,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Try to deserialize that.
             try
             {
-                DeserializeRawToObject(data);
+                DeserializeRawToObject(data, FormatterAssemblyStyle.Simple);
                 // Since there's no checksum, it's possible we changed data that didn't corrupt the instance
             }
             catch (ArgumentOutOfRangeException) { }
