@@ -13,15 +13,22 @@
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/runtime.h>
+#include <mono/metadata/w32handle.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/metadata/null-gc-handles.h>
 
 #ifdef HAVE_NULL_GC
+
+static gboolean gc_inited = FALSE;
 
 void
 mono_gc_base_init (void)
 {
+	if (gc_inited)
+		return;
+
 	mono_counters_init ();
 
 #ifndef HOST_WIN32
@@ -32,6 +39,10 @@ mono_gc_base_init (void)
 	mono_thread_info_init (sizeof (MonoThreadInfo));
 
 	mono_thread_info_attach ();
+
+	null_gc_handles_init ();
+
+	gc_inited = TRUE;
 }
 
 void
@@ -107,24 +118,6 @@ mono_gc_register_root (char *start, size_t size, void *descr, MonoGCRootSource s
 void
 mono_gc_deregister_root (char* addr)
 {
-}
-
-void
-mono_gc_weak_link_add (void **link_addr, MonoObject *obj, gboolean track)
-{
-	*link_addr = obj;
-}
-
-void
-mono_gc_weak_link_remove (void **link_addr, gboolean track)
-{
-	*link_addr = NULL;
-}
-
-MonoObject*
-mono_gc_weak_link_get (void **link_addr)
-{
-	return *link_addr;
 }
 
 void*
@@ -292,12 +285,14 @@ mono_gc_is_critical_method (MonoMethod *method)
 gpointer
 mono_gc_thread_attach (MonoThreadInfo* info)
 {
+	info->handle_stack = mono_handle_stack_alloc ();
 	return info;
 }
 
 void
 mono_gc_thread_detach_with_lock (MonoThreadInfo *p)
 {
+	mono_handle_stack_free (p->handle_stack);
 }
 
 gboolean
@@ -340,27 +335,6 @@ const char *
 mono_gc_get_gc_name (void)
 {
 	return "null";
-}
-
-void
-mono_gc_add_weak_track_handle (MonoObject *obj, guint32 gchandle)
-{
-}
-
-void
-mono_gc_change_weak_track_handle (MonoObject *old_obj, MonoObject *obj, guint32 gchandle)
-{
-}
-
-void
-mono_gc_remove_weak_track_handle (guint32 gchandle)
-{
-}
-
-GSList*
-mono_gc_remove_weak_track_object (MonoDomain *domain, MonoObject *obj)
-{
-	return NULL;
 }
 
 void
@@ -566,6 +540,19 @@ mono_gc_is_null (void)
 {
 	return TRUE;
 }
+
+int
+mono_gc_invoke_finalizers (void)
+{
+	return 0;
+}
+
+MonoBoolean
+mono_gc_pending_finalizers (void)
+{
+	return FALSE;
+}
+
 #else
 
 MONO_EMPTY_SOURCE_FILE (null_gc);

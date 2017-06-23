@@ -69,7 +69,7 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
  * points to a valid value.
  */
 
-#ifdef HAVE_BOEHM_GC
+#if defined(HAVE_BOEHM_GC) || defined(HAVE_NULL_GC)
 static HandleStack*
 new_handle_stack ()
 {
@@ -85,12 +85,19 @@ free_handle_stack (HandleStack *stack)
 static HandleChunk*
 new_handle_chunk ()
 {
+#if defined(HAVE_BOEHM_GC)
 	return (HandleChunk *)GC_MALLOC (sizeof (HandleChunk));
+#elif defined(HAVE_NULL_GC)
+	return (HandleChunk *)g_malloc (sizeof (HandleChunk));
+#endif
 }
 
 static void
 free_handle_chunk (HandleChunk *chunk)
 {
+#if defined(HAVE_NULL_GC)
+	g_free (chunk);
+#endif
 }
 #else
 static HandleStack*
