@@ -853,26 +853,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
             if (delayUseSrc != nullptr)
             {
-                // If delayUseSrc is an indirection and it doesn't produce a result, then we need to set "delayFree'
-                // on the base & index, if any.
-                // Otherwise, we set it on delayUseSrc itself.
-                if (delayUseSrc->isIndir() && (delayUseSrc->gtLsraInfo.dstCount == 0))
-                {
-                    GenTree* base  = delayUseSrc->AsIndir()->Base();
-                    GenTree* index = delayUseSrc->AsIndir()->Index();
-                    if (base != nullptr)
-                    {
-                        base->gtLsraInfo.isDelayFree = true;
-                    }
-                    if (index != nullptr)
-                    {
-                        index->gtLsraInfo.isDelayFree = true;
-                    }
-                }
-                else
-                {
-                    delayUseSrc->gtLsraInfo.isDelayFree = true;
-                }
+                SetDelayFree(delayUseSrc);
                 info->hasDelayFreeSrc = true;
             }
         }
@@ -882,6 +863,30 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
+}
+
+void Lowering::SetDelayFree(GenTree* delayUseSrc)
+{
+    // If delayUseSrc is an indirection and it doesn't produce a result, then we need to set "delayFree'
+    // on the base & index, if any.
+    // Otherwise, we set it on delayUseSrc itself.
+    if (delayUseSrc->isIndir() && (delayUseSrc->gtLsraInfo.dstCount == 0))
+    {
+        GenTree* base  = delayUseSrc->AsIndir()->Base();
+        GenTree* index = delayUseSrc->AsIndir()->Index();
+        if (base != nullptr)
+        {
+            base->gtLsraInfo.isDelayFree = true;
+        }
+        if (index != nullptr)
+        {
+            index->gtLsraInfo.isDelayFree = true;
+        }
+    }
+    else
+    {
+        delayUseSrc->gtLsraInfo.isDelayFree = true;
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3535,6 +3540,9 @@ void Lowering::TreeNodeInfoInitMul(GenTreePtr tree)
         if (memOp != nullptr)
         {
             MakeSrcContained(tree, memOp);
+            // The memOp will be the second source. It must be different from the targetReg.
+            SetDelayFree(memOp);
+            info->hasDelayFreeSrc = true;
         }
         else if (imm != nullptr)
         {
