@@ -139,7 +139,7 @@ namespace System.Net.Http
         private CredentialCache _credentialCache = null; // protected by LockObject
         private bool _useDefaultCredentials = HttpHandlerDefaults.DefaultUseDefaultCredentials;
         private CookieContainer _cookieContainer = new CookieContainer();
-        private bool _useCookie = HttpHandlerDefaults.DefaultUseCookies;
+        private bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
         private TimeSpan _connectTimeout = Timeout.InfiniteTimeSpan;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
         private int _maxAutomaticRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
@@ -148,7 +148,7 @@ namespace System.Net.Http
         private ClientCertificateOption _clientCertificateOption = HttpHandlerDefaults.DefaultClientCertificateOption;
         private X509Certificate2Collection _clientCertificates;
         private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateValidationCallback;
-        private bool _checkCertificateRevocationList;
+        private bool _checkCertificateRevocationList = HttpHandlerDefaults.DefaultCheckCertificateRevocationList;
         private SslProtocols _sslProtocols = SslProtocols.None; // use default
         private IDictionary<String, Object> _properties; // Only create dictionary when required.
 
@@ -181,7 +181,7 @@ namespace System.Net.Http
         private static string CurlVersionDescription => s_curlVersionDescription ?? (s_curlVersionDescription = Interop.Http.GetVersionDescription() ?? string.Empty);
         private static string CurlSslVersionDescription => s_curlSslVersionDescription ?? (s_curlSslVersionDescription = Interop.Http.GetSslVersionDescription() ?? string.Empty);
 
-        internal bool AutomaticRedirection
+        internal bool AllowAutoRedirect
         {
             get { return _automaticRedirection; }
             set
@@ -253,19 +253,14 @@ namespace System.Net.Http
             {
                 if (_clientCertificateOption != ClientCertificateOption.Manual)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
+                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, nameof(ClientCertificateOptions), nameof(ClientCertificateOption.Manual)));
                 }
 
-                if (_clientCertificates == null)
-                {
-                    _clientCertificates = new X509Certificate2Collection();
-                }
-
-                return _clientCertificates;
+                return _clientCertificates ?? (_clientCertificates = new X509Certificate2Collection());
             }
         }
 
-        internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateValidationCallback
+        internal Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
             get { return _serverCertificateValidationCallback; }
             set
@@ -322,13 +317,13 @@ namespace System.Net.Http
             }
         }
 
-        internal bool UseCookie
+        internal bool UseCookies
         {
-            get { return _useCookie; }
+            get { return _useCookies; }
             set
             {
                 CheckDisposedOrStarted();
-                _useCookie = value;
+                _useCookies = value;
             }
         }
 
@@ -446,7 +441,7 @@ namespace System.Net.Http
                 throw new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content);
             }
 
-            if (_useCookie && _cookieContainer == null)
+            if (_useCookies && _cookieContainer == null)
             {
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
@@ -551,7 +546,7 @@ namespace System.Net.Http
 
         private void AddResponseCookies(EasyRequest state, string cookieHeader)
         {
-            if (!_useCookie)
+            if (!_useCookies)
             {
                 return;
             }
