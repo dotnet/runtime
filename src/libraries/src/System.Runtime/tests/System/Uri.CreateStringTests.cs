@@ -558,9 +558,9 @@ namespace System.Tests
             }
             else // Unix paths preserve backslash
             {
-                yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file:///path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
                 yield return new object[] { @"file:///path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
-                yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+                yield return new object[] { @"file://localhost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
                 yield return new object[] { @"file://localhost/path1%5Cpath2\path3", @"/path1%5Cpath2%5Cpath3", "", ""};
             }
             // Implicit file with empty path
@@ -677,7 +677,7 @@ namespace System.Tests
                 yield return new object[] { @"file:///\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
                 yield return new object[] { @"file://\/unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
             }
-            else if(!s_isWindowsSystem)
+            else
             {
                 // Implicit file with path
                 yield return new object[] { "/", "/", "", "" };
@@ -687,15 +687,15 @@ namespace System.Tests
                 // Implicit file ending with backlash
                 yield return new object[] { @"/path1\path2/path3\path4\", "/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
                 // Explicit UNC with backslash in path
-                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
-                yield return new object[] { @"file:////unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
-                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
-                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4", @"/path1\path2/path3\path4", "", "" };
+                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
+                yield return new object[] { @"file:////unchost/path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
+                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
+                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4", @"/path1%5Cpath2/path3%5Cpath4", "", "" };
                 // Explicit UNC ending with backslash
-                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
-                yield return new object[] { @"file:////unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
-                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
-                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4\", @"/path1\path2/path3\path4\", "", "" };
+                yield return new object[] { @"file://\\unchost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
+                yield return new object[] { @"file:////unchost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
+                yield return new object[] { @"file:///\unchost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
+                yield return new object[] { @"file://\/unchost/path1\path2/path3\path4\", @"/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
             }
 
             // Mailto
