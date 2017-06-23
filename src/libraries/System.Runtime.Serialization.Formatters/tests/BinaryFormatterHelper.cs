@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -118,6 +119,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
             return typeof(EqualityExtensions).GetMethod("IsEqual", new[] { extendedType, extendedType });
         }
 
+        public static void ValidateEqualityComparer(object obj)
+        {
+            Type objType = obj.GetType();
+            Assert.True(objType.IsGenericType, $"Type `{objType.FullName}` must be generic.");
+            Assert.Equal("System.Collections.Generic.ObjectEqualityComparer`1", objType.GetGenericTypeDefinition().FullName);
+            Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
+        }
+
         public static string GetTestDataFilePath()
         {
             string GetRepoRootPath()
@@ -152,25 +161,29 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 .Concat(SerializableObjects_MemberData());
         }
 
-        public static IEnumerable<string> GetCoreTypeBlobs(IEnumerable<object[]> records)
+        public static IEnumerable<string> GetCoreTypeBlobs(IEnumerable<object[]> records, FormatterAssemblyStyle assemblyStyle)
         {
             foreach (object[] record in records)
             {
-                BinaryFormatter bf = new BinaryFormatter();
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    bf.Serialize(ms, record[0]); // Zero Index is the core type instance
-                    yield return Convert.ToBase64String(ms.ToArray());
-                }
+                yield return SerializeObjectToBlob(record[0], assemblyStyle);
             }
         }
 
-        public static void UpdateCoreTypeBlobs(string testDataFilePath, string[] blobs)
+        public static string CreateComparableBlobInfo(string base64Blob)
+        {
+            byte[] data = Convert.FromBase64String(base64Blob);
+            string decodedString = Encoding.UTF8.GetString(data);
+            return Regex.Replace(decodedString, @"Version=\d.\d.\d.\d.", "Version=0.0.0.0", RegexOptions.Multiline);
+        }
+
+        public static (int blobs, int foundBlobs, int updatedBlobs) UpdateCoreTypeBlobs(string testDataFilePath, string[] blobs)
         {
             // Replace existing test data blobs with updated ones
             string[] testDataLines = File.ReadAllLines(testDataFilePath);
             List<string> updatedTestDataLines = new List<string>();
             int numberOfBlobs = 0;
+            int numberOfFoundBlobs = 0;
+            int numberOfUpdatedBlobs = 0;
 
             for (int i = 0; i < testDataLines.Length; i++)
             {
@@ -181,14 +194,31 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     continue;
                 }
 
+                string pattern = null;
+                string replacement = null;
                 if (PlatformDetection.IsFullFramework)
                 {
-                    testDataLine = Regex.Replace(testDataLine, ", \"AAEAAAD[^\"]+\"(?!,)", ", \"" + blobs[numberOfBlobs] + "\"");
+                    pattern = ", \"AAEAAAD[^\"]+\"(?!,)";
+                    replacement = ", \"" + blobs[numberOfBlobs] + "\"";
                 }
                 else
                 {
-                    testDataLine = Regex.Replace(testDataLine, "\"AAEAAAD[^\"]+\",", "\"" + blobs[numberOfBlobs] + "\",");
+                    pattern = "\"AAEAAAD[^\"]+\",";
+                    replacement = "\"" + blobs[numberOfBlobs] + "\",";
                 }
+
+                Regex regex = new Regex(pattern);
+                Match match = regex.Match(testDataLine);
+                if (match.Success)
+                {
+                    numberOfFoundBlobs++;
+                }
+                string updatedLine = regex.Replace(testDataLine, replacement);
+                if (testDataLine != updatedLine)
+                {
+                    numberOfUpdatedBlobs++;
+                }
+                testDataLine = updatedLine;
 
                 updatedTestDataLines.Add(testDataLine);
                 numberOfBlobs++;
@@ -197,11 +227,14 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Check if all blobs were recognized and write updates to file
             Assert.Equal(numberOfBlobs, blobs.Length);
             File.WriteAllLines(testDataFilePath, updatedTestDataLines);
+
+            return (numberOfBlobs, numberOfFoundBlobs, numberOfUpdatedBlobs);
         }
 
-        public static byte[] SerializeObjectToRaw(object obj)
+        public static byte[] SerializeObjectToRaw(object obj, FormatterAssemblyStyle assemblyStyle)
         {
             BinaryFormatter bf = new BinaryFormatter();
+            bf.AssemblyFormat = assemblyStyle;
             using (MemoryStream ms = new MemoryStream())
             {
                 bf.Serialize(ms, obj);
@@ -209,25 +242,26 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        public static string SerializeObjectToBlob(object obj)
+        public static string SerializeObjectToBlob(object obj, FormatterAssemblyStyle assemblyStyle)
         {
-            byte[] raw = SerializeObjectToRaw(obj);
+            byte[] raw = SerializeObjectToRaw(obj, assemblyStyle);
             return Convert.ToBase64String(raw);
         }
 
-        public static object DeserializeRawToObject(byte[] raw)
+        public static object DeserializeRawToObject(byte[] raw, FormatterAssemblyStyle assemblyStyle)
         {
             var binaryFormatter = new BinaryFormatter();
+            binaryFormatter.AssemblyFormat = assemblyStyle;
             using (var serializedStream = new MemoryStream(raw))
             {
                 return binaryFormatter.Deserialize(serializedStream);
             }
         }
 
-        public static object DeserializeBlobToObject(string base64Str)
+        public static object DeserializeBlobToObject(string base64Str, FormatterAssemblyStyle assemblyStyle)
         {
             byte[] raw = Convert.FromBase64String(base64Str);
-            return DeserializeRawToObject(raw);
+            return DeserializeRawToObject(raw, assemblyStyle);
         }
 
         private static T FormatterClone<T>(
