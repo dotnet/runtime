@@ -242,6 +242,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false, 10, 1024)]
         [InlineData(true, 10, 1024)]
+        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task NamedPipeViaFileStream_AllDataCopied(bool useAsync, int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;
