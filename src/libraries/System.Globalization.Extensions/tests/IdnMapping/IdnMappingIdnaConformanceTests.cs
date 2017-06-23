@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Globalization.Tests
 {
@@ -22,15 +24,21 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetAscii_Success()
         {
-            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
+            Assert.All(Factory.GetDataset().Where(e => e.ASCIIResult.Success), entry =>
             {
-                if (entry.ASCIIResult.Success)
+                try
                 {
                     var map = new IdnMapping();
                     var asciiResult = map.GetAscii(entry.Source);
                     Assert.Equal(entry.ASCIIResult.Value, asciiResult, StringComparer.OrdinalIgnoreCase);
                 }
-            }
+                catch (ArgumentException)
+                {
+                    string actualCodePoints = GetCodePoints(entry.Source);
+                    string expectedCodePoints = GetCodePoints(entry.ASCIIResult.Value);
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
+                }
+            });
         }
 
         /// <summary>
@@ -41,25 +49,27 @@ namespace System.Globalization.Tests
         /// Same applies to Windows 10 >= 10.0.15063 in the IdnaTest_9.txt file
         /// </summary>
         [Fact]
-        public void GetUnicode_Succes()
+        public void GetUnicode_Success()
         {
-            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
+            Assert.All(Factory.GetDataset().Where(e => e.UnicodeResult.Success && e.UnicodeResult.ValidDomainName), entry =>
             {
-                if (entry.UnicodeResult.Success && entry.UnicodeResult.ValidDomainName)
+                try
                 {
-                    try
-                    {
-                        var map = new IdnMapping { UseStd3AsciiRules = true, AllowUnassigned = true };
-                        var unicodeResult = map.GetUnicode(entry.Source);
+                    var map = new IdnMapping { UseStd3AsciiRules = true, AllowUnassigned = true };
+                    var unicodeResult = map.GetUnicode(entry.Source);
 
-                        Assert.Equal(entry.UnicodeResult.Value, unicodeResult, StringComparer.OrdinalIgnoreCase);
-                    }
-                    catch (ArgumentException)
+                    Assert.Equal(entry.UnicodeResult.Value, unicodeResult, StringComparer.OrdinalIgnoreCase);
+                }
+                catch (ArgumentException)
+                {
+                    if (!string.Equals(entry.UnicodeResult.Value, entry.Source, StringComparison.OrdinalIgnoreCase))
                     {
-                        Assert.Equal(entry.UnicodeResult.Value, entry.Source, StringComparer.OrdinalIgnoreCase);
+                        string actualCodePoints = GetCodePoints(entry.Source);
+                        string expectedCodePoints = GetCodePoints(entry.UnicodeResult.Value);
+                        throw new Exception($"Expected IdnMapping.GetUnicode(\"{actualCodePoints}\" to return \"{expectedCodePoints}\".");
                     }
                 }
-            }
+            });
         }
 
         /// <summary>
@@ -73,14 +83,19 @@ namespace System.Globalization.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/21332
         public void GetAscii_Invalid()
         {
-            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
+            Assert.All(Factory.GetDataset().Where(entry => !entry.ASCIIResult.Success), entry =>
             {
-                if (!entry.ASCIIResult.Success)
+                try
                 {
                     var map = new IdnMapping();
-                    Assert.Throws<ArgumentException>(() => map.GetAscii(entry.Source));
+                    AssertExtensions.Throws<ArgumentException>("unicode", () => map.GetAscii(entry.Source));
                 }
-            }
+                catch (ThrowsException)
+                {
+                    string codePoints = GetCodePoints(entry.Source);
+                    throw new Exception($"Expected IdnMapping.GetAscii(\"{codePoints}\") to throw an ArgumentException.");
+                }
+            });
         }
 
         /// <summary>
@@ -94,14 +109,19 @@ namespace System.Globalization.Tests
         [Fact]
         public void GetUnicode_Invalid()
         {
-            foreach (IConformanceIdnaTest entry in Factory.GetDataset())
+            Assert.All(Factory.GetDataset().Where(entry => !entry.UnicodeResult.Success), entry =>
             {
-                if (!entry.UnicodeResult.Success)
+                try
                 {
                     var map = new IdnMapping();
-                    Assert.Throws<ArgumentException>(() => map.GetUnicode(entry.Source));
+                    AssertExtensions.Throws<ArgumentException>("ascii", () => map.GetUnicode(entry.Source));
                 }
-            }
+                catch (ThrowsException)
+                {
+                    string codePoints = GetCodePoints(entry.Source);
+                    throw new Exception($"Expected IdnMapping.GetUnicode(\"{codePoints}\") to throw an ArgumentException.");
+                }
+            });
         }
 
         [Theory]
@@ -130,5 +150,7 @@ namespace System.Globalization.Tests
             Assert.False(original.Equals(unequal3));
             Assert.NotEqual(original.GetHashCode(), unequal3.GetHashCode());
         }
+
+        private static string GetCodePoints(string s) => string.Concat(s.Select(c => $"\\u{(int)c:D4}"));
     }
 }
