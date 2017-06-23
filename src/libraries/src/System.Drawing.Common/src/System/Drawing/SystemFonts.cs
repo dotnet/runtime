@@ -258,41 +258,13 @@ namespace System.Drawing
             {
                 Font defaultFont = null;
 
-                //special case defaultfont for arabic systems too
-                bool systemDefaultLCIDIsArabic = false;
+                // Special case DefaultFont for Arabic systems.
+                bool systemDefaultLCIDIsArabic = (UnsafeNativeMethods.GetSystemDefaultLCID() & 0x3ff) == 0x0001;
 
-                // For Japanese on Win9x get the MS UI Gothic font
-                if (Environment.OSVersion.Platform == System.PlatformID.Win32NT &&
-                    Environment.OSVersion.Version.Major <= 4)
-                {
-                    if ((UnsafeNativeMethods.GetSystemDefaultLCID() & 0x3ff) == 0x0011)
-                    {
-                        try
-                        {
-                            defaultFont = new Font("MS UI Gothic", 9);
-                        }
-                        //fall through here if this fails and we'll get the default
-                        //font via the DEFAULT_GUI method
-                        catch (Exception ex)
-                        {
-                            if (IsCriticalFontException(ex))
-                            {
-                                throw;
-                            }
-                        }
-                    }
-                }
 
-                if (defaultFont == null)
-                {
-                    systemDefaultLCIDIsArabic = ((UnsafeNativeMethods.GetSystemDefaultLCID() & 0x3ff) == 0x0001);
-                }
-
-                // For arabic systems, regardless of the platform, always return Tahoma 8.
+                // For Arabic systems, regardless of the platform, always return Tahoma 8.
                 if (systemDefaultLCIDIsArabic)
                 {
-                    Debug.Assert(defaultFont == null);
-                    // Try Tahoma 8.
                     try
                     {
                         defaultFont = new Font("Tahoma", 8);
@@ -306,13 +278,8 @@ namespace System.Drawing
                     }
                 }
 
-                //
-                // Neither Japanese on Win9x nor Arabic.
+                // Not Arabic.
                 // First try DEFAULT_GUI, then Tahoma 8, then GenericSansSerif 8.
-                //
-
-                // first, try DEFAULT_GUI font.
-                //
                 if (defaultFont == null)
                 {
                     IntPtr handle = UnsafeNativeMethods.GetStockObject(NativeMethods.DEFAULT_GUI_FONT);
@@ -335,7 +302,6 @@ namespace System.Drawing
                 }
 
                 // If DEFAULT_GUI didn't work, we try Tahoma.
-                //
                 if (defaultFont == null)
                 {
                     try
@@ -347,9 +313,7 @@ namespace System.Drawing
                     }
                 }
 
-                // Last resort, we use the GenericSansSerif - this will
-                // always work.
-                //
+                // Last resort, we use the GenericSansSerif - this will always work.
                 if (defaultFont == null)
                 {
                     defaultFont = new Font(FontFamily.GenericSansSerif, 8);
@@ -375,19 +339,14 @@ namespace System.Drawing
 
                 if ((UnsafeNativeMethods.GetSystemDefaultLCID() & 0x3ff) == 0x0011)
                 {
-                    // for JAPANESE culture always return DefaultFont
-                    dialogFont = DefaultFont;
-                }
-                else if (Environment.OSVersion.Platform == System.PlatformID.Win32Windows)
-                {
-                    // use DefaultFont for Win9X
+                    // Always return DefaultFont for Japanese cultures.
                     dialogFont = DefaultFont;
                 }
                 else
                 {
                     try
                     {
-                        // use MS Shell Dlg 2, 8pt for anything else than Japanese and Win9x
+                        // Use MS Shell Dlg 2, 8pt for anything other than than Japanese.
                         dialogFont = new Font("MS Shell Dlg 2", 8);
                     }
                     catch (ArgumentException)
@@ -404,10 +363,8 @@ namespace System.Drawing
                     dialogFont = FontInPoints(dialogFont);
                 }
 
-                //
-                // JAPANESE or Win9x: SystemFonts.DefaultFont returns a new Font object every time it is invoked.
-                // So for JAPANESE or Win9x we return the DefaultFont w/ its SystemFontName set to DialogFont.
-                //
+                // For Japanese cultures, SystemFonts.DefaultFont returns a new Font object every time it is invoked.
+                // So for Japanese we return the DefaultFont with its SystemFontName set to DialogFont.
                 dialogFont.SetSystemFontName("DialogFont");
                 return dialogFont;
             }

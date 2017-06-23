@@ -4794,10 +4794,7 @@ namespace System.Drawing
                 {
                     if (s_halftonePalette == IntPtr.Zero)
                     {
-                        if (!(Environment.OSVersion.Platform == System.PlatformID.Win32Windows))
-                        {
-                            AppDomain.CurrentDomain.DomainUnload += new EventHandler(OnDomainUnload);
-                        }
+                        AppDomain.CurrentDomain.DomainUnload += new EventHandler(OnDomainUnload);
                         AppDomain.CurrentDomain.ProcessExit += new EventHandler(OnDomainUnload);
 
                         s_halftonePalette = SafeNativeMethods.Gdip.GdipCreateHalftonePalette();
@@ -4807,9 +4804,7 @@ namespace System.Drawing
             return s_halftonePalette;
         }
 
-        //This will get called for ProcessExit in case for WinNT..
-        //This will get called for ProcessExit AND DomainUnLoad for Win9X...
-        //
+        // This is called from AppDomain.ProcessExit and AppDomain.DomainUnload.
         [PrePrepareMethod]
         private static void OnDomainUnload(object sender, EventArgs e)
         {
