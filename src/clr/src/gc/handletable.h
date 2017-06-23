@@ -138,14 +138,6 @@ uint32_t        HndCountAllHandles(BOOL fUseLocks);
 /*--------------------------------------------------------------------------*/
 
 
-#if defined(USE_CHECKED_OBJECTREFS) && !defined(_NOVM)
-#define OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)    (*((_UNCHECKED_OBJECTREF*)&(objref)))
-#define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (OBJECTREF(obj))
-#else
-#define OBJECTREF_TO_UNCHECKED_OBJECTREF(objref)    (objref)
-#define UNCHECKED_OBJECTREF_TO_OBJECTREF(obj)       (obj)
-#endif
-
 #ifdef _DEBUG_IMPL
 void ValidateAssignObjrefForHandle(OBJECTREF, ADIndex appDomainIndex);
 void ValidateFetchObjrefForHandle(OBJECTREF, ADIndex appDomainIndex);

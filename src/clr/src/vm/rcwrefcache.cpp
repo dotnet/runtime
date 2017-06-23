@@ -17,7 +17,6 @@
 
 #include "common.h"
 
-#include "objecthandle.h"
 #include "rcwrefcache.h"
 #include "comcallablewrapper.h"
 #include "runtimecallablewrapper.h"

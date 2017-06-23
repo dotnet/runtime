@@ -22,7 +22,6 @@
 #include "stackprobe.h"
 #include "eeconfig.h"
 #include "eehash.h"
-#include "objecthandle.h"
 #include "interoputil.h"
 #include "typedesc.h"
 #include "virtualcallstub.h"

@@ -1162,10 +1162,10 @@ void Ref_TraceNormalRoots(uint32_t condemned, uint32_t maxgen, ScanContext* sc, 
 #endif // FEATURE_COMINTEROP || FEATURE_REDHAWK
 }
 
-#ifdef FEATURE_COMINTEROP
 
 void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintptr_t lParam2)
 {
+#ifdef FEATURE_COMINTEROP
     int max_slots = getNumberOfSlots();
     uint32_t handleType = HNDTYPE_REFCOUNTED;
 
@@ -1186,9 +1186,13 @@ void Ref_TraceRefCountHandles(HANDLESCANPROC callback, uintptr_t lParam1, uintpt
         }
         walk = walk->pNext;
     }
+#else
+    UNREFERENCED_PARAMETER(callback);
+    UNREFERENCED_PARAMETER(lParam1);
+    UNREFERENCED_PARAMETER(lParam2);
+#endif // FEATURE_COMINTEROP
 }
 
-#endif
 
 
 
