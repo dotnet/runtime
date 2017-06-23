@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("type", () => RuntimeHelpers.GetUninitializedObject(null));
 
-            Assert.Throws<ArgumentException>(() => RuntimeHelpers.GetUninitializedObject(typeof(string))); // special type
+            AssertExtensions.Throws<ArgumentException>(null, () => RuntimeHelpers.GetUninitializedObject(typeof(string))); // special type
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.IEnumerable))); // interface
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.Generic.List<>))); // generic definition

@@ -494,10 +494,10 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             Assert.Throws<ArgumentNullException>(() => ilcf1.Branch(ILOpCode.Br, default(LabelHandle)));
             Assert.Throws<ArgumentNullException>(() => ilcf1.MarkLabel(default(LabelHandle)));
-            Assert.Throws<ArgumentException>(() => ilcf1.Branch(ILOpCode.Br, l2));
-            Assert.Throws<ArgumentException>(() => ilcf1.MarkLabel(l2));
+            AssertExtensions.Throws<ArgumentException>("label", () => ilcf1.Branch(ILOpCode.Br, l2));
+            AssertExtensions.Throws<ArgumentException>("label", () => ilcf1.MarkLabel(l2));
 
-            Assert.Throws<ArgumentException>(() => ilcf1.Branch(ILOpCode.Box, l1));
+            AssertExtensions.Throws<ArgumentException>("opCode", () => ilcf1.Branch(ILOpCode.Box, l1));
         }
 
         [Fact]

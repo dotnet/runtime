@@ -34,7 +34,7 @@ namespace System.Linq.Tests
         {
             IQueryable<int> query = new EnumerableQuery<int>(Expression.Constant(Math.PI));
             Assert.NotNull(query.Expression);
-            Assert.Throws<ArgumentException>(() => query.GetEnumerator());
+            AssertExtensions.Throws<ArgumentException>(null, () => query.GetEnumerator());
         }
 
         [Fact]
@@ -151,7 +151,7 @@ namespace System.Linq.Tests
         {
             var exp = Expression.Constant(Math.PI);
             IQueryProvider provider = Enumerable.Empty<string>().AsQueryable().Provider;
-            Assert.Throws<ArgumentException>(() => provider.CreateQuery<int>(exp));
+            AssertExtensions.Throws<ArgumentException>(null, () => provider.CreateQuery<int>(exp));
         }
 
         [Fact]
@@ -159,7 +159,7 @@ namespace System.Linq.Tests
         {
             var exp = Expression.Constant(Math.PI);
             IQueryProvider provider = Enumerable.Empty<string>().AsQueryable().Provider;
-            Assert.Throws<ArgumentException>(() => provider.CreateQuery(exp));
+            AssertExtensions.Throws<ArgumentException>(null, () => provider.CreateQuery(exp));
         }
 
         [Fact]
@@ -205,7 +205,7 @@ namespace System.Linq.Tests
         {
             var exp = Expression.Constant(Math.PI);
             IQueryProvider provider = Enumerable.Empty<string>().AsQueryable().Provider;
-            Assert.Throws<ArgumentException>(() => provider.Execute<IEnumerable<int>>(exp));
+            AssertExtensions.Throws<ArgumentException>(null, () => provider.Execute<IEnumerable<int>>(exp));
         }
 
         [Fact]

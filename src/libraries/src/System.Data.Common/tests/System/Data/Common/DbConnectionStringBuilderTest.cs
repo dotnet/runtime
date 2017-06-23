@@ -1740,7 +1740,7 @@ namespace System.Data.Tests.Common
         [Fact]
         public void NegICollectionCopyToTest()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 KeyValuePair<string, object>[] dict = new KeyValuePair<string, object>[1];
                 _builder.Add(SERVER, SERVER_VALUE);

@@ -123,7 +123,7 @@ namespace System.ServiceProcess.Tests
             var controller = new ServiceController(_testService.TestServiceName, _testService.TestMachineName);
             AssertExpectedProperties(controller);
 
-            Assert.Throws<ArgumentException>(() => { var c = new ServiceController(_testService.TestServiceName, ""); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { var c = new ServiceController(_testService.TestServiceName, ""); });
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]

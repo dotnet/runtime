@@ -1945,7 +1945,7 @@ namespace System.Data.Tests
         public void CreateDataReaderNoTable()
         {
             DataSet dsr = new DataSet();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                DataTableReader dtr = dsr.CreateDataReader();
            });
@@ -1992,7 +1992,7 @@ namespace System.Data.Tests
         [Fact]
         public void Load_TableUnknown()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                localSetup();
                DataSet dsLoad = new DataSet("LoadTableUnknown");
@@ -2029,7 +2029,7 @@ namespace System.Data.Tests
         [Fact]
         public void Load_TableConflictF()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                _fillErrCounter = 0;
                _fillErr[0].init("Table1", 1, false,

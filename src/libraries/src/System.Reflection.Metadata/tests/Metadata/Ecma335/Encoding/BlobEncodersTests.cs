@@ -575,7 +575,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x03, 0xED, 0xA0, 0x80 }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentException>(() => e.SystemType(""));
+            AssertExtensions.Throws<ArgumentException>("serializedTypeName", () => e.SystemType(""));
         }
 
         [Fact]
@@ -626,7 +626,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             b.Clear();
 
             Assert.Throws<ArgumentNullException>(() => e.Name(null));
-            Assert.Throws<ArgumentException>(() => e.Name(""));
+            AssertExtensions.Throws<ArgumentException>("name", () => e.Name(""));
         }
 
         [Fact]
@@ -888,7 +888,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             b.Clear();
 
             Assert.Throws<ArgumentNullException>(() => e.Enum(null));
-            Assert.Throws<ArgumentException>(() => e.Enum(""));
+            AssertExtensions.Throws<ArgumentException>("enumTypeName", () => e.Enum(""));
         }
 
         [Fact]
@@ -1083,8 +1083,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x12, 0x05 }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentException>(() => e.Type(MetadataTokens.TypeSpecificationHandle(1), isValueType: false));
-            Assert.Throws<ArgumentException>(() => e.Type(default(EntityHandle), isValueType: false));
+            AssertExtensions.Throws<ArgumentException>(null, () => e.Type(MetadataTokens.TypeSpecificationHandle(1), isValueType: false));
+            AssertExtensions.Throws<ArgumentException>(null, () => e.Type(default(EntityHandle), isValueType: false));
             Assert.Equal(0, b.Count);
         }
 
@@ -1118,7 +1118,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x1B, 0x00 }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentException>(() => e.FunctionPointer(0, (FunctionPointerAttributes)1000, genericParameterCount: 0));
+            AssertExtensions.Throws<ArgumentException>("attributes", () => e.FunctionPointer(0, (FunctionPointerAttributes)1000, genericParameterCount: 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.FunctionPointer(0, 0, genericParameterCount: -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.FunctionPointer(0, 0, genericParameterCount: ushort.MaxValue + 1));
             Assert.Equal(0, b.Count);
@@ -1148,8 +1148,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x15, 0x12, 0x04, 0xC0, 0x00, 0xFF, 0xFF }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentException>(() => e.GenericInstantiation(MetadataTokens.TypeSpecificationHandle(1), 1, isValueType: false));
-            Assert.Throws<ArgumentException>(() => e.GenericInstantiation(default(EntityHandle), 1, isValueType: false));
+            AssertExtensions.Throws<ArgumentException>(null, () => e.GenericInstantiation(MetadataTokens.TypeSpecificationHandle(1), 1, isValueType: false));
+            AssertExtensions.Throws<ArgumentException>(null, () => e.GenericInstantiation(default(EntityHandle), 1, isValueType: false));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.GenericInstantiation(default(TypeDefinitionHandle), 0, true));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.GenericInstantiation(default(TypeDefinitionHandle), -1, true));
             Assert.Throws<ArgumentOutOfRangeException>(() => e.GenericInstantiation(default(TypeDefinitionHandle), ushort.MaxValue + 1, true));
@@ -1263,11 +1263,11 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             AssertEx.Equal(new byte[] { 0x1f, 0x06 }, b.ToArray());
             b.Clear();
 
-            Assert.Throws<ArgumentException>(() => e.AddModifier(default(EntityHandle), true));
-            Assert.Throws<ArgumentException>(() => e.AddModifier(default(TypeDefinitionHandle), true));
-            Assert.Throws<ArgumentException>(() => e.AddModifier(default(TypeReferenceHandle), true));
-            Assert.Throws<ArgumentException>(() => e.AddModifier(default(TypeSpecificationHandle), true));
-            Assert.Throws<ArgumentException>(() => e.AddModifier(MetadataTokens.FieldDefinitionHandle(1), true));
+            AssertExtensions.Throws<ArgumentException>("type", () => e.AddModifier(default(EntityHandle), true));
+            AssertExtensions.Throws<ArgumentException>("type", () => e.AddModifier(default(TypeDefinitionHandle), true));
+            AssertExtensions.Throws<ArgumentException>("type", () => e.AddModifier(default(TypeReferenceHandle), true));
+            AssertExtensions.Throws<ArgumentException>("type", () => e.AddModifier(default(TypeSpecificationHandle), true));
+            AssertExtensions.Throws<ArgumentException>(null, () => e.AddModifier(MetadataTokens.FieldDefinitionHandle(1), true));
         }
 
         [Fact]

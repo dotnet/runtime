@@ -468,10 +468,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 string bogus = "Bogus";
 
-                Assert.Throws<ArgumentException>(() => il[0] = bogus);
-                Assert.Throws<ArgumentException>(() => il.Add(bogus));
-                Assert.Throws<ArgumentException>(() => il.Remove(bogus));
-                Assert.Throws<ArgumentException>(() => il.Insert(0, bogus));
+                AssertExtensions.Throws<ArgumentException>("value", () => il[0] = bogus);
+                AssertExtensions.Throws<ArgumentException>("value", () => il.Add(bogus));
+                AssertExtensions.Throws<ArgumentException>("value", () => il.Remove(bogus));
+                AssertExtensions.Throws<ArgumentException>("value", () => il.Insert(0, bogus));
             }
         }
 
@@ -953,7 +953,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 cc.Remove(c2);
                 Assert.Equal(0, cc.Count);
 
-                Assert.Throws<ArgumentException>(() => cc.Remove(c2));
+                AssertExtensions.Throws<ArgumentException>(null, () => cc.Remove(c2));
 
                 IList il = new X509CertificateCollection(new X509Certificate[] { c1, c2 });
 
@@ -964,7 +964,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 il.Remove(c2);
                 Assert.Equal(0, il.Count);
 
-                Assert.Throws<ArgumentException>(() => il.Remove(c2));
+                AssertExtensions.Throws<ArgumentException>(null, () => il.Remove(c2));
             }
         }
 
@@ -1045,7 +1045,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Add c1Clone back
                 // End state: { c1, c2 } => { c2, c1Clone }
                 cc = new X509Certificate2Collection(array);
-                Assert.Throws<ArgumentException>(() => cc.RemoveRange(new X509Certificate2[] { c1Clone, c1, c2 }));
+                AssertExtensions.Throws<ArgumentException>(null, () => cc.RemoveRange(new X509Certificate2[] { c1Clone, c1, c2 }));
                 Assert.Equal(2, cc.Count);
                 Assert.Same(c2, cc[0]);
                 Assert.Same(c1Clone, cc[1]);
@@ -1106,7 +1106,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     c1,
                     c2,
                 };
-                Assert.Throws<ArgumentException>(() => cc.RemoveRange(collection));
+                AssertExtensions.Throws<ArgumentException>(null, () => cc.RemoveRange(collection));
                 Assert.Equal(2, cc.Count);
                 Assert.Same(c2, cc[0]);
                 Assert.Same(c1Clone, cc[1]);

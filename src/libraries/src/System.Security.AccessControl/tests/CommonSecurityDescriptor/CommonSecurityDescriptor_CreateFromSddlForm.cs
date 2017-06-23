@@ -46,35 +46,35 @@ namespace System.Security.AccessControl.Tests
             });
 
             // Case 3, sddl form owner symbol exists but no content
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("sddlForm", () =>
             {
                 commonSecurityDescriptor = new CommonSecurityDescriptor(false, false, "O:G:SYD:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)");
                 // expect to throw exception but not
             });
 
             // Case 4, sddl form group symbol exists but no content
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("sddlForm", () =>
             {
                 commonSecurityDescriptor = new CommonSecurityDescriptor(false, false, "O:LAG:D:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)");
                 // expect to throw exception but not
             });
 
             // Case 5, garbage string sddl
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("sddlForm", () =>
             {
                 commonSecurityDescriptor = new CommonSecurityDescriptor(false, false, "ABCDEFGHIJKLMNOPQ");
                 // expect to throw exception but not
             });
 
             // Case 7, sddl form with invalid owner sid
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("sddlForm", () =>
             {
                 commonSecurityDescriptor = new CommonSecurityDescriptor(false, false, "O:XXG:D:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)");
                 // expect to throw exception but not
             });
 
             // Case 8, sddl form with invalid group sid
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("sddlForm", () =>
             {
                 commonSecurityDescriptor = new CommonSecurityDescriptor(false, false, "O:LAG:YYD:AI(A;ID;FR;;;BA)S:AI(AU;IDFA;FR;;;BA)");
                 // expect to throw exception but not

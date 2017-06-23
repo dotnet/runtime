@@ -28,7 +28,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(AddressFamily.Unknown)]
         public void Ctor_InvalidFamily_Throws(AddressFamily family)
         {
-            Assert.Throws<ArgumentException>(() => new TcpClient(family));
+            AssertExtensions.Throws<ArgumentException>("family", () => new TcpClient(family));
         }
 
         [Fact]

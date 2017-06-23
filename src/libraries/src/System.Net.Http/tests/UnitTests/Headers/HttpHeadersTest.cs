@@ -423,7 +423,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
             
-            Assert.Throws<ArgumentException>(() => { headers.Add(null, "value"); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Add(null, "value"); });
         }
 
         [Fact]
@@ -1031,7 +1031,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
             
-            Assert.Throws<ArgumentException>(() => { headers.Remove(null); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Remove(null); });
         }
 
         [Fact]
@@ -1152,7 +1152,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
             
-            Assert.Throws<ArgumentException>(() => { headers.GetValues(null); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.GetValues(null); });
         }
 
         [Fact]
@@ -1427,7 +1427,7 @@ namespace System.Net.Http.Tests
         {
             MockHeaders headers = new MockHeaders();
             
-            Assert.Throws<ArgumentException>(() => { headers.Contains(null); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { headers.Contains(null); });
         }
 
         [Fact]

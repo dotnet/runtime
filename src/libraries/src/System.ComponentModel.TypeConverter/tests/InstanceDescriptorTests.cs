@@ -50,7 +50,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void Constructor0_Arguments_Mismatch()
         {
-            ArgumentException ex = Assert.Throws<ArgumentException>(() => new InstanceDescriptor(ci, null));
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(ci, null));
             // Length mismatch
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
@@ -75,7 +75,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void Constructor_MemberInfo_Null_Boolean()
         {
-            Assert.Throws<ArgumentException>(() => new InstanceDescriptor(ci, null, false));
+            AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(ci, null, false));
             // mismatch for required parameters
         }
 
@@ -107,7 +107,7 @@ namespace System.ComponentModel.Tests
         {
             FieldInfo fi = typeof(StaticField).GetField(nameof(StaticField.Field));
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(() => new InstanceDescriptor(fi, new object[] { url }));
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(fi, new object[] { url }));
             // Parameter must be static
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
@@ -135,7 +135,7 @@ namespace System.ComponentModel.Tests
         {
             FieldInfo fi = typeof(InstanceField).GetField(nameof(InstanceField.Name));
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(() => new InstanceDescriptor(fi, null));
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(fi, null));
             // Parameter must be static
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
@@ -181,7 +181,7 @@ namespace System.ComponentModel.Tests
 
             ArgumentException ex;
 
-            ex = Assert.Throws<ArgumentException>(() => new InstanceDescriptor(pi, null));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(pi, null));
             // Parameter must be static
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
@@ -191,7 +191,7 @@ namespace System.ComponentModel.Tests
                 Assert.Null(ex.ParamName);
             }
 
-            ex = Assert.Throws<ArgumentException>(() => new InstanceDescriptor(pi, null, false));
+            ex = AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(pi, null, false));
             // Parameter must be static
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
@@ -207,7 +207,7 @@ namespace System.ComponentModel.Tests
         {
             PropertyInfo pi = typeof(WriteOnlyProperty).GetProperty(nameof(WriteOnlyProperty.Name));
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(() => new InstanceDescriptor(pi, null));
+            ArgumentException ex = AssertExtensions.Throws<ArgumentException>(null, () => new InstanceDescriptor(pi, null));
             // Parameter must be readable
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);

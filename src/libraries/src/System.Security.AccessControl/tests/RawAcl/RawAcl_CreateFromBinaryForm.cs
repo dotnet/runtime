@@ -220,7 +220,7 @@ namespace System.Security.AccessControl.Tests
             aceFlag = 0;
             binaryForm = new byte[65536];
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("binaryForm", () =>
             {
                 revision = 127;
                 capacity = 1;

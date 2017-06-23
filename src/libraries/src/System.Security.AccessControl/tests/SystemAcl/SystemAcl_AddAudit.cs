@@ -109,7 +109,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 2, SystemAudit Ace but non AuditFlags
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("auditFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -121,7 +121,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 3, 0 accessMask
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("accessMask", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -133,7 +133,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 4, non-Container, but InheritanceFlags is not None
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("inheritanceFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -145,7 +145,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 5, non-Container, but PropagationFlags is not None
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -157,7 +157,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 6, Container, but InheritanceFlags is None, but PropagationFlags is InheritOnly
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -169,7 +169,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 7, Container, but InheritanceFlags is None, but PropagationFlags is NoPropagateInherit
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -181,7 +181,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 8, Container, but InheritanceFlags is None, but PropagationFlags is NoPropagateInherit | InheritOnly
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;

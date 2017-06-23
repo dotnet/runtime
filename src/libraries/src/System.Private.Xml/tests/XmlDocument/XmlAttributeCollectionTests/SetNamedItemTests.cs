@@ -31,7 +31,7 @@ namespace System.Xml.Tests
             XmlDocument doc = CreateDocumentWithElement();
             XmlElement element = doc.DocumentElement;
             XmlAttributeCollection target = element.Attributes;
-            Assert.Throws<ArgumentException>(() => target.SetNamedItem(element));
+            AssertExtensions.Throws<ArgumentException>(null, () => target.SetNamedItem(element));
         }
 
         [Fact]

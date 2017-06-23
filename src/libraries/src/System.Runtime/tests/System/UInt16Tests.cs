@@ -266,16 +266,16 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
         {
             ushort result = 0;
-            Assert.Throws<ArgumentException>(() => ushort.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.TryParse("1", style, null, out result));
             Assert.Equal(default(ushort), result);
 
-            Assert.Throws<ArgumentException>(() => ushort.Parse("1", style));
-            Assert.Throws<ArgumentException>(() => ushort.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => ushort.Parse("1", style, null));
         }
     }
 }

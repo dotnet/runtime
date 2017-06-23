@@ -21,7 +21,7 @@ namespace System.Xml.Tests
             XmlDocument doc = CreateDocumentWithElement();
             XmlAttribute anotherDocumentAttr = new XmlDocument().CreateAttribute("attr");
             XmlAttributeCollection target = doc.DocumentElement.Attributes;
-            Assert.Throws<ArgumentException>(() => target.Prepend(anotherDocumentAttr));
+            AssertExtensions.Throws<ArgumentException>(null, () => target.Prepend(anotherDocumentAttr));
         }
 
         [Fact]

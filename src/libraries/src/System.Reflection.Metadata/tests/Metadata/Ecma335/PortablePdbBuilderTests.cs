@@ -20,19 +20,19 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             var rowCounts = new int[128];
             rowCounts[64] = 1;
-            Assert.Throws<ArgumentException>(() => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>("typeSystemRowCounts", () => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
 
             rowCounts = new int[64];
             rowCounts[63] = 1;
-            Assert.Throws<ArgumentException>(() => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>("typeSystemRowCounts", () => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
 
             rowCounts = new int[64];
             rowCounts[(int)TableIndex.EventPtr] = 1;
-            Assert.Throws<ArgumentException>(() => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>("typeSystemRowCounts", () => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
 
             rowCounts = new int[64];
             rowCounts[(int)TableIndex.CustomDebugInformation] = 1;
-            Assert.Throws<ArgumentException>(() => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
+            AssertExtensions.Throws<ArgumentException>("typeSystemRowCounts", () => new PortablePdbBuilder(mdBuilder, ImmutableArray.Create(rowCounts), default(MethodDefinitionHandle)));
 
             rowCounts = new int[64];
             rowCounts[(int)TableIndex.MethodDef] = -1;

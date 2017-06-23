@@ -105,7 +105,7 @@ namespace MonoTests.System.Configuration
         {
             WhiteSpaceTrimStringConverter cv = new WhiteSpaceTrimStringConverter();
 
-            Assert.Throws<ArgumentException>(() => cv.ConvertTo(null, null, 59, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => cv.ConvertTo(null, null, 59, typeof(string)));
         }
     }
 }

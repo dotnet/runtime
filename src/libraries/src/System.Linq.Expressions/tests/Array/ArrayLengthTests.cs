@@ -1616,7 +1616,7 @@ namespace System.Linq.Expressions.Tests
         public static void UnreadableArray()
         {
             Expression array = Expression.Property(null, typeof(Unreadable<int[]>), nameof(Unreadable<int>.WriteOnly));
-            Assert.Throws<ArgumentException>(() => Expression.ArrayLength(array));
+            AssertExtensions.Throws<ArgumentException>("array", () => Expression.ArrayLength(array));
         }
 
         private static IEnumerable<object[]> TestArrays()

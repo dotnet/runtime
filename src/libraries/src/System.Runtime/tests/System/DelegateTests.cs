@@ -393,7 +393,7 @@ namespace System.Tests
         [Fact]
         public static void DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue()
         {
-            Assert.Throws<ArgumentException>(() => (new OptionalStringParameter(StringMethod)).DynamicInvoke(new object[] { Type.Missing }));
+            AssertExtensions.Throws<ArgumentException>(null, () => (new OptionalStringParameter(StringMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
         [Fact]

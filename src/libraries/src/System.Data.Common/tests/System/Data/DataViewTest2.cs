@@ -280,7 +280,7 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             // FindRows ,no sort - exception
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dvArr = dv.FindRows(3);
             });
@@ -323,7 +323,7 @@ namespace System.Data.Tests
             DataView dv = new DataView(dt);
 
             // FindRows ,no sort - exception
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dvArr = dv.FindRows(new object[] { "3", "3-String1" });
             });
@@ -388,7 +388,7 @@ namespace System.Data.Tests
             }
 
             // Find ,no sort - exception
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 FindResult = dv.Find("3");
             });
@@ -425,7 +425,7 @@ namespace System.Data.Tests
             }
 
             // Find ,no sort - exception
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 FindResult = dv.Find(new object[] { "3", "3-String1" });
             });

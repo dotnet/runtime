@@ -24,10 +24,10 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("offset", () => uma.ReadArray<UmaTestStruct>(0, structArr, -1, 1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => uma.WriteArray<UmaTestStruct>(0, structArr, 0, -1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => uma.ReadArray<UmaTestStruct>(0, structArr, 0, -1));
-                Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(0, structArr, 2, 0));
-                Assert.Throws<ArgumentException>(() => uma.ReadArray<UmaTestStruct>(0, structArr, 2, 0));
-                Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(0, structArr, 0, 2));
-                Assert.Throws<ArgumentException>(() => uma.ReadArray<UmaTestStruct>(0, structArr, 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.WriteArray<UmaTestStruct>(0, structArr, 2, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.ReadArray<UmaTestStruct>(0, structArr, 2, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.WriteArray<UmaTestStruct>(0, structArr, 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.ReadArray<UmaTestStruct>(0, structArr, 0, 2));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.WriteArray<UmaTestStruct>(-1, structArr, 0, 1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.ReadArray<UmaTestStruct>(-1, structArr, 0, 1));
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("position", () => uma.WriteArray<UmaTestStruct>(capacity, structArr, 0, 1));
@@ -81,8 +81,8 @@ namespace System.IO.Tests
             using (TestSafeBuffer buffer = new TestSafeBuffer(capacity))
             using (UnmanagedMemoryAccessor uma = new UnmanagedMemoryAccessor(buffer, 0, capacity, FileAccess.ReadWrite))
             {
-                Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, structArr, 0, 1));
-                Assert.Throws<ArgumentException>(() => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, structArr, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => uma.WriteArray<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, structArr, 0, 1));
                 Assert.Equal(0, uma.ReadArray<UmaTestStruct>(capacity - UmaTestStruct_UnalignedSize + 1, structArr, 0, 1));
                 Assert.Equal(0, uma.ReadArray<UmaTestStruct>(capacity - UmaTestStruct_AlignedSize + 1, structArr, 0, 1));
             }

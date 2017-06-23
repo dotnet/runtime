@@ -124,9 +124,9 @@ namespace System.Text.RegularExpressions.Tests
             ICollection<Match> collection = CreateCollection();
             Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(new Match[1], -1));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Match[1], 0));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Match[1], 1));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Match[1], 2));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => collection.CopyTo(new Match[1], 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => collection.CopyTo(new Match[1], 1));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => collection.CopyTo(new Match[1], 2));
         }
 
         [Fact]

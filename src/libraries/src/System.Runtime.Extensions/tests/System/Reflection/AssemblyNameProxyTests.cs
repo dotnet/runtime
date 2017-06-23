@@ -19,7 +19,7 @@ namespace System.Reflection.Tests
         {
             AssemblyNameProxy anp = new AssemblyNameProxy();
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => anp.GetAssemblyName(null));
-            Assert.Throws<ArgumentException>(() => anp.GetAssemblyName(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => anp.GetAssemblyName(string.Empty));
             Assert.Throws<FileNotFoundException>(() => anp.GetAssemblyName(Guid.NewGuid().ToString("N")));
 
             Assembly a = typeof(AssemblyNameProxyTests).Assembly;

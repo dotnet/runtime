@@ -468,9 +468,9 @@ namespace System.Data.SqlClient.Tests
             list.Remove(item2);
             Assert.Equal(0, list.Count);
 
-            Assert.Throws<ArgumentException>(() => list.Remove(item2));
-            Assert.Throws<ArgumentException>(() => list.Remove(new SqlBulkCopyColumnMapping(2, 2)));
-            Assert.Throws<ArgumentException>(() => list.Remove("bogus"));
+            AssertExtensions.Throws<ArgumentException>(null, () => list.Remove(item2));
+            AssertExtensions.Throws<ArgumentException>(null, () => list.Remove(new SqlBulkCopyColumnMapping(2, 2)));
+            AssertExtensions.Throws<ArgumentException>(null, () => list.Remove("bogus"));
         }
 
         [Fact]

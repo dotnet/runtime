@@ -185,7 +185,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => { environment.CopyTo(kvpa, -1); });
 
             //Exception not thrown with null key
-            Assert.Throws<ArgumentException>(() => { environment.CopyTo(kvpa, 9); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { environment.CopyTo(kvpa, 9); });
 
             //Exception not thrown with null key
             Assert.Throws<ArgumentNullException>(() =>
@@ -692,7 +692,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(CountItems + 1, environmentVariables.Count);
 
             //Exception not thrown with invalid key
-            Assert.Throws<ArgumentException>(() => { environmentVariables.Add("NewKey2", "NewValue2"); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { environmentVariables.Add("NewKey2", "NewValue2"); });
             Assert.False(environmentVariables.ContainsKey("NewKey"));
 
             environmentVariables.Add("newkey2", "newvalue2");
@@ -754,7 +754,7 @@ namespace System.Diagnostics.Tests
             //Exception not thrown with invalid key
             Assert.Throws<ArgumentNullException>(() => environmentVariables.Add(null, "NewValue2"));
 
-            Assert.Throws<ArgumentException>(() => environmentVariables.Add("newkey2", "NewValue2"));
+            AssertExtensions.Throws<ArgumentException>(null, () => environmentVariables.Add("newkey2", "NewValue2"));
 
             //Use DictionaryEntry Enumerator
             var x = environmentVariables.GetEnumerator() as IEnumerator;
@@ -774,14 +774,14 @@ namespace System.Diagnostics.Tests
             Assert.Equal("newvalue3", kvpa[2].Value);
 
             string[] kvp = new string[10];
-            Assert.Throws<ArgumentException>(() => { environmentVariables.CopyTo(kvp, 6); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { environmentVariables.CopyTo(kvp, 6); });
             environmentVariables.CopyTo(kvpa, 6);
             Assert.Equal("NewKey", kvpa[6].Key);
             Assert.Equal("newvalue", kvpa[6].Value);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => { environmentVariables.CopyTo(kvpa, -1); });
 
-            Assert.Throws<ArgumentException>(() => { environmentVariables.CopyTo(kvpa, 9); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { environmentVariables.CopyTo(kvpa, 9); });
 
             Assert.Throws<ArgumentNullException>(() =>
             {

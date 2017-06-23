@@ -307,7 +307,7 @@ namespace System.Threading.Tests
         {
             SpinLock slock = new SpinLock();
             bool isTaken = true;
-            Assert.Throws<ArgumentException>(() => slock.Enter(ref isTaken));
+            AssertExtensions.Throws<ArgumentException>(null, () => slock.Enter(ref isTaken));
             // Failure Case: Enter didn't throw AE when isTaken is true
 
             slock = new SpinLock(false);

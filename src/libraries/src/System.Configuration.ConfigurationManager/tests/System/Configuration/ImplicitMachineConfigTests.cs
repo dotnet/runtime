@@ -33,7 +33,7 @@ namespace System.ConfigurationTests
         {
             // ConfigurationFileMap checks for existence in the constructor
             string missingFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".config");
-            Assert.Throws<ArgumentException>(() => new ConfigurationFileMap(missingFile));
+            AssertExtensions.Throws<ArgumentException>("machineConfigFilename", () => new ConfigurationFileMap(missingFile));
         }
 
         [Fact]

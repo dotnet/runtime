@@ -388,7 +388,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetEnumName_Invalid()
         {
-            Assert.Throws<ArgumentException>(() => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumName(""));
+            AssertExtensions.Throws<ArgumentException>("value", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumName(""));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().GetEnumName(null));
         }
 
@@ -408,7 +408,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetEnumNames_TypeNotEnum_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumNames());
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumNames());
         }
 
         [Theory]
@@ -422,7 +422,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetEnumUnderlyingType_TypeNotEnum_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
         }
 
         [Fact]
@@ -445,7 +445,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetEnumValues_TypeNotEnum_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
+            AssertExtensions.Throws<ArgumentException>("enumType", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().GetEnumUnderlyingType());
         }
 
         [Theory]
@@ -459,7 +459,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void IsEnumDefined_Invalid()
         {
-            Assert.Throws<ArgumentException>(() => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
+            AssertExtensions.Throws<ArgumentException>("", () => typeof(NonGenericClassWithNoInterfaces).GetTypeInfo().IsEnumDefined(10));
             Assert.Throws<ArgumentNullException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(null));
             Assert.Throws<InvalidOperationException>(() => typeof(IntEnum).GetTypeInfo().IsEnumDefined(new NonGenericClassWithNoInterfaces()));
         }

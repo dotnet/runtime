@@ -612,7 +612,7 @@ namespace System.Data.Tests
             ds.Tables[1].Columns.Add("col2", typeof(int));
 
             ds.Relations.Add("rel1", ds.Tables[0].Columns[0], ds.Tables[1].Columns[0]);
-            Assert.Throws<ArgumentException>(() => ds.Tables[0].Columns.RemoveAt(0));
+            AssertExtensions.Throws<ArgumentException>(null, () => ds.Tables[0].Columns.RemoveAt(0));
         }
 
         [Fact]

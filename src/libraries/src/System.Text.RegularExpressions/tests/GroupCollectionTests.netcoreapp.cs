@@ -127,8 +127,8 @@ namespace System.Text.RegularExpressions.Tests
             ICollection<Group> collection = CreateCollection();
             AssertExtensions.Throws<ArgumentNullException>("array", () => collection.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Group[1], -1));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Group[1], 0));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(new Group[1], 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Group[1], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.CopyTo(new Group[1], 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => collection.CopyTo(new Group[1], 2));
         }
 

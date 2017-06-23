@@ -325,7 +325,7 @@ namespace System.Resources.ResourceWriterTests
                         bw.Write(2000);//Our resource reader expects the ResourceManager magic number here
 
                         //  ms2.Seek(0L, SeekOrigin.Begin);
-                        Assert.Throws<ArgumentException>(() =>
+                        AssertExtensions.Throws<ArgumentException>(null, () =>
                         {
                             var resReader = new ResourceReader(ms2);
                         });
@@ -444,7 +444,7 @@ namespace System.Resources.ResourceWriterTests
                 {
 
                    
-                    Assert.Throws<ArgumentException>(() =>
+                    AssertExtensions.Throws<ArgumentException>(null, () =>
                     {
                         var rr = new ResourceReader(ms2);
                     });

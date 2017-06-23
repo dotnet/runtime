@@ -104,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_NonHttpUri_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new HttpRequestMessage(HttpMethod.Put, "ftp://example.com"));
+            AssertExtensions.Throws<ArgumentException>("requestUri", () => new HttpRequestMessage(HttpMethod.Put, "ftp://example.com"));
         }
 
         [Fact]
@@ -159,7 +159,7 @@ namespace System.Net.Http.Functional.Tests
         public void RequestUri_SetNonHttpUri_ThrowsArgumentException()
         {
             var rm = new HttpRequestMessage();
-            Assert.Throws<ArgumentException>(() => { rm.RequestUri = new Uri("ftp://example.com"); });
+            AssertExtensions.Throws<ArgumentException>("value", () => { rm.RequestUri = new Uri("ftp://example.com"); });
         }
 
         [Fact]

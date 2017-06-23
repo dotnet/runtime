@@ -22,7 +22,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Null(TestRegistryKey.OpenSubKey(expected));
             Assert.Equal(0, TestRegistryKey.SubKeyCount);
 
-            Assert.Throws<ArgumentException>(() => deleteSubKeyTree());
+            AssertExtensions.Throws<ArgumentException>(null, () => deleteSubKeyTree());
         }
 
         protected void Verify_DeleteSubKeyTree_KeyDoesNotExists_DoesNotThrow(string expected, Action deleteSubKeyTree)

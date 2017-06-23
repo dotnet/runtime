@@ -423,16 +423,16 @@ namespace System.Collections.ObjectModel.Tests
             foreach (var index in iArrLargeValues)
             {
                 string[] aCopy = new string[collection.Count];
-                Assert.Throws<ArgumentException>(() => collection.CopyTo(aCopy, index));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", null, () => collection.CopyTo(aCopy, index));
             }
 
             Assert.Throws<ArgumentNullException>(() => collection.CopyTo(null, 1));
 
             string[] copy = new string[collection.Count - 1];
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(copy, 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(copy, 0));
 
             copy = new string[0];
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(copy, 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(copy, 0));
         }
 
         /// <summary>

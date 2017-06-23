@@ -166,7 +166,7 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertFrom_ArgumentException(string value)
         {
             var conv = new ColorConverter();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 conv.ConvertFrom(null, CultureInfo.InvariantCulture, value);
             });
@@ -326,7 +326,7 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertFromInvariantString_Invalid()
         {
             var conv = new ColorConverter();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 conv.ConvertFromInvariantString("1, 2, 3, 4, 5");
             });
@@ -372,7 +372,7 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertFromString_Invalid()
         {
             var conv = new ColorConverter();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 conv.ConvertFromString(string.Format("1{0} 2{0} 3{0} 4{0} 5", CultureInfo.CurrentCulture.TextInfo.ListSeparator));
             });

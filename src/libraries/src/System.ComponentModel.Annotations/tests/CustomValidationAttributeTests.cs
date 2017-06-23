@@ -150,7 +150,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_MethodThrowsCustomException_IsNotCaught()
         {
             CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.ValidationMethodThrowsException));
-            Assert.Throws<ArgumentException>(() => attribute.Validate(new IConvertibleImplementor(), s_testValidationContext));
+            AssertExtensions.Throws<ArgumentException>(null, () => attribute.Validate(new IConvertibleImplementor(), s_testValidationContext));
         }
 
         internal class NonPublicCustomValidator

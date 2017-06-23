@@ -310,7 +310,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => vector.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, array.Length));
-            Assert.Throws<ArgumentException>(() => vector.CopyTo(array, array.Length - 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => vector.CopyTo(array, array.Length - 1));
 
             vector.CopyTo(array);
             for (int g = 0; g < array.Length; g++)

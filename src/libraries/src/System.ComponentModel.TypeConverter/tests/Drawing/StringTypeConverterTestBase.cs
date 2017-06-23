@@ -80,7 +80,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         protected void ConvertFromThrowsArgumentExceptionForString(string value)
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Converter.ConvertFrom(null, CultureInfo.InvariantCulture, value);
             });
@@ -137,7 +137,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         protected void ConvertFromInvariantStringThrowsArgumentException(string str)
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Converter.ConvertFromInvariantString(str);
             });
@@ -155,7 +155,7 @@ namespace System.ComponentModel.TypeConverterTests
 
         protected void ConvertFromStringThrowsArgumentException(string str)
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 Converter.ConvertFromString(str);
             });

@@ -52,15 +52,15 @@ namespace System.Threading.Tasks.Dataflow.Tests
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, string>(-1));
             Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, string>(2, null));
-            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { Greedy = false }));
-            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 2 }));
+            AssertExtensions.Throws<ArgumentException>("dataflowBlockOptions", () => new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { Greedy = false }));
+            AssertExtensions.Throws<ArgumentException>("dataflowBlockOptions", () => new BatchedJoinBlock<int, string>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 2 }));
             Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)new BatchedJoinBlock<int, string>(2)).Fault(null));
             Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, string>(2).Target1.Fault(null));
 
             Assert.Throws<ArgumentOutOfRangeException>(() => new BatchedJoinBlock<int, string, double>(-1));
             Assert.Throws<ArgumentNullException>(() => new BatchedJoinBlock<int, string, double>(2, null));
-            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { Greedy = false }));
-            Assert.Throws<ArgumentException>(() => new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 2 }));
+            AssertExtensions.Throws<ArgumentException>("dataflowBlockOptions", () => new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { Greedy = false }));
+            AssertExtensions.Throws<ArgumentException>("dataflowBlockOptions", () => new BatchedJoinBlock<int, string, double>(2, new GroupingDataflowBlockOptions { BoundedCapacity = 2 }));
             Assert.Throws<ArgumentNullException>(() => ((IDataflowBlock)new BatchedJoinBlock<int, string, double>(2)).Fault(null));
 
             DataflowTestHelpers.TestArgumentsExceptions(new BatchedJoinBlock<int, string>(1));

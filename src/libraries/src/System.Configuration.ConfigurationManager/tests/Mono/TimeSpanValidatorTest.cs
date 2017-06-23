@@ -74,21 +74,21 @@ namespace MonoTests.System.Configuration
         public void Validate_Exclusive_fail1()
         {
             TimeSpanValidator v = new TimeSpanValidator(new TimeSpan(5000), new TimeSpan(10000), true);
-            Assert.Throws<ArgumentException>(() => v.Validate(new TimeSpan(5000)));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(new TimeSpan(5000)));
         }
 
         [Fact]
         public void Validate_Exclusive_fail2()
         {
             TimeSpanValidator v = new TimeSpanValidator(new TimeSpan(5000), new TimeSpan(10000), true);
-            Assert.Throws<ArgumentException>(() => v.Validate(new TimeSpan(10000)));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(new TimeSpan(10000)));
         }
 
         [Fact]
         public void Validate_Exclusive_fail3()
         {
             TimeSpanValidator v = new TimeSpanValidator(new TimeSpan(5000), new TimeSpan(10000), true);
-            Assert.Throws<ArgumentException>(() => v.Validate(new TimeSpan(7000)));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(new TimeSpan(7000)));
         }
 
         [Fact]
@@ -99,7 +99,7 @@ namespace MonoTests.System.Configuration
                                      false,
                                      2);
 
-            Assert.Throws<ArgumentException>(() => v.Validate(TimeSpan.FromTicks(40000)));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(TimeSpan.FromTicks(40000)));
         }
     }
 }

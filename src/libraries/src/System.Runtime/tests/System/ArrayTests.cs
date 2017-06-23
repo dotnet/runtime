@@ -2868,12 +2868,12 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Sort(new int[10], 0, -1));
 
             // Index + length > list.Count
-            Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], 11, 0));
-            Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], 11, 0));
-            Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], 10, 1));
-            Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], 10, 1));
-            Assert.Throws<ArgumentException>(() => Array.Sort((Array)new int[10], 9, 2));
-            Assert.Throws<ArgumentException>(() => Array.Sort(new int[10], 9, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 11, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 11, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 10, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 10, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort((Array)new int[10], 9, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Sort(new int[10], 9, 2));
         }
 
         [Fact]

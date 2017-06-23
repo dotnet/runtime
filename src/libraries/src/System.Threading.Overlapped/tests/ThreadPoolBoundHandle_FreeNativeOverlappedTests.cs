@@ -41,7 +41,7 @@ public partial class ThreadPoolBoundHandleTests
 
             using (ThreadPoolBoundHandle handle2 = CreateThreadPoolBoundHandle())
             {
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("overlapped", () =>
                 {
                     handle2.FreeNativeOverlapped(overlapped);
                 });

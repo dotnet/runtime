@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Encoding.Tests
         [Fact]
         public void CopyTo_Throws()
         {
-            ValidateCopyToThrows((collection, array, index) => collection.CopyTo(array, index));
+            ValidateCopyToThrows((collection, array, index) => collection.CopyTo(array, index), paramName: "destinationArray");
         }
 
         [Fact]
@@ -102,14 +102,15 @@ namespace System.Security.Cryptography.Encoding.Tests
             ValidateCopyToThrows((collection, array, index) => ((ICollection)collection).CopyTo(array, index), c =>
             {
                 ICollection ic = c;
-                Assert.Throws<ArgumentException>(() => ic.CopyTo(new Oid[4, 3], 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => ic.CopyTo(new Oid[4, 3], 0));
                 Assert.Throws<InvalidCastException>(() => ic.CopyTo(new string[10], 0));
-            });
+            }, paramName: null);
         }
 
         private static void ValidateCopyToThrows(
             Action<OidCollection, Oid[], int> copyTo,
-            Action<OidCollection> additionalValidation = null)
+            Action<OidCollection> additionalValidation = null,
+            string paramName = null)
         {
             var item1 = new Oid(Sha1Oid, Sha1Name);
             var item2 = new Oid(Sha256Oid, Sha256Name);
@@ -121,7 +122,7 @@ namespace System.Security.Cryptography.Encoding.Tests
             Assert.Throws<ArgumentNullException>(() => copyTo(c, null, 0));
             Assert.Throws<ArgumentNullException>(() => copyTo(c, null, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => copyTo(c, new Oid[10], -1));
-            Assert.Throws<ArgumentException>(() => copyTo(c, new Oid[10], 7));
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => copyTo(c, new Oid[10], 7));
             Assert.Throws<ArgumentOutOfRangeException>(() => copyTo(c, new Oid[10], 1000));
 
             additionalValidation?.Invoke(c);

@@ -102,7 +102,7 @@ namespace System.Security.AccessControl.Tests
             byte[] opaque = null;
 
             //Case 1, non-Container, but InheritanceFlags is not None
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("inheritanceFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -115,7 +115,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 2, non-Container, but PropagationFlags is not None
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -129,7 +129,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 3, Container, InheritanceFlags is None, PropagationFlags is InheritOnly
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -143,7 +143,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 4, Container, InheritanceFlags is None, PropagationFlags is NoPropagateInherit
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -157,7 +157,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 5, Container, InheritanceFlags is None, PropagationFlags is NoPropagateInherit | InheritOnly
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -171,7 +171,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 6, accessMask = 0
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("accessMask", () =>
             {
                 isContainer = true;
                 isDS = false;
@@ -232,7 +232,7 @@ namespace System.Security.AccessControl.Tests
             //bug# 288116
 
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = true;
                 isDS = false;

@@ -37,12 +37,12 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentNullException>("replacement", () => new EncoderReplacementFallback(null));
 
             // Invalid surrogate pair
-            Assert.Throws<ArgumentException>(() => new EncoderReplacementFallback("\uD800"));
-            Assert.Throws<ArgumentException>(() => new EncoderReplacementFallback("\uD800a"));
-            Assert.Throws<ArgumentException>(() => new EncoderReplacementFallback("\uDC00"));
-            Assert.Throws<ArgumentException>(() => new EncoderReplacementFallback("a\uDC00"));
-            Assert.Throws<ArgumentException>(() => new EncoderReplacementFallback("\uDC00\uDC00"));
-            Assert.Throws<ArgumentException>(() => new EncoderReplacementFallback("\uD800\uD800"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EncoderReplacementFallback("\uD800"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EncoderReplacementFallback("\uD800a"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EncoderReplacementFallback("\uDC00"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EncoderReplacementFallback("a\uDC00"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EncoderReplacementFallback("\uDC00\uDC00"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new EncoderReplacementFallback("\uD800\uD800"));
         }
 
         public static IEnumerable<object[]> Equals_TestData()

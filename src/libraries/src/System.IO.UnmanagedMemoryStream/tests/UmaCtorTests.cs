@@ -45,11 +45,11 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 1, 2, (FileAccess)(-1)));
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 1, 2, (FileAccess)42));
 
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 2, 999));
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 999, 9));
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, 1, 100));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryAccessor(fakeBuffer, 2, 999));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryAccessor(fakeBuffer, 999, 9));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryAccessor(fakeBuffer, 1, 100));
 
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryAccessor(fakeBuffer, Int32.MaxValue, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryAccessor(fakeBuffer, Int32.MaxValue, 1));
         }
 
         // Derived class used to exercise protected members and to test behaviors before and after initialization

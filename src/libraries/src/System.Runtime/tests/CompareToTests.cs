@@ -22,7 +22,7 @@ namespace System.Tests
             Assert.True(0 > false.CompareTo((object)true));
             Assert.True(0 < true.CompareTo((object)false));
 
-            Assert.Throws<ArgumentException>(() => false.CompareTo("hello"));
+            AssertExtensions.Throws<ArgumentException>(null, () => false.CompareTo("hello"));
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace System.Tests
             Assert.True(0 < byte.MaxValue.CompareTo((object)(byte)0));
             Assert.True(0 > ((byte)0).CompareTo((object)(byte)1));
 
-            Assert.Throws<ArgumentException>(() => ((byte)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((byte)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -47,7 +47,7 @@ namespace System.Tests
             Assert.Equal(0, 'c'.CompareTo('c'));
             Assert.True(0 > 'a'.CompareTo('c'));
             Assert.True(0 < 'd'.CompareTo('c'));
-            Assert.Throws<ArgumentException>(() => 'x'.CompareTo("hello"));
+            AssertExtensions.Throws<ArgumentException>(null, () => 'x'.CompareTo("hello"));
         }
 
         [Fact]
@@ -65,7 +65,7 @@ namespace System.Tests
             Assert.True(0 > ((decimal)0).CompareTo((object)(decimal)1));
             Assert.True(0 < ((decimal)0).CompareTo((object)(decimal)-1));
 
-            Assert.Throws<ArgumentException>(() => ((decimal)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((decimal)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace System.Tests
             Assert.True(0 > ((double)0).CompareTo((object)(double)1));
             Assert.True(0 < ((double)0).CompareTo((object)(double)-1));
 
-            Assert.Throws<ArgumentException>(() => ((double)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((double)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -101,7 +101,7 @@ namespace System.Tests
             Assert.True(0 > ((short)0).CompareTo((object)(short)1));
             Assert.True(0 < ((short)0).CompareTo((object)(short)-1));
 
-            Assert.Throws<ArgumentException>(() => ((short)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((short)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -119,7 +119,7 @@ namespace System.Tests
             Assert.True(0 > ((int)0).CompareTo((object)(int)1));
             Assert.True(0 < ((int)0).CompareTo((object)(int)-1));
 
-            Assert.Throws<ArgumentException>(() => ((int)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((int)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -137,7 +137,7 @@ namespace System.Tests
             Assert.True(0 > ((long)0).CompareTo((object)(long)1));
             Assert.True(0 < ((long)0).CompareTo((object)(long)-1));
 
-            Assert.Throws<ArgumentException>(() => ((long)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((long)0.CompareTo("hello")));
         }
 
         public static void FromSByte()
@@ -154,7 +154,7 @@ namespace System.Tests
             Assert.True(0 > ((sbyte)0).CompareTo((object)(sbyte)1));
             Assert.True(0 < ((sbyte)0).CompareTo((object)(sbyte)-1));
 
-            Assert.Throws<ArgumentException>(() => ((sbyte)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((sbyte)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -172,7 +172,7 @@ namespace System.Tests
             Assert.True(0 > ((float)0).CompareTo((object)(float)1));
             Assert.True(0 < ((float)0).CompareTo((object)(float)-1));
 
-            Assert.Throws<ArgumentException>(() => ((float)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((float)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -188,7 +188,7 @@ namespace System.Tests
             Assert.True(0 < ushort.MaxValue.CompareTo((object)(ushort)0));
             Assert.True(0 > ((ushort)0).CompareTo((object)(ushort)1));
 
-            Assert.Throws<ArgumentException>(() => ((ushort)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((ushort)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -204,7 +204,7 @@ namespace System.Tests
             Assert.True(0 < uint.MaxValue.CompareTo((object)(uint)0));
             Assert.True(0 > ((uint)0).CompareTo((object)(uint)1));
 
-            Assert.Throws<ArgumentException>(() => ((uint)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((uint)0.CompareTo("hello")));
         }
 
         [Fact]
@@ -220,7 +220,7 @@ namespace System.Tests
             Assert.True(0 < ulong.MaxValue.CompareTo((object)(ulong)0));
             Assert.True(0 > ((ulong)0).CompareTo((object)(ulong)1));
 
-            Assert.Throws<ArgumentException>(() => ((ulong)0.CompareTo("hello")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((ulong)0.CompareTo("hello")));
         }
     }
 }

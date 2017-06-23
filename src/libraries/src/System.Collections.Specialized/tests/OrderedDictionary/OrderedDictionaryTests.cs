@@ -42,7 +42,7 @@ namespace System.Collections.Specialized.Tests
             var eqComp = new CaseInsensitiveEqualityComparer();
             var d1 = new OrderedDictionary(eqComp);
             d1.Add("foo", "bar");
-            Assert.Throws<ArgumentException>(() => d1.Add("FOO", "bar"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d1.Add("FOO", "bar"));
 
             // The equality comparer should also test for a non-existent key 
             d1.Remove("foofoo");
@@ -322,12 +322,12 @@ namespace System.Collections.Specialized.Tests
             d.Add("5", "foo6");
             Assert.Equal("foo6", d["5"]);
 
-            Assert.Throws<ArgumentException>(() => d.Add((int)5, "foo"));
-            Assert.Throws<ArgumentException>(() => d.Add((double)5, "foo"));
-            Assert.Throws<ArgumentException>(() => d.Add((long)5, "foo"));
-            Assert.Throws<ArgumentException>(() => d.Add((short)5, "foo"));
-            Assert.Throws<ArgumentException>(() => d.Add((uint)5, "foo"));
-            Assert.Throws<ArgumentException>(() => d.Add("5", "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add((int)5, "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add((double)5, "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add((long)5, "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add((short)5, "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add((uint)5, "foo"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add("5", "foo"));
 
             Assert.Throws<ArgumentNullException>(() => d.Add(null, "foobar"));
         }
@@ -403,7 +403,7 @@ namespace System.Collections.Specialized.Tests
 
             Assert.Throws<ArgumentNullException>(() => d.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => d.CopyTo(arr, -1));
-            Assert.Throws<ArgumentException>(() => d.CopyTo(arr, 3));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.CopyTo(arr, 3));
 
             d.CopyTo(arr, 0);
             for (int i = 0; i < 2; i++)
@@ -497,7 +497,7 @@ namespace System.Collections.Specialized.Tests
             d.Insert(0, "foo", "bar");
             Assert.Equal("bar", d["foo"]);
             Assert.Equal("bar", d[0]);
-            Assert.Throws<ArgumentException>(() => d.Insert(0, "foo", "bar"));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Insert(0, "foo", "bar"));
 
             d.Insert(0, "aaa", "bbb");
             Assert.Equal("bbb", d["aaa"]);

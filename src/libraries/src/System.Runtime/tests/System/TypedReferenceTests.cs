@@ -54,9 +54,9 @@ namespace System.Tests
             Type dataType = data.GetType();
             Assert.Throws<ArgumentNullException>(() => { TypedReference.MakeTypedReference(null, dataType.GetFields()); });
             Assert.Throws<ArgumentNullException>(() => { TypedReference.MakeTypedReference(data, null); });
-            Assert.Throws<ArgumentException>(() => { TypedReference.MakeTypedReference(data, Array.Empty<FieldInfo>()); });
-            Assert.Throws<ArgumentException>(() => { TypedReference.MakeTypedReference(data, new FieldInfo[] { dataType.GetField("oneStruct"), null }); });
-            Assert.Throws<ArgumentException>(() => { TypedReference.MakeTypedReference(data, new FieldInfo[] { dataType.GetField("oneStruct"), typeof(OneStruct).GetField("b") }); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { TypedReference.MakeTypedReference(data, Array.Empty<FieldInfo>()); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { TypedReference.MakeTypedReference(data, new FieldInfo[] { dataType.GetField("oneStruct"), null }); });
+            AssertExtensions.Throws<ArgumentException>(null, () => { TypedReference.MakeTypedReference(data, new FieldInfo[] { dataType.GetField("oneStruct"), typeof(OneStruct).GetField("b") }); });
         }
 
         [Fact]

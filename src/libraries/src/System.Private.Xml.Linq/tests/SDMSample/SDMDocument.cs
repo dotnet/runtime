@@ -141,8 +141,8 @@ namespace XDocumentTests.SDMSample
             doc.Add(" \t" + Environment.NewLine);
             Assert.Equal(" \t" + Environment.NewLine, doc.ToString(SaveOptions.DisableFormatting));
 
-            Assert.Throws<ArgumentException>(() => doc.Add("a"));
-            Assert.Throws<ArgumentException>(() => doc.Add("\tab"));
+            AssertExtensions.Throws<ArgumentException>(null, () => doc.Add("a"));
+            AssertExtensions.Throws<ArgumentException>(null, () => doc.Add("\tab"));
         }
     }
 }

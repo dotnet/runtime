@@ -14,7 +14,7 @@ namespace System.Threading.Tasks.Dataflow.Tests
         [Fact]
         public void TestDataflowMessageHeader()
         {
-            Assert.Throws<ArgumentException>(() => new DataflowMessageHeader(0));
+            AssertExtensions.Throws<ArgumentException>("id", () => new DataflowMessageHeader(0));
 
             Assert.False(new DataflowMessageHeader().IsValid);
             Assert.True(new DataflowMessageHeader(1).IsValid);

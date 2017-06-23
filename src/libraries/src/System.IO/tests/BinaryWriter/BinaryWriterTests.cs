@@ -42,14 +42,14 @@ namespace System.IO.Tests
             // [] Can't construct a BinaryWriter on a readonly stream
             using (Stream memStream = new MemoryStream(new byte[10], false))
             {
-                Assert.Throws<ArgumentException>(() => new BinaryWriter(memStream));
+                AssertExtensions.Throws<ArgumentException>(null, () => new BinaryWriter(memStream));
             }
 
             // [] Can't construct a BinaryWriter with a closed stream
             {
                 Stream memStream = CreateStream();
                 memStream.Dispose();
-                Assert.Throws<ArgumentException>(() => new BinaryWriter(memStream));
+                AssertExtensions.Throws<ArgumentException>(null, () => new BinaryWriter(memStream));
             }
         }
 
@@ -261,7 +261,7 @@ namespace System.IO.Tests
             {
                 writer.Write("012345789".ToCharArray());
 
-                Assert.Throws<ArgumentException>(() => 
+                AssertExtensions.Throws<ArgumentException>(null, () => 
                 {
                     writer.Seek(3, ~SeekOrigin.Begin);
                 });

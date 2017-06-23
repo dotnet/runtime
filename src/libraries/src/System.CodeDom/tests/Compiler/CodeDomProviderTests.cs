@@ -247,7 +247,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void CompileAssemblyFromDom_CallsCompilerMethod()
         {
-            Assert.Throws<ArgumentException>(() => new CustomProvider().CompileAssemblyFromDom(new CompilerParameters()));
+            AssertExtensions.Throws<ArgumentException>(null, () => new CustomProvider().CompileAssemblyFromDom(new CompilerParameters()));
         }
 
         [Fact]

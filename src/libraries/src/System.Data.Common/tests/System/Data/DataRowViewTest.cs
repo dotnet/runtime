@@ -43,7 +43,7 @@ namespace System.Data.Tests
         [Fact]
         public void CreateChildViewNullStringArg()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                DataView dv = CreateTestView();
                DataRowView dvr = dv[0];
@@ -54,7 +54,7 @@ namespace System.Data.Tests
         [Fact]
         public void CreateChildViewNullDataRelationArg()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataView dv = CreateTestView();
                 DataRowView dvr = dv[0];
@@ -65,7 +65,7 @@ namespace System.Data.Tests
         [Fact]
         public void CreateChildViewNonExistentName()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataView dv = CreateTestView();
                 DataRowView dvr = dv[0];

@@ -206,7 +206,7 @@ namespace System.Data.Tests.SqlTypes
         public void CompareToArgumentException()
         {
             SqlByte Test = new SqlByte(1);
-            Assert.Throws<ArgumentException>(() => _test1.CompareTo(Test));
+            AssertExtensions.Throws<ArgumentException>(null, () => _test1.CompareTo(Test));
         }
 
         [Fact]

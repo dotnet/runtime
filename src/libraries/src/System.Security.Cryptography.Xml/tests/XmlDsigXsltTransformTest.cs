@@ -302,7 +302,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void UnsupportedOutput()
         {
             XmlDocument doc = new XmlDocument();
-            Assert.Throws<ArgumentException>(() => transform.GetOutput(doc.GetType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => transform.GetOutput(doc.GetType()));
         }
     }
 }

@@ -2441,7 +2441,7 @@ public static partial class DataContractJsonSerializerTests
                 },
             };
             var original = DateTime.Now;
-            Assert.Throws<ArgumentException>(() => SerializeAndDeserialize(original, null, dcjsSettings, null, true));
+            AssertExtensions.Throws<ArgumentException>("style", () => SerializeAndDeserialize(original, null, dcjsSettings, null, true));
         }
     }
 

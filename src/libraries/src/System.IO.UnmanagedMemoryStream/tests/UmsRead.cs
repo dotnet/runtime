@@ -122,14 +122,14 @@ namespace System.IO.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.WriteAsync(new byte[] { }, 1, -2).GetAwaiter().GetResult());
 
                 //case#6: call Read with count > ums.Length-startIndex, ArgumentOutOfRangeException should be thrown.
-                Assert.Throws<ArgumentException>(() => stream.Read(new byte[10], 0, 11)); // "Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection."
-                Assert.Throws<ArgumentException>(() => stream.ReadAsync(new byte[10], 0, 11).GetAwaiter().GetResult());
-                Assert.Throws<ArgumentException>(() => stream.Write(new byte[3], 0, 4));
-                Assert.Throws<ArgumentException>(() => stream.WriteAsync(new byte[3], 0, 4).GetAwaiter().GetResult());
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.Read(new byte[10], 0, 11)); // "Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection."
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.ReadAsync(new byte[10], 0, 11).GetAwaiter().GetResult());
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.Write(new byte[3], 0, 4));
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.WriteAsync(new byte[3], 0, 4).GetAwaiter().GetResult());
 
                 //case#10: Call Read on a n length stream, (Capacity is implicitly n), position is set to end, call it,  should throw ArgumentException.
-                Assert.Throws<ArgumentException>(() => stream.Read(new byte[] { }, 0, 1));
-                Assert.Throws<ArgumentException>(() => stream.Write(new byte[] { }, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.Read(new byte[] { }, 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.Write(new byte[] { }, 0, 1));
             }
         }
 

@@ -40,7 +40,7 @@ namespace System.Net.Http.Tests
             Assert.Null(productInfo.Product);
             Assert.Equal("(this is a comment)", productInfo.Comment);
 
-            Assert.Throws<ArgumentException>(() => { new ProductInfoHeaderValue((string)null); });
+            AssertExtensions.Throws<ArgumentException>("comment", () => { new ProductInfoHeaderValue((string)null); });
             Assert.Throws<FormatException>(() => { new ProductInfoHeaderValue("invalid comment"); });
             Assert.Throws<FormatException>(() => { new ProductInfoHeaderValue(" (leading space)"); });
             Assert.Throws<FormatException>(() => { new ProductInfoHeaderValue("(trailing space) "); });

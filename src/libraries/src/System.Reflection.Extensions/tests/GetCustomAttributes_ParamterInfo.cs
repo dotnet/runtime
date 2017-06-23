@@ -32,7 +32,7 @@ namespace System.Reflection.Tests
 
             Assert.True(CustomAttributeExtensions.IsDefined(piWithAttributes, typeof(MyAttribute_Single_P)));
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 CustomAttributeExtensions.IsDefined(piWithAttributes, typeof(String));
             });
@@ -127,7 +127,7 @@ namespace System.Reflection.Tests
                 attribute = CustomAttributeExtensions.GetCustomAttribute(piWithAttributes, typeof(MyAttribute_AllowMultiple_P));
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 attribute = CustomAttributeExtensions.GetCustomAttribute(piWithAttributes, typeof(String));
             });
@@ -167,7 +167,7 @@ namespace System.Reflection.Tests
             attributes = CustomAttributeExtensions.GetCustomAttributes(piWithAttributes, typeof(CLSCompliantAttribute));
             Assert.Equal(0, attributes.Count());
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 attributes = CustomAttributeExtensions.GetCustomAttributes(piWithAttributes, typeof(String));
             });

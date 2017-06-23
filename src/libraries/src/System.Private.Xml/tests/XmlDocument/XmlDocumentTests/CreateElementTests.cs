@@ -48,7 +48,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
 
-            Assert.Throws<ArgumentException>(() => xmlDocument.CreateElement(String.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument.CreateElement(String.Empty));
         }
 
         [Fact]

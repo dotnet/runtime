@@ -53,7 +53,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentNullException>("array", () => stream.Read(null, 1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(array, -1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Read(array, 1, -1));
-                Assert.Throws<ArgumentException>(() => stream.Read(array, 9, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.Read(array, 9, 2));
             }
         }
 
@@ -66,7 +66,7 @@ namespace System.IO.Tests
                 AssertExtensions.Throws<ArgumentNullException>("array", () => stream.Write(null, 1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(array, -1, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => stream.Write(array, 1, -1));
-                Assert.Throws<ArgumentException>(() => stream.Write(array, 9, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => stream.Write(array, 9, 2));
             }
         }
 

@@ -41,7 +41,7 @@ namespace System.Threading.Tests
         [Fact]
         public void Ctor_InvalidName()
         {
-            Assert.Throws<ArgumentException>(() => new Mutex(false, new string('a', 1000)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(false, new string('a', 1000)));
         }
 
         [Fact]
@@ -132,8 +132,8 @@ namespace System.Threading.Tests
         public void OpenExisting_InvalidNames()
         {
             AssertExtensions.Throws<ArgumentNullException>("name", () => Mutex.OpenExisting(null));
-            Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(string.Empty));
-            Assert.Throws<ArgumentException>(() => Mutex.OpenExisting(new string('a', 10000)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => Mutex.OpenExisting(new string('a', 10000)));
         }
 
         [Fact]

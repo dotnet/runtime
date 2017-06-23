@@ -245,13 +245,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Field_ByrefTypeFieldAccessor_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(GenericClass<string>).MakeByRefType(), nameof(GenericClass<string>.Field)));
+            AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(null, typeof(GenericClass<string>).MakeByRefType(), nameof(GenericClass<string>.Field)));
         }
 
         [Fact]
         public static void Field_GenericFieldAccessor_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(GenericClass<>), nameof(GenericClass<string>.Field)));
+            AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(null, typeof(GenericClass<>), nameof(GenericClass<string>.Field)));
         }
 
         [Fact]
@@ -514,7 +514,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Property_ByRefStaticAccess_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(NonGenericClass).MakeByRefType(), nameof(NonGenericClass.NonGenericProperty)));
+            AssertExtensions.Throws<ArgumentException>("propertyName", () => Expression.Property(null, typeof(NonGenericClass).MakeByRefType(), nameof(NonGenericClass.NonGenericProperty)));
         }
 
         [Fact]

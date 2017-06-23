@@ -2058,7 +2058,7 @@ Assert.False(true);
         [Fact]
         public void ColumnObjectTypeTest()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataTable dt = new DataTable();
                 dt.Columns.Add("Series Label", typeof(SqlInt32));
@@ -4012,7 +4012,7 @@ Assert.False(true);
 				  <xs:schema id='NewDataSet' xmlns='' xmlns:xs='http://www.w3.org/2001/BAD' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
 				  </xs:schema>
 				</CustomElement>";
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 using (var s = new StringReader(xml))
                 {

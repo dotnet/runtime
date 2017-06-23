@@ -17,14 +17,14 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_NameNull_Throw()
         {
-            Assert.Throws<ArgumentException>(() => { NameValueHeaderValue nameValue = new NameValueHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(null); });
         }
 
         [Fact]
         public void Ctor_NameEmpty_Throw()
         {
             // null and empty should be treated the same. So we also throw for empty strings.
-            Assert.Throws<ArgumentException>(() => { NameValueHeaderValue nameValue = new NameValueHeaderValue(string.Empty); });
+            AssertExtensions.Throws<ArgumentException>("name", () => { NameValueHeaderValue nameValue = new NameValueHeaderValue(string.Empty); });
         }
 
         [Fact]
@@ -36,7 +36,7 @@ namespace System.Net.Http.Tests
             AssertFormatException(" text", null);
             AssertFormatException("te xt", null);
             AssertFormatException("te=xt", null); // The ctor takes a name which must not contain '='.
-            AssertFormatException("teäxt", null);
+            AssertFormatException("te\u00E4xt", null);
         }
 
         [Fact]

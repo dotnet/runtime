@@ -17,8 +17,8 @@ namespace System.Net.Http.Tests
             Assert.Equal("Basic", auth.Scheme);
             Assert.Equal("realm=\"contoso.com\"", auth.Parameter);
 
-            Assert.Throws<ArgumentException>(() => { new AuthenticationHeaderValue(null, "x"); });
-            Assert.Throws<ArgumentException>(() => { new AuthenticationHeaderValue("", "x"); });
+            AssertExtensions.Throws<ArgumentException>("scheme", () => { new AuthenticationHeaderValue(null, "x"); });
+            AssertExtensions.Throws<ArgumentException>("scheme", () => { new AuthenticationHeaderValue("", "x"); });
             Assert.Throws<FormatException>(() => { new AuthenticationHeaderValue(" x", "x"); });
             Assert.Throws<FormatException>(() => { new AuthenticationHeaderValue("x ", "x"); });
             Assert.Throws<FormatException>(() => { new AuthenticationHeaderValue("x y", "x"); });

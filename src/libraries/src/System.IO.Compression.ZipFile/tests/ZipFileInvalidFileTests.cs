@@ -22,7 +22,7 @@ namespace System.IO.Compression.Tests
                 ZipArchiveEntry entry = archive.GetEntry("first.txt");
 
                 //null/empty string
-                Assert.Throws<ArgumentException>(() => archive.CreateEntry(""));
+                AssertExtensions.Throws<ArgumentException>("entryName", () => archive.CreateEntry(""));
                 Assert.Throws<ArgumentNullException>(() => archive.CreateEntry(null));
             }
         }
@@ -219,7 +219,7 @@ namespace System.IO.Compression.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Checks Unix-specific invalid file path
         public void Unix_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
         {
-            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            AssertExtensions.Throws<ArgumentException>("path", () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         [Theory]
@@ -242,14 +242,14 @@ namespace System.IO.Compression.Tests
         /// when an attempt is made to extract them.
         /// </summary>
         [Theory]
-        [InlineData("WindowsInvalid_FromUnix")]
-        [InlineData("WindowsInvalid_FromWindows")]
-        [InlineData("NullCharFileName_FromWindows")]
-        [InlineData("NullCharFileName_FromUnix")]
+        [InlineData("WindowsInvalid_FromUnix", null)]
+        [InlineData("WindowsInvalid_FromWindows", null)]
+        [InlineData("NullCharFileName_FromWindows", "path")]
+        [InlineData("NullCharFileName_FromUnix", "path")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
+        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName, string paramName)
         {
-            Assert.Throws<ArgumentException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         [Theory]

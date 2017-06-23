@@ -167,7 +167,7 @@ namespace System.PrivateUri.Tests
         [InlineData("fragment?fragment")]
         public void Ctor_InvalidExtraValue_ThrowsArgumentException(string extraValue)
         {
-            Assert.Throws<ArgumentException>(() => new UriBuilder("scheme", "host", 80, "path", extraValue));
+            AssertExtensions.Throws<ArgumentException>("extraValue", null, () => new UriBuilder("scheme", "host", 80, "path", extraValue));
         }
 
         [Theory]
@@ -187,12 +187,12 @@ namespace System.PrivateUri.Tests
         [InlineData("-")]
         public void InvalidScheme_ThrowsArgumentException(string schemeName)
         {
-            Assert.Throws<ArgumentException>(() => new UriBuilder(schemeName, "host"));
-            Assert.Throws<ArgumentException>(() => new UriBuilder(schemeName, "host", 80));
-            Assert.Throws<ArgumentException>(() => new UriBuilder(schemeName, "host", 80, "path"));
-            Assert.Throws<ArgumentException>(() => new UriBuilder(schemeName, "host", 80, "?query#fragment"));
+            AssertExtensions.Throws<ArgumentException>("value", null, () => new UriBuilder(schemeName, "host"));
+            AssertExtensions.Throws<ArgumentException>("value", null, () => new UriBuilder(schemeName, "host", 80));
+            AssertExtensions.Throws<ArgumentException>("value", null, () => new UriBuilder(schemeName, "host", 80, "path"));
+            AssertExtensions.Throws<ArgumentException>("value", null, () => new UriBuilder(schemeName, "host", 80, "?query#fragment"));
 
-            Assert.Throws<ArgumentException>(() => new UriBuilder().Scheme = schemeName);
+            AssertExtensions.Throws<ArgumentException>("value", null, () => new UriBuilder().Scheme = schemeName);
         }
 
         [Theory]

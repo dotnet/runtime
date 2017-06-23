@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetOutput_InvalidType()
         {
-            Assert.Throws<ArgumentException>(() => transform.GetOutput(typeof(string)));
+            AssertExtensions.Throws<ArgumentException>("type", () => transform.GetOutput(typeof(string)));
         }
 		
         [Fact]

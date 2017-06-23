@@ -69,7 +69,7 @@ namespace System.Collections.Specialized.Tests
                 Assert.Equal(i + 1, added.Count);
                 CollectionAsserts.Equal(keys, added.Keys);
                 CollectionAsserts.Equal(values, added.Values);
-                Assert.Throws<ArgumentException>(() => added.Add(key, value));
+                AssertExtensions.Throws<ArgumentException>(null, () => added.Add(key, value));
                 added[key] = value;
             }
         }
@@ -96,7 +96,7 @@ namespace System.Collections.Specialized.Tests
                 comparer.AssertCompared(i + 1, () => Assert.Equal(value, added[key]));
                 comparer.AssertCompared(i + 1, () => Assert.True(added.Contains(key)));
                 Assert.Equal(i + 1, added.Count);
-                comparer.AssertCompared(i + 1, () => Assert.Throws<ArgumentException>(() => added.Add(key, "duplicate")));
+                comparer.AssertCompared(i + 1, () => AssertExtensions.Throws<ArgumentException>(null, () => added.Add(key, "duplicate")));
             }
             Assert.Equal(s_dictionaryData.Length, added.Count);
 
@@ -110,7 +110,7 @@ namespace System.Collections.Specialized.Tests
             Assert.True(added.Contains(middleKey));
             // Index is 0-based, count is 1-based
             //  ... Add throws exception
-            comparer.AssertCompared(middleIndex + 1, () => Assert.Throws<ArgumentException>(() => added.Add(middleKey, "middleValue")));
+            comparer.AssertCompared(middleIndex + 1, () => AssertExtensions.Throws<ArgumentException>(null, () => added.Add(middleKey, "middleValue")));
             Assert.Equal(middleValue, added[middleKey]);
             Assert.True(added.Contains(middleKey));
         }

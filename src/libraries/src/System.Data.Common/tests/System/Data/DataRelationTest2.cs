@@ -240,7 +240,7 @@ namespace System.Data.Tests
             dRel = new DataRelation("MyRelation", dtParent.Columns[0], dtChild.Columns[0]);
 
             // Add relation which will create invalid constraint
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Relations.Add(dRel);
             });
@@ -277,7 +277,7 @@ namespace System.Data.Tests
                 // Add relation which will create invalid constraint
                 if (createConstraints == true)
                 {
-                    Assert.Throws<ArgumentException>(() =>
+                    AssertExtensions.Throws<ArgumentException>(null, () =>
                     {
                         ds.Relations.Add(dRel);
                     });
@@ -325,14 +325,14 @@ namespace System.Data.Tests
 
             //check some exception 
             // DataRelation - CTor ArgumentException, two columns child
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dRel = new DataRelation("MyRelation", new DataColumn[] { dtParent.Columns[0] }, new DataColumn[] { dtChild.Columns[0], dtChild.Columns[2] });
             });
 
             dRel = new DataRelation("MyRelation", new DataColumn[] { dtParent.Columns[0], dtParent.Columns[1] }, new DataColumn[] { dtChild.Columns[0], dtChild.Columns[2] });
             // DataRelation - Add Relation ArgumentException, fail on creating child Constraints
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Relations.Add(dRel);
             });
@@ -406,7 +406,7 @@ namespace System.Data.Tests
                 // Add relation which will create invalid constraint
                 if (createConstraints == true)
                 {
-                    Assert.Throws<ArgumentException>(() => ds.Relations.Add(dRel));
+                    AssertExtensions.Throws<ArgumentException>(null, () => ds.Relations.Add(dRel));
                 }
                 else
                     ds.Relations.Add(dRel);

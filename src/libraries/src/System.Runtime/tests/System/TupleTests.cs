@@ -649,7 +649,7 @@ namespace System.Tests
             var b = Tuple.Create(testClassB);
 
             Assert.True(a.Equals(b));
-            Assert.Throws<ArgumentException>(() => ((IComparable)a).CompareTo(b));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((IComparable)a).CompareTo(b));
             Assert.Equal(a.GetHashCode(), b.GetHashCode());
             Assert.True(((IStructuralEquatable)a).Equals(b, TestEqualityComparer.Instance));
             Assert.Equal(5, ((IStructuralComparable)a).CompareTo(b, TestComparer.Instance));

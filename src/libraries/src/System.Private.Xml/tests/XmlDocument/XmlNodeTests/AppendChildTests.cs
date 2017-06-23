@@ -45,7 +45,7 @@ namespace System.Xml.Tests
             var xmlDocument2 = new XmlDocument();
             xmlDocument2.LoadXml("<b attr2='test2' />");
 
-            Assert.Throws<ArgumentException>(() => xmlDocument2.DocumentElement.AppendChild(xmlDocument1.DocumentElement));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument2.DocumentElement.AppendChild(xmlDocument1.DocumentElement));
         }
 
         [Fact]

@@ -87,7 +87,7 @@ namespace System.Security.AccessControl.Tests
             GenericAce gAce = null;
             byte[] opaque = null;
             //Case 1, non-Container, but InheritanceFlags is not None
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("inheritanceFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -101,7 +101,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             //Case 2, non-Container, but PropagationFlags is not None
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("propagationFlags", () =>
             {
                 isContainer = false;
                 isDS = false;
@@ -134,7 +134,7 @@ namespace System.Security.AccessControl.Tests
 
 
             //Case 4, accessMask = 0
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("accessMask", () =>
             {
                 isContainer = true;
                 isDS = false;

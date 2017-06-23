@@ -601,7 +601,7 @@ namespace System.Threading.Threads.Tests
             {
                 // AllocateNamedDataSlot allocates
                 slot = Thread.AllocateNamedDataSlot(slotName);
-                Assert.Throws<ArgumentException>(() => Thread.AllocateNamedDataSlot(slotName));
+                AssertExtensions.Throws<ArgumentException>(null, () => Thread.AllocateNamedDataSlot(slotName));
                 slot2 = Thread.AllocateNamedDataSlot(slotName2);
                 Assert.NotEqual(slot, slot2);
                 VerifyLocalDataSlot(slot);

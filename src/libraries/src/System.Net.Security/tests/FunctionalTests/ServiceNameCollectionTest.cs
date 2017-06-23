@@ -23,9 +23,9 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         [InlineData("")]
         public void Constructor_CollectionContainsNullOrEmpty_Throws(string item)
         {
-            Assert.Throws<ArgumentException>(() => new ServiceNameCollection(new[] { item }));
-            Assert.Throws<ArgumentException>(() => new ServiceNameCollection(new[] { "first", item }));
-            Assert.Throws<ArgumentException>(() => new ServiceNameCollection(new[] { item, "second" }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ServiceNameCollection(new[] { item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ServiceNameCollection(new[] { "first", item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ServiceNameCollection(new[] { item, "second" }));
         }
 
         [Fact]
@@ -124,7 +124,7 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         {
             ICollection collection = new ServiceNameCollection(new[] { "first", "second" });
             int[] destination = new int[collection.Count - 1];
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(destination, 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(destination, 0));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
             ICollection collection = new ServiceNameCollection(new[] { "first", "second" });
             int[] destination = new int[collection.Count];
             Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(destination, -1));
-            Assert.Throws<ArgumentException>(() => collection.CopyTo(destination, destination.Length));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(destination, destination.Length));
         }
 
         [Fact]
@@ -185,8 +185,8 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         public void Merge_NullOrEmptyString_Throws()
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
-            Assert.Throws<ArgumentException>(() => collection.Merge((string)null));
-            Assert.Throws<ArgumentException>(() => collection.Merge(string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge((string)null));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(string.Empty));
         }
 
         [Fact]
@@ -227,16 +227,16 @@ namespace System.Security.Authentication.ExtendedProtection.Tests
         public void Merge_EnumerableContainingNullOrEmpty_Throws(string item)
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
-            Assert.Throws<ArgumentException>(() => collection.Merge(new[] { item }));
-            Assert.Throws<ArgumentException>(() => collection.Merge(new[] { "third", item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { item }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { "third", item }));
         }
 
         [Fact]
         public void Merge_NonStringEnumerable_Throws()
         {
             var collection = new ServiceNameCollection(new[] { "first", "second" });
-            Assert.Throws<ArgumentException>(() => collection.Merge(new[] { 3 }));
-            Assert.Throws<ArgumentException>(() => collection.Merge(new[] { new object() }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { 3 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => collection.Merge(new[] { new object() }));
         }
 
         public static object[][] MergeCollectionsTestData =

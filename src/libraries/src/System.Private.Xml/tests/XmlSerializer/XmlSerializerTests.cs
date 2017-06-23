@@ -1737,7 +1737,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         attrs.XmlElements.Remove(item2);
         Assert.False(attrs.XmlElements.Contains(item2));
 
-        Assert.Throws<ArgumentException>(() => { attrs.XmlElements.Remove(item2); });
+        AssertExtensions.Throws<ArgumentException>(null, () => { attrs.XmlElements.Remove(item2); });
     }
 
     [Fact]
@@ -1769,7 +1769,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         attrs.XmlArrayItems.Remove(item2);
         Assert.False(attrs.XmlArrayItems.Contains(item2));
 
-        Assert.Throws<ArgumentException>(() => { attrs.XmlArrayItems.Remove(item2); });
+        AssertExtensions.Throws<ArgumentException>(null, () => { attrs.XmlArrayItems.Remove(item2); });
     }
 
     [Fact]
@@ -1801,7 +1801,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         attrs.XmlAnyElements.Remove(item2);
         Assert.False(attrs.XmlAnyElements.Contains(item2));
 
-        Assert.Throws<ArgumentException>(() => { attrs.XmlAnyElements.Remove(item2); });
+        AssertExtensions.Throws<ArgumentException>(null, () => { attrs.XmlAnyElements.Remove(item2); });
     }
 
     [Fact]

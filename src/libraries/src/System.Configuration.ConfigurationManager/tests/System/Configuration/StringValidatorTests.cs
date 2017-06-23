@@ -29,21 +29,21 @@ namespace System.ConfigurationTests
         public void Validate_PassInNonString()
         {
             StringValidator validator = new StringValidator(5);
-            ArgumentException thrownException = Assert.Throws<ArgumentException>(() => validator.Validate(5));
+            AssertExtensions.Throws<ArgumentException>("", () => validator.Validate(5));
         }
 
         [Fact]
         public void Validate_StringTooSmall()
         {
             StringValidator validator = new StringValidator(5);
-            ArgumentException thrownException = Assert.Throws<ArgumentException>(() => validator.Validate("Hi"));
+            AssertExtensions.Throws<ArgumentException>(null, () => validator.Validate("Hi"));
         }
 
         [Fact]
         public void Validate_StringTooBig()
         {
             StringValidator validator = new StringValidator(5, 10);
-            ArgumentException thrownException = Assert.Throws<ArgumentException>(() => validator.Validate("This is more than ten"));
+            ArgumentException thrownException = AssertExtensions.Throws<ArgumentException>(null, () => validator.Validate("This is more than ten"));
         }
 
         [Fact]
@@ -59,7 +59,7 @@ namespace System.ConfigurationTests
         public void Validate_UsinginvalidCharacters(string stringToValidate)
         {
             StringValidator validator = new StringValidator(1, 20, "_-");
-            ArgumentException result = Assert.Throws<ArgumentException>(() => validator.Validate(stringToValidate));
+            ArgumentException result = AssertExtensions.Throws<ArgumentException>(null, () => validator.Validate(stringToValidate));
         }
 
         [Fact]

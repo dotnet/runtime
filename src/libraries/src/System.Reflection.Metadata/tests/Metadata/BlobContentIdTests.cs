@@ -79,8 +79,8 @@ namespace System.Reflection.Metadata.Tests
 
             Assert.Throws<ArgumentNullException>(() => BlobContentId.FromHash(default(ImmutableArray<byte>)));
             Assert.Throws<ArgumentNullException>(() => BlobContentId.FromHash(null));
-            Assert.Throws<ArgumentException>(() => BlobContentId.FromHash(new byte[0]));
-            Assert.Throws<ArgumentException>(() => BlobContentId.FromHash(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
+            AssertExtensions.Throws<ArgumentException>("hashCode", () => BlobContentId.FromHash(new byte[0]));
+            AssertExtensions.Throws<ArgumentException>("hashCode", () => BlobContentId.FromHash(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }));
         }
     }
 }

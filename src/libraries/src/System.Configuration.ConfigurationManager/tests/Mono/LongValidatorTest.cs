@@ -72,21 +72,21 @@ namespace MonoTests.System.Configuration
         public void Validate_Exclusive_fail1()
         {
             LongValidator v = new LongValidator(5000L, 10000L, true);
-            Assert.Throws<ArgumentException>(() => v.Validate(5000L));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(5000L));
         }
 
         [Fact]
         public void Validate_Exclusive_fail2()
         {
             LongValidator v = new LongValidator(5000L, 10000L, true);
-            Assert.Throws<ArgumentException>(() => v.Validate(10000L));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(10000L));
         }
 
         [Fact]
         public void Validate_Exclusive_fail3()
         {
             LongValidator v = new LongValidator(5000L, 10000L, true);
-            Assert.Throws<ArgumentException>(() => v.Validate(7000L));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(7000L));
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace MonoTests.System.Configuration
                                  false,
                                  3000L);
 
-            Assert.Throws<ArgumentException>(() => v.Validate(40000L));
+            AssertExtensions.Throws<ArgumentException>(null, () => v.Validate(40000L));
         }
     }
 }

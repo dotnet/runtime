@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 
             using (DES des = DESFactory.Create())
             {
-                Assert.Throws<ArgumentException>(() => des.Key = KnownShortKey);
+                AssertExtensions.Throws<ArgumentException>(null, () => des.Key = KnownShortKey);
                 Assert.Throws<CryptographicException>(() => des.Key = KnownSemiWeakKey);
                 AssertExtensions.Throws<ArgumentNullException>("value", () => des.Key = null);
 

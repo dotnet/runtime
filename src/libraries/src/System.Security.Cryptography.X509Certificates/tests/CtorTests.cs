@@ -280,11 +280,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void TestNullConstructorArguments()
         {
             Assert.Throws<ArgumentNullException>(() => new X509Certificate2((string)null));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2(IntPtr.Zero));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (string)null));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2(Array.Empty<byte>(), (string)null));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2((byte[])null, (string)null, X509KeyStorageFlags.DefaultKeySet));
-            Assert.Throws<ArgumentException>(() => new X509Certificate2(Array.Empty<byte>(), (string)null, X509KeyStorageFlags.DefaultKeySet));
+            AssertExtensions.Throws<ArgumentException>("handle", () => new X509Certificate2(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentException>("rawData", () => new X509Certificate2((byte[])null, (string)null));
+            AssertExtensions.Throws<ArgumentException>("rawData", () => new X509Certificate2(Array.Empty<byte>(), (string)null));
+            AssertExtensions.Throws<ArgumentException>("rawData", () => new X509Certificate2((byte[])null, (string)null, X509KeyStorageFlags.DefaultKeySet));
+            AssertExtensions.Throws<ArgumentException>("rawData", () => new X509Certificate2(Array.Empty<byte>(), (string)null, X509KeyStorageFlags.DefaultKeySet));
 
             // A null string password does not throw
             using (new X509Certificate2(TestData.MsCertificate, (string)null)) { }

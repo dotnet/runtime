@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Cng.Tests
         {
             using (RSACng rsaCng = new RSACng())
             {
-                Assert.Throws<ArgumentException>(() => new ECDsaCng(rsaCng.Key));
+                AssertExtensions.Throws<ArgumentException>("key", () => new ECDsaCng(rsaCng.Key));
             }
         }
 

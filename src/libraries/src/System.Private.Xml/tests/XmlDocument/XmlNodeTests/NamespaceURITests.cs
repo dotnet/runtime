@@ -120,7 +120,7 @@ namespace System.Xml.Tests
         {
             var xmlDocument = new XmlDocument();
 
-            Assert.Throws<ArgumentException>(() => xmlDocument.CreateAttribute("xmlns", "aa"));
+            AssertExtensions.Throws<ArgumentException>(null, () => xmlDocument.CreateAttribute("xmlns", "aa"));
         }
     }
 }

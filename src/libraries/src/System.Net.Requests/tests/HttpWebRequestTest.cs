@@ -915,7 +915,7 @@ namespace System.Net.Tests
                 using (Stream requestStream = await request.GetRequestStreamAsync())
                 {
                     requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
-                    Assert.Throws<ArgumentException>(() => new StreamReader(requestStream));
+                    AssertExtensions.Throws<ArgumentException>(null, () => new StreamReader(requestStream));
                 }
             });
         }

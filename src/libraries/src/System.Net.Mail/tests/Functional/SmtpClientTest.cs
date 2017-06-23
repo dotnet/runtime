@@ -89,7 +89,7 @@ namespace System.Net.Mail.Tests
         public void InvalidHostTest()
         {
             Assert.Throws<ArgumentNullException>(() => Smtp.Host = null);
-            Assert.Throws<ArgumentException>(() => Smtp.Host = "");
+            AssertExtensions.Throws<ArgumentException>("value", () => Smtp.Host = "");
         }
 
         [Fact]

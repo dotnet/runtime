@@ -48,7 +48,7 @@ namespace System.Linq.Tests
         [Fact]
         public void NonGenericToQueryable()
         {
-            Assert.Throws<ArgumentException>(() => new NonGenericEnumerableSoWeDontNeedADependencyOnTheAssemblyWithNonGeneric().AsQueryable());
+            AssertExtensions.Throws<ArgumentException>(null, () => new NonGenericEnumerableSoWeDontNeedADependencyOnTheAssemblyWithNonGeneric().AsQueryable());
         }
 
         [Fact]

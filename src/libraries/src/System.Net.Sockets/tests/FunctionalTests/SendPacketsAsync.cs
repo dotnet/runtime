@@ -276,7 +276,7 @@ namespace System.Net.Sockets.Tests
         [InlineData(SocketImplementationType.Async)]
         public void SendPacketsElement_EmptyFileName_Throws(SocketImplementationType type)
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("path", null, () =>
             {
                 SendPackets(type, new SendPacketsElement(String.Empty), 0);
             });
@@ -288,7 +288,7 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // whitespace-only is a valid name on Unix
         public void SendPacketsElement_BlankFileName_Throws(SocketImplementationType type)
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("path", null, () =>
             {
                 // Existence is validated on send
                 SendPackets(type, new SendPacketsElement(" \t  "), 0);
@@ -301,7 +301,7 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // valid filename chars on Unix
         public void SendPacketsElement_BadCharactersFileName_Throws(SocketImplementationType type)
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("path", null, () =>
             {
                 // Existence is validated on send
                 SendPackets(type, new SendPacketsElement("blarkd@dfa?/sqersf"), 0);

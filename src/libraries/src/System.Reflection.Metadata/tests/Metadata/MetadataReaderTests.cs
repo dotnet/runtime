@@ -130,8 +130,7 @@ namespace System.Reflection.Metadata.Tests
         public void CannotInstantiateReaderWithNonUtf8Decoder()
         {
             var decoder = new MetadataStringDecoder(Encoding.ASCII);
-            var exception = Assert.Throws<ArgumentException>(() => GetMetadataReader(Misc.Members, decoder: decoder));
-            Assert.Equal("utf8Decoder", exception.ParamName);
+            AssertExtensions.Throws<ArgumentException>("utf8Decoder", () => GetMetadataReader(Misc.Members, decoder: decoder));
         }
 
         [Fact]

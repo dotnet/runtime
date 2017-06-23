@@ -168,7 +168,7 @@ namespace System.Tests
         [InlineData(typeof(IList<>))]
         public static void GetArrayRank_Invalid(Type t)
         {
-            Assert.Throws<ArgumentException>(() => t.GetArrayRank());
+            AssertExtensions.Throws<ArgumentException>(null, () => t.GetArrayRank());
         }
 
         [Theory]

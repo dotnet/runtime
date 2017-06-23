@@ -23,8 +23,8 @@ namespace System.IO.Pipes.Tests
         [Fact]
         public static void EmptyStringPipeName_Throws_ArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream(""));
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream(".", ""));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream(".", ""));
         }
 
         [Theory]
@@ -45,10 +45,10 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         public static void EmptyStringServerName_Throws_ArgumentException(PipeDirection direction)
         {
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream("", "client1"));
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream("", "client1", direction));
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream("", "client1", direction, PipeOptions.None));
-            Assert.Throws<ArgumentException>(() => new NamedPipeClientStream("", "client1", direction, PipeOptions.None, TokenImpersonationLevel.None));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", direction));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", direction, PipeOptions.None));
+            AssertExtensions.Throws<ArgumentException>(null, () => new NamedPipeClientStream("", "client1", direction, PipeOptions.None, TokenImpersonationLevel.None));
         }
 
         [Theory]

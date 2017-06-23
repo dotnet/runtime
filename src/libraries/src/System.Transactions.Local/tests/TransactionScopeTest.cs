@@ -999,7 +999,7 @@ namespace System.Transactions.Tests
         [Fact]
         public void ExplicitTransaction12()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("asyncResult", () =>
             {
                 CommittableTransaction ct = new CommittableTransaction();
 

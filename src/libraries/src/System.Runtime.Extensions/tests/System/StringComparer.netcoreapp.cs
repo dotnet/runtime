@@ -36,8 +36,8 @@ namespace System.Tests
             StringComparison minInvalid = Enum.GetValues(typeof(StringComparison)).Cast<StringComparison>().Min() - 1;
             StringComparison maxInvalid = Enum.GetValues(typeof(StringComparison)).Cast<StringComparison>().Max() + 1;
 
-            Assert.Throws<ArgumentException>(() => StringComparer.FromComparison(minInvalid));
-            Assert.Throws<ArgumentException>(() => StringComparer.FromComparison(maxInvalid));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => StringComparer.FromComparison(minInvalid));
+            AssertExtensions.Throws<ArgumentException>("comparisonType", () => StringComparer.FromComparison(maxInvalid));
         }
     }
 }

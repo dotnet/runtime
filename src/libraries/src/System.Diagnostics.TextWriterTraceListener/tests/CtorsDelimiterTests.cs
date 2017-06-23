@@ -92,7 +92,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             var target = new DelimitedListTraceListener(FileStream.Null);
             Assert.Equal(DefaultDelimiter, target.Delimiter);
             Assert.Throws<ArgumentNullException>(() => target.Delimiter = null);
-            Assert.Throws<ArgumentException>(() => target.Delimiter = string.Empty);
+            AssertExtensions.Throws<ArgumentException>(null, () => target.Delimiter = string.Empty);
         }
     }
 }

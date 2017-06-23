@@ -58,8 +58,8 @@ namespace System.Collections.Tests
         public void CopyTo_ArgumentValidity(int count)
         {
             List<T> list = GenericListFactory(count);
-            Assert.Throws<ArgumentException>(() => list.CopyTo(0, new T[0], 0, count + 1));
-            Assert.Throws<ArgumentException>(() => list.CopyTo(count, new T[0], 0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => list.CopyTo(0, new T[0], 0, count + 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => list.CopyTo(count, new T[0], 0, 1));
         }
     }
 }

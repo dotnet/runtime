@@ -140,7 +140,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
             byte[] bad = { 0xBA, 0xD };
-            Assert.Throws<ArgumentException>(() => transform.LoadInput(bad));
+            AssertExtensions.Throws<ArgumentException>("obj", () => transform.LoadInput(bad));
         }
 
         [Fact]
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
             XmlDocument doc = new XmlDocument();
-            Assert.Throws<ArgumentException>(() => transform.GetOutput(doc.GetType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => transform.GetOutput(doc.GetType()));
         }
 
         [Fact]

@@ -115,7 +115,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var expectedException = new ArgumentException(expectedInnerMessage, "statusDescription");
                 string expectedMessage = expectedException.Message;
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("statusDescription", () =>
                     { Task t = cws.CloseAsync(WebSocketCloseStatus.NormalClosure, closeDescription, cts.Token); });
 
                 Assert.Equal(WebSocketState.Open, cws.State);

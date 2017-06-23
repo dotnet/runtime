@@ -66,7 +66,7 @@ namespace System.ConfigurationTests
         public void GetTypeConfigHost_ThrowOnError()
         {
             TestHost host = new TestHost((s, b) => { if (b) throw new ArgumentException(); return null; });
-            Assert.Throws<ArgumentException>(() => TypeUtil.GetType(host, "Mxyzptlk", throwOnError: true));
+            AssertExtensions.Throws<ArgumentException>(null, () => TypeUtil.GetType(host, "Mxyzptlk", throwOnError: true));
         }
 
         [Fact]

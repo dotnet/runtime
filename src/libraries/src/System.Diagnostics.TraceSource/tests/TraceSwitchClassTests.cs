@@ -26,7 +26,7 @@ namespace System.Diagnostics.TraceSourceTests
             item = new TraceSwitch("SwitchName", null, "warning");
             Assert.Equal(TraceLevel.Warning, item.Level);
             item = new TraceSwitch("Name", null, "NO_EXIST");
-            Assert.Throws<ArgumentException>(() => item.Level);
+            AssertExtensions.Throws<ArgumentException>(null, () => item.Level);
             item = new TraceSwitch("Name", null, null);
 
             Assert.Throws<ArgumentNullException>(() => item.Level);
@@ -40,8 +40,8 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(TraceLevel.Error, item.Level);
             item.Level = TraceLevel.Info;
             Assert.Equal(TraceLevel.Info, item.Level);
-            Assert.Throws<ArgumentException>(() => item.Level = (TraceLevel)(TraceLevel.Off - 1));
-            Assert.Throws<ArgumentException>(() => item.Level = (TraceLevel)(TraceLevel.Verbose + 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => item.Level = (TraceLevel)(TraceLevel.Off - 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => item.Level = (TraceLevel)(TraceLevel.Verbose + 1));
         }
 
         [Theory]

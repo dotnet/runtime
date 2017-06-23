@@ -234,8 +234,8 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => collection.CopyTo(data, -1));
             if (data.Length > 0)
             {
-                Assert.Throws<ArgumentException>(() => collection.CopyTo(new string[0], data.Length - 1));
-                Assert.Throws<ArgumentException>(() => collection.CopyTo(new string[data.Length - 1], 0));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(new string[0], data.Length - 1));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => collection.CopyTo(new string[data.Length - 1], 0));
             }
 
             // As explicit interface implementation
@@ -243,8 +243,8 @@ namespace System.Collections.Specialized.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => ((ICollection)collection).CopyTo(data, -1));
             if (data.Length > 0)
             {
-                Assert.Throws<ArgumentException>(() => ((ICollection)collection).CopyTo(new string[0], data.Length - 1));
-                Assert.Throws<ArgumentException>(() => ((ICollection)collection).CopyTo(new string[data.Length - 1], 0));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => ((ICollection)collection).CopyTo(new string[0], data.Length - 1));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => ((ICollection)collection).CopyTo(new string[data.Length - 1], 0));
             }
         }
 

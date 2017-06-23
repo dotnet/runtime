@@ -177,12 +177,12 @@ namespace System.IO.Compression.Tests
         {
             var ms = new MemoryStream();
             ms.Dispose();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var deflate = new GZipStream(ms, CompressionMode.Decompress);
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var deflate = new GZipStream(ms, CompressionMode.Compress);
             });
@@ -194,7 +194,7 @@ namespace System.IO.Compression.Tests
             var ms = new LocalMemoryStream();
             ms.SetCanWrite(false);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var gzip = new GZipStream(ms, CompressionMode.Compress);
             });
@@ -206,7 +206,7 @@ namespace System.IO.Compression.Tests
             var ms = new LocalMemoryStream();
             ms.SetCanRead(false);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>("stream", () =>
             {
                 var gzip = new GZipStream(ms, CompressionMode.Decompress);
             });

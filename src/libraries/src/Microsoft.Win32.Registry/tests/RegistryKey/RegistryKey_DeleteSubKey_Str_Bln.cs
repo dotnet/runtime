@@ -20,7 +20,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentNullException>(() => TestRegistryKey.DeleteSubKey(null, false));
 
             // Should throw because subkey doesn't exists
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.DeleteSubKey(name, throwOnMissingSubKey: true));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.DeleteSubKey(name, throwOnMissingSubKey: true));
 
             // Should throw if subkey has child subkeys
             using (var rk = TestRegistryKey.CreateSubKey(name))

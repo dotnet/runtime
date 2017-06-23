@@ -526,7 +526,7 @@ namespace System.Linq.Expressions.Tests
             ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
             Expression[] arguments = { Expression.Constant(5) };
             MemberInfo[] members = { globalMethodInfo };
-            Assert.Throws<ArgumentException>(() => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
         }
 
         [Fact]
@@ -539,7 +539,7 @@ namespace System.Linq.Expressions.Tests
             ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
             Expression[] arguments = { Expression.Constant(5) };
             MemberInfo[] members = { globalField };
-            Assert.Throws<ArgumentException>(() => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>("members[0]", () => Expression.New(constructor, arguments, members));
         }
 #endif
 

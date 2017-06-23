@@ -450,7 +450,7 @@ namespace System.Data.Tests
             //------Check Remove column exception---------
             dt = dtSource.Clone();
             dt.ImportRow(dtSource.Rows[0]);
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataColumn dc = new DataColumn();
                 dt.Columns.Remove(dc);
@@ -474,7 +474,7 @@ namespace System.Data.Tests
             DataTable dt = new DataTable();
             DataColumn col = new DataColumn("col1", Type.GetType("System.String"));
             dt.Columns.Add(col);
-            Assert.Throws<ArgumentException>(() => dt.Columns.Add(col));
+            AssertExtensions.Throws<ArgumentException>(null, () => dt.Columns.Add(col));
         }
 
         [Fact]
@@ -571,7 +571,7 @@ namespace System.Data.Tests
         public void Clear2()
         {
             DataSet ds = DataProvider.CreateForigenConstraint();
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 ds.Tables[0].Columns.Clear();
             });
@@ -767,14 +767,14 @@ namespace System.Data.Tests
             dt = dtSource.Clone();
             dt.ImportRow(dtSource.Rows[0]);
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dt.Columns.Remove("NotExist");
             });
 
             dt.Columns.Clear();
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 dt.Columns.Remove("Col_0");
             });

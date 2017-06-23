@@ -14,8 +14,8 @@ public class Color
     [Fact]
     public static void InvalidColors()
     {
-        Assert.Throws<ArgumentException>(() => Console.BackgroundColor = (ConsoleColor)42);
-        Assert.Throws<ArgumentException>(() => Console.ForegroundColor = (ConsoleColor)42);
+        AssertExtensions.Throws<ArgumentException>(null, () => Console.BackgroundColor = (ConsoleColor)42);
+        AssertExtensions.Throws<ArgumentException>(null, () => Console.ForegroundColor = (ConsoleColor)42);
     }
 
     [Fact]

@@ -29,7 +29,7 @@ namespace System.Xml.Tests
                 writer.WriteStartElement("test");
                 char[] invalidSurrogatePair = new char[] { (char)(SurHighStart + 5), (char)(SurLowStart - 1) };
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     writer.WriteRaw(invalidSurrogatePair, 0, invalidSurrogatePair.Length);
                 });
@@ -49,7 +49,7 @@ namespace System.Xml.Tests
                 writer.WriteStartElement("test");
                 char[] invalidSurrogatePair = new char[] { (char)(SurHighStart + 5), (char)(SurLowEnd + 1) };
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>(null, () =>
                 {
                     writer.WriteRaw(invalidSurrogatePair, 0, invalidSurrogatePair.Length);
                 });

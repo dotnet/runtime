@@ -18,7 +18,7 @@ namespace Microsoft.Win32.RegistryTests
             // [] Vanilla; create a new subkey in read/write mode and write to it
             const string testValueName = "TestValue";
             const string testStringValueName = "TestString";
-            const string testStringValue = "Hello World!†þ";
+            const string testStringValue = "Hello World!\u2020\u00FE";
             const int testValue = 42;
 
             using (var rk = TestRegistryKey.CreateSubKey(TestRegistryKeyName, writable: true))
@@ -42,7 +42,7 @@ namespace Microsoft.Win32.RegistryTests
             // [] Vanilla; create a new subkey in read/write mode and write to it
             const string testValueName = "TestValue";
             const string testStringValueName = "TestString";
-            const string testStringValue = "Hello World!†þ";
+            const string testStringValue = "Hello World!\u2020\u00FE";
             const int testValue = 42;
 
             using (var rk = TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
@@ -71,16 +71,16 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentNullException>(() => TestRegistryKey.CreateSubKey(null, RegistryKeyPermissionCheck.ReadWriteSubTree, new RegistryOptions(), new RegistrySecurity()));
 
             // Should throw if passed option is invalid
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(TestRegistryKeyName, true, options: (RegistryOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(TestRegistryKeyName, true, options: (RegistryOptions)3));
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)3));
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)(-1), new RegistrySecurity()));
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)3, new RegistrySecurity()));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.CreateSubKey(TestRegistryKeyName, true, options: (RegistryOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.CreateSubKey(TestRegistryKeyName, true, options: (RegistryOptions)3));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)3));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)(-1), new RegistrySecurity()));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.CreateSubKey(TestRegistryKeyName, RegistryKeyPermissionCheck.ReadWriteSubTree, (RegistryOptions)3, new RegistrySecurity()));
 
             // Should throw if key length above 255 characters
             const int maxValueNameLength = 255;
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => TestRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
 
             // Should throw if RegistryKey is readonly
             const string name = "FooBar";

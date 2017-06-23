@@ -59,8 +59,8 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(1, MetadataTokens.GetHeapOffset(s_writerGuidHandle));
             Assert.Equal(1, MetadataTokens.GetHeapOffset((GuidHandle)s_writerGuidHandle));
 
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetHeapOffset(s_assemblyRefHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetHeapOffset(s_virtualAssemblyRefHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetHeapOffset(s_assemblyRefHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetHeapOffset(s_virtualAssemblyRefHandle));
         }
 
         [Fact]
@@ -73,11 +73,11 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(0, MetadataTokens.GetToken(s_virtualAssemblyRefHandle));
             Assert.Equal(0x70000001, MetadataTokens.GetToken(s_userStringHandle));
 
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_virtualBlobHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_stringHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_winrtPrefixedStringHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_blobHandle));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.GetToken(s_guidHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetToken(s_virtualBlobHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetToken(s_stringHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetToken(s_winrtPrefixedStringHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetToken(s_blobHandle));
+            AssertExtensions.Throws<ArgumentException>("handle", () => MetadataTokens.GetToken(s_guidHandle));
         }
 
         [Fact]
@@ -183,14 +183,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             Assert.Equal(s_userStringHandle, MetadataTokens.Handle(0x70000001));
             Assert.Equal(s_exportedTypeHandle, MetadataTokens.ExportedTypeHandle((int)(TokenTypeIds.ExportedType | s_exportedTypeHandle.RowId)));
 
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(-1));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x71000001));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x72000001));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x73000001));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x74000001));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x7a000001));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x7e000001));
-            Assert.Throws<ArgumentException>(() => MetadataTokens.Handle(0x7fffffff));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(-1));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x71000001));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x72000001));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x73000001));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x74000001));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x7a000001));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x7e000001));
+            AssertExtensions.Throws<ArgumentException>("token", () => MetadataTokens.Handle(0x7fffffff));
         }
 
         [Fact]

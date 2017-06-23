@@ -19,7 +19,7 @@ namespace Microsoft.Win32.RegistryTests
 
             // Should throw if key length above 255 characters
             const int maxValueNameLength = 255;
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => TestRegistryKey.CreateSubKey(new string('a', maxValueNameLength + 1)));
 
             // Should throw if RegistryKey is readonly
             const string name = "FooBar";

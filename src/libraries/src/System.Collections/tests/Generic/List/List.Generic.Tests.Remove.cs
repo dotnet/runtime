@@ -116,7 +116,7 @@ namespace System.Collections.Tests
             Assert.All(InvalidParameters, invalidSet =>
             {
                 if (invalidSet.Item1 >= 0 && invalidSet.Item2 >= 0)
-                    Assert.Throws<ArgumentException>(() => list.RemoveRange(invalidSet.Item1, invalidSet.Item2));
+                    AssertExtensions.Throws<ArgumentException>(null, () => list.RemoveRange(invalidSet.Item1, invalidSet.Item2));
             });
         }
 

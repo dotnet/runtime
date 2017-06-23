@@ -15,7 +15,7 @@ namespace System.Diagnostics.Contracts.Tests
             Assert.Throws<ArgumentNullException>(() => Contract.ForAll(0, 1, null));
             Assert.Throws<ArgumentNullException>(() => Contract.ForAll<int>(null, i => true));
             Assert.Throws<ArgumentNullException>(() => Contract.ForAll<int>(Enumerable.Empty<int>(), null));
-            Assert.Throws<ArgumentException>(() => Contract.ForAll(1, 0, i => true)); // fromInclusive > toExclusive
+            AssertExtensions.Throws<ArgumentException>(null, () => Contract.ForAll(1, 0, i => true)); // fromInclusive > toExclusive
         }
 
         [Fact]

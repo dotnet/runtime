@@ -313,7 +313,7 @@ namespace System.Data.Tests
             Assert.Equal(dt.Rows[0]["ParentDateTime"], drv["ParentDateTime"]);
 
             // Item invalid - excpetion
-            Assert.Throws<ArgumentException>(() => drv["something"]);
+            AssertExtensions.Throws<ArgumentException>(null, () => drv["something"]);
         }
 
         [Fact]

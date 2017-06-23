@@ -623,8 +623,8 @@ namespace System.Net.Tests
             WebHeaderCollection w = new WebHeaderCollection();
             char[] arr = new char[ushort.MaxValue + 1];
             string maxStr = new string(arr);
-            Assert.Throws<ArgumentException>(() => w.Add(HttpRequestHeader.ContentLength,maxStr));
-            Assert.Throws<ArgumentException>(() => w.Add("ContentLength", maxStr));
+            AssertExtensions.Throws<ArgumentException>("value", () => w.Add(HttpRequestHeader.ContentLength,maxStr));
+            AssertExtensions.Throws<ArgumentException>("value", () => w.Add("ContentLength", maxStr));
         }
 
         [Fact]

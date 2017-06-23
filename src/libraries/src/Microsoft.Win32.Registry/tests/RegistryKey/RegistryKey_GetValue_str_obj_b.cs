@@ -13,8 +13,8 @@ namespace Microsoft.Win32.RegistryTests
         [Fact]
         public void NegativeTests()
         {
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.GetValue(null, null, (RegistryValueOptions)(-1)));
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.GetValue(null, null, (RegistryValueOptions)2));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.GetValue(null, null, (RegistryValueOptions)(-1)));
+            AssertExtensions.Throws<ArgumentException>("options", () => TestRegistryKey.GetValue(null, null, (RegistryValueOptions)2));
 
             Assert.Throws<ObjectDisposedException>(() =>
             {

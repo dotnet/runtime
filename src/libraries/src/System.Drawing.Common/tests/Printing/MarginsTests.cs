@@ -61,7 +61,7 @@ namespace System.Drawing.Printing.Tests
         [InlineData(0, 0, 0, -1)]
         public void Ctor_BoundsBadValues_ThrowsArgumentException(int left, int right, int top, int bottom)
         {
-            Assert.Throws<ArgumentException>(() => new Margins(left, right, top, bottom));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Margins(left, right, top, bottom));
         }
 
         private static IEnumerable<object[]> Equals_TestData()
@@ -120,10 +120,10 @@ namespace System.Drawing.Printing.Tests
         public void Bounds_BadValues_ThrowsArgumentException()
         {
             Margins m = new Margins();
-            Assert.Throws<ArgumentException>(() => m.Bottom = -1);
-            Assert.Throws<ArgumentException>(() => m.Left = -1);
-            Assert.Throws<ArgumentException>(() => m.Right = -1);
-            Assert.Throws<ArgumentException>(() => m.Top = -1);
+            AssertExtensions.Throws<ArgumentException>(null, () => m.Bottom = -1);
+            AssertExtensions.Throws<ArgumentException>(null, () => m.Left = -1);
+            AssertExtensions.Throws<ArgumentException>(null, () => m.Right = -1);
+            AssertExtensions.Throws<ArgumentException>(null, () => m.Top = -1);
         }
     }
 }

@@ -195,14 +195,14 @@ namespace System.IO.Tests
         public void ArgumentOutOfRangeOnNegativCount()
         {
             var sr = GetCharArrayStream().Item2;
-            Assert.Throws<ArgumentException>(() => sr.Read(new char[0], 0, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 0, 1));
         }
 
         [Fact]
         public void ArgumentExceptionOffsetAndCount()
         {
             var sr = GetCharArrayStream().Item2;
-            Assert.Throws<ArgumentException>(() => sr.Read(new char[0], 2, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => sr.Read(new char[0], 2, 0));
         }
 
         [Fact]

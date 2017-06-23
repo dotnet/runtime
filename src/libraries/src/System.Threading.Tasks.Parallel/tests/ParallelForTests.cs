@@ -32,7 +32,7 @@ namespace System.Threading.Tasks.Tests
             AssertExtensions.Throws<ArgumentNullException>("parallelOptions", () => Parallel.Invoke((ParallelOptions)null, () => { }));
             AssertExtensions.Throws<ArgumentNullException>("actions", () => Parallel.Invoke(options, null));
 
-            Assert.Throws<ArgumentException>(() => Parallel.Invoke(options, (Action)null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Parallel.Invoke(options, (Action)null));
 
             CancellationTokenSource cts = new CancellationTokenSource();
             options.CancellationToken = cts.Token;

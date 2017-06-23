@@ -135,7 +135,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], -1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.PushRange(new int[1], 2, 1));
-            Assert.Throws<ArgumentException>(() => stack.PushRange(new int[1], 0, 10));
+            AssertExtensions.Throws<ArgumentException>(null, () => stack.PushRange(new int[1], 0, 10));
         }
 
         [Fact]
@@ -147,7 +147,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.TryPopRange(new int[1], 0, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.TryPopRange(new int[1], -1, 1));
             Assert.Throws<ArgumentOutOfRangeException>(() => stack.TryPopRange(new int[1], 2, 1));
-            Assert.Throws<ArgumentException>(() => stack.TryPopRange(new int[1], 0, 10));
+            AssertExtensions.Throws<ArgumentException>(null, () => stack.TryPopRange(new int[1], 0, 10));
         }
 
         protected sealed class StackOracle : IProducerConsumerCollection<int>

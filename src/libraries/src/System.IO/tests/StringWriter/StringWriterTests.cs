@@ -129,7 +129,7 @@ namespace System.IO.Tests
             for (int i = 0; i < iArrLargeValues.Length; i++)
             {
                 StringWriter sw = new StringWriter();
-                Assert.Throws<ArgumentException>(() => sw.Write(chArr, iArrLargeValues[i], chArr.Length));
+                AssertExtensions.Throws<ArgumentException>(null, () => sw.Write(chArr, iArrLargeValues[i], chArr.Length));
             }
         }
 
@@ -140,7 +140,7 @@ namespace System.IO.Tests
             for (int i = 0; i < iArrLargeValues.Length; i++)
             {
                 StringWriter sw = new StringWriter();
-                Assert.Throws<ArgumentException>(() => sw.Write(chArr, 0, iArrLargeValues[i]));
+                AssertExtensions.Throws<ArgumentException>(null, () => sw.Write(chArr, 0, iArrLargeValues[i]));
             }
         }
 

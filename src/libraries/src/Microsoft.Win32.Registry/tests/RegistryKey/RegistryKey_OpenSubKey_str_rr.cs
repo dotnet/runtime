@@ -17,7 +17,7 @@ namespace Microsoft.Win32.RegistryTests
             Assert.Throws<ArgumentNullException>(() => TestRegistryKey.OpenSubKey(name: null, rights: RegistryRights.ReadKey));
 
             // Should throw if subkey name greater than 255 chars
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.OpenSubKey(new string('a', 256), RegistryRights.FullControl));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => TestRegistryKey.OpenSubKey(new string('a', 256), RegistryRights.FullControl));
 
             // OpenSubKey should be read only
             const string name = "FooBar";

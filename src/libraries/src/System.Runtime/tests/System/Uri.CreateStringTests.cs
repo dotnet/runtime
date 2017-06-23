@@ -1015,13 +1015,13 @@ namespace System.Tests
         [Fact]
         public void Create_String_InvalidUriKind_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => new Uri("http://host", UriKind.RelativeOrAbsolute - 1));
-            Assert.Throws<ArgumentException>(() => new Uri("http://host", UriKind.Relative + 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Uri("http://host", UriKind.RelativeOrAbsolute - 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Uri("http://host", UriKind.Relative + 1));
 
             Uri uri = null;
-            Assert.Throws<ArgumentException>(() => Uri.TryCreate("http://host", UriKind.RelativeOrAbsolute - 1, out uri));
+            AssertExtensions.Throws<ArgumentException>(null, () => Uri.TryCreate("http://host", UriKind.RelativeOrAbsolute - 1, out uri));
             Assert.Null(uri);
-            Assert.Throws<ArgumentException>(() => Uri.TryCreate("http://host", UriKind.Relative + 1, out uri));
+            AssertExtensions.Throws<ArgumentException>(null, () => Uri.TryCreate("http://host", UriKind.Relative + 1, out uri));
             Assert.Null(uri);
         }
 

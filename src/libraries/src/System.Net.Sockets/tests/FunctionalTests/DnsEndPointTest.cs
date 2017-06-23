@@ -82,7 +82,7 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
                 {
                     sock.SendTo(new byte[10], new DnsEndPoint("localhost", UnusedPort));
                 });
@@ -98,7 +98,7 @@ namespace System.Net.Sockets.Tests
                 int port = sock.BindToAnonymousPort(IPAddress.Loopback);
                 EndPoint endpoint = new DnsEndPoint("localhost", port);
 
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
                 {
                     sock.ReceiveFrom(new byte[10], ref endpoint);
                 });
@@ -174,7 +174,7 @@ namespace System.Net.Sockets.Tests
         {
             using (Socket sock = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                Assert.Throws<ArgumentException>(() =>
+                AssertExtensions.Throws<ArgumentException>("remoteEP", () =>
                 {
                     sock.BeginSendTo(new byte[10], 0, 0, SocketFlags.None, new DnsEndPoint("localhost", UnusedPort), null, null);
                 });

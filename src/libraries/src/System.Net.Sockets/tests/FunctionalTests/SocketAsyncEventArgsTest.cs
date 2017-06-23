@@ -184,7 +184,7 @@ namespace System.Net.Sockets.Tests
 
                 byte[] buffer = new byte[1];
                 saea.SetBuffer(buffer, 0, 1);
-                Assert.Throws<ArgumentException>(() => saea.BufferList = bufferList);
+                AssertExtensions.Throws<ArgumentException>(null, () => saea.BufferList = bufferList);
                 Assert.Same(buffer, saea.Buffer);
                 Assert.Null(saea.BufferList);
 
@@ -200,7 +200,7 @@ namespace System.Net.Sockets.Tests
             {
                 var bufferList = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1]) };
                 saea.BufferList = bufferList;
-                Assert.Throws<ArgumentException>(() => saea.SetBuffer(new byte[1], 0, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => saea.SetBuffer(new byte[1], 0, 1));
                 Assert.Same(bufferList, saea.BufferList);
                 Assert.Null(saea.Buffer);
 

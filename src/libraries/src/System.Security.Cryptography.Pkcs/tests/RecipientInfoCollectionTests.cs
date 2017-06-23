@@ -114,16 +114,16 @@ namespace System.Security.Cryptography.Pkcs.Tests
             RecipientInfo[] recipients = new RecipientInfo[6];
 
             col.CopyTo(recipients, 3);
-            Assert.Throws<ArgumentException>(() => col.CopyTo(recipients, 4));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", null, () => col.CopyTo(recipients, 4));
             Assert.Throws<ArgumentOutOfRangeException>(() => col.CopyTo(recipients, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => col.CopyTo(recipients, 6));
 
             ICollection ic = col;
-            Assert.Throws<ArgumentException>(() => ic.CopyTo(recipients, 4));
+            AssertExtensions.Throws<ArgumentException>(null, () => ic.CopyTo(recipients, 4));
             Assert.Throws<ArgumentOutOfRangeException>(() => ic.CopyTo(recipients, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => ic.CopyTo(recipients, 6));
             Assert.Throws<ArgumentOutOfRangeException>(() => ic.CopyTo(recipients, 6));
-            Assert.Throws<ArgumentException>(() => ic.CopyTo(new RecipientInfo[2, 2], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => ic.CopyTo(new RecipientInfo[2, 2], 0));
         }
 
         [Fact]
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             RecipientInfo[] recipients = new RecipientInfo[6];
 
             col.CopyTo(recipients, 3);
-            Assert.Throws<ArgumentException>(() => col.CopyTo(recipients, 4));
+            AssertExtensions.Throws<ArgumentException>(null, () => col.CopyTo(recipients, 4));
             Assert.Throws<ArgumentOutOfRangeException>(() => col.CopyTo(recipients, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => col.CopyTo(recipients, 6));
 

@@ -262,46 +262,46 @@ namespace System.Globalization.Tests
         [MemberData(nameof(Calendars_TestData))]
         public static void AddDays_Invalid(Calendar calendar)
         {
-            Assert.Throws<ArgumentException>(() => calendar.AddDays(calendar.MaxSupportedDateTime, 1));
-            Assert.Throws<ArgumentException>(() => calendar.AddDays(calendar.MinSupportedDateTime, -1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddDays(calendar.MaxSupportedDateTime, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddDays(calendar.MinSupportedDateTime, -1));
 
-            Assert.Throws<ArgumentException>(() => calendar.AddDays(DateTime.Now, -120001 * 30));
-            Assert.Throws<ArgumentException>(() => calendar.AddDays(DateTime.Now, 120001 * 30));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddDays(DateTime.Now, -120001 * 30));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddDays(DateTime.Now, 120001 * 30));
         }
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void AddHours_Invalid(Calendar calendar)
         {
-            Assert.Throws<ArgumentException>(() => calendar.AddHours(calendar.MaxSupportedDateTime, 1));
-            Assert.Throws<ArgumentException>(() => calendar.AddHours(calendar.MinSupportedDateTime, -1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddHours(calendar.MaxSupportedDateTime, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddHours(calendar.MinSupportedDateTime, -1));
 
-            Assert.Throws<ArgumentException>(() => calendar.AddHours(DateTime.Now, -120001 * 30 * 24));
-            Assert.Throws<ArgumentException>(() => calendar.AddHours(DateTime.Now, 120001 * 30 * 24));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddHours(DateTime.Now, -120001 * 30 * 24));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddHours(DateTime.Now, 120001 * 30 * 24));
         }
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void AddMinutes_Invalid(Calendar calendar)
         {
-            Assert.Throws<ArgumentException>(() => calendar.AddMinutes(calendar.MaxSupportedDateTime, 1));
-            Assert.Throws<ArgumentException>(() => calendar.AddMinutes(calendar.MinSupportedDateTime, -1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddMinutes(calendar.MaxSupportedDateTime, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddMinutes(calendar.MinSupportedDateTime, -1));
         }
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void AddSeconds_Invalid(Calendar calendar)
         {
-            Assert.Throws<ArgumentException>(() => calendar.AddSeconds(calendar.MaxSupportedDateTime, 1));
-            Assert.Throws<ArgumentException>(() => calendar.AddSeconds(calendar.MinSupportedDateTime, -1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddSeconds(calendar.MaxSupportedDateTime, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddSeconds(calendar.MinSupportedDateTime, -1));
         }
 
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void AddMilliseconds_Invalid(Calendar calendar)
         {
-            Assert.Throws<ArgumentException>(() => calendar.AddMilliseconds(calendar.MaxSupportedDateTime, 1));
-            Assert.Throws<ArgumentException>(() => calendar.AddMilliseconds(calendar.MinSupportedDateTime, -1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddMilliseconds(calendar.MaxSupportedDateTime, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => calendar.AddMilliseconds(calendar.MinSupportedDateTime, -1));
         }
 
         [Theory]

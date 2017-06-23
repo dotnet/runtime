@@ -444,9 +444,9 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             il = new InstructionEncoder(codeBuilder, flowBuilder);
             var l0 = il.DefineLabel();
 
-            Assert.Throws<ArgumentException>(() => il.Branch(ILOpCode.Nop, l0));
+            AssertExtensions.Throws<ArgumentException>("opCode", () => il.Branch(ILOpCode.Nop, l0));
             Assert.Throws<ArgumentNullException>(() => il.Branch(ILOpCode.Br, default(LabelHandle)));
-            Assert.Throws<ArgumentException>(() => il.Branch(ILOpCode.Br, l2));
+            AssertExtensions.Throws<ArgumentException>("label", () => il.Branch(ILOpCode.Br, l2));
         }
 
         [Fact]

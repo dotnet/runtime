@@ -22,11 +22,11 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryStream(fakeBuffer, 1, 2, (FileAccess)(-1)));
             Assert.Throws<ArgumentOutOfRangeException>(() => new UnmanagedMemoryStream(fakeBuffer, 1, 2, (FileAccess)42));
 
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryStream(fakeBuffer, 2, 999));
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryStream(fakeBuffer, 999, 9));
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryStream(fakeBuffer, 1, 100));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, 2, 999));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, 999, 9));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, 1, 100));
 
-            Assert.Throws<ArgumentException>(() => new UnmanagedMemoryStream(fakeBuffer, Int32.MaxValue, 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => new UnmanagedMemoryStream(fakeBuffer, Int32.MaxValue, 1));
         }
 
         [Fact]

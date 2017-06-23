@@ -28,14 +28,14 @@ namespace Microsoft.Win32.RegistryTests
 
             // Should throw if key length above 255 characters but prior to V4, the limit is 16383
             const int maxValueNameLength = 16383;
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue(new string('a', maxValueNameLength + 1), 5));
+            AssertExtensions.Throws<ArgumentException>("name", null, () => TestRegistryKey.SetValue(new string('a', maxValueNameLength + 1), 5));
 
             // Should throw if passed value is array with uninitialized elements
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue("StringArr", value: new string[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.SetValue("StringArr", value: new string[1]));
 
             // Should throw because only String[] (REG_MULTI_SZ) and byte[] (REG_BINARY) are supported.
             // RegistryKey.SetValue does not support arrays of type UInt32[].
-            Assert.Throws<ArgumentException>(() => TestRegistryKey.SetValue("IntArray", value: new[] { 1, 2, 3 }));
+            AssertExtensions.Throws<ArgumentException>(null, () => TestRegistryKey.SetValue("IntArray", value: new[] { 1, 2, 3 }));
 
             // Should throw if RegistryKey closed
             Assert.Throws<ObjectDisposedException>(() =>

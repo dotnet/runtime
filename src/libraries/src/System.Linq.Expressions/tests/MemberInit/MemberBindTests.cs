@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(3))
                 );
             NewExpression newExp = Expression.New(typeof(PropertyAndFields));
-            Assert.Throws<ArgumentException>(() => Expression.MemberInit(newExp, bind));
+            AssertExtensions.Throws<ArgumentException>("bindings[0]", () => Expression.MemberInit(newExp, bind));
         }
 
         [Fact]
@@ -271,14 +271,14 @@ namespace System.Linq.Expressions.Tests
         {
             MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
             PropertyInfo property = typeof(Outer).GetProperty(nameof(Outer.WriteonlyInnerProperty));
-            Assert.Throws<ArgumentException>(() => Expression.MemberBind(property, bind));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MemberBind(property, bind));
         }
 
         public void StaticWriteOnlyInnerProperty()
         {
             MemberAssignment bind = Expression.Bind(typeof(Inner).GetProperty(nameof(Inner.Value)), Expression.Constant(0));
             PropertyInfo property = typeof(Outer).GetProperty(nameof(Outer.StaticWriteonlyInnerProperty));
-            Assert.Throws<ArgumentException>(() => Expression.MemberBind(property, bind));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MemberBind(property, bind));
         }
     }
 }

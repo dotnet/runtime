@@ -495,8 +495,8 @@ namespace System.Linq.Expressions.Tests
                 Assert.True(Enumerable.Range(1, i).SequenceEqual(rocb.Cast<int>()));
             }
 
-            Assert.Throws<ArgumentException>(() => rocb.Add(null));
-            Assert.Throws<ArgumentException>(() => rocb.Add("foo"));
+            AssertExtensions.Throws<ArgumentException>("value", () => rocb.Add(null));
+            AssertExtensions.Throws<ArgumentException>("value", () => rocb.Add("foo"));
         }
 
         [Fact]
@@ -604,10 +604,10 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rocb.Reverse(1, -1));
 
             // CONSIDER: Throw ArgumentException just like List<T> does, see https://github.com/dotnet/corefx/issues/14059
-            // Assert.Throws<ArgumentException>(() => rocb.Reverse(3, 1));
-            // Assert.Throws<ArgumentException>(() => rocb.Reverse(1, 3));
-            // Assert.Throws<ArgumentException>(() => rocb.Reverse(2, 2));
-            // Assert.Throws<ArgumentException>(() => rocb.Reverse(3, 1));
+            // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(3, 1));
+            // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(1, 3));
+            // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(2, 2));
+            // AssertExtensions.Throws<ArgumentException>(null, () => rocb.Reverse(3, 1));
         }
 
         [Fact]
@@ -793,7 +793,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentNullException>(() => rocb.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => rocb.CopyTo(new int[3], -1));
-            Assert.Throws<ArgumentException>(() => rocb.CopyTo(new int[3], 3)); // NB: Consistent with List<T> behavior
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => rocb.CopyTo(new int[3], 3)); // NB: Consistent with List<T> behavior
         }
 
         [Fact]
@@ -827,8 +827,8 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentNullException>(() => rocb.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => rocb.CopyTo(new int[3], -1));
-            Assert.Throws<ArgumentException>(() => rocb.CopyTo(new int[3], 3)); // NB: Consistent with List<T> behavior
-            Assert.Throws<ArgumentException>(() => rocb.CopyTo(new int[3, 3], 0));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", () => rocb.CopyTo(new int[3], 3)); // NB: Consistent with List<T> behavior
+            AssertExtensions.Throws<ArgumentException>(null, () => rocb.CopyTo(new int[3, 3], 0));
 
             // CONSIDER: Throw ArgumentException instead to be consistent with List<T>, see https://github.com/dotnet/corefx/issues/14059
             Assert.Throws<ArrayTypeMismatchException>(() => rocb.CopyTo(new string[3], 0));

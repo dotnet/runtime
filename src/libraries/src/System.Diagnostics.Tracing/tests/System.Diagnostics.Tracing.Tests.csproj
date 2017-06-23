@@ -36,6 +36,9 @@
     <Compile Include="CustomEventSources\SimpleEventSource.cs" />
     <Compile Include="CustomEventSources\UseAbstractEventSource.cs" />
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>CommonTest\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>CommonTest\System\PlatformDetection.cs</Link>
     </Compile>

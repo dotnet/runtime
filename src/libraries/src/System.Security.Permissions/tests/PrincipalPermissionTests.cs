@@ -122,7 +122,7 @@ namespace System.Security.Permissions.Tests
             SecurityElement se2 = new SecurityElement("IInvalidPermission", se.Text);
             se2.AddAttribute("class", se.Attribute("class"));
             se2.AddAttribute("version", se.Attribute("version"));
-            Assert.Throws<ArgumentException>(() => p.FromXml(se2));
+            AssertExtensions.Throws<ArgumentException>(null, () => p.FromXml(se2));
         }
 
         [Fact]
@@ -134,7 +134,7 @@ namespace System.Security.Permissions.Tests
             SecurityElement se2 = new SecurityElement(se.Tag, se.Text);
             se2.AddAttribute("class", se.Attribute("class"));
             se2.AddAttribute("version", "2");
-            Assert.Throws<ArgumentException>(() => p.FromXml(se2));
+            AssertExtensions.Throws<ArgumentException>(null, () => p.FromXml(se2));
         }
 
         [Fact]
@@ -201,7 +201,7 @@ namespace System.Security.Permissions.Tests
         {
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
-            Assert.Throws<ArgumentException>(() => p1.Union(ep2));
+            AssertExtensions.Throws<ArgumentException>("System.Security.Permissions.PrincipalPermission", () => p1.Union(ep2));
         }
 
         [Fact]
@@ -286,7 +286,7 @@ namespace System.Security.Permissions.Tests
         {
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
-            Assert.Throws<ArgumentException>(() => p1.Intersect(ep2));
+            AssertExtensions.Throws<ArgumentException>("System.Security.Permissions.PrincipalPermission", () => p1.Intersect(ep2));
         }
 
         [Fact]
@@ -351,7 +351,7 @@ namespace System.Security.Permissions.Tests
         {
             PrincipalPermission p1 = new PrincipalPermission("user", null);
             EnvironmentPermission ep2 = new EnvironmentPermission(PermissionState.Unrestricted);
-            Assert.Throws<ArgumentException>(() => p1.IsSubsetOf(ep2));
+            AssertExtensions.Throws<ArgumentException>("System.Security.Permissions.PrincipalPermission", () => p1.IsSubsetOf(ep2));
         }
     }
 }

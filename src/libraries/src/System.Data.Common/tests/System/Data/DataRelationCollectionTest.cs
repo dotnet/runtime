@@ -91,7 +91,7 @@ namespace System.Data.Tests
         [Fact]
         public void AddException2()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                DataRelationCollection drcol = _dataset.Relations;
                DataRelation dr1 = new DataRelation("CustOrder"
@@ -288,7 +288,7 @@ namespace System.Data.Tests
             DataRelation newdr = new DataRelation("newdr"
                                 , _dataset.Tables["Customer"].Columns["custid"]
                                 , _dataset.Tables["Order"].Columns["custid"]);
-            Assert.Throws<ArgumentException>(() => drcol.Remove(newdr));
+            AssertExtensions.Throws<ArgumentException>(null, () => drcol.Remove(newdr));
         }
 
         [Fact]

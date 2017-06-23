@@ -117,7 +117,7 @@ namespace System.Data.Tests
         [Fact]
         public void DataRowCollection_Add_D2()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                DataTable dt = DataProvider.CreateParentDataTable();
                dt.Rows.Add(dt.Rows[0]);
@@ -137,7 +137,7 @@ namespace System.Data.Tests
         [Fact]
         public void DataRowCollection_Add_D4()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 DataTable dt = DataProvider.CreateParentDataTable();
                 DataTable dt1 = DataProvider.CreateParentDataTable();
@@ -302,7 +302,7 @@ namespace System.Data.Tests
         [Fact]
         public void DataRowCollection_Contains_O4()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                DataTable dt = DataProvider.CreateParentDataTable();
                dt.PrimaryKey = new DataColumn[] { dt.Columns[0], dt.Columns[1] };
@@ -357,7 +357,7 @@ namespace System.Data.Tests
         [Fact]
         public void DataRowCollection_Find_O4()
         {
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
            {
                DataTable dt = DataProvider.CreateParentDataTable();
                dt.PrimaryKey = new DataColumn[] { dt.Columns[0], dt.Columns[1] };

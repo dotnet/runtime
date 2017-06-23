@@ -146,7 +146,7 @@ namespace System.Data.Tests
             _table.Rows.Add(new object[] { 1 });
 
             //FKC: can't create unique constraint because duplicate values already exist
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 var fkc = new ForeignKeyConstraint(_table.Columns[0], _table2.Columns[0]);
                 _table2.Constraints.Add(fkc);
@@ -167,7 +167,7 @@ namespace System.Data.Tests
             _table2.Rows.Add(new object[] { 3 });
 
             var fkc = new ForeignKeyConstraint(_table.Columns[0], _table2.Columns[0]);
-            Assert.Throws<ArgumentException>(() => _table2.Constraints.Add(fkc));
+            AssertExtensions.Throws<ArgumentException>(null, () => _table2.Constraints.Add(fkc));
         }
 
         [Fact]
@@ -177,7 +177,7 @@ namespace System.Data.Tests
             _table.Rows.Add(new object[] { 1 });
             _table.Rows.Add(new object[] { 1 });
             var uc = new UniqueConstraint(_table.Columns[0]);
-            Assert.Throws<ArgumentException>(() => _table.Constraints.Add(uc));
+            AssertExtensions.Throws<ArgumentException>(null, () => _table.Constraints.Add(uc));
         }
 
         [Fact]

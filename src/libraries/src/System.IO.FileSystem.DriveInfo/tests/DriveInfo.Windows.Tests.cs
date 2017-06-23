@@ -16,18 +16,31 @@ namespace System.IO.FileSystem.DriveInfoTests
 {
     public class DriveInfoWindowsTests
     {
+        [Theory]
+        [InlineData(":\0", "driveName")]
+        [InlineData(":", null)]
+        [InlineData("://", null)]
+        [InlineData(@":\", null)]
+        [InlineData(":/", null)]
+        [InlineData(@":\\", null)]
+        [InlineData("Az", null)]
+        [InlineData("1", null)]
+        [InlineData("a1", null)]
+        [InlineData(@"\\share", null)]
+        [InlineData(@"\\", null)]
+        [InlineData("c ", null)]
+        [InlineData("", "path")]
+        [InlineData(" c", null)]
+        public void Ctor_InvalidPath_ThrowsArgumentException(string driveName, string paramName)
+        {
+            AssertExtensions.Throws<ArgumentException>(paramName, null, () => new DriveInfo(driveName));
+        }
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void TestConstructor()
         {
-            string[] invalidInput = { ":\0", ":", "://", @":\", ":/", @":\\", "Az", "1", "a1", @"\\share", @"\\", "c ", string.Empty, " c" };
             string[] variableInput = { "{0}", "{0}", "{0}:", "{0}:", @"{0}:\", @"{0}:\\", "{0}://" };
-
-            // Test Invalid input
-            foreach (var input in invalidInput)
-            {
-                Assert.Throws<ArgumentException>(() => { new DriveInfo(input); });
-            }
 
             // Test Null
             Assert.Throws<ArgumentNullException>(() => { new DriveInfo(null); });

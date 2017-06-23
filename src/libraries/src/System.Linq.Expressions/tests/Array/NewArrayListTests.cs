@@ -1645,7 +1645,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void VoidType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.NewArrayInit(typeof(void)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(void)));
         }
 
         [Fact]
@@ -1665,7 +1665,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void ByRefType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.NewArrayInit(typeof(int).MakeByRefType()));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(int).MakeByRefType()));
         }
 
         [Fact]
@@ -1677,14 +1677,14 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void GenericType()
         {
-            Assert.Throws<ArgumentException>(() => Expression.NewArrayInit(typeof(List<>)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(List<>)));
         }
 
         [Fact]
         public static void TypeContainsGenericParameters()
         {
-            Assert.Throws<ArgumentException>(() => Expression.NewArrayInit(typeof(List<>.Enumerator)));
-            Assert.Throws<ArgumentException>(() => Expression.NewArrayInit(typeof(List<>).MakeGenericType(typeof(List<>))));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(List<>.Enumerator)));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.NewArrayInit(typeof(List<>).MakeGenericType(typeof(List<>))));
         }
 
         [Fact]

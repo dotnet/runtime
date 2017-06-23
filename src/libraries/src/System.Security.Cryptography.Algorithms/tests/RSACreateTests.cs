@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             parameters.Exponent = null;
 
             if (RSA.Create() is RSACng && PlatformDetection.IsFullFramework)
-                Assert.Throws<ArgumentException>(() => RSA.Create(parameters));
+                AssertExtensions.Throws<ArgumentException>(null, () => RSA.Create(parameters));
             else
                 Assert.Throws<CryptographicException>(() => RSA.Create(parameters));
         }

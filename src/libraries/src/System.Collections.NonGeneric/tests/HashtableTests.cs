@@ -127,7 +127,7 @@ namespace System.Collections.Tests
         public static void Ctor_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue)); // Capacity / load factor > int.MaxValue
+            AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue)); // Capacity / load factor > int.MaxValue
         }
 
         [Fact]
@@ -253,7 +253,7 @@ namespace System.Collections.Tests
         public static void Ctor_Int_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, 0.1f)); // Capacity / load factor > int.MaxValue
+            AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue, 0.1f)); // Capacity / load factor > int.MaxValue
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f)); // Load factor < 0.1f
             AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f)); // Load factor > 1f
@@ -287,7 +287,7 @@ namespace System.Collections.Tests
         public static void Ctor_Int_IEqualityComparer_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, null)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, null)); // Capacity / load factor > int.MaxValue
+            AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue, null)); // Capacity / load factor > int.MaxValue
         }
 
         [Fact]
@@ -354,7 +354,7 @@ namespace System.Collections.Tests
         public static void Ctor_Capacity_LoadFactor_IEqualityComparer_Invalid()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("capacity", () => new Hashtable(-1, 1f, null)); // Capacity < 0
-            Assert.Throws<ArgumentException>(() => new Hashtable(int.MaxValue, 0.1f, null)); // Capacity / load factor > int.MaxValue
+            AssertExtensions.Throws<ArgumentException>("capacity", null, () => new Hashtable(int.MaxValue, 0.1f, null)); // Capacity / load factor > int.MaxValue
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 0.09f, null)); // Load factor < 0.1f
             AssertExtensions.Throws<ArgumentOutOfRangeException>("loadFactor", () => new Hashtable(100, 1.01f, null)); // Load factor > 1f
@@ -843,11 +843,11 @@ namespace System.Collections.Tests
         {
             var hash = new ComparableHashtable(StringComparer.CurrentCulture);
 
-            Assert.Throws<ArgumentException>(() => hash.HashCodeProvider);
-            Assert.Throws<ArgumentException>(() => hash.Comparer);
+            AssertExtensions.Throws<ArgumentException>(null, () => hash.HashCodeProvider);
+            AssertExtensions.Throws<ArgumentException>(null, () => hash.Comparer);
 
-            Assert.Throws<ArgumentException>(() => hash.HashCodeProvider = CaseInsensitiveHashCodeProvider.DefaultInvariant);
-            Assert.Throws<ArgumentException>(() => hash.Comparer = StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.Throws<ArgumentException>(null, () => hash.HashCodeProvider = CaseInsensitiveHashCodeProvider.DefaultInvariant);
+            AssertExtensions.Throws<ArgumentException>(null, () => hash.Comparer = StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]

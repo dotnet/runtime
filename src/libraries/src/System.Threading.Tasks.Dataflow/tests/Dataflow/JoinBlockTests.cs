@@ -65,8 +65,8 @@ namespace System.Threading.Tasks.Dataflow.Tests
             Assert.Throws<NotSupportedException>(() => { var ignored = new JoinBlock<int, int>().Target1.Completion; });
             Assert.Throws<NotSupportedException>(() => { var ignored = new JoinBlock<int, int, int>().Target3.Completion; });
             Assert.Throws<ArgumentNullException>(() => new JoinBlock<int, int>().Target1.Fault(null));
-            Assert.Throws<ArgumentException>(() => new JoinBlock<int, int>().Target1.OfferMessage(default(DataflowMessageHeader), 1, null, false));
-            Assert.Throws<ArgumentException>(() => new JoinBlock<int, int>().Target1.OfferMessage(new DataflowMessageHeader(1), 1, null, true));
+            AssertExtensions.Throws<ArgumentException>("messageHeader", () => new JoinBlock<int, int>().Target1.OfferMessage(default(DataflowMessageHeader), 1, null, false));
+            AssertExtensions.Throws<ArgumentException>("consumeToAccept", () => new JoinBlock<int, int>().Target1.OfferMessage(new DataflowMessageHeader(1), 1, null, true));
 
             DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int>>(new JoinBlock<int, int>());
             DataflowTestHelpers.TestArgumentsExceptions<Tuple<int, int, int>>(new JoinBlock<int, int, int>());

@@ -120,7 +120,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
 
             TestGenerationHandle(aggregator, MetadataTokens.Handle(0x1800003a), expectedHandle: MetadataTokens.Handle(0x18000002), expectedGeneration: 3);
 
-            Assert.Throws<ArgumentException>(() => TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000032), expectedHandle: MetadataTokens.Handle(0x00000000), expectedGeneration: 0));
+            AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.Handle(0x11000032), expectedHandle: MetadataTokens.Handle(0x00000000), expectedGeneration: 0));
         }
 
         [Fact]
@@ -170,7 +170,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
             TestGenerationHandle(aggregator, MetadataTokens.UserStringHandle(12), expectedHandle: MetadataTokens.UserStringHandle(2), expectedGeneration: 2);
             TestGenerationHandle(aggregator, MetadataTokens.StringHandle(0), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 2);
 
-            Assert.Throws<ArgumentException>(() => TestGenerationHandle(aggregator, MetadataTokens.StringHandle(22), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 0));
+            AssertExtensions.Throws<ArgumentException>("handle", () => TestGenerationHandle(aggregator, MetadataTokens.StringHandle(22), expectedHandle: MetadataTokens.StringHandle(0), expectedGeneration: 0));
         }
     }
 }

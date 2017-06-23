@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             parameters.X = null;
             parameters.Y = null;
 
-            Assert.Throws<ArgumentException>(() => DSA.Create(parameters));
+            AssertExtensions.Throws<ArgumentException>(null, () => DSA.Create(parameters));
         }
     }
 }

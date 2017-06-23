@@ -28,12 +28,12 @@ namespace System.Tests
         [Fact]
         public void IncorrectVariableThrowsArgument()
         {
-            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(string.Empty, "test"));
-            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(NullString, "test"));
-            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable("Variable=Something", "test"));
+            AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(string.Empty, "test"));
+            AssertExtensions.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(NullString, "test"));
+            AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable("Variable=Something", "test"));
 
             string varWithLenLongerThanAllowed = new string('c', MAX_VAR_LENGTH_ALLOWED + 1);
-            Assert.Throws<ArgumentException>(() => Environment.SetEnvironmentVariable(varWithLenLongerThanAllowed, "test"));
+            AssertExtensions.Throws<ArgumentException>("variable", null, () => Environment.SetEnvironmentVariable(varWithLenLongerThanAllowed, "test"));
         }
 
         private static void ExecuteAgainstTarget(

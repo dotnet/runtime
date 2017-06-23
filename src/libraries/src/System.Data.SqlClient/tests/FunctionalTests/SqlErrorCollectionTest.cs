@@ -95,7 +95,7 @@ namespace System.Data.SqlClient.Tests
             Assert.Throws<ArgumentNullException>(() => copyTo(c, null, 0));
             Assert.Throws<ArgumentNullException>(() => copyTo(c, null, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => copyTo(c, new SqlError[10], -1));
-            Assert.Throws<ArgumentException>(() => copyTo(c, new SqlError[10], 1000));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => copyTo(c, new SqlError[10], 1000));
 
             additionalValidation?.Invoke(c);
         }

@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Ctor_NullMethod_Exception()
         {
-            Assert.Throws<ArgumentException>(() => { new HttpMethod(null); } );
+            AssertExtensions.Throws<ArgumentException>("method", () => { new HttpMethod(null); } );
         }
 
         [Theory]

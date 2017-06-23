@@ -189,7 +189,7 @@ namespace System.Collections.Tests
 
             Assert.All(InvalidParameters, invalidSet =>
             {
-                Assert.Throws<ArgumentException>(() => list.Sort(invalidSet.Item1, invalidSet.Item2, GetIComparer()));
+                AssertExtensions.Throws<ArgumentException>(null, () => list.Sort(invalidSet.Item1, invalidSet.Item2, GetIComparer()));
             });
         }
 

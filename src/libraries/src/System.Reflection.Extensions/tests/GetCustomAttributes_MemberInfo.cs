@@ -25,7 +25,7 @@ namespace System.Reflection.Tests
         {
             Assert.True(CustomAttributeExtensions.IsDefined(s_typeTestClass.GetTypeInfo(), typeof(MyAttribute_Single_M)));
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 CustomAttributeExtensions.IsDefined(s_typeTestClass.GetTypeInfo(), typeof(String));
             });
@@ -93,7 +93,7 @@ namespace System.Reflection.Tests
                 attribute = CustomAttributeExtensions.GetCustomAttribute(s_typeTestClass.GetTypeInfo(), typeof(MyAttribute_AllowMultiple_Inherited));
             });
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 attribute = CustomAttributeExtensions.GetCustomAttribute(s_typeTestClass.GetTypeInfo(), typeof(String));
             });
@@ -113,7 +113,7 @@ namespace System.Reflection.Tests
             attributes = CustomAttributeExtensions.GetCustomAttributes(s_typeTestClass.GetTypeInfo(), typeof(SecurityCriticalAttribute));
             Assert.Equal(0, attributes.Count());
 
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 attributes = CustomAttributeExtensions.GetCustomAttributes(s_typeTestClass.GetTypeInfo(), typeof(String));
             });

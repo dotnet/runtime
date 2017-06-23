@@ -133,12 +133,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
         {
             Assert.Throws<ArgumentNullException>(() => ECCurve.CreateFromFriendlyName(null));
             Assert.Throws<ArgumentNullException>(() => ECCurve.CreateFromValue(null));
-            Assert.Throws<ArgumentException>(() => ECCurve.CreateFromFriendlyName(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => ECCurve.CreateFromFriendlyName(""));
             Assert.Throws<PlatformNotSupportedException>(() => ECDsaFactory.Create(ECCurve.CreateFromFriendlyName("Invalid")).ExportExplicitParameters(false));
-            Assert.Throws<ArgumentException>(() => ECCurve.CreateFromValue(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => ECCurve.CreateFromValue(""));
             Assert.Throws<PlatformNotSupportedException>(() => ECDsaFactory.Create(ECCurve.CreateFromValue("Invalid")).ExportExplicitParameters(false));
-            Assert.Throws<ArgumentException>(() => ECCurve.CreateFromOid(new Oid(null, null)));
-            Assert.Throws<ArgumentException>(() => ECCurve.CreateFromOid(new Oid("", "")));
+            AssertExtensions.Throws<ArgumentException>(null, () => ECCurve.CreateFromOid(new Oid(null, null)));
+            AssertExtensions.Throws<ArgumentException>(null, () => ECCurve.CreateFromOid(new Oid("", "")));
         }
 
         [Fact]

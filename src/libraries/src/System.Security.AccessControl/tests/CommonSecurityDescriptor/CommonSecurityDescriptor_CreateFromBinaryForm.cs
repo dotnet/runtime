@@ -65,7 +65,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             // case 5: ControlFlags.SelfRelative is not set
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 byte[] binaryForm = new byte[24];
                 for (int i = 0; i < binaryForm.Length; i++)
@@ -84,7 +84,7 @@ namespace System.Security.AccessControl.Tests
             });
 
             // Case 7, an array of garbage
-            Assert.Throws<ArgumentException>(() =>
+            AssertExtensions.Throws<ArgumentException>(null, () =>
             {
                 byte[] binaryForm = { 1, 0, 0, 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
                 commonSecurityDescriptor = new CommonSecurityDescriptor(false, false, binaryForm, 0);

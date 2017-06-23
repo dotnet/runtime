@@ -196,7 +196,7 @@ namespace System.Linq.Tests
             int[] source = new int[] { 1, 2, 3 };
             Func<int, int> keySelector = key => 1;
 
-            Assert.Throws<ArgumentException>(() => source.ToDictionary(keySelector));
+            AssertExtensions.Throws<ArgumentException>(null, () => source.ToDictionary(keySelector));
         }
 
         [Fact]
@@ -312,7 +312,7 @@ namespace System.Linq.Tests
                 new { Name = "Bob", Score = 55 }
             };
 
-            Assert.Throws<ArgumentException>(() => source.ToDictionary(e => e.Name, e => e, new AnagramEqualityComparer()));
+            AssertExtensions.Throws<ArgumentException>(null, () => source.ToDictionary(e => e.Name, e => e, new AnagramEqualityComparer()));
         }
         
         private static void AssertMatches<K, E>(IEnumerable<K> keys, IEnumerable<E> values, Dictionary<K, E> dict)
