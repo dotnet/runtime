@@ -207,4 +207,27 @@ sgen_array_list_default_is_slot_set (volatile gpointer *slot)
 	return *slot != NULL;
 }
 
+/* Removes all NULL pointers from the array. Not thread safe */
+void
+sgen_array_list_remove_nulls (SgenArrayList *array)
+{
+	guint32 start = 0;
+	volatile gpointer *slot;
+	gboolean skipped = FALSE;
+
+	SGEN_ARRAY_LIST_FOREACH_SLOT (array, slot) {
+		if (*slot) {
+			*sgen_array_list_get_slot (array, start++) = *slot;
+			if (skipped)
+				*slot = NULL;
+		} else {
+			skipped = TRUE;
+		}
+	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
+
+	mono_memory_write_barrier ();
+	array->next_slot = start;
+	array->slot_hint = start;
+}
+
 #endif

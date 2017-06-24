@@ -212,6 +212,7 @@ static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, sgen_array_l
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
+static gboolean compact_blocks = FALSE;
 
 /*
  * We can iterate the block list also while sweep is in progress but we
@@ -1611,6 +1612,8 @@ sweep_start (void)
 
 	sgen_workers_foreach (GENERATION_NURSERY, sgen_worker_clear_free_block_lists);
 	sgen_workers_foreach (GENERATION_OLD, sgen_worker_clear_free_block_lists);
+
+	compact_blocks = TRUE;
 }
 
 static void sweep_finish (void);
@@ -1984,6 +1987,18 @@ major_start_nursery_collection (void)
 #endif
 
 	old_num_major_sections = num_major_sections;
+
+	/* Compact the block list if it hasn't been compacted in a while and nobody is using it */
+	if (compact_blocks && !sweep_in_progress () && !sweep_blocks_job && !sgen_concurrent_collection_in_progress ()) {
+		/*
+		 * We support null elements in the array but do regular compaction to avoid
+		 * excessive traversal of the array and to facilitate splitting into well
+		 * balanced sections for parallel modes. We compact as soon as possible after
+		 * sweep.
+		 */
+		sgen_array_list_remove_nulls (&allocated_blocks);
+		compact_blocks = FALSE;
+	}
 }
 
 static void
