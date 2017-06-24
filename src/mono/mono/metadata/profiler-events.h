@@ -20,7 +20,8 @@
  */
 
 MONO_PROFILER_EVENT_0(runtime_initialized, RuntimeInitialized)
-MONO_PROFILER_EVENT_0(runtime_shutdown, RuntimeShutdown)
+MONO_PROFILER_EVENT_0(runtime_shutdown_begin, RuntimeShutdown)
+MONO_PROFILER_EVENT_0(runtime_shutdown_end, RuntimeShutdown)
 
 MONO_PROFILER_EVENT_1(context_loaded, ContextLoaded, MonoAppContext *, context)
 MONO_PROFILER_EVENT_1(context_unloaded, ContextUnloaded, MonoAppContext *, context)

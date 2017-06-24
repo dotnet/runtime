@@ -541,7 +541,7 @@ void mono_profiler_init (const char *desc)
 	prof->string_locations_hash = g_hash_table_new (mismatched_files_guint32_hash, mismatched_files_guint32_equal);
 
 	MonoProfilerHandle handle = mono_profiler_install (prof);
-	mono_profiler_set_runtime_shutdown_callback (handle, profiler_shutdown);
+	mono_profiler_set_runtime_shutdown_end_callback (handle, profiler_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized_cb);
 	mono_profiler_set_iomap_report_callback (handle, mono_portability_iomap_event);
 	mono_profiler_enable_allocations ();

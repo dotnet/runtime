@@ -168,7 +168,7 @@ mono_profiler_init (const char *desc)
 	mono_os_mutex_init (&mutex);
 
 	MonoProfilerHandle handle = mono_profiler_install (prof);
-	mono_profiler_set_runtime_shutdown_callback (handle, prof_shutdown);
+	mono_profiler_set_runtime_shutdown_end_callback (handle, prof_shutdown);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_leave);
 }
 

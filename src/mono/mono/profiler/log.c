@@ -4715,7 +4715,7 @@ mono_profiler_init (const char *desc)
 	MonoProfilerHandle handle = log_profiler->handle = mono_profiler_install (log_profiler);
 
 	//Required callbacks
-	mono_profiler_set_runtime_shutdown_callback (handle, log_shutdown);
+	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 
 	mono_profiler_set_gc_event_callback (handle, gc_event);

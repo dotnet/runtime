@@ -1000,7 +1000,7 @@ mono_debugger_agent_init (void)
 	mono_coop_cond_init (&debugger_thread_exited_cond);
 
 	MonoProfilerHandle prof = mono_profiler_install ((MonoProfiler*)&debugger_profiler);
-	mono_profiler_set_runtime_shutdown_callback (prof, runtime_shutdown);
+	mono_profiler_set_runtime_shutdown_end_callback (prof, runtime_shutdown);
 	mono_profiler_set_runtime_initialized_callback (prof, runtime_initialized);
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
 	mono_profiler_set_domain_unloading_callback (prof, appdomain_start_unload);

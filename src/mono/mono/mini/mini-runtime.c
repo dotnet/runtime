@@ -4359,6 +4359,8 @@ mini_cleanup (MonoDomain *domain)
 	if (mono_profiler_sampling_enabled ())
 		mono_runtime_shutdown_stat_profiler ();
 
+	MONO_PROFILER_RAISE (runtime_shutdown_begin, ());
+
 #ifndef DISABLE_COM
 	cominterop_release_all_rcws ();
 #endif
@@ -4380,7 +4382,7 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_threadpool_cleanup ();
 
-	MONO_PROFILER_RAISE (runtime_shutdown, ());
+	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
 
 	mono_profiler_cleanup ();
 
