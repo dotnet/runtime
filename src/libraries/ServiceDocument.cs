@@ -68,12 +68,12 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public static ServiceDocument Load(XmlReader reader)
+        public static ServiceDocument Load(XmlReaderWrapper reader)
         {
             return Load<ServiceDocument>(reader);
         }
 
-        public static TServiceDocument Load<TServiceDocument>(XmlReader reader)
+        public static TServiceDocument Load<TServiceDocument>(XmlReaderWrapper reader)
             where TServiceDocument : ServiceDocument, new()
         {
             AtomPub10ServiceDocumentFormatter<TServiceDocument> formatter = new AtomPub10ServiceDocumentFormatter<TServiceDocument>();
@@ -101,7 +101,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReader reader, string version)
+        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
         {
             return false;
         }
@@ -116,7 +116,7 @@ namespace Microsoft.ServiceModel.Syndication
             _extensions.WriteElementExtensions(writer);
         }
 
-        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
         {
             _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }

@@ -79,7 +79,7 @@ namespace Microsoft.ServiceModel.Syndication
             get { return App10Constants.Namespace; }
         }
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -95,7 +95,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -118,7 +118,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteDocument(writer);
         }
 
-        public override void ReadFrom(XmlReader reader)
+        public override void ReadFrom(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -170,7 +170,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadDocument(XmlReader reader)
+        private void ReadDocument(XmlReaderWrapper reader)
         {
             try
             {

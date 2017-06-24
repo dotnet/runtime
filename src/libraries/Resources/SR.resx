@@ -1303,7 +1303,7 @@
     <value>The {0} object has been disposed.</value>
   </data>
   <data name="InvalidReaderPositionOnCreateMessage" xml:space="preserve">
-    <value>The XmlReader used for the body of the message must be positioned on an element.</value>
+    <value>The XmlReaderWrapper used for the body of the message must be positioned on an element.</value>
   </data>
   <data name="DuplicateMessageProperty" xml:space="preserve">
     <value>A property with the name '{0}' already exists.</value>
@@ -1666,7 +1666,7 @@
     <value>Could not compile the XPath expression '{0}' with the given XsltContext.</value>
   </data>
   <data name="FilterReaderNotStartElem" xml:space="preserve">
-    <value>XmlReader not positioned at a start element.</value>
+    <value>XmlReaderWrapper not positioned at a start element.</value>
   </data>
   <data name="SeekableMessageNavInvalidPosition" xml:space="preserve">
     <value>The position is not valid for this navigator.</value>

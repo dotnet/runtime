@@ -267,17 +267,17 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
+        public static SyndicationFeed Load(XmlReaderWrapper reader, Rss20FeedFormatter formatter)
         {
             return Load(reader, formatter, new Atom10FeedFormatter());
         }
 
-        public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter)
+        public static SyndicationFeed Load(XmlReaderWrapper reader, Atom10FeedFormatter formatter)
         {
             return Load(reader, new Rss20FeedFormatter(), formatter);
         }
 
-        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
+        public static SyndicationFeed Load(XmlReaderWrapper reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
         {
             if (reader == null)
             {
@@ -299,12 +299,12 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        public static SyndicationFeed Load(XmlReader reader)
+        public static SyndicationFeed Load(XmlReaderWrapper reader)
         {
             return Load<SyndicationFeed>(reader);
         }
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader)
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReaderWrapper reader)
             where TSyndicationFeed : SyndicationFeed, new()
         {
             if (reader == null)
@@ -381,7 +381,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReader reader, string version)
+        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
         {
             return false;
         }
@@ -396,7 +396,7 @@ namespace Microsoft.ServiceModel.Syndication
             _extensions.WriteElementExtensions(writer);
         }
 
-        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
         {
             _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }

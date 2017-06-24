@@ -199,12 +199,12 @@ namespace Microsoft.ServiceModel.Syndication
             set { _title = value; }
         }
 
-        public static SyndicationItem Load(XmlReader reader)
+        public static SyndicationItem Load(XmlReaderWrapper reader)
         {
             return Load<SyndicationItem>(reader);
         }
 
-        public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader)
+        public static TSyndicationItem Load<TSyndicationItem>(XmlReaderWrapper reader)
             where TSyndicationItem : SyndicationItem, new()
         {
             if (reader == null)
@@ -289,13 +289,13 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseContent(XmlReader reader, string contentType, string version, out SyndicationContent content)
+        protected internal virtual bool TryParseContent(XmlReaderWrapper reader, string contentType, string version, out SyndicationContent content)
         {
             content = null;
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReader reader, string version)
+        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
         {
             return false;
         }
@@ -310,7 +310,7 @@ namespace Microsoft.ServiceModel.Syndication
             _extensions.WriteElementExtensions(writer);
         }
 
-        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
         {
             _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }

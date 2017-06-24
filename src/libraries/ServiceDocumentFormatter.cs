@@ -35,8 +35,8 @@ namespace Microsoft.ServiceModel.Syndication
         public abstract string Version
         { get; }
 
-        public abstract bool CanRead(XmlReader reader);
-        public abstract void ReadFrom(XmlReader reader);
+        public abstract bool CanRead(XmlReaderWrapper reader);
+        public abstract void ReadFrom(XmlReaderWrapper reader);
         public abstract void WriteTo(XmlWriter writer);
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, CategoriesDocument categories)
@@ -116,7 +116,7 @@ namespace Microsoft.ServiceModel.Syndication
             return document.CreateWorkspace();
         }
 
-        protected static void LoadElementExtensions(XmlReader reader, CategoriesDocument categories, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReaderWrapper reader, CategoriesDocument categories, int maxExtensionSize)
         {
             if (categories == null)
             {
@@ -125,7 +125,7 @@ namespace Microsoft.ServiceModel.Syndication
             categories.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        protected static void LoadElementExtensions(XmlReader reader, ResourceCollectionInfo collection, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReaderWrapper reader, ResourceCollectionInfo collection, int maxExtensionSize)
         {
             if (collection == null)
             {
@@ -134,7 +134,7 @@ namespace Microsoft.ServiceModel.Syndication
             collection.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        protected static void LoadElementExtensions(XmlReader reader, Workspace workspace, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReaderWrapper reader, Workspace workspace, int maxExtensionSize)
         {
             if (workspace == null)
             {
@@ -143,7 +143,7 @@ namespace Microsoft.ServiceModel.Syndication
             workspace.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        protected static void LoadElementExtensions(XmlReader reader, ServiceDocument document, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReaderWrapper reader, ServiceDocument document, int maxExtensionSize)
         {
             if (document == null)
             {
@@ -188,7 +188,7 @@ namespace Microsoft.ServiceModel.Syndication
             return workspace.TryParseAttribute(name, ns, value, version);
         }
 
-        protected static bool TryParseElement(XmlReader reader, ResourceCollectionInfo collection, string version)
+        protected static bool TryParseElement(XmlReaderWrapper reader, ResourceCollectionInfo collection, string version)
         {
             if (collection == null)
             {
@@ -197,7 +197,7 @@ namespace Microsoft.ServiceModel.Syndication
             return collection.TryParseElement(reader, version);
         }
 
-        protected static bool TryParseElement(XmlReader reader, ServiceDocument document, string version)
+        protected static bool TryParseElement(XmlReaderWrapper reader, ServiceDocument document, string version)
         {
             if (document == null)
             {
@@ -206,7 +206,7 @@ namespace Microsoft.ServiceModel.Syndication
             return document.TryParseElement(reader, version);
         }
 
-        protected static bool TryParseElement(XmlReader reader, Workspace workspace, string version)
+        protected static bool TryParseElement(XmlReaderWrapper reader, Workspace workspace, string version)
         {
             if (workspace == null)
             {
@@ -215,7 +215,7 @@ namespace Microsoft.ServiceModel.Syndication
             return workspace.TryParseElement(reader, version);
         }
 
-        protected static bool TryParseElement(XmlReader reader, CategoriesDocument categories, string version)
+        protected static bool TryParseElement(XmlReaderWrapper reader, CategoriesDocument categories, string version)
         {
             if (categories == null)
             {

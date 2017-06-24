@@ -34,22 +34,22 @@ namespace Microsoft.ServiceModel.Syndication
         private bool _serializeExtensionsAsAtom;
 
         //Custom Parsers
-        public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; } // ParseDate
-        public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
-        public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
-        public Func<XmlReader, string> LanguageParser { get; set; }
-        public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
-        public Func<XmlReader, string> GeneratorParser { get; set; }
-        public Func<XmlReader, Uri, SyndicationLink> LinkParser { get; set; }
-        public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
-        public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
-        public Func<XmlReader,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
-        public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
+        public Func<string, XmlReaderWrapper, DateTimeOffset> DateParser { get; set; } // ParseDate
+        public Func<XmlReaderWrapper, TextSyndicationContent> TitleParser { get; set; }
+        public Func<XmlReaderWrapper, TextSyndicationContent> DescriptionParser { get; set; }
+        public Func<XmlReaderWrapper, string> LanguageParser { get; set; }
+        public Func<XmlReaderWrapper, TextSyndicationContent> CopyrightParser { get; set; }
+        public Func<XmlReaderWrapper, string> GeneratorParser { get; set; }
+        public Func<XmlReaderWrapper, Uri, SyndicationLink> LinkParser { get; set; }
+        public Func<XmlReaderWrapper, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
+        public Func<XmlReaderWrapper, SyndicationFeed, bool> ImageParser { get; set; }
+        public Func<XmlReaderWrapper,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
+        public Func<XmlReaderWrapper, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
 
 
 
 
-        private bool OnReadImage(XmlReader reader, SyndicationFeed result)
+        private bool OnReadImage(XmlReaderWrapper reader, SyndicationFeed result)
         {
             reader.ReadStartElement();
             while (reader.IsStartElement())
@@ -71,36 +71,36 @@ namespace Microsoft.ServiceModel.Syndication
             return true;
         }
 
-        private SyndicationItem OnReadItem(XmlReader reader, SyndicationFeed result)
+        private SyndicationItem OnReadItem(XmlReaderWrapper reader, SyndicationFeed result)
         {
             return ReadItem(reader,result);
         }
-        private TextSyndicationContent OnReadTitle(XmlReader reader)
+        private TextSyndicationContent OnReadTitle(XmlReaderWrapper reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private TextSyndicationContent DescriptionParserAction(XmlReader reader)
+        private TextSyndicationContent DescriptionParserAction(XmlReaderWrapper reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private String LanguageParserAction(XmlReader reader)
+        private String LanguageParserAction(XmlReaderWrapper reader)
         {
             return reader.ReadElementString();
         }
 
-        private TextSyndicationContent CopyrightParserAction(XmlReader reader)
+        private TextSyndicationContent CopyrightParserAction(XmlReaderWrapper reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private string GeneratorParserAction(XmlReader reader)
+        private string GeneratorParserAction(XmlReaderWrapper reader)
         {
             return reader.ReadElementString();
         }
 
-        private SyndicationPerson ManagingEditorParserAction(XmlReader reader, SyndicationFeed feed)
+        private SyndicationPerson ManagingEditorParserAction(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             //person = new SyndicationPerson();
             SyndicationPerson result = CreatePerson(feed);
@@ -108,7 +108,7 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private SyndicationLink LinkParserAction(XmlReader reader, Uri baseUri)
+        private SyndicationLink LinkParserAction(XmlReaderWrapper reader, Uri baseUri)
         {
             return ReadAlternateLink(reader, baseUri);
         }
@@ -205,7 +205,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -220,13 +220,13 @@ namespace Microsoft.ServiceModel.Syndication
             return null;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReader reader1)
         {
-            if (reader == null)
+            if (reader1 == null)
             {
                 throw new ArgumentNullException("reader");
             }
+            XmlReaderWrapper reader = reader1 is XmlReaderWrapper ? (XmlReaderWrapper)reader1 : new XmlReaderWrapper(reader1);
             ReadFeed(reader);
         }
 
@@ -240,7 +240,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteFeed(writer);
         }
 
-        public override void ReadFrom(XmlReader reader)
+        public override void ReadFrom(XmlReaderWrapper reader)
         {
             if (!CanRead(reader))
             {
@@ -268,7 +268,7 @@ namespace Microsoft.ServiceModel.Syndication
 
 
 
-        internal void ReadItemFrom(XmlReader reader, SyndicationItem result)
+        internal void ReadItemFrom(XmlReaderWrapper reader, SyndicationItem result)
         {
             ReadItemFrom(reader, result, null);
         }
@@ -283,7 +283,7 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
         }
 
-        protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
+        protected virtual SyndicationItem ReadItem(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             if (feed == null)
             {
@@ -299,7 +299,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#", Justification = "The out parameter is needed to enable implementations that read in items from the stream on demand")]
-        public virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        public virtual IEnumerable<SyndicationItem> ReadItems(XmlReaderWrapper reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
             if (feed == null)
             {
@@ -485,7 +485,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private SyndicationLink ReadAlternateLink(XmlReader reader, Uri baseUri)
+        private SyndicationLink ReadAlternateLink(XmlReaderWrapper reader, Uri baseUri)
         {
             SyndicationLink link = new SyndicationLink();
             link.BaseUri = baseUri;
@@ -512,21 +512,21 @@ namespace Microsoft.ServiceModel.Syndication
             return link;
         }
 
-        private SyndicationCategory ReadCategory(XmlReader reader, SyndicationFeed feed)
+        private SyndicationCategory ReadCategory(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationCategory result = CreateCategory(feed);
             ReadCategory(reader, result);
             return result;
         }
 
-        private SyndicationCategory ReadCategory(XmlReader reader, SyndicationItem item)
+        private SyndicationCategory ReadCategory(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationCategory result = CreateCategory(item);
             ReadCategory(reader, result);
             return result;
         }
 
-        private void ReadCategory(XmlReader reader, SyndicationCategory category)
+        private void ReadCategory(XmlReaderWrapper reader, SyndicationCategory category)
         {
             string DebugString = "" + reader.Name + "," + reader.Value + "," + reader.NodeType;
 
@@ -563,13 +563,13 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadFeed(XmlReader reader)
+        private void ReadFeed(XmlReaderWrapper reader)
         {
             SetFeed(CreateFeedInstance());
             ReadXml(reader, this.Feed);
         }
 
-        private void ReadItemFrom(XmlReader reader, SyndicationItem result, Uri feedBaseUri)
+        private void ReadItemFrom(XmlReaderWrapper reader, SyndicationItem result, Uri feedBaseUri)
         {
             try
             {
@@ -753,7 +753,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private SyndicationLink ReadMediaEnclosure(XmlReader reader, Uri baseUri)
+        private SyndicationLink ReadMediaEnclosure(XmlReaderWrapper reader, Uri baseUri)
         {
             SyndicationLink link = new SyndicationLink();
             link.BaseUri = baseUri;
@@ -804,21 +804,21 @@ namespace Microsoft.ServiceModel.Syndication
             return link;
         }
 
-        private SyndicationPerson ReadPerson(XmlReader reader, SyndicationFeed feed)
+        private SyndicationPerson ReadPerson(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationPerson result = CreatePerson(feed);
             ReadPerson(reader, result);
             return result;
         }
 
-        private SyndicationPerson ReadPerson(XmlReader reader, SyndicationItem item)
+        private SyndicationPerson ReadPerson(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationPerson result = CreatePerson(item);
             ReadPerson(reader, result);
             return result;
         }
 
-        private void ReadPerson(XmlReader reader, SyndicationPerson person)
+        private void ReadPerson(XmlReaderWrapper reader, SyndicationPerson person)
         {
             bool isEmpty = reader.IsEmptyElement;
             if (reader.HasAttributes)
@@ -850,7 +850,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadXml(XmlReader reader, SyndicationFeed result)
+        private void ReadXml(XmlReaderWrapper reader, SyndicationFeed result)
         {
             try
             {
@@ -1382,7 +1382,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         // Custom parsers
-        public DateTimeOffset DateParserAction(string dateTimeString, XmlReader reader)
+        public DateTimeOffset DateParserAction(string dateTimeString, XmlReaderWrapper reader)
         {
             bool parsed = false;
             //try

@@ -69,7 +69,7 @@ namespace Microsoft.ServiceModel.Syndication
             return new ReferencedCategoriesDocument(linkToCategoriesDocument);
         }
 
-        public static CategoriesDocument Load(XmlReader reader)
+        public static CategoriesDocument Load(XmlReaderWrapper reader)
         {
             AtomPub10CategoriesDocumentFormatter formatter = new AtomPub10CategoriesDocumentFormatter();
             formatter.ReadFrom(reader);
@@ -91,7 +91,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReader reader, string version)
+        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
         {
             return false;
         }
@@ -106,7 +106,7 @@ namespace Microsoft.ServiceModel.Syndication
             _extensions.WriteElementExtensions(writer);
         }
 
-        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
         {
             _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
