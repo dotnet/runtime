@@ -4533,9 +4533,12 @@ void Lowering::DoPhase()
     {
         comp->fgDispBasicBlocks(true);
     }
-#endif
 
-    assert(BlockRange().CheckLIR(comp, true));
+    for (BasicBlock* block = comp->fgFirstBB; block; block = block->bbNext)
+    {
+        assert(LIR::AsRange(block).CheckLIR(comp, true));
+    }
+#endif
 
     // The initialization code for the TreeNodeInfo map was initially part of a single full IR
     // traversal and it has been split because the order of traversal performed by fgWalkTreePost
@@ -4581,23 +4584,8 @@ void Lowering::DoPhase()
             node->gtLsraInfo.Initialize(m_lsra, node, currentLoc);
             node->gtClearReg(comp);
 
-            // Mark the node's operands as used
-            for (GenTree* operand : node->Operands())
-            {
-                operand->gtLIRFlags &= ~LIR::Flags::IsUnusedValue;
-            }
-
-            // If the node produces a value, mark it as unused.
-            if (node->IsValue())
-            {
-                node->gtLIRFlags |= LIR::Flags::IsUnusedValue;
-            }
-
             currentLoc += 2;
-        }
 
-        for (GenTree* node : BlockRange().NonPhiNodes())
-        {
             TreeNodeInfoInit(node);
 
             // Only nodes that produce values should have a non-zero dstCount.
