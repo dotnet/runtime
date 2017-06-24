@@ -10,6 +10,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="DirectoryObjectSecurityTests.cs" />
+    <Compile Include="FileSystemAccessRuleTests.cs" />
     <Compile Include="FileSystemAclExtensionsTests.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
@@ -21,6 +22,7 @@
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
     <Compile Include="FileSystemAuditRuleTests.cs" />
+    <Compile Include="FileSystemSecurityTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
