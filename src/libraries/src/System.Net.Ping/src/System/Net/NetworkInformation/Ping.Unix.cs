@@ -16,7 +16,8 @@ namespace System.Net.NetworkInformation
     public partial class Ping
     {
         private const int IcmpHeaderLengthInBytes = 8;
-        private const int IpHeaderLengthInBytes = 20;
+        private const int MinIpHeaderLengthInBytes = 20;
+        private const int MaxIpHeaderLengthInBytes = 60;
         [ThreadStatic]
         private static Random t_idGenerator;
 
@@ -69,9 +70,9 @@ namespace System.Net.NetworkInformation
                 socket.SendTimeout = timeout;
                 // Setting Socket.DontFragment and .Ttl is not supported on Unix, so ignore the PingOptions parameter.
 
-                int ipHeaderLength = isIpv4 ? IpHeaderLengthInBytes : 0;
+                int ipHeaderLength = isIpv4 ? MinIpHeaderLengthInBytes : 0;
                 await socket.SendToAsync(new ArraySegment<byte>(sendBuffer), SocketFlags.None, endPoint).ConfigureAwait(false);
-                byte[] receiveBuffer = new byte[ipHeaderLength + IcmpHeaderLengthInBytes + buffer.Length];
+                byte[] receiveBuffer = new byte[MaxIpHeaderLengthInBytes + IcmpHeaderLengthInBytes + buffer.Length];
 
                 long elapsed;
                 Stopwatch sw = Stopwatch.StartNew();
@@ -105,6 +106,17 @@ namespace System.Net.NetworkInformation
                     {
                         fixed (byte* bytesPtr = &receiveBuffer[0])
                         {
+                            if (isIpv4)
+                            {
+                                // Determine actual size of IP header
+                                byte ihl = (byte)(bytesPtr[0] & 0x0f); // Internet Header Length
+                                ipHeaderLength = 4 * ihl;
+                                if (bytesReceived - ipHeaderLength < IcmpHeaderLengthInBytes)
+                                {
+                                    continue; // Not enough bytes to reconstruct actual IP header + ICMP header.
+                                }
+                            }
+
                             int icmpHeaderOffset = ipHeaderLength;
                             IcmpHeader receivedHeader = *((IcmpHeader*)(bytesPtr + icmpHeaderOffset)); // Skip IP header.
                             type = receivedHeader.Type;
