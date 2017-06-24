@@ -82,9 +82,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs">
       <Link>Interop\Windows\IpHlpApi\Interop.IP_ADDR_STRING.cs</Link>
     </Compile>
-  </ItemGroup>
-  <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Windows.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Windows.cs" />
     <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Windows.cs" />
@@ -227,17 +224,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\WSABuffer.cs">
       <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap'">
-    <Compile Include="System\Net\NetworkInformation\IPGlobalPropertiesPal.Uap.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetNativeIPGlobalProperties.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkAddressChange.Uap.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs" />
-    <Compile Include="System\Net\NetworkInformation\NetNativeNetworkInterface.cs" />
-    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\HostInformationPal.Uap.cs">
-      <Link>Common\System\Net\NetworkInformation\HostInformationPal.Uap.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->

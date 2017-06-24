@@ -11,7 +11,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20130", TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(NetworkChange).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
