@@ -122,7 +122,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     connBulk.Open();
 
-                    ExecuteSQL(connBulk, "create table {0} (f1 sql_variant)", bulkCopyTableName);
+                    ExecuteSQL(connBulk, "create table dbo.{0} (f1 sql_variant)", bulkCopyTableName);
                     try
                     {
                         // Perform bulk copy to target.
@@ -215,7 +215,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             {
                 connTvp.Open();
 
-                ExecuteSQL(connTvp, "create type {0} as table (f1 sql_variant)", tvpTypeName);
+                ExecuteSQL(connTvp, "create type dbo.{0} as table (f1 sql_variant)", tvpTypeName);
                 try
                 {
                     // Send TVP using SqlMetaData.

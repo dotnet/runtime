@@ -178,7 +178,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     conn.Open();
                     DropType(conn, tvpTypeName);
-                    xsql(conn, string.Format("create type {0} as table (f1 {1})", tvpTypeName, expectedBaseTypeName));
+                    xsql(conn, string.Format("create type dbo.{0} as table (f1 {1})", tvpTypeName, expectedBaseTypeName));
 
                     // Send TVP using SqlMetaData.
                     SqlMetaData[] metadata = new SqlMetaData[1];
@@ -232,7 +232,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     conn.Open();
                     DropType(conn, tvpTypeName);
-                    xsql(conn, string.Format("create type {0} as table (f1 sql_variant)", tvpTypeName));
+                    xsql(conn, string.Format("create type dbo.{0} as table (f1 sql_variant)", tvpTypeName));
 
                     // Send TVP using SqlMetaData.
                     SqlMetaData[] metadata = new SqlMetaData[1];
@@ -284,7 +284,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     conn.Open();
                     DropType(conn, tvpTypeName);
-                    xsql(conn, string.Format("create type {0} as table (f1 {1})", tvpTypeName, expectedBaseTypeName));
+                    xsql(conn, string.Format("create type dbo.{0} as table (f1 {1})", tvpTypeName, expectedBaseTypeName));
 
                     // Send TVP using SqlDataReader.
                     SqlConnection connInput = new SqlConnection(s_connStr);
@@ -346,7 +346,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     conn.Open();
                     DropType(conn, tvpTypeName);
-                    xsql(conn, string.Format("create type {0} as table (f1 sql_variant)", tvpTypeName));
+                    xsql(conn, string.Format("create type dbo.{0} as table (f1 sql_variant)", tvpTypeName));
 
                     // Send TVP using SqlDataReader.
                     SqlConnection connInput = new SqlConnection(s_connStr);
@@ -412,9 +412,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     DropStoredProcedure(conn, ProcName);
                     DropTable(conn, InputTableName);
                     DropTable(conn, OutputTableName);
-                    DropType(conn, tvpTypeName);
+                    DropType(conn, $"dbo.{tvpTypeName}");
 
-                    xsql(conn, string.Format("create type {0} as table (f1 {1})", tvpTypeName, expectedBaseTypeName));
+                    xsql(conn, string.Format("create type dbo.{0} as table (f1 {1})", tvpTypeName, expectedBaseTypeName));
                     xsql(conn, string.Format("create table {0} (f1 {1})", InputTableName, expectedBaseTypeName));
                     xsql(conn, string.Format("create table {0} (f1 {1})", OutputTableName, expectedBaseTypeName));
 
