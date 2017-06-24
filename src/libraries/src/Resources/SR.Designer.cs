@@ -4382,7 +4382,7 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to XmlReader not positioned at a start element..
+        ///   Looks up a localized string similar to XmlReaderWrapper not positioned at a start element..
         /// </summary>
         internal static string FilterReaderNotStartElem {
             get {
@@ -6363,7 +6363,7 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The XmlReader used for the body of the message must be positioned on an element..
+        ///   Looks up a localized string similar to The XmlReaderWrapper used for the body of the message must be positioned on an element..
         /// </summary>
         internal static string InvalidReaderPositionOnCreateMessage {
             get {

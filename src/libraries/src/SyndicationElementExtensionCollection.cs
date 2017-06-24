@@ -94,19 +94,19 @@ namespace Microsoft.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(xmlSerializerExtension, serializer));
         }
 
-        public void Add(XmlReader xmlReader)
+        public void Add(XmlReaderWrapper XmlReaderWrapper)
         {
-            if (xmlReader == null)
+            if (XmlReaderWrapper == null)
             {
-                throw new ArgumentNullException("xmlReader");
+                throw new ArgumentNullException("XmlReaderWrapper");
             }
-            base.Add(new SyndicationElementExtension(xmlReader));
+            base.Add(new SyndicationElementExtension(XmlReaderWrapper));
         }
 
-        public XmlReader GetReaderAtElementExtensions()
+        public XmlReaderWrapper GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReader reader = extensionsBuffer.GetReader(0);
+            XmlReaderWrapper reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
         }

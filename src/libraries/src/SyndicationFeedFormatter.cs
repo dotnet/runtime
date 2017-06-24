@@ -44,9 +44,9 @@ namespace Microsoft.ServiceModel.Syndication
         public abstract string Version
         { get; }
 
-        public abstract bool CanRead(XmlReader reader);
+        public abstract bool CanRead(XmlReaderWrapper reader);
 
-        public abstract void ReadFrom(XmlReader reader);
+        public abstract void ReadFrom(XmlReaderWrapper reader);
 
         public override string ToString()
         {
@@ -118,7 +118,7 @@ namespace Microsoft.ServiceModel.Syndication
             return GetNonNullValue<SyndicationPerson>(item.CreatePerson(), SR.ItemCreatedNullPerson);
         }
 
-        internal static protected void LoadElementExtensions(XmlReader reader, SyndicationFeed feed, int maxExtensionSize)
+        internal static protected void LoadElementExtensions(XmlReaderWrapper reader, SyndicationFeed feed, int maxExtensionSize)
         {
             if (feed == null)
             {
@@ -127,7 +127,7 @@ namespace Microsoft.ServiceModel.Syndication
             feed.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        internal static protected void LoadElementExtensions(XmlReader reader, SyndicationItem item, int maxExtensionSize)
+        internal static protected void LoadElementExtensions(XmlReaderWrapper reader, SyndicationItem item, int maxExtensionSize)
         {
             if (item == null)
             {
@@ -136,7 +136,7 @@ namespace Microsoft.ServiceModel.Syndication
             item.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        internal static protected void LoadElementExtensions(XmlReader reader, SyndicationCategory category, int maxExtensionSize)
+        internal static protected void LoadElementExtensions(XmlReaderWrapper reader, SyndicationCategory category, int maxExtensionSize)
         {
             if (category == null)
             {
@@ -145,7 +145,7 @@ namespace Microsoft.ServiceModel.Syndication
             category.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        internal static protected void LoadElementExtensions(XmlReader reader, SyndicationLink link, int maxExtensionSize)
+        internal static protected void LoadElementExtensions(XmlReaderWrapper reader, SyndicationLink link, int maxExtensionSize)
         {
             if (link == null)
             {
@@ -154,7 +154,7 @@ namespace Microsoft.ServiceModel.Syndication
             link.LoadElementExtensions(reader, maxExtensionSize);
         }
 
-        internal static protected void LoadElementExtensions(XmlReader reader, SyndicationPerson person, int maxExtensionSize)
+        internal static protected void LoadElementExtensions(XmlReaderWrapper reader, SyndicationPerson person, int maxExtensionSize)
         {
             if (person == null)
             {
@@ -228,12 +228,12 @@ namespace Microsoft.ServiceModel.Syndication
             return person.TryParseAttribute(name, ns, value, version);
         }
 
-        internal static protected bool TryParseContent(XmlReader reader, SyndicationItem item, string contentType, string version, out SyndicationContent content)
+        internal static protected bool TryParseContent(XmlReaderWrapper reader, SyndicationItem item, string contentType, string version, out SyndicationContent content)
         {
             return item.TryParseContent(reader, contentType, version, out content);
         }
 
-        internal static protected bool TryParseElement(XmlReader reader, SyndicationFeed feed, string version)
+        internal static protected bool TryParseElement(XmlReaderWrapper reader, SyndicationFeed feed, string version)
         {
             if (feed == null)
             {
@@ -242,7 +242,7 @@ namespace Microsoft.ServiceModel.Syndication
             return feed.TryParseElement(reader, version);
         }
 
-        internal static protected bool TryParseElement(XmlReader reader, SyndicationItem item, string version)
+        internal static protected bool TryParseElement(XmlReaderWrapper reader, SyndicationItem item, string version)
         {
             if (item == null)
             {
@@ -251,7 +251,7 @@ namespace Microsoft.ServiceModel.Syndication
             return item.TryParseElement(reader, version);
         }
 
-        internal static protected bool TryParseElement(XmlReader reader, SyndicationCategory category, string version)
+        internal static protected bool TryParseElement(XmlReaderWrapper reader, SyndicationCategory category, string version)
         {
             if (category == null)
             {
@@ -260,7 +260,7 @@ namespace Microsoft.ServiceModel.Syndication
             return category.TryParseElement(reader, version);
         }
 
-        internal static protected bool TryParseElement(XmlReader reader, SyndicationLink link, string version)
+        internal static protected bool TryParseElement(XmlReaderWrapper reader, SyndicationLink link, string version)
         {
             if (link == null)
             {
@@ -269,7 +269,7 @@ namespace Microsoft.ServiceModel.Syndication
             return link.TryParseElement(reader, version);
         }
 
-        internal static protected bool TryParseElement(XmlReader reader, SyndicationPerson person, string version)
+        internal static protected bool TryParseElement(XmlReaderWrapper reader, SyndicationPerson person, string version)
         {
             if (person == null)
             {
@@ -388,7 +388,7 @@ namespace Microsoft.ServiceModel.Syndication
             buffer.Close();
         }
 
-        internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlReader reader, int maxExtensionSize)
+        internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlReaderWrapper reader, int maxExtensionSize)
         {
             if (buffer == null)
             {
@@ -461,7 +461,7 @@ namespace Microsoft.ServiceModel.Syndication
             person.LoadElementExtensions(buffer);
         }
 
-        internal static void MoveToStartElement(XmlReader reader)
+        internal static void MoveToStartElement(XmlReaderWrapper reader)
         {
             if (!reader.IsStartElement())
             {

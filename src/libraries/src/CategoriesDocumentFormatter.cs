@@ -35,8 +35,8 @@ namespace Microsoft.ServiceModel.Syndication
         public abstract string Version
         { get; }
 
-        public abstract bool CanRead(XmlReader reader);
-        public abstract void ReadFrom(XmlReader reader);
+        public abstract bool CanRead(XmlReaderWrapper reader);
+        public abstract void ReadFrom(XmlReaderWrapper reader);
         public abstract void WriteTo(XmlWriter writer);
 
         protected virtual InlineCategoriesDocument CreateInlineCategoriesDocument()

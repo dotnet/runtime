@@ -23,20 +23,20 @@ namespace Microsoft.ServiceModel.Syndication
         private string _outerName;
         private string _outerNamespace;
 
-        public SyndicationElementExtension(XmlReader xmlReader)
+        public SyndicationElementExtension(XmlReaderWrapper XmlReaderWrapper)
         {
-            if (xmlReader == null)
+            if (XmlReaderWrapper == null)
             {
-                throw new ArgumentNullException("xmlReader");
+                throw new ArgumentNullException("XmlReaderWrapper");
             }
-            SyndicationFeedFormatter.MoveToStartElement(xmlReader);
-            _outerName = xmlReader.LocalName;
-            _outerNamespace = xmlReader.NamespaceURI;
+            SyndicationFeedFormatter.MoveToStartElement(XmlReaderWrapper);
+            _outerName = XmlReaderWrapper.LocalName;
+            _outerNamespace = XmlReaderWrapper.NamespaceURI;
             _buffer = new XmlBuffer(int.MaxValue);
             using (XmlDictionaryWriter writer = _buffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                writer.WriteNode(xmlReader, false);
+                writer.WriteNode(XmlReaderWrapper, false);
                 writer.WriteEndElement();
             }
             _buffer.CloseSection();
@@ -141,7 +141,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 return (TExtension)_extensionData;
             }
-            using (XmlReader reader = GetReader())
+            using (XmlReaderWrapper reader = GetReader())
             {
                 return (TExtension)serializer.ReadObject(reader, false);
             }
@@ -157,16 +157,16 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 return (TExtension)_extensionData;
             }
-            using (XmlReader reader = GetReader())
+            using (XmlReaderWrapper reader = GetReader())
             {
                 return (TExtension)serializer.Deserialize(reader);
             }
         }
 
-        public XmlReader GetReader()
+        public XmlReaderWrapper GetReader()
         {
             this.EnsureBuffer();
-            XmlReader reader = _buffer.GetReader(0);
+            XmlReaderWrapper reader = new XmlReaderWrapper( _buffer.GetReader(0));
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);
             while (reader.IsStartElement())
@@ -193,7 +193,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                using (XmlReader reader = GetReader())
+                using (XmlReaderWrapper reader = GetReader())
                 {
                     writer.WriteNode(reader, false);
                 }
@@ -314,7 +314,7 @@ namespace Microsoft.ServiceModel.Syndication
                         this.WriteTo(writer);
                     }
                     stream.Seek(0, SeekOrigin.Begin);
-                    using (XmlReader reader = XmlReader.Create(stream))
+                    using (XmlReaderWrapper reader = new XmlReaderWrapper(XmlReader.Create(stream)))
                     {
                         SyndicationFeedFormatter.MoveToStartElement(reader);
                         name = reader.LocalName;

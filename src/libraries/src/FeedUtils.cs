@@ -12,7 +12,7 @@ namespace Microsoft.ServiceModel.Syndication
 
     internal static class FeedUtils
     {
-        public static string AddLineInfo(XmlReader reader, string error)
+        public static string AddLineInfo(XmlReaderWrapper reader, string error)
         {
             IXmlLineInfo lineInfo = reader as IXmlLineInfo;
             if (lineInfo != null && lineInfo.HasLineInfo())

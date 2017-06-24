@@ -94,7 +94,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -110,12 +110,13 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReader reader1)
         {
-            if (reader == null)
+            if (reader1 == null)
             {
                 throw new ArgumentNullException("reader");
             }
+            XmlReaderWrapper reader = reader1 is XmlReaderWrapper ? (XmlReaderWrapper)reader1 : new XmlReaderWrapper(reader1);
             ReadFeed(reader);
         }
 
@@ -129,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteFeed(writer);
         }
 
-        public override void ReadFrom(XmlReader reader)
+        public override void ReadFrom(XmlReaderWrapper reader)
         {
             if (!CanRead(reader))
             {
@@ -149,7 +150,7 @@ namespace Microsoft.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        internal static void ReadCategory(XmlReader reader, SyndicationCategory category, string version, bool preserveAttributeExtensions, bool preserveElementExtensions, int maxExtensionSize)
+        internal static void ReadCategory(XmlReaderWrapper reader, SyndicationCategory category, string version, bool preserveAttributeExtensions, bool preserveElementExtensions, int maxExtensionSize)
         {
             MoveToStartElement(reader);
             bool isEmpty = reader.IsEmptyElement;
@@ -229,7 +230,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        internal static TextSyndicationContent ReadTextContentFrom(XmlReader reader, string context, bool preserveAttributeExtensions)
+        internal static TextSyndicationContent ReadTextContentFrom(XmlReaderWrapper reader, string context, bool preserveAttributeExtensions)
         {
             string type = reader.GetAttribute(Atom10Constants.TypeTag);
             return ReadTextContentFromHelper(reader, type, context, preserveAttributeExtensions);
@@ -256,12 +257,12 @@ namespace Microsoft.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        internal void ReadItemFrom(XmlReader reader, SyndicationItem result)
+        internal void ReadItemFrom(XmlReaderWrapper reader, SyndicationItem result)
         {
             ReadItemFrom(reader, result, null);
         }
 
-        internal bool TryParseFeedElementFrom(XmlReader reader, SyndicationFeed result)
+        internal bool TryParseFeedElementFrom(XmlReaderWrapper reader, SyndicationFeed result)
         {
             if (reader.IsStartElement(Atom10Constants.AuthorTag, Atom10Constants.Atom10Namespace))
             {
@@ -316,7 +317,7 @@ namespace Microsoft.ServiceModel.Syndication
             return true;
         }
 
-        internal bool TryParseItemElementFrom(XmlReader reader, SyndicationItem result)
+        internal bool TryParseItemElementFrom(XmlReaderWrapper reader, SyndicationItem result)
         {
             if (reader.IsStartElement(Atom10Constants.AuthorTag, Atom10Constants.Atom10Namespace))
             {
@@ -497,7 +498,7 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
         }
 
-        protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
+        protected virtual SyndicationItem ReadItem(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             if (feed == null)
             {
@@ -513,7 +514,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1021:AvoidOutParameters", MessageId = "2#", Justification = "The out parameter is needed to enable implementations that read in items from the stream on demand")]
-        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+        protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReaderWrapper reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
             if (feed == null)
             {
@@ -551,7 +552,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private static TextSyndicationContent ReadTextContentFromHelper(XmlReader reader, string type, string context, bool preserveAttributeExtensions)
+        private static TextSyndicationContent ReadTextContentFromHelper(XmlReaderWrapper reader, string type, string context, bool preserveAttributeExtensions)
         {
             if (string.IsNullOrEmpty(type))
             {
@@ -628,7 +629,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private DateTimeOffset DateFromString(string dateTimeString, XmlReader reader)
+        private DateTimeOffset DateFromString(string dateTimeString, XmlReaderWrapper reader)
         {
             dateTimeString = dateTimeString.Trim();
             if (dateTimeString.Length < 20)
@@ -666,26 +667,26 @@ namespace Microsoft.ServiceModel.Syndication
             throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
         }
 
-        private void ReadCategory(XmlReader reader, SyndicationCategory category)
+        private void ReadCategory(XmlReaderWrapper reader, SyndicationCategory category)
         {
             ReadCategory(reader, category, this.Version, this.PreserveAttributeExtensions, this.PreserveElementExtensions, _maxExtensionSize);
         }
 
-        private SyndicationCategory ReadCategoryFrom(XmlReader reader, SyndicationFeed feed)
+        private SyndicationCategory ReadCategoryFrom(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationCategory result = CreateCategory(feed);
             ReadCategory(reader, result);
             return result;
         }
 
-        private SyndicationCategory ReadCategoryFrom(XmlReader reader, SyndicationItem item)
+        private SyndicationCategory ReadCategoryFrom(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationCategory result = CreateCategory(item);
             ReadCategory(reader, result);
             return result;
         }
 
-        private SyndicationContent ReadContentFrom(XmlReader reader, SyndicationItem item)
+        private SyndicationContent ReadContentFrom(XmlReaderWrapper reader, SyndicationItem item)
         {
             MoveToStartElement(reader);
             string type = reader.GetAttribute(Atom10Constants.TypeTag, string.Empty);
@@ -745,13 +746,13 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadFeed(XmlReader reader)
+        private void ReadFeed(XmlReaderWrapper reader)
         {
             SetFeed(CreateFeedInstance());
             ReadFeedFrom(reader, this.Feed, false);
         }
 
-        private SyndicationFeed ReadFeedFrom(XmlReader reader, SyndicationFeed result, bool isSourceFeed)
+        private SyndicationFeed ReadFeedFrom(XmlReaderWrapper reader, SyndicationFeed result, bool isSourceFeed)
         {
             reader.MoveToContent();
             try
@@ -865,7 +866,7 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private void ReadItemFrom(XmlReader reader, SyndicationItem result, Uri feedBaseUri)
+        private void ReadItemFrom(XmlReaderWrapper reader, SyndicationItem result, Uri feedBaseUri)
         {
             try
             {
@@ -947,7 +948,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadLink(XmlReader reader, SyndicationLink link, Uri baseUri)
+        private void ReadLink(XmlReaderWrapper reader, SyndicationLink link, Uri baseUri)
         {
             bool isEmpty = reader.IsEmptyElement;
             string mediaType = null;
@@ -1039,35 +1040,35 @@ namespace Microsoft.ServiceModel.Syndication
             link.Uri = (val != null) ? new Uri(val, UriKind.RelativeOrAbsolute) : null;
         }
 
-        private SyndicationLink ReadLinkFrom(XmlReader reader, SyndicationFeed feed)
+        private SyndicationLink ReadLinkFrom(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationLink result = CreateLink(feed);
             ReadLink(reader, result, feed.BaseUri);
             return result;
         }
 
-        private SyndicationLink ReadLinkFrom(XmlReader reader, SyndicationItem item)
+        private SyndicationLink ReadLinkFrom(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationLink result = CreateLink(item);
             ReadLink(reader, result, item.BaseUri);
             return result;
         }
 
-        private SyndicationPerson ReadPersonFrom(XmlReader reader, SyndicationFeed feed)
+        private SyndicationPerson ReadPersonFrom(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationPerson result = CreatePerson(feed);
             ReadPersonFrom(reader, result);
             return result;
         }
 
-        private SyndicationPerson ReadPersonFrom(XmlReader reader, SyndicationItem item)
+        private SyndicationPerson ReadPersonFrom(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationPerson result = CreatePerson(item);
             ReadPersonFrom(reader, result);
             return result;
         }
 
-        private void ReadPersonFrom(XmlReader reader, SyndicationPerson result)
+        private void ReadPersonFrom(XmlReaderWrapper reader, SyndicationPerson result)
         {
             bool isEmpty = reader.IsEmptyElement;
             if (reader.HasAttributes)
@@ -1139,7 +1140,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private TextSyndicationContent ReadTextContentFrom(XmlReader reader, string context)
+        private TextSyndicationContent ReadTextContentFrom(XmlReaderWrapper reader, string context)
         {
             return ReadTextContentFrom(reader, context, this.PreserveAttributeExtensions);
         }

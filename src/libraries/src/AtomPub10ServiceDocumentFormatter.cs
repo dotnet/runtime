@@ -62,7 +62,7 @@ namespace Microsoft.ServiceModel.Syndication
             get { return App10Constants.Namespace; }
         }
 
-        public override bool CanRead(XmlReader reader)
+        public override bool CanRead(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -78,7 +78,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReader reader)
+        void IXmlSerializable.ReadXml(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -101,7 +101,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteDocument(writer);
         }
 
-        public override void ReadFrom(XmlReader reader)
+        public override void ReadFrom(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -130,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
             writer.WriteEndElement();
         }
 
-        internal static CategoriesDocument ReadCategories(XmlReader reader, Uri baseUri, CreateInlineCategoriesDelegate inlineCategoriesFactory, CreateReferencedCategoriesDelegate referencedCategoriesFactory, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
+        internal static CategoriesDocument ReadCategories(XmlReaderWrapper reader, Uri baseUri, CreateInlineCategoriesDelegate inlineCategoriesFactory, CreateReferencedCategoriesDelegate referencedCategoriesFactory, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
         {
             string link = reader.GetAttribute(App10Constants.Href, string.Empty);
             if (string.IsNullOrEmpty(link))
@@ -182,7 +182,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private static void ReadInlineCategories(XmlReader reader, InlineCategoriesDocument inlineCategories, Uri baseUri, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
+        private static void ReadInlineCategories(XmlReaderWrapper reader, InlineCategoriesDocument inlineCategories, Uri baseUri, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
         {
             inlineCategories.BaseUri = baseUri;
             if (reader.HasAttributes)
@@ -270,7 +270,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private static void ReadReferencedCategories(XmlReader reader, ReferencedCategoriesDocument referencedCategories, Uri baseUri, Uri link, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
+        private static void ReadReferencedCategories(XmlReaderWrapper reader, ReferencedCategoriesDocument referencedCategories, Uri baseUri, Uri link, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
         {
             referencedCategories.BaseUri = baseUri;
             referencedCategories.Link = link;
@@ -387,7 +387,7 @@ namespace Microsoft.ServiceModel.Syndication
             writer.WriteAttributeString("xml", "lang", Atom10FeedFormatter.XmlNs, lang);
         }
 
-        private ResourceCollectionInfo ReadCollection(XmlReader reader, Workspace workspace)
+        private ResourceCollectionInfo ReadCollection(XmlReaderWrapper reader, Workspace workspace)
         {
             ResourceCollectionInfo result = CreateCollection(workspace);
             result.BaseUri = workspace.BaseUri;
@@ -482,7 +482,7 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private void ReadDocument(XmlReader reader)
+        private void ReadDocument(XmlReaderWrapper reader)
         {
             ServiceDocument result = CreateDocumentInstance();
             try
@@ -569,7 +569,7 @@ namespace Microsoft.ServiceModel.Syndication
             SetDocument(result);
         }
 
-        private Workspace ReadWorkspace(XmlReader reader, ServiceDocument document)
+        private Workspace ReadWorkspace(XmlReaderWrapper reader, ServiceDocument document)
         {
             Workspace result = CreateWorkspace(document);
             result.BaseUri = document.BaseUri;
