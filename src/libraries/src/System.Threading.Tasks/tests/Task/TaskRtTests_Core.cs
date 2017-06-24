@@ -1323,7 +1323,7 @@ namespace System.Threading.Tasks.Tests
         public static void RunTaskWaitAllTests()
         {
             Assert.Throws<ArgumentNullException>(() => Task.WaitAll((Task[])null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Task.WaitAll(new Task[] { null }));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAll(new Task[] { null }));
             Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll(new Task[] { Task.Factory.StartNew(() => { }) }, -2));
             Assert.Throws<ArgumentOutOfRangeException>(() => Task.WaitAll(new Task[] { Task.Factory.StartNew(() => { }) }, TimeSpan.FromMilliseconds(-2)));
 
