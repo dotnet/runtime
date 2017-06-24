@@ -983,6 +983,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             // Clear the GTF_CALL flag for all nodes but calls
             node->gtFlags &= ~GTF_CALL;
         }
+
+        if (node->TypeGet() == TYP_LONG)
+        {
+            comp->compLongUsed = true;
+        }
     }
 
     assert(isLateArg == ((use.Def()->gtFlags & GTF_LATE_ARG) != 0));

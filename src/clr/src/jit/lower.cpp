@@ -4460,7 +4460,10 @@ void Lowering::DoPhase()
 
 #if !defined(_TARGET_64BIT_)
     DecomposeLongs decomp(comp); // Initialize the long decomposition class.
-    decomp.PrepareForDecomposition();
+    if (comp->compLongUsed)
+    {
+        decomp.PrepareForDecomposition();
+    }
 #endif // !defined(_TARGET_64BIT_)
 
     for (BasicBlock* block = comp->fgFirstBB; block; block = block->bbNext)
@@ -4469,7 +4472,10 @@ void Lowering::DoPhase()
         comp->compCurBB = block;
 
 #if !defined(_TARGET_64BIT_)
-        decomp.DecomposeBlock(block);
+        if (comp->compLongUsed)
+        {
+            decomp.DecomposeBlock(block);
+        }
 #endif //!_TARGET_64BIT_
 
         LowerBlock(block);
