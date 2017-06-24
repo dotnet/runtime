@@ -9,7 +9,7 @@
     <Language>unused</Language>
     <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
-    <PackageTargetFramework>uap10.1</PackageTargetFramework>
+    <PackageTargetFramework>uap10.0.15138</PackageTargetFramework>
     <PrimaryPackage>Microsoft.Private.CoreFx.UAP</PrimaryPackage>
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <RestorePackages>true</RestorePackages>
