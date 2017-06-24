@@ -273,20 +273,11 @@ namespace System.Net.Http
             }
         }
 
-        // WinINet limit
         public int MaxAutomaticRedirections
         {
-            get { return 10; }
+            get { return 10; } // WinRT Windows.Web.Http constant via use of native WinINet.
             set
             {
-                /*
-                 * TODO:#17812
-                if (value != MaxAutomaticRedirections)
-                {
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, nameof(MaxAutomaticRedirections)));
-                }
-                */
                 CheckDisposedOrStarted();
             }
         }
@@ -326,11 +317,7 @@ namespace System.Net.Http
 
             set
             {
-                /*
-                 * TODO:#18036
-                throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                    SR.net_http_value_not_supported, value, nameof(MaxResponseHeadersLength)));
-                */
+                CheckDisposedOrStarted();
             }
         }
 
