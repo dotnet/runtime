@@ -14,7 +14,15 @@ namespace System.Net.Http
 {
     internal sealed class HttpConnection : IDisposable
     {
-        private const int BufferSize = 4096;
+        private const int BufferSize =
+#if DEBUG
+            10;
+#else
+            4096;
+#endif
+
+        private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
+        private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
 
         private readonly HttpConnectionPool _pool;
         private readonly HttpConnectionKey _key;
@@ -196,7 +204,7 @@ namespace System.Net.Http
                 _chunkBytesRemaining = 0;
             }
 
-            private async ValueTask<bool> TryGetNextChunk(CancellationToken cancellationToken)
+            private async Task<bool> TryGetNextChunk(CancellationToken cancellationToken)
             {
                 Debug.Assert(_chunkBytesRemaining == 0);
 
@@ -449,18 +457,16 @@ namespace System.Net.Http
                     int digit = (count & mask) >> shift;
                     if (digitWritten || digit != 0)
                     {
-                        await _connection.WriteCharAsync((char)(digit < 10 ? '0' + digit : 'A' + digit - 10), cancellationToken).ConfigureAwait(false);
+                        await _connection.WriteByteAsync((byte)(digit < 10 ? '0' + digit : 'A' + digit - 10), cancellationToken).ConfigureAwait(false);
                         digitWritten = true;
                     }
                 }
 
-                await _connection.WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-                await _connection.WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
 
                 // Write chunk contents
                 await _connection.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
-                await _connection.WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-                await _connection.WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
 
             public override Task FlushAsync(CancellationToken cancellationToken)
@@ -471,13 +477,11 @@ namespace System.Net.Http
             public override async Task FinishAsync(CancellationToken cancellationToken)
             {
                 // Send 0 byte chunk to indicate end
-                await _connection.WriteCharAsync('0', cancellationToken).ConfigureAwait(false);
-                await _connection.WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-                await _connection.WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+                await _connection.WriteByteAsync((byte)'0', cancellationToken).ConfigureAwait(false);
+                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
 
                 // Send final _CRLF
-                await _connection.WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-                await _connection.WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
 
                 _connection = null;
             }
@@ -730,8 +734,7 @@ namespace System.Net.Http
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
             {
                 await WriteStringAsync(header.Key, cancellationToken).ConfigureAwait(false);
-                await WriteCharAsync(':', cancellationToken).ConfigureAwait(false);
-                await WriteCharAsync(' ', cancellationToken).ConfigureAwait(false);
+                await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
 
                 bool first = true;
                 foreach (string headerValue in header.Value)
@@ -742,16 +745,14 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        await WriteCharAsync(',', cancellationToken).ConfigureAwait(false);
-                        await WriteCharAsync(' ', cancellationToken).ConfigureAwait(false);
+                        await WriteTwoBytesAsync((byte)',', (byte)' ', cancellationToken).ConfigureAwait(false);
                     }
                     await WriteStringAsync(headerValue, cancellationToken).ConfigureAwait(false);
                 }
 
                 Debug.Assert(!first, "No values for header??");
 
-                await WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-                await WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -802,28 +803,13 @@ namespace System.Net.Http
 
             // Write request line
             await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync(' ', cancellationToken).ConfigureAwait(false);
+            await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
 
-            if (_usingProxy)
-            {
-                await WriteStringAsync(request.RequestUri.AbsoluteUri, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                await WriteStringAsync(request.RequestUri.PathAndQuery, cancellationToken).ConfigureAwait(false);
-            }
+            await WriteStringAsync(
+                _usingProxy ? request.RequestUri.AbsoluteUri : request.RequestUri.PathAndQuery,
+                cancellationToken).ConfigureAwait(false);
 
-            await WriteCharAsync(' ', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('H', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('T', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('T', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('P', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('/', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('1', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('.', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('1', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+            await WriteBytesAsync(s_spaceHttp11NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
 
             // Write request headers
             await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
@@ -835,7 +821,7 @@ namespace System.Net.Http
                 if (request.Method != HttpMethod.Get &&
                     request.Method != HttpMethod.Head)
                 {
-                    await WriteStringAsync("Content-Length: 0\r\n", cancellationToken).ConfigureAwait(false);
+                    await WriteBytesAsync(s_contentLength0NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
                 }
             }
             else
@@ -845,8 +831,7 @@ namespace System.Net.Http
             }
 
             // CRLF for end of headers.
-            await WriteCharAsync('\r', cancellationToken).ConfigureAwait(false);
-            await WriteCharAsync('\n', cancellationToken).ConfigureAwait(false);
+            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
 
             // Write body, if any
             if (requestContent != null)
@@ -908,35 +893,86 @@ namespace System.Net.Http
             }
         }
 
-        private ValueTask<bool> WriteCharAsync(char c, CancellationToken cancellationToken)
+        private Task WriteCharAsync(char c, CancellationToken cancellationToken)
         {
             if ((c & 0xFF80) != 0)
             {
-                throw new HttpRequestException("Non-ASCII characters found");
+                return Task.FromException(new HttpRequestException("Non-ASCII characters found"));
             }
 
             return WriteByteAsync((byte)c, cancellationToken);
         }
 
-        private ValueTask<bool> WriteByteAsync(byte b, CancellationToken cancellationToken)
+        private Task WriteByteAsync(byte b, CancellationToken cancellationToken)
         {
             if (_writeOffset < BufferSize)
             {
                 _writeBuffer[_writeOffset++] = b;
-                return new ValueTask<bool>(true);
+                return Task.CompletedTask;
             }
-
-            return new ValueTask<bool>(WriteByteSlowAsync(b, cancellationToken));
+            return WriteByteSlowAsync(b, cancellationToken);
         }
 
-        private async Task<bool> WriteByteSlowAsync(byte b, CancellationToken cancellationToken)
+        private async Task WriteByteSlowAsync(byte b, CancellationToken cancellationToken)
         {
             await _stream.WriteAsync(_writeBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
 
             _writeBuffer[0] = b;
             _writeOffset = 1;
+        }
 
-            return true;
+        private Task WriteTwoBytesAsync(byte b1, byte b2, CancellationToken cancellationToken)
+        {
+            if (_writeOffset <= BufferSize - 2)
+            {
+                byte[] buffer = _writeBuffer;
+                buffer[_writeOffset++] = b1;
+                buffer[_writeOffset++] = b2;
+                return Task.CompletedTask;
+            }
+            return WriteTwoBytesSlowAsync(b1, b2, cancellationToken);
+        }
+
+        private async Task WriteTwoBytesSlowAsync(byte b1, byte b2, CancellationToken cancellationToken)
+        {
+            await WriteByteAsync(b1, cancellationToken).ConfigureAwait(false);
+            await WriteByteAsync(b2, cancellationToken).ConfigureAwait(false);
+        }
+
+        private Task WriteBytesAsync(byte[] bytes, CancellationToken cancellationToken)
+        {
+            if (_writeOffset <= BufferSize - bytes.Length)
+            {
+                Buffer.BlockCopy(bytes, 0, _writeBuffer, _writeOffset, bytes.Length);
+                _writeOffset += bytes.Length;
+                return Task.CompletedTask;
+            }
+            return WriteBytesSlowAsync(bytes, cancellationToken);
+        }
+
+        private async Task WriteBytesSlowAsync(byte[] bytes, CancellationToken cancellationToken)
+        {
+            int offset = 0;
+            while (true)
+            {
+                int remaining = bytes.Length - offset;
+                int toCopy = Math.Min(remaining, BufferSize - _writeOffset);
+                Buffer.BlockCopy(bytes, offset, _writeBuffer, _writeOffset, toCopy);
+                _writeOffset += toCopy;
+                offset += toCopy;
+
+                Debug.Assert(offset <= BufferSize, $"Expected {nameof(offset)} to be <= {bytes.Length}, got {offset}");
+                Debug.Assert(_writeOffset <= BufferSize, $"Expected {nameof(_writeOffset)} to be <= {BufferSize}, got {_writeOffset}");
+                if (offset == bytes.Length)
+                {
+                    break;
+                }
+                else if (_writeOffset == BufferSize)
+                {
+                    await _stream.WriteAsync(_writeBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
+                    _writeOffset = 0;
+                }
+            }
         }
 
         private async Task WriteStringAsync(string s, CancellationToken cancellationToken)
@@ -1014,7 +1050,7 @@ namespace System.Net.Http
                 byte b = _readBuffer[_readOffset++];
                 if ((b & 0x80) != 0)
                 {
-                    throw new HttpRequestException("Invalid character read from stream");
+                    return new ValueTask<char>(Task.FromException<char>(new HttpRequestException("Invalid character read from stream")));
                 }
 
                 return new ValueTask<char>((char)b);
