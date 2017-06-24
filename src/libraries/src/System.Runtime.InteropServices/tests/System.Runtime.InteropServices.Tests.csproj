@@ -4,6 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{A824F4CD-935B-4496-A1B2-C3664936DA7B}</ProjectGuid>
     <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
@@ -14,6 +15,7 @@
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\AllowReversePInvokeCallsAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ArrayWithOffsetTests.cs" />
     <Compile Include="System\Runtime\InteropServices\BestFitMappingAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\BStrWrapperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\CallingConventionTests.cs" />
@@ -26,6 +28,7 @@
     <Compile Include="System\Runtime\InteropServices\ComConversionLossAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComDefaultInterfaceAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComEventInterfaceAttributeTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventsHelperTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComRegisterFunctionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComSourceInterfacesAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ComUnregisterFunctionAttributeTests.cs" />
@@ -38,6 +41,7 @@
     <Compile Include="System\Runtime\InteropServices\DispIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\DllImportAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ErrorWrapperTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\GCHandleTests.cs" />
     <Compile Include="System\Runtime\InteropServices\GuidAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleCollectorTests.cs" />
     <Compile Include="System\Runtime\InteropServices\HandleRefTests.cs" />
@@ -50,6 +54,7 @@
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeBufferTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeIdentifierAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\UnknownWrapperTests.cs" />
