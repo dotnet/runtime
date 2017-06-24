@@ -18217,6 +18217,14 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
     }
 #endif
 
+#ifdef _TARGET_ARM_
+    if (compiler->opts.ShouldUsePInvokeHelpers() && (call->gtFlags & GTF_CALL_UNMANAGED) &&
+        ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_NONVIRT))
+    {
+        (void)genPInvokeCallProlog(nullptr, 0, (CORINFO_METHOD_HANDLE) nullptr, nullptr);
+    }
+#endif
+
     gtCallTypes callType = (gtCallTypes)call->gtCallType;
     IL_OFFSETX  ilOffset = BAD_IL_OFFSET;
 
@@ -18985,8 +18993,12 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         noway_assert(callType == CT_USER_FUNC);
                     }
 
-                    regNumber tcbReg;
-                    tcbReg = genPInvokeCallProlog(frameListRoot, nArgSize, methHnd, returnLabel);
+                    regNumber tcbReg = REG_NA;
+
+                    if (!compiler->opts.ShouldUsePInvokeHelpers())
+                    {
+                        tcbReg = genPInvokeCallProlog(frameListRoot, nArgSize, methHnd, returnLabel);
+                    }
 
                     void* addr = NULL;
 
@@ -21099,6 +21111,9 @@ regMaskTP CodeGen::genPInvokeMethodProlog(regMaskTP initRegs)
  */
 void CodeGen::genPInvokeMethodEpilog()
 {
+    if (compiler->opts.ShouldUsePInvokeHelpers())
+        return;
+
     noway_assert(compiler->info.compCallUnmanaged);
     noway_assert(!compiler->opts.ShouldUsePInvokeHelpers());
     noway_assert(compiler->compCurBB == compiler->genReturnBB ||
@@ -21307,6 +21322,21 @@ regNumber CodeGen::genPInvokeCallProlog(LclVarDsc*            frameListRoot,
 
     noway_assert(compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
+#ifdef _TARGET_ARM_
+    if (compiler->opts.ShouldUsePInvokeHelpers())
+    {
+        regNumber baseReg;
+        int       adr = compiler->lvaFrameAddress(compiler->lvaInlinedPInvokeFrameVar, true, &baseReg, 0);
+
+        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_ARG_0, baseReg, adr);
+        genEmitHelperCall(CORINFO_HELP_JIT_PINVOKE_BEGIN,
+                          0,           // argSize
+                          EA_UNKNOWN); // retSize
+        regTracker.rsTrackRegTrash(REG_ARG_0);
+        return REG_ARG_0;
+    }
+#endif
+
     /* mov   dword ptr [frame.callSiteTarget], value */
 
     if (methodToken == NULL)
@@ -21428,6 +21458,23 @@ regNumber CodeGen::genPInvokeCallProlog(LclVarDsc*            frameListRoot,
 
 void CodeGen::genPInvokeCallEpilog(LclVarDsc* frameListRoot, regMaskTP retVal)
 {
+#ifdef _TARGET_ARM_
+    if (compiler->opts.ShouldUsePInvokeHelpers())
+    {
+        noway_assert(compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
+
+        regNumber baseReg;
+        int       adr = compiler->lvaFrameAddress(compiler->lvaInlinedPInvokeFrameVar, true, &baseReg, 0);
+
+        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_ARG_0, baseReg, adr);
+        genEmitHelperCall(CORINFO_HELP_JIT_PINVOKE_END,
+                          0,           // argSize
+                          EA_UNKNOWN); // retSize
+        regTracker.rsTrackRegTrash(REG_ARG_0);
+        return;
+    }
+#endif
+
     BasicBlock*      clab_nostop;
     CORINFO_EE_INFO* pInfo = compiler->eeGetEEInfo();
     regNumber        reg2;
