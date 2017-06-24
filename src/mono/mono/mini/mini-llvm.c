@@ -8587,6 +8587,7 @@ mono_llvm_emit_aot_data (const char *symbol, guint8 *data, int data_len)
 	LLVMSetVisibility (d, LLVMHiddenVisibility);
 	LLVMSetLinkage (d, LLVMInternalLinkage);
 	LLVMSetInitializer (d, mono_llvm_create_constant_data_array (data, data_len));
+	LLVMSetAlignment (d, 8);
 	mono_llvm_set_is_constant (d);
 }
 
