@@ -151,6 +151,6 @@ namespace System.Globalization.Tests
             Assert.NotEqual(original.GetHashCode(), unequal3.GetHashCode());
         }
 
-        private static string GetCodePoints(string s) => string.Concat(s.Select(c => $"\\u{(int)c:D4}"));
+        private static string GetCodePoints(string s) => string.Concat(s.Select(c => c <= 127 ? c.ToString() : $"\\u{(int)c:X4}"));
     }
 }
