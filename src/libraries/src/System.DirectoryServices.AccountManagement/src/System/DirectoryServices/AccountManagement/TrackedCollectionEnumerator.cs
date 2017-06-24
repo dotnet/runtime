@@ -27,7 +27,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Either we're at the end or before the beginning
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "Current: bad position, endReached={0}", _endReached);
-                    throw new InvalidOperationException(StringResources.TrackedCollectionEnumInvalidPos);
+                    throw new InvalidOperationException(SR.TrackedCollectionEnumInvalidPos);
                 }
 
                 return _current;
@@ -184,7 +184,7 @@ namespace System.DirectoryServices.AccountManagement
                             _trackedCollection.LastChange,
                             _creationTime);
 
-                throw new InvalidOperationException(StringResources.TrackedCollectionEnumHasChanged);
+                throw new InvalidOperationException(SR.TrackedCollectionEnumHasChanged);
             }
         }
     }

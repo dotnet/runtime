@@ -23,7 +23,6 @@
     <Compile Include="System\DirectoryServices\AccountManagement\utils.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\constants.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\Context.cs" />
-    <Compile Include="System\DirectoryServices\AccountManagement\Resources.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\StoreCtx.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\StoreKey.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\Principal.cs" />

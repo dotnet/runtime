@@ -30,7 +30,7 @@ namespace System.DirectoryServices.AccountManagement
                             throw new ConfigurationErrorsException(
                                                 String.Format(
                                                     CultureInfo.CurrentCulture,
-                                                    StringResources.ConfigHandlerConfigSectionsUnique,
+                                                    SR.ConfigHandlerConfigSectionsUnique,
                                                     "Debugging"));
 
                         RemoveEnumAttribute(child, "Debugging", "debugLevel", typeof(DebugLevel), ref debugLevelEnum);
@@ -44,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
                         throw new ConfigurationErrorsException(
                                             String.Format(
                                                 CultureInfo.CurrentCulture,
-                                                StringResources.ConfigHandlerUnknownConfigSection,
+                                                SR.ConfigHandlerUnknownConfigSection,
                                                 child.Name));
                 }
             }
@@ -74,7 +74,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new ConfigurationErrorsException(
                                         String.Format(
                                                 CultureInfo.CurrentCulture,
-                                                StringResources.ConfigHandlerInvalidEnumAttribute,
+                                                SR.ConfigHandlerInvalidEnumAttribute,
                                                 attributeName,
                                                 sectionName));
                 }
@@ -93,7 +93,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new ConfigurationErrorsException(
                                         String.Format(
                                                 CultureInfo.CurrentCulture,
-                                                StringResources.ConfigHandlerInvalidStringAttribute,
+                                                SR.ConfigHandlerInvalidStringAttribute,
                                                 attributeName,
                                                 sectionName));
 

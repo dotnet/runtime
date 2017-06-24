@@ -272,7 +272,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new NotSupportedException(
                                 String.Format(
                                         CultureInfo.CurrentCulture,
-                                        StringResources.StoreCtxUnsupportedPropertyForQuery,
+                                        SR.StoreCtxUnsupportedPropertyForQuery,
                                         PropertyNamesExternal.GetExternalForm(filter.PropertyName)));
                 }
 
@@ -513,7 +513,7 @@ namespace System.DirectoryServices.AccountManagement
             int index = samToMatch.IndexOf('\\');
 
             if (index == samToMatch.Length - 1)
-                throw new InvalidOperationException(StringResources.StoreCtxNT4IdentityClaimWrongForm);
+                throw new InvalidOperationException(SR.StoreCtxNT4IdentityClaimWrongForm);
 
             string samAccountName = (index != -1) ? samToMatch.Substring(index + 1) :    // +1 to skip the '/'
                                                      samToMatch;
@@ -537,7 +537,7 @@ namespace System.DirectoryServices.AccountManagement
             byte[] sidToMatch = Utils.StringToByteArray((string)filter.Value);
 
             if (sidToMatch == null)
-                throw new InvalidOperationException(StringResources.StoreCtxSecurityIdentityClaimBadFormat);
+                throw new InvalidOperationException(SR.StoreCtxSecurityIdentityClaimBadFormat);
 
             if (de.Properties["objectSid"].Count > 0 && de.Properties["objectSid"].Value != null)
             {

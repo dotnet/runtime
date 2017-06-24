@@ -603,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Get the SID of the foreign principal
                 if (de.Properties["objectSid"].Count == 0)
                 {
-                    throw new PrincipalOperationException(StringResources.ADStoreCtxCantRetrieveObjectSidForCrossStore);
+                    throw new PrincipalOperationException(SR.ADStoreCtxCantRetrieveObjectSidForCrossStore);
                 }
 
                 Byte[] sid = (Byte[])de.Properties["objectSid"].Value;
@@ -736,7 +736,7 @@ namespace System.DirectoryServices.AccountManagement
                     if (null == foreignPrincipal)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADDNLinkedAttrSet", "MoveNextForeign: no matching principal");
-                        throw new PrincipalOperationException(StringResources.ADStoreCtxFailedFindCrossStoreTarget);
+                        throw new PrincipalOperationException(SR.ADStoreCtxFailedFindCrossStoreTarget);
                     }
 
                     _foreignMembersToReturn.RemoveAt(0);

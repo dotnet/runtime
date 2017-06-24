@@ -342,7 +342,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new InvalidOperationException(
                                        String.Format(
                                            CultureInfo.CurrentCulture,
-                                           StringResources.StoreCtxMultipleFiltersForPropertyUnsupported,
+                                           SR.StoreCtxMultipleFiltersForPropertyUnsupported,
                                            PropertyNamesExternal.GetExternalForm(ExpirationDateFilter.PropertyNameStatic)));
                 }
 

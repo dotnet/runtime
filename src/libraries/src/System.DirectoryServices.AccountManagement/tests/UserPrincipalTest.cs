@@ -2,74 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.DirectoryServices.AccountManagement;
+using System.Security.Principal;
 using Xunit;
 
-namespace AccountManagementUnitTests
+namespace System.DirectoryServices.AccountManagement.Tests
 {
-    /// <summary>
-    ///This is a test class for UserPrincipalTest and is intended
-    ///to contain all UserPrincipalTest Unit Tests
-    ///</summary>
     public class UserPrincipalTest : PrincipalTest
     {
-        #region Additional test attributes
-        // 
-        //You can use the following additional attributes as you write your tests:
-        //
-        //Use ClassInitialize to run code before running the first test in the class
-        //[ClassInitialize()]
-        //public static void MyClassInitialize(TestContext testContext)
-        //{
-        //}
-        //
-        //Use ClassCleanup to run code after all tests in a class have run
-        //[ClassCleanup()]
-        //public static void MyClassCleanup()
-        //{
-        //}
-        //
-        //Use TestInitialize to run code before running each test
-        //[TestInitialize()]
-        //public void MyTestInitialize()
-        //{
-        //}
-        //
-        //Use TestCleanup to run code after each test has run
-        //[TestCleanup()]
-        //public void MyTestCleanup()
-        //{
-        //}
-        //
-        #endregion
-
         internal override Principal CreatePrincipal(PrincipalContext context, string name)
         {
-            UserPrincipal user = new UserPrincipal(context);
-            user.Name = name;
-            return user;
+            return new UserPrincipal(context) { Name = name };
         }
 
         internal override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
         {
-            ExtendedUserPrincipal user = new ExtendedUserPrincipal(context);
-            user.Name = name;
-            return user;
+            return new ExtendedUserPrincipal(context) { Name = name };
         }
 
         internal override Principal FindExtendedPrincipal(PrincipalContext context, string name)
         {
             return ExtendedUserPrincipal.FindByIdentity(context, name);
         }
-
-        /// <summary>
-        ///A test for UserPrincipal Constructor
-        ///</summary>
+        
         public void UserPrincipalConstructorTest()
         {
-            UserPrincipal user = new UserPrincipal(domainContext);
+            UserPrincipal user = new UserPrincipal(DomainContext);
             user.Dispose();
-            //Assert.Inconclusive("TODO: Implement code to verify target");
         }
 
         public void ComputedUACCheck()
@@ -78,9 +36,9 @@ namespace AccountManagementUnitTests
             string password = "Adrumble@6";
             //TODO: don't assume it exists, create it if its not
             string OU = "TestNull";
-            string baseDomain = System.Security.Principal.WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
-            string domain = System.String.Format("{0}.nttest.microsoft.com", baseDomain);
-            string container = System.String.Format("ou={0},dc={1},dc=nttest,dc=microsoft,dc=com", OU, baseDomain);
+            string baseDomain =WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
+            string domain = $"{baseDomain}.nttest.microsoft.com";
+            string container = $"ou={OU},dc={baseDomain},dc=nttest,dc=microsoft,dc=com";
 
             PrincipalContext context = new PrincipalContext(ContextType.Domain, domain, container, username, password);
             UserPrincipal user = UserPrincipal.FindByIdentity(context, IdentityType.SamAccountName, "good");

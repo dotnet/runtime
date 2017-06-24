@@ -55,7 +55,7 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(_ctx != null || this.unpersisted == true);
 
                 if (_ctx == null)
-                    throw new InvalidOperationException(StringResources.PrincipalMustSetContextForProperty);
+                    throw new InvalidOperationException(SR.PrincipalMustSetContextForProperty);
 
                 return _ctx.ContextType;
             }
@@ -80,7 +80,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalDescription))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _description, value, ref _descriptionChanged, PropertyNames.PrincipalDescription);
             }
@@ -106,7 +106,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalDisplayName))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _displayName, value, ref _displayNameChanged, PropertyNames.PrincipalDisplayName);
             }
@@ -134,10 +134,10 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (null == value || 0 == value.Length)
-                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, PropertyNames.PrincipalSamAccountName));
+                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, PropertyNames.PrincipalSamAccountName));
 
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalSamAccountName))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _samName, value, ref _samNameChanged, PropertyNames.PrincipalSamAccountName);
             }
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalUserPrincipalName))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _userPrincipalName, value, ref _userPrincipalNameChanged, PropertyNames.PrincipalUserPrincipalName);
             }
@@ -262,10 +262,10 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (null == value || 0 == value.Length)
-                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, PropertyNames.PrincipalName));
+                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, PropertyNames.PrincipalName));
 
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalName))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 ContextType ct = (_ctx == null) ? ContextType.Domain : _ctx.ContextType;
 
@@ -326,7 +326,7 @@ namespace System.DirectoryServices.AccountManagement
             if (_ctx == null)
             {
                 Debug.Assert(this.unpersisted == true);
-                throw new InvalidOperationException(StringResources.PrincipalMustSetContextForSave);
+                throw new InvalidOperationException(SR.PrincipalMustSetContextForSave);
             }
 
             // Call the appropriate operation depending on whether this is an insert or update
@@ -361,14 +361,14 @@ namespace System.DirectoryServices.AccountManagement
 
             if (context.ContextType == ContextType.Machine || _ctx.ContextType == ContextType.Machine)
             {
-                throw new InvalidOperationException(StringResources.SaveToNotSupportedAgainstMachineStore);
+                throw new InvalidOperationException(SR.SaveToNotSupportedAgainstMachineStore);
             }
             // We must have a PrincipalContext to save into.  This should always be the case, unless we're unpersisted
             // and they never set a PrincipalContext.
             if (context == null)
             {
                 Debug.Assert(this.unpersisted == true);
-                throw new InvalidOperationException(StringResources.NullArguments);
+                throw new InvalidOperationException(SR.NullArguments);
             }
 
             // If the user is trying to save to the same context we are already set to then just save the changes
@@ -383,7 +383,7 @@ namespace System.DirectoryServices.AccountManagement
             if (context.ContextType != _ctx.ContextType)
             {
                 Debug.Assert(this.unpersisted == true);
-                throw new InvalidOperationException(StringResources.SaveToMustHaveSamecontextType);
+                throw new InvalidOperationException(SR.SaveToMustHaveSamecontextType);
             }
 
             StoreCtx originalStoreCtx = GetStoreCtxToUse();
@@ -476,7 +476,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // If we're unpersisted, nothing to delete
             if (this.unpersisted)
-                throw new InvalidOperationException(StringResources.PrincipalCantDeleteUnpersisted);
+                throw new InvalidOperationException(SR.PrincipalCantDeleteUnpersisted);
 
             // Since we're not unpersisted, we must have come back from a query, and the query logic would
             // have filled in a PrincipalContext on us.
@@ -518,7 +518,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if (this.UnderlyingObject == null)
             {
-                throw new InvalidOperationException(StringResources.PrincipalMustPersistFirst);
+                throw new InvalidOperationException(SR.PrincipalMustPersistFirst);
             }
 
             return this.UnderlyingObject;
@@ -542,7 +542,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 else
                 {
-                    throw new InvalidOperationException(StringResources.PrincipalMustSetContextForNative);
+                    throw new InvalidOperationException(SR.PrincipalMustSetContextForNative);
                 }
             }
             else
@@ -600,7 +600,7 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "Principal", "IsMemberOf(urn/urn): no matching principal");
-                throw new NoMatchingPrincipalException(StringResources.NoMatchingGroupExceptionText);
+                throw new NoMatchingPrincipalException(SR.NoMatchingGroupExceptionText);
             }
         }
 
@@ -651,7 +651,7 @@ namespace System.DirectoryServices.AccountManagement
         protected object[] ExtensionGet(string attribute)
         {
             if (null == attribute)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             ExtensionCacheValue val;
             if (_extensionCache.TryGetValue(attribute, out val))
@@ -690,19 +690,19 @@ namespace System.DirectoryServices.AccountManagement
             if (value is object[])
             {
                 if (((object[])value).Length == 0)
-                    throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                    throw new ArgumentException(SR.InvalidExtensionCollectionType);
 
                 foreach (object o in (object[])value)
                 {
                     if (o is ICollection)
-                        throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                        throw new ArgumentException(SR.InvalidExtensionCollectionType);
                 }
             }
             if (value is byte[])
             {
                 if (((byte[])value).Length == 0)
                 {
-                    throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                    throw new ArgumentException(SR.InvalidExtensionCollectionType);
                 }
             }
             else
@@ -711,11 +711,11 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     ICollection collection = (ICollection)value;
                     if (collection.Count == 0)
-                        throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                        throw new ArgumentException(SR.InvalidExtensionCollectionType);
                     foreach (object o in collection)
                     {
                         if (o is ICollection)
-                            throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                            throw new ArgumentException(SR.InvalidExtensionCollectionType);
                     }
                 }
             }
@@ -725,7 +725,7 @@ namespace System.DirectoryServices.AccountManagement
         protected void ExtensionSet(string attribute, object value)
         {
             if (null == attribute)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             ValidateExtensionObject(value);
 
@@ -741,7 +741,7 @@ namespace System.DirectoryServices.AccountManagement
         internal void AdvancedFilterSet(string attribute, object value, Type objectType, MatchType mt)
         {
             if (null == attribute)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             ValidateExtensionObject(value);
 
@@ -818,14 +818,14 @@ namespace System.DirectoryServices.AccountManagement
 
             if (null == CI)
             {
-                throw new NotSupportedException(StringResources.ExtensionInvalidClassDefinitionConstructor);
+                throw new NotSupportedException(SR.ExtensionInvalidClassDefinitionConstructor);
             }
 
             p = (Principal)CI.Invoke(new object[] { ctx });
 
             if (null == p)
             {
-                throw new NotSupportedException(StringResources.ExtensionInvalidClassDefinitionConstructor);
+                throw new NotSupportedException(SR.ExtensionInvalidClassDefinitionConstructor);
             }
 
             p.unpersisted = false;
@@ -933,7 +933,7 @@ namespace System.DirectoryServices.AccountManagement
             if (_isDeleted)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "Principal", "CheckDisposedOrDeleted: accessing deleted object");
-                throw new InvalidOperationException(StringResources.PrincipalDeleted);
+                throw new InvalidOperationException(SR.PrincipalDeleted);
             }
         }
 
@@ -1015,7 +1015,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposedOrDeleted();
 
             if (_ctx == null)
-                throw new InvalidOperationException(StringResources.UserMustSetContextForMethod);
+                throw new InvalidOperationException(SR.UserMustSetContextForMethod);
 
             StoreCtx storeCtx = GetStoreCtxToUse();
             Debug.Assert(storeCtx != null);
@@ -1057,7 +1057,7 @@ namespace System.DirectoryServices.AccountManagement
             if (this.fakePrincipal)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "Principal", "CheckFakePrincipal: fake principal");
-                throw new InvalidOperationException(StringResources.PrincipalNotSupportedOnFakePrincipal);
+                throw new InvalidOperationException(SR.PrincipalNotSupportedOnFakePrincipal);
             }
         }
 

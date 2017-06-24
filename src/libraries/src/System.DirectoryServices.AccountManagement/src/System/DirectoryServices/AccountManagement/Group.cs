@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement
         public GroupPrincipal(PrincipalContext context)
         {
             if (context == null)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;
             this.unpersisted = true;
@@ -30,7 +30,7 @@ namespace System.DirectoryServices.AccountManagement
         public GroupPrincipal(PrincipalContext context, string samAccountName) : this(context)
         {
             if (samAccountName == null)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             if (Context.ContextType != ContextType.ApplicationDirectory)
                 this.SamAccountName = samAccountName;

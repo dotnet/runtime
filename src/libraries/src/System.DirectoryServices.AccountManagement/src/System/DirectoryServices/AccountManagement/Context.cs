@@ -389,21 +389,21 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((userName == null && password != null) ||
                 (userName != null && password == null))
-                throw new ArgumentException(StringResources.ContextBadUserPwdCombo);
+                throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
             if ((options & ~(ContextOptions.Signing | ContextOptions.Negotiate | ContextOptions.Sealing | ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind | ContextOptions.ServerBind)) != 0)
                 throw new InvalidEnumArgumentException("options", (int)options, typeof(ContextOptions));
 
             if (contextType == ContextType.Machine && ((options & ~ContextOptions.Negotiate) != 0))
             {
-                throw new ArgumentException(StringResources.InvalidContextOptionsForMachine);
+                throw new ArgumentException(SR.InvalidContextOptionsForMachine);
             }
 
             if ((contextType == ContextType.Domain || contextType == ContextType.ApplicationDirectory) &&
                 (((options & (ContextOptions.Negotiate | ContextOptions.SimpleBind)) == 0) ||
                 (((options & (ContextOptions.Negotiate | ContextOptions.SimpleBind)) == ((ContextOptions.Negotiate | ContextOptions.SimpleBind))))))
             {
-                throw new ArgumentException(StringResources.InvalidContextOptionsForAD);
+                throw new ArgumentException(SR.InvalidContextOptionsForAD);
             }
 
             if ((contextType != ContextType.Machine) &&
@@ -418,10 +418,10 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             if ((contextType == ContextType.Machine) && (container != null))
-                throw new ArgumentException(StringResources.ContextNoContainerForMachineCtx);
+                throw new ArgumentException(SR.ContextNoContainerForMachineCtx);
 
             if ((contextType == ContextType.ApplicationDirectory) && ((String.IsNullOrEmpty(container)) || (String.IsNullOrEmpty(name))))
-                throw new ArgumentException(StringResources.ContextNoContainerForApplicationDirectoryCtx);
+                throw new ArgumentException(SR.ContextNoContainerForApplicationDirectoryCtx);
 
             _contextType = contextType;
             _name = name;
@@ -519,7 +519,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((userName == null && password != null) ||
                 (userName != null && password == null))
-                throw new ArgumentException(StringResources.ContextBadUserPwdCombo);
+                throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
 #if TESTHOOK
                 if ( contextType == ContextType.Test )
@@ -542,10 +542,10 @@ namespace System.DirectoryServices.AccountManagement
 
             if ((userName == null && password != null) ||
                 (userName != null && password == null))
-                throw new ArgumentException(StringResources.ContextBadUserPwdCombo);
+                throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
             if (options != ContextOptions.Negotiate && _contextType == ContextType.Machine)
-                throw new ArgumentException(StringResources.ContextOptionsNotValidForMachineStore);
+                throw new ArgumentException(SR.ContextOptionsNotValidForMachineStore);
 
 #if TESTHOOK
                 if ( contextType == ContextType.Test )
@@ -701,7 +701,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 if (_serverProperties.contextType != _contextType)
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, StringResources.PassedContextTypeDoesNotMatchDetectedType, _serverProperties.contextType.ToString()));
+                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.PassedContextTypeDoesNotMatchDetectedType, _serverProperties.contextType.ToString()));
                 }
             }
         }
@@ -886,7 +886,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     // Something's wrong with the domain, it's not exposing the proper
                     // well-known object fields.
-                    throw new PrincipalOperationException(StringResources.ContextNoWellKnownObjects);
+                    throw new PrincipalOperationException(SR.ContextNoWellKnownObjects);
                 }
 
                 //
@@ -1133,7 +1133,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 catch (LdapException ex)
                 {
-                    throw new PrincipalServerDownException(StringResources.ServerDown, ex);
+                    throw new PrincipalServerDownException(SR.ServerDown, ex);
                 }
 
                 // Fill in the struct with the casted properties from the serach results.

@@ -54,7 +54,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             catch (EntryPointNotFoundException)
             {
-                throw new InvalidOperationException(StringResources.AdsiNotInstalled);
+                throw new InvalidOperationException(SR.AdsiNotInstalled);
             }
         }
 

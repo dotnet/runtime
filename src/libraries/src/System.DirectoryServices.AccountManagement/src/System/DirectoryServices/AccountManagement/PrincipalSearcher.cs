@@ -25,7 +25,7 @@ namespace System.DirectoryServices.AccountManagement
         public PrincipalSearcher(Principal queryFilter)
         {
             if (null == queryFilter)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, "queryFilter"));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, "queryFilter"));
 
             _ctx = queryFilter.Context;
             this.QueryFilter = queryFilter; // use property to enforce "no persisted principals" check
@@ -61,14 +61,14 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (null == value)
-                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidNullArgument, "queryFilter"));
+                    throw new ArgumentNullException(String.Format(CultureInfo.CurrentCulture, SR.InvalidNullArgument, "queryFilter"));
 
                 CheckDisposed();
                 Debug.Assert(value.Context != null);
 
                 // Make sure they're not passing in a persisted Principal object
                 if ((value != null) && (!value.unpersisted))
-                    throw new ArgumentException(StringResources.PrincipalSearcherPersistedPrincipal);
+                    throw new ArgumentException(SR.PrincipalSearcherPersistedPrincipal);
 
                 _qbeFilter = value;
                 _ctx = _qbeFilter.Context;
@@ -136,24 +136,24 @@ namespace System.DirectoryServices.AccountManagement
 
             // We have to have a filter
             if (_qbeFilter == null)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherMustSetFilter);
+                throw new InvalidOperationException(SR.PrincipalSearcherMustSetFilter);
 
             // Double-check that the Principal isn't persisted.  We don't allow them to assign a persisted
             // Principal as the filter, but they could have persisted it after assigning it to the QueryFilter
             // property.
             if (!_qbeFilter.unpersisted)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherPersistedPrincipal);
+                throw new InvalidOperationException(SR.PrincipalSearcherPersistedPrincipal);
 
             // Validate the QBE filter: make sure it doesn't have any non-scalar properties set.
             if (HasReferentialPropertiesSet())
-                throw new InvalidOperationException(StringResources.PrincipalSearcherNonReferentialProps);
+                throw new InvalidOperationException(SR.PrincipalSearcherNonReferentialProps);
 
             StoreCtx storeCtx = _ctx.QueryCtx;
             Debug.Assert(storeCtx != null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
             if (storeCtx.SupportsSearchNatively == false)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherNoUnderlying);
+                throw new InvalidOperationException(SR.PrincipalSearcherNoUnderlying);
 
             // We need to generate the searcher every time because the object could change
             // outside of our control.
@@ -171,14 +171,14 @@ namespace System.DirectoryServices.AccountManagement
 
             // We have to have a filter
             if (_qbeFilter == null)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherMustSetFilter);
+                throw new InvalidOperationException(SR.PrincipalSearcherMustSetFilter);
 
             StoreCtx storeCtx = _ctx.QueryCtx;
             Debug.Assert(storeCtx != null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
             if (storeCtx.SupportsSearchNatively == false)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherNoUnderlying);
+                throw new InvalidOperationException(SR.PrincipalSearcherNoUnderlying);
 
             return storeCtx.SearcherNativeType();
         }
@@ -261,16 +261,16 @@ namespace System.DirectoryServices.AccountManagement
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindAll, returnOne=" + returnOne.ToString());
 
             if (_qbeFilter == null)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherMustSetFilter);
+                throw new InvalidOperationException(SR.PrincipalSearcherMustSetFilter);
             // Double-check that the Principal isn't persisted.  We don't allow them to assign a persisted
             // Principal as the filter, but they could have persisted it after assigning it to the QueryFilter
             // property.
             if (!_qbeFilter.unpersisted)
-                throw new InvalidOperationException(StringResources.PrincipalSearcherPersistedPrincipal);
+                throw new InvalidOperationException(SR.PrincipalSearcherPersistedPrincipal);
 
             // Validate the QBE filter: make sure it doesn't have any non-scalar properties set.
             if (HasReferentialPropertiesSet())
-                throw new InvalidOperationException(StringResources.PrincipalSearcherNonReferentialProps);
+                throw new InvalidOperationException(SR.PrincipalSearcherNonReferentialProps);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "FindAll: qbeFilter is non-null and passes");
 

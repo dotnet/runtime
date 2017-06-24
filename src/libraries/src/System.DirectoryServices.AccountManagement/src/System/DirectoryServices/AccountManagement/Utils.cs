@@ -394,7 +394,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             throw new PrincipalOperationException(
                                             String.Format(CultureInfo.CurrentCulture,
-                                                          StringResources.UnableToOpenToken,
+                                                          SR.UnableToOpenToken,
                                                           lastError));
                         }
                     }
@@ -404,7 +404,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         throw new PrincipalOperationException(
                                         String.Format(CultureInfo.CurrentCulture,
-                                                      StringResources.UnableToOpenToken,
+                                                      SR.UnableToOpenToken,
                                                       error));
                     }
                 }
@@ -428,7 +428,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: GetTokenInformation (1st try) failed, gle=" + getTokenInfoError);
 
                     throw new PrincipalOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, StringResources.UnableToRetrieveTokenInfo, getTokenInfoError));
+                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, getTokenInfoError));
                 }
 
                 // Allocate the necessary buffer.
@@ -451,7 +451,7 @@ namespace System.DirectoryServices.AccountManagement
                                       "GetCurrentUserSid: GetTokenInformation (2nd try) failed, neededBufferSize=" + neededBufferSize + ", gle=" + lastError);
 
                     throw new PrincipalOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, StringResources.UnableToRetrieveTokenInfo, lastError));
+                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, lastError));
                 }
 
                 // Retrieve the user's SID from the user info
@@ -472,7 +472,7 @@ namespace System.DirectoryServices.AccountManagement
                                       "GetCurrentUserSid: CopySid failed, errorcode=" + lastError);
 
                     throw new PrincipalOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, StringResources.UnableToRetrieveTokenInfo, lastError));
+                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, lastError));
                 }
 
                 return pCopyOfUserSid;
@@ -512,7 +512,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaOpenPolicy failed, gle=" + SafeNativeMethods.LsaNtStatusToWinError(err));
 
                     throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
-                                                               StringResources.UnableToRetrievePolicy,
+                                                               SR.UnableToRetrievePolicy,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }
 
@@ -527,7 +527,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaQueryInformationPolicy failed, gle=" + SafeNativeMethods.LsaNtStatusToWinError(err));
 
                     throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
-                                                               StringResources.UnableToRetrievePolicy,
+                                                               SR.UnableToRetrievePolicy,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }
 
@@ -549,7 +549,7 @@ namespace System.DirectoryServices.AccountManagement
                                       "GetMachineDomainSid: CopySid failed, errorcode=" + lastError);
 
                     throw new PrincipalOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, StringResources.UnableToRetrievePolicy, lastError));
+                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrievePolicy, lastError));
                 }
 
                 return pCopyOfSid;
@@ -616,7 +616,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(
                                     String.Format(
                                             CultureInfo.CurrentCulture,
-                                            StringResources.UnableToRetrieveDomainInfo,
+                                            SR.UnableToRetrieveDomainInfo,
                                             err));
                 }
 
@@ -819,7 +819,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 throw new PrincipalOperationException(
                     String.Format(CultureInfo.CurrentCulture,
-                                  StringResources.UnableToImpersonateCredentials,
+                                  SR.UnableToImpersonateCredentials,
                                   lastError));
             }
 
@@ -834,7 +834,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 throw new PrincipalOperationException(
                     String.Format(CultureInfo.CurrentCulture,
-                                  StringResources.UnableToImpersonateCredentials,
+                                  SR.UnableToImpersonateCredentials,
                                   lastError));
             }
 
@@ -870,7 +870,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(
                                     String.Format(
                                             CultureInfo.CurrentCulture,
-                                            StringResources.UnableToRetrieveDomainInfo,
+                                            SR.UnableToRetrieveDomainInfo,
                                             err));
                 }
 

@@ -64,7 +64,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         if (null == objectClass || null == rdnPrefix)
                         {
-                            throw new InvalidOperationException(StringResources.ExtensionInvalidClassAttributes);
+                            throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
                         }
 
                         // We need to determine if this class is dervived from one of the base classes but has a different RdnPrefix
@@ -80,7 +80,7 @@ namespace System.DirectoryServices.AccountManagement
                             (DirectoryRdnPrefixAttribute[])Attribute.GetCustomAttributes(principalType.BaseType, typeof(DirectoryRdnPrefixAttribute), false);
 
                             if (MyAttribute == null)
-                                throw new InvalidOperationException(StringResources.ExtensionInvalidClassAttributes);
+                                throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
 
                             string defaultRdn = null;
 
@@ -144,13 +144,13 @@ namespace System.DirectoryServices.AccountManagement
                     if (rdnPrefix == null)
                     {
                         // There was no rdn prefix attribute set on the principal class
-                        throw new InvalidOperationException(StringResources.ExtensionInvalidClassAttributes);
+                        throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
                     }
 
                     if (rdnValue == null)
                     {
                         // They didn't set a display name or SAM IdentityClaim (or set an empty/invalid value for those).
-                        throw new InvalidOperationException(StringResources.NameMustBeSetToPersistPrincipal);
+                        throw new InvalidOperationException(SR.NameMustBeSetToPersistPrincipal);
                     }
 
                     rdn = rdnPrefix + "=" + rdnValue;
@@ -521,7 +521,7 @@ namespace System.DirectoryServices.AccountManagement
                         //                        = Utils.StringToByteArray(urnValue);
 
                         if (sid == null)
-                            throw new ArgumentException(StringResources.StoreCtxSecurityIdentityClaimBadFormat);
+                            throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);
 
                         IntPtr pSid = IntPtr.Zero;
 
@@ -656,7 +656,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Did we find more than one match?
                 if (count > 1)
-                    throw new MultipleMatchesException(StringResources.MultipleMatchingPrincipals);
+                    throw new MultipleMatchesException(SR.MultipleMatchingPrincipals);
 
                 if (count == 0)
                     return null;
@@ -1183,7 +1183,7 @@ namespace System.DirectoryServices.AccountManagement
             if ((value == null) || (value.Length > 0))
                 de.Properties[suggestedAdProperty].Value = value;
             else
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, StringResources.InvalidStringValueForStore, propertyName));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidStringValueForStore, propertyName));
         }
 
         protected static void BinaryToLdapConverter(Principal p, string propertyName, DirectoryEntry de, string suggestedAdProperty)
@@ -1342,7 +1342,7 @@ namespace System.DirectoryServices.AccountManagement
                     if ((kvp.Value.Value.Length == 1 && kvp.Value.Value[0] is ICollection) || (kvp.Value.Value.Length > 1))
                     {
                         if (kvp.Value.Value.Length > 1 && (kvp.Value.Value[0] is ICollection))
-                            throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                            throw new ArgumentException(SR.InvalidExtensionCollectionType);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Value implements ICollection");
 
@@ -1363,7 +1363,7 @@ namespace System.DirectoryServices.AccountManagement
                             if (null != oVal)
                             {
                                 if ((oVal is ICollection || oVal is IList) && !(oVal is byte[]))
-                                    throw new ArgumentException(StringResources.InvalidExtensionCollectionType);
+                                    throw new ArgumentException(SR.InvalidExtensionCollectionType);
 
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Element Value Type " + oVal.GetType().ToString());
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheToLdapConverter - Adding  Element " + oVal.ToString());
@@ -1414,7 +1414,7 @@ namespace System.DirectoryServices.AccountManagement
                     // It's not an unpersisted principal, so we should have the property.  Perhaps we don't have access
                     // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.
                     throw new PrincipalOperationException(
-                                    StringResources.ADStoreCtxUnableToReadExistingGroupTypeFlagsForUpdate);
+                                    SR.ADStoreCtxUnableToReadExistingGroupTypeFlagsForUpdate);
                 }
 
                 // initial default value
@@ -1532,17 +1532,17 @@ namespace System.DirectoryServices.AccountManagement
                         (!memberType.IsSubclassOf(typeof(AuthenticablePrincipal))))
                     {
                         throw new InvalidOperationException(
-                                        String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
+                                        String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
                     }
                     // Can't inserted unpersisted principal
                     if (member.unpersisted)
-                        throw new InvalidOperationException(StringResources.StoreCtxGroupHasUnpersistedInsertedPrincipal);
+                        throw new InvalidOperationException(SR.StoreCtxGroupHasUnpersistedInsertedPrincipal);
 
                     Debug.Assert(member.Context != null);
 
                     // Can only insert AD principals (no reg-SAM/MSAM principals)
                     if (member.ContextType == ContextType.Machine)
-                        throw new InvalidOperationException(StringResources.ADStoreCtxUnsupportedPrincipalContextForGroupInsert);
+                        throw new InvalidOperationException(SR.ADStoreCtxUnsupportedPrincipalContextForGroupInsert);
                 }
 
                 // Now add each member to the group
@@ -1564,7 +1564,7 @@ namespace System.DirectoryServices.AccountManagement
                         string memberSidDN = GetSidPathFromPrincipal(member);
 
                         if (memberSidDN == null)
-                            throw new PrincipalOperationException(StringResources.ADStoreCtxCouldntGetSIDForGroupMember);
+                            throw new PrincipalOperationException(SR.ADStoreCtxCouldntGetSIDForGroupMember);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "UpdateGroupMembership: add {0}", memberSidDN);
 
@@ -1610,7 +1610,7 @@ namespace System.DirectoryServices.AccountManagement
                         string memberSidDN = GetSidPathFromPrincipal(member);
 
                         if (memberSidDN == null)
-                            throw new PrincipalOperationException(StringResources.ADStoreCtxCouldntGetSIDForGroupMember);
+                            throw new PrincipalOperationException(SR.ADStoreCtxCouldntGetSIDForGroupMember);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "UpdateGroupMembership: remove via SID {0}", memberSidDN);
 
@@ -1645,7 +1645,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (Sid == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "GetSidADsPathFromPrincipal: no SID IC (fake principal)");
-                    throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                    throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
                 }
 
                 return @"<SID=" + Utils.SecurityIdentifierToLdapHexBindingString(Sid) + ">";
