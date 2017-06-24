@@ -17,7 +17,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteInformation)
             {
                 CompositionTraceSource.WriteInformation(CompositionTraceId.Registration_ConstructorConventionOverridden,
-                                                        Strings.Registration_ConstructorConventionOverridden,
+                                                        SR.Registration_ConstructorConventionOverridden,
                                                         type.FullName);
             }
         }
@@ -29,7 +29,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_TypeExportConventionOverridden,
-                                                    Strings.Registration_TypeExportConventionOverridden,
+                                                    SR.Registration_TypeExportConventionOverridden,
                                                     type.FullName);
             }
         }
@@ -41,7 +41,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_MemberExportConventionOverridden,
-                                                    Strings.Registration_MemberExportConventionOverridden,
+                                                    SR.Registration_MemberExportConventionOverridden,
                                                     member.Name, type.FullName);
             }
         }
@@ -53,7 +53,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_MemberImportConventionOverridden,
-                                                    Strings.Registration_MemberImportConventionOverridden,
+                                                    SR.Registration_MemberImportConventionOverridden,
                                                     member.Name, type.FullName);
             }
         }
@@ -65,7 +65,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_OnSatisfiedImportNotificationOverridden,
-                                                    Strings.Registration_OnSatisfiedImportNotificationOverridden,
+                                                    SR.Registration_OnSatisfiedImportNotificationOverridden,
                                                     member.Name, type.FullName);
             }
         }
@@ -77,7 +77,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_PartCreationConventionOverridden,
-                                                    Strings.Registration_PartCreationConventionOverridden,
+                                                    SR.Registration_PartCreationConventionOverridden,
                                                     type.FullName);
             }
         }
@@ -89,7 +89,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_MemberImportConventionMatchedTwice,
-                                                    Strings.Registration_MemberImportConventionMatchedTwice,
+                                                    SR.Registration_MemberImportConventionMatchedTwice,
                                                     member.Name, type.FullName);
             }
         }
@@ -101,7 +101,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_PartMetadataConventionOverridden,
-                                                    Strings.Registration_PartMetadataConventionOverridden,
+                                                    SR.Registration_PartMetadataConventionOverridden,
                                                     type.FullName);
             }
         }
@@ -113,7 +113,7 @@ namespace Microsoft.Composition.Diagnostics
             if (CompositionTraceSource.CanWriteWarning)
             {
                 CompositionTraceSource.WriteWarning(CompositionTraceId.Registration_ParameterImportConventionOverridden,
-                                                    Strings.Registration_ParameterImportConventionOverridden,
+                                                    SR.Registration_ParameterImportConventionOverridden,
                                                     parameter.Name, constructor.Name);
             }
         }

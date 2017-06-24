@@ -5,7 +5,7 @@
     <ProjectGuid>{E6592FAD-10B5-4B56-9287-D72DD136992F}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>System.Composition.Convention</AssemblyName>
-    <DefineConstants  Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -39,7 +39,6 @@
     <Compile Include="Microsoft\Composition\Diagnostics\TraceWriter.cs" />
     <Compile Include="Microsoft\Internal\AttributeServices.cs" />
     <Compile Include="Microsoft\Internal\ReflectionServices.cs" />
-    <Compile Include="Strings.Designer.cs" />
     <Compile Include="System\Composition\Convention\ConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\ExportConventionBuilder.cs" />
     <Compile Include="System\Composition\Convention\ImportConventionBuilder.cs" />
@@ -55,7 +54,6 @@
       <LastGenOutput>CommonStrings.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.Internal</CustomToolNamespace>
     </EmbeddedResource>
-    <EmbeddedResource Include="Strings.resx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj">
