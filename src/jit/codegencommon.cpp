@@ -8958,7 +8958,7 @@ void CodeGen::genFnProlog()
     genReportGenericContextArg(initReg, &initRegZeroed);
 
 #if defined(LEGACY_BACKEND) // in RyuJIT backend this has already been expanded into trees
-    if (compiler->info.compCallUnmanaged)
+    if (compiler->info.compCallUnmanaged && !compiler->opts.ShouldUsePInvokeHelpers())
     {
         getEmitter()->emitDisableRandomNops();
         initRegs = genPInvokeMethodProlog(initRegs);
