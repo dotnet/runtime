@@ -133,7 +133,7 @@ namespace System.Composition.Hosting.Core
             if (IsError)
                 return Site.ToString();
 
-            return string.Format(Properties.Resources.Dependency_ToStringFormat, Site, Target.Contract, Target.Origin);
+            return SR.Format(SR.Dependency_ToStringFormat, Site, Target.Contract, Target.Origin);
         }
 
         internal bool IsError { get { return _target == null; } }
@@ -144,12 +144,12 @@ namespace System.Composition.Hosting.Core
 
             if (_oversuppliedTargets != null)
             {
-                var list = Formatters.ReadableList(_oversuppliedTargets.Select(t => string.Format(Properties.Resources.Dependency_QuoteParameter, t.Origin)));
-                message.AppendFormat(Properties.Resources.Dependency_TooManyExports, Contract, list);
+                var list = Formatters.ReadableList(_oversuppliedTargets.Select(t => SR.Format(SR.Dependency_QuoteParameter, t.Origin)));
+                message.AppendFormat(SR.Dependency_TooManyExports, Contract, list);
             }
             else
             {
-                message.AppendFormat(Properties.Resources.Dependency_ExportNotFound, Contract);
+                message.AppendFormat(SR.Dependency_ExportNotFound, Contract);
             }
         }
     }

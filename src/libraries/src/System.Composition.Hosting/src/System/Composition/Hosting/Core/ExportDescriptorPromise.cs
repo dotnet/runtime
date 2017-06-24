@@ -99,7 +99,7 @@ namespace System.Composition.Hosting.Core
         /// <returns>A description of the promise.</returns>
         public override string ToString()
         {
-            return string.Format(Properties.Resources.ExportDescriptor_ToStringFormat, Contract, Origin);
+            return SR.Format(SR.ExportDescriptor_ToStringFormat, Contract, Origin);
         }
     }
 }

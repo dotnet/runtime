@@ -37,11 +37,6 @@
       <Link>Microsoft\Internal\Requires.cs</Link>
     </Compile>
     <Compile Include="Microsoft\Internal\ThrowHelper.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Composition\Hosting\CompositionHost.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositeActivator.cs" />
     <Compile Include="System\Composition\Hosting\Core\CompositionDependency.cs" />
@@ -75,12 +70,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>CommonStrings.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.Internal</CustomToolNamespace>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-      <CustomToolNamespace>System.Composition.Hosting.Properties</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
