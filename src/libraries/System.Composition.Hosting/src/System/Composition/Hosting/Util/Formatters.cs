@@ -14,8 +14,8 @@ namespace System.Composition.Hosting.Util
         {
             Assumes.NotNull(items);
 
-            string reply = string.Join(Properties.Resources.Formatter_ListSeparatorWithSpace, items.OrderBy(t => t));
-            return !string.IsNullOrEmpty(reply) ? reply : Properties.Resources.Formatter_None;
+            string reply = string.Join(SR.Formatter_ListSeparatorWithSpace, items.OrderBy(t => t));
+            return !string.IsNullOrEmpty(reply) ? reply : SR.Formatter_None;
         }
 
         public static string Format(Type type)

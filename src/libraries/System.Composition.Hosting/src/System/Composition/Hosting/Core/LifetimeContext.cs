@@ -92,7 +92,7 @@ namespace System.Composition.Hosting.Core
 
             // To generate acceptable error messages here we're going to need to pass in a description
             // of the component, or otherwise find a way to get one.
-            throw ThrowHelper.CompositionException(string.Format(Properties.Resources.Component_NotCreatableOutsideSharingBoundary, sharingBoundary));
+            throw ThrowHelper.CompositionException(SR.Format(SR.Component_NotCreatableOutsideSharingBoundary, sharingBoundary));
         }
 
         /// <summary>

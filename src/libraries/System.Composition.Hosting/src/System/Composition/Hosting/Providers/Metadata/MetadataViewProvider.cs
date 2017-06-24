@@ -23,7 +23,7 @@ namespace System.Composition.Hosting.Providers.Metadata
                 return m => (TMetadata)m;
 
             if (!typeof(TMetadata).GetTypeInfo().IsClass)
-                throw new CompositionFailedException(string.Format(Properties.Resources.MetadataViewProvider_InvalidViewImplementation, typeof(TMetadata).Name));
+                throw new CompositionFailedException(SR.Format(SR.MetadataViewProvider_InvalidViewImplementation, typeof(TMetadata).Name));
 
             var ti = typeof(TMetadata).GetTypeInfo();
             var dictionaryConstructor = ti.DeclaredConstructors.SingleOrDefault(ci =>
@@ -71,7 +71,7 @@ namespace System.Composition.Hosting.Providers.Metadata
                     .Compile();
             }
 
-            throw new CompositionFailedException(string.Format(Properties.Resources.MetadataViewProvider_InvalidViewImplementation, typeof(TMetadata).Name));
+            throw new CompositionFailedException(SR.Format(SR.MetadataViewProvider_InvalidViewImplementation, typeof(TMetadata).Name));
         }
 
         private static TValue GetMetadataValue<TValue>(IDictionary<string, object> metadata, string name, DefaultValueAttribute defaultValue)
@@ -84,7 +84,7 @@ namespace System.Composition.Hosting.Providers.Metadata
                 return (TValue)defaultValue.Value;
 
             // This could be significantly improved by describing the target metadata property.
-            var message = string.Format(Properties.Resources.MetadataViewProvider_MissingMetadata, name);
+            var message = SR.Format(SR.MetadataViewProvider_MissingMetadata, name);
             throw ThrowHelper.CompositionException(message);
         }
     }

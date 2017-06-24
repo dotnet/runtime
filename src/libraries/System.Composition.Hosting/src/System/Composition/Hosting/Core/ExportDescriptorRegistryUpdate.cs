@@ -93,7 +93,7 @@ namespace System.Composition.Hosting.Core
                     if (step.Target.Equals(dependency.Target))
                     {
                         var message = new StringBuilder();
-                        message.AppendFormat(Properties.Resources.ExportDescriptor_UnsupportedCycle, dependency.Target.Origin);
+                        message.AppendFormat(SR.ExportDescriptor_UnsupportedCycle, dependency.Target.Origin);
                         message.AppendLine();
                         message.Append(DescribeCompositionStack(dependency, checking));
                         throw ThrowHelper.CompositionException(message.ToString());
@@ -117,12 +117,12 @@ namespace System.Composition.Hosting.Core
 
             foreach (var step in dependencies)
             {
-                result.AppendFormat(Properties.Resources.ExportDescriptor_DependencyErrorLine, import.Site, step.Target.Origin);
+                result.AppendFormat(SR.ExportDescriptor_DependencyErrorLine, import.Site, step.Target.Origin);
                 result.AppendLine();
                 import = step;
             }
 
-            result.AppendFormat(Properties.Resources.ExportDescriptor_DependencyErrorContract, import.Contract);
+            result.AppendFormat(SR.ExportDescriptor_DependencyErrorContract, import.Contract);
             return result;
         }
 
