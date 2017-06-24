@@ -303,7 +303,7 @@ static void*
 open_memory_map (const char *c_mapName, int mode, gint64 *capacity, int access, int options, int *ioerror)
 {
 	MmapHandle *handle;
-	if (*capacity <= 0) {
+	if (*capacity <= 0 && mode != FILE_MODE_OPEN) {
 		*ioerror = CAPACITY_MUST_BE_POSITIVE;
 		return NULL;
 	}

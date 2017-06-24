@@ -140,7 +140,7 @@ static void *open_handle (void *handle, MonoString *mapName, int mode, gint64 *c
 	HANDLE result = NULL;
 
 	if (handle == INVALID_HANDLE_VALUE) {
-		if (*capacity <= 0) {
+		if (*capacity <= 0 && mode != FILE_MODE_OPEN) {
 			*error = CAPACITY_MUST_BE_POSITIVE;
 			return NULL;
 		}
