@@ -1765,17 +1765,17 @@ GenTree* DecomposeLongs::DecomposeSimdGetItem(LIR::Use& use)
         index = simdTree->gtOp.gtOp2->gtIntCon.gtIconVal;
     }
 
-    GenTree* simdTmpVar = RepresentOpAsLocalVar(simdTree->gtOp.gtOp1, simdTree, &simdTree->gtOp.gtOp1);
+    GenTree* simdTmpVar    = RepresentOpAsLocalVar(simdTree->gtOp.gtOp1, simdTree, &simdTree->gtOp.gtOp1);
     unsigned simdTmpVarNum = simdTmpVar->AsLclVarCommon()->gtLclNum;
     JITDUMP("[DecomposeSimdGetItem]: Saving op1 tree to a temp var:\n");
     DISPTREERANGE(Range(), simdTmpVar);
     Range().Remove(simdTmpVar);
 
-    GenTree* indexTmpVar = nullptr;
+    GenTree* indexTmpVar    = nullptr;
     unsigned indexTmpVarNum = 0;
     if (!indexIsConst)
     {
-        indexTmpVar = RepresentOpAsLocalVar(simdTree->gtOp.gtOp2, simdTree, &simdTree->gtOp.gtOp2);
+        indexTmpVar    = RepresentOpAsLocalVar(simdTree->gtOp.gtOp2, simdTree, &simdTree->gtOp.gtOp2);
         indexTmpVarNum = indexTmpVar->AsLclVarCommon()->gtLclNum;
         JITDUMP("[DecomposeSimdGetItem]: Saving op2 tree to a temp var:\n");
         DISPTREERANGE(Range(), indexTmpVar);
