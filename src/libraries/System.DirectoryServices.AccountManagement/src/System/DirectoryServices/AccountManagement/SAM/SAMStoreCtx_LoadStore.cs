@@ -52,7 +52,7 @@ namespace System.DirectoryServices.AccountManagement
                     else
                     {
                         throw new InvalidOperationException(
-                                        String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForSave, principalType.ToString()));
+                                        String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForSave, principalType.ToString()));
                     }
 
                     // Determine the SAM account name for the entry we'll be creating.  Use the name from the NT4 IdentityClaim.
@@ -61,7 +61,7 @@ namespace System.DirectoryServices.AccountManagement
                     if (samAccountName == null)
                     {
                         // They didn't set a NT4 IdentityClaim.
-                        throw new InvalidOperationException(StringResources.NameMustBeSetToPersistPrincipal);
+                        throw new InvalidOperationException(SR.NameMustBeSetToPersistPrincipal);
                     }
 
                     lock (_ctxBaseLock)
@@ -345,7 +345,7 @@ namespace System.DirectoryServices.AccountManagement
                 sidObj.GetBinaryForm(sid, 0);
 
                 if (sid == null)
-                    throw new ArgumentException(StringResources.StoreCtxSecurityIdentityClaimBadFormat);
+                    throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);
 
                 // If they're searching by SID for a SID corresponding to a fake group, construct
                 // and return the fake group
@@ -462,7 +462,7 @@ namespace System.DirectoryServices.AccountManagement
                 // If they both succeeded in finding a match, we have too many matches.
                 // Throw an exception.
                 if ((sidPrincipal != null) && (nt4Principal != null))
-                    throw new MultipleMatchesException(StringResources.MultipleMatchingPrincipals);
+                    throw new MultipleMatchesException(SR.MultipleMatchingPrincipals);
 
                 // Return whichever one matched.  If neither matched, this will return null.
                 return (sidPrincipal != null) ? GetAsPrincipal(sidPrincipal, null) :
@@ -472,7 +472,7 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 // Unsupported type of IdentityClaim
-                throw new ArgumentException(StringResources.StoreCtxUnsupportedIdentityClaimForQuery);
+                throw new ArgumentException(SR.StoreCtxUnsupportedIdentityClaimForQuery);
             }
         }
 
@@ -533,7 +533,7 @@ namespace System.DirectoryServices.AccountManagement
             int index = urnValue.IndexOf('\\');
 
             if (index == urnValue.Length - 1)
-                throw new ArgumentException(StringResources.StoreCtxNT4IdentityClaimWrongForm);
+                throw new ArgumentException(SR.StoreCtxNT4IdentityClaimWrongForm);
 
             string samAccountName = (index != -1) ? urnValue.Substring(index + 1) :    // +1 to skip the '/'
                                                      urnValue;
@@ -905,7 +905,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             throw new InvalidOperationException(
                             String.Format(CultureInfo.CurrentCulture,
-                                          StringResources.PrincipalUnsupportPropertyForType,
+                                          SR.PrincipalUnsupportPropertyForType,
                                           p.GetType().ToString(),
                                           PropertyNamesExternal.GetExternalForm(propertyName)));
         }
@@ -958,7 +958,7 @@ namespace System.DirectoryServices.AccountManagement
             if (!isLSAM)
                 throw new InvalidOperationException(
                     String.Format(CultureInfo.CurrentCulture,
-                                  StringResources.PrincipalUnsupportPropertyForPlatform,
+                                  SR.PrincipalUnsupportPropertyForPlatform,
                                   PropertyNamesExternal.GetExternalForm(propertyName)));
         }
 
@@ -969,7 +969,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (!isLSAM)
                     throw new InvalidOperationException(
                         String.Format(CultureInfo.CurrentCulture,
-                                      StringResources.PrincipalUnsupportPropertyForPlatform,
+                                      SR.PrincipalUnsupportPropertyForPlatform,
                                       PropertyNamesExternal.GetExternalForm(propertyName)));
             }
             else
@@ -980,7 +980,7 @@ namespace System.DirectoryServices.AccountManagement
                 GroupScope value = (GroupScope)p.GetValueForProperty(propertyName);
 
                 if (value != GroupScope.Local)
-                    throw new InvalidOperationException(StringResources.SAMStoreCtxLocalGroupsOnly);
+                    throw new InvalidOperationException(SR.SAMStoreCtxLocalGroupsOnly);
             }
         }
 
@@ -989,7 +989,7 @@ namespace System.DirectoryServices.AccountManagement
             if (!isLSAM)
                 throw new InvalidOperationException(
                     String.Format(CultureInfo.CurrentCulture,
-                                  StringResources.PrincipalUnsupportPropertyForPlatform,
+                                  SR.PrincipalUnsupportPropertyForPlatform,
                                   PropertyNamesExternal.GetExternalForm(propertyName)));
         }
 
@@ -1065,7 +1065,7 @@ namespace System.DirectoryServices.AccountManagement
                         throw new PrincipalOperationException(
                                         String.Format(
                                                 CultureInfo.CurrentCulture,
-                                                StringResources.SAMStoreCtxFailedToClearGroup,
+                                                SR.SAMStoreCtxFailedToClearGroup,
                                                 hr.ToString(CultureInfo.InvariantCulture)));
                     }
                 }
@@ -1085,12 +1085,12 @@ namespace System.DirectoryServices.AccountManagement
                          (memberType != typeof(GroupPrincipal)) && (!memberType.IsSubclassOf(typeof(GroupPrincipal))))
                     {
                         throw new InvalidOperationException(
-                                        String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
+                                        String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForGroupInsert, memberType.ToString()));
                     }
 
                     // Can't inserted unpersisted principal
                     if (member.unpersisted)
-                        throw new InvalidOperationException(StringResources.StoreCtxGroupHasUnpersistedInsertedPrincipal);
+                        throw new InvalidOperationException(SR.StoreCtxGroupHasUnpersistedInsertedPrincipal);
 
                     Debug.Assert(member.Context != null);
 
@@ -1107,7 +1107,7 @@ namespace System.DirectoryServices.AccountManagement
                     string memberSidPath = GetSidADsPathFromPrincipal(member);
 
                     if (memberSidPath == null)
-                        throw new InvalidOperationException(StringResources.SAMStoreCtxCouldntGetSIDForGroupMember);
+                        throw new InvalidOperationException(SR.SAMStoreCtxCouldntGetSIDForGroupMember);
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UpdateGroupMembership: inserting {0}", memberSidPath);
 
@@ -1135,7 +1135,7 @@ namespace System.DirectoryServices.AccountManagement
                     string memberSidPath = GetSidADsPathFromPrincipal(member);
 
                     if (memberSidPath == null)
-                        throw new InvalidOperationException(StringResources.SAMStoreCtxCouldntGetSIDForGroupMember);
+                        throw new InvalidOperationException(SR.SAMStoreCtxCouldntGetSIDForGroupMember);
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UpdateGroupMembership: removing {0}", memberSidPath);
 

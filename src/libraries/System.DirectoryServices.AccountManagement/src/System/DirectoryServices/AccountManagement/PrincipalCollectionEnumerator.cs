@@ -37,7 +37,7 @@ namespace System.DirectoryServices.AccountManagement
                                         _endReached,
                                         _currentMode);
 
-                    throw new InvalidOperationException(StringResources.PrincipalCollectionEnumInvalidPos);
+                    throw new InvalidOperationException(SR.PrincipalCollectionEnumInvalidPos);
                 }
 
                 Debug.Assert(_current != null);
@@ -327,7 +327,7 @@ namespace System.DirectoryServices.AccountManagement
                             _memberCollection.LastChange,
                             _creationTime);
 
-                throw new InvalidOperationException(StringResources.PrincipalCollectionEnumHasChanged);
+                throw new InvalidOperationException(SR.PrincipalCollectionEnumHasChanged);
             }
         }
     }

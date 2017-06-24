@@ -228,7 +228,7 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SDSUtils", "InsertPrincipal: Bad principal type:" + p.GetType().ToString());
 
                 throw new InvalidOperationException(
-                                String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForSave, p.GetType().ToString()));
+                                String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForSave, p.GetType().ToString()));
             }
 
             // Commit the properties
@@ -702,7 +702,7 @@ namespace System.DirectoryServices.AccountManagement
                 // to it.  In that case, we don't want to blindly overwrite whatever other bits might be there.            
                 Debug.Assert(p.unpersisted == false);
                 throw new PrincipalOperationException(
-                                StringResources.ADStoreCtxUnableToReadExistingAccountControlFlagsForUpdate);
+                                SR.ADStoreCtxUnableToReadExistingAccountControlFlagsForUpdate);
             }
 
             uint bitmask;

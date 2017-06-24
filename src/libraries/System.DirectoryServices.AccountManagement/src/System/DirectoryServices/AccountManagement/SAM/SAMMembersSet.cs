@@ -433,7 +433,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 throw new PrincipalOperationException(
                             String.Format(CultureInfo.CurrentCulture,
-                                          StringResources.SAMStoreCtxErrorEnumeratingGroup,
+                                          SR.SAMStoreCtxErrorEnumeratingGroup,
                                           err));
             }
 

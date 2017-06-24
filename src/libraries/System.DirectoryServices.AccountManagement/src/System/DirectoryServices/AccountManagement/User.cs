@@ -22,7 +22,7 @@ namespace System.DirectoryServices.AccountManagement
         public UserPrincipal(PrincipalContext context) : base(context)
         {
             if (context == null)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;
             this.unpersisted = true;
@@ -31,7 +31,7 @@ namespace System.DirectoryServices.AccountManagement
         public UserPrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
         {
             if (samAccountName == null || password == null)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             if (Context.ContextType != ContextType.ApplicationDirectory)
                 this.SamAccountName = samAccountName;
@@ -59,7 +59,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserGivenName))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _givenName, value, ref _givenNameChanged,
                                   PropertyNames.UserGivenName);
@@ -80,7 +80,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserMiddleName))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _middleName, value, ref _middleNameChanged,
                                   PropertyNames.UserMiddleName);
@@ -101,7 +101,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserSurname))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _surname, value, ref _surnameChanged,
                                   PropertyNames.UserSurname);
@@ -122,7 +122,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserEmailAddress))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _emailAddress, value, ref _emailAddressChanged,
                                   PropertyNames.UserEmailAddress);
@@ -143,7 +143,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserVoiceTelephoneNumber))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _voiceTelephoneNumber, value, ref _voiceTelephoneNumberChanged,
                                   PropertyNames.UserVoiceTelephoneNumber);
@@ -164,7 +164,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.UserEmployeeID))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 HandleSet<string>(ref _employeeID, value, ref _employeeIDChanged,
                                   PropertyNames.UserEmployeeID);
@@ -190,7 +190,7 @@ namespace System.DirectoryServices.AccountManagement
                     context = new PrincipalContext(ContextType.Machine);
 #else
                     // This implementation doesn't support Reg-SAM/MSAM (machine principals)
-                    throw new NotSupportedException(StringResources.UserLocalNotSupportedOnPlatform);       
+                    throw new NotSupportedException(SR.UserLocalNotSupportedOnPlatform);       
 #endif // PAPI_REGSAM
                 }
                 else
@@ -201,7 +201,7 @@ namespace System.DirectoryServices.AccountManagement
                     context = new PrincipalContext(ContextType.Domain);
 #else
                     // This implementation doesn't support AD (domain principals)
-                    throw new NotSupportedException(StringResources.UserDomainNotSupportedOnPlatform);       
+                    throw new NotSupportedException(SR.UserDomainNotSupportedOnPlatform);       
 #endif // PAPI_AD
                 }
 
@@ -231,7 +231,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (user == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "User", "Current: found no user");
-                    throw new NoMatchingPrincipalException(StringResources.UserCouldNotFindCurrent);
+                    throw new NoMatchingPrincipalException(SR.UserCouldNotFindCurrent);
                 }
 
                 return user;

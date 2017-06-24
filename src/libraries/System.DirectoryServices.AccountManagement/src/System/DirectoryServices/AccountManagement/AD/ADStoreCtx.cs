@@ -290,7 +290,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // This will also detect if the server is down or nonexistent
             if (!IsContainer(ctxBase))
-                throw new InvalidOperationException(StringResources.ADStoreCtxMustBeContainer);
+                throw new InvalidOperationException(SR.ADStoreCtxMustBeContainer);
 
             this.ctxBase = ctxBase;
             _ownCtxBase = ownCtxBase;
@@ -627,7 +627,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "SetAuthPrincipalEnableStatus: can't read userAccountControl");
 
                     throw new PrincipalOperationException(
-                                StringResources.ADStoreCtxUnableToReadExistingAccountControlFlagsToEnable);
+                                SR.ADStoreCtxUnableToReadExistingAccountControlFlagsToEnable);
                 }
 
                 if (enable && ((uacValue & 0x2) != 0))
@@ -728,7 +728,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if (null == rdnPrefix)
             {
-                throw new InvalidOperationException(StringResources.ExtensionInvalidClassAttributes);
+                throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
             }
 
             if (p.GetChangeStatusForProperty(PropertyNames.PrincipalName))
@@ -747,7 +747,7 @@ namespace System.DirectoryServices.AccountManagement
                     (DirectoryRdnPrefixAttribute[])Attribute.GetCustomAttributes(principalType.BaseType, typeof(DirectoryRdnPrefixAttribute), false);
 
                     if (MyAttribute == null)
-                        throw new InvalidOperationException(StringResources.ExtensionInvalidClassAttributes);
+                        throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
 
                     string defaultRdn = null;
 
@@ -933,7 +933,7 @@ namespace System.DirectoryServices.AccountManagement
             if ((p.GetType() == typeof(ComputerPrincipal)) || (p.GetType().IsSubclassOf(typeof(ComputerPrincipal))))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADStoreCtx", "ChangePassword: computer acct, can't change password.");
-                throw new NotSupportedException(StringResources.ADStoreCtxNoComputerPasswordChange);
+                throw new NotSupportedException(SR.ADStoreCtxNoComputerPasswordChange);
             }
 
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
@@ -1384,7 +1384,7 @@ namespace System.DirectoryServices.AccountManagement
             SecurityIdentifier Sid = foreignPrincipal.Sid;
 
             if (Sid == null)
-                throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
 
             // Search our store for a object with a matching SID.  This could be a user/group/computer object,
             // or a foreignSecurityPrincipal.  Doesn't really matter --- either way, the store object will have a objectSid
@@ -1457,7 +1457,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Converr the object to a SDDL format
                     string stringSid = Utils.SecurityIdentifierToLdapHexFilterString(Sid);
                     if (stringSid == null)
-                        throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                        throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
 
                     ds.Filter = "(objectSid=" + stringSid + ")";
 
@@ -1607,7 +1607,7 @@ namespace System.DirectoryServices.AccountManagement
             if (SidObj == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "GetGroupsMemberOfAZ: no SID IC");
-                throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
 
             byte[] sid = new byte[SidObj.BinaryLength];
@@ -1616,7 +1616,7 @@ namespace System.DirectoryServices.AccountManagement
             if (sid == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "GetGroupsMemberOfAZ: bad SID IC");
-                throw new ArgumentException(StringResources.StoreCtxSecurityIdentityClaimBadFormat);
+                throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);
             }
 
             try
@@ -1820,7 +1820,7 @@ namespace System.DirectoryServices.AccountManagement
             if (Sid == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "IsMemberOfInStore: no SID IC or null UrnValue");
-                throw new ArgumentException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                throw new ArgumentException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
             DirectoryEntry defaultNCDirEntry = null;
             DirectorySearcher ds = null;
@@ -1846,7 +1846,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (stringSid == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "IsMemberOfInStore: bad SID IC");
-                    throw new ArgumentException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                    throw new ArgumentException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
                 }
 
                 ds.Filter = "(&(objectClass=foreignSecurityPrincipal)(objectSid=" + stringSid + "))";
@@ -1939,7 +1939,7 @@ namespace System.DirectoryServices.AccountManagement
                         // there is such a member, we can't clear the group
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "IsMemberOfInStore: found member, can't clear");
 
-                        explanationForFailure = StringResources.ADStoreCtxCantClearGroup;
+                        explanationForFailure = SR.ADStoreCtxCantClearGroup;
                         return false;
                     }
                     else
@@ -2038,7 +2038,7 @@ namespace System.DirectoryServices.AccountManagement
                                                 "CanGroupMemberBeRemoved: primary group member (rid={0}), can't remove",
                                                 groupRid);
 
-                        explanationForFailure = StringResources.ADStoreCtxCantRemoveMemberFromGroup;
+                        explanationForFailure = SR.ADStoreCtxCantRemoveMemberFromGroup;
                         return false;
                     }
                     else
@@ -2092,7 +2092,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (fpoDE.Properties["objectSid"].Count == 0)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "ResolveCrossStoreRefToPrincipal: no objectSid found");
-                    throw new PrincipalOperationException(StringResources.ADStoreCtxCantRetrieveObjectSidForCrossStore);
+                    throw new PrincipalOperationException(SR.ADStoreCtxCantRetrieveObjectSidForCrossStore);
                 }
 
                 Debug.Assert(fpoDE.Properties["objectSid"].Count == 1);
@@ -2147,7 +2147,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         throw new PrincipalOperationException(
                                 String.Format(CultureInfo.CurrentCulture,
-                                                  StringResources.ADStoreCtxCantResolveSidForCrossStore,
+                                                  SR.ADStoreCtxCantResolveSidForCrossStore,
                                                   err));
                     }
 
@@ -2190,7 +2190,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "ResolveCrossStoreRefToPrincipal: no matching principal");
-                    throw new PrincipalOperationException(StringResources.ADStoreCtxFailedFindCrossStoreTarget);
+                    throw new PrincipalOperationException(SR.ADStoreCtxFailedFindCrossStoreTarget);
                 }
             }
             catch (System.Runtime.InteropServices.COMException e)

@@ -31,7 +31,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override Type SearcherNativeType()
         {
             Debug.Fail("SAMStoreCtx: SearcherNativeType: There is no native searcher type.");
-            throw new InvalidOperationException(StringResources.PrincipalSearcherNoUnderlying);
+            throw new InvalidOperationException(SR.PrincipalSearcherNoUnderlying);
         }
 
         // Pushes the query represented by the QBE filter into the PrincipalSearcher's underlying native
@@ -143,7 +143,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 Debug.Fail("SAMStoreCtx.GetSchemaFilter: fell off end looking for " + principalType.ToString());
                 throw new InvalidOperationException(
-                                String.Format(CultureInfo.CurrentCulture, StringResources.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
+                                String.Format(CultureInfo.CurrentCulture, SR.StoreCtxUnsupportedPrincipalTypeForQuery, principalType.ToString()));
             }
 
             return schemaTypes;

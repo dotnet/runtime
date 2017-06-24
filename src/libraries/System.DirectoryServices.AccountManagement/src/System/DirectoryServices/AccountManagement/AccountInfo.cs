@@ -55,7 +55,7 @@ namespace System.DirectoryServices.AccountManagement
             get
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoPermittedWorkstations))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 return _owningPrincipal.HandleGet<PrincipalValueCollection<string>>(ref _permittedWorkstations, PropertyNames.AcctInfoPermittedWorkstations, ref _permittedWorkstationsLoaded);
             }
@@ -89,7 +89,7 @@ namespace System.DirectoryServices.AccountManagement
                 //this.owningPrincipal.CheckSupportedProperty(PropertyNames.AcctInfoPermittedLogonTimes);
 
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoPermittedLogonTimes))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 // If we get to this point we know that the value of the property has changed and we should not load it from the store.
                 // If value is retrived the state is set to loaded.  Even if user modifies the reference we will
@@ -119,7 +119,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoExpirationDate))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 _owningPrincipal.HandleSet<Nullable<DateTime>>(ref _expirationDate, value, ref _expirationDateChanged,
                                                PropertyNames.AcctInfoExpirationDate);
@@ -142,7 +142,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoSmartcardRequired))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 _owningPrincipal.HandleSet<bool>(ref _smartcardLogonRequired, value, ref _smartcardLogonRequiredChanged,
                                  PropertyNames.AcctInfoSmartcardRequired);
@@ -165,7 +165,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoDelegationPermitted))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 _owningPrincipal.HandleSet<bool>(ref _delegationPermitted, value, ref _delegationPermittedChanged,
                                  PropertyNames.AcctInfoDelegationPermitted);
@@ -201,7 +201,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoHomeDirectory))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 _owningPrincipal.HandleSet<string>(ref _homeDirectory, value, ref _homeDirectoryChanged,
                                    PropertyNames.AcctInfoHomeDirectory);
@@ -224,7 +224,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoHomeDrive))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 _owningPrincipal.HandleSet<string>(ref _homeDrive, value, ref _homeDriveChanged,
                                    PropertyNames.AcctInfoHomeDrive);
@@ -247,7 +247,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 if (!_owningPrincipal.GetStoreCtxToUse().IsValidProperty(_owningPrincipal, PropertyNames.AcctInfoScriptPath))
-                    throw new InvalidOperationException(StringResources.InvalidPropertyForStore);
+                    throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
                 _owningPrincipal.HandleSet<string>(ref _scriptPath, value, ref _scriptPathChanged,
                                    PropertyNames.AcctInfoScriptPath);

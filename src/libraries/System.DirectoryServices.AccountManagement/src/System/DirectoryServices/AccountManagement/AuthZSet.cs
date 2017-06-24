@@ -189,7 +189,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(
                                     String.Format(
                                             CultureInfo.CurrentCulture,
-                                            StringResources.AuthZFailedToRetrieveGroupList,
+                                            SR.AuthZFailedToRetrieveGroupList,
                                             lastError));
                 }
 
@@ -212,10 +212,10 @@ namespace System.DirectoryServices.AccountManagement
 
                 // We're on a platform that doesn't have the AuthZ library
                 if (e is DllNotFoundException)
-                    throw new NotSupportedException(StringResources.AuthZNotSupported, e);
+                    throw new NotSupportedException(SR.AuthZNotSupported, e);
 
                 if (e is EntryPointNotFoundException)
-                    throw new NotSupportedException(StringResources.AuthZNotSupported, e);
+                    throw new NotSupportedException(SR.AuthZNotSupported, e);
 
                 throw;
             }
@@ -442,7 +442,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (group == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "CurrentAsPrincipal: Couldn't find group {0}");
-                    throw new NoMatchingPrincipalException(StringResources.AuthZCantFindGroup);
+                    throw new NoMatchingPrincipalException(SR.AuthZCantFindGroup);
                 }
 
                 return group;
@@ -655,7 +655,7 @@ namespace System.DirectoryServices.AccountManagement
                                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: couldn't get policy handle, err={0}", err);                                                                
 
                                 throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
-                                                                           StringResources.AuthZErrorEnumeratingGroups,
+                                                                           SR.AuthZErrorEnumeratingGroups,
                                                                            SafeNativeMethods.LsaNtStatusToWinError(err)));
                             }
 
@@ -677,7 +677,7 @@ namespace System.DirectoryServices.AccountManagement
                                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "SidList: LsaLookupSids failed, err={0}", err);                                                                
 
                                 throw new PrincipalOperationException(String.Format(CultureInfo.CurrentCulture,
-                                                                           StringResources.AuthZErrorEnumeratingGroups,
+                                                                           SR.AuthZErrorEnumeratingGroups,
                                                                            SafeNativeMethods.LsaNtStatusToWinError(err)));
                             }
 

@@ -328,7 +328,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                errorMsg = StringResources.DSUnknown + Convert.ToString(temp, 16);
+                errorMsg = SR.DSUnknown + Convert.ToString(temp, 16);
             }
 
             return errorMsg;

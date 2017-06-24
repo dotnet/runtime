@@ -173,7 +173,7 @@ namespace System.DirectoryServices.AccountManagement
             // While you can reset the password on an unpersisted principal (and it will be used as the initial password
             // for the pricipal), changing the password on a principal that doesn't exist yet doesn't make sense
             if (_owningPrincipal.unpersisted)
-                throw new InvalidOperationException(StringResources.PasswordInfoChangePwdOnUnpersistedPrinc);
+                throw new InvalidOperationException(SR.PasswordInfoChangePwdOnUnpersistedPrinc);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "ChangePassword: sending request");
             _owningPrincipal.GetStoreCtxToUse().ChangePassword(_owningPrincipal, oldPassword, newPassword);

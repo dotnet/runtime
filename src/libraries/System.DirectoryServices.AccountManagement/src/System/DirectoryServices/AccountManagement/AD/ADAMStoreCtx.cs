@@ -84,7 +84,7 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADAMStoreCtx", "SetAuthPrincipalEnableStatus: can't read userAccountControl");
 
                 throw new PrincipalOperationException(
-                            StringResources.ADStoreCtxUnableToReadExistingAccountControlFlagsToEnable);
+                            SR.ADStoreCtxUnableToReadExistingAccountControlFlagsToEnable);
             }
 
             if ((enable && acctDisabled) || (!enable && !acctDisabled))
@@ -274,7 +274,7 @@ namespace System.DirectoryServices.AccountManagement
                     if (deRoot.Properties["schemaNamingContext"].Count == 0)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList Unable to read schemaNamingContrext from " + userSuppliedServerName);
-                        throw new PrincipalOperationException(StringResources.ADAMStoreUnableToPopulateSchemaList);
+                        throw new PrincipalOperationException(SR.ADAMStoreUnableToPopulateSchemaList);
                     }
 
                     SchemaNamingContext = (string)deRoot.Properties["schemaNamingContext"].Value;
@@ -295,7 +295,7 @@ namespace System.DirectoryServices.AccountManagement
                                 if (null == res.Properties["ldapDisplayName"])
                                 {
                                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "ADAMStoreCtx", "PopulatAuxObjectList Unable to read ldapDisplayName from " + SchemaNamingContext);
-                                    throw new PrincipalOperationException(StringResources.ADAMStoreUnableToPopulateSchemaList);
+                                    throw new PrincipalOperationException(SR.ADAMStoreUnableToPopulateSchemaList);
                                 }
 
                                 objectClasses.Add(res.Properties["ldapDisplayName"][0].ToString());

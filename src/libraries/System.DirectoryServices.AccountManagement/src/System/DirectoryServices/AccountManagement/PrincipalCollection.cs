@@ -27,10 +27,10 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentNullException("array");
 
             if (array.Rank != 1)
-                throw new ArgumentException(StringResources.PrincipalCollectionNotOneDimensional);
+                throw new ArgumentException(SR.PrincipalCollectionNotOneDimensional);
 
             if (index >= array.GetLength(0))
-                throw new ArgumentException(StringResources.PrincipalCollectionIndexNotInArray);
+                throw new ArgumentException(SR.PrincipalCollectionIndexNotInArray);
 
             ArrayList tempArray = new ArrayList();
 
@@ -73,7 +73,7 @@ namespace System.DirectoryServices.AccountManagement
                                                     arraySize,
                                                     tempArraySize);
 
-                            throw new ArgumentException(StringResources.PrincipalCollectionArrayTooSmall);
+                            throw new ArgumentException(SR.PrincipalCollectionArrayTooSmall);
                         }
                     }
                 }
@@ -261,7 +261,7 @@ namespace System.DirectoryServices.AccountManagement
                 throw new ArgumentNullException("principal");
 
             if (Contains(principal))
-                throw new PrincipalExistsException(StringResources.PrincipalExistsExceptionText);
+                throw new PrincipalExistsException(SR.PrincipalExistsExceptionText);
 
             MarkChange();
 
@@ -318,7 +318,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // No Principal matching the IdentityReference could be found in the PrincipalContext      
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Add(urn/urn): no match");
-                throw new NoMatchingPrincipalException(StringResources.NoMatchingPrincipalExceptionText);
+                throw new NoMatchingPrincipalException(SR.NoMatchingPrincipalExceptionText);
             }
         }
 
@@ -466,7 +466,7 @@ namespace System.DirectoryServices.AccountManagement
             if (principal == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Remove(urn/urn): no match");
-                throw new NoMatchingPrincipalException(StringResources.NoMatchingPrincipalExceptionText);
+                throw new NoMatchingPrincipalException(SR.NoMatchingPrincipalExceptionText);
             }
 
             return Remove(principal);

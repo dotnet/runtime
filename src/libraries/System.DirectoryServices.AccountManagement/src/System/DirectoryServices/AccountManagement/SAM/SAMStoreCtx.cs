@@ -468,7 +468,7 @@ namespace System.DirectoryServices.AccountManagement
             if (p is ComputerPrincipal)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "SetPassword: computer acct, can't reset");
-                throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordSet);
+                throw new InvalidOperationException(SR.SAMStoreCtxNoComputerPasswordSet);
             }
 
             Debug.Assert(p != null);
@@ -493,7 +493,7 @@ namespace System.DirectoryServices.AccountManagement
             if (p is ComputerPrincipal)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ChangePassword: computer acct, can't change");
-                throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordSet);
+                throw new InvalidOperationException(SR.SAMStoreCtxNoComputerPasswordSet);
             }
 
             Debug.Assert(p != null);
@@ -514,7 +514,7 @@ namespace System.DirectoryServices.AccountManagement
             if (p is ComputerPrincipal)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ExpirePassword: computer acct, can't expire");
-                throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordExpire);
+                throw new InvalidOperationException(SR.SAMStoreCtxNoComputerPasswordExpire);
             }
 
             WriteAttribute(p, "PasswordExpired", 1);
@@ -528,7 +528,7 @@ namespace System.DirectoryServices.AccountManagement
             if (p is ComputerPrincipal)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "UnexpirePassword: computer acct, can't unexpire");
-                throw new InvalidOperationException(StringResources.SAMStoreCtxNoComputerPasswordExpire);
+                throw new InvalidOperationException(SR.SAMStoreCtxNoComputerPasswordExpire);
             }
 
             WriteAttribute(p, "PasswordExpired", 0);
@@ -552,13 +552,13 @@ namespace System.DirectoryServices.AccountManagement
         internal override ResultSet FindByLockoutTime(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            throw new NotSupportedException(StringResources.StoreNotSupportMethod);
+            throw new NotSupportedException(SR.StoreNotSupportMethod);
         }
 
         internal override ResultSet FindByBadPasswordAttempt(
             DateTime dt, MatchType matchType, Type principalType)
         {
-            throw new NotSupportedException(StringResources.StoreNotSupportMethod);
+            throw new NotSupportedException(SR.StoreNotSupportMethod);
         }
 
         internal override ResultSet FindByLogonTime(
@@ -661,7 +661,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (principalSid == null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf: bad SID IC");
-                    throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                    throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
                 }
 
                 // Create the ResultSet that will perform the client-side filtering
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.AccountManagement
             if (Sid == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOf(ctx): no SID IC");
-                throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
 
             // In SAM, only users can be member of SAM groups (no nested groups)
@@ -727,7 +727,7 @@ namespace System.DirectoryServices.AccountManagement
             if (Sid == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOfAZ: no SID IC");
-                throw new InvalidOperationException(StringResources.StoreCtxNeedValueSecurityIdentityClaimToQuery);
+                throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
             }
 
             byte[] Sidb = new byte[Sid.BinaryLength];
@@ -736,7 +736,7 @@ namespace System.DirectoryServices.AccountManagement
             if (Sidb == null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetGroupsMemberOfAZ: Bad SID IC");
-                throw new ArgumentException(StringResources.StoreCtxSecurityIdentityClaimBadFormat);
+                throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);
             }
 
             try
@@ -822,7 +822,7 @@ namespace System.DirectoryServices.AccountManagement
             if (foreignDE.Properties["objectSid"].Count == 0)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ResolveCrossStoreRefToPrincipal: no objectSid found");
-                throw new PrincipalOperationException(StringResources.SAMStoreCtxCantRetrieveObjectSidForCrossStore);
+                throw new PrincipalOperationException(SR.SAMStoreCtxCantRetrieveObjectSidForCrossStore);
             }
 
             Debug.Assert(foreignDE.Properties["objectSid"].Count == 1);
@@ -846,7 +846,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 throw new PrincipalOperationException(
                             String.Format(CultureInfo.CurrentCulture,
-                                          StringResources.SAMStoreCtxCantResolveSidForCrossStore,
+                                          SR.SAMStoreCtxCantResolveSidForCrossStore,
                                           err));
             }
 
@@ -885,7 +885,7 @@ namespace System.DirectoryServices.AccountManagement
             else
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "ResolveCrossStoreRefToPrincipal: no matching principal");
-                throw new PrincipalOperationException(StringResources.SAMStoreCtxFailedFindCrossStoreTarget);
+                throw new PrincipalOperationException(SR.SAMStoreCtxFailedFindCrossStoreTarget);
             }
         }
 
@@ -1030,7 +1030,7 @@ namespace System.DirectoryServices.AccountManagement
 
             if (!SAMUtils.GetOSVersion(_ctxBase, out versionMajor, out versionMinor))
             {
-                throw new PrincipalOperationException(StringResources.SAMStoreCtxUnableToRetrieveVersion);
+                throw new PrincipalOperationException(SR.SAMStoreCtxUnableToRetrieveVersion);
             }
 
             Debug.Assert(versionMajor > 0);
@@ -1058,7 +1058,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                throw new PrincipalOperationException(StringResources.SAMStoreCtxUnableToRetrieveMachineName);
+                throw new PrincipalOperationException(SR.SAMStoreCtxUnableToRetrieveMachineName);
             }
 
             //
@@ -1083,7 +1083,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new PrincipalOperationException(
                                     String.Format(
                                         CultureInfo.CurrentCulture,
-                                        StringResources.SAMStoreCtxUnableToRetrieveFlatMachineName,
+                                        SR.SAMStoreCtxUnableToRetrieveFlatMachineName,
                                         err));
                 }
             }

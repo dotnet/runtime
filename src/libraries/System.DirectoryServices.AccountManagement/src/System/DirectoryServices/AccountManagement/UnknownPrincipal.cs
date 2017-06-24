@@ -22,7 +22,7 @@ namespace System.DirectoryServices.AccountManagement
         private UnknownPrincipal(PrincipalContext context)
         {
             if (context == null)
-                throw new ArgumentException(StringResources.NullArguments);
+                throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;
             this.unpersisted = true;
