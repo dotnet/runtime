@@ -43,9 +43,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
                 if (!(m.IsPublic || m.IsAssembly) | m.IsStatic || m.ReturnType != typeof(void) ||
                     m.IsGenericMethodDefinition || m.GetParameters().Length != 0)
                 {
-                    var message = string.Format(
-                        Properties.Resources.OnImportsSatisfiedFeature_AttributeError,
-                        partType, m.Name);
+                    string message = SR.Format(SR.OnImportsSatisfiedFeature_AttributeError, partType, m.Name);
                     throw new CompositionFailedException(message);
                 }
 

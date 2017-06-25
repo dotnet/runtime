@@ -64,8 +64,8 @@ namespace System.Composition
                     }
                     else if (!importInfo.AllowDefault)
                     {
-                        throw new CompositionFailedException(string.Format(
-                            Properties.Resources.CompositionContextExtensions_MissingDependency, pi.Name, objectWithLooseImports));
+                        throw new CompositionFailedException(SR.Format(
+                            SR.CompositionContextExtensions_MissingDependency, pi.Name, objectWithLooseImports));
                     }
                 }
             }

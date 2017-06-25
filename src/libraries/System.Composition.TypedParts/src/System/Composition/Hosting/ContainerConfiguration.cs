@@ -67,7 +67,7 @@ namespace System.Composition.Hosting
             if (conventions == null) throw new ArgumentNullException(nameof(conventions));
 
             if (_defaultAttributeContext != null)
-                throw new InvalidOperationException(System.Composition.Properties.Resources.ContainerConfiguration_DefaultConventionSet);
+                throw new InvalidOperationException(SR.ContainerConfiguration_DefaultConventionSet);
 
             _defaultAttributeContext = conventions;
             return this;

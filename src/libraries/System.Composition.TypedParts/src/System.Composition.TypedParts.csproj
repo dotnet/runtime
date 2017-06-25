@@ -33,11 +33,6 @@
     <Compile Include="..\..\Common\src\Microsoft\Internal\EmptyArray.cs">
       <Link>Microsoft\Internal\EmptyArray.cs</Link>
     </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
     <Compile Include="System\Composition\CompositionContextExtensions.cs" />
     <Compile Include="System\Composition\Convention\AttributedModelProviderExtensions.cs" />
     <Compile Include="System\Composition\Debugging\ContainerConfigurationDebuggerProxy.cs" />
@@ -59,12 +54,6 @@
     <Compile Include="System\Composition\TypedParts\ImportInfo.cs" />
     <Compile Include="System\Composition\TypedParts\TypedPartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\Util\DirectAttributeContext.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
     <Reference Include="System.Collections" />

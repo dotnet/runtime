@@ -170,7 +170,7 @@ namespace System.Composition.TypedParts.Discovery
             }
             else if (!contractType.IsAssignableFrom(property.PropertyType.GetTypeInfo()))
             {
-                var message = string.Format(Properties.Resources.TypeInspector_ExportedContractTypeNotAssignable,
+                string message = SR.Format(SR.TypeInspector_ExportedContractTypeNotAssignable,
                                                 contractType.Name, property.Name, partType.Name);
                 throw new CompositionFailedException(message);
             }
@@ -180,7 +180,7 @@ namespace System.Composition.TypedParts.Discovery
         {
             if (!contractType.IsGenericTypeDefinition)
             {
-                var message = string.Format(Properties.Resources.TypeInspector_NoExportNonGenericContract, partType.Name, contractType.Name);
+                string message = SR.Format(SR.TypeInspector_NoExportNonGenericContract, partType.Name, contractType.Name);
                 throw new CompositionFailedException(message);
             }
 
@@ -193,7 +193,7 @@ namespace System.Composition.TypedParts.Discovery
                     var mappedType = ifce;
                     if (!(mappedType == partType || mappedType.GenericTypeArguments.SequenceEqual(partType.GenericTypeParameters)))
                     {
-                        var message = string.Format(Properties.Resources.TypeInspector_ArgumentMissmatch, contractType.Name, partType.Name);
+                        string message = SR.Format(SR.TypeInspector_ArgumentMissmatch, contractType.Name, partType.Name);
                         throw new CompositionFailedException(message);
                     }
 
@@ -204,7 +204,7 @@ namespace System.Composition.TypedParts.Discovery
 
             if (!compatible)
             {
-                var message = string.Format(Properties.Resources.TypeInspector_ExportNotCompatible, exportingMemberType.Name, partType.Name, contractType.Name);
+                string message = SR.Format(SR.TypeInspector_ExportNotCompatible, exportingMemberType.Name, partType.Name, contractType.Name);
                 throw new CompositionFailedException(message);
             }
         }
@@ -230,7 +230,7 @@ namespace System.Composition.TypedParts.Discovery
             }
             else if (!contractType.IsAssignableFrom(partType))
             {
-                var message = string.Format(Properties.Resources.TypeInspector_ContractNotAssignable, contractType.Name, partType.Name);
+                string message = string.Format(SR.TypeInspector_ContractNotAssignable, contractType.Name, partType.Name);
                 throw new CompositionFailedException(message);
             }
         }

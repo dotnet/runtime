@@ -90,7 +90,7 @@ namespace System.Composition.TypedParts.Discovery
                     {
                         if (_constructor != null)
                         {
-                            var message = string.Format(Properties.Resources.DiscoveredPart_MultipleImportingConstructorsFound, _partType);
+                            string message = SR.Format(SR.DiscoveredPart_MultipleImportingConstructorsFound, _partType);
                             throw new CompositionFailedException(message);
                         }
 
@@ -104,7 +104,7 @@ namespace System.Composition.TypedParts.Discovery
 
                 if (_constructor == null)
                 {
-                    var message = string.Format(Properties.Resources.DiscoveredPart_NoImportingConstructorsFound, _partType);
+                    string message = SR.Format(SR.DiscoveredPart_NoImportingConstructorsFound, _partType);
                     throw new CompositionFailedException(message);
                 }
             }
