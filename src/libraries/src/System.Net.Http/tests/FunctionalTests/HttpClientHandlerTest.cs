@@ -115,13 +115,17 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(null, handler.Proxy);
                 Assert.True(handler.SupportsAutomaticDecompression);
                 Assert.True(handler.UseCookies);
-
-                if (!PlatformDetection.IsUap) // TODO https://github.com/dotnet/corefx/issues/21510
-                {
-                    Assert.False(handler.UseDefaultCredentials);
-                }
-
                 Assert.True(handler.UseProxy);
+            }
+        }
+
+        [ActiveIssue(21510, TargetFrameworkMonikers.Uap)]
+        [Fact]
+        public void UseDefaultCredentials_Ctor_ExpectedValue()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                Assert.False(handler.UseDefaultCredentials);
             }
         }
 
@@ -139,7 +143,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.SupportsRedirectConfiguration);
                 
                 // Changes from .NET Framework (Desktop).
-                if (!PlatformDetection.IsFullFramework) // TODO Issue #17691
+                if (!PlatformDetection.IsFullFramework)
                 {
                     Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 }
