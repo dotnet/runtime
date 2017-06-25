@@ -98,9 +98,8 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
         [Fact]
-        public void Ctor_ExpectedDefaultPropertyValues()
+        public void Ctor_ExpectedDefaultPropertyValues_CommonPlatform()
         {
             using (var handler = new HttpClientHandler())
             {
@@ -112,22 +111,42 @@ namespace System.Net.Http.Functional.Tests
                 Assert.NotNull(cookies);
                 Assert.Equal(0, cookies.Count);
                 Assert.Null(handler.Credentials);
-                Assert.Equal(50, handler.MaxAutomaticRedirections);
-                Assert.False(handler.PreAuthenticate);
+                Assert.NotNull(handler.Properties);
                 Assert.Equal(null, handler.Proxy);
                 Assert.True(handler.SupportsAutomaticDecompression);
+                Assert.True(handler.UseCookies);
+                Assert.True(handler.UseProxy);
+            }
+        }
+
+        [ActiveIssue(21510, TargetFrameworkMonikers.Uap)]
+        [Fact]
+        public void UseDefaultCredentials_Ctor_ExpectedValue()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                Assert.False(handler.UseDefaultCredentials);
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [Fact]
+        public void Ctor_ExpectedDefaultPropertyValues_NotUapPlatform()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                // Same as .NET Framework (Desktop).
+                Assert.Equal(50, handler.MaxAutomaticRedirections);
+                Assert.Equal(64, handler.MaxResponseHeadersLength);
+                Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
                 Assert.True(handler.SupportsRedirectConfiguration);
-                Assert.True(handler.UseCookies);
-                Assert.False(handler.UseDefaultCredentials);
-                Assert.True(handler.UseProxy);
-
+                
                 // Changes from .NET Framework (Desktop).
-                if (!PlatformDetection.IsFullFramework) // TODO Issue #17691
+                if (!PlatformDetection.IsFullFramework)
                 {
                     Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 }
-                Assert.NotNull(handler.Properties);
             }
         }
 
@@ -136,7 +155,11 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
+                Assert.Equal(10, handler.MaxAutomaticRedirections);
+                Assert.Equal(-1, handler.MaxResponseHeadersLength);
                 Assert.True(handler.PreAuthenticate);
+                Assert.False(handler.SupportsProxy);
+                Assert.False(handler.SupportsRedirectConfiguration);
             }
         }
 
@@ -544,7 +567,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not currently supported on UAP")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(3, 2)]
