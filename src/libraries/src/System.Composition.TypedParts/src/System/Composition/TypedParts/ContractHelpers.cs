@@ -81,7 +81,7 @@ namespace System.Composition.TypedParts
 
             if (explicitImportsApplied > 1)
             {
-                var message = string.Format(Properties.Resources.ContractHelpers_TooManyImports, site);
+                string message = SR.Format(SR.ContractHelpers_TooManyImports, site);
                 throw new CompositionFailedException(message);
             }
 
