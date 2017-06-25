@@ -42,28 +42,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 $"{Environment.NewLine}{numberOfUpdatedBlobs} updated blobs with regex replace");
         }
 
-        private static void SanityCheckBlob(object obj, string[] blobs)
-        {
-            // Check if runtime generated blob is the same as the stored one
-            int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
-            if (frameworkBlobNumber < blobs.Length &&
-                // WeakReference<Point> and HybridDictionary with default constructor are generating
-                // different blobs at runtime for some obscure reason. Excluding those from the check.
-                !(obj is WeakReference<Point>) &&
-                !(obj is Collections.Specialized.HybridDictionary))
-            {
-                string runtimeBlob = SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full);
-                Assert.True(CreateComparableBlobInfo(blobs[frameworkBlobNumber]) == CreateComparableBlobInfo(runtimeBlob),
-                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}Stored blob: {blobs[frameworkBlobNumber]}{Environment.NewLine}Generated runtime blob: {runtimeBlob}");
-            }
-        }
-
         [Theory]
         [MemberData(nameof(SerializableObjects_MemberData))]
         public void ValidateAgainstBlobs(object obj, string[] blobs)
         {
-            bool verifyBlob = false;
-
             if (obj == null)
             {
                 throw new ArgumentNullException("The serializable object must not be null", nameof(obj));
@@ -75,10 +57,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full));
             }
 
-            if (verifyBlob)
-            {
-                SanityCheckBlob(obj, blobs);
-            }
+            SanityCheckBlob(obj, blobs);
 
             foreach (string blob in blobs)
             {
@@ -138,14 +117,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full));
             }
 
-            // Check if runtime generated blob is the same as the stored one
-            int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
-            if (frameworkBlobNumber < blobs.Length)
-            {
-                string runtimeBlob = SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full);
-                Assert.True(CreateComparableBlobInfo(blobs[frameworkBlobNumber]) == CreateComparableBlobInfo(runtimeBlob),
-                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}Stored blob: {blobs[frameworkBlobNumber]}{Environment.NewLine}Generated runtime blob: {runtimeBlob}");
-            }
+            SanityCheckBlob(obj, blobs);
 
             foreach (string blob in blobs)
             {
