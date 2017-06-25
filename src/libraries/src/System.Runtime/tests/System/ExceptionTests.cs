@@ -42,6 +42,9 @@ namespace System.Tests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Exception.TargetSite always returns null on UapAot.")]
         public static void Exception_TargetSite_Aot()
         {
+            if (!PlatformDetection.IsNetNative) // Skip condition above does not work see https://github.com/dotnet/buildtools/pull/1583
+                return;
+
             bool caught = false;
 
             try
