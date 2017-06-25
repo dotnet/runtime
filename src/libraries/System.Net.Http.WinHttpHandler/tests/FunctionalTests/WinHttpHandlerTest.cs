@@ -18,6 +18,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 {
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinHttpHandler not supported on UAP")]
     public class WinHttpHandlerTest
     {
         // TODO: This is a placeholder until GitHub Issue #2383 gets resolved.
