@@ -2,41 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System.DirectoryServices
 {
-    using System.ComponentModel;
-
-    /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization"]/*' />
-    /// <devdoc>
-    ///    <para>Specifies how to do directory synchronization search.</para>
-    /// </devdoc>
     public class DirectorySynchronization
     {
-        private DirectorySynchronizationOptions _flag = DirectorySynchronizationOptions.None;
+        private DirectorySynchronizationOptions _option = DirectorySynchronizationOptions.None;
         private byte[] _cookie = new byte[0];
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.DirectorySynchronization"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-    	public DirectorySynchronization()
+        public DirectorySynchronization()
         {
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.DirectorySynchronization1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-    	public DirectorySynchronization(DirectorySynchronizationOptions option)
+        public DirectorySynchronization(DirectorySynchronizationOptions option)
         {
             Option = option;
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.DirectorySynchronization2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-    	public DirectorySynchronization(DirectorySynchronization sync)
+        public DirectorySynchronization(DirectorySynchronization sync)
         {
             if (sync != null)
             {
@@ -45,55 +29,32 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.DirectorySynchronization3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-    	public DirectorySynchronization(byte[] cookie)
-        {
-            ResetDirectorySynchronizationCookie(cookie);
-        }
+        public DirectorySynchronization(byte[] cookie) => ResetDirectorySynchronizationCookie(cookie);
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.DirectorySynchronization4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-    	public DirectorySynchronization(DirectorySynchronizationOptions option, byte[] cookie)
+        public DirectorySynchronization(DirectorySynchronizationOptions option, byte[] cookie)
         {
             Option = option;
             ResetDirectorySynchronizationCookie(cookie);
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.Flag"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets the flag to do directory synchronization search.</para>
-        /// </devdoc>
-    	[
-            DefaultValue(DirectorySynchronizationOptions.None),
-        ]
+        [DefaultValue(DirectorySynchronizationOptions.None)]
         public DirectorySynchronizationOptions Option
         {
-            get
-            {
-                return _flag;
-            }
-
+            get => _option;
             set
             {
                 long val = (long)(value & (~(DirectorySynchronizationOptions.None | DirectorySynchronizationOptions.ObjectSecurity |
-                                         DirectorySynchronizationOptions.ParentsFirst | DirectorySynchronizationOptions.PublicDataOnly |
-                                         DirectorySynchronizationOptions.IncrementalValues)));
+                                            DirectorySynchronizationOptions.ParentsFirst | DirectorySynchronizationOptions.PublicDataOnly |
+                                            DirectorySynchronizationOptions.IncrementalValues)));
                 if (val != 0)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(DirectorySynchronizationOptions));
+                {
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(DirectorySynchronizationOptions));
+                }
 
-                _flag = value;
+                _option = value;
             }
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.GetDirectorySynchronizationCookie"]/*' />
-        /// <devdoc>
-        ///    <para>Gets the directory synchronization search cookie.</para>
-        /// </devdoc>
         public byte[] GetDirectorySynchronizationCookie()
         {
             byte[] tempcookie = new byte[_cookie.Length];
@@ -105,23 +66,14 @@ namespace System.DirectoryServices
             return tempcookie;
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.GetDirectorySynchronizationCookie1"]/*' />
-        /// <devdoc>
-        ///    <para>Gets the directory synchronization search cookie.</para>
-        /// </devdoc>
-        public void ResetDirectorySynchronizationCookie()
-        {
-            _cookie = new byte[0];
-        }
+        public void ResetDirectorySynchronizationCookie() => _cookie = Array.Empty<byte>();
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.ResetDirectorySynchronizationCookie"]/*' />
-        /// <devdoc>
-        ///    <para>Resets the directory synchronization search cookie.</para>
-        /// </devdoc>
         public void ResetDirectorySynchronizationCookie(byte[] cookie)
         {
             if (cookie == null)
-                _cookie = new byte[0];
+            {
+                _cookie = Array.Empty<byte>();
+            }
             else
             {
                 _cookie = new byte[cookie.Length];
@@ -132,13 +84,6 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\DirectorySynchronization.uex' path='docs/doc[@for="DirectorySynchronization.Copy"]/*' />
-        /// <devdoc>
-        ///    <para>Returns a copy of the current DirectorySynchronization instance.</para>
-        /// </devdoc>
-        public DirectorySynchronization Copy()
-        {
-            return new DirectorySynchronization(_flag, _cookie);
-        }
+        public DirectorySynchronization Copy() => new DirectorySynchronization(_option, _cookie);
     }
 }
