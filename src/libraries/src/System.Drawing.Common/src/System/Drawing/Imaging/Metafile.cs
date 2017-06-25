@@ -105,7 +105,9 @@ namespace System.Drawing.Imaging
         public Metafile(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentException(SR.Format(SR.InvalidArgument, "stream", "null"));
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
 
             IntPtr metafile = IntPtr.Zero;
 

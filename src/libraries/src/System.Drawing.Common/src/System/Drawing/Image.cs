@@ -174,7 +174,7 @@ namespace System.Drawing
         {
             if (stream == null)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidArgument, "stream", "null"));
+                throw new ArgumentNullException(nameof(stream));
             }
 
             IntPtr image = IntPtr.Zero;

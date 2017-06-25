@@ -140,11 +140,11 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Ctor_NullStream_ThrowsArgumentException()
+        public void Ctor_NullStream_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentException>(null, () => new Icon((Stream)null));
-            Assert.Throws<ArgumentException>(null, () => new Icon((Stream)null, 32, 32));
-            Assert.Throws<ArgumentException>(null, () => new Icon((Stream)null, new Size(32, 32)));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Icon((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Icon((Stream)null, 32, 32));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Icon((Stream)null, new Size(32, 32)));
         }
 
         public static IEnumerable<object[]> Ctor_InvalidBytesInStream_TestData()
@@ -233,10 +233,10 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Ctor_NullIcon_ThrowsArgumentException()
+        public void Ctor_NullIcon_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentException>(null, () => new Icon((Icon)null, 32, 32));
-            Assert.Throws<ArgumentException>(null, () => new Icon((Icon)null, new Size(32, 32)));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, 32, 32));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, new Size(32, 32)));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -373,8 +373,13 @@ namespace System.Drawing.Tests
             Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
         }
 
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void ExtractAssociatedIcon_NullFilePath_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("filePath", null, () => Icon.ExtractAssociatedIcon(null));
+        }
+
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData(null, null)]
         [InlineData("", "path")]
         [InlineData("\\\\uncpath", null)]
         public void ExtractAssociatedIcon_InvalidFilePath_ThrowsArgumentException(string filePath, string paramName)

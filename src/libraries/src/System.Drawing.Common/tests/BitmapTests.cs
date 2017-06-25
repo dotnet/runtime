@@ -149,10 +149,10 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Ctor_NullStream_ThrowsArgumentException()
+        public void Ctor_NullStream_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentException>(null, () => new Bitmap((Stream)null));
-            Assert.Throws<ArgumentException>(null, () => new Bitmap((Stream)null, false));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Bitmap((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Bitmap((Stream)null, false));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -311,7 +311,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullGraphics_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("Value of 'null' is not valid for 'g'.", () => new Bitmap(1, 1, null));
+            AssertExtensions.Throws<ArgumentNullException>("g", "Value of 'null' is not valid for 'g'.", () => new Bitmap(1, 1, null));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
