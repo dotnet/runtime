@@ -9,9 +9,16 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\DomainControllerTests.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectorySynchronizationTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryVirtualListViewContextTests.cs" />
+    <Compile Include="System\DirectoryServices\DirectoryVirtualListViewTests.cs" />
     <Compile Include="System\DirectoryServices\PropertyCollectionTests.cs" />
+    <Compile Include="System\DirectoryServices\SortOptionTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\ActiveDirectoryInterSiteTransportTests.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectory\DirectoryContextTests.cs" />
+    <Compile Include="System\DirectoryServices\ActiveDirectory\ForestTests.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>

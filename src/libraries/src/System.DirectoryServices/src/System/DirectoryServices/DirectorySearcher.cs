@@ -1026,10 +1026,10 @@ namespace System.DirectoryServices
                     }
                     else
                     {
-                        vlvValue.contextIDlength = _vlv.DirectoryVirtualListViewContext.context.Length;
+                        vlvValue.contextIDlength = _vlv.DirectoryVirtualListViewContext._context.Length;
                         vlvValue.contextID = Marshal.AllocCoTaskMem(vlvValue.contextIDlength);
                         ptrVLVContexToFree = vlvValue.contextID;
-                        Marshal.Copy(_vlv.DirectoryVirtualListViewContext.context, 0, vlvValue.contextID, vlvValue.contextIDlength);
+                        Marshal.Copy(_vlv.DirectoryVirtualListViewContext._context, 0, vlvValue.contextID, vlvValue.contextIDlength);
                     }
                     IntPtr vlvPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(AdsVLV)));
                     byte[] vlvBytes = new byte[Marshal.SizeOf(vlvValue)];
