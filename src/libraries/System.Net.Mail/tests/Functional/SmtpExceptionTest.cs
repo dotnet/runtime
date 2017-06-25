@@ -9,7 +9,6 @@
 // (C) 2008 Gert Driesen
 //
 
-
 using System.Collections;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters;
@@ -86,13 +85,6 @@ namespace System.Net.Mail.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19585 - System.Exception not serializable - NotImplemented", TargetFrameworkMonikers.UapAot)]
-        public void TestConstructorThrowsNull()
-        {
-            Assert.Throws<ArgumentNullException>(() => new MySmtpException((SerializationInfo)null, new StreamingContext()));
-        }
-
-        [Fact]
         public void TestConstructorWithStatusCodeAndStringArgument()
         {
             string msg;
@@ -162,13 +154,4 @@ namespace System.Net.Mail.Tests
             Assert.Equal(SmtpStatusCode.GeneralFailure, se.StatusCode);
         }
     }
-
-    class MySmtpException : SmtpException
-    {
-        public MySmtpException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-        }
-    }
 }
-
