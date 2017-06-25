@@ -127,6 +127,26 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(obj.GetType().GetGenericArguments()[0], objType.GetGenericArguments()[0]);
         }
 
+        private static void SanityCheckBlob(object obj, string[] blobs)
+        {
+            // Check if runtime generated blob is the same as the stored one
+            int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
+            if (frameworkBlobNumber < blobs.Length &&
+                // WeakReference<Point> and HybridDictionary with default constructor are generating
+                // different blobs at runtime for some obscure reason. Excluding those from the check.
+                !(obj is WeakReference<Point>) &&
+                !(obj is Collections.Specialized.HybridDictionary))
+            {
+                string runtimeBlob = SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full);
+
+                string storedComparableBlob = CreateComparableBlobInfo(blobs[frameworkBlobNumber]);
+                string runtimeComparableBlob = CreateComparableBlobInfo(runtimeBlob);
+
+                Assert.True(storedComparableBlob == runtimeComparableBlob,
+                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}Stored blob: {blobs[frameworkBlobNumber]}{Environment.NewLine}Generated runtime blob: {runtimeBlob}");
+            }
+        }
+
         public static string GetTestDataFilePath()
         {
             string GetRepoRootPath()
@@ -171,9 +191,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         public static string CreateComparableBlobInfo(string base64Blob)
         {
+            string lineSeparator = ((char)0x2028).ToString();
+            string paragraphSeparator = ((char)0x2029).ToString();
+
             byte[] data = Convert.FromBase64String(base64Blob);
-            string decodedString = Encoding.UTF8.GetString(data);
-            return Regex.Replace(decodedString, @"Version=\d.\d.\d.\d.", "Version=0.0.0.0", RegexOptions.Multiline);
+            base64Blob = Encoding.UTF8.GetString(data);
+
+            return Regex.Replace(base64Blob, @"Version=\d.\d.\d.\d.", "Version=0.0.0.0", RegexOptions.Multiline)
+                .Replace("\r\n", string.Empty)
+                .Replace("\n", string.Empty)
+                .Replace("\r", string.Empty)
+                .Replace(lineSeparator, string.Empty)
+                .Replace(paragraphSeparator, string.Empty);
         }
 
         public static (int blobs, int foundBlobs, int updatedBlobs) UpdateCoreTypeBlobs(string testDataFilePath, string[] blobs)
