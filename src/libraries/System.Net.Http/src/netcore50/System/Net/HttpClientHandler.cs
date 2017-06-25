@@ -29,26 +29,26 @@ namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
-        private const string clientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
+        private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         private static readonly Lazy<bool> s_RTCookieUsageBehaviorSupported =
             new Lazy<bool>(InitRTCookieUsageBehaviorSupported);
         
         #region Fields
 
-        private readonly RTHttpBaseProtocolFilter rtFilter;
-        private readonly HttpHandlerToFilter handlerToFilter;
-        private readonly HttpMessageHandler diagnosticsPipeline;
+        private readonly RTHttpBaseProtocolFilter _rtFilter;
+        private readonly HttpHandlerToFilter _handlerToFilter;
+        private readonly HttpMessageHandler _diagnosticsPipeline;
 
-        private volatile bool operationStarted;
-        private volatile bool disposed;
+        private volatile bool _operationStarted;
+        private volatile bool _disposed;
 
-        private ClientCertificateOption clientCertificateOptions;
-        private CookieContainer cookieContainer;
-        private bool useCookies;
-        private DecompressionMethods automaticDecompression;
-        private IWebProxy proxy;
-        private X509Certificate2Collection clientCertificates;
-        private IDictionary<String, Object> properties; // Only create dictionary when required.
+        private ClientCertificateOption _clientCertificateOptions;
+        private CookieContainer _cookieContainer;
+        private bool _useCookies;
+        private DecompressionMethods _automaticDecompression;
+        private IWebProxy _proxy;
+        private X509Certificate2Collection _clientCertificates;
+        private IDictionary<String, Object> _properties; // Only create dictionary when required.
 
         #endregion Fields
 
@@ -71,17 +71,17 @@ namespace System.Net.Http
 
         public bool UseCookies
         {
-            get { return useCookies; }
+            get { return _useCookies; }
             set
             {
                 CheckDisposedOrStarted();
-                useCookies = value;
+                _useCookies = value;
             }
         }
 
         public CookieContainer CookieContainer
         {
-            get { return cookieContainer; }
+            get { return _cookieContainer; }
             set
             {
                 if (value == null)
@@ -94,13 +94,13 @@ namespace System.Net.Http
                         SR.net_http_invalid_enable_first, nameof(UseCookies), "true"));
                 }
                 CheckDisposedOrStarted();
-                cookieContainer = value;
+                _cookieContainer = value;
             }
         }
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get { return clientCertificateOptions; }
+            get { return _clientCertificateOptions; }
             set
             {
                 if (value != ClientCertificateOption.Manual &&
@@ -109,13 +109,13 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 CheckDisposedOrStarted();
-                clientCertificateOptions = value;
+                _clientCertificateOptions = value;
             }
         }
 
         public DecompressionMethods AutomaticDecompression
         {
-            get { return automaticDecompression; }
+            get { return _automaticDecompression; }
             set
             {
                 CheckDisposedOrStarted();
@@ -123,18 +123,18 @@ namespace System.Net.Http
                 // Automatic decompression is implemented downstack.
                 // HBPF will decompress both gzip and deflate, we will set
                 // accept-encoding for one, the other, or both passed in here.
-                rtFilter.AutomaticDecompression = (value != DecompressionMethods.None);
-                automaticDecompression = value;
+                _rtFilter.AutomaticDecompression = (value != DecompressionMethods.None);
+                _automaticDecompression = value;
             }
         }
 
         public bool UseProxy
         {
-            get { return rtFilter.UseProxy; }
+            get { return _rtFilter.UseProxy; }
             set
             {
                 CheckDisposedOrStarted();
-                rtFilter.UseProxy = value;
+                _rtFilter.UseProxy = value;
             }
         }
 
@@ -147,12 +147,12 @@ namespace System.Net.Http
             // does support this and doing so would break apps. So, we'll just let this get/set work
             // even though we ignore it.  The majority of apps actually use the default proxy anyways
             // so setting it here would be a no-op.
-            get { return proxy; }
+            get { return _proxy; }
             set
             {
                 CheckDisposedOrStarted();
-                proxy = value;
-                SetProxyCredential(proxy);
+                _proxy = value;
+                SetProxyCredential(_proxy);
             }
         }
 
@@ -174,13 +174,13 @@ namespace System.Net.Http
                 if (value)
                 {
                     // System managed
-                    rtFilter.ServerCredential = null;
+                    _rtFilter.ServerCredential = null;
                 }
-                else if (rtFilter.ServerCredential == null)
+                else if (_rtFilter.ServerCredential == null)
                 {
                     // The only way to disable default credentials is to provide credentials.
                     // Do not overwrite credentials if they were already assigned.
-                    rtFilter.ServerCredential = new RTPasswordCredential();
+                    _rtFilter.ServerCredential = new RTPasswordCredential();
                 }
             }
         }
@@ -189,7 +189,7 @@ namespace System.Net.Http
         {
             get
             {
-                RTPasswordCredential rtCreds = rtFilter.ServerCredential;
+                RTPasswordCredential rtCreds = _rtFilter.ServerCredential;
                 if (rtCreds == null)
                 {
                     return null;
@@ -203,18 +203,18 @@ namespace System.Net.Http
                 if (value == null)
                 {
                     CheckDisposedOrStarted();
-                    rtFilter.ServerCredential = null;
+                    _rtFilter.ServerCredential = null;
                 }
                 else if (value == CredentialCache.DefaultCredentials)
                 {
                     CheckDisposedOrStarted();
                     // System managed
-                    rtFilter.ServerCredential = null;
+                    _rtFilter.ServerCredential = null;
                 }
                 else if (value is NetworkCredential)
                 {
                     CheckDisposedOrStarted();
-                    rtFilter.ServerCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
+                    _rtFilter.ServerCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
                 }
                 else
                 {
@@ -228,7 +228,7 @@ namespace System.Net.Http
         {
             get
             {
-                RTPasswordCredential rtCreds = rtFilter.ProxyCredential;
+                RTPasswordCredential rtCreds = _rtFilter.ProxyCredential;
                 if (rtCreds == null)
                 {
                     return null;
@@ -242,18 +242,18 @@ namespace System.Net.Http
                 if (value == null)
                 {
                     CheckDisposedOrStarted();
-                    rtFilter.ProxyCredential = null;
+                    _rtFilter.ProxyCredential = null;
                 }
                 else if (value == CredentialCache.DefaultCredentials)
                 {
                     CheckDisposedOrStarted();
                     // System managed
-                    rtFilter.ProxyCredential = null;
+                    _rtFilter.ProxyCredential = null;
                 }
                 else if (value is NetworkCredential)
                 {
                     CheckDisposedOrStarted();
-                    rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
+                    _rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
                 }
                 else
                 {
@@ -265,11 +265,11 @@ namespace System.Net.Http
 
         public bool AllowAutoRedirect
         {
-            get { return rtFilter.AllowAutoRedirect; }
+            get { return _rtFilter.AllowAutoRedirect; }
             set
             {
                 CheckDisposedOrStarted();
-                rtFilter.AllowAutoRedirect = value;
+                _rtFilter.AllowAutoRedirect = value;
             }
         }
 
@@ -284,11 +284,11 @@ namespace System.Net.Http
 
         public int MaxConnectionsPerServer
         {
-            get { return (int)rtFilter.MaxConnectionsPerServer; }
+            get { return (int)_rtFilter.MaxConnectionsPerServer; }
             set
             {
                 CheckDisposedOrStarted();
-                rtFilter.MaxConnectionsPerServer = (uint)value;
+                _rtFilter.MaxConnectionsPerServer = (uint)value;
             }
         }
         
@@ -334,12 +334,12 @@ namespace System.Net.Http
             // TODO: Not yet implemented. Issue #7623.
             get
             {
-                if (clientCertificates == null)
+                if (_clientCertificates == null)
                 {
-                    clientCertificates = new X509Certificate2Collection();
+                    _clientCertificates = new X509Certificate2Collection();
                 }
 
-                return clientCertificates;
+                return _clientCertificates;
             }
         }
 
@@ -400,12 +400,12 @@ namespace System.Net.Http
         {
             get
             {
-                if (properties == null)
+                if (_properties == null)
                 {
-                    properties = new Dictionary<String, object>();
+                    _properties = new Dictionary<String, object>();
                 }
 
-                return properties;
+                return _properties;
             }
         }
 
@@ -415,43 +415,43 @@ namespace System.Net.Http
 
         public HttpClientHandler()
         {
-            this.rtFilter = new RTHttpBaseProtocolFilter();
-            this.handlerToFilter = new HttpHandlerToFilter(this.rtFilter);
-            this.diagnosticsPipeline = new DiagnosticsHandler(handlerToFilter);
+            _rtFilter = new RTHttpBaseProtocolFilter();
+            _handlerToFilter = new HttpHandlerToFilter(_rtFilter);
+            _diagnosticsPipeline = new DiagnosticsHandler(_handlerToFilter);
 
-            this.clientCertificateOptions = ClientCertificateOption.Manual;
+            _clientCertificateOptions = ClientCertificateOption.Manual;
 
             InitRTCookieUsageBehavior();
 
-            this.useCookies = true; // deal with cookies by default.
-            this.cookieContainer = new CookieContainer(); // default container used for dealing with auto-cookies.
+            _useCookies = true; // deal with cookies by default.
+            _cookieContainer = new CookieContainer(); // default container used for dealing with auto-cookies.
 
             // Managed at this layer for granularity, but uses the desktop default.
-            this.rtFilter.AutomaticDecompression = false;
-            this.automaticDecompression = DecompressionMethods.None;
+            _rtFilter.AutomaticDecompression = false;
+            _automaticDecompression = DecompressionMethods.None;
 
             // Set initial proxy credentials based on default system proxy.
             SetProxyCredential(null);
 
             // We don't support using the UI model in HttpBaseProtocolFilter() especially for auto-handling 401 responses.
-            this.rtFilter.AllowUI = false;
+            _rtFilter.AllowUI = false;
             
             // The .NET Desktop System.Net Http APIs (based on HttpWebRequest/HttpClient) uses no caching by default.
             // To preserve app-compat, we turn off caching (as much as possible) in the WinRT HttpClient APIs.
             // TODO (#7877): use RTHttpCacheReadBehavior.NoCache when available in the next version of WinRT HttpClient API.
-            this.rtFilter.CacheControl.ReadBehavior = RTHttpCacheReadBehavior.MostRecent; 
-            this.rtFilter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
+            _rtFilter.CacheControl.ReadBehavior = RTHttpCacheReadBehavior.MostRecent; 
+            _rtFilter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !disposed)
+            if (disposing && !_disposed)
             {
-                disposed = true;
+                _disposed = true;
 
                 try
                 {
-                    rtFilter.Dispose();
+                    _rtFilter.Dispose();
                 }
                 catch (InvalidComObjectException)
                 {
@@ -528,12 +528,12 @@ namespace System.Net.Http
             // Get the certs that can be used for Client Authentication.
             var query = new RTCertificateQuery();
             var ekus = query.EnhancedKeyUsages;
-            ekus.Add(clientAuthenticationOID);
+            ekus.Add(ClientAuthenticationOID);
             var clientCertificates = await RTCertificateStores.FindAllAsync(query).AsTask().ConfigureAwait(false);
 
             if (clientCertificates.Count > 0)
             {
-                this.rtFilter.ClientCertificate = clientCertificates[0];
+                _rtFilter.ClientCertificate = clientCertificates[0];
             }
         }
         #endregion Request Setup
@@ -552,8 +552,8 @@ namespace System.Net.Http
                 await ConfigureRequest(request).ConfigureAwait(false);
 
                 Task<HttpResponseMessage> responseTask = DiagnosticsHandler.IsEnabled() ? 
-                    this.diagnosticsPipeline.SendAsync(request, cancellationToken) :
-                    this.handlerToFilter.SendAsync(request, cancellationToken);
+                    _diagnosticsPipeline.SendAsync(request, cancellationToken) :
+                    _handlerToFilter.SendAsync(request, cancellationToken);
 
                 response = await responseTask.ConfigureAwait(false);
             }
@@ -633,15 +633,15 @@ namespace System.Net.Http
 
         private void SetOperationStarted()
         {
-            if (!operationStarted)
+            if (!_operationStarted)
             {
-                operationStarted = true;
+                _operationStarted = true;
             }
         }
 
         private void CheckDisposed()
         {
-            if (disposed)
+            if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().ToString());
             }
@@ -650,7 +650,7 @@ namespace System.Net.Http
         private void CheckDisposedOrStarted()
         {
             CheckDisposed();
-            if (operationStarted)
+            if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }
@@ -685,14 +685,14 @@ namespace System.Net.Http
             // WinRT HttpClient. But we do support passing in explicit proxy credentials, if specified, which we can
             // get from the specified or default proxy.
             ICredentials proxyCredentials = null;
-            if (proxy != null)
+            if (_proxy != null)
             {
-                proxyCredentials = proxy.Credentials;
+                proxyCredentials = _proxy.Credentials;
             }
 
             if (proxyCredentials != CredentialCache.DefaultCredentials && proxyCredentials is NetworkCredential)
             {
-                this.rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)proxyCredentials);
+                _rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)proxyCredentials);
             }
         }
 
@@ -728,7 +728,7 @@ namespace System.Net.Http
             // Use .NET CookieContainer handling only.
             if (RTCookieUsageBehaviorSupported)
             {
-                this.rtFilter.CookieUsageBehavior = RTHttpCookieUsageBehavior.NoCookies;
+                _rtFilter.CookieUsageBehavior = RTHttpCookieUsageBehavior.NoCookies;
             }
         }
 
