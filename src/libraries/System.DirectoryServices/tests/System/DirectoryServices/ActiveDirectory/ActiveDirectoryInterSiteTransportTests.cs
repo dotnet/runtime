@@ -22,12 +22,18 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
             Assert.Throws<ActiveDirectoryOperationException>(() => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
         }
 
-        [Theory]
-        [InlineData("\0")]
-        [InlineData("server:port")]
-        public void FindByTransportType_ForestNoDomainAssociatedWithName_ThrowsActiveDirectoryOperationException(string name)
+        [Fact]
+        public void FindByTransportType_ForestNoDomainAssociatedWithName_ThrowsActiveDirectoryOperationException()
         {
-            var context = new DirectoryContext(DirectoryContextType.Forest, name);
+            var context = new DirectoryContext(DirectoryContextType.Forest, "server:port");
+            AssertExtensions.Throws<ArgumentException>("context", () => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
+        public void FindByTransportType_ForestNoDomainAssociatedWithName_ThrowsActiveDirectoryOperationException_NoUap()
+        {
+            var context = new DirectoryContext(DirectoryContextType.Forest, "\0");
             AssertExtensions.Throws<ArgumentException>("context", () => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
         }
 
@@ -42,6 +48,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [InlineData(DirectoryContextType.ApplicationPartition)]
         [InlineData(DirectoryContextType.DirectoryServer)]
         [InlineData(DirectoryContextType.Domain)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to common path is denied inside App")]
         public void FindByTransportType_InvalidContextTypeWithName_ThrowsArgumentException(DirectoryContextType type)
         {
             var context = new DirectoryContext(type, "Name");

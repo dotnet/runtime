@@ -25,6 +25,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void GetForest_NullNameAndNotRootedDomain_ThrowsActiveDirectoryOperationException()
         {
             var context = new DirectoryContext(DirectoryContextType.Forest);
@@ -33,10 +34,21 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(DirectoryContextType.DirectoryServer, "\0")]
-        [InlineData(DirectoryContextType.DirectoryServer, "server:port")]
-        [InlineData(DirectoryContextType.Forest, "\0")]
         [InlineData(DirectoryContextType.Forest, "server:port")]
         public void GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException(DirectoryContextType type, string name)
+        {
+            var context = new DirectoryContext(type, name);
+            Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
+
+            // The result of validation is cached, so repeat this to make sure it's cached properly.
+            Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(DirectoryContextType.Forest, "\0")]
+        [InlineData(DirectoryContextType.DirectoryServer, "server:port")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
+        public void GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException_NonUap(DirectoryContextType type, string name)
         {
             var context = new DirectoryContext(type, name);
             Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => Forest.GetForest(context));
