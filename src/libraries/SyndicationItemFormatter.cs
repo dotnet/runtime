@@ -8,6 +8,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Threading.Tasks;
     using System.Xml;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -41,9 +42,11 @@ namespace Microsoft.ServiceModel.Syndication
         public abstract String Version
         { get; }
 
-        public abstract bool CanRead(XmlReaderWrapper reader);
+        public abstract bool CanRead(XmlReader reader);
 
-        public abstract void ReadFrom(XmlReaderWrapper reader);
+        //public abstract void ReadFrom(XmlReaderWrapper reader);
+
+        public abstract Task ReadFromAsync(XmlReader reader);
 
         public override string ToString()
         {
@@ -59,11 +62,6 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException("item");
             }
             _item = item;
-        }
-
-        internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlDictionaryReader reader, int maxExtensionSize)
-        {
-            SyndicationFeedFormatter.CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter,new XmlReaderWrapper(reader), maxExtensionSize);
         }
 
         internal static SyndicationItem CreateItemInstance(Type itemType)

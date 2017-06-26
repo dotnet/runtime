@@ -20,7 +20,7 @@ namespace Microsoft.ServiceModel.Syndication
         private Func<Task> skipFunc;
         private Func<Task<bool>> readFunc;
 
-        public XmlReaderWrapper(XmlReader reader)
+        private XmlReaderWrapper(XmlReader reader)
         {
             if (reader == null)
             {
@@ -37,6 +37,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 Init();
             }
+        }
+
+        public static XmlReaderWrapper CreateFromReader(XmlReader reader)
+        {
+            XmlReaderWrapper wrappedReader = reader as XmlReaderWrapper;
+
+            return wrappedReader != null ? wrappedReader : new XmlReaderWrapper(reader);
         }
 
         private void InitAsync()
@@ -477,7 +484,7 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private static async Task DoWriteNodeAsync(XmlDictionaryWriter writer, XmlReader reader, bool defattr)
+        public static async Task WriteNodeAsync(XmlDictionaryWriter writer, XmlReader reader, bool defattr)
         {
             char[] writeNodeBuffer = null;
             const int WriteNodeBufferSize = 1024;

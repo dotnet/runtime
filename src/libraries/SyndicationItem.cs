@@ -8,12 +8,10 @@ namespace Microsoft.ServiceModel.Syndication
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationItem : IExtensibleSyndicationObject
     {
         private Collection<SyndicationPerson> _authors;
@@ -52,11 +50,14 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 this.Title = new TextSyndicationContent(title);
             }
+
             _content = content;
+
             if (itemAlternateLink != null)
             {
                 this.Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
             }
+
             _id = id;
             _lastUpdatedTime = lastUpdatedTime;
         }
@@ -67,6 +68,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
+
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
@@ -82,6 +84,7 @@ namespace Microsoft.ServiceModel.Syndication
                 _sourceFeed = source._sourceFeed.Clone(false);
                 _sourceFeed.Items = new Collection<SyndicationItem>();
             }
+
             _summary = FeedUtils.CloneTextContent(source._summary);
             _baseUri = source._baseUri;
             _title = FeedUtils.CloneTextContent(source._title);
@@ -199,36 +202,38 @@ namespace Microsoft.ServiceModel.Syndication
             set { _title = value; }
         }
 
-        public static SyndicationItem Load(XmlReaderWrapper reader)
+        public static async Task<SyndicationItem> LoadAsync(XmlReader reader)
         {
-            return Load<SyndicationItem>(reader);
+            return await LoadAsync<SyndicationItem>(reader);
         }
 
-        public static TSyndicationItem Load<TSyndicationItem>(XmlReaderWrapper reader)
+        public static async Task<TSyndicationItem> LoadAsync<TSyndicationItem>(XmlReader reader)
             where TSyndicationItem : SyndicationItem, new()
         {
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
-            Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
-            if (atomSerializer.CanRead(reader))
-            {
-                atomSerializer.ReadFrom(reader);
-                return atomSerializer.Item as TSyndicationItem;
-            }
+
+            //Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
+            //if (atomSerializer.CanRead(reader))
+            //{
+            //    atomSerializer.ReadFrom(reader);
+            //    return atomSerializer.Item as TSyndicationItem;
+            //}
+
             Rss20ItemFormatter<TSyndicationItem> rssSerializer = new Rss20ItemFormatter<TSyndicationItem>();
+
             if (rssSerializer.CanRead(reader))
             {
-                rssSerializer.ReadFrom(reader);
+                await rssSerializer.ReadFromAsync(reader);
                 return rssSerializer.Item as TSyndicationItem;
             }
+
             throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
         }
 
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "0#permalink", Justification = "permalink is a term defined in the RSS format")]
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Permalink", Justification = "permalink is a term defined in the RSS format")]
         public void AddPermalink(Uri permalink)
         {
             if (permalink == null)

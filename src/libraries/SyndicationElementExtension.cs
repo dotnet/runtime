@@ -9,10 +9,10 @@ namespace Microsoft.ServiceModel.Syndication
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Serialization;
-
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
+    
     public class SyndicationElementExtension
     {
         private XmlBuffer _buffer;
@@ -141,7 +141,8 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 return (TExtension)_extensionData;
             }
-            using (XmlReaderWrapper reader = GetReader())
+
+            using (XmlReader reader = GetReader())
             {
                 return (TExtension)serializer.ReadObject(reader, false);
             }
@@ -157,16 +158,17 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 return (TExtension)_extensionData;
             }
-            using (XmlReaderWrapper reader = GetReader())
+
+            using (XmlReader reader = GetReader())
             {
                 return (TExtension)serializer.Deserialize(reader);
             }
         }
 
-        public XmlReaderWrapper GetReader()
+        public async Task<XmlReader> GetReaderAsync()
         {
             this.EnsureBuffer();
-            XmlReaderWrapper reader = new XmlReaderWrapper( _buffer.GetReader(0));
+            XmlReaderWrapper reader = XmlReaderWrapper.CreateFromReader(_buffer.GetReader(0));
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);
             while (reader.IsStartElement())
@@ -176,9 +178,16 @@ namespace Microsoft.ServiceModel.Syndication
                     break;
                 }
                 ++index;
-                reader.Skip();
+
+                await reader.SkipAsync();
             }
+
             return reader;
+        }
+
+        public XmlReader GetReader()
+        {
+            return GetReaderAsync().GetAwaiter().GetResult();
         }
 
         public void WriteTo(XmlWriter writer)
@@ -193,7 +202,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                using (XmlReaderWrapper reader = GetReader())
+                using (XmlReader reader = GetReader())
                 {
                     writer.WriteNode(reader, false);
                 }
@@ -313,8 +322,10 @@ namespace Microsoft.ServiceModel.Syndication
                     {
                         this.WriteTo(writer);
                     }
+
                     stream.Seek(0, SeekOrigin.Begin);
-                    using (XmlReaderWrapper reader = new XmlReaderWrapper(XmlReader.Create(stream)))
+
+                    using (XmlReader reader = XmlReader.Create(stream))
                     {
                         SyndicationFeedFormatter.MoveToStartElement(reader);
                         name = reader.LocalName;

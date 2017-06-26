@@ -12,13 +12,13 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.ServiceModel.Channels;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Atom10Constants.FeedTag, Namespace = Atom10Constants.Atom10Namespace)]
-    public class Atom10FeedFormatter : SyndicationFeedFormatter, IXmlSerializable
+    public class Atom10FeedFormatter : SyndicationFeedFormatter
     {
         internal static readonly TimeSpan zeroOffset = new TimeSpan(0, 0, 0);
         internal const string XmlNs = "http://www.w3.org/XML/1998/namespace";
@@ -94,49 +94,25 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public override bool CanRead(XmlReaderWrapper reader)
+        public override bool CanRead(XmlReader reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
+
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
-
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        XmlSchema IXmlSerializable.GetSchema()
-        {
-            return null;
-        }
-
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReader reader1)
-        {
-            if (reader1 == null)
-            {
-                throw new ArgumentNullException("reader");
-            }
-            XmlReaderWrapper reader = reader1 is XmlReaderWrapper ? (XmlReaderWrapper)reader1 : new XmlReaderWrapper(reader1);
-            ReadFeed(reader);
-        }
-
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.WriteXml(XmlWriter writer)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException("writer");
-            }
-            WriteFeed(writer);
-        }
-
-        public override void ReadFrom(XmlReaderWrapper reader)
+        
+        public override async Task ReadFromAsync(XmlReader reader)
         {
             if (!CanRead(reader))
             {
                 throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
-            ReadFeed(reader);
+
+            SetFeed(CreateFeedInstance());
+            await ReadFeedFromAsync(XmlReaderWrapper.CreateFromReader(reader), this.Feed, false);
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -746,15 +722,127 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadFeed(XmlReaderWrapper reader)
+
+        private async Task<SyndicationFeed> ReadFeedFromAsync(XmlReaderWrapper reader, SyndicationFeed result, bool isSourceFeed)
         {
-            SetFeed(CreateFeedInstance());
-            ReadFeedFrom(reader, this.Feed, false);
+            await reader.MoveToContentAsync();
+
+            bool elementIsEmpty = false;
+            if (!isSourceFeed)
+            {
+                await MoveToStartElementAsync(reader);
+                elementIsEmpty = reader.IsEmptyElement;
+                if (reader.HasAttributes)
+                {
+                    while (reader.MoveToNextAttribute())
+                    {
+                        if (reader.LocalName == "lang" && reader.NamespaceURI == XmlNs)
+                        {
+                            result.Language = reader.Value;
+                        }
+                        else if (reader.LocalName == "base" && reader.NamespaceURI == XmlNs)
+                        {
+                            result.BaseUri = FeedUtils.CombineXmlBase(result.BaseUri, reader.Value);
+                        }
+                        else
+                        {
+                            string ns = reader.NamespaceURI;
+                            string name = reader.LocalName;
+                            if (FeedUtils.IsXmlns(name, ns) || FeedUtils.IsXmlSchemaType(name, ns))
+                            {
+                                continue;
+                            }
+
+                            string val = await reader.GetValueAsync();
+
+                            if (!TryParseAttribute(name, ns, val, result, this.Version))
+                            {
+                                if (_preserveAttributeExtensions)
+                                {
+                                    result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+                await reader.ReadStartElementAsync();
+            }
+
+            XmlBuffer buffer = null;
+            XmlDictionaryWriter extWriter = null;
+            bool areAllItemsRead = true;
+            bool readItemsAtLeastOnce = false;
+
+            if (!elementIsEmpty)
+            {
+                try
+                {
+                    while (await reader.IsStartElementAsync())
+                    {
+                        if (TryParseFeedElementFrom(reader, result))  //JERRY MAKE THIS ASYNC
+                        {
+                            // nothing, we parsed something, great
+                        }
+                        else if (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
+                        {
+                            if (readItemsAtLeastOnce)
+                            {
+                                throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
+                            }
+
+                            result.Items = ReadItems(reader, result, out areAllItemsRead);  // JERRY MAKE THIS ASYNC
+                            readItemsAtLeastOnce = true;
+                            // if the derived class is reading the items lazily, then stop reading from the stream
+                            if (!areAllItemsRead)
+                            {
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if (!TryParseElement(reader, result, this.Version))
+                            {
+                                if (_preserveElementExtensions)
+                                {
+                                    if (buffer == null)
+                                    {
+                                        buffer = new XmlBuffer(_maxExtensionSize);
+                                        extWriter = buffer.OpenSection(XmlDictionaryReaderQuotas.Max);
+                                        extWriter.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
+                                    }
+
+                                    await XmlReaderWrapper.WriteNodeAsync(extWriter, reader, false);
+                                }
+                                else
+                                {
+                                    await reader.SkipAsync();
+                                }
+                            }
+                        }
+                    }
+
+                    LoadElementExtensions(buffer, extWriter, result);  // JERRY MAKE THIS ASYNC
+                }
+                finally
+                {
+                    if (extWriter != null)
+                    {
+                        ((IDisposable)extWriter).Dispose();
+                    }
+                }
+            }
+            if (!isSourceFeed && areAllItemsRead)
+            {
+                await reader.ReadEndElementAsync(); // feed
+            }
+
+            return result;
         }
 
-        private SyndicationFeed ReadFeedFrom(XmlReaderWrapper reader, SyndicationFeed result, bool isSourceFeed)
+        private SyndicationFeed ReadFeedFrom(XmlReaderWrapper reader, SyndicationFeed result, bool isSourceFeed)  //JERRY REMOVE THIS METHOD AND USE THE ONE ABOVE
         {
             reader.MoveToContent();
+
             try
             {
                 bool elementIsEmpty = false;

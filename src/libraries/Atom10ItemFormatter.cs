@@ -14,13 +14,14 @@ namespace Microsoft.ServiceModel.Syndication
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Atom10Constants.EntryTag, Namespace = Atom10Constants.Atom10Namespace)]
-    public class Atom10ItemFormatter : SyndicationItemFormatter, IXmlSerializable
+    public class Atom10ItemFormatter : SyndicationItemFormatter
     {
         private Atom10FeedFormatter _feedSerializer;
         private Type _itemType;
@@ -92,7 +93,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public override bool CanRead(XmlReaderWrapper reader)
+        public override bool CanRead(XmlReader reader)
         {
             if (reader == null)
             {
@@ -101,39 +102,13 @@ namespace Microsoft.ServiceModel.Syndication
             return reader.IsStartElement(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        XmlSchema IXmlSerializable.GetSchema()
-        {
-            return null;
-        }
-
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReader reader1)
-        {
-            if (reader1 == null)
-            {
-                throw new ArgumentNullException("reader");
-            }
-            XmlReaderWrapper reader = reader1 is XmlReader ? (XmlReaderWrapper)reader1 : new XmlReaderWrapper(reader1);
-            ReadItem(reader);
-        }
-
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.WriteXml(XmlWriter writer)
-        {
-            if (writer == null)
-            {
-                throw new ArgumentNullException("writer");
-            }
-            WriteItem(writer);
-        }
-
-        public override void ReadFrom(XmlReaderWrapper reader)
+        public override async Task ReadFromAsync(XmlReader reader)
         {
             if (!CanRead(reader))
             {
                 throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
+
             ReadItem(reader);
         }
 
@@ -153,10 +128,10 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
 
-        private void ReadItem(XmlReaderWrapper reader)
+        private void ReadItem(XmlReader reader)
         {
             SetItem(CreateItemInstance());
-            _feedSerializer.ReadItemFrom(new XmlReaderWrapper( XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
+            _feedSerializer.ReadItemFrom(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
         private void WriteItem(XmlWriter writer)

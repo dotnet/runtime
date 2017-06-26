@@ -79,11 +79,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 return rootBase;
             }
+
             Uri newBaseUri = new Uri(newBase, UriKind.RelativeOrAbsolute);
             if (rootBase == null || newBaseUri.IsAbsoluteUri)
             {
                 return newBaseUri;
             }
+
             return new Uri(rootBase, newBase);
         }
 
