@@ -15,6 +15,7 @@ namespace System.Data.SqlTypes
 {
     // Options that are used in comparison
     [Flags]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public enum SqlCompareOptions
     {
         None = 0x00000000,
