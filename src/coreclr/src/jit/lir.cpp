@@ -971,11 +971,20 @@ void LIR::Range::InsertAtEnd(Range&& range)
 //
 // Arguments:
 //    node - The node to remove. Must be part of this range.
+//    markOperandsUnused - If true, marks the node's operands as unused.
 //
-void LIR::Range::Remove(GenTree* node)
+void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
 {
     assert(node != nullptr);
     assert(Contains(node));
+
+    if (markOperandsUnused)
+    {
+        for (GenTree* operand : node->Operands())
+        {
+            operand->gtLIRFlags |= Flags::IsUnusedValue;
+        }
+    }
 
     GenTree* prev = node->gtPrev;
     GenTree* next = node->gtNext;
@@ -1180,7 +1189,7 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
     // Don't bother looking for uses of nodes that are not values.
     // If the node is the last node, we won't find a use (and we would
     // end up creating an illegal range if we tried).
-    if (node->IsValue() && (node != LastNode()))
+    if (node->IsValue() && ((node->gtLIRFlags & Flags::IsUnusedValue) == 0) && (node != LastNode()))
     {
         for (GenTree* n : ReadOnlyRange(node->gtNext, m_lastNode))
         {
