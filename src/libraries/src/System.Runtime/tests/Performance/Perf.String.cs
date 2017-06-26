@@ -10,7 +10,7 @@ using Microsoft.Xunit.Performance;
 
 namespace System.Tests
 {
-    public class Perf_String
+    public partial class Perf_String
     {
         public static IEnumerable<object[]> TestStringSizes()
         {
