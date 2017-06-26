@@ -41,15 +41,15 @@ private:
     void FixupIfSIMDLocal(GenTreeLclVarCommon* node);
 
     // Intrinsic related transformations
-    static void RewriteNodeAsCall(GenTreePtr*           ppTree,
-                                  Compiler::fgWalkData* data,
-                                  CORINFO_METHOD_HANDLE callHnd,
+    void RewriteNodeAsCall(GenTree**             use,
+                           ArrayStack<GenTree*>& parents,
+                           CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
-                                  CORINFO_CONST_LOOKUP entryPoint,
+                           CORINFO_CONST_LOOKUP entryPoint,
 #endif
-                                  GenTreeArgList* args);
+                           GenTreeArgList* args);
 
-    static void RewriteIntrinsicAsUserCall(GenTreePtr* ppTree, Compiler::fgWalkData* data);
+    void RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents);
 
     // Other transformations
     void RewriteAssignment(LIR::Use& use);

@@ -8,15 +8,6 @@
 #endif
 
 #ifndef LEGACY_BACKEND
-// state carried over the tree walk, to be used in making
-// a splitting decision.
-struct SplitData
-{
-    GenTree*      root; // root stmt of tree being processed
-    BasicBlock*   block;
-    Rationalizer* thisPhase;
-};
-
 // return op that is the store equivalent of the given load opcode
 genTreeOps storeForm(genTreeOps loadForm)
 {
@@ -147,21 +138,18 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
 //
 
 void Rationalizer::RewriteNodeAsCall(GenTree**             use,
-                                     Compiler::fgWalkData* data,
+                                     ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
                                      CORINFO_CONST_LOOKUP entryPoint,
 #endif
                                      GenTreeArgList* args)
 {
-    GenTreePtr tree          = *use;
-    Compiler*  comp          = data->compiler;
-    SplitData* tmpState      = (SplitData*)data->pCallbackData;
-    GenTreePtr root          = tmpState->root;
-    GenTreePtr treeFirstNode = comp->fgGetFirstNode(tree);
-    GenTreePtr treeLastNode  = tree;
-    GenTreePtr treePrevNode  = treeFirstNode->gtPrev;
-    GenTreePtr treeNextNode  = treeLastNode->gtNext;
+    GenTree* tree          = *use;
+    GenTree* treeFirstNode = comp->fgGetFirstNode(tree);
+    GenTree* treeLastNode  = tree;
+    GenTree* treePrevNode  = treeFirstNode->gtPrev;
+    GenTree* treeNextNode  = treeLastNode->gtNext;
 
     // Create the call node
     GenTreeCall* call = comp->gtNewCallNode(CT_USER_FUNC, callHnd, tree->gtType, args);
@@ -181,9 +169,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 #endif
 
     // Replace "tree" with "call"
-    if (data->parentStack->Height() > 1)
+    if (parents.Height() > 1)
     {
-        data->parentStack->Index(1)->ReplaceOperand(use, call);
+        parents.Index(1)->ReplaceOperand(use, call);
     }
     else
     {
@@ -193,7 +181,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     }
 
     // Rebuild the evaluation order.
-    comp->gtSetStmtInfo(root);
+    comp->gtSetStmtInfo(m_statement);
 
     // Rebuild the execution order.
     comp->fgSetTreeSeq(call, treePrevNode);
@@ -207,10 +195,10 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
     }
     else
     {
-        // Update the linear oder start of "root" if treeFirstNode
+        // Update the linear order start of "m_statement" if treeFirstNode
         // appears to have replaced the original first node.
-        assert(treeFirstNode == root->gtStmt.gtStmtList);
-        root->gtStmt.gtStmtList = comp->fgGetFirstNode(call);
+        assert(treeFirstNode == m_statement->gtStmt.gtStmtList);
+        m_statement->gtStmt.gtStmtList = comp->fgGetFirstNode(call);
     }
 
     if (treeNextNode)
@@ -222,18 +210,18 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     // Propagate flags of "call" to its parents.
     // 0 is current node, so start at 1
-    for (int i = 1; i < data->parentStack->Height(); i++)
+    for (int i = 1; i < parents.Height(); i++)
     {
-        GenTree* node = data->parentStack->Index(i);
+        GenTree* node = parents.Index(i);
         node->gtFlags |= GTF_CALL;
         node->gtFlags |= call->gtFlags & GTF_ALL_EFFECT;
     }
 
     // Since "tree" is replaced with "call", pop "tree" node (i.e the current node)
     // and replace it with "call" on parent stack.
-    assert(data->parentStack->Top() == tree);
-    (void)data->parentStack->Pop();
-    data->parentStack->Push(call);
+    assert(parents.Top() == tree);
+    (void)parents.Pop();
+    parents.Push(call);
 }
 
 // RewriteIntrinsicAsUserCall : Rewrite an intrinsic operator as a GT_CALL to the original method.
@@ -250,10 +238,9 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 // Conceptually, the lower is the right place to do the rewrite. Keeping it in rationalization is
 // mainly for throughput issue.
 
-void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, Compiler::fgWalkData* data)
+void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents)
 {
     GenTreeIntrinsic* intrinsic = (*use)->AsIntrinsic();
-    Compiler*         comp      = data->compiler;
 
     GenTreeArgList* args;
     if (intrinsic->gtOp.gtOp2 == nullptr)
@@ -265,7 +252,7 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, Compiler::fgWalkDat
         args = comp->gtNewArgList(intrinsic->gtGetOp1(), intrinsic->gtGetOp2());
     }
 
-    RewriteNodeAsCall(use, data, intrinsic->gtMethodHandle,
+    RewriteNodeAsCall(use, parents, intrinsic->gtMethodHandle,
 #ifdef FEATURE_READYTORUN_COMPILER
                       intrinsic->gtEntryPoint,
 #endif
@@ -1050,18 +1037,16 @@ void Rationalizer::DoPhase()
             assert(statement->gtStmtExpr != nullptr);
             assert(statement->gtStmtExpr->gtNext == nullptr);
 
-            SplitData splitData;
-            splitData.root      = statement;
-            splitData.block     = block;
-            splitData.thisPhase = this;
-
+            m_statement = statement;
             comp->fgWalkTreePost(&statement->gtStmtExpr,
                                  [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
+                                     auto* const thisPhase = reinterpret_cast<Rationalizer*>(walkData->pCallbackData);
+
                                      GenTree* node = *use;
                                      if (node->OperGet() == GT_INTRINSIC &&
                                          Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
                                      {
-                                         RewriteIntrinsicAsUserCall(use, walkData);
+                                         thisPhase->RewriteIntrinsicAsUserCall(use, *walkData->parentStack);
                                      }
                                      else if (node->OperIsLocal())
                                      {
@@ -1070,7 +1055,7 @@ void Rationalizer::DoPhase()
 
                                      return Compiler::WALK_CONTINUE;
                                  },
-                                 &splitData, true);
+                                 this, true);
 
             GenTree* firstNodeInStatement = statement->gtStmtList;
             if (lastNodeInPreviousStatement != nullptr)
