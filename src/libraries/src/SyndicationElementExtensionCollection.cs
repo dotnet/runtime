@@ -106,7 +106,7 @@ namespace Microsoft.ServiceModel.Syndication
         public XmlReaderWrapper GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReaderWrapper reader = extensionsBuffer.GetReader(0);
+            XmlReaderWrapper reader = new XmlReaderWrapper(extensionsBuffer.GetReader(0));
             reader.ReadStartElement();
             return reader;
         }

@@ -267,22 +267,25 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        public static SyndicationFeed Load(XmlReaderWrapper reader, Rss20FeedFormatter formatter)
+        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
         {
             return Load(reader, formatter, new Atom10FeedFormatter());
         }
 
-        public static SyndicationFeed Load(XmlReaderWrapper reader, Atom10FeedFormatter formatter)
+        public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter)
         {
             return Load(reader, new Rss20FeedFormatter(), formatter);
         }
 
-        public static SyndicationFeed Load(XmlReaderWrapper reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
+        public static SyndicationFeed Load(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
         {
-            if (reader == null)
+            if (reader1 == null)
             {
                 throw new ArgumentNullException("reader");
             }
+
+            XmlReaderWrapper reader = new XmlReaderWrapper(reader1);
+
             Atom10FeedFormatter atomSerializer = Atomformatter;
             if (atomSerializer.CanRead(reader))
             {
@@ -299,18 +302,21 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        public static SyndicationFeed Load(XmlReaderWrapper reader)
+        public static SyndicationFeed Load(XmlReader reader)
         {
             return Load<SyndicationFeed>(reader);
         }
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReaderWrapper reader)
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader1)
             where TSyndicationFeed : SyndicationFeed, new()
         {
-            if (reader == null)
+            if (reader1 == null)
             {
                 throw new ArgumentNullException("reader");
             }
+
+            XmlReaderWrapper reader = new XmlReaderWrapper(reader1);
+
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {

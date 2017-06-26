@@ -156,7 +156,7 @@ namespace Microsoft.ServiceModel.Syndication
         private void ReadItem(XmlReaderWrapper reader)
         {
             SetItem(CreateItemInstance());
-            _feedSerializer.ReadItemFrom(XmlDictionaryReader.CreateDictionaryReader(reader), this.Item);
+            _feedSerializer.ReadItemFrom(new XmlReaderWrapper( XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
         private void WriteItem(XmlWriter writer)

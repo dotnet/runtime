@@ -16,9 +16,8 @@ namespace Microsoft.ServiceModel.Syndication
     internal delegate InlineCategoriesDocument CreateInlineCategoriesDelegate();
     internal delegate ReferencedCategoriesDocument CreateReferencedCategoriesDelegate();
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = App10Constants.Service, Namespace = App10Constants.Namespace)]
-    public class AtomPub10ServiceDocumentFormatter : ServiceDocumentFormatter, IXmlSerializable
+    public class AtomPub10ServiceDocumentFormatter : ServiceDocumentFormatter
     {
         private Type _documentType;
         private int _maxExtensionSize;
@@ -71,14 +70,9 @@ namespace Microsoft.ServiceModel.Syndication
             return reader.IsStartElement(App10Constants.Service, App10Constants.Namespace);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        XmlSchema IXmlSerializable.GetSchema()
-        {
-            return null;
-        }
+        
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReaderWrapper reader)
+        void ReadXml(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -87,8 +81,7 @@ namespace Microsoft.ServiceModel.Syndication
             ReadDocument(reader);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.WriteXml(XmlWriter writer)
+        void WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {

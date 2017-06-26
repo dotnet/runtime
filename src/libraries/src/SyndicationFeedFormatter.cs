@@ -13,8 +13,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Runtime.Serialization;
     using System.Xml;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
-    [DataContract]
     public abstract class SyndicationFeedFormatter
     {
         private SyndicationFeed _feed;
