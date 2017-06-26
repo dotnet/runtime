@@ -578,13 +578,28 @@ namespace System.Net.Http
                 await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'T' ||
                 await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'T' ||
                 await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'P' ||
-                await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '/' ||
-                await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '1' ||
-                await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '.' ||
-                await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '1')
+                await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '/')
             {
                 throw new HttpRequestException("could not read response HTTP version");
             }
+
+            // Set the response HttpVersion.
+            char majorVersion = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+            if (!char.IsDigit(majorVersion) ||
+                await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '.')
+            {
+                throw new HttpRequestException("could not read response HTTP version");
+            }
+            char minorVersion = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+            if (!char.IsDigit(minorVersion))
+            {
+                throw new HttpRequestException("could not read response HTTP version");
+            }
+            response.Version =
+                (majorVersion == '1' && minorVersion == '1') ? HttpVersionInternal.Version11 :
+                (majorVersion == '1' && minorVersion == '0') ? HttpVersionInternal.Version10 :
+                (majorVersion == '2' && minorVersion == '0') ? HttpVersionInternal.Version20 :
+                HttpVersionInternal.Unknown;
 
             if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != ' ')
             {
@@ -680,7 +695,7 @@ namespace System.Net.Http
                     throw new HttpRequestException("Saw CR without LF while parsing headers");
                 }
 
-                string headerValue = _sb.ToString();
+                string headerValue = HttpKnownHeaderNames.GetHeaderValue(headerName, _sb.Chars, 0, _sb.Offset);
 
                 // TryAddWithoutValidation will fail if the header name has trailing whitespace.
                 // So, trim it here.
@@ -689,7 +704,6 @@ namespace System.Net.Http
                 headerName = headerName.TrimEnd();
 
                 // Add header to appropriate collection
-                // Don't ask me why this is the right API to call, but apparently it is
                 if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                 {
                     // The existing handlers ignore headers that couldn't be added.  Do the same here.

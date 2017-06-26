@@ -8,6 +8,9 @@ namespace System.Net
 {
     internal static partial class HttpKnownHeaderNames
     {
+        private const string Gzip = "gzip";
+        private const string Deflate = "deflate";
+
         /// <summary>
         /// Gets a known header name string from a matching char[] array segment, using a case-sensitive
         /// ordinal comparison. Used to avoid allocating new strings for known header names.
@@ -45,6 +48,36 @@ namespace System.Net
                 (buf, index) => (char)((byte*)buf)[index],
                 (known, buf, start, len) => EqualsOrdinal(known, buf, len),
                 out name);
+        }
+
+        public static string GetHeaderValue(string name, char[] array, int startIndex, int length)
+        {
+            Debug.Assert(name != null);
+            CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
+
+            if (length == 0)
+            {
+                return string.Empty;
+            }
+
+            // If it's a known header value, use the known value instead of allocating a new string.
+
+            // Do a really quick reference equals check to see if name is the same object as
+            // HttpKnownHeaderNames.ContentEncoding, in which case the value is very likely to
+            // be either "gzip" or "deflate".
+            if (ReferenceEquals(name, ContentEncoding))
+            {
+                if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(Gzip, array, startIndex, length))
+                {
+                    return Gzip;
+                }
+                else if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(Deflate, array, startIndex, length))
+                {
+                    return Deflate;
+                }
+            }
+
+            return new string(array, startIndex, length);
         }
 
         private static bool TryGetHeaderName<T>(

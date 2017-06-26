@@ -63,14 +63,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_winHttpHandler != null)
-                {
-                    _winHttpHandler.Dispose();
-                }
-                else
-                {
-                    _managedHandler.Dispose();
-                }
+                ((HttpMessageHandler)_winHttpHandler ?? _managedHandler).Dispose();
             }
 
             base.Dispose(disposing);

@@ -27,7 +27,7 @@ namespace System.Net.Http
         {
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-            int redirectCount = 0;
+            uint redirectCount = 0;
             while (true)
             {
                 bool needRedirect = false;
