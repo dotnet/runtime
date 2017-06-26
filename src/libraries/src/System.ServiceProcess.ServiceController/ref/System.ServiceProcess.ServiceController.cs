@@ -5,9 +5,54 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.ServiceProcess
 {
+    public enum PowerBroadcastStatus
+    {
+        BatteryLow = 9,
+        OemEvent = 11,
+        PowerStatusChange = 10,
+        QuerySuspend = 0,
+        QuerySuspendFailed = 2,
+        ResumeAutomatic = 18,
+        ResumeCritical = 6,
+        ResumeSuspend = 7,
+        Suspend = 4,
+    }
+    public partial class ServiceBase : System.ComponentModel.Component
+    {
+        public const int MaxNameLength = 80;
+        public ServiceBase() { }
+        [System.ComponentModel.DefaultValueAttribute(false)]
+        public bool CanHandlePowerEvent { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(false)]
+        public bool CanHandleSessionChangeEvent { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(false)]
+        public bool CanPauseAndContinue { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(false)]
+        public bool CanShutdown { get { throw null; } set { } }
+        [System.ComponentModel.DefaultValueAttribute(true)]
+        public bool CanStop { get { throw null; } set { } }
+        public int ExitCode { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        protected System.IntPtr ServiceHandle { get { throw null; } }
+        public string ServiceName { get { throw null; } set { } }
+        protected override void Dispose(bool disposing) { }
+        protected virtual void OnContinue() { }
+        protected virtual void OnCustomCommand(int command) { }
+        protected virtual void OnPause() { }
+        protected virtual bool OnPowerEvent(System.ServiceProcess.PowerBroadcastStatus powerStatus) { throw null; }
+        protected virtual void OnSessionChange(System.ServiceProcess.SessionChangeDescription changeDescription) { }
+        protected virtual void OnShutdown() { }
+        protected virtual void OnStart(string[] args) { }
+        protected virtual void OnStop() { }
+        public void RequestAdditionalTime(int milliseconds) { }
+        public static void Run(System.ServiceProcess.ServiceBase service) { }
+        public static void Run(System.ServiceProcess.ServiceBase[] services) { }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public void ServiceMainCallback(int argCount, System.IntPtr argPointer) { }
+        public void Stop() { }
+    }
     public partial class ServiceController : System.IDisposable
     {
         public ServiceController(string name) { }
@@ -68,11 +113,34 @@ namespace System.ServiceProcess
         Win32OwnProcess = 16,
         Win32ShareProcess = 32,
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct SessionChangeDescription
+    {
+        public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
+        public int SessionId { get { throw null; } }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.ServiceProcess.SessionChangeDescription changeDescription) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.ServiceProcess.SessionChangeDescription a, System.ServiceProcess.SessionChangeDescription b) { throw null; }
+        public static bool operator !=(System.ServiceProcess.SessionChangeDescription a, System.ServiceProcess.SessionChangeDescription b) { throw null; }
+    }
+    public enum SessionChangeReason
+    {
+        ConsoleConnect = 1,
+        ConsoleDisconnect = 2,
+        RemoteConnect = 3,
+        RemoteDisconnect = 4,
+        SessionLock = 7,
+        SessionLogoff = 6,
+        SessionLogon = 5,
+        SessionRemoteControl = 9,
+        SessionUnlock = 8,
+    }
     public partial class TimeoutException : System.Exception
     {
         public TimeoutException() { }
+        protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TimeoutException(string message) { }
         public TimeoutException(string message, System.Exception innerException) { }
-        protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }
