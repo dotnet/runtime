@@ -215,7 +215,7 @@ mono_os_cond_timedwait (mono_cond_t *cond, mono_mutex_t *mutex, guint32 timeout_
 
 	res = pthread_cond_timedwait (cond, mutex, &ts);
 	if (G_UNLIKELY (res != 0 && res != ETIMEDOUT))
-		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+		g_error ("%s: pthread_cond_timedwait failed with \"%s\" (%d) %ld %ld %d", __func__, g_strerror (res), res, ts.tv_sec, ts.tv_nsec, timeout_ms);
 
 	return res != 0 ? -1 : 0;
 }
