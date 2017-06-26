@@ -17,18 +17,35 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.cs">
+      <Link>Common\System\Net\Capability.Security.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Certificates.cs">
+      <Link>Common\System\Net\Configuration.Certificates.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
       <Link>Common\System\Net\Configuration.Http.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Security.cs">
+      <Link>Common\System\Net\Configuration.Security.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.WebSockets.cs">
       <Link>Common\System\Net\Configuration.WebSockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
+      <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
     </Compile>
     <Compile Include="AbortTest.cs" />
     <Compile Include="CancelTest.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
+    <Compile Include="ClientWebSocketOptionsTests.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="ClientWebSocketOptionsTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
@@ -39,6 +56,9 @@
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(PackagesDir)system.net.testdata\1.0.0-prerelease\content\**\*.*" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
