@@ -14,7 +14,7 @@ namespace Microsoft.ServiceModel.Syndication
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.ItemTag, Namespace = Rss20Constants.Rss20Namespace)]
-    public class Rss20ItemFormatter : SyndicationItemFormatter, IXmlSerializable
+    public class Rss20ItemFormatter : SyndicationItemFormatter
     {
         private Rss20FeedFormatter _feedSerializer;
         private Type _itemType;
@@ -113,14 +113,9 @@ namespace Microsoft.ServiceModel.Syndication
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        XmlSchema IXmlSerializable.GetSchema()
-        {
-            return null;
-        }
+        
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.ReadXml(XmlReaderWrapper reader)
+        void ReadXml(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
@@ -129,8 +124,7 @@ namespace Microsoft.ServiceModel.Syndication
             ReadItem(reader);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes", Justification = "The IXmlSerializable implementation is only for exposing under WCF DataContractSerializer. The funcionality is exposed to derived class through the ReadFrom\\WriteTo methods")]
-        void IXmlSerializable.WriteXml(XmlWriter writer)
+        void WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -167,7 +161,7 @@ namespace Microsoft.ServiceModel.Syndication
         private void ReadItem(XmlReaderWrapper reader)
         {
             SetItem(CreateItemInstance());
-            _feedSerializer.ReadItemFrom(XmlDictionaryReader.CreateDictionaryReader(reader), this.Item);
+            _feedSerializer.ReadItemFrom(new XmlReaderWrapper(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
         private void WriteItem(XmlWriter writer)
@@ -181,9 +175,8 @@ namespace Microsoft.ServiceModel.Syndication
         }
     }
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [XmlRoot(ElementName = Rss20Constants.ItemTag, Namespace = Rss20Constants.Rss20Namespace)]
-    public class Rss20ItemFormatter<TSyndicationItem> : Rss20ItemFormatter, IXmlSerializable
+    public class Rss20ItemFormatter<TSyndicationItem> : Rss20ItemFormatter
         where TSyndicationItem : SyndicationItem, new()
     {
         public Rss20ItemFormatter()

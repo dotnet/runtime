@@ -63,7 +63,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlDictionaryReader reader, int maxExtensionSize)
         {
-            SyndicationFeedFormatter.CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, maxExtensionSize);
+            SyndicationFeedFormatter.CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter,new XmlReaderWrapper(reader), maxExtensionSize);
         }
 
         internal static SyndicationItem CreateItemInstance(Type itemType)

@@ -15,7 +15,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
     public static class BasicScenarioTests
     {
-                
+
         [Fact]
         public static void SyndicationFeed_CreateNewFeed()
         {
@@ -84,15 +84,15 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             try
             {
                 // *** SETUP *** \\
-                 SyndicationFeed feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>", new Uri("http://www.Contoso.com/news"), "123FeedID", DateTime.Now);
-            
+                SyndicationFeed feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>", new Uri("http://www.Contoso.com/news"), "123FeedID", DateTime.Now);
+
                 //Add an author
                 SyndicationPerson author = new SyndicationPerson("jerry@Contoso.com");
                 feed.Authors.Add(author);
-            
+
                 //Create item
                 SyndicationItem item1 = new SyndicationItem("SyndicationFeed released for .net Core", "A lot of text describing the release of .net core feature", new Uri("http://Contoso.com/news/path"));
-            
+
                 //Add item to feed
                 List<SyndicationItem> feedList = new List<SyndicationItem> { item1 };
                 feed.Items = feedList;
@@ -106,12 +106,12 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 Console.WriteLine(feed.BaseUri);
 
                 // Write to XML > rss
-                
+
                 XmlWriter xmlwRss = XmlWriter.Create(RssPath);
                 Rss20FeedFormatter rssff = new Rss20FeedFormatter(feed);
 
                 // Write to XML > atom
-               
+
                 XmlWriter xmlwAtom = XmlWriter.Create(AtomPath);
                 Atom10FeedFormatter atomf = new Atom10FeedFormatter(feed);
 
@@ -131,68 +131,69 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             {
                 // *** CLEANUP *** \\
                 File.Delete(RssPath);
-                File.Delete(AtomPath);            
+                File.Delete(AtomPath);
             }
         }
 
 
-        [Fact]
-        public static void SyndicationFeed_RSS20FeedFormatter_UsingCustomParser()
-        {
-            //this test will override the default date parser and assign just a new date to the feed
+        ////[Fact]
+        ////public static void SyndicationFeed_RSS20FeedFormatter_UsingCustomParser()
+        ////{
+        ////    //this test will override the default date parser and assign just a new date to the feed
 
-            // *** SETUP *** \\
-            Rss20FeedFormatter rssformater = new Rss20FeedFormatter();
-            string newTitle = "My title is not the original one!";
-            DateTime timeNow = DateTime.Now;
+        ////    // *** SETUP *** \\
+        ////    Rss20FeedFormatter rssformater = new Rss20FeedFormatter();
+        ////    string newTitle = "My title is not the original one!";
+        ////    DateTime timeNow = DateTime.Now;
 
-            rssformater.DateParser = delegate (string date, XmlReader xmlr)
-            {
-                return new DateTimeOffset(timeNow);
-            };
+        ////    rssformater.DateParser = delegate (string date, XmlReader xmlr)
+        ////    {
+        ////        return new DateTimeOffset(timeNow);
+        ////    };
 
-            rssformater.ItemParser = delegate (XmlReader reader1, SyndicationFeed result)
-            {
-                while (reader1.Name != "item" || reader1.NodeType != XmlNodeType.EndElement)
-                    reader1.Read();
+        ////    rssformater.ItemParser = delegate (XmlReader reader1, SyndicationFeed result)
+        ////    {
+        ////        while (reader1.Name != "item" || reader1.NodeType != XmlNodeType.EndElement)
+        ////            reader1.Read();
 
-                SyndicationItem item = new SyndicationItem();
+        ////        SyndicationItem item = new SyndicationItem();
 
-                item.Title = new TextSyndicationContent(newTitle);
-                item.Summary = new TextSyndicationContent("I'm not supposed to show a summary...");
-                return item;
-            };
+        ////        item.Title = new TextSyndicationContent(newTitle);
+        ////        item.Summary = new TextSyndicationContent("I'm not supposed to show a summary...");
+        ////        return item;
+        ////    };
 
-            rssformater.ImageParser = delegate (XmlReader readerD, SyndicationFeed feed)
-            {
-                feed.ImageUrl = new Uri("http://www.customParsedImage.com");
-                readerD.Skip();
-                return true;
-            };
-
-
-            try
-            {
-                // *** EXECUTE *** \\
-                XmlReader reader = XmlReader.Create(@"TestFeeds\SimpleRssFeed.xml");
-                SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
-
-                // *** ASSERT *** \\
-                foreach (var item in sf.Items) {
-                    Assert.True(item.Title.Text == newTitle);
-                    Assert.True(sf.LastUpdatedTime == timeNow);
-                }
-
-            }
-            finally
-            {
-                // *** CLEANUP *** \\
-                
-            }
+        ////    rssformater.ImageParser = delegate (XmlReader readerD, SyndicationFeed feed)
+        ////    {
+        ////        feed.ImageUrl = new Uri("http://www.customParsedImage.com");
+        ////        readerD.Skip();
+        ////        return true;
+        ////    };
 
 
-        }
-        
+        //    try
+        //    {
+        //        // *** EXECUTE *** \\
+        //        XmlReader reader = XmlReader.Create(@"TestFeeds\SimpleRssFeed.xml");
+        //        SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
+
+        //        // *** ASSERT *** \\
+        //        foreach (var item in sf.Items)
+        //        {
+        //            Assert.True(item.Title.Text == newTitle);
+        //            Assert.True(sf.LastUpdatedTime == timeNow);
+        //        }
+
+        //    }
+        //    finally
+        //    {
+        //        // *** CLEANUP *** \\
+
+        //    }
+
+
+        //}
+
         [Fact]
         public static void SyndicationFeed_RSS20_Load_customImageDataInFeed()
         {
@@ -204,7 +205,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
             // *** ASSERT *** \\
             Assert.True("The title is not the same to the original one" == sf.ImageTitle.Text);
-            Assert.True(sf.ImageLink.AbsoluteUri !=  sf.Links[0].GetAbsoluteUri().AbsoluteUri);
+            Assert.True(sf.ImageLink.AbsoluteUri != sf.Links[0].GetAbsoluteUri().AbsoluteUri);
 
             // *** CLEANUP *** \\
             reader.Close();
@@ -226,7 +227,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             XmlWriter writer = XmlWriter.Create(resultPath);
             Rss20FeedFormatter rssff = sf.GetRss20Formatter();
 
-            
+
             try
             {
                 // *** EXECUTE *** \\
