@@ -1816,6 +1816,14 @@ void EncodeTypeInDictionarySignature(
 
         return;
     }
+    else if((CorElementTypeZapSig)typ == ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG)
+    {
+        pSigBuilder->AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
+
+        IfFailThrow(ptr.GetElemType(&typ));
+
+        _ASSERTE(typ == ELEMENT_TYPE_SZARRAY || typ == ELEMENT_TYPE_ARRAY);
+    }
 
     pSigBuilder->AppendElementType(typ);
 

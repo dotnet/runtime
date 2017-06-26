@@ -2742,7 +2742,9 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
         case ENCODE_NEW_ARRAY_HELPER:
             {
                 CorInfoHelpFunc helpFunc = CEEInfo::getNewArrHelperStatic(th);
-                pHelper = DynamicHelpers::CreateHelperArgMove(pModule->GetLoaderAllocator(), th.AsTAddr(), CEEJitInfo::getHelperFtnStatic(helpFunc));
+                ArrayTypeDesc *pArrayTypeDesc = th.AsArray();
+                MethodTable *pArrayMT = pArrayTypeDesc->GetTemplateMethodTable();
+                pHelper = DynamicHelpers::CreateHelperArgMove(pModule->GetLoaderAllocator(), dac_cast<TADDR>(pArrayMT), CEEJitInfo::getHelperFtnStatic(helpFunc));
             }
             break;
 
