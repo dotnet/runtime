@@ -32,7 +32,7 @@ namespace System.Net.Http
         private readonly TransportContext _transportContext;
         private readonly bool _usingProxy;
 
-        private readonly StringBuilder _sb;
+        private ValueStringBuilder _sb; // mutable struct, do not make this readonly
 
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
@@ -541,7 +541,8 @@ namespace System.Net.Http
             _transportContext = transportContext;
             _usingProxy = usingProxy;
 
-            _sb = new StringBuilder();
+            const int DefaultCapacity = 16;
+            _sb = new ValueStringBuilder(DefaultCapacity);
 
             _writeBuffer = new byte[BufferSize];
             _writeOffset = 0;
@@ -624,7 +625,10 @@ namespace System.Net.Http
                 throw new HttpRequestException("Saw CR without LF while parsing response line");
             }
 
-            response.ReasonPhrase = _sb.ToString();
+            string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
+            response.ReasonPhrase = CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Offset) ?
+                knownReasonPhrase :
+                _sb.ToString();
 
             var responseContent = new HttpConnectionContent(CancellationToken.None);
 
@@ -650,7 +654,11 @@ namespace System.Net.Http
                     c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                string headerName = _sb.ToString();
+                string headerName;
+                if (!HttpKnownHeaderNames.TryGetHeaderName(_sb.Chars, 0, _sb.Offset, out headerName))
+                {
+                    headerName = _sb.ToString();
+                }
 
                 _sb.Clear();
 
@@ -1203,6 +1211,33 @@ namespace System.Net.Http
             Debug.Assert(_writeOffset == 0);
 
             _pool.PutConnection(this);
+        }
+
+        private struct ValueStringBuilder
+        {
+            public char[] Chars;
+            public int Offset;
+
+            public ValueStringBuilder(int initialCapacity)
+            {
+                Chars = new char[initialCapacity];
+                Offset = 0;
+            }
+
+            public void Append(char c)
+            {
+                if (Offset == Chars.Length)
+                {
+                    Grow();
+                }
+                Chars[Offset++] = c;
+            }
+
+            private void Grow() => Array.Resize(ref Chars, Chars.Length * 2);
+
+            public void Clear() => Offset = 0;
+
+            public override string ToString() => new string(Chars, 0, Offset);
         }
     }
 }
