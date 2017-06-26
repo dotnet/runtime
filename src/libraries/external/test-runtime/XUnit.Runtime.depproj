@@ -73,6 +73,9 @@
     <PackageReference Include="System.Net.TestData">
       <Version>1.0.0-prerelease</Version>
     </PackageReference>
+    <PackageReference Include="System.Drawing.Common.TestData">
+      <Version>1.0.0</Version>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <PackageReference Include="xunit.runner.console">
