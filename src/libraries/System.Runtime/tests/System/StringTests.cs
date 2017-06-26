@@ -1291,6 +1291,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21541", TargetFrameworkMonikers.Uap)]
         public static void IndexOf_TurkishI()
         {
             RemoteInvoke(() =>

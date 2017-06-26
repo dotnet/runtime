@@ -10,6 +10,7 @@ namespace System.IO.Pipes.Tests
     public class AnonymousPipeTest_CrossProcess : RemoteExecutorTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21275", TargetFrameworkMonikers.Uap)]
         public void PingPong()
         {
             // Create two anonymous pipes, one for each direction of communication.
