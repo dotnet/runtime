@@ -32,7 +32,10 @@
     <Compile Include="SystemBrushesTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="Drawing2D\BlendTests.cs" />
+    <Compile Include="Drawing2D\ColorBlendTests.cs" />
     <Compile Include="Drawing2D\HatchBrushTests.cs" />
+    <Compile Include="Drawing2D\LinearGradientBrushTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
