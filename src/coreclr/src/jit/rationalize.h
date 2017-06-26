@@ -41,7 +41,7 @@ private:
     void FixupIfSIMDLocal(GenTreeLclVarCommon* node);
 
     // Intrinsic related transformations
-    void RewriteNodeAsCall(GenTree** slot,
+    void RewriteNodeAsCall(GenTree**             use,
                            ArrayStack<GenTree*>& parents,
                            CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
