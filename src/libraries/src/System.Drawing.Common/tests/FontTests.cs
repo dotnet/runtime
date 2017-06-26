@@ -7,7 +7,7 @@ namespace System.Drawing.Tests
 {
     public class FontTests
     {
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("NoSuchFont")]
