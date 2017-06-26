@@ -1021,13 +1021,15 @@ namespace System.Net.Http
             return WriteStringAsync(s, cancellationToken);
         }
 
-        private async Task FlushAsync(CancellationToken cancellationToken)
+        private Task FlushAsync(CancellationToken cancellationToken)
         {
             if (_writeOffset > 0)
-            { 
-                await _stream.WriteAsync(_writeBuffer, 0, _writeOffset, cancellationToken).ConfigureAwait(false);
+            {
+                Task t = _stream.WriteAsync(_writeBuffer, 0, _writeOffset, cancellationToken);
                 _writeOffset = 0;
+                return t;
             }
+            return Task.CompletedTask;
         }
 
         private Task FillAsync(CancellationToken cancellationToken)
