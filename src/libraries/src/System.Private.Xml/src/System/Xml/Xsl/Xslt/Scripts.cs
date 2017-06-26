@@ -15,7 +15,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
-#if !uap && !uapaot
+#if FEATURE_COMPILED_XSL
 using System.Xml.Xsl.IlGen;
 #endif
 using System.Xml.Xsl.Runtime;

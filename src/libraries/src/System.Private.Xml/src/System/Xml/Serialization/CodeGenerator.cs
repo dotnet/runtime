@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 
-#if !uapaot
+#if !FEATURE_SERIALIZATION_UAPAOT
 #if XMLSERIALIZERGENERATOR
 namespace Microsoft.XmlSerializer.Generator
 #else
