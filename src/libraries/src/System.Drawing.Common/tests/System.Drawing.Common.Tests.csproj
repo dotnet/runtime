@@ -32,6 +32,7 @@
     <Compile Include="SystemBrushesTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="Design\CategoryNameCollectionTests.cs" />
     <Compile Include="Drawing2D\BlendTests.cs" />
     <Compile Include="Drawing2D\ColorBlendTests.cs" />
     <Compile Include="Drawing2D\HatchBrushTests.cs" />
