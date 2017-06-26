@@ -6246,15 +6246,310 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
     assert(def != nullptr);
     assert(use != nullptr);
 
-    for (GenTree** useEdge : UseEdges())
+    switch (OperGet())
     {
-        if (*useEdge == def)
+        // Leaf nodes
+        case GT_LCL_VAR:
+        case GT_LCL_FLD:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        case GT_CATCH_ARG:
+        case GT_LABEL:
+        case GT_FTN_ADDR:
+        case GT_RET_EXPR:
+        case GT_CNS_INT:
+        case GT_CNS_LNG:
+        case GT_CNS_DBL:
+        case GT_CNS_STR:
+        case GT_MEMORYBARRIER:
+        case GT_JMP:
+        case GT_JCC:
+        case GT_SETCC:
+        case GT_NO_OP:
+        case GT_START_NONGC:
+        case GT_PROF_HOOK:
+#if !FEATURE_EH_FUNCLETS
+        case GT_END_LFIN:
+#endif // !FEATURE_EH_FUNCLETS
+        case GT_PHI_ARG:
+#ifndef LEGACY_BACKEND
+        case GT_JMPTABLE:
+#endif // LEGACY_BACKEND
+        case GT_REG_VAR:
+        case GT_CLS_VAR:
+        case GT_CLS_VAR_ADDR:
+        case GT_ARGPLACE:
+        case GT_PHYSREG:
+        case GT_EMITNOP:
+        case GT_PINVOKE_PROLOG:
+        case GT_PINVOKE_EPILOG:
+        case GT_IL_OFFSET:
+            return false;
+
+        // Standard unary operators
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+        case GT_NOT:
+        case GT_NEG:
+        case GT_COPY:
+        case GT_RELOAD:
+        case GT_ARR_LENGTH:
+        case GT_CAST:
+        case GT_CKFINITE:
+        case GT_LCLHEAP:
+        case GT_ADDR:
+        case GT_IND:
+        case GT_OBJ:
+        case GT_BLK:
+        case GT_BOX:
+        case GT_ALLOCOBJ:
+        case GT_INIT_VAL:
+        case GT_JTRUE:
+        case GT_SWITCH:
+        case GT_NULLCHECK:
+        case GT_PHYSREGDST:
+        case GT_PUTARG_REG:
+        case GT_PUTARG_STK:
+        case GT_RETURNTRAP:
+        case GT_NOP:
+        case GT_RETURN:
+        case GT_RETFILT:
+            if (def == this->AsUnOp()->gtOp1)
+            {
+                *use = &this->AsUnOp()->gtOp1;
+                return true;
+            }
+            return false;
+
+        // Variadic nodes
+        case GT_PHI:
+            assert(this->AsUnOp()->gtOp1 != nullptr);
+            return this->AsUnOp()->gtOp1->TryGetUseList(def, use);
+
+        case GT_FIELD_LIST:
+            return TryGetUseList(def, use);
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
+            {
+                assert(this->AsSIMD()->gtOp1 != nullptr);
+                return this->AsSIMD()->gtOp1->TryGetUseList(def, use);
+            }
+
+            return TryGetUseBinOp(def, use);
+#endif // FEATURE_SIMD
+
+        // Special nodes
+        case GT_CMPXCHG:
         {
-            *use = useEdge;
+            GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
+            if (def == cmpXchg->gtOpLocation)
+            {
+                *use = &cmpXchg->gtOpLocation;
+                return true;
+            }
+            if (def == cmpXchg->gtOpValue)
+            {
+                *use = &cmpXchg->gtOpValue;
+                return true;
+            }
+            if (def == cmpXchg->gtOpComparand)
+            {
+                *use = &cmpXchg->gtOpComparand;
+                return true;
+            }
+            return false;
+        }
+
+        case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+        {
+            GenTreeBoundsChk* const boundsChk = this->AsBoundsChk();
+            if (def == boundsChk->gtIndex)
+            {
+                *use = &boundsChk->gtIndex;
+                return true;
+            }
+            if (def == boundsChk->gtArrLen)
+            {
+                *use = &boundsChk->gtArrLen;
+                return true;
+            }
+            return false;
+        }
+
+        case GT_FIELD:
+            if (def == this->AsField()->gtFldObj)
+            {
+                *use = &this->AsField()->gtFldObj;
+                return true;
+            }
+            return false;
+
+        case GT_STMT:
+            if (def == this->AsStmt()->gtStmtExpr)
+            {
+                *use = &this->AsStmt()->gtStmtExpr;
+                return true;
+            }
+            return false;
+
+        case GT_ARR_ELEM:
+        {
+            GenTreeArrElem* const arrElem = this->AsArrElem();
+            if (def == arrElem->gtArrObj)
+            {
+                *use = &arrElem->gtArrObj;
+                return true;
+            }
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                if (def == arrElem->gtArrInds[i])
+                {
+                    *use = &arrElem->gtArrInds[i];
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        case GT_ARR_OFFSET:
+        {
+            GenTreeArrOffs* const arrOffs = this->AsArrOffs();
+            if (def == arrOffs->gtOffset)
+            {
+                *use = &arrOffs->gtOffset;
+                return true;
+            }
+            if (def == arrOffs->gtIndex)
+            {
+                *use = &arrOffs->gtIndex;
+                return true;
+            }
+            if (def == arrOffs->gtArrObj)
+            {
+                *use = &arrOffs->gtArrObj;
+                return true;
+            }
+            return false;
+        }
+
+        case GT_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            if (def == dynBlock->gtOp1)
+            {
+                *use = &dynBlock->gtOp1;
+                return true;
+            }
+            if (def == dynBlock->gtDynamicSize)
+            {
+                *use = &dynBlock->gtDynamicSize;
+                return true;
+            }
+            return false;
+        }
+
+        case GT_STORE_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            if (def == dynBlock->gtOp1)
+            {
+                *use = &dynBlock->gtOp1;
+                return true;
+            }
+            if (def == dynBlock->gtOp2)
+            {
+                *use = &dynBlock->gtOp2;
+                return true;
+            }
+            if (def == dynBlock->gtDynamicSize)
+            {
+                *use = &dynBlock->gtDynamicSize;
+                return true;
+            }
+            return false;
+        }
+
+        case GT_CALL:
+        {
+            GenTreeCall* const call = this->AsCall();
+            if (def == call->gtCallObjp)
+            {
+                *use = &call->gtCallObjp;
+                return true;
+            }
+            if (def == call->gtControlExpr)
+            {
+                *use = &call->gtControlExpr;
+                return true;
+            }
+            if (call->gtCallType == CT_INDIRECT)
+            {
+                if (def == call->gtCallCookie)
+                {
+                    *use = &call->gtCallCookie;
+                    return true;
+                }
+                if (def == call->gtCallAddr)
+                {
+                    *use = &call->gtCallAddr;
+                    return true;
+                }
+            }
+            if ((call->gtCallArgs != nullptr) && call->gtCallArgs->TryGetUseList(def, use))
+            {
+                return true;
+            }
+
+            return (call->gtCallLateArgs != nullptr) && call->gtCallLateArgs->TryGetUseList(def, use);
+        }
+
+        // Binary nodes
+        default:
+            assert(this->OperIsBinary());
+            return TryGetUseBinOp(def, use);
+    }
+
+    return false;
+}
+
+bool GenTree::TryGetUseList(GenTree* def, GenTree*** use)
+{
+    assert(def != nullptr);
+    assert(use != nullptr);
+
+    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
+    {
+        if (def == node->gtOp1)
+        {
+            *use = &node->gtOp1;
             return true;
         }
     }
+    return false;
+}
 
+bool GenTree::TryGetUseBinOp(GenTree* def, GenTree*** use)
+{
+    assert(def != nullptr);
+    assert(use != nullptr);
+    assert(this->OperIsBinary());
+
+    GenTreeOp* const binOp = this->AsOp();
+    if (def == binOp->gtOp1)
+    {
+        *use = &binOp->gtOp1;
+        return true;
+    }
+    if (def == binOp->gtOp2)
+    {
+        *use = &binOp->gtOp2;
+        return true;
+    }
     return false;
 }
 
