@@ -4,11 +4,9 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\QueryPageSettingsEventHandler.uex' path='docs/doc[@for="QueryPageSettingsEventHandler"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Represents the method that will handle the <see cref='E:System.Drawing.Printing.PrintDocument.QueryPageSettings'/> event of a <see cref='System.Drawing.Printing.PrintDocument'/>.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Represents the method that will handle the <see cref='PrintDocument.QueryPageSettings'/> event of a
+    /// <see cref='PrintDocument'/>.
+    /// </summary>
     public delegate void QueryPageSettingsEventHandler(object sender, QueryPageSettingsEventArgs e);
 }

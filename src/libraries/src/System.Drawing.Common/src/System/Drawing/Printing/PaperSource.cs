@@ -4,24 +4,17 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PaperSource.uex' path='docs/doc[@for="PaperSource"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the paper tray from which the printer gets paper.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the paper tray from which the printer gets paper.
+    /// </summary>
     public partial class PaperSource
     {
         private string _name;
         private PaperSourceKind _kind;
 
-        /// <include file='doc\PaperSource.uex' path='docs/doc[@for="PaperSource.PaperSource"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PaperSource'/> class with default properties.
-        ///       This constructor is required for the serialization of the <see cref='System.Drawing.Printing.PaperSource'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PaperSource'/> class with default properties.
+        /// </summary>
         public PaperSource()
         {
             _kind = PaperSourceKind.Custom;
@@ -34,14 +27,9 @@ namespace System.Drawing.Printing
             _name = name;
         }
 
-        /// <include file='doc\PaperSource.uex' path='docs/doc[@for="PaperSource.Kind"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
-        ///       a value indicating the type of paper source.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating the type of paper source.
+        /// </summary>
         public PaperSourceKind Kind
         {
             get
@@ -53,40 +41,27 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PaperSource.uex' path='docs/doc[@for="PaperSource.RawKind"]/*' />
-        /// <devdoc>
-        ///    <para>
+        /// <summary>
         /// Same as Kind, but values larger than DMBIN_USER do not map to PaperSourceKind.Custom.
-        /// This property is needed for serialization of the PrinterSettings object.
-        ///    </para>
-        /// </devdoc>
+        /// </summary>
         public int RawKind
         {
             get { return unchecked((int)_kind); }
             set { _kind = unchecked((PaperSourceKind)value); }
         }
 
-        /// <include file='doc\PaperSource.uex' path='docs/doc[@for="PaperSource.SourceName"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the name of the paper source.
-        ///       Setter is added for serialization of the PrinterSettings object.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the name of the paper source.
+        /// </summary>
         public string SourceName
         {
             get { return _name; }
             set { _name = value; }
         }
 
-        /// <include file='doc\PaperSource.uex' path='docs/doc[@for="PaperSource.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the PaperSource in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the PaperSource in String form.
+        /// </summary>
         public override string ToString()
         {
             return "[PaperSource " + SourceName

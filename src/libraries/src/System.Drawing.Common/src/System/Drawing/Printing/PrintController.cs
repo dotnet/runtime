@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security;
+
 namespace System.Drawing.Printing
 {
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.Security;
-
-    /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController"]/*' />
-    /// <devdoc>
-    ///    <para>Controls how a document is printed.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Controls how a document is printed.
+    /// </summary>
     public abstract class PrintController
     {
         // DEVMODEs are pretty expensive, so we cache one here and share it with the 
@@ -21,11 +20,8 @@ namespace System.Drawing.Printing
         #region SafeDeviceModeHandle Class
 
         /// <summary>
-        ///     Represents a SafeHandle for a Printer's Device Mode struct handle (DEVMODE)
+        /// Represents a SafeHandle for a Printer's Device Mode struct handle (DEVMODE)
         /// </summary>
-        /// <SecurityNote>
-        ///     Critical: base class SafeHandle is critical
-        /// </SecurityNote>
         [SecurityCritical]
         internal sealed class SafeDeviceModeHandle : SafeHandle
         {
@@ -76,23 +72,17 @@ namespace System.Drawing.Printing
 
         internal SafeDeviceModeHandle modeHandle = null;
 
-        /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController.PrintController"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrintController'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PrintController'/> class.
+        /// </summary>
         protected PrintController()
         {
         }
 
 
-        /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController.IsPreview"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       This is new public property which notifies if this controller is used for PrintPreview.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// This is new public property which notifies if this controller is used for PrintPreview.
+        /// </summary>
         public virtual bool IsPreview
         {
             get
@@ -280,39 +270,32 @@ namespace System.Drawing.Printing
         }
 
 
-        /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController.OnStartPrint"]/*' />
-        /// <devdoc>
-        ///    <para>When overridden in a derived class, begins the control sequence of when and how to print a document.</para>
-        /// </devdoc>
+        /// <summary>
+        /// When overridden in a derived class, begins the control sequence of when and how to print a document.
+        /// </summary>
         public virtual void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
             modeHandle = (SafeDeviceModeHandle)document.PrinterSettings.GetHdevmode(document.DefaultPageSettings);
         }
 
-        /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController.OnStartPage"]/*' />
-        /// <devdoc>
-        ///    <para>When overridden in a derived class, begins the control 
-        ///       sequence of when and how to print a page in a document.</para>
-        /// </devdoc>
+        /// <summary>
+        /// When overridden in a derived class, begins the control sequence of when and how to print a page in a document.
+        /// </summary>
         public virtual Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
             return null;
         }
 
-        /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController.OnEndPage"]/*' />
-        /// <devdoc>
-        ///    <para>When overridden in a derived class, completes the control sequence of when and how 
-        ///       to print a page in a document.</para>
-        /// </devdoc>
+        /// <summary>
+        /// When overridden in a derived class, completes the control sequence of when and how to print a page in a document.
+        /// </summary>
         public virtual void OnEndPage(PrintDocument document, PrintPageEventArgs e)
         {
         }
 
-        /// <include file='doc\PrintController.uex' path='docs/doc[@for="PrintController.OnEndPrint"]/*' />
-        /// <devdoc>
-        ///    <para>When overridden in a derived class, completes the 
-        ///       control sequence of when and how to print a document.</para>
-        /// </devdoc>
+        /// <summary>
+        /// When overridden in a derived class, completes the control sequence of when and how to print a document.
+        /// </summary>
         public virtual void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert((modeHandle != null), "modeHandle is null.  Someone must have forgot to call base.StartPrint");
@@ -323,4 +306,3 @@ namespace System.Drawing.Printing
         }
     }
 }
-

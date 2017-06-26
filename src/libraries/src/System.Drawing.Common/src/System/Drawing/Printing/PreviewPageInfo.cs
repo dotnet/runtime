@@ -4,13 +4,9 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PreviewPageInfo.uex' path='docs/doc[@for="PreviewPageInfo"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies print preview information for
-    ///       a single page. This class cannot be inherited.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies print preview information for a single page. This class cannot be inherited.
+    /// </summary>
     public sealed class PreviewPageInfo
     {
         private Image _image;
@@ -18,33 +14,26 @@ namespace System.Drawing.Printing
         // Physical measures in hundredths of an inch
         private Size _physicalSize = Size.Empty;
 
-        /// <include file='doc\PreviewPageInfo.uex' path='docs/doc[@for="PreviewPageInfo.PreviewPageInfo"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PreviewPageInfo'/>
-        ///       class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PreviewPageInfo'/> class.
+        /// </summary>
         public PreviewPageInfo(Image image, Size physicalSize)
         {
             _image = image;
             _physicalSize = physicalSize;
         }
 
-        /// <include file='doc\PreviewPageInfo.uex' path='docs/doc[@for="PreviewPageInfo.Image"]/*' />
-        /// <devdoc>
-        ///    <para>Gets the image of the printed page.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the image of the printed page.
+        /// </summary>
         public Image Image
         {
             get { return _image; }
         }
 
-        // Physical measures in hundredths of an inch
-        /// <include file='doc\PreviewPageInfo.uex' path='docs/doc[@for="PreviewPageInfo.PhysicalSize"]/*' />
-        /// <devdoc>
-        ///    <para> Gets the size of the printed page, in hundredths of an inch.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the size of the printed page, in hundredths of an inch.
+        /// </summary>
         public Size PhysicalSize
         {
             get { return _physicalSize; }

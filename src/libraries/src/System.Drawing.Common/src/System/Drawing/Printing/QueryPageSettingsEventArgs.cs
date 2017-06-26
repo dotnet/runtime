@@ -4,12 +4,9 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\QueryPageSettingsEventArgs.uex' path='docs/doc[@for="QueryPageSettingsEventArgs"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Provides data for the <see cref='E:System.Drawing.Printing.PrintDocument.QueryPageSettings'/> event.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Provides data for the <see cref='PrintDocument.QueryPageSettings'/> event.
+    /// </summary>
     public class QueryPageSettingsEventArgs : PrintEventArgs
     {
         private PageSettings _pageSettings;
@@ -22,23 +19,17 @@ namespace System.Drawing.Printing
         /// used often.
         internal bool PageSettingsChanged;
 
-        /// <include file='doc\QueryPageSettingsEventArgs.uex' path='docs/doc[@for="QueryPageSettingsEventArgs.QueryPageSettingsEventArgs"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.QueryPageSettingsEventArgs'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='QueryPageSettingsEventArgs'/> class.
+        /// </summary>
         public QueryPageSettingsEventArgs(PageSettings pageSettings) : base()
         {
             _pageSettings = pageSettings;
         }
 
-        /// <include file='doc\QueryPageSettingsEventArgs.uex' path='docs/doc[@for="QueryPageSettingsEventArgs.PageSettings"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the page settings for the page to be printed.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the page settings for the page to be printed.
+        /// </summary>
         public PageSettings PageSettings
         {
             get

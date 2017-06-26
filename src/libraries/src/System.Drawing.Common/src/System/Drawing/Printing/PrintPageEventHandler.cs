@@ -4,11 +4,8 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PrintPageEventHandler.uex' path='docs/doc[@for="PrintPageEventHandler"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Represents the method that will handle the <see cref='E:System.Drawing.Printing.PrintDocument.PrintPage'/> event of a <see cref='System.Drawing.Printing.PrintDocument'/>.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Represents the method that will handle the <see cref='PrintDocument.PrintPage'/> event of a <see cref='PrintDocument'/>.
+    /// </summary>
     public delegate void PrintPageEventHandler(object sender, PrintPageEventArgs e);
 }
