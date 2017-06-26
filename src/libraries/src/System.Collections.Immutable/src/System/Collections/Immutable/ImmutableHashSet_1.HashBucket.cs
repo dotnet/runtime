@@ -30,7 +30,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Contains all the keys in the collection that hash to the same value.
         /// </summary>
-        internal struct HashBucket
+        internal struct HashBucket : IEquatable<HashBucket>
         {
             /// <summary>
             /// One of the values in this bucket.
@@ -74,6 +74,25 @@ namespace System.Collections.Immutable
             public Enumerator GetEnumerator()
             {
                 return new Enumerator(this);
+            }
+
+            /// <inheritdoc />
+            public bool Equals(HashBucket other)
+            {
+                return this._additionalElements == other._additionalElements
+                    && EqualityComparer<T>.Default.Equals(this._firstValue, other._firstValue);
+            }
+
+            /// <inheritdoc />
+            public override bool Equals(object obj)
+            {
+                return obj is HashBucket h && this.Equals(h);
+            }
+
+            /// <inheritdoc />
+            public override int GetHashCode()
+            {
+                return EqualityComparer<T>.Default.GetHashCode(this._firstValue);
             }
 
             /// <summary>
