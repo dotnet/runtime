@@ -971,6 +971,7 @@ void LIR::Range::InsertAtEnd(Range&& range)
 //
 // Arguments:
 //    node - The node to remove. Must be part of this range.
+//    markOperandsUnused - If true, marks the node's operands as unused.
 //
 void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
 {
