@@ -30,6 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [InlineData("\0")]
         [InlineData("server:port")]
         [InlineData("[")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
         public void GetDomainController_InvalidName_ThrowsActiveDirectoryObjectNotFoundException(string name)
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, name);
@@ -37,6 +38,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
         public void GetDomainController_InvalidIPV6_ThrowsInvalidCastException()
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, "[::1]:port");
@@ -103,6 +105,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not approved COM object for app")]
         public void FindAll_NoSuchName_ReturnsEmpty()
         {
             var context = new DirectoryContext(DirectoryContextType.Domain, "\0");
