@@ -1030,12 +1030,25 @@ namespace System.Net.Http
             }
         }
 
-        private async Task FillAsync(CancellationToken cancellationToken)
+        private Task FillAsync(CancellationToken cancellationToken)
         {
             Debug.Assert(_readOffset == _readLength);
 
             _readOffset = 0;
-            _readLength = await _stream.ReadAsync(_readBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
+            Task<int> t = _stream.ReadAsync(_readBuffer, 0, BufferSize, cancellationToken);
+            if (t.IsCompleted)
+            {
+                _readLength = t.GetAwaiter().GetResult();
+                return Task.CompletedTask;
+            }
+            else
+            {
+                // Using async/await results in slightly higher allocations for the case of a single await,
+                // and it's simple to transform this one into ContinueWith.
+                return t.ContinueWith((completed, state) =>
+                    ((HttpConnection)state)._readLength = completed.GetAwaiter().GetResult(),
+                    this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            }
         }
 
         private async ValueTask<byte> ReadByteSlowAsync(CancellationToken cancellationToken)
