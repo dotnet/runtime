@@ -38,6 +38,8 @@
     <Compile Include="Drawing2D\HatchBrushTests.cs" />
     <Compile Include="Drawing2D\LinearGradientBrushTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
+    <Compile Include="Text\InstalledFontCollectionTests.cs" />
+    <Compile Include="Text\PrivateFontCollectionTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

@@ -89,7 +89,7 @@ namespace System.Drawing
         private void CreateFontFamily(string name, FontCollection fontCollection)
         {
             IntPtr fontfamily = IntPtr.Zero;
-            IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection.nativeFontCollection;
+            IntPtr nativeFontCollection = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
 
             int status = SafeNativeMethods.Gdip.GdipCreateFontFamilyFromName(name, new HandleRef(fontCollection, nativeFontCollection), out fontfamily);
 

@@ -4,23 +4,12 @@
 
 namespace System.Drawing.Text
 {
-    /// <summary>
-    /// Represents the fonts installed on the system.
-    /// </summary>
     public sealed class InstalledFontCollection : FontCollection
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref='System.Drawing.Text.InstalledFontCollection'/> class.
-        /// </summary>
-        public InstalledFontCollection()
+        public InstalledFontCollection() : base()
         {
-            nativeFontCollection = IntPtr.Zero;
-
-            int status = SafeNativeMethods.Gdip.GdipNewInstalledFontCollection(out nativeFontCollection);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            int status = SafeNativeMethods.Gdip.GdipNewInstalledFontCollection(out _nativeFontCollection);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
     }
 }
-
