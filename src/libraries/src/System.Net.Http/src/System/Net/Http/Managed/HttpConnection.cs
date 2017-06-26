@@ -692,11 +692,8 @@ namespace System.Net.Http
                 // Don't ask me why this is the right API to call, but apparently it is
                 if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
                 {
-                    if (!responseContent.Headers.TryAddWithoutValidation(headerName, headerValue))
-                    {
-                        // Header name or value validation failed.
-                        throw new HttpRequestException($"invalid response header, {headerName}: {headerValue}");
-                    }
+                    // The existing handlers ignore headers that couldn't be added.  Do the same here.
+                    responseContent.Headers.TryAddWithoutValidation(headerName, headerValue);
                 }
 
                 _sb.Clear();
