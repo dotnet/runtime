@@ -25,7 +25,7 @@ namespace System.Net.Http
             _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Uri proxyUri = null;
             try
@@ -41,11 +41,14 @@ namespace System.Net.Http
                 // TODO: This seems a bit questionable, but it's what the tests expect
             }
 
-            if (proxyUri == null)
-            {
-                return await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            }
+            return proxyUri == null ?
+                _innerHandler.SendAsync(request, cancellationToken) :
+                SendWithProxyAsync(proxyUri, request, cancellationToken);
+        }
 
+        private async Task<HttpResponseMessage> SendWithProxyAsync(
+            Uri proxyUri, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
             if (proxyUri.Scheme != "http")
             {
                 throw new InvalidOperationException($"invalid scheme {proxyUri.Scheme} for proxy");
