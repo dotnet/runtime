@@ -4,13 +4,9 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * Image format constants
-     */
-    /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat"]/*' />
-    /// <devdoc>
-    ///    Specifies the format of the image.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the format of the image.
+    /// </summary>
     public sealed class ImageFormat
     {
         // Format IDs
@@ -28,131 +24,108 @@ namespace System.Drawing.Imaging
         private static ImageFormat s_flashPIX = new ImageFormat(new Guid("{b96b3cb4-0728-11d3-9d7b-0000f81ef32e}"));
         private static ImageFormat s_icon = new ImageFormat(new Guid("{b96b3cb5-0728-11d3-9d7b-0000f81ef32e}"));
 
-
         private Guid _guid;
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.ImageFormat"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Imaging.ImageFormat'/> class with the specified GUID.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='ImageFormat'/> class with the specified GUID.
+        /// </summary>
         public ImageFormat(Guid guid)
         {
             _guid = guid;
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Guid"]/*' />
-        /// <devdoc>
-        ///    Specifies a global unique identifier (GUID)
-        ///    that represents this <see cref='System.Drawing.Imaging.ImageFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a global unique identifier (GUID) that represents this <see cref='ImageFormat'/>.
+        /// </summary>
         public Guid Guid
         {
             get { return _guid; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.MemoryBmp"]/*' />
-        /// <devdoc>
-        ///    Specifies a memory bitmap image format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a memory bitmap image format.
+        /// </summary>
         public static ImageFormat MemoryBmp
         {
             get { return s_memoryBMP; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Bmp"]/*' />
-        /// <devdoc>
-        ///    Specifies the bitmap image format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the bitmap image format.
+        /// </summary>
         public static ImageFormat Bmp
         {
             get { return s_bmp; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Emf"]/*' />
-        /// <devdoc>
-        ///    Specifies the enhanced Windows metafile
-        ///    image format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the enhanced Windows metafile image format.
+        /// </summary>
         public static ImageFormat Emf
         {
             get { return s_emf; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Wmf"]/*' />
-        /// <devdoc>
-        ///    Specifies the Windows metafile image
-        ///    format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the Windows metafile image format.
+        /// </summary>
         public static ImageFormat Wmf
         {
             get { return s_wmf; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Gif"]/*' />
-        /// <devdoc>
-        ///    Specifies the GIF image format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the GIF image format.
+        /// </summary>
         public static ImageFormat Gif
         {
             get { return s_gif; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Jpeg"]/*' />
-        /// <devdoc>
-        ///    Specifies the JPEG image format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the JPEG image format.
+        /// </summary>
         public static ImageFormat Jpeg
         {
             get { return s_jpeg; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Png"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies the W3C PNG image format.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the W3C PNG image format.
+        /// </summary>
         public static ImageFormat Png
         {
             get { return s_png; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Tiff"]/*' />
-        /// <devdoc>
-        ///    Specifies the Tag Image File
-        ///    Format (TIFF) image format.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the Tag Image File Format (TIFF) image format.
+        /// </summary>
         public static ImageFormat Tiff
         {
             get { return s_tiff; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Exif"]/*' />
-        /// <devdoc>
-        ///    Specifies the Exchangable Image Format
-        ///    (EXIF).
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the Exchangable Image Format (EXIF).
+        /// </summary>
         public static ImageFormat Exif
         {
             get { return s_exif; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Icon"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies the Windows icon image format.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the Windows icon image format.
+        /// </summary>
         public static ImageFormat Icon
         {
             get { return s_icon; }
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.Equals"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    specified object is an <see cref='System.Drawing.Imaging.ImageFormat'/> equivalent to this <see cref='System.Drawing.Imaging.ImageFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the specified object is an <see cref='ImageFormat'/> equivalent to this
+        /// <see cref='ImageFormat'/>.
+        /// </summary>
         public override bool Equals(object o)
         {
             ImageFormat format = o as ImageFormat;
@@ -161,12 +134,9 @@ namespace System.Drawing.Imaging
             return _guid == format._guid;
         }
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.GetHashCode"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns a hash code.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns a hash code.
+        /// </summary>
         public override int GetHashCode()
         {
             return _guid.GetHashCode();
@@ -186,10 +156,9 @@ namespace System.Drawing.Imaging
         }
 #endif
 
-        /// <include file='doc\ImageFormat.uex' path='docs/doc[@for="ImageFormat.ToString"]/*' />
-        /// <devdoc>
-        ///    Converts this <see cref='System.Drawing.Imaging.ImageFormat'/> to a human-readable string.
-        /// </devdoc>
+        /// <summary>
+        /// Converts this <see cref='System.Drawing.Imaging.ImageFormat'/> to a human-readable string.
+        /// </summary>
         public override string ToString()
         {
             if (this == s_memoryBMP) return "MemoryBMP";

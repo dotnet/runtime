@@ -4,45 +4,34 @@
 
 namespace System.Drawing.Imaging
 {
-    /// <include file='doc\ColorMap.uex' path='docs/doc[@for="ColorMap"]/*' />
-    /// <devdoc>
-    ///    Defines a map for converting colors.
-    /// </devdoc>
+    /// <summary>
+    /// Defines a map for converting colors.
+    /// </summary>
     public sealed class ColorMap
     {
         private Color _oldColor;
         private Color _newColor;
 
-        /// <include file='doc\ColorMap.uex' path='docs/doc[@for="ColorMap.ColorMap"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.ColorMap'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='ColorMap'/> class.
+        /// </summary>
         public ColorMap()
         {
             _oldColor = new Color();
             _newColor = new Color();
         }
 
-        /// <include file='doc\ColorMap.uex' path='docs/doc[@for="ColorMap.OldColor"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies the existing <see cref='System.Drawing.Color'/> to be
-        ///       converted.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the existing <see cref='Color'/> to be converted.
+        /// </summary>
         public Color OldColor
         {
             get { return _oldColor; }
             set { _oldColor = value; }
         }
-        /// <include file='doc\ColorMap.uex' path='docs/doc[@for="ColorMap.NewColor"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifes the new <see cref='System.Drawing.Color'/> to which to convert.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifes the new <see cref='Color'/> to which to convert.
+        /// </summary>
         public Color NewColor
         {
             get { return _newColor; }

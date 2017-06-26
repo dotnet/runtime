@@ -4,24 +4,18 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * Color Map type constants
-     */
-    /// <include file='doc\ColorMapType.uex' path='docs/doc[@for="ColorMapType"]/*' />
-    /// <devdoc>
-    ///    Specifies the types of color maps.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the types of color maps.
+    /// </summary>
     public enum ColorMapType
     {
-        /// <include file='doc\ColorMapType.uex' path='docs/doc[@for="ColorMapType.Default"]/*' />
-        /// <devdoc>
-        ///    A default color map.
-        /// </devdoc>
+        /// <summary>
+        /// A default color map.
+        /// </summary>
         Default = 0,
-        /// <include file='doc\ColorMapType.uex' path='docs/doc[@for="ColorMapType.Brush"]/*' />
-        /// <devdoc>
-        ///    Specifies a color map for a <see cref='System.Drawing.Brush'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a color map for a <see cref='Drawing.Brush'/>.
+        /// </summary>
         Brush
     }
 }

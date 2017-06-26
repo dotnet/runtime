@@ -4,14 +4,6 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * frame dimension constants (used with Bitmap.FrameDimensionsList)
-     */
-    /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension"]/*' />
-    /// <devdoc>
-    ///    
-    /// </devdoc>
-    // [TypeConverterAttribute(typeof(FrameDimensionConverter))]
     public sealed class FrameDimension
     {
         // Frame dimension GUIDs, from sdkinc\imgguids.h
@@ -21,56 +13,49 @@ namespace System.Drawing.Imaging
 
         private Guid _guid;
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.FrameDimension"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Imaging.FrameDimension'/> class with the specified GUID.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FrameDimension'/> class with the specified GUID.
+        /// </summary>
         public FrameDimension(Guid guid)
         {
             _guid = guid;
         }
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.Guid"]/*' />
-        /// <devdoc>
-        ///    Specifies a global unique identifier (GUID)
-        ///    that represents this <see cref='System.Drawing.Imaging.FrameDimension'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a global unique identifier (GUID) that represents this <see cref='FrameDimension'/>.
+        /// </summary>
         public Guid Guid
         {
             get { return _guid; }
         }
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.Time"]/*' />
-        /// <devdoc>
-        ///    The time dimension.
-        /// </devdoc>
+        /// <summary>
+        /// The time dimension.
+        /// </summary>
         public static FrameDimension Time
         {
             get { return s_time; }
         }
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.Resolution"]/*' />
-        /// <devdoc>
-        ///    The resolution dimension.
-        /// </devdoc>
+        /// <summary>
+        /// The resolution dimension.
+        /// </summary>
         public static FrameDimension Resolution
         {
             get { return s_resolution; }
         }
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.Page"]/*' />
-        /// <devdoc>
-        ///    The page dimension.
-        /// </devdoc>
+        /// <summary>
+        /// The page dimension.
+        /// </summary>
         public static FrameDimension Page
         {
             get { return s_page; }
         }
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.Equals"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    specified object is an <see cref='System.Drawing.Imaging.FrameDimension'/> equivalent to this <see cref='System.Drawing.Imaging.FrameDimension'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the specified object is an <see cref='FrameDimension'/> equivalent to
+        /// this <see cref='FrameDimension'/>.
+        /// </summary>
         public override bool Equals(object o)
         {
             FrameDimension format = o as FrameDimension;
@@ -79,19 +64,14 @@ namespace System.Drawing.Imaging
             return _guid == format._guid;
         }
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.GetHashCode"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public override int GetHashCode()
         {
             return _guid.GetHashCode();
         }
 
-        /// <include file='doc\FrameDimension.uex' path='docs/doc[@for="FrameDimension.ToString"]/*' />
-        /// <devdoc>
-        ///    Converts this <see cref='System.Drawing.Imaging.FrameDimension'/> to a human-readable string.
-        /// </devdoc>
+        /// <summary>
+        /// Converts this <see cref='FrameDimension'/> to a human-readable string.
+        /// </summary>
         public override string ToString()
         {
             if (this == s_time) return "Time";

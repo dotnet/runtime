@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix"]/*' />
-    /// <devdoc>
-    ///    Defines a 5 x 5 matrix that that
-    ///    contains the homogenous coordinates for the RGBA space.
-    /// </devdoc>
+    /// <summary>
+    /// Defines a 5 x 5 matrix that that contains the homogenous coordinates for the RGBA space.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public sealed class ColorMatrix
     {
@@ -40,12 +38,9 @@ namespace System.Drawing.Imaging
         private float _matrix43;
         private float _matrix44;
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.ColorMatrix"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.ColorMatrix'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='ColorMatrix'/> class.
+        /// </summary>
         public ColorMatrix()
         {
             /*
@@ -79,297 +74,224 @@ namespace System.Drawing.Imaging
             _matrix44 = 1.0f;
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix00"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the
-        ///       0th row and 0th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 0th row and 0th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix00
         {
             get { return _matrix00; }
             set { _matrix00 = value; }
         }
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix01"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 0th row and 1st column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 0th row and 1st column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix01
         {
             get { return _matrix01; }
             set { _matrix01 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix02"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 0th row and 2nd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 0th row and 2nd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix02
         {
             get { return _matrix02; }
             set { _matrix02 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix03"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 0th row and 3rd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 0th row and 3rd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix03
         {
             get { return _matrix03; }
             set { _matrix03 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix04"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 0th row and 4th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 0th row and 4th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix04
         {
             get { return _matrix04; }
             set { _matrix04 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix10"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 1st row and 0th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 1st row and 0th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix10
         {
             get { return _matrix10; }
             set { _matrix10 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix11"]/*' />
-        /// <devdoc>
-        ///    Represents the element at the 1st row and
-        ///    1st column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 1st row and 1st column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix11
         {
             get { return _matrix11; }
             set { _matrix11 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix12"]/*' />
-        /// <devdoc>
-        ///    Represents the element at the 1st row
-        ///    and 2nd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 1st row and 2nd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix12
         {
             get { return _matrix12; }
             set { _matrix12 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix13"]/*' />
-        /// <devdoc>
-        ///    Represents the element at the 1st row
-        ///    and 3rd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 1st row and 3rd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix13
         {
             get { return _matrix13; }
             set { _matrix13 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix14"]/*' />
-        /// <devdoc>
-        ///    Represents the element at the 1st row
-        ///    and 4th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 1st row and 4th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix14
         {
             get { return _matrix14; }
             set { _matrix14 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix20"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 2nd row and
-        ///       0th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 2nd row and 0th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix20
         {
             get { return _matrix20; }
             set { _matrix20 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix21"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 2nd row and 1st column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 2nd row and 1st column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix21
         {
             get { return _matrix21; }
             set { _matrix21 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix22"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 2nd row and 2nd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 2nd row and 2nd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix22
         {
             get { return _matrix22; }
             set { _matrix22 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix23"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 2nd row and 3rd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 2nd row and 3rd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix23
         {
             get { return _matrix23; }
             set { _matrix23 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix24"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 2nd row and 4th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 2nd row and 4th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix24
         {
             get { return _matrix24; }
             set { _matrix24 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix30"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 3rd row and 0th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 3rd row and 0th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix30
         {
             get { return _matrix30; }
             set { _matrix30 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix31"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 3rd row and 1st column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 3rd row and 1st column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix31
         {
             get { return _matrix31; }
             set { _matrix31 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix32"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 3rd row and 2nd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 3rd row and 2nd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix32
         {
             get { return _matrix32; }
             set { _matrix32 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix33"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 3rd row and 3rd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 3rd row and 3rd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix33
         {
             get { return _matrix33; }
             set { _matrix33 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix34"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 3rd row and 4th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 3rd row and 4th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix34
         {
             get { return _matrix34; }
             set { _matrix34 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix40"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 4th row and 0th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 4th row and 0th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix40
         {
             get { return _matrix40; }
             set { _matrix40 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix41"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 4th row and 1st column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 4th row and 1st column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix41
         {
             get { return _matrix41; }
             set { _matrix41 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix42"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 4th row and 2nd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 4th row and 2nd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix42
         {
             get { return _matrix42; }
             set { _matrix42 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix43"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 4th row and 3rd column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 4th row and 3rd column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix43
         {
             get { return _matrix43; }
             set { _matrix43 = value; }
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.Matrix44"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Represents the element at the 4th row and 4th column of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Represents the element at the 4th row and 4th column of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float Matrix44
         {
             get { return _matrix44; }
@@ -377,13 +299,9 @@ namespace System.Drawing.Imaging
         }
 
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.ColorMatrix1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.ColorMatrix'/> class with the
-        ///       elements in the specified matrix.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='ColorMatrix'/> class with the elements in the specified matrix.
+        /// </summary>
         [CLSCompliant(false)]
         public ColorMatrix(float[][] newColorMatrix)
         {
@@ -455,12 +373,9 @@ namespace System.Drawing.Imaging
             return returnMatrix;
         }
 
-        /// <include file='doc\ColorMatrix.uex' path='docs/doc[@for="ColorMatrix.this"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the value of the specified element of this <see cref='System.Drawing.Imaging.ColorMatrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the value of the specified element of this <see cref='ColorMatrix'/>.
+        /// </summary>
         public float this[int row, int column]
         {
             get
