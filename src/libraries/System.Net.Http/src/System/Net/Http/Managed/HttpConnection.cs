@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -23,6 +24,7 @@ namespace System.Net.Http
 
         private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
+        private static readonly byte[] s_hostKeyAndSeparator = Encoding.ASCII.GetBytes(HttpKnownHeaderNames.Host + ": ");
 
         private readonly HttpConnectionPool _pool;
         private readonly HttpConnectionKey _key;
@@ -756,6 +758,20 @@ namespace System.Net.Http
             }
         }
 
+        private async Task WriteHostHeaderAsync(Uri uri, CancellationToken cancellationToken)
+        {
+            await WriteBytesAsync(s_hostKeyAndSeparator, cancellationToken).ConfigureAwait(false);
+
+            await WriteStringAsync(uri.Host, cancellationToken).ConfigureAwait(false);
+            if (!uri.IsDefaultPort)
+            {
+                await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);
+                await WriteStringAsync(uri.Port.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+            }
+
+            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+        }
+
         public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -788,19 +804,6 @@ namespace System.Net.Http
                 }
             }
 
-            // Add Host header, if not present
-            if (request.Headers.Host == null)
-            {
-                Uri uri = request.RequestUri;
-                string hostString = uri.Host;
-                if (!uri.IsDefaultPort)
-                {
-                    hostString += ":" + uri.Port.ToString();
-                }
-
-                request.Headers.Host = hostString;
-            }
-
             // Write request line
             await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
             await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
@@ -828,6 +831,13 @@ namespace System.Net.Http
             {
                 // Write content headers
                 await WriteHeadersAsync(requestContent.Headers, cancellationToken).ConfigureAwait(false);
+            }
+
+            // Write special additional headers.  If a host isn't in the headers list, then a Host header
+            // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
+            if (request.Headers.Host == null)
+            {
+                await WriteHostHeaderAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
             }
 
             // CRLF for end of headers.
