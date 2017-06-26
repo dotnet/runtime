@@ -51,52 +51,16 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="bitmaps\16x16_one_entry_4bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\32x32_one_entry_4bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\48x48_one_entry_1bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\64x64_one_entry_8bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\96x96_one_entry_8bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\telescope_01.wmf">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <EmbeddedResource Include="bitmaps\48x48_multiple_entries_4bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\bitmaps\48x48_multiple_entries_4bit.ico">
       <LogicalName>System.Drawing.Tests.48x48_multiple_entries_4bit.ico</LogicalName>
     </EmbeddedResource>
-    <Content Include="bitmaps\256x256_seven_entries_multiple_bits.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\48x48_multiple_entries_32bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\10x16_one_entry_32bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\256x256_one_entry_32bit.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\256x256_two_entries_multiple_bits.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="bitmaps\16x16_nonindexed_24bit.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <EmbeddedResource Include="bitmaps\173x183_indexed_8bit.bmp">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\bitmaps\173x183_indexed_8bit.bmp">
       <LogicalName>System.Drawing.Tests.173x183_indexed_8bit.bmp</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="bitmaps\empty.file">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\bitmaps\empty.file">
       <LogicalName>System.Drawing.Tests.empty.file</LogicalName>
     </EmbeddedResource>
     <Compile Include="Printing\MarginsTests.cs" />
