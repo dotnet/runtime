@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -38,146 +37,186 @@ namespace System.Net.Http
         private HttpMessageHandler _handler;
         private bool _disposed;
 
-        private void CheckInUse()
+        private void CheckDisposed()
         {
-            // Can't set props once in use
-            if (_handler != null)
+            if (_disposed)
             {
-                throw new InvalidOperationException();
+                throw new ObjectDisposedException(nameof(ManagedHandler));
             }
         }
 
-        public bool SupportsAutomaticDecompression
+        private void CheckDisposedOrStarted()
         {
-            get { return true; }
+            CheckDisposed();
+            if (_handler != null)
+            {
+                throw new InvalidOperationException(SR.net_http_operation_started);
+            }
         }
 
-        public bool SupportsProxy
-        {
-            get { return true; }
-        }
+        public bool SupportsAutomaticDecompression => true;
 
-        public bool SupportsRedirectConfiguration
-        {
-            get { return true; }
-        }
+        public bool SupportsProxy => true;
+
+        public bool SupportsRedirectConfiguration => true;
 
         public bool UseCookies
         {
-            get { return _useCookies; }
-            set { CheckInUse(); _useCookies = value; }
+            get => _useCookies;
+            set
+            {
+                CheckDisposedOrStarted();
+                _useCookies = value;
+            }
         }
 
         public CookieContainer CookieContainer
         {
-            get
+            get => _cookieContainer ?? (_cookieContainer = new CookieContainer());
+            set
             {
-                if (_cookieContainer == null)
-                {
-                    _cookieContainer = new CookieContainer();
-                }
-
-                return _cookieContainer;
+                CheckDisposedOrStarted();
+                _cookieContainer = value;
             }
-            set { CheckInUse(); _cookieContainer = value; }
         }
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get { return _clientCertificateOptions; }
+            get => _clientCertificateOptions;
             set
             {
-                CheckInUse();
-                if (value == ClientCertificateOption.Automatic || value == ClientCertificateOption.Manual)
+                if (value != ClientCertificateOption.Manual &&
+                    value != ClientCertificateOption.Automatic)
                 {
-                    _clientCertificateOptions = value;
-                    return;
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                throw new ArgumentOutOfRangeException(nameof(value));
+                CheckDisposedOrStarted();
+                _clientCertificateOptions = value;
             }
         }
 
         public DecompressionMethods AutomaticDecompression
         {
-            get { return _automaticDecompression; }
-            set { CheckInUse(); _automaticDecompression = value; }
+            get => _automaticDecompression;
+            set
+            {
+                CheckDisposedOrStarted();
+                _automaticDecompression = value;
+            }
         }
 
         public bool UseProxy
         {
-            get { return _useProxy; }
-            set { CheckInUse(); _useProxy = value; }
+            get => _useProxy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _useProxy = value;
+            }
         }
 
         public IWebProxy Proxy
         {
-            get { return _proxy; }
-            set { CheckInUse(); _proxy = value; }
+            get => _proxy;
+            set
+            {
+                CheckDisposedOrStarted();
+                _proxy = value;
+            }
         }
 
         public ICredentials DefaultProxyCredentials
         {
-            get { return _defaultProxyCredentials; }
-            set { CheckInUse(); _defaultProxyCredentials = value; }
+            get => _defaultProxyCredentials;
+            set
+            {
+                CheckDisposedOrStarted();
+                _defaultProxyCredentials = value;
+            }
         }
 
         public bool PreAuthenticate
         {
-            get { return _preAuthenticate; }
-            set { CheckInUse(); _preAuthenticate = value; }
+            get => _preAuthenticate;
+            set
+            {
+                CheckDisposedOrStarted();
+                _preAuthenticate = value;
+            }
         }
 
         public bool UseDefaultCredentials
         {
-            get { return _useDefaultCredentials; }
-            set { CheckInUse(); _useDefaultCredentials = value; }
+            get => _useDefaultCredentials;
+            set
+            {
+                CheckDisposedOrStarted();
+                _useDefaultCredentials = value;
+            }
         }
 
         public ICredentials Credentials
         {
-            get { return _credentials; }
-            set { CheckInUse(); _credentials = value; }
+            get => _credentials;
+            set
+            {
+                CheckDisposedOrStarted();
+                _credentials = value;
+            }
         }
 
         public bool AllowAutoRedirect
         {
-            get { return _allowAutoRedirect; }
-            set { CheckInUse(); _allowAutoRedirect = value; }
+            get => _allowAutoRedirect;
+            set
+            {
+                CheckDisposedOrStarted();
+                _allowAutoRedirect = value;
+            }
         }
 
         public int MaxAutomaticRedirections
         {
-            get { return _maxAutomaticRedirections; }
-            set { CheckInUse(); _maxAutomaticRedirections = value; }
+            get => _maxAutomaticRedirections;
+            set
+            {
+                if (value < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
+                }
+
+                CheckDisposedOrStarted();
+                _maxAutomaticRedirections = value;
+            }
         }
 
         public int MaxConnectionsPerServer
         {
-            get { return _maxConnectionsPerServer; }
+            get => _maxConnectionsPerServer;
             set
             {
-                CheckInUse();
-                if (value <= 0)
+                if (value < 1)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
+                CheckDisposedOrStarted();
                 _maxConnectionsPerServer = value;
             }
         }
 
         public int MaxResponseHeadersLength
         {
-            get { return _maxResponseHeadersLength; }
+            get => _maxResponseHeadersLength;
             set
             {
-                CheckInUse();
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value));
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
                 }
 
+                CheckDisposedOrStarted();
                 _maxResponseHeadersLength = value;
             }
         }
@@ -197,63 +236,51 @@ namespace System.Net.Http
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
-            get { return _serverCertificateCustomValidationCallback; }
-            set { CheckInUse(); _serverCertificateCustomValidationCallback = value; }
+            get => _serverCertificateCustomValidationCallback;
+            set
+            {
+                CheckDisposedOrStarted();
+                _serverCertificateCustomValidationCallback = value;
+            }
         }
 
         public bool CheckCertificateRevocationList
         {
-            get { return _checkCertificateRevocationList; }
-            set { CheckInUse(); _checkCertificateRevocationList = value; }
+            get => _checkCertificateRevocationList;
+            set
+            {
+                CheckDisposedOrStarted();
+                _checkCertificateRevocationList = value;
+            }
         }
 
         public SslProtocols SslProtocols
         {
-            get { return _sslProtocols; }
+            get => _sslProtocols;
             set
             {
-                CheckInUse();
-#pragma warning disable 0618 // obsolete warning
-                if ((value & (SslProtocols.Ssl2 | SslProtocols.Ssl3)) != 0)
-                {
-                    throw new NotSupportedException("unsupported SSL protocols");
-                }
-#pragma warning restore 0618
-
+                SecurityProtocol.ThrowOnNotAllowed(value, allowNone: true);
+                CheckDisposedOrStarted();
                 _sslProtocols = value;
             }
         }
 
-        public IDictionary<String, object> Properties
-        {
-            get
-            {
-                if (_properties == null)
-                {
-                    _properties = new Dictionary<string, object>();
-                }
-
-                return _properties;
-            }
-        }
+        public IDictionary<string, object> Properties =>
+            _properties ?? (_properties = new Dictionary<string, object>());
 
         protected override void Dispose(bool disposing)
         {
-
             if (disposing && !_disposed)
             {
                 _disposed = true;
-
                 _handler?.Dispose();
             }
 
             base.Dispose(disposing);
         }
 
-        private void SetupHandlerChain()
+        private HttpMessageHandler SetupHandlerChain()
         {
-            Debug.Assert(_handler == null);
-
             HttpMessageHandler handler = new HttpConnectionHandler(
                 _clientCertificates,
                 _serverCertificateCustomValidationCallback,
@@ -285,23 +312,23 @@ namespace System.Net.Http
                 handler = new DecompressionHandler(_automaticDecompression, handler);
             }
 
-            _handler = handler;
+            if (Interlocked.CompareExchange(ref _handler, handler, null) == null)
+            {
+                return handler;
+            }
+            else
+            {
+                handler.Dispose();
+                return _handler;
+            }
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(ManagedHandler));
-            }
-
-            if (_handler == null)
-            {
-                SetupHandlerChain();
-            }
-
-            return _handler.SendAsync(request, cancellationToken);
+            CheckDisposed();
+            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            return handler.SendAsync(request, cancellationToken);
         }
     }
 }
