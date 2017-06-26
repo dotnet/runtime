@@ -544,6 +544,12 @@ namespace System.Net
             return _tokenizer.GetCookieString();
         }
 
+#if SYSTEM_NET_PRIMITIVES_DLL
+        private static bool InternalSetNameMethod(Cookie cookie, string value)
+        {
+            return cookie.InternalSetName(value);
+        }
+#else
         private static Func<Cookie, string, bool> s_internalSetNameMethod;
         private static Func<Cookie, string, bool> InternalSetNameMethod
         {
@@ -568,6 +574,7 @@ namespace System.Net
                 return s_internalSetNameMethod;
             }
         }
+#endif
 
         private static FieldInfo s_isQuotedDomainField = null;
         private static FieldInfo IsQuotedDomainField

@@ -151,7 +151,6 @@ namespace System.Net.Primitives.Functional.Tests
 
         [Theory]
         [MemberData(nameof(SetCookiesInvalidData))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20482", TargetFrameworkMonikers.UapAot)]
         public static void SetCookies_InvalidData_Throws(Uri uri, string cookieHeader)
         {
             CookieContainer cc = new CookieContainer();
