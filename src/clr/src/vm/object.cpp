@@ -1824,6 +1824,24 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
 #endif   // VERIFY_HEAP
 
+#ifndef DACCESS_COMPILE
+#ifdef _DEBUG
+void ArrayBase::AssertArrayTypeDescLoaded()
+{
+    _ASSERTE (m_pMethTab->IsArray());
+
+    // The type should already be loaded
+    // See also: MethodTable::DoFullyLoad
+    TypeHandle th = ClassLoader::LoadArrayTypeThrowing(m_pMethTab->GetApproxArrayElementTypeHandle(),
+                                                       m_pMethTab->GetInternalCorElementType(),
+                                                       m_pMethTab->GetRank(),
+                                                       ClassLoader::DontLoadTypes);
+
+    _ASSERTE(!th.IsNull());
+}
+#endif // DEBUG
+#endif // !DACCESS_COMPILE
+
 /*==================================NewString===================================
 **Action:  Creates a System.String object.
 **Returns:

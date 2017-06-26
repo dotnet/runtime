@@ -215,9 +215,9 @@ extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength
 extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
 
-extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+extern FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+extern FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+extern FCDECL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
 #ifndef JIT_Stelem_Ref
 #define JIT_Stelem_Ref JIT_Stelem_Ref_Portable
@@ -326,8 +326,8 @@ private:
 #ifdef _WIN64
 EXTERN_C FCDECL1(Object*, JIT_TrialAllocSFastMP_InlineGetThread, CORINFO_CLASS_HANDLE typeHnd_);
 EXTERN_C FCDECL2(Object*, JIT_BoxFastMP_InlineGetThread, CORINFO_CLASS_HANDLE type, void* data);
-EXTERN_C FCDECL2(Object*, JIT_NewArr1VC_MP_InlineGetThread, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+EXTERN_C FCDECL2(Object*, JIT_NewArr1VC_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+EXTERN_C FCDECL2(Object*, JIT_NewArr1OBJ_MP_InlineGetThread, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 
 #endif // _WIN64
 
