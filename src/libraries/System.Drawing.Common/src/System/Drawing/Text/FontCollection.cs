@@ -2,27 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Text
 {
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-
-    /// <summary>
-    /// When inherited, enumerates the FontFamily objects in a collection of fonts.
-    /// </summary>
     public abstract class FontCollection : IDisposable
     {
-        internal IntPtr nativeFontCollection;
+        internal IntPtr _nativeFontCollection;
 
+        internal FontCollection() => _nativeFontCollection = IntPtr.Zero;
 
-        internal FontCollection()
-        {
-            nativeFontCollection = IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Disposes of this <see cref='System.Drawing.Text.FontCollection'/>
-        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -31,40 +21,29 @@ namespace System.Drawing.Text
 
         protected virtual void Dispose(bool disposing)
         {
+            // Nop.
         }
 
-        /// <summary>
-        /// Gets the array of <see cref='System.Drawing.FontFamily'/> objects associated
-        /// with this <see cref='System.Drawing.Text.FontCollection'/>.
-        /// </summary>
         public FontFamily[] Families
         {
             get
             {
                 int numSought = 0;
+                int status = SafeNativeMethods.Gdip.GdipGetFontCollectionFamilyCount(new HandleRef(this, _nativeFontCollection), out numSought);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
-                int status = SafeNativeMethods.Gdip.GdipGetFontCollectionFamilyCount(new HandleRef(this, nativeFontCollection), out numSought);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                IntPtr[] gpfamilies = new IntPtr[numSought];
-
+                var gpfamilies = new IntPtr[numSought];
                 int numFound = 0;
-
-                status = SafeNativeMethods.Gdip.GdipGetFontCollectionFamilyList(new HandleRef(this, nativeFontCollection), numSought, gpfamilies,
+                status = SafeNativeMethods.Gdip.GdipGetFontCollectionFamilyList(new HandleRef(this, _nativeFontCollection), numSought, gpfamilies,
                                                              out numFound);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 Debug.Assert(numSought == numFound, "GDI+ can't give a straight answer about how many fonts there are");
-                FontFamily[] families = new FontFamily[numFound];
+                var families = new FontFamily[numFound];
                 for (int f = 0; f < numFound; f++)
                 {
                     IntPtr native;
-                    SafeNativeMethods.Gdip.GdipCloneFontFamily(new HandleRef(null, (IntPtr)gpfamilies[f]), out native);
+                    SafeNativeMethods.Gdip.GdipCloneFontFamily(new HandleRef(null, gpfamilies[f]), out native);
                     families[f] = new FontFamily(native);
                 }
 
@@ -72,9 +51,6 @@ namespace System.Drawing.Text
             }
         }
 
-        ~FontCollection()
-        {
-            Dispose(false);
-        }
+        ~FontCollection() => Dispose(false);
     }
 }
