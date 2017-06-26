@@ -8,6 +8,7 @@
 class Compiler;
 struct GenTree;
 struct BasicBlock;
+class Rationalizer;
 
 class LIR final
 {
@@ -236,6 +237,7 @@ public:
     {
         friend class LIR;
         friend struct BasicBlock;
+        friend class Rationalizer;
 
     private:
         Range(GenTree* firstNode, GenTree* lastNode);
