@@ -2,41 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using Marshal = System.Runtime.InteropServices.Marshal;
-
-    //[StructLayout(LayoutKind.Sequential)]
-    /// <include file='doc\EncoderParameters.uex' path='docs/doc[@for="EncoderParameters"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public sealed class EncoderParameters : IDisposable
     {
         private EncoderParameter[] _param;
 
-        /// <include file='doc\EncoderParameters.uex' path='docs/doc[@for="EncoderParameters.EncoderParameters"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameters(int count)
         {
             _param = new EncoderParameter[count];
         }
 
-        /// <include file='doc\EncoderParameters.uex' path='docs/doc[@for="EncoderParameters.EncoderParameters1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameters()
         {
             _param = new EncoderParameter[1];
         }
 
-        /// <include file='doc\EncoderParameters.uex' path='docs/doc[@for="EncoderParameters.Param"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter[] Param
         {
             get
@@ -49,25 +32,25 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <devdoc>
-        ///     Copy the EncoderParameters data into a chunk of memory to be consumed by native GDI+ code.
-        ///     
-        ///     We need to marshal the EncoderParameters info from/to native GDI+ ourselve since the definition of the managed/unmanaged classes 
-        ///     are different and the native class is a bit weird. The native EncoderParameters class is defined in GDI+ as follows:
+        /// <summary>
+        /// Copy the EncoderParameters data into a chunk of memory to be consumed by native GDI+ code.
+        ///
+        /// We need to marshal the EncoderParameters info from/to native GDI+ ourselve since the definition of the managed/unmanaged classes
+        /// are different and the native class is a bit weird. The native EncoderParameters class is defined in GDI+ as follows:
         /// 
-        ///      class EncoderParameters {
-        ///          UINT Count;                      // Number of parameters in this structure
-        ///          EncoderParameter Parameter[1];   // Parameter values
-        ///      };
-        /// 
-        ///     We don't have the 'Count' field since the managed array contains it. In order for this structure to work with more than one 
-        ///     EncoderParameter we need to preallocate memory for the extra n-1 elements, something like this:
-        ///     
-        ///         EncoderParameters* pEncoderParameters = (EncoderParameters*) malloc(sizeof(EncoderParameters) + (n-1) * sizeof(EncoderParameter));
-        ///         
-        ///     Also, in 64-bit platforms, 'Count' is aligned in 8 bytes (4 extra padding bytes) so we use IntPtr instead of Int32 to account for 
-        ///     that.
-        /// </devdoc>
+        /// class EncoderParameters {
+        ///     UINT Count;                      // Number of parameters in this structure
+        ///     EncoderParameter Parameter[1];   // Parameter values
+        /// };
+        ///
+        /// We don't have the 'Count' field since the managed array contains it. In order for this structure to work with more than one
+        /// EncoderParameter we need to preallocate memory for the extra n-1 elements, something like this:
+        ///
+        /// EncoderParameters* pEncoderParameters = (EncoderParameters*) malloc(sizeof(EncoderParameters) + (n-1) * sizeof(EncoderParameter));
+        ///
+        /// Also, in 64-bit platforms, 'Count' is aligned in 8 bytes (4 extra padding bytes) so we use IntPtr instead of Int32 to account for
+        /// that.
+        /// </summary>
         internal IntPtr ConvertToMemory()
         {
             int size = Marshal.SizeOf(typeof(EncoderParameter));
@@ -92,10 +75,10 @@ namespace System.Drawing.Imaging
             return memory;
         }
 
-        /// <devdoc>
-        ///     Copy the native GDI+ EncoderParameters data from a chunk of memory into a managed EncoderParameters object.
-        ///     See ConvertToMemory for more info.
-        /// </devdoc>
+        /// <summary>
+        /// Copy the native GDI+ EncoderParameters data from a chunk of memory into a managed EncoderParameters object.
+        /// See ConvertToMemory for more info.
+        /// </summary>
         internal static EncoderParameters ConvertFromMemory(IntPtr memory)
         {
             if (memory == IntPtr.Zero)
@@ -122,7 +105,6 @@ namespace System.Drawing.Imaging
             return p;
         }
 
-        /// <include file='doc\EncoderParameters.uex' path='docs/doc[@for="EncoderParameters.Dispose"]/*' />
         public void Dispose()
         {
             foreach (EncoderParameter p in _param)
@@ -136,4 +118,3 @@ namespace System.Drawing.Imaging
         }
     }
 }
-

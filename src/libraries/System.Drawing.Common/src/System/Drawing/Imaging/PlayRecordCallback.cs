@@ -4,13 +4,5 @@
 
 namespace System.Drawing.Imaging
 {
-    /// <include file='doc\PlayRecordCAllback.uex' path='docs/doc[@for="PlayRecodCallBack"]/*' />
-    /// <devdoc>
-    /// </devdoc>
-    public delegate void PlayRecordCallback(EmfPlusRecordType recordType,
-                                            int flags,
-                                            int dataSize,
-                                            IntPtr recordData);
+    public delegate void PlayRecordCallback(EmfPlusRecordType recordType, int flags, int dataSize, IntPtr recordData);
 }
-
-

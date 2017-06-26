@@ -4,58 +4,35 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * Page unit constants
-     */
-    /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the unit of measurement for the
-    ///       rectangle used to size and position a metafile. This is specified during the
-    ///       creation of the <see cref='System.Drawing.Imaging.Metafile'/>.
-    ///    </para>
-    /// </devdoc>    
+    /// <summary>
+    /// Specifies the unit of measurement for the rectangle used to size and position a metafile.
+    /// This is specified during the creation of the <see cref='Metafile'/>.
+    /// </summary>    
     public enum MetafileFrameUnit
     {
-        /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit.Pixel"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies a pixel as the unit of measure.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a pixel as the unit of measure.
+        /// </summary>
         Pixel = GraphicsUnit.Pixel,
-        /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit.Point"]/*' />
-        /// <devdoc>
-        ///    Specifies a printer's point as
-        ///    the unit of measure.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a printer's point as the unit of measure.
+        /// </summary>
         Point = GraphicsUnit.Point,
-        /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit.Inch"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies an inch as the unit of measure.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies an inch as the unit of measure.
+        /// </summary>
         Inch = GraphicsUnit.Inch,
-        /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit.Document"]/*' />
-        /// <devdoc>
-        ///    Specifies 1/300 of an inch as the unit of
-        ///    measure.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies 1/300 of an inch as the unit of measure.
+        /// </summary>
         Document = GraphicsUnit.Document,
-        /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit.Millimeter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies a millimeter as the unit of
-        ///       measure.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies a millimeter as the unit of measure.
+        /// </summary>
         Millimeter = GraphicsUnit.Millimeter,
-        /// <include file='doc\MetafileFrameUnit.uex' path='docs/doc[@for="MetafileFrameUnit.GdiCompatible"]/*' />
-        /// <devdoc>
-        ///    Specifies .01 millimeter as the unit of
-        ///    measure. Provided for compatibility with GDI.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies .01 millimeter as the unit of measure. Provided for compatibility with GDI.
+        /// </summary>
         GdiCompatible
     }
 }

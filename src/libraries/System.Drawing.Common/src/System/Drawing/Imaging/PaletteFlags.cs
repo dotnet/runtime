@@ -4,30 +4,24 @@
 
 namespace System.Drawing.Imaging
 {
-    /// <include file='doc\PaletteFlags.uex' path='docs/doc[@for="PaletteFlags"]/*' />
-    /// <devdoc>
-    ///    Specifies the type of color data in the
-    ///    system palette. The data can be color data with alpha, grayscale only, or
-    ///    halftone data.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the type of color data in the system palette. The data can be color data with alpha, grayscale only,
+    /// or halftone data.
+    /// </summary>
     [Flags]
     public enum PaletteFlags
     {
-        /// <include file='doc\PaletteFlags.uex' path='docs/doc[@for="PaletteFlags.HasAlpha"]/*' />
-        /// <devdoc>
-        ///    Specifies alpha data.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies alpha data.
+        /// </summary>
         HasAlpha = 0x0001,
-        /// <include file='doc\PaletteFlags.uex' path='docs/doc[@for="PaletteFlags.GrayScale"]/*' />
-        /// <devdoc>
-        ///    Specifies grayscale data.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies grayscale data.
+        /// </summary>
         GrayScale = 0x0002,
-        /// <include file='doc\PaletteFlags.uex' path='docs/doc[@for="PaletteFlags.Halftone"]/*' />
-        /// <devdoc>
-        ///    Specifies halftone data.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies halftone data.
+        /// </summary>
         Halftone = 0x0004
     }
 }
-
