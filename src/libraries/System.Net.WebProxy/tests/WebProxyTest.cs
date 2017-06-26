@@ -160,7 +160,7 @@ namespace System.Net.Tests
             if (!string.IsNullOrWhiteSpace(domain))
             {
                 Uri uri = null;
-                try { new Uri($"http://{Guid.NewGuid().ToString("N")}.{domain}"); }
+                try { uri = new Uri($"http://{Guid.NewGuid().ToString("N")}.{domain}"); }
                 catch (UriFormatException) { }
 
                 if (uri != null)
