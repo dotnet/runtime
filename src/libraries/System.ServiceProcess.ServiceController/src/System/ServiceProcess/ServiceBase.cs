@@ -1,53 +1,41 @@
-//------------------------------------------------------------------------------
-// <copyright file="ServiceBase.cs" company="Microsoft">
-//     Copyright (c ) Microsoft Corporation.  All rights reserved.
-// </copyright>                                                                
-//------------------------------------------------------------------------------
-/*
- */
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Threading;
+
+using static Interop.Advapi32;
+
 namespace System.ServiceProcess
 {
-    using System.Runtime.InteropServices;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System;
-    using System.Threading;
-    using System.IO;
-    using System.ServiceProcess;
-    using System.Reflection;
-    using System.Security;
-    using System.Security.Permissions;
-    using System.Globalization;
-    
-    /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase"]/*' />
     /// <devdoc>
     /// <para>Provides a base class for a service that will exist as part of a service application. <see cref='System.ServiceProcess.ServiceBase'/>
-    /// must
-    /// be derived when creating a new service class.</para>
+    /// must be derived when creating a new service class.</para>
     /// </devdoc>
-    [
-    InstallerType(typeof(ServiceProcessInstaller)),
-    ]
-    public class ServiceBase : Component 
+    public class ServiceBase : Component
     {
-        private NativeMethods.SERVICE_STATUS status = new NativeMethods.SERVICE_STATUS ();
-        private IntPtr statusHandle;
-        private NativeMethods.ServiceControlCallback commandCallback;
-        private NativeMethods.ServiceControlCallbackEx commandCallbackEx;
-        private NativeMethods.ServiceMainCallback mainCallback;
-        private IntPtr handleName;
-        private ManualResetEvent startCompletedSignal;
-        private int acceptedCommands;
-        private bool autoLog;
-        private string serviceName;
-        private EventLog eventLog;
-        private bool nameFrozen;          // set to true once we've started running and ServiceName can't be changed any more.        
-        private bool commandPropsFrozen;  // set to true once we've use the Can... properties.
-        private bool disposed;
-        private bool initialized;
-        private bool isServiceHosted; // If the service is being hosted by MgdSvcHost or some other hosting process.
+        private SERVICE_STATUS _status = new SERVICE_STATUS();
+        private IntPtr _statusHandle;
+        private ServiceControlCallback _commandCallback;
+        private ServiceControlCallbackEx _commandCallbackEx;
+        private ServiceMainCallback _mainCallback;
+        private IntPtr _handleName;
+        private ManualResetEvent _startCompletedSignal;
+        private int _acceptedCommands;
+        private string _serviceName;
+        private bool _nameFrozen;          // set to true once we've started running and ServiceName can't be changed any more.
+        private bool _commandPropsFrozen;  // set to true once we've use the Can... properties.
+        private bool _disposed;
+        private bool _initialized;
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.MaxNameLength"]/*' />        
         /// <devdoc>
         ///    <para>
         ///       Indicates the maximum size for a service name.
@@ -55,286 +43,256 @@ namespace System.ServiceProcess
         /// </devdoc>
         public const int MaxNameLength = 80;
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.ServiceBase"]/*' />
         /// <devdoc>
         /// <para>Creates a new instance of the <see cref='System.ServiceProcess.ServiceBase()'/> class.</para>
         /// </devdoc>
-        public ServiceBase () 
+        public ServiceBase()
         {
-            acceptedCommands = NativeMethods.ACCEPT_STOP;
-            AutoLog = true;
+            _acceptedCommands = AcceptOptions.ACCEPT_STOP;
             ServiceName = "";
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.UpdatePendingStatus"]/*' />
         /// <devdoc>
-        /// When this method is called from OnStart, OnStop, OnPause or OnContinue, 
+        /// When this method is called from OnStart, OnStop, OnPause or OnContinue,
         /// the specified wait hint is passed to the
         /// Service Control Manager to avoid having the service marked as hung.
         /// </devdoc>
-        [ComVisible(false)]
-        public unsafe void RequestAdditionalTime(int milliseconds) 
+        public unsafe void RequestAdditionalTime(int milliseconds)
         {
-            fixed (NativeMethods.SERVICE_STATUS *pStatus = &status) 
-            {     
-                if (status.currentState != NativeMethods.STATE_CONTINUE_PENDING &&
-                    status.currentState != NativeMethods.STATE_START_PENDING &&
-                    status.currentState != NativeMethods.STATE_STOP_PENDING &&
-                    status.currentState != NativeMethods.STATE_PAUSE_PENDING)
+            fixed (SERVICE_STATUS* pStatus = &_status)
+            {
+                if (_status.currentState != ServiceControlStatus.STATE_CONTINUE_PENDING &&
+                    _status.currentState != ServiceControlStatus.STATE_START_PENDING &&
+                    _status.currentState != ServiceControlStatus.STATE_STOP_PENDING &&
+                    _status.currentState != ServiceControlStatus.STATE_PAUSE_PENDING)
                 {
-                    throw new InvalidOperationException (Res.GetString (Res.NotInPendingState));
+                    throw new InvalidOperationException(SR.NotInPendingState);
                 }
 
-                status.waitHint = milliseconds;
-                status.checkPoint++;       
-                NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                _status.waitHint = milliseconds;
+                _status.checkPoint++;
+                SetServiceStatus(_statusHandle, pStatus);
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.AutoLog"]/*' />
-        /// <devdoc>
-        ///    <para> Indicates whether to report Start, Stop, Pause,
-        ///       and Continue commands
-        ///       in
-        ///       the
-        ///       event
-        ///       log.</para>
-        /// </devdoc>
-        [
-        DefaultValue (true), 
-        ServiceProcessDescription (Res.SBAutoLog)
-        ]
-        public bool AutoLog 
-        {
-            get 
-            {
-                return autoLog;
-            }
-            set 
-            {
-                autoLog = value;
-            }
-        }
-
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.ExitCode"]/*' />
         /// <devdoc>
         /// The termination code for the service.  Set this to a non-zero value before
         /// stopping to indicate an error to the Service Control Manager.
         /// </devdoc>
-        [ComVisible(false)]
-        public int ExitCode 
+        public int ExitCode
         {
-            get 
+            get
             {
-                return status.win32ExitCode;
+                return _status.win32ExitCode;
             }
-            set 
+            set
             {
-                status.win32ExitCode = value;
+                _status.win32ExitCode = value;
             }
         }
 
-
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.CanHandlePowerEvent"]/*' />
         /// <devdoc>
-        ///    <para> 
-        ///         Indicates whether the service can be handle notifications on
-        ///         computer power status changes.
-        ///    </para>
-        /// </devdoc>                      
-        [DefaultValue (false)]
-        public bool CanHandlePowerEvent 
+        ///  Indicates whether the service can be handle notifications on
+        ///  computer power status changes.
+        /// </devdoc>
+        [DefaultValue(false)]
+        public bool CanHandlePowerEvent
         {
-            get 
+            get
             {
-                return (acceptedCommands & NativeMethods.ACCEPT_POWEREVENT) != 0;
+                return (_acceptedCommands & AcceptOptions.ACCEPT_POWEREVENT) != 0;
             }
-            set 
+            set
             {
-                if (commandPropsFrozen)
-                    throw new InvalidOperationException (Res.GetString (Res.CannotChangeProperties));
+                if (_commandPropsFrozen)
+                    throw new InvalidOperationException(SR.CannotChangeProperties);
 
                 if (value)
-                    acceptedCommands |= NativeMethods.ACCEPT_POWEREVENT;
+                {
+                    _acceptedCommands |= AcceptOptions.ACCEPT_POWEREVENT;
+                }
                 else
-                    acceptedCommands &= ~NativeMethods.ACCEPT_POWEREVENT;
+                {
+                    _acceptedCommands &= ~AcceptOptions.ACCEPT_POWEREVENT;
+                }
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.CanHandleSessionChangeEvent"]/*' />
         /// <devdoc>
         /// Indicates whether the service can handle Terminal Server session change events.
         /// </devdoc>
-        [DefaultValue (false)]
-        [ComVisible(false)]
+        [DefaultValue(false)]
         public bool CanHandleSessionChangeEvent
         {
             get
             {
-                return (acceptedCommands & NativeMethods.ACCEPT_SESSIONCHANGE) != 0;
+                return (_acceptedCommands & AcceptOptions.ACCEPT_SESSIONCHANGE) != 0;
             }
             set
             {
-                if (commandPropsFrozen)
-                    throw new InvalidOperationException (Res.GetString (Res.CannotChangeProperties));
+                if (_commandPropsFrozen)
+                    throw new InvalidOperationException(SR.CannotChangeProperties);
 
                 if (value)
-                    acceptedCommands |= NativeMethods.ACCEPT_SESSIONCHANGE;
+                {
+                    _acceptedCommands |= AcceptOptions.ACCEPT_SESSIONCHANGE;
+                }
                 else
-                    acceptedCommands &= ~NativeMethods.ACCEPT_SESSIONCHANGE;
+                {
+                    _acceptedCommands &= ~AcceptOptions.ACCEPT_SESSIONCHANGE;
+                }
             }
-        } 
+        }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.CanPauseAndContinue"]/*' />
         /// <devdoc>
         ///    <para> Indicates whether the service can be paused
         ///       and resumed.</para>
         /// </devdoc>
-        [DefaultValue (false)]
-        public bool CanPauseAndContinue 
+        [DefaultValue(false)]
+        public bool CanPauseAndContinue
         {
-            get 
+            get
             {
-                return (acceptedCommands & NativeMethods.ACCEPT_PAUSE_CONTINUE) != 0;
+                return (_acceptedCommands & AcceptOptions.ACCEPT_PAUSE_CONTINUE) != 0;
             }
-            set 
+            set
             {
-                if (commandPropsFrozen)
-                    throw new InvalidOperationException (Res.GetString (Res.CannotChangeProperties));
+                if (_commandPropsFrozen)
+                    throw new InvalidOperationException(SR.CannotChangeProperties);
 
                 if (value)
-                    acceptedCommands |= NativeMethods.ACCEPT_PAUSE_CONTINUE;
+                {
+                    _acceptedCommands |= AcceptOptions.ACCEPT_PAUSE_CONTINUE;
+                }
                 else
-                    acceptedCommands &= ~NativeMethods.ACCEPT_PAUSE_CONTINUE;
+                {
+                    _acceptedCommands &= ~AcceptOptions.ACCEPT_PAUSE_CONTINUE;
+                }
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.CanShutdown"]/*' />
         /// <devdoc>
         ///    <para> Indicates whether the service should be notified when
         ///       the system is shutting down.</para>
         /// </devdoc>
-        [DefaultValue (false)]
-        public bool CanShutdown 
+        [DefaultValue(false)]
+        public bool CanShutdown
         {
-            get 
+            get
             {
-                return (acceptedCommands & NativeMethods.ACCEPT_SHUTDOWN) != 0;
+                return (_acceptedCommands & AcceptOptions.ACCEPT_SHUTDOWN) != 0;
             }
-            set 
+            set
             {
-                if (commandPropsFrozen)
-                    throw new InvalidOperationException (Res.GetString (Res.CannotChangeProperties));
+                if (_commandPropsFrozen)
+                    throw new InvalidOperationException(SR.CannotChangeProperties);
 
                 if (value)
-                    acceptedCommands |= NativeMethods.ACCEPT_SHUTDOWN;
+                {
+                    _acceptedCommands |= AcceptOptions.ACCEPT_SHUTDOWN;
+                }
                 else
-                    acceptedCommands &= ~NativeMethods.ACCEPT_SHUTDOWN;
+                {
+                    _acceptedCommands &= ~AcceptOptions.ACCEPT_SHUTDOWN;
+                }
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.CanStop"]/*' />
         /// <devdoc>
         ///    <para> Indicates whether the service can be
         ///       stopped once it has started.</para>
         /// </devdoc>
-        [DefaultValue (true)]
-        public bool CanStop 
+        [DefaultValue(true)]
+        public bool CanStop
         {
-            get 
+            get
             {
-                return (acceptedCommands & NativeMethods.ACCEPT_STOP) != 0;
+                return (_acceptedCommands & AcceptOptions.ACCEPT_STOP) != 0;
             }
-            set 
+            set
             {
-                if (commandPropsFrozen)
-                    throw new InvalidOperationException (Res.GetString (Res.CannotChangeProperties));
+                if (_commandPropsFrozen)
+                    throw new InvalidOperationException(SR.CannotChangeProperties);
 
                 if (value)
-                    acceptedCommands |= NativeMethods.ACCEPT_STOP;
-                else
-                    acceptedCommands &= ~NativeMethods.ACCEPT_STOP;
-            }
-        }
-
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.EventLog"]/*' />
-        /// <devdoc>
-        /// <para>Indicates an <see cref='System.Diagnostics.EventLog'/> you can use to write noficiation of service command calls, such as
-        ///    Start and Stop, to the Application event log. This property is read-only.</para>
-        /// </devdoc>
-        [Browsable (false), DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog 
-        {
-            get 
-            {
-                if (eventLog == null) 
                 {
-                    eventLog = new EventLog ();
-                    eventLog.Source = ServiceName;
-                    eventLog.Log = "Application";
+                    _acceptedCommands |= AcceptOptions.ACCEPT_STOP;
                 }
-
-                return eventLog;
+                else
+                {
+                    _acceptedCommands &= ~AcceptOptions.ACCEPT_STOP;
+                }
             }
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
-        protected IntPtr ServiceHandle { 
-            get {
-                new SecurityPermission(SecurityPermissionFlag.UnmanagedCode).Demand();
-                
-                return statusHandle; 
+        protected IntPtr ServiceHandle
+        {
+            get
+            {
+                return _statusHandle;
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.ServiceName"]/*' />
         /// <devdoc>
         ///    <para> Indicates the short name used to identify the service to the system.</para>
         /// </devdoc>
-        [
-        ServiceProcessDescription(Res.SBServiceName),
-        TypeConverter("System.Diagnostics.Design.StringValueConverter, " + AssemblyRef.SystemDesign)
-        ]
-        public string ServiceName 
+        public string ServiceName
         {
-            get 
+            get
             {
-                return serviceName;
+                return _serviceName;
             }
-            set 
+            set
             {
-                if (nameFrozen)
-                    throw new InvalidOperationException (Res.GetString (Res.CannotChangeName));
+                if (_nameFrozen)
+                    throw new InvalidOperationException(SR.CannotChangeName);
 
                 // For component properties, "" is a special case.
-                if (value != "" && !ServiceController.ValidServiceName (value))
-                    throw new ArgumentException (Res.GetString (Res.ServiceName, value, ServiceBase.MaxNameLength.ToString (CultureInfo.CurrentCulture)));
+                if (value != "" && !ValidServiceName(value))
+                    throw new ArgumentException(SR.Format(SR.ServiceName, value, ServiceBase.MaxNameLength.ToString(CultureInfo.CurrentCulture)));
 
-                serviceName = value;
+                _serviceName = value;
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.Dispose"]/*' />
-        /// <devdoc>
-        ///    <para>Disposes of the resources (other than memory ) used by 
-        ///       the <see cref='System.ServiceProcess.ServiceBase'/>
-        ///       .</para>
-        /// </devdoc>
-        protected override void Dispose (bool disposing) 
+        internal static bool ValidServiceName(string serviceName)
         {
-            if (this.handleName != (IntPtr)0) 
+            if (serviceName == null)
+                return false;
+
+            // not too long and check for empty name as well.
+            if (serviceName.Length > ServiceBase.MaxNameLength || serviceName.Length == 0)
+                return false;
+
+            // no slashes or backslash allowed
+            foreach (char c in serviceName.ToCharArray())
             {
-                Marshal.FreeHGlobal (this.handleName);
-                this.handleName = (IntPtr)0;
+                if ((c == '\\') || (c == '/'))
+                    return false;
             }
 
-            nameFrozen = false;
-            commandPropsFrozen = false;
-            this.disposed = true;
-            base.Dispose (disposing);
+            return true;
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnContinue"]/*' />
+        /// <devdoc>
+        ///    <para>Disposes of the resources (other than memory ) used by
+        ///       the <see cref='System.ServiceProcess.ServiceBase'/>.</para>
+        /// </devdoc>
+        protected override void Dispose(bool disposing)
+        {
+            if (_handleName != (IntPtr)0)
+            {
+                Marshal.FreeHGlobal(_handleName);
+                _handleName = (IntPtr)0;
+            }
+
+            _nameFrozen = false;
+            _commandPropsFrozen = false;
+            _disposed = true;
+            base.Dispose(disposing);
+        }
+
         /// <devdoc>
         ///    <para> When implemented in a
         ///       derived class,
@@ -343,11 +301,10 @@ namespace System.ServiceProcess
         ///       Service Control Manager. Specifies the actions to take when a
         ///       service resumes normal functioning after being paused.</para>
         /// </devdoc>
-        protected virtual void OnContinue () 
+        protected virtual void OnContinue()
         {
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnPause"]/*' />
         /// <devdoc>
         ///    <para> When implemented in a
         ///       derived class, executes when a Pause command is sent
@@ -355,66 +312,29 @@ namespace System.ServiceProcess
         ///       the service by the Service Control Manager. Specifies the
         ///       actions to take when a service pauses.</para>
         /// </devdoc>
-        protected virtual void OnPause () 
+        protected virtual void OnPause()
         {
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnPowerEvent"]/*' />
         /// <devdoc>
-        ///    <para> 
+        ///    <para>
         ///         When implemented in a derived class, executes when the computer's
         ///         power status has changed.
-        ///    </para> 
+        ///    </para>
         /// </devdoc>
-        protected virtual bool OnPowerEvent (PowerBroadcastStatus powerStatus) 
+        protected virtual bool OnPowerEvent(PowerBroadcastStatus powerStatus)
         {
             return true;
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnSessionChange"]/*' />
         /// <devdoc>
         ///    <para>When implemented in a derived class,
         ///       executes when a Terminal Server session change event is received.</para>
         /// </devdoc>
         protected virtual void OnSessionChange(SessionChangeDescription changeDescription)
-        {            
-        }
-
-
-#if NOTIMPLEMENTED
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnDeviceEvent"]/*' />
-        /// <devdoc>
-        ///    <para>Registers the service to receive Device Events.  These events will be received by OnDeviceEvent.</para>
-        /// </devdoc>
-        public void RegisterForDeviceNotifications(
-            IntPtr              deviceHandle )
         {
-            /** Example C code:
-            DEV_BROADCAST_HANDLE DbtHandle;
-            memset( &DbtHandle, 0, sizeof(DbtHandle) );
-
-            DbtHandle.dbch_size = sizeof(DEV_BROADCAST_HANDLE);
-            DbtHandle.dbch_devicetype = DBT_DEVTYP_HANDLE;
-            DbtHandle.dbch_handle = hDriveHandle;
-
-            hNotify =
-                RegisterDeviceNotification( (HANDLE) ghServiceHandle,
-                &DbtHandle,
-                DEVICE_NOTIFY_SERVICE_HANDLE );
-            **/
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnDeviceEvent"]/*' />
-        /// <devdoc>
-        ///    <para>When implemented in a derived class,
-        ///       executes when a device event is received by the service.</para>
-        /// </devdoc>
-        protected virtual void OnDeviceEvent( ... ) 
-        {        
-        }
-#endif
-
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnShutdown"]/*' />
         /// <devdoc>
         ///    <para>When implemented in a derived class,
         ///       executes when the system is shutting down.
@@ -422,11 +342,10 @@ namespace System.ServiceProcess
         ///       happen just prior
         ///       to the system shutting down.</para>
         /// </devdoc>
-        protected virtual void OnShutdown () 
+        protected virtual void OnShutdown()
         {
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnStart"]/*' />
         /// <devdoc>
         ///    <para> When implemented in a
         ///       derived class, executes when a Start command is sent
@@ -442,11 +361,10 @@ namespace System.ServiceProcess
         ///       services that start automatically at boot-up?
         ///    </note>
         /// </devdoc>
-        protected virtual void OnStart (string[] args) 
+        protected virtual void OnStart(string[] args)
         {
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnStop"]/*' />
         /// <devdoc>
         ///    <para> When implemented in a
         ///       derived class, executes when a Stop command is sent to the
@@ -454,76 +372,81 @@ namespace System.ServiceProcess
         ///       service stops
         ///       running.</para>
         /// </devdoc>
-        protected virtual void OnStop () 
+        protected virtual void OnStop()
         {
         }
 
         // Delegate type used for the asynchronous call to handle the service stop.
-        private delegate void DeferredHandlerDelegate ();
-        private delegate void DeferredHandlerDelegateCommand (int command);
+        private delegate void DeferredHandlerDelegate();
+        private delegate void DeferredHandlerDelegateCommand(int command);
         private delegate void DeferredHandlerDelegateAdvanced(int eventType, IntPtr eventData);
         private delegate void DeferredHandlerDelegateAdvancedSession(int eventType, int sessionId);
 
-        private unsafe void DeferredContinue() {
-            fixed (NativeMethods.SERVICE_STATUS *pStatus = &status) 
+        private unsafe void DeferredContinue()
+        {
+            fixed (SERVICE_STATUS* pStatus = &_status)
             {
-                try 
+                try
                 {
-                    OnContinue ();
-                    WriteEventLogEntry (Res.GetString (Res.ContinueSuccessful));
-                    status.currentState = NativeMethods.STATE_RUNNING;
+                    OnContinue();
+                    WriteLogEntry(SR.ContinueSuccessful);
+                    _status.currentState = ServiceControlStatus.STATE_RUNNING;
                 }
-                catch (Exception e) 
+                catch (Exception e)
                 {
-                    status.currentState = NativeMethods.STATE_PAUSED;
-                    WriteEventLogEntry (Res.GetString (Res.ContinueFailed, e.ToString ()), EventLogEntryType.Error);
-                
+                    _status.currentState = ServiceControlStatus.STATE_PAUSED;
+                    WriteLogEntry(SR.Format(SR.ContinueFailed, e.ToString()), true);
+
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
                     throw;
                 }
-                finally {
-                    NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                finally
+                {
+                    SetServiceStatus(_statusHandle, pStatus);
                 }
             }
         }
 
-        private void DeferredCustomCommand(int command) {
-            try 
+        private void DeferredCustomCommand(int command)
+        {
+            try
             {
-                OnCustomCommand (command);
-                WriteEventLogEntry (Res.GetString (Res.CommandSuccessful));
+                OnCustomCommand(command);
+                WriteLogEntry(SR.CommandSuccessful);
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-                WriteEventLogEntry (Res.GetString (Res.CommandFailed, e.ToString ()), EventLogEntryType.Error);
-            
+                WriteLogEntry(SR.Format(SR.CommandFailed, e.ToString()), true);
+
                 // We should re-throw the exception so that the advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
                 throw;
             }
         }
-        
-        private unsafe void DeferredPause() {
-            fixed (NativeMethods.SERVICE_STATUS *pStatus = &status) 
+
+        private unsafe void DeferredPause()
+        {
+            fixed (SERVICE_STATUS* pStatus = &_status)
             {
-                try 
+                try
                 {
-                    OnPause ();
-                    WriteEventLogEntry (Res.GetString (Res.PauseSuccessful));
-                    status.currentState = NativeMethods.STATE_PAUSED;
+                    OnPause();
+                    WriteLogEntry(SR.PauseSuccessful);
+                    _status.currentState = ServiceControlStatus.STATE_PAUSED;
                 }
-                catch (Exception e) 
+                catch (Exception e)
                 {
-                    status.currentState = NativeMethods.STATE_RUNNING;
-                    WriteEventLogEntry (Res.GetString (Res.PauseFailed, e.ToString ()), EventLogEntryType.Error);
-                
+                    _status.currentState = ServiceControlStatus.STATE_RUNNING;
+                    WriteLogEntry(SR.Format(SR.PauseFailed, e.ToString()), true);
+
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
                     throw;
                 }
-                finally {
-                    NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                finally
+                {
+                    SetServiceStatus(_statusHandle, pStatus);
                 }
             }
         }
@@ -533,127 +456,95 @@ namespace System.ServiceProcess
             // Note: The eventData pointer might point to an invalid location
             // This might happen because, between the time the eventData ptr was
             // captured and the time this deferred code runs, the ptr might have
-            // already been freed. 
-            try 
+            // already been freed.
+            try
             {
                 PowerBroadcastStatus status = (PowerBroadcastStatus)eventType;
-                bool statusResult = OnPowerEvent (status);
-            
-                WriteEventLogEntry (Res.GetString (Res.PowerEventOK));
+                bool statusResult = OnPowerEvent(status);
+
+                WriteLogEntry(SR.PowerEventOK);
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-                WriteEventLogEntry (Res.GetString (Res.PowerEventFailed, e.ToString ()), EventLogEntryType.Error);
-            
-                // We rethrow the exception so that advapi32 code can report 
+                WriteLogEntry(SR.Format(SR.PowerEventFailed, e.ToString()), true);
+
+                // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
                 throw;
             }
         }
 
-        private void DeferredSessionChange(int eventType, int sessionId) {
-            try 
+        private void DeferredSessionChange(int eventType, int sessionId)
+        {
+            try
             {
-                OnSessionChange ( new SessionChangeDescription(( SessionChangeReason) eventType, sessionId));
+                OnSessionChange(new SessionChangeDescription((SessionChangeReason)eventType, sessionId));
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-                WriteEventLogEntry (Res.GetString (Res.SessionChangeFailed, e.ToString ()), EventLogEntryType.Error);
-                // We rethrow the exception so that advapi32 code can report 
+                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e.ToString()), true);
+
+                // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
                 throw;
             }
-        }            
-        
-        //
+        }
+
         // We mustn't call OnStop directly from the command callback, as this will
         // tie up the command thread for the duration of the OnStop, which can be lengthy.
         // This is a problem when multiple services are hosted in a single process.
-        //
-        private unsafe void DeferredStop () 
+        private unsafe void DeferredStop()
         {
-            fixed (NativeMethods.SERVICE_STATUS *pStatus = &status) 
+            fixed (SERVICE_STATUS* pStatus = &_status)
             {
-                int previousState = status.currentState;
+                int previousState = _status.currentState;
 
-                status.checkPoint = 0;
-                status.waitHint = 0;
-                status.currentState = NativeMethods.STATE_STOP_PENDING;
-                NativeMethods.SetServiceStatus (statusHandle, pStatus);
-                try 
+                _status.checkPoint = 0;
+                _status.waitHint = 0;
+                _status.currentState = ServiceControlStatus.STATE_STOP_PENDING;
+                SetServiceStatus(_statusHandle, pStatus);
+                try
                 {
-                    OnStop ();
-                    WriteEventLogEntry (Res.GetString (Res.StopSuccessful));
-                    status.currentState = NativeMethods.STATE_STOPPED;
-                    NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                    OnStop();
+                    WriteLogEntry(SR.StopSuccessful);
+                    _status.currentState = ServiceControlStatus.STATE_STOPPED;
+                    SetServiceStatus(_statusHandle, pStatus);
+                }
+                catch (Exception e)
+                {
+                    _status.currentState = previousState;
+                    SetServiceStatus(_statusHandle, pStatus);
+                    WriteLogEntry(SR.Format(SR.StopFailed, e.ToString()), true);
+                    throw;
+                }
+            }
+        }
 
-                    //
-                    // If we are a hosted service, then we will now unload the app domain.
-                    //
-                    if (isServiceHosted) 
+        private unsafe void DeferredShutdown()
+        {
+            try
+            {
+                OnShutdown();
+                WriteLogEntry(SR.Format(SR.ShutdownOK));
+
+                if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
+                {
+                    fixed (SERVICE_STATUS* pStatus = &_status)
                     {
-                        try 
-                        {
-                            AppDomain.Unload (AppDomain.CurrentDomain);
-                        }
-                        catch (CannotUnloadAppDomainException e ) 
-                        {
-                            WriteEventLogEntry (Res.GetString(Res.FailedToUnloadAppDomain, AppDomain.CurrentDomain.FriendlyName, e.Message), EventLogEntryType.Error);
-                        }
+                        _status.checkPoint = 0;
+                        _status.waitHint = 0;
+                        _status.currentState = ServiceControlStatus.STATE_STOPPED;
+                        SetServiceStatus(_statusHandle, pStatus);
                     }
                 }
-                catch (Exception e) 
-                {
-                    status.currentState = previousState;
-                    NativeMethods.SetServiceStatus (statusHandle, pStatus);
-                    WriteEventLogEntry (Res.GetString (Res.StopFailed, e.ToString ()), EventLogEntryType.Error);
-                    throw; 
-                }
-            } // fixed
-        } // DeferredStop
-
-        private unsafe void DeferredShutdown () 
-        {
-            try 
-            {
-                OnShutdown ();
-                WriteEventLogEntry (Res.GetString (Res.ShutdownOK));
-
-                if (status.currentState == NativeMethods.STATE_PAUSED || status.currentState == NativeMethods.STATE_RUNNING)
-                {
-                    fixed (NativeMethods.SERVICE_STATUS* pStatus = &status)
-                    {
-                        status.checkPoint = 0;
-                        status.waitHint = 0;
-                        status.currentState = NativeMethods.STATE_STOPPED;
-                        NativeMethods.SetServiceStatus(statusHandle, pStatus);
-
-                        //
-                        // If we are a hosted service, then we will now unload the app domain.
-                        //
-                        if (isServiceHosted)
-                        {
-                            try
-                            {
-                                AppDomain.Unload(AppDomain.CurrentDomain);
-                            }
-                            catch (CannotUnloadAppDomainException e)
-                            {
-                                WriteEventLogEntry(Res.GetString(Res.FailedToUnloadAppDomain, AppDomain.CurrentDomain.FriendlyName, e.Message), EventLogEntryType.Error);
-                            }
-                        }
-
-                    } // fixed
-                }
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-                WriteEventLogEntry (Res.GetString (Res.ShutdownFailed, e.ToString ()), EventLogEntryType.Error);
+                WriteLogEntry(SR.Format(SR.ShutdownFailed, e.ToString()), true);
                 throw;
             }
-        } // DeferredShutdown
+        }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.OnCustomCommand"]/*' />
         /// <devdoc>
         /// <para>When implemented in a derived class, <see cref='System.ServiceProcess.ServiceBase.OnCustomCommand'/>
         /// executes when a custom command is passed to
@@ -673,231 +564,157 @@ namespace System.ServiceProcess
         ///    custom command?
         /// </note>
         /// </devdoc>
-        protected virtual void OnCustomCommand (int command) 
+        protected virtual void OnCustomCommand(int command)
         {
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.Run"]/*' />
         /// <devdoc>
         ///    <para>Provides the main entry point for an executable that
         ///       contains multiple associated services. Loads the specified services into memory so they can be
         ///       started.</para>
         /// </devdoc>
-        public static void Run (ServiceBase[] services) 
+        public static void Run(ServiceBase[] services)
         {
             if (services == null || services.Length == 0)
-                throw new ArgumentException (Res.GetString (Res.NoServices));
+                throw new ArgumentException(SR.NoServices);
 
-            // check if we're on an NT OS
-            if (Environment.OSVersion.Platform != PlatformID.Win32NT) 
-            {
-                // if not NT, put up a message box and exit.
-                string cantRunOnWin9x = Res.GetString (Res.CantRunOnWin9x);
-                string cantRunOnWin9xTitle = Res.GetString (Res.CantRunOnWin9xTitle);
-
-                LateBoundMessageBoxShow (cantRunOnWin9x, cantRunOnWin9xTitle);
-                return;
-            }
-
-            IntPtr entriesPointer = Marshal.AllocHGlobal ((IntPtr)((services.Length + 1) * Marshal.SizeOf (typeof(NativeMethods.SERVICE_TABLE_ENTRY ))));
-            NativeMethods.SERVICE_TABLE_ENTRY[] entries = new NativeMethods.SERVICE_TABLE_ENTRY[services.Length];
+            IntPtr entriesPointer = Marshal.AllocHGlobal((IntPtr)((services.Length + 1) * Marshal.SizeOf(typeof(SERVICE_TABLE_ENTRY))));
+            SERVICE_TABLE_ENTRY[] entries = new SERVICE_TABLE_ENTRY[services.Length];
             bool multipleServices = services.Length > 1;
             IntPtr structPtr = (IntPtr)0;
 
-            for (int index = 0; index < services.Length; ++index) 
+            for (int index = 0; index < services.Length; ++index)
             {
-                services[index].Initialize (multipleServices);
-                entries[index] = services[index].GetEntry ();
-                structPtr = (IntPtr)((long)entriesPointer + Marshal.SizeOf (typeof(NativeMethods.SERVICE_TABLE_ENTRY )) * index);
-                Marshal.StructureToPtr (entries[index], structPtr, true);
+                services[index].Initialize(multipleServices);
+                entries[index] = services[index].GetEntry();
+                structPtr = (IntPtr)((long)entriesPointer + Marshal.SizeOf(typeof(SERVICE_TABLE_ENTRY)) * index);
+                Marshal.StructureToPtr(entries[index], structPtr, true);
             }
 
-            NativeMethods.SERVICE_TABLE_ENTRY lastEntry = new NativeMethods.SERVICE_TABLE_ENTRY ();
+            SERVICE_TABLE_ENTRY lastEntry = new SERVICE_TABLE_ENTRY();
 
             lastEntry.callback = null;
             lastEntry.name = (IntPtr)0;
-            structPtr = (IntPtr)((long)entriesPointer + Marshal.SizeOf (typeof(NativeMethods.SERVICE_TABLE_ENTRY )) * services.Length);
-            Marshal.StructureToPtr (lastEntry, structPtr, true);
+            structPtr = (IntPtr)((long)entriesPointer + Marshal.SizeOf(typeof(SERVICE_TABLE_ENTRY)) * services.Length);
+            Marshal.StructureToPtr(lastEntry, structPtr, true);
 
             // While the service is running, this function will never return. It will return when the service
             // is stopped.
-            bool res = NativeMethods.StartServiceCtrlDispatcher (entriesPointer);
+            bool res = StartServiceCtrlDispatcher(entriesPointer);
             string errorMessage = "";
 
-            if (!res) 
+            if (!res)
             {
-                errorMessage = new Win32Exception ().Message;
-
-                // This message will only print out if the exe is run at the command prompt - which is not
-                // a valid thing to do.
-                string cantStartFromCommandLine = Res.GetString (Res.CantStartFromCommandLine);
-
-                if (Environment.UserInteractive) 
-                {
-                    string cantStartFromCommandLineTitle = Res.GetString (Res.CantStartFromCommandLineTitle);
-
-                    LateBoundMessageBoxShow (cantStartFromCommandLine, cantStartFromCommandLineTitle);
-                }
-                else
-                    Console.WriteLine (cantStartFromCommandLine);
+                errorMessage = new Win32Exception().Message;
+                Console.WriteLine(SR.CantStartFromCommandLine);
             }
 
-            foreach (ServiceBase service in services) 
+            foreach (ServiceBase service in services)
             {
-                service.Dispose ();
-                if (!res && service.EventLog.Source.Length != 0)
-                    service.WriteEventLogEntry (Res.GetString (Res.StartFailed, errorMessage), EventLogEntryType.Error);
+                service.Dispose();
+                if (!res)
+                {
+                    service.WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), true);
+                }
             }
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.Run1"]/*' />
         /// <devdoc>
         ///    <para>Provides the main
         ///       entry point for an executable that contains a single
         ///       service. Loads the service into memory so it can be
         ///       started.</para>
         /// </devdoc>
-        public static void Run (ServiceBase service) 
+        public static void Run(ServiceBase service)
         {
             if (service == null)
-                throw new ArgumentException (Res.GetString (Res.NoServices));
+                throw new ArgumentException(SR.NoServices);
 
-            Run (new ServiceBase[] { service });
+            Run(new ServiceBase[] { service });
         }
 
-        public void Stop() {
+        public void Stop()
+        {
             DeferredStop();
         }
-        
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.Initialize"]/*' />
-        /// <devdoc>
-        ///     Initializes the service status.
-        /// </devdoc>
-        /// <internalonly/>
-        private void Initialize (bool multipleServices) 
+
+        private void Initialize(bool multipleServices)
         {
-            if (!initialized) 
+            if (!_initialized)
             {
                 //Cannot register the service with NT service manatger if the object has been disposed, since finalization has been suppressed.
-                if (this.disposed)
-                    throw new ObjectDisposedException (GetType ().Name);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (!multipleServices)
-                    status.serviceType = NativeMethods.SERVICE_TYPE_WIN32_OWN_PROCESS;
+                {
+                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS;
+                }
                 else
-                    status.serviceType = NativeMethods.SERVICE_TYPE_WIN32_SHARE_PROCESS;
+                {
+                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_SHARE_PROCESS;
+                }
 
-                status.currentState = NativeMethods.STATE_START_PENDING;
-                status.controlsAccepted = 0;
-                status.win32ExitCode = 0;
-                status.serviceSpecificExitCode = 0;
-                status.checkPoint = 0;
-                status.waitHint = 0;
+                _status.currentState = ServiceControlStatus.STATE_START_PENDING;
+                _status.controlsAccepted = 0;
+                _status.win32ExitCode = 0;
+                _status.serviceSpecificExitCode = 0;
+                _status.checkPoint = 0;
+                _status.waitHint = 0;
 
-                this.mainCallback = new NativeMethods.ServiceMainCallback (this.ServiceMainCallback);
-                this.commandCallback = new NativeMethods.ServiceControlCallback (this.ServiceCommandCallback);
-                this.commandCallbackEx = new NativeMethods.ServiceControlCallbackEx (this.ServiceCommandCallbackEx);
-                this.handleName = Marshal.StringToHGlobalUni (this.ServiceName);
+                _mainCallback = new ServiceMainCallback(this.ServiceMainCallback);
+                _commandCallback = new ServiceControlCallback(this.ServiceCommandCallback);
+                _commandCallbackEx = new ServiceControlCallbackEx(this.ServiceCommandCallbackEx);
+                _handleName = Marshal.StringToHGlobalUni(this.ServiceName);
 
-                initialized = true;
+                _initialized = true;
             }
         }
 
-        private NativeMethods.SERVICE_TABLE_ENTRY GetEntry () 
+        private SERVICE_TABLE_ENTRY GetEntry()
         {
-            NativeMethods.SERVICE_TABLE_ENTRY entry = new NativeMethods.SERVICE_TABLE_ENTRY ();
+            SERVICE_TABLE_ENTRY entry = new SERVICE_TABLE_ENTRY();
 
-            nameFrozen = true;
-            entry.callback = (Delegate)mainCallback;
-            entry.name = this.handleName;
+            _nameFrozen = true;
+            entry.callback = (Delegate)_mainCallback;
+            entry.name = _handleName;
             return entry;
         }
 
-        private static void LateBoundMessageBoxShow (string message, string title) {
-            int options = 0;
-            if (IsRTLResources) {
-                options |= /*MessageBoxOptions.RightAlign*/ 0x00080000 | /*MessageBoxOptions.RtlReading*/ 0x00100000;
-            }
-            
-            // Avoid direct usage of the MessageBoxOptions enum so we don't take a dependency on System.Windows.Forms.dll. 
-            Type mbType = Type.GetType ("System.Windows.Forms.MessageBox, " + AssemblyRef.SystemWindowsForms);
-            Type mbBtnType = Type.GetType ("System.Windows.Forms.MessageBoxButtons, " + AssemblyRef.SystemWindowsForms);
-            Type mbIconType = Type.GetType ("System.Windows.Forms.MessageBoxIcon, " + AssemblyRef.SystemWindowsForms);
-            Type mbDefaultBtnType = Type.GetType ("System.Windows.Forms.MessageBoxDefaultButton, " + AssemblyRef.SystemWindowsForms);
-            Type mbOptionsType = Type.GetType ("System.Windows.Forms.MessageBoxOptions, " + AssemblyRef.SystemWindowsForms);
-            mbType.InvokeMember ("Show", BindingFlags.Static | BindingFlags.Public | BindingFlags.InvokeMethod, null, null, 
-                                             new object[] { 
-                                                message, 
-                                                title, 
-                                                Enum.ToObject(mbBtnType, 0), 
-                                                Enum.ToObject(mbIconType, 0),
-                                                Enum.ToObject(mbDefaultBtnType, 0), 
-                                                Enum.ToObject(mbOptionsType, options)}, CultureInfo.InvariantCulture);
-        }
-
-        private static bool IsRTLResources {
-            get {
-                return Res.GetString(Res.RTL) != "RTL_False";
-            }
-        }
-
-        private int ServiceCommandCallbackEx (int command, int eventType, IntPtr eventData, IntPtr eventContext) 
+        private int ServiceCommandCallbackEx(int command, int eventType, IntPtr eventData, IntPtr eventContext)
         {
-            int result = NativeMethods.NO_ERROR;
-
-            switch ( command )
+            switch (command)
             {
-                case NativeMethods.CONTROL_POWEREVENT:
-                {
-                    DeferredHandlerDelegateAdvanced powerDelegate = new DeferredHandlerDelegateAdvanced(DeferredPowerEvent);
-                    powerDelegate.BeginInvoke(eventType, eventData, null, null);
-                    
-                    break;
-                }  
+                case ControlOptions.CONTROL_POWEREVENT:
+                    {
+                        DeferredHandlerDelegateAdvanced powerDelegate = new DeferredHandlerDelegateAdvanced(DeferredPowerEvent);
+                        powerDelegate.BeginInvoke(eventType, eventData, null, null);
 
-                case NativeMethods.CONTROL_SESSIONCHANGE:
-                {
-                    // The eventData pointer can be released between now and when the DeferredDelegate gets called.
-                    // So we capture the session id at this point
-                    DeferredHandlerDelegateAdvancedSession sessionDelegate = new DeferredHandlerDelegateAdvancedSession(DeferredSessionChange);
-                    NativeMethods.WTSSESSION_NOTIFICATION sessionNotification = new NativeMethods.WTSSESSION_NOTIFICATION ();
-                    Marshal.PtrToStructure (eventData, sessionNotification);
-                    sessionDelegate.BeginInvoke(eventType, sessionNotification.sessionId, null, null);
+                        break;
+                    }
 
-                    break;
-                }
+                case ControlOptions.CONTROL_SESSIONCHANGE:
+                    {
+                        // The eventData pointer can be released between now and when the DeferredDelegate gets called.
+                        // So we capture the session id at this point
+                        DeferredHandlerDelegateAdvancedSession sessionDelegate = new DeferredHandlerDelegateAdvancedSession(DeferredSessionChange);
+                        WTSSESSION_NOTIFICATION sessionNotification = new WTSSESSION_NOTIFICATION();
+                        Marshal.PtrToStructure(eventData, sessionNotification);
+                        sessionDelegate.BeginInvoke(eventType, sessionNotification.sessionId, null, null);
 
-#if NOTIMPLEMENTED
-                case NativeMethods.CONTROL_DEVICEEVENT:
-                    break;
-
-                case NativeMethods.CONTROL_NETBINDADD:
-                    break;
-
-                case NativeMethods.CONTROL_NETBINDDISABLE:
-                    break;
-
-                case NativeMethods.CONTROL_NETBINDENABLE:
-                    break;
-
-                case NativeMethods.CONTROL_NETBINDREMOVE:
-                    break;
-
-                case NativeMethods.CONTROL_PARAMCHANGE:
-                    break;
-#endif
+                        break;
+                    }
 
                 default:
-                {
-                    ServiceCommandCallback (command);
-                    break;
-                }
-            } // switch
+                    {
+                        ServiceCommandCallback(command);
+                        break;
+                    }
+            }
 
-            return result;
+            return 0;
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.ServiceCommandCallback"]/*' />
         /// <devdoc>
         ///     Command Handler callback is called by NT .
         ///     Need to take specific action in response to each
@@ -905,79 +722,79 @@ namespace System.ServiceProcess
         ///     Instead, override OnStart, OnStop, OnCustomCommand, etc.
         /// </devdoc>
         /// <internalonly/>
-        private unsafe void ServiceCommandCallback (int command) 
+        private unsafe void ServiceCommandCallback(int command)
         {
-            fixed (NativeMethods.SERVICE_STATUS *pStatus = &status) 
+            fixed (SERVICE_STATUS* pStatus = &_status)
             {
-                if (command == NativeMethods.CONTROL_INTERROGATE)
-                    NativeMethods.SetServiceStatus (statusHandle, pStatus);
-                else if (status.currentState != NativeMethods.STATE_CONTINUE_PENDING &&
-                    status.currentState != NativeMethods.STATE_START_PENDING &&
-                    status.currentState != NativeMethods.STATE_STOP_PENDING &&
-                    status.currentState != NativeMethods.STATE_PAUSE_PENDING) 
+                if (command == ControlOptions.CONTROL_INTERROGATE)
+                    SetServiceStatus(_statusHandle, pStatus);
+                else if (_status.currentState != ServiceControlStatus.STATE_CONTINUE_PENDING &&
+                    _status.currentState != ServiceControlStatus.STATE_START_PENDING &&
+                    _status.currentState != ServiceControlStatus.STATE_STOP_PENDING &&
+                    _status.currentState != ServiceControlStatus.STATE_PAUSE_PENDING)
                 {
-                    switch (command) 
+                    switch (command)
                     {
-                        case NativeMethods.CONTROL_CONTINUE:
-                            if (status.currentState == NativeMethods.STATE_PAUSED) 
+                        case ControlOptions.CONTROL_CONTINUE:
+                            if (_status.currentState == ServiceControlStatus.STATE_PAUSED)
                             {
-                                status.currentState = NativeMethods.STATE_CONTINUE_PENDING;
-                                NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                                _status.currentState = ServiceControlStatus.STATE_CONTINUE_PENDING;
+                                SetServiceStatus(_statusHandle, pStatus);
 
-                                DeferredHandlerDelegate continueDelegate = new DeferredHandlerDelegate (DeferredContinue);
-                                continueDelegate.BeginInvoke (null, null);
+                                DeferredHandlerDelegate continueDelegate = new DeferredHandlerDelegate(DeferredContinue);
+                                continueDelegate.BeginInvoke(null, null);
                             }
 
                             break;
 
-                        case NativeMethods.CONTROL_PAUSE:
-                            if (status.currentState == NativeMethods.STATE_RUNNING) 
+                        case ControlOptions.CONTROL_PAUSE:
+                            if (_status.currentState == ServiceControlStatus.STATE_RUNNING)
                             {
-                                status.currentState = NativeMethods.STATE_PAUSE_PENDING;
-                                NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                                _status.currentState = ServiceControlStatus.STATE_PAUSE_PENDING;
+                                SetServiceStatus(_statusHandle, pStatus);
 
-                                DeferredHandlerDelegate pauseDelegate = new DeferredHandlerDelegate (DeferredPause);
-                                pauseDelegate.BeginInvoke (null, null);
+                                DeferredHandlerDelegate pauseDelegate = new DeferredHandlerDelegate(DeferredPause);
+                                pauseDelegate.BeginInvoke(null, null);
                             }
 
                             break;
 
-                        case NativeMethods.CONTROL_STOP:
-                            int previousState = status.currentState;
+                        case ControlOptions.CONTROL_STOP:
+                            int previousState = _status.currentState;
                             //
                             // Can't perform all of the service shutdown logic from within the command callback.
                             // This is because there is a single ScDispatcherLoop for the entire process.  Instead, we queue up an
                             // asynchronous call to "DeferredStop", and return immediately.  This is crucial for the multiple service
                             // per process scenario, such as the new managed service host model.
                             //
-                            if (status.currentState == NativeMethods.STATE_PAUSED || status.currentState == NativeMethods.STATE_RUNNING) 
+                            if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
                             {
-                                status.currentState = NativeMethods.STATE_STOP_PENDING;
-                                NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                                _status.currentState = ServiceControlStatus.STATE_STOP_PENDING;
+                                SetServiceStatus(_statusHandle, pStatus);
                                 // Set our copy of the state back to the previous so that the deferred stop routine
                                 // can also save the previous state.
-                                status.currentState = previousState;
+                                _status.currentState = previousState;
 
-                                DeferredHandlerDelegate stopDelegate = new DeferredHandlerDelegate (DeferredStop);
-                                stopDelegate.BeginInvoke (null, null);
+                                DeferredHandlerDelegate stopDelegate = new DeferredHandlerDelegate(DeferredStop);
+                                stopDelegate.BeginInvoke(null, null);
                             }
 
                             break;
 
-                        case NativeMethods.CONTROL_SHUTDOWN:
+                        case ControlOptions.CONTROL_SHUTDOWN:
                             //
                             // Same goes for shutdown -- this needs to be very responsive, so we can't have one service tying up the
                             // dispatcher loop.
                             //
-                            DeferredHandlerDelegate shutdownDelegate = new DeferredHandlerDelegate (DeferredShutdown);
+                            DeferredHandlerDelegate shutdownDelegate = new DeferredHandlerDelegate(DeferredShutdown);
 
-                            shutdownDelegate.BeginInvoke (null, null);
+                            shutdownDelegate.BeginInvoke(null, null);
                             break;
 
                         default:
-                            DeferredHandlerDelegateCommand customDelegate = new DeferredHandlerDelegateCommand (DeferredCustomCommand);
-                            customDelegate.BeginInvoke (command, null, null);
-                                
+                            DeferredHandlerDelegateCommand customDelegate = new DeferredHandlerDelegateCommand(DeferredCustomCommand);
+                            customDelegate.BeginInvoke(command, null, null);
+
                             break;
                     }
                 }
@@ -988,89 +805,94 @@ namespace System.ServiceProcess
         // Most applications will start asynchronous operations in the
         // OnStart method. If such a method is executed in MainCallback
         // thread, the async operations might get canceled immediately.
-        private void ServiceQueuedMainCallback (object state) 
+        private void ServiceQueuedMainCallback(object state)
         {
             string[] args = (string[])state;
 
-            try 
+            try
             {
-                OnStart (args);
-                WriteEventLogEntry (Res.GetString (Res.StartSuccessful));
-                status.checkPoint = 0;
-                status.waitHint = 0;
-                status.currentState = NativeMethods.STATE_RUNNING;
+                OnStart(args);
+                WriteLogEntry(SR.StartSuccessful);
+                _status.checkPoint = 0;
+                _status.waitHint = 0;
+                _status.currentState = ServiceControlStatus.STATE_RUNNING;
             }
-            catch (Exception e) 
+            catch (Exception e)
             {
-                WriteEventLogEntry (Res.GetString (Res.StartFailed, e.ToString ()), EventLogEntryType.Error);
-                status.currentState = NativeMethods.STATE_STOPPED;
+                WriteLogEntry(SR.Format(SR.StartFailed, e.ToString()), true);
+                _status.currentState = ServiceControlStatus.STATE_STOPPED;
             }
-            startCompletedSignal.Set ();
+            _startCompletedSignal.Set();
         }
 
-        /// <include file='doc\ServiceBase.uex' path='docs/doc[@for="ServiceBase.ServiceMainCallback"]/*' />
         /// <devdoc>
         ///     ServiceMain callback is called by NT .
         ///     It is expected that we register the command handler,
         ///     and start the service at this point.
         /// </devdoc>
-        /// <internalonly/>    
-        [ComVisible(false)]
+        /// <internalonly/>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public unsafe void ServiceMainCallback (int argCount, IntPtr argPointer) 
+        public unsafe void ServiceMainCallback(int argCount, IntPtr argPointer)
         {
-            fixed (NativeMethods.SERVICE_STATUS *pStatus = &status) 
+            fixed (SERVICE_STATUS* pStatus = &_status)
             {
                 string[] args = null;
 
-                if (argCount > 0) 
+                if (argCount > 0)
                 {
-                    char** argsAsPtr = (char**) argPointer.ToPointer();
-                    
+                    char** argsAsPtr = (char**)argPointer.ToPointer();
+
                     //Lets read the arguments
                     // the first arg is always the service name. We don't want to pass that in.
                     args = new string[argCount - 1];
 
-                    for (int index = 0; index < args.Length; ++index) 
+                    for (int index = 0; index < args.Length; ++index)
                     {
-                        // we increment the pointer first so we skip over the first argument. 
+                        // we increment the pointer first so we skip over the first argument.
                         argsAsPtr++;
-                        args[index] = Marshal.PtrToStringUni((IntPtr) (*argsAsPtr));
+                        args[index] = Marshal.PtrToStringUni((IntPtr)(*argsAsPtr));
                     }
                 }
 
                 // If we are being hosted, then Run will not have been called, since the EXE's Main entrypoint is not called.
-                if (!initialized) 
+                if (!_initialized)
                 {
-                    isServiceHosted = true;
-                    Initialize (true);
+                    Initialize(true);
                 }
 
                 if (Environment.OSVersion.Version.Major >= 5)
-                    statusHandle = NativeMethods.RegisterServiceCtrlHandlerEx (ServiceName, (Delegate)this.commandCallbackEx, (IntPtr)0);
-                else
-                    statusHandle = NativeMethods.RegisterServiceCtrlHandler (ServiceName, (Delegate)this.commandCallback);
-
-                nameFrozen = true;
-                if (statusHandle == (IntPtr)0) 
                 {
-                    string errorMessage = new Win32Exception ().Message;
-                    WriteEventLogEntry (Res.GetString (Res.StartFailed, errorMessage), EventLogEntryType.Error);
+                    _statusHandle = RegisterServiceCtrlHandlerEx(ServiceName, (Delegate)_commandCallbackEx, (IntPtr)0);
+                }
+                else
+                {
+                    _statusHandle = RegisterServiceCtrlHandler(ServiceName, (Delegate)_commandCallback);
                 }
 
-                status.controlsAccepted = acceptedCommands;
-                commandPropsFrozen = true;
-                if ((status.controlsAccepted & NativeMethods.ACCEPT_STOP) != 0)
-                    status.controlsAccepted = status.controlsAccepted | NativeMethods.ACCEPT_SHUTDOWN;
+                _nameFrozen = true;
+                if (_statusHandle == (IntPtr)0)
+                {
+                    string errorMessage = new Win32Exception().Message;
+                    WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), true);
+                }
+
+                _status.controlsAccepted = _acceptedCommands;
+                _commandPropsFrozen = true;
+                if ((_status.controlsAccepted & AcceptOptions.ACCEPT_STOP) != 0)
+                {
+                    _status.controlsAccepted = _status.controlsAccepted | AcceptOptions.ACCEPT_SHUTDOWN;
+                }
 
                 if (Environment.OSVersion.Version.Major < 5)
-                    status.controlsAccepted &= ~NativeMethods.ACCEPT_POWEREVENT;   // clear Power Event flag for NT4
+                {
+                    _status.controlsAccepted &= ~AcceptOptions.ACCEPT_POWEREVENT;   // clear Power Event flag for NT4
+                }
 
-                status.currentState = NativeMethods.STATE_START_PENDING;
+                _status.currentState = ServiceControlStatus.STATE_START_PENDING;
 
-                bool statusOK = NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                bool statusOK = SetServiceStatus(_statusHandle, pStatus);
 
-                if (!statusOK) 
+                if (!statusOK)
                 {
                     return;
                 }
@@ -1081,73 +903,25 @@ namespace System.ServiceProcess
                 // thread, the async operations might get canceled immediately
                 // since NT will terminate this thread right after this function
                 // finishes.
-                startCompletedSignal = new ManualResetEvent (false);
-                ThreadPool.QueueUserWorkItem (new WaitCallback (this.ServiceQueuedMainCallback), args);
-                startCompletedSignal.WaitOne ();
-                statusOK = NativeMethods.SetServiceStatus (statusHandle, pStatus);
-                if (!statusOK) 
+                _startCompletedSignal = new ManualResetEvent(false);
+                ThreadPool.QueueUserWorkItem(new WaitCallback(this.ServiceQueuedMainCallback), args);
+                _startCompletedSignal.WaitOne();
+                statusOK = SetServiceStatus(_statusHandle, pStatus);
+                if (!statusOK)
                 {
-                    WriteEventLogEntry (Res.GetString (Res.StartFailed, new Win32Exception ().Message), EventLogEntryType.Error);
-                    status.currentState = NativeMethods.STATE_STOPPED;
-                    NativeMethods.SetServiceStatus (statusHandle, pStatus);
+                    WriteLogEntry(SR.Format(SR.StartFailed, new Win32Exception().Message), true);
+                    _status.currentState = ServiceControlStatus.STATE_STOPPED;
+                    SetServiceStatus(_statusHandle, pStatus);
                 }
             }
         }
 
-        private void WriteEventLogEntry (string message) 
+        private void WriteLogEntry(string message, bool error = false)
         {
-            //EventLog failures shouldn't affect the service operation
-            try 
-            {
-                if (AutoLog)
-                    this.EventLog.WriteEntry (message);
-            }
-            #region Stuff not to catch
-            catch (StackOverflowException) 
-            {
-                throw;
-            }
-            catch (OutOfMemoryException) 
-            {
-                throw;
-            }
-            catch (ThreadAbortException) 
-            {
-                throw;
-            }
-            #endregion
-            catch  
-            {
-                // Do nothing.  Not having the event log is bad, but not starting the service as a result is worse.
-            }
-        }
+            // Used to write to EventLog but for now just logging to debug output stream
+            // might want to plumb other logging in the future.
 
-        private void WriteEventLogEntry (string message, EventLogEntryType errorType) 
-        {
-            //EventLog failures shouldn't affect the service operation
-            try 
-            {
-                if (AutoLog)
-                    this.EventLog.WriteEntry (message, errorType);
-            }
-            #region Stuff not to catch
-            catch (StackOverflowException) 
-            {
-                throw;
-            }
-            catch (OutOfMemoryException) 
-            {
-                throw;
-            }
-            catch (ThreadAbortException) 
-            {
-                throw;
-            }
-            #endregion
-            catch  
-            {
-                // Do nothing.  Not having the event log is bad, but not starting the service as a result is worse.
-            }
+            Debug.WriteLine((error ? "Error: " : "") + message);
         }
-    } // class ServiceBase
-} // namespace
+    }
+}
