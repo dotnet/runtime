@@ -5465,7 +5465,7 @@ image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int t
 
 		MONO_HANDLE_ARRAY_SETREF (res, count, rt);
 	} else {
-		MonoException *ex = mono_error_convert_to_exception (error);
+		MonoException *ex = mono_error_convert_to_exception (&klass_error);
 		MONO_HANDLE_ARRAY_SETRAW (exceptions, count, ex);
 	}
 	HANDLE_FUNCTION_RETURN ();
