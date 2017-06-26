@@ -780,7 +780,7 @@ namespace System.Net.Http
             await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
         }
 
-        public async ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             if (request.Version.Major != 1 || request.Version.Minor != 1)
