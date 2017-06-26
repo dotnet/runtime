@@ -735,7 +735,7 @@ namespace System.Net.Http
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
             {
-                await WriteStringAsync(header.Key, cancellationToken).ConfigureAwait(false);
+                await WriteAsciiStringAsync(header.Key, cancellationToken).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
 
                 bool first = true;
@@ -766,7 +766,7 @@ namespace System.Net.Http
             if (!uri.IsDefaultPort)
             {
                 await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);
-                await WriteStringAsync(uri.Port.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+                await WriteAsciiStringAsync(uri.Port.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
             }
 
             await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
@@ -991,6 +991,26 @@ namespace System.Net.Http
             {
                 await WriteCharAsync(s[i], cancellationToken).ConfigureAwait(false);
             }
+        }
+
+        private Task WriteAsciiStringAsync(string s, CancellationToken cancellationToken)
+        {
+            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
+            int offset = _writeOffset;
+            if (s.Length <= BufferSize - offset)
+            {
+                byte[] writeBuffer = _writeBuffer;
+                foreach (char c in s)
+                {
+                    writeBuffer[offset++] = (byte)c;
+                }
+                _writeOffset = offset;
+                return Task.CompletedTask;
+            }
+
+            // Otherwise, fall back to doing a normal string write; we could optimize away
+            // the extra checks later, but the case where we cross a buffer boundary should be rare.
+            return WriteStringAsync(s, cancellationToken);
         }
 
         private async Task FlushAsync(CancellationToken cancellationToken)
