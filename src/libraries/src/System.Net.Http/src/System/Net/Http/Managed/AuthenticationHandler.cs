@@ -10,6 +10,7 @@ namespace System.Net.Http
 {
     internal sealed class AuthenticationHandler : HttpMessageHandler
     {
+        private const string Basic = "Basic";
         private readonly HttpMessageHandler _innerHandler;
         private readonly bool _preAuthenticate;
         private readonly ICredentials _credentials;
@@ -23,13 +24,13 @@ namespace System.Net.Http
 
         private bool TrySetBasicAuthToken(HttpRequestMessage request)
         {
-            NetworkCredential credential = _credentials.GetCredential(request.RequestUri, "Basic");
+            NetworkCredential credential = _credentials.GetCredential(request.RequestUri, Basic);
             if (credential == null)
             {
                 return false;
             }
 
-            request.Headers.Authorization = new AuthenticationHeaderValue("Basic", BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
+            request.Headers.Authorization = new AuthenticationHeaderValue(Basic, BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
             return true;
         }
 
@@ -49,7 +50,7 @@ namespace System.Net.Http
                 foreach (AuthenticationHeaderValue h in authenticateValues)
                 {
                     // We only support Basic auth, ignore others
-                    if (h.Scheme == "Basic")
+                    if (h.Scheme == Basic)
                     {
                         if (!TrySetBasicAuthToken(request))
                         {

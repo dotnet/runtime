@@ -25,14 +25,14 @@ namespace System.Net.Http
             string cookieHeader = _cookieContainer.GetCookieHeader(request.RequestUri);
             if (!string.IsNullOrEmpty(cookieHeader))
             {
-                request.Headers.Add("Cookie", cookieHeader);
+                request.Headers.Add(HttpKnownHeaderNames.Cookie, cookieHeader);
             }
 
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // Handle Set-Cookie
             IEnumerable<string> setCookies;
-            if (response.Headers.TryGetValues("Set-Cookie", out setCookies))
+            if (response.Headers.TryGetValues(HttpKnownHeaderNames.SetCookie, out setCookies))
             {
                 foreach (string setCookie in setCookies)
                 {

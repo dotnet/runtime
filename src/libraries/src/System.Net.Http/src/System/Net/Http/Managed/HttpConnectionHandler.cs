@@ -100,7 +100,7 @@ namespace System.Net.Http
 
             TransportContext transportContext = null;
 
-            if (uri.Scheme == "https")
+            if (uri.Scheme == UriScheme.Https)
             {
                 SslStream sslStream = await EstablishSslConnection(uri.Host, request, stream).ConfigureAwait(false);
 
