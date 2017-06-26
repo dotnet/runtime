@@ -7,11 +7,9 @@ namespace System.Drawing.Text
     using System.Diagnostics;
     using System.Runtime.InteropServices;
 
-    /// <include file='doc\FontCollection.uex' path='docs/doc[@for="FontCollection"]/*' />
-    /// <devdoc>
-    ///    When inherited, enumerates the FontFamily
-    ///    objects in a collection of fonts.
-    /// </devdoc>
+    /// <summary>
+    /// When inherited, enumerates the FontFamily objects in a collection of fonts.
+    /// </summary>
     public abstract class FontCollection : IDisposable
     {
         internal IntPtr nativeFontCollection;
@@ -22,29 +20,23 @@ namespace System.Drawing.Text
             nativeFontCollection = IntPtr.Zero;
         }
 
-        /// <include file='doc\FontCollection.uex' path='docs/doc[@for="FontCollection.Dispose"]/*' />
-        /// <devdoc>
-        ///    Disposes of this <see cref='System.Drawing.Text.FontCollection'/>
-        /// </devdoc>
+        /// <summary>
+        /// Disposes of this <see cref='System.Drawing.Text.FontCollection'/>
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        /// <include file='doc\FontCollection.uex' path='docs/doc[@for="FontCollection.Dispose2"]/*' />
         protected virtual void Dispose(bool disposing)
         {
-            // nothing...
         }
 
-        /// <include file='doc\FontCollection.uex' path='docs/doc[@for="FontCollection.Families"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the array of <see cref='System.Drawing.FontFamily'/>
-        ///       objects associated with this <see cref='System.Drawing.Text.FontCollection'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the array of <see cref='System.Drawing.FontFamily'/> objects associated
+        /// with this <see cref='System.Drawing.Text.FontCollection'/>.
+        /// </summary>
         public FontFamily[] Families
         {
             get
@@ -80,16 +72,6 @@ namespace System.Drawing.Text
             }
         }
 
-        /**
-         * Object cleanup
-         */
-        /// <include file='doc\FontCollection.uex' path='docs/doc[@for="FontCollection.Finalize"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Allows an object to free resources before the object is
-        ///       reclaimed by the Garbage Collector (<see langword='GC'/>).
-        ///    </para>
-        /// </devdoc>
         ~FontCollection()
         {
             Dispose(false);

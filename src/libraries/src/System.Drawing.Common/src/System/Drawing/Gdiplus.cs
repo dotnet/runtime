@@ -2,6 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Internal;
+using System.Text;
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System;
+using System.IO;
+using Microsoft.Win32;
+using System.Drawing;
+using System.Drawing.Internal;
+using System.Drawing.Imaging;
+using System.Drawing.Text;
+using System.Drawing.Drawing2D;
+using System.Threading;
+using System.Security.Permissions;
+using System.Security;
+using System.Runtime.ConstrainedExecution;
+using System.Globalization;
+using System.Runtime.Versioning;
+
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+BITMAP.bmBits")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+DIBSECTION.dshSection")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources", Scope = "member", Target = "System.Drawing.SafeNativeMethods+Gdip.initToken")]
@@ -45,34 +67,8 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812:AvoidUninstantiatedInternalClasses", Scope = "type", Target = "System.Drawing.SafeNativeMethods+Gdip")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.Drawing.SafeNativeMethods+ENHMETAHEADER..ctor()")]
 
-
-
-
-
 namespace System.Drawing
 {
-    using System.Internal;
-    using System.Text;
-    using System.Collections;
-    using System.Runtime.InteropServices;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System;
-    using System.IO;
-    using Microsoft.Win32;
-    using System.Drawing;
-    using System.Drawing.Internal;
-    using System.Drawing.Imaging;
-    using System.Drawing.Text;
-    using System.Drawing.Drawing2D;
-    using System.Threading;
-    using System.Security.Permissions;
-    using System.Security;
-    using System.Runtime.ConstrainedExecution;
-    using System.Globalization;
-    using System.Runtime.Versioning;
-
     [System.Security.SuppressUnmanagedCodeSecurityAttribute()]
     internal class SafeNativeMethods
     {
@@ -90,9 +86,9 @@ namespace System.Drawing
                 Initialize();
             }
 
-            /// <devdoc>
-            ///      Returns true if GDI+ has been started, but not shut down
-            /// </devdoc>
+            /// <summary>
+            /// Returns true if GDI+ has been started, but not shut down
+            /// </summary>
             private static bool Initialized
             {
                 get
@@ -101,12 +97,11 @@ namespace System.Drawing
                 }
             }
 
-            /// <devdoc>
-            ///      This property will give us back a hashtable we can use to store
-            ///      all of our static brushes and pens on a per-thread basis.  This way   
-            ///      we can avoid 'object in use' crashes when different threads are
-            ///      referencing the same drawing object.
-            /// </devdoc>
+            /// <summary>
+            /// This property will give us back a hashtable we can use to store all of our static brushes and pens on
+            /// a per-thread basis. This way we can avoid 'object in use' crashes when different threads are
+            /// referencing the same drawing object.
+            /// </summary>
             internal static IDictionary ThreadData
             {
                 get
@@ -123,7 +118,6 @@ namespace System.Drawing
             }
 
             // Clean up thread data
-            //
             [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
             private static void ClearThreadData()
             {
@@ -132,10 +126,10 @@ namespace System.Drawing
                 Thread.SetData(slot, null);
             }
 
-            /// <devdoc>
-            ///      Initializes GDI+
-            ///      This should only be called by our constructor (static), we do not expect multiple calls per domain
-            /// </devdoc>
+            /// <summary>
+            /// Initializes GDI+
+            /// This should only be called by our constructor (static), we do not expect multiple calls per domain
+            /// </summary>
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals")]
             private static void Initialize()
             {
@@ -170,9 +164,9 @@ namespace System.Drawing
                 }
             }
 
-            /// <devdoc>
-            ///      Shutsdown GDI+
-            /// </devdoc>            
+            /// <summary>
+            /// Shutsdown GDI+
+            /// </summary>            
             private static void Shutdown()
             {
                 Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Shutdown GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
@@ -229,9 +223,7 @@ namespace System.Drawing
                 Shutdown();
             }
 
-            // Fix for Dev10 560430. When we call it in static constructor of other classes,
-            // JIT will make sure the static constructor of Gdip has been called before, 
-            // and GDI+ has been initialized.
+            // Used to ensure static constructor has run.
             internal static void DummyFunction()
             {
             }
@@ -3411,37 +3403,12 @@ namespace System.Drawing
             return System.Internal.HandleCollector.Add(IntCreateBitmap(width, height, planes, bpp, bitmapData), SafeNativeMethods.CommonHandles.GDI);
         }
 
-
-        // FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        //[DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, EntryPoint="CreatePatternBrush", CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        //private static extern IntPtr /*HBRUSH*/ IntCreatePatternBrush(HandleRef hbmp);
-        //public static IntPtr /*HBRUSH*/ CreatePatternBrush(HandleRef hbmp) {
-        //    return System.Internal.HandleCollector.Add(IntCreatePatternBrush(hbmp), SafeNativeMethods.CommonHandles.GDI);
-        //}
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=CharSet.Auto)]
-        public static extern long GetBitmapBits(HandleRef hbmp, long nBytes, byte[] buffer);
-        */
-
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern int BitBlt(HandleRef hDC, int x, int y, int nWidth, int nHeight,
                                          HandleRef hSrcDC, int xSrc, int ySrc, int dwRop);
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        [DllImport(ExternDll.Gdi32)]
-        public static extern IntPtr GetDIBits(HandleRef hdc, HandleRef hbm, int arg1, int arg2, IntPtr arg3, NativeMethods.BITMAPINFOHEADER bmi, int arg5);
-        */
 
         [DllImport(ExternDll.Gdi32)]
         public static extern int GetDIBits(HandleRef hdc, HandleRef hbm, int arg1, int arg2, IntPtr arg3, ref NativeMethods.BITMAPINFO_FLAT bmi, int arg5);
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetPaletteEntries(HandleRef hpal, int iStartIndex, int nEntries, int[] lppe);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetPaletteEntries(HandleRef hpal, int iStartIndex, int nEntries, IntPtr lppe);
-        */
 
         [DllImport(ExternDll.Gdi32)]
         public static extern uint GetPaletteEntries(HandleRef hpal, int iStartIndex, int nEntries, byte[] lppe);
@@ -3473,11 +3440,6 @@ namespace System.Drawing
         [DllImport(ExternDll.Comdlg32, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern bool PrintDlg([In, Out] PRINTDLGX86 lppd);
 
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.                
-        [DllImport(ExternDll.Comdlg32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int PageSetupDlg([In, Out] PAGESETUPDLG lppsd);
-        */
-
         [DllImport(ExternDll.Winspool, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern int DeviceCapabilities(string pDevice, string pPort, short fwCapabilities, IntPtr pOutput, IntPtr /*DEVMODE*/ pDevMode);
 
@@ -3486,17 +3448,6 @@ namespace System.Drawing
 
         [DllImport(ExternDll.Winspool, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto, BestFitMapping = false)]
         public static extern int DocumentProperties(HandleRef hwnd, HandleRef hPrinter, string pDeviceName, IntPtr /*DEVMODE*/ pDevModeOutput, IntPtr /*DEVMODE*/ pDevModeInput, int fMode);
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        [DllImport(ExternDll.Winspool, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetPrinter(HandleRef hPrinter, int level, HandleRef pPrinter, int cbBuf, int[] pcbNeeded);
-
-        [DllImport(ExternDll.Winspool, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool OpenPrinter(string pPrinterName, HandleRef [] phPrinter, HandleRef pDefault);
-        
-        [DllImport(ExternDll.Winspool, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int ClosePrinter(HandleRef hPrinter);
-        */
 
         [DllImport(ExternDll.Winspool, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern int EnumPrinters(int flags, string name, int level, IntPtr pPrinterEnum/*buffer*/,
@@ -3528,53 +3479,6 @@ namespace System.Drawing
         {
             return AddFontResourceEx(fileName, /*FR_PRIVATE*/ 0x10, IntPtr.Zero);
         }
-
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int ExcludeClipRect(HandleRef hDC, int nLeftRect, int nTopRect, int nRightRect, int nBottomRect);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SaveDC(HandleRef hDC);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool RestoreDC(HandleRef hDC, int nSavedDC);        
-       
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool SetWorldTransform(HandleRef hDC, NativeMethods.XFORM xform);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool ModifyWorldTransform( HandleRef hdc, NativeMethods.XFORM lpXform, int iMode );
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool GetWorldTransform( HandleRef hdc, NativeMethods.XFORM lpXform );
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetGraphicsMode(HandleRef hDC, int iMode);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetGraphicsMode(HandleRef hDC);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetNearestColor(HandleRef hDC, int color);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetRgnBox(HandleRef hRegion, ref RECT clipRect);
-
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, EntryPoint="CreateCompatibleDC", CharSet=CharSet.Auto)]
-        public static extern IntPtr IntCreateCompatibleDC(HandleRef hDC);
-        public static IntPtr CreateCompatibleDC(HandleRef hDC) {
-            return System.Internal.HandleCollector.Add(IntCreateCompatibleDC(hDC), SafeNativeMethods.CommonHandles.GDI);
-        }
-        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool Polygon(HandleRef hDC, SafeNativeMethods.POINT[] points, int nCount);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetPolyFillMode(HandleRef hDC, int nPolyFillMode);
-        */
-
 
         internal static IntPtr SaveClipRgn(IntPtr hDC)
         {
@@ -3626,19 +3530,6 @@ namespace System.Drawing
         }
         [DllImport(ExternDll.Kernel32)]
         static internal extern void ZeroMemory(IntPtr destination, UIntPtr length);
-
-        //
-        // WARNING: Don't uncomment this code unless you absolutelly need it.  Use instead Marshal.GetLastWin32Error
-        // and mark your PInvoke [DllImport(..., SetLastError=true)]
-        // From MSDN:
-        // GetLastWin32Error exposes the Win32 GetLastError API method from Kernel32.DLL. This method exists because 
-        // it is not safe to make a direct platform invoke call to GetLastError to obtain this information. If you 
-        // want to access this error code, you must call GetLastWin32Error rather than writing your own platform invoke 
-        // definition for GetLastError and calling it. The common language runtime can make internal calls to APIs that 
-        // overwrite the operating system maintained GetLastError.
-        //
-        //[DllImport(ExternDll.Kernel32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        //public extern static int GetLastError();
 
         public const int ERROR_ACCESS_DENIED = 5;
         public const int ERROR_INVALID_PARAMETER = 87;
@@ -3758,23 +3649,6 @@ namespace System.Drawing
             public int top;
             public int right;
             public int bottom;
-
-            /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-            public static RECT FromXYWH(int x, int y, int width, int height) {
-                return new RECT(x,
-                                y,
-                                x + width,
-                                y + height);
-            }
-
-            public Size Size 
-            {
-                get 
-                {
-                    return new Size(this.right - this.left, this.bottom - this.top);
-                }
-            }
-            */
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -3988,18 +3862,6 @@ namespace System.Drawing
             internal int union2;
             internal int union3;
 
-            /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-            public static PICTDESC CreateBitmapPICTDESC(IntPtr hbitmap, IntPtr hpal) {
-                PICTDESC pictdesc = new PICTDESC();
-                pictdesc.cbSizeOfStruct = 16;
-                pictdesc.picType = Ole.PICTYPE_BITMAP;
-                pictdesc.union1 = hbitmap;
-                pictdesc.union2 = unchecked((int)(((long)hpal) & 0xffffffff));
-                pictdesc.union3 = (int)(((long)hpal) >> 32);
-                return pictdesc;
-            }
-            */
-
             public static PICTDESC CreateIconPICTDESC(IntPtr hicon)
             {
                 PICTDESC pictdesc = new PICTDESC();
@@ -4009,39 +3871,10 @@ namespace System.Drawing
                 return pictdesc;
             }
 
-            /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-            public static PICTDESC CreateEnhMetafilePICTDESC(IntPtr hEMF) {
-                PICTDESC pictdesc = new PICTDESC();
-                pictdesc.cbSizeOfStruct = 12;
-                pictdesc.picType = Ole.PICTYPE_ENHMETAFILE;
-                pictdesc.union1 = hEMF;
-                return pictdesc;
-            }
-
-            public static PICTDESC CreateWinMetafilePICTDESC(IntPtr hmetafile, int x, int y) {
-                PICTDESC pictdesc = new PICTDESC();
-                pictdesc.cbSizeOfStruct = 20;
-                pictdesc.picType = Ole.PICTYPE_METAFILE;
-                pictdesc.union1 = hmetafile;
-                pictdesc.union2 = x;
-                pictdesc.union3 = y;
-                return pictdesc;
-            }
-            */
-
             public virtual IntPtr GetHandle()
             {
                 return union1;
             }
-
-            /*public virtual IntPtr GetHPal() {
-                Debug.Assert((union2 >= 0) && (union3 >= 0));
-
-                long u2 = union2;
-                long u3 = union3;
-                if (picType == Ole.PICTYPE_BITMAP)
-                    return (IntPtr)(u2 | (u3 << 32));
-            */
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
@@ -4138,65 +3971,55 @@ namespace System.Drawing
 #endif
             }
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Accelerator"]/*' />
-            /// <devdoc>
-            ///     Handle type for accelerator tables.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for accelerator tables.
+            /// </summary>
             public static readonly int Accelerator = System.Internal.HandleCollector.RegisterType("Accelerator", 80, 50);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Cursor"]/*' />
-            /// <devdoc>
-            ///     handle type for cursors.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for cursors.
+            /// </summary>
             public static readonly int Cursor = System.Internal.HandleCollector.RegisterType("Cursor", 20, 500);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.EMF"]/*' />
-            /// <devdoc>
-            ///     Handle type for enhanced metafiles.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for enhanced metafiles.
+            /// </summary>
             public static readonly int EMF = System.Internal.HandleCollector.RegisterType("EnhancedMetaFile", 20, 500);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Find"]/*' />
-            /// <devdoc>
-            ///     Handle type for file find handles.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for file find handles.
+            /// </summary>
             public static readonly int Find = System.Internal.HandleCollector.RegisterType("Find", 0, 1000);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.GDI"]/*' />
-            /// <devdoc>
-            ///     Handle type for GDI objects.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for GDI objects.
+            /// </summary>
             public static readonly int GDI = System.Internal.HandleCollector.RegisterType("GDI", 50, 500);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.HDC"]/*' />
-            /// <devdoc>
-            ///     Handle type for HDC's that count against the Win98 limit of five DC's.  HDC's
-            ///     which are not scarce, such as HDC's for bitmaps, are counted as GDIHANDLE's.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for HDC's that count against the Win98 limit of five DC's. 
+            /// HDC's which are not scarce, such as HDC's for bitmaps, are counted as GDIHANDLE's.
+            /// </summary>
             public static readonly int HDC = System.Internal.HandleCollector.RegisterType("HDC", 100, 2); // wait for 2 dc's before collecting
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Icon"]/*' />
-            /// <devdoc>
-            ///     Handle type for icons.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for icons.
+            /// </summary>
             public static readonly int Icon = System.Internal.HandleCollector.RegisterType("Icon", 20, 500);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Kernel"]/*' />
-            /// <devdoc>
-            ///     Handle type for kernel objects.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for kernel objects.
+            /// </summary>
             public static readonly int Kernel = System.Internal.HandleCollector.RegisterType("Kernel", 0, 1000);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Menu"]/*' />
-            /// <devdoc>
-            ///     Handle type for files.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for files.
+            /// </summary>
             public static readonly int Menu = System.Internal.HandleCollector.RegisterType("Menu", 30, 1000);
 
-            /// <include file='doc\SafeNativeMethods.uex' path='docs/doc[@for="SafeNativeMethods.CommonHandles.Window"]/*' />
-            /// <devdoc>
-            ///     Handle type for windows.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for windows.
+            /// </summary>
             public static readonly int Window = System.Internal.HandleCollector.RegisterType("Window", 5, 1000);
 
 #if DEBUG
@@ -4238,26 +4061,8 @@ namespace System.Drawing
             return IntDeleteObject(hObject);
         }
 
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, EntryPoint = "DeleteDC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        internal static extern bool IntDeleteDC(HandleRef hDC);
-        public static bool DeleteDC(HandleRef hDC)
-        {
-            System.Internal.HandleCollector.Remove((IntPtr)hDC, SafeNativeMethods.CommonHandles.GDI);
-            return IntDeleteDC(hDC);
-        }
-        */
-
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
         public static extern IntPtr SelectObject(HandleRef hdc, HandleRef obj);
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        [DllImport(ExternDll.User32, SetLastError=true, EntryPoint="CreateIconIndirect")]
-        private static extern IntPtr IntCreateIconIndirect(SafeNativeMethods.ICONINFO piconinfo);
-        public static IntPtr CreateIconIndirect(SafeNativeMethods.ICONINFO piconinfo) {
-            return System.Internal.HandleCollector.Add(IntCreateIconIndirect(piconinfo), SafeNativeMethods.CommonHandles.Icon);
-        }
-        */
 
         [DllImport(ExternDll.User32, SetLastError = true, EntryPoint = "CreateIconFromResourceEx")]
         private unsafe static extern IntPtr IntCreateIconFromResourceEx(byte* pbIconBits, int cbIconBits, bool fIcon, int dwVersion, int csDesired, int cyDesired, int flags);
@@ -4325,51 +4130,14 @@ namespace System.Drawing
             return GetObject(hObject, System.Runtime.InteropServices.Marshal.SizeOf(typeof(SafeNativeMethods.LOGFONT)), lp);
         }
 
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetObject(HandleRef hObject, int nSize, [In, Out] SafeNativeMethods.DIBSECTION ds);
-        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetObject(HandleRef hObject, int nSize, [In, Out] SafeNativeMethods.LOGPEN lp);
-        public static int GetObject(HandleRef hObject, SafeNativeMethods.LOGPEN lp) {
-            return GetObject(hObject, System.Runtime.InteropServices.Marshal.SizeOf(typeof(SafeNativeMethods.LOGPEN)), lp);
-        }
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetObject(HandleRef hObject, int nSize, [In, Out] SafeNativeMethods.LOGBRUSH lb);
-        public static int GetObject(HandleRef hObject, SafeNativeMethods.LOGBRUSH lb) {
-            return GetObject(hObject, System.Runtime.InteropServices.Marshal.SizeOf(typeof(SafeNativeMethods.LOGBRUSH)), lb);
-        }
-        
-        //HPALETTE
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetObject(HandleRef hObject, int nSize, ref int nEntries);
-        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetObject(HandleRef hObject, int nSize, int[] nEntries);
-        */
-
         [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern bool GetIconInfo(HandleRef hIcon, [In, Out] SafeNativeMethods.ICONINFO info);
 
         [DllImport(ExternDll.User32, SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern int GetSysColor(int nIndex);
 
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        [DllImport(ExternDll.User32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool DrawIcon(HandleRef hDC, int x, int y, HandleRef hIcon);
-        */
-
         [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         public static extern bool DrawIconEx(HandleRef hDC, int x, int y, HandleRef hIcon, int width, int height, int iStepIfAniCursor, HandleRef hBrushFlickerFree, int diFlags);
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.               
-        [DllImport(ExternDll.Oleaut32, PreserveSig=false)]
-        public static extern IPicture OleLoadPicture(UnsafeNativeMethods.IStream pStream, int lSize, bool fRunmode, ref Guid refiid);
-        
-        [DllImport(ExternDll.Oleaut32, PreserveSig=false)]
-        public static extern IPicture OleLoadPictureEx(UnsafeNativeMethods.IStream pStream, int lSize, bool fRunmode, ref Guid refiid, int width, int height, int dwFlags);
-        */
-
 
 #if CUSTOM_MARSHALING_ISTREAM
         [DllImport(ExternDll.Oleaut32, PreserveSig=false)]
@@ -4523,170 +4291,6 @@ namespace System.Drawing
             TRANSPARENT = 1,
             OPAQUE = 2
         }
-
-        // FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        //[DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        //public static extern int /*COLORREF*/ SetTextColor(HandleRef hDC, int crColor);
-
-        // FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.        
-        //[DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        //public static extern int /*COLORREF*/ GetTextColor(HandleRef hDC);
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetBkColor(HandleRef hDC, int clr);
-
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetBkMode(HandleRef hDC, int nBkMode);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetBkColor(HandleRef hDC);
-
-        [DllImport(ExternDll.User32, SetLastError=true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int DrawText(HandleRef hDC, string lpszString, int nCount, ref SafeNativeMethods.RECT lpRect, int nFormat);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetTextExtentPoint32(HandleRef hDC, string str, int len, [In, Out] SafeNativeMethods.SIZE size);
-    
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern bool LineTo(HandleRef hdc, int x, int y);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern bool MoveToEx(HandleRef hdc, int x, int y, SafeNativeMethods.POINT pt);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern bool Rectangle(HandleRef hdc, int left, int top, int right, int bottom);
-
-        [DllImport(ExternDll.User32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int FillRect(HandleRef hdc, [In] ref SafeNativeMethods.RECT rect, HandleRef hbrush);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, EntryPoint = "CreateSolidBrush", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private static extern IntPtr IntCreateSolidBrush(int crColor);
-        public static IntPtr CreateSolidBrush(int crColor) 
-        {
-            return System.Internal.HandleCollector.Add(IntCreateSolidBrush(crColor), SafeNativeMethods.CommonHandles.GDI);
-        }
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, EntryPoint = "CreateHatchBrush", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private static extern IntPtr IntCreateHatchBrush(int fnStyle, int crColor);
-        public static IntPtr CreateHatchBrush(int fnStyle, int crColor) 
-        {
-            return System.Internal.HandleCollector.Add(IntCreateHatchBrush(fnStyle, crColor), SafeNativeMethods.CommonHandles.GDI);
-        }
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, EntryPoint = "CreatePen", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private static extern IntPtr IntCreatePen(int fnStyle, int nWidth, int crColor);
-        public static IntPtr CreatePen(int fnStyle, int nWidth, int crColor)
-        {
-            return System.Internal.HandleCollector.Add(IntCreatePen(fnStyle, nWidth, crColor), SafeNativeMethods.CommonHandles.GDI);
-        }
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, EntryPoint = "ExtCreatePen", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        private static extern IntPtr IntExtCreatePen(int fnStyle, int dwWidth, SafeNativeMethods.LOGBRUSH lplb, int dwStyleCount, [MarshalAs(UnmanagedType.LPArray)] int[] lpStyle);
-        public static IntPtr ExtCreatePen(int fnStyle, int dwWidth, SafeNativeMethods.LOGBRUSH lplb, int dwStyleCount, int[] lpStyle)
-        {
-            return System.Internal.HandleCollector.Add(IntExtCreatePen(fnStyle, dwWidth, lplb, dwStyleCount, lpStyle), SafeNativeMethods.CommonHandles.GDI);
-        }
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetROP2(HandleRef hDC, int nDrawMode);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetMapMode(HandleRef hDC, int nMapMode);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern IntPtr GetCurrentObject(HandleRef hDC, uint uObjectType);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-        public static extern int GetTextMetricsW(HandleRef hDC, [In, Out] ref SafeNativeMethods.TEXTMETRIC lptm);
-
-        public static int GetTextMetrics(HandleRef hDC, ref SafeNativeMethods.TEXTMETRIC lptm) {
-            return SafeNativeMethods.GetTextMetricsW(hDC, ref lptm);
-        }
-
-        [DllImport(ExternDll.Kernel32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int FormatMessage(int dwFlags, HandleRef lpSource, int dwMessageId, int dwLanguageId, StringBuilder lpBuffer, int nSize, HandleRef arguments);
-    
-        [DllImport(ExternDll.Kernel32, SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetUserDefaultLCID();
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetTextAlign(HandleRef hDC, int nMode);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetSystemPaletteUse(HandleRef hDc);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetSystemPaletteUse(HandleRef hDc, int iStartIndex, int nEntries, HandleRef lppe);
-        */
-
-        // FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        //[DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, EntryPoint="CreatePalette", CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        //private static extern IntPtr /*HPALETTE*/ IntCreatePalette(HandleRef lplgpl);
-        //public static IntPtr /*HPALETTE*/ CreatePalette(HandleRef lplgpl) {
-        //    IntPtr result = IntCreatePalette(lplgpl);
-        //    if(result == IntPtr.Zero) {
-        //        Debug.WriteLine("IntCreatePalette failed : " + DbgUtil.GetLastErrorStr());
-        //        throw new Win32Exception();
-        //    }
-        //    return System.Internal.HandleCollector.Add(result, SafeNativeMethods.CommonHandles.GDI);
-        //}
-
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int SetPixel(HandleRef hDc, int x, int y, int color);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool Ellipse(HandleRef hDc, int x1, int y1, int x2, int y2);
-
-        [DllImport(ExternDll.User32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool DrawFocusRect(HandleRef hDc, ref SafeNativeMethods.RECT lpRect);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool GdiFlush();
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, CharSet=CharSet.Auto)]
-        public static extern int GetObject(HandleRef hObject, int nSize, [In, Out] NativeMethods.BITMAP bm);
-
-
-        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, EntryPoint="CreateDIBSection", CharSet=CharSet.Auto)]
-        public static extern IntPtr IntCreateDIBSection(HandleRef hdc, ref NativeMethods.BITMAPINFO bmi, int iUsage, ref IntPtr ppvBits, IntPtr hSection, int dwOffset);
-        public static IntPtr CreateDIBSection(HandleRef hdc, ref NativeMethods.BITMAPINFO bmi, int iUsage, ref IntPtr ppvBits, IntPtr hSection, int dwOffset) {
-            return System.Internal.HandleCollector.Add(IntCreateDIBSection(hdc, ref bmi, iUsage, ref ppvBits, hSection, dwOffset), SafeNativeMethods.CommonHandles.GDI);
-        }
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool DPtoLP(HandleRef hDC, [In, Out] ref POINT lpRect, int nCount);       
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern int GetMapMode(HandleRef hDC);
-        
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool BeginPath(HandleRef hDC);
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool EndPath(HandleRef hDC);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool StrokePath(HandleRef hDC);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool AngleArc(HandleRef hDC, int x, int y, int radius, float startAngle, float endAngle);
-
-        [DllImport(ExternDll.Gdi32, SetLastError=true, ExactSpelling=true, CharSet=System.Runtime.InteropServices.CharSet.Auto)]
-        public static extern bool Arc(HandleRef hDC, int nLeftRect,   // x-coord of rectangle's upper-left corner
-                                  int nTopRect,    // y-coord of rectangle's upper-left corner
-                                  int nRightRect,  // x-coord of rectangle's lower-right corner
-                                  int nBottomRect, // y-coord of rectangle's lower-right corner
-                                  int nXStartArc,  // x-coord of first radial ending point
-                                  int nYStartArc,  // y-coord of first radial ending point
-                                  int nXEndArc,    // x-coord of second radial ending point
-                                  int nYEndArc     // y-coord of second radial ending point
-                                );
-     
-        */
     }
 }
 

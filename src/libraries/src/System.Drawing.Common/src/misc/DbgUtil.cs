@@ -2,20 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Permissions;
+using System.Text;
+
 namespace System.Drawing.Internal
 {
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-    using System.Security.Permissions;
-    using System.Text;
-
-
-    /// <include file='doc\DbgUtil.uex' path='docs/doc[@for="DbgUtil"]/*' />
-    /// <devdoc>
+    /// <summary>
     /// Debug help utility.
-    /// </devdoc>
+    /// </summary>
     [
     ReflectionPermission(SecurityAction.Assert, MemberAccess = true),
     EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
@@ -43,13 +41,10 @@ namespace System.Drawing.Internal
         public static int finalizeMaxFrameCount = 5;
 #pragma warning restore 0414
 
-        // Methods
-
-
-        /// <devdoc>
-        ///   Call this method from your Dispose(bool) to assert that unmanaged resources has been explicitly disposed.
-        /// </devdoc>
-        [Conditional("DEBUG")] // This code will be compiled into the assembly anyways, it is up to the compiler to ignore the call.
+        /// <summary>
+        /// Call this method from your Dispose(bool) to assert that unmanaged resources has been explicitly disposed.
+        /// </summary>
+        [Conditional("DEBUG")]
         public static void AssertFinalization(object obj, bool disposing)
         {
 #if GDI_FINALIZATION_WATCH
@@ -86,8 +81,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
         [Conditional("DEBUG")]
         public static void AssertWin32(bool expression, string message)
         {
@@ -99,8 +92,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
         [Conditional("DEBUG")]
         public static void AssertWin32(bool expression, string format, object arg1)
         {
@@ -113,8 +104,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
         [Conditional("DEBUG")]
         public static void AssertWin32(bool expression, string format, object arg1, object arg2)
         {
@@ -127,8 +116,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
         [Conditional("DEBUG")]
         public static void AssertWin32(bool expression, string format, object arg1, object arg2, object arg3)
         {
@@ -141,8 +128,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
         [Conditional("DEBUG")]
         public static void AssertWin32(bool expression, string format, object arg1, object arg2, object arg3, object arg4)
         {
@@ -155,8 +140,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
         [Conditional("DEBUG")]
         public static void AssertWin32(bool expression, string format, object arg1, object arg2, object arg3, object arg4, object arg5)
         {
@@ -169,9 +152,7 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        /// <devdoc>
-        /// </devdoc>
-        [Conditional("DEBUG")] // This code will be compiled into the assembly anyways, it is up to the compiler to ignore the call.
+        [Conditional("DEBUG")]
         private static void AssertWin32Impl(bool expression, string format, object[] args)
         {
 #if DEBUG
@@ -183,7 +164,6 @@ namespace System.Drawing.Internal
 #endif
         }
 
-        //
         // WARNING: Your PInvoke function needs to have the DllImport.SetLastError=true for this method
         // to work properly.  From the MSDN:
         // GetLastWin32Error exposes the Win32 GetLastError API method from Kernel32.DLL. This method exists 
@@ -194,7 +174,6 @@ namespace System.Drawing.Internal
         //
         // You can only use this method to obtain error codes if you apply the System.Runtime.InteropServices.DllImportAttribute
         // to the method signature and set the SetLastError field to true.
-        //              
         public static string GetLastErrorStr()
         {
             int MAX_SIZE = 255;
@@ -229,21 +208,18 @@ namespace System.Drawing.Internal
             return String.Format(CultureInfo.CurrentCulture, "0x{0:x8} - {1}", err, message);
         }
 
-        /// <devdoc>
-        ///   Duplicated here from ClientUtils not to depend on that code because this class is to be
-        ///   compiled into System.Drawing and System.Windows.Forms.
-        /// </devdoc>
+        /// <summary>
+        /// Duplicated here from ClientUtils not to depend on that code because this class is to be compiled into
+        /// System.Drawing and System.Windows.Forms.
+        /// </summary>
         private static bool IsCriticalException(Exception ex)
         {
             return
-                //ex is NullReferenceException ||
                 ex is StackOverflowException ||
                 ex is OutOfMemoryException ||
                 ex is System.Threading.ThreadAbortException;
         }
 
-        /// <devdoc>
-        /// </devdoc>
         public static string StackTrace
         {
             get
@@ -252,10 +228,10 @@ namespace System.Drawing.Internal
             }
         }
 
-        /// <devdoc>
-        ///   Returns information about the top stack frames in a string format.  The input param determines the number of
-        ///   frames to include.
-        /// </devdoc>
+        /// <summary>
+        /// Returns information about the top stack frames in a string format.  The input param determines the number of
+        /// frames to include.
+        /// </summary>
         public static string StackFramesToStr(int maxFrameCount)
         {
             string trace = String.Empty;
@@ -329,7 +305,7 @@ namespace System.Drawing.Internal
             }
             catch (Exception ex)
             {
-                if (DbgUtil.IsCriticalException(ex))
+                if (IsCriticalException(ex))
                 {
                     throw;  //rethrow critical exception.
                 }
@@ -339,26 +315,26 @@ namespace System.Drawing.Internal
             return trace.ToString();
         }
 
-        /// <devdoc>
-        ///   Returns information about the top stack frames in a string format.
-        /// </devdoc>
+        /// <summary>
+        /// Returns information about the top stack frames in a string format.
+        /// </summary>
         public static string StackFramesToStr()
         {
-            return StackFramesToStr(DbgUtil.gdipInitMaxFrameCount);
+            return StackFramesToStr(gdipInitMaxFrameCount);
         }
 
-        /// <devdoc>
-        ///   Returns information about the top stack frames in a string format.  The input param determines the number of
-        ///   frames to include.  The 'message' parameter is used as the header of the returned string.
-        /// </devdoc>
+        /// <summary>
+        /// Returns information about the top stack frames in a string format.  The input param determines the number of
+        /// frames to include. The 'message' parameter is used as the header of the returned string.
+        /// </summary>
         public static string StackTraceToStr(string message, int frameCount)
         {
             return String.Format(CultureInfo.CurrentCulture, "{0}\r\nTop Stack Trace:\r\n{1}", message, DbgUtil.StackFramesToStr(frameCount));
         }
 
-        /// <devdoc>
-        ///   Returns information about the top stack frames in a string format. The 'message' parameter is used as the header of the returned string.
-        /// </devdoc>
+        /// <summary>
+        /// Returns information about the top stack frames in a string format. The 'message' parameter is used as the header of the returned string.
+        /// </summary>
         public static string StackTraceToStr(string message)
         {
             return StackTraceToStr(message, DbgUtil.gdipInitMaxFrameCount);

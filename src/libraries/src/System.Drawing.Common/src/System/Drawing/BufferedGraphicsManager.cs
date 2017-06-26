@@ -2,30 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.ConstrainedExecution;
+
 namespace System.Drawing
 {
-    using System.Runtime.ConstrainedExecution;
-
-    /// <include file='doc\BufferedGraphicsManager.uex' path='docs/doc[@for="BufferedGraphicsManager"]/*' />
-    /// <devdoc>
-    ///         The BufferedGraphicsManager is used for accessing a BufferedGraphicsContext.
-    /// </devdoc>
+    /// <summary>
+    /// The BufferedGraphicsManager is used for accessing a BufferedGraphicsContext.
+    /// </summary>
     public sealed class BufferedGraphicsManager
     {
         private static BufferedGraphicsContext s_bufferedGraphicsContext;
 
-        /// <include file='doc\BufferedGraphicsManager.uex' path='docs/doc[@for="BufferedGraphicsManager.BufferedGraphicsManager"]/*' />
-        /// <devdoc>
-        ///         Private constructor.
-        /// </devdoc>
+        /// <summary>
+        /// Private constructor.
+        /// </summary>
         private BufferedGraphicsManager()
         {
         }
 
-        /// <include file='doc\BufferedGraphicsManager.uex' path='docs/doc[@for="BufferedGraphicsManager.BufferedGraphicsManager"]/*' />
-        /// <devdoc>
-        ///         Static constructor.  Here, we hook the exit & unload events so we can clean up our context buffer.
-        /// </devdoc>
+        /// <summary>
+        /// Static constructor.  Here, we hook the exit & unload events so we can clean up our context buffer.
+        /// </summary>
         static BufferedGraphicsManager()
         {
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(BufferedGraphicsManager.OnShutdown);
@@ -33,10 +30,9 @@ namespace System.Drawing
             s_bufferedGraphicsContext = new BufferedGraphicsContext();
         }
 
-        /// <include file='doc\BufferedGraphicsManager.uex' path='docs/doc[@for="BufferedGraphicsManager.Current"]/*' />
-        /// <devdoc>
-        ///         Retrieves the context associated with the app domain.
-        /// </devdoc>
+        /// <summary>
+        /// Retrieves the context associated with the app domain.
+        /// </summary>
         public static BufferedGraphicsContext Current
         {
             get
@@ -45,10 +41,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\BufferedGraphicsManager.uex' path='docs/doc[@for="BufferedGraphicsManager.OnProcessExit"]/*' />
-        /// <devdoc>
-        ///         Called on process exit
-        /// </devdoc>
+        /// <summary>
+        /// Called on process exit
+        /// </summary>
         [PrePrepareMethod]
         private static void OnShutdown(object sender, EventArgs e)
         {

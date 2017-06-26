@@ -4,83 +4,46 @@
 
 namespace System.Drawing
 {
-    /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies alignment of content on the drawing surface.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies alignment of content on the drawing surface.
+    /// </summary>
     public enum ContentAlignment
     {
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.TopLeft"]/*' />
-        /// <devdoc>
-        ///    Content is vertically aligned at the top, and horizontally
-        ///    aligned on the left.
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned at the top, and horizontally aligned on the left.
+        /// </summary>
         TopLeft = 0x001,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.TopCenter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned at the top, and
-        ///       horizontally aligned at the center.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned at the top, and horizontally aligned at the center.
+        /// </summary>
         TopCenter = 0x002,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.TopRight"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned at the top, and
-        ///       horizontally aligned on the right.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned at the top, and horizontally aligned on the right.
+        /// </summary>
         TopRight = 0x004,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.MiddleLeft"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned in the middle, and
-        ///       horizontally aligned on the left.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned in the middle, and horizontally aligned on the left.
+        /// </summary>
         MiddleLeft = 0x010,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.MiddleCenter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned in the middle, and
-        ///       horizontally aligned at the center.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned in the middle, and horizontally aligned at the center.
+        /// </summary>
         MiddleCenter = 0x020,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.MiddleRight"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned in the middle, and horizontally aligned on the
-        ///       right.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned in the middle, and horizontally aligned on the right.
+        /// </summary>
         MiddleRight = 0x040,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.BottomLeft"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned at the bottom, and horizontally aligned on the
-        ///       left.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned at the bottom, and horizontally aligned on the left.
+        /// </summary>
         BottomLeft = 0x100,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.BottomCenter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned at the bottom, and horizontally aligned at the
-        ///       center.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned at the bottom, and horizontally aligned at the center.
+        /// </summary>
         BottomCenter = 0x200,
-        /// <include file='doc\ContentAlignment.uex' path='docs/doc[@for="ContentAlignment.BottomRight"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Content is vertically aligned at the bottom, and horizontally aligned on the
-        ///       right.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Content is vertically aligned at the bottom, and horizontally aligned on the right.
+        /// </summary>
         BottomRight = 0x400,
     }
 }

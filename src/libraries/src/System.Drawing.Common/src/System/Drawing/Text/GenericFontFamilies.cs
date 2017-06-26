@@ -4,29 +4,22 @@
 
 namespace System.Drawing.Text
 {
-    /**
-     * GenericFontFamilies
-     */
-    /// <include file='doc\GenericFontFamilies.uex' path='docs/doc[@for="GenericFontFamilies"]/*' />
-    /// <devdoc>
-    ///    Specifies a generic <see cref='System.Drawing.FontFamily'/>.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies a generic <see cref='System.Drawing.FontFamily'/>.
+    /// </summary>
     public enum GenericFontFamilies
     {
-        /// <include file='doc\GenericFontFamilies.uex' path='docs/doc[@for="GenericFontFamilies.Serif"]/*' />
-        /// <devdoc>
-        ///    A generic Serif <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// A generic Serif <see cref='System.Drawing.FontFamily'/>.
+        /// </summary>
         Serif,
-        /// <include file='doc\GenericFontFamilies.uex' path='docs/doc[@for="GenericFontFamilies.SansSerif"]/*' />
-        /// <devdoc>
-        ///    A generic SansSerif <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// A generic SansSerif <see cref='System.Drawing.FontFamily'/>.
+        /// </summary>
         SansSerif,
-        /// <include file='doc\GenericFontFamilies.uex' path='docs/doc[@for="GenericFontFamilies.Monospace"]/*' />
-        /// <devdoc>
-        ///    A generic Monospace <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// A generic Monospace <see cref='System.Drawing.FontFamily'/>.
+        /// </summary>
         Monospace
     }
 }

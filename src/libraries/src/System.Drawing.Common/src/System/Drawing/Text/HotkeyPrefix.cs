@@ -4,34 +4,22 @@
 
 namespace System.Drawing.Text
 {
-    /// <include file='doc\HotkeyPrefix.uex' path='docs/doc[@for="HotkeyPrefix"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the type of display for hotkey prefixes for text.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the type of display for hotkey prefixes for text.
+    /// </summary>
     public enum HotkeyPrefix
     {
-        /// <include file='doc\HotkeyPrefix.uex' path='docs/doc[@for="HotkeyPrefix.None"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       No hotkey prefix.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// No hotkey prefix.
+        /// </summary>
         None = 0,
-        /// <include file='doc\HotkeyPrefix.uex' path='docs/doc[@for="HotkeyPrefix.Show"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Display the hotkey prefix.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Display the hotkey prefix.
+        /// </summary>
         Show = 1,
-        /// <include file='doc\HotkeyPrefix.uex' path='docs/doc[@for="HotkeyPrefix.Hide"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Do not display the hotkey prefix.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Do not display the hotkey prefix.
+        /// </summary>
         Hide = 2
     }
 }
