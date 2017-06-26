@@ -116,7 +116,7 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !!_disposed)
+            if (disposing && !_disposed)
             {
                 _disposed = true;
 
