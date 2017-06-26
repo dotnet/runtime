@@ -4,52 +4,43 @@
 
 namespace System.Drawing
 {
-    /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming"]/*' />
-    /// <devdoc>
-    ///    Specifies how to trim characters from a
-    ///    string that does not completely fit into a layout shape.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies how to trim characters from a string that does not completely fit into a layout shape.
+    /// </summary>
     public enum StringTrimming
     {
-        /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming.None"]/*' />
-        /// <devdoc>
-        ///    Specifies no trimming.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies no trimming.
+        /// </summary>
         None = 0,
 
-        /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming.Character"]/*' />
-        /// <devdoc>
-        ///    Specifies that the string is broken at the boundary of the last character that is 
-        ///    inside the layout rectangle. This is the default.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies that the string is broken at the boundary of the last character
+        /// that is inside the layout rectangle. This is the default.
+        /// </summary>
         Character = 1,
 
-        /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming.Word"]/*' />
-        /// <devdoc>
-        ///    Specifies that the string is broken at the boundary of the last word that is inside 
-        ///    the layout rectangle.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies that the string is broken at the boundary of the last word that is inside the layout rectangle.
+        /// </summary>
         Word = 2,
 
-        /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming.EllipsisCharacter"]/*' />
-        /// <devdoc>
-        ///    Specifies that the string is broken at the boundary of the last character that is inside 
-        ///    the layout rectangle and an ellipsis (...) is inserted after the character. 
-        /// </devdoc>
+        /// <summary>
+        /// Specifies that the string is broken at the boundary of the last character that is inside 
+        /// the layout rectangle and an ellipsis (...) is inserted after the character. 
+        /// </summary>
         EllipsisCharacter = 3,
 
-        /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming.EllipsisWord"]/*' />
-        /// <devdoc>
-        ///    Specifies that the string is broken at the boundary of the last word that is inside the 
-        ///    layout rectangle and an ellipsis (...) is inserted after the word.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies that the string is broken at the boundary of the last word that is inside the 
+        /// layout rectangle and an ellipsis (...) is inserted after the word.
+        /// </summary>
         EllipsisWord = 4,
 
-        /// <include file='doc\StringTrimming.uex' path='docs/doc[@for="StringTrimming.EllipsisPath"]/*' />
-        /// <devdoc>
-        ///    Specifies that the center is removed from the string and replaced by an ellipsis. 
-        ///    The algorithm keeps as much of the last portion of the string as possible. 
-        /// </devdoc>
+        /// <summary>
+        /// Specifies that the center is removed from the string and replaced by an ellipsis. 
+        /// The algorithm keeps as much of the last portion of the string as possible. 
+        /// </summary>
         EllipsisPath = 5
     }
 }

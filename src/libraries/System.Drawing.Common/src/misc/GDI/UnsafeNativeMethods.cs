@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Internal
 {
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-
     [System.Security.SuppressUnmanagedCodeSecurityAttribute]
     internal static partial class IntUnsafeNativeMethods
     {
@@ -19,10 +19,10 @@ namespace System.Drawing.Internal
             return hdc;
         }
 
-        /// <devdoc>
-        ///     NOTE: DeleteDC is to be used to delete the hdc created from CreateCompatibleDC ONLY.  All other hdcs should be
-        ///     deleted with DeleteHDC.
-        /// </devdoc>
+        /// <summary>
+        /// NOTE: DeleteDC is to be used to delete the hdc created from CreateCompatibleDC ONLY. All other hdcs shoul
+        /// be deleted with DeleteHDC.
+        /// </summary>
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteDC", CharSet = CharSet.Auto)]
         public static extern bool IntDeleteDC(HandleRef hDC);
         public static bool DeleteDC(HandleRef hDC)
@@ -67,10 +67,10 @@ namespace System.Drawing.Internal
             return hdc;
         }
 
-        /// <devdoc>
-        ///     CreateCompatibleDC requires to add a GDI handle instead of an HDC handle to avoid perf penalty in HandleCollector.
-        ///     The hdc obtained from this method needs to be deleted with DeleteDC instead of DeleteHDC.
-        /// </devdoc>
+        /// <summary>
+        /// CreateCompatibleDC requires to add a GDI handle instead of an HDC handle to avoid perf penalty in HandleCollector.
+        /// The hdc obtained from this method needs to be deleted with DeleteDC instead of DeleteHDC.
+        /// </summary>
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "CreateCompatibleDC", CharSet = CharSet.Auto)]
         public static extern IntPtr IntCreateCompatibleDC(HandleRef hDC);
         public static IntPtr CreateCompatibleDC(HandleRef hDC)

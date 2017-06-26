@@ -2,62 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Diagnostics;
+using System.ComponentModel;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+
 namespace System.Drawing
 {
-    using System.Runtime.InteropServices;
-    using System.Diagnostics;
-    using System.ComponentModel;
-    using System.Drawing.Drawing2D;
-    using System.Drawing.Imaging;
-
-    /**
-     * Represent a Texture brush object
-     */
-    /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush"]/*' />
-    /// <devdoc>
-    ///    Encapsulates a <see cref='System.Drawing.Brush'/> that uses an fills the
-    ///    interior of a shape with an image.
-    /// </devdoc>
+    /// <summary>
+    /// Encapsulates a <see cref='System.Drawing.Brush'/> that fills the interior of a shape with an image.
+    /// </summary>
     public sealed class TextureBrush : Brush
     {
-        /**
-         * Create a new texture brush object
-         *
-         * @notes Should the rectangle parameter be Rectangle or RectF?
-         *  We'll use Rectangle to specify pixel unit source image
-         *  rectangle for now. Eventually, we'll need a mechanism
-         *  to specify areas of an image in a resolution-independent way.
-         *
-         * @notes We'll make a copy of the bitmap object passed in.
-         */
-
         // When creating a texture brush from a metafile image, the dstRect
         // is used to specify the size that the metafile image should be
         // rendered at in the device units of the destination graphics.
         // It is NOT used to crop the metafile image, so only the width 
         // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/>
-        ///    class with the specified image.
-        /// </devdoc>
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image.
+        /// </summary>
         public TextureBrush(Image bitmap)
             : this(bitmap, System.Drawing.Drawing2D.WrapMode.Tile)
         {
         }
 
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/>
-        ///       class with the specified image and wrap mode.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image and wrap mode.
+        /// </summary>
         public TextureBrush(Image image, WrapMode wrapMode)
         {
             if (image == null)
@@ -82,19 +56,10 @@ namespace System.Drawing
             SetNativeBrushInternal(brush);
         }
 
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        // float version
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush2"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/>
-        ///       class with the specified image, wrap mode, and bounding rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image,
+        /// wrap mode, and bounding rectangle.
+        /// </summary>
         public TextureBrush(Image image, WrapMode wrapMode, RectangleF dstRect)
         {
             if (image == null)
@@ -123,19 +88,10 @@ namespace System.Drawing
             SetNativeBrushInternal(brush);
         }
 
-        // int version
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush3"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/>
-        ///       class with the specified image, wrap mode, and bounding rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image,
+        /// wrap mode, and bounding rectangle.
+        /// </summary>
         public TextureBrush(Image image, WrapMode wrapMode, Rectangle dstRect)
         {
             if (image == null)
@@ -167,36 +123,19 @@ namespace System.Drawing
         }
 
 
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush4"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image
-        ///       and bounding rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image
+        /// and bounding rectangle.
+        /// </summary>
         public TextureBrush(Image image, RectangleF dstRect)
-        : this(image, dstRect, (ImageAttributes)null)
+            : this(image, dstRect, (ImageAttributes)null)
         { }
 
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush5"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified
-        ///       image, bounding rectangle, and image attributes.
-        ///    </para>
-        /// </devdoc>
-        public TextureBrush(Image image, RectangleF dstRect,
-                            ImageAttributes imageAttr)
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image,
+        /// bounding rectangle, and image attributes.
+        /// </summary>
+        public TextureBrush(Image image, RectangleF dstRect, ImageAttributes imageAttr)
         {
             if (image == null)
                 throw new ArgumentNullException("image");
@@ -220,36 +159,19 @@ namespace System.Drawing
             SetNativeBrushInternal(brush);
         }
 
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush6"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image
-        ///       and bounding rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified image
+        /// and bounding rectangle.
+        /// </summary>
         public TextureBrush(Image image, Rectangle dstRect)
-        : this(image, dstRect, (ImageAttributes)null)
+            : this(image, dstRect, (ImageAttributes)null)
         { }
 
-        // When creating a texture brush from a metafile image, the dstRect
-        // is used to specify the size that the metafile image should be
-        // rendered at in the device units of the destination graphics.
-        // It is NOT used to crop the metafile image, so only the width 
-        // and height values matter for metafiles.
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TextureBrush7"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified
-        ///       image, bounding rectangle, and image attributes.
-        ///    </para>
-        /// </devdoc>
-        public TextureBrush(Image image, Rectangle dstRect,
-                            ImageAttributes imageAttr)
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.TextureBrush'/> class with the specified
+        /// image, bounding rectangle, and image attributes.
+        /// </summary>
+        public TextureBrush(Image image, Rectangle dstRect, ImageAttributes imageAttr)
         {
             if (image == null)
                 throw new ArgumentNullException("image");
@@ -273,19 +195,18 @@ namespace System.Drawing
             SetNativeBrushInternal(brush);
         }
 
-        /// <devdoc>
-        ///     Constructor to initialized this object to be owned by GDI+.
-        /// </devdoc>
+        /// <summary>
+        /// Constructor to initialize this object to be owned by GDI+.
+        /// </summary>
         internal TextureBrush(IntPtr nativeBrush)
         {
             Debug.Assert(nativeBrush != IntPtr.Zero, "Initializing native brush with null.");
             SetNativeBrushInternal(nativeBrush);
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.Clone"]/*' />
-        /// <devdoc>
-        ///    Creates an exact copy of this <see cref='System.Drawing.TextureBrush'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Creates an exact copy of this <see cref='System.Drawing.TextureBrush'/>.
+        /// </summary>
         public override Object Clone()
         {
             IntPtr cloneBrush = IntPtr.Zero;
@@ -299,9 +220,6 @@ namespace System.Drawing
         }
 
 
-        /**
-         * Set/get brush transform
-         */
         private void _SetTransform(Matrix matrix)
         {
             int status = SafeNativeMethods.Gdip.GdipSetTextureTransform(new HandleRef(this, NativeBrush), new HandleRef(matrix, matrix.nativeMatrix));
@@ -324,13 +242,10 @@ namespace System.Drawing
             return matrix;
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.Transform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a <see cref='System.Drawing.Drawing2D.Matrix'/> that defines a local geometrical
-        ///       transform for this <see cref='System.Drawing.TextureBrush'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a <see cref='System.Drawing.Drawing2D.Matrix'/> that defines a local geometrical
+        /// transform for this <see cref='System.Drawing.TextureBrush'/>.
+        /// </summary>
         public Matrix Transform
         {
             get { return _GetTransform(); }
@@ -345,9 +260,6 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Set/get brush wrapping mode
-         */
         private void _SetWrapMode(WrapMode wrapMode)
         {
             int status = SafeNativeMethods.Gdip.GdipSetTextureWrapMode(new HandleRef(this, NativeBrush), unchecked((int)wrapMode));
@@ -372,13 +284,10 @@ namespace System.Drawing
             return (WrapMode)mode;
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.WrapMode"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a <see cref='System.Drawing.Drawing2D.WrapMode'/> that indicates the wrap mode for this
-        ///    <see cref='System.Drawing.TextureBrush'/>. 
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a <see cref='System.Drawing.Drawing2D.WrapMode'/> that indicates the wrap mode for this
+        /// <see cref='System.Drawing.TextureBrush'/>. 
+        /// </summary>
         public WrapMode WrapMode
         {
             get
@@ -398,12 +307,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.Image"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the <see cref='System.Drawing.Image'/> associated with this <see cref='System.Drawing.TextureBrush'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the <see cref='System.Drawing.Image'/> associated with this <see cref='System.Drawing.TextureBrush'/>.
+        /// </summary>
         public Image Image
         {
             get
@@ -421,13 +327,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.ResetTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Resets the <see cref='System.Drawing.Drawing2D.LinearGradientBrush.Transform'/> property to
-        ///       identity.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Resets the <see cref='System.Drawing.Drawing2D.LinearGradientBrush.Transform'/> property to identity.
+        /// </summary>
         public void ResetTransform()
         {
             int status = SafeNativeMethods.Gdip.GdipResetTextureTransform(new HandleRef(this, NativeBrush));
@@ -438,23 +340,19 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.MultiplyTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Multiplies the <see cref='System.Drawing.Drawing2D.Matrix'/> that represents the local geometrical
-        ///       transform of this <see cref='System.Drawing.TextureBrush'/> by the specified <see cref='System.Drawing.Drawing2D.Matrix'/> by prepending the specified <see cref='System.Drawing.Drawing2D.Matrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Multiplies the <see cref='System.Drawing.Drawing2D.Matrix'/> that represents the local geometrical
+        /// transform of this <see cref='System.Drawing.TextureBrush'/> by the specified <see cref='System.Drawing.Drawing2D.Matrix'/>
+        /// by prepending the specified <see cref='System.Drawing.Drawing2D.Matrix'/>.
+        /// </summary>
         public void MultiplyTransform(Matrix matrix)
         { MultiplyTransform(matrix, MatrixOrder.Prepend); }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.MultiplyTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Multiplies the <see cref='System.Drawing.Drawing2D.Matrix'/> that represents the local geometrical
-        ///       transform of this <see cref='System.Drawing.TextureBrush'/> by the specified <see cref='System.Drawing.Drawing2D.Matrix'/> in the specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Multiplies the <see cref='System.Drawing.Drawing2D.Matrix'/> that represents the local geometrical
+        /// transform of this <see cref='System.Drawing.TextureBrush'/> by the specified <see cref='System.Drawing.Drawing2D.Matrix'/>
+        /// in the specified order.
+        /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
             if (matrix == null)
@@ -472,23 +370,16 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TranslateTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Translates the local geometrical transform by the specified dimmensions. This
-        ///       method prepends the translation to the transform.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Translates the local geometrical transform by the specified dimmensions. This
+        /// method prepends the translation to the transform.
+        /// </summary>
         public void TranslateTransform(float dx, float dy)
         { TranslateTransform(dx, dy, MatrixOrder.Prepend); }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.TranslateTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Translates the local geometrical transform by the specified dimmensions in
-        ///       the specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Translates the local geometrical transform by the specified dimmensions in the specified order.
+        /// </summary>
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipTranslateTextureTransform(new HandleRef(this, NativeBrush),
@@ -502,23 +393,16 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.ScaleTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Scales the local geometric transform by the specified amounts. This method
-        ///       prepends the scaling matrix to the transform.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Scales the local geometric transform by the specified amounts. This method
+        /// prepends the scaling matrix to the transform.
+        /// </summary>
         public void ScaleTransform(float sx, float sy)
         { ScaleTransform(sx, sy, MatrixOrder.Prepend); }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.ScaleTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Scales the local geometric transform by the specified amounts in the
-        ///       specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Scales the local geometric transform by the specified amounts in the specified order.
+        /// </summary>
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipScaleTextureTransform(new HandleRef(this, NativeBrush),
@@ -532,23 +416,15 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.RotateTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Rotates the local geometric transform by the specified amount. This method
-        ///       prepends the rotation to the transform.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Rotates the local geometric transform by the specified amount. This method prepends the rotation to the transform.
+        /// </summary>
         public void RotateTransform(float angle)
         { RotateTransform(angle, MatrixOrder.Prepend); }
 
-        /// <include file='doc\TextureBrush.uex' path='docs/doc[@for="TextureBrush.RotateTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Rotates the local geometric transform by the specified amount in the
-        ///       specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Rotates the local geometric transform by the specified amount in the specified order.
+        /// </summary>
         public void RotateTransform(float angle, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipRotateTextureTransform(new HandleRef(this, NativeBrush),

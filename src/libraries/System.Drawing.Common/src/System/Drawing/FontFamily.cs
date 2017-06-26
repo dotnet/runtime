@@ -2,26 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*
-* font family object (sdkinc\GDIplusFontFamily.h)
-*/
+using System.Diagnostics;
+using System.Drawing.Text;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Drawing
 {
-    using System.Diagnostics;
-    using System.Drawing.Text;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Text;
-
-    /**
-     * Represent a FontFamily object
-     */
-    /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily"]/*' />
-    /// <devdoc>
-    ///    Abstracts a group of type faces having a
-    ///    similar basic design but having certain variation in styles.
-    /// </devdoc>
+    /// <summary>
+    /// Abstracts a group of type faces having a similar basic design but having certain variation in styles.
+    /// </summary>
     public sealed class FontFamily : MarshalByRefObject, IDisposable
     {
         private const int LANG_NEUTRAL = 0;
@@ -34,9 +25,9 @@ namespace System.Drawing
         private int _id;
 #endif
 
-        /// <devdoc>
-        ///     Sets the GDI+ native family.
-        /// </devdoc>
+        /// <summary>
+        /// Sets the GDI+ native family.
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts")]
         private void SetNativeFamily(IntPtr family)
         {
@@ -52,59 +43,49 @@ namespace System.Drawing
 #endif
         }
 
-        ///<devdoc>
-        ///     Internal constructor to initialize the native GDI+ font to an existing one.
-        ///     Used to create generic fonts and by FontCollection class.
-        ///</devdoc>
+        ///<summary>
+        /// Internal constructor to initialize the native GDI+ font to an existing one. Used to create generic fonts
+        /// and by FontCollection class.
+        ///</summary>
         internal FontFamily(IntPtr family)
         {
             SetNativeFamily(family);
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.FontFamily3"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.FontFamily'/>
-        ///       class with the specified name.
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class with the specified name.
         ///
-        ///       The <paramref name="createDefaultOnFail"/> parameter determines how errors are
-        ///       handled when creating a font based on a font family that does not exist on the
-        ///       end user's system at run time. If this parameter is true, then a fall-back font
-        ///       will always be used instead. If this parameter is false, an exception will be thrown.
-        ///    </para>
-        /// </devdoc>
+        /// The <paramref name="createDefaultOnFail"/> parameter determines how errors are handled when creating a
+        /// font based on a font family that does not exist on the end user's system at run time. If this parameter is
+        /// true, then a fall-back fontwill always be used instead. If this parameter is false, an exception will be thrown.
+        /// </summary>
         internal FontFamily(string name, bool createDefaultOnFail)
         {
             _createDefaultOnFail = createDefaultOnFail;
             CreateFontFamily(name, null);
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.FontFamily"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.FontFamily'/>
-        ///       class with the specified name.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class with the specified name.
+        /// </summary>
         public FontFamily(string name)
         {
             CreateFontFamily(name, null);
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.FontFamily1"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.FontFamily'/>
-        ///    class in the specified <see cref='System.Drawing.Text.FontCollection'/> and with the specified name.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class in the specified
+        /// <see cref='FontCollection'/> and with the specified name.
+        /// </summary>
         public FontFamily(string name, FontCollection fontCollection)
         {
             CreateFontFamily(name, fontCollection);
         }
 
-        /// <devdoc>
-        ///     Creates the native font family object.  
-        ///     Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
-        /// </devdoc>
+        /// <summary>
+        /// Creates the native font family object. Note: GDI+ creates singleton font family objects (from the
+        /// corresponding font file) and reference count them.
+        /// </summary>
         private void CreateFontFamily(string name, FontCollection fontCollection)
         {
             IntPtr fontfamily = IntPtr.Zero;
@@ -139,11 +120,9 @@ namespace System.Drawing
             SetNativeFamily(fontfamily);
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.FontFamily2"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.FontFamily'/>
-        ///    class from the specified generic font family.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class from the specified generic font family.
+        /// </summary>
         public FontFamily(GenericFontFamilies genericFamily)
         {
             IntPtr fontfamily = IntPtr.Zero;
@@ -175,26 +154,18 @@ namespace System.Drawing
             SetNativeFamily(fontfamily);
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.Finalize"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Allows an object to free resources before the object is reclaimed by the
-        ///       Garbage Collector (<see langword='GC'/>).
-        ///    </para>
-        /// </devdoc>
         ~FontFamily()
         {
             Dispose(false);
         }
 
-        /// <devdoc>
-        ///     The GDI+ native font family.  It is shared by all FontFamily objects with same family name.
-        /// </devdoc>
+        /// <summary>
+        /// The GDI+ native font family. It is shared by all FontFamily objects with same family name.
+        /// </summary>
         internal IntPtr NativeFamily
         {
             get
             {
-                //Debug.Assert( this.nativeFamily != IntPtr.Zero, "this.nativeFamily == IntPtr.Zero." );
                 return _nativeFamily;
             }
         }
@@ -203,10 +174,6 @@ namespace System.Drawing
         // than AddRef (it doesn't copy the underlying GpFont), and in a garbage collected
         // world, that's not very useful.
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.Equals"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -222,20 +189,17 @@ namespace System.Drawing
             return ff.NativeFamily == NativeFamily;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.ToString"]/*' />
-        /// <devdoc>
-        ///    Converts this <see cref='System.Drawing.FontFamily'/> to a
-        ///    human-readable string.
-        /// </devdoc>
+        /// <summary>
+        /// Converts this <see cref='FontFamily'/> to a human-readable string.
+        /// </summary>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "[{0}: Name={1}]", GetType().Name, Name);
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetHashCode"]/*' />
-        /// <devdoc>
-        ///    Gets a hash code for this <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets a hash code for this <see cref='FontFamily'/>.
+        /// </summary>
         public override int GetHashCode()
         {
             return GetName(LANG_NEUTRAL).GetHashCode();
@@ -249,10 +213,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.Dispose"]/*' />
-        /// <devdoc>
-        ///    Disposes of this <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Disposes of this <see cref='FontFamily'/>.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -289,10 +252,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.Name"]/*' />
-        /// <devdoc>
-        ///    Gets the name of this <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the name of this <see cref='FontFamily'/>.
+        /// </summary>
         public String Name
         {
             get
@@ -301,13 +263,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetName"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Retuns the name of this <see cref='System.Drawing.FontFamily'/> in
-        ///       the specified language.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Retuns the name of this <see cref='FontFamily'/> in the specified language.
+        /// </summary>
         public String GetName(int language)
         {
             // LF_FACESIZE is 32
@@ -322,12 +280,10 @@ namespace System.Drawing
         }
 
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.Families"]/*' />
-        /// <devdoc>
-        ///    Returns an array that contains all of the
-        /// <see cref='System.Drawing.FontFamily'/> objects associated with the current graphics 
-        ///    context.
-        /// </devdoc>
+        /// <summary>
+        /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the current
+        /// graphics context.
+        /// </summary>
         public static FontFamily[] Families
         {
             get
@@ -336,12 +292,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GenericSansSerif"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a generic SansSerif <see cref='System.Drawing.FontFamily'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a generic SansSerif <see cref='FontFamily'/>.
+        /// </summary>
         public static FontFamily GenericSansSerif
         {
             get
@@ -362,10 +315,9 @@ namespace System.Drawing
             return fontfamily;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GenericSerif"]/*' />
-        /// <devdoc>
-        ///    Gets a generic Serif <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets a generic Serif <see cref='FontFamily'/>.
+        /// </summary>
         public static FontFamily GenericSerif
         {
             get
@@ -386,10 +338,9 @@ namespace System.Drawing
             return fontfamily;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GenericMonospace"]/*' />
-        /// <devdoc>
-        ///    Gets a generic monospace <see cref='System.Drawing.FontFamily'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets a generic monospace <see cref='FontFamily'/>.
+        /// </summary>
         public static FontFamily GenericMonospace
         {
             get
@@ -410,16 +361,10 @@ namespace System.Drawing
             return fontfamily;
         }
 
-        // No longer support in FontFamily
-        // Obsolete API and need to be removed later
-        //
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetFamilies"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns an array that contains all of the <see cref='System.Drawing.FontFamily'/> objects associated with
-        ///       the specified graphics context.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the specified
+        /// graphics context.
+        /// </summary>
         [Obsolete("Do not use method GetFamilies, use property Families instead")]
         public static FontFamily[] GetFamilies(Graphics graphics)
         {
@@ -429,11 +374,9 @@ namespace System.Drawing
             return new InstalledFontCollection().Families;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.IsStyleAvailable"]/*' />
-        /// <devdoc>
-        ///    Indicates whether the specified <see cref='System.Drawing.FontStyle'/> is
-        ///    available.
-        /// </devdoc>
+        /// <summary>
+        /// Indicates whether the specified <see cref='FontStyle'/> is available.
+        /// </summary>
         public bool IsStyleAvailable(FontStyle style)
         {
             int bresult;
@@ -446,11 +389,9 @@ namespace System.Drawing
             return bresult != 0;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetEmHeight"]/*' />
-        /// <devdoc>
-        ///    Gets the size of the Em square for the
-        ///    specified style in font design units.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the size of the Em square for the specified style in font design units.
+        /// </summary>
         public int GetEmHeight(FontStyle style)
         {
             int result = 0;
@@ -464,12 +405,9 @@ namespace System.Drawing
         }
 
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetCellAscent"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the ascender metric for Windows.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the ascender metric for Windows.
+        /// </summary>
         public int GetCellAscent(FontStyle style)
         {
             int result = 0;
@@ -482,12 +420,9 @@ namespace System.Drawing
             return result;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetCellDescent"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the descender metric for Windows.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the descender metric for Windows.
+        /// </summary>
         public int GetCellDescent(FontStyle style)
         {
             int result = 0;
@@ -500,11 +435,10 @@ namespace System.Drawing
             return result;
         }
 
-        /// <include file='doc\FontFamily.uex' path='docs/doc[@for="FontFamily.GetLineSpacing"]/*' />
-        /// <devdoc>
-        ///    Returns the distance between two
-        ///    consecutive lines of text for this <see cref='System.Drawing.FontFamily'/> with the specified <see cref='System.Drawing.FontStyle'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns the distance between two consecutive lines of text for this <see cref='FontFamily'/> with the
+        /// specified <see cref='FontStyle'/>.
+        /// </summary>
         public int GetLineSpacing(FontStyle style)
         {
             int result = 0;

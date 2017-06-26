@@ -2,28 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Diagnostics;
+
+using Hashtable = System.Collections.Hashtable;
+
 namespace System.Internal
 {
-    using System.ComponentModel;
-    using System.Diagnostics;
-
-    using Hashtable = System.Collections.Hashtable;
-
-    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker"]/*' />
-    /// <devdoc>
-    ///     The job of this class is to collect and track handle usage in
-    ///     windows forms.  Ideally, a developer should never have to call dispose() on
-    ///     any windows forms object.  The problem in making this happen is in objects that
-    ///     are very small to the VM garbage collector, but take up huge amounts
-    ///     of resources to the system.  A good example of this is a Win32 region
-    ///     handle.  To the VM, a Region object is a small six ubyte object, so there
-    ///     isn't much need to garbage collect it anytime soon.  To Win32, however,
-    ///     a region handle consumes expensive USER and GDI resources.  Ideally we
-    ///     would like to be able to mark an object as "expensive" so it uses a different
-    ///     garbage collection algorithm.  In absence of that, we use the HandleCollector class, which
-    ///     runs a daemon thread to garbage collect when handle usage goes up.
-    /// </devdoc>
-    /// <internalonly/>
+    /// <summary>
+    /// The job of this class is to collect and track handle usage in windows forms. Ideally, a developer should never
+    /// have to call dispose() on any windows forms object. The problem in making this happen is in objects that are
+    /// very small to the VM garbage collector, but take up huge amounts of resources to the system. A good example of
+    /// this is a Win32 region handle. To the VM, a Region object is a small six ubyte object, so there isn't much need
+    /// to garbage collect it anytime soon. To Win32, however, a region handle consumes expensive USER and GDI
+    /// resources. Ideally we would like to be able to mark an object as "expensive" so it uses a different garbage
+    /// collection algorithm. In absence of that, we use the HandleCollector class, which runs a daemon thread to
+    /// garbage collect when handle usage goes up.
+    /// </summary>
     internal class DebugHandleTracker
     {
         private static Hashtable s_handleTypes = new Hashtable();
@@ -46,12 +41,9 @@ namespace System.Internal
 
         private static object s_internalSyncObject = new object();
 
-        /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.IgnoreCurrentHandlesAsLeaks"]/*' />
-        /// <devdoc>
-        ///     All handles available at this time will be not be considered as leaks
-        ///     when CheckLeaks is called to report leaks.
-        /// </devdoc>
-        /** @conditional(DEBUG) */
+        /// <summary>
+        /// All handles available at this time will be not be considered as leaks when CheckLeaks is called to report leaks.
+        /// </summary>
         public static void IgnoreCurrentHandlesAsLeaks()
         {
             lock (s_internalSyncObject)
@@ -72,13 +64,10 @@ namespace System.Internal
             }
         }
 
-        /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.CheckLeaks"]/*' />
-        /// <devdoc>
-        ///     Called at shutdown to check for handles that are currently allocated.
-        ///     Normally, there should be none.  This will print a list of all
-        ///     handle leaks.
-        /// </devdoc>
-        /** @conditional(DEBUG) */
+        /// <summary>
+        /// Called at shutdown to check for handles that are currently allocated. Normally, there should be none. 
+        /// This will print a list of all handle leaks.
+        /// </summary>
         public static void CheckLeaks()
         {
             lock (s_internalSyncObject)
@@ -103,22 +92,18 @@ namespace System.Internal
             }
         }
 
-        /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.Initialize"]/*' />
-        /// <devdoc>
-        ///     Ensures leak detection has been initialized.
-        /// </devdoc>
-        /** @conditional(DEBUG) */
+        /// <summary>
+        /// Ensures leak detection has been initialized.
+        /// </summary>
         public static void Initialize()
         {
             // Calling this method forces the class to be loaded, thus running the
             // static constructor which does all the work.
         }
 
-        /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.OnHandleAdd"]/*' />
-        /// <devdoc>
-        ///     Called by the Win32 handle collector when a new handle is created.
-        /// </devdoc>
-        /** @conditional(DEBUG) */
+        /// <summary>
+        /// Called by the Win32 handle collector when a new handle is created.
+        /// </summary>
         private void OnHandleAdd(string handleName, IntPtr handle, int handleCount)
         {
             HandleType type = (HandleType)s_handleTypes[handleName];
@@ -130,11 +115,9 @@ namespace System.Internal
             type.Add(handle);
         }
 
-        /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.OnHandleRemove"]/*' />
-        /// <devdoc>
-        ///     Called by the Win32 handle collector when a new handle is created.
-        /// </devdoc>
-        /** @conditional(DEBUG) */
+        /// <summary>
+        /// Called by the Win32 handle collector when a new handle is created.
+        /// </summary>
         private void OnHandleRemove(string handleName, IntPtr handle, int HandleCount)
         {
             HandleType type = (HandleType)s_handleTypes[handleName];
@@ -161,10 +144,9 @@ namespace System.Internal
             }
         }
 
-        /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType"]/*' />
-        /// <devdoc>
-        ///     Represents a specific type of handle.
-        /// </devdoc>
+        /// <summary>
+        /// Represents a specific type of handle.
+        /// </summary>
         private class HandleType
         {
             public readonly string name;
@@ -174,20 +156,18 @@ namespace System.Internal
 
             private const int BUCKETS = 10;
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleType"]/*' />
-            /// <devdoc>
-            ///     Creates a new handle type.
-            /// </devdoc>
+            /// <summary>
+            /// Creates a new handle type.
+            /// </summary>
             public HandleType(string name)
             {
                 this.name = name;
                 _buckets = new HandleEntry[BUCKETS];
             }
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.Add"]/*' />
-            /// <devdoc>
-            ///     Adds a handle to this handle type for monitoring.
-            /// </devdoc>
+            /// <summary>
+            /// Adds a handle to this handle type for monitoring.
+            /// </summary>
             public void Add(IntPtr handle)
             {
                 lock (this)
@@ -215,10 +195,9 @@ namespace System.Internal
                 }
             }
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.CheckLeaks"]/*' />
-            /// <devdoc>
-            ///     Checks and reports leaks for handle monitoring.
-            /// </devdoc>
+            /// <summary>
+            /// Checks and reports leaks for handle monitoring.
+            /// </summary>
             public void CheckLeaks()
             {
                 lock (this)
@@ -247,10 +226,9 @@ namespace System.Internal
                 }
             }
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.IgnoreCurrentHandlesAsLeaks"]/*' />
-            /// <devdoc>
-            ///     Marks all the handles currently stored, as ignorable, so that they will not be reported as leaks later.
-            /// </devdoc>
+            /// <summary>
+            /// Marks all the handles currently stored, as ignorable, so that they will not be reported as leaks later.
+            /// </summary>
             public void IgnoreCurrentHandlesAsLeaks()
             {
                 lock (this)
@@ -270,19 +248,17 @@ namespace System.Internal
                 }
             }
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.ComputeHash"]/*' />
-            /// <devdoc>
-            ///     Computes the hash bucket for this handle.
-            /// </devdoc>
+            /// <summary>
+            /// Computes the hash bucket for this handle.
+            /// </summary>
             private int ComputeHash(IntPtr handle)
             {
                 return (unchecked((int)handle) & 0xFFFF) % BUCKETS;
             }
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.Remove"]/*' />
-            /// <devdoc>
-            ///     Removes the given handle from our monitor list.
-            /// </devdoc>
+            /// <summary>
+            /// Removes the given handle from our monitor list.
+            /// </summary>
             public bool Remove(IntPtr handle)
             {
                 lock (this)
@@ -320,10 +296,9 @@ namespace System.Internal
                 }
             }
 
-            /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry"]/*' />
-            /// <devdoc>
-            ///     Denotes a single entry in our handle list.
-            /// </devdoc>
+            /// <summary>
+            /// Denotes a single entry in our handle list.
+            /// </summary>
             private class HandleEntry
             {
                 public readonly IntPtr handle;
@@ -331,10 +306,9 @@ namespace System.Internal
                 public readonly string callStack;
                 public bool ignorableAsLeak;
 
-                /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.HandleEntry"]/*' />
-                /// <devdoc>
-                ///     Creates a new handle entry
-                /// </devdoc>
+                /// <summary>
+                /// Creates a new handle entry
+                /// </summary>
                 public HandleEntry(HandleEntry next, IntPtr handle)
                 {
                     this.handle = handle;
@@ -350,57 +324,31 @@ namespace System.Internal
                     }
                 }
 
-                /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.ToString"]/*' />
-                /// <devdoc>
-                ///     Converts this handle to a printable string.  the string consists
-                ///     of the handle value along with the callstack for it's
-                ///     allocation.
-                /// </devdoc>
+                /// <summary>
+                /// Converts this handle to a printable string.  the string consists of the handle value along with
+                /// the callstack for it's allocation.
+                /// </summary>
                 public string ToString(HandleType type)
                 {
                     StackParser sp = new StackParser(callStack);
 
                     // Discard all of the stack up to and including the "Handle.create" call
-                    //
                     sp.DiscardTo("HandleCollector.Add");
 
                     // Skip the next call as it is always a debug wrapper
-                    //
                     sp.DiscardNext();
 
                     // Now recreate the leak list with a lot of stack entries
-                    //
                     sp.Truncate(40);
 
                     string description = "";
-                    /*if (type.name.Equals("GDI") || type.name.Equals("HDC")) {
-                        int objectType = UnsafeNativeMethods.GetObjectType(new HandleRef(null, handle));
-                        switch (objectType) {
-                            case NativeMethods.OBJ_DC: description = "normal DC"; break;
-                            case NativeMethods.OBJ_MEMDC: description = "memory DC"; break;
-                            case NativeMethods.OBJ_METADC: description = "metafile DC"; break;
-                            case NativeMethods.OBJ_ENHMETADC: description = "enhanced metafile DC"; break;
-
-                            case NativeMethods.OBJ_PEN: description = "Pen"; break;
-                            case NativeMethods.OBJ_BRUSH: description = "Brush"; break;
-                            case NativeMethods.OBJ_PAL: description = "Palette"; break;
-                            case NativeMethods.OBJ_FONT: description = "Font"; break;
-                            case NativeMethods.OBJ_BITMAP: description = "Bitmap"; break;
-                            case NativeMethods.OBJ_REGION: description = "Region"; break;
-                            case NativeMethods.OBJ_METAFILE: description = "Metafile"; break;
-                            case NativeMethods.OBJ_EXTPEN: description = "Extpen"; break;
-                            default: description = "?"; break;
-                        }
-                        description = " (" + description + ")";
-                    }*/
 
                     return Convert.ToString(unchecked((int)handle), 16) + description + ": " + sp.ToString();
                 }
 
-                /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser"]/*' />
-                /// <devdoc>
-                ///     Simple stack parsing class to manipulate our callstack.
-                /// </devdoc>
+                /// <summary>
+                /// Simple stack parsing class to manipulate our callstack.
+                /// </summary>
                 private class StackParser
                 {
                     internal string releventStack;
@@ -408,21 +356,18 @@ namespace System.Internal
                     internal int endIndex;
                     internal int length;
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.StackParser"]/*' />
-                    /// <devdoc>
-                    ///     Creates a new stackparser with the given callstack
-                    /// </devdoc>
+                    /// <summary>
+                    /// Creates a new stackparser with the given callstack
+                    /// </summary>
                     public StackParser(string callStack)
                     {
                         releventStack = callStack;
                         length = releventStack.Length;
                     }
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.ContainsString"]/*' />
-                    /// <devdoc>
-                    ///     Determines if the given string contains token.  This is a case
-                    ///     sensitive match.
-                    /// </devdoc>
+                    /// <summary>
+                    /// Determines if the given string contains token.  This is a case sensitive match.
+                    /// </summary>
                     private static bool ContainsString(string str, string token)
                     {
                         int stringLength = str.Length;
@@ -443,20 +388,17 @@ namespace System.Internal
                         return false;
                     }
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.DiscardNext"]/*' />
-                    /// <devdoc>
-                    ///     Discards the next line of the stack trace.
-                    /// </devdoc>
+                    /// <summary>
+                    /// Discards the next line of the stack trace.
+                    /// </summary>
                     public void DiscardNext()
                     {
                         GetLine();
                     }
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.DiscardTo"]/*' />
-                    /// <devdoc>
-                    ///     Discards all lines up to and including the line that contains
-                    ///     discardText.
-                    /// </devdoc>
+                    /// <summary>
+                    /// Discards all lines up to and including the line that contains discardText.
+                    /// </summary>
                     public void DiscardTo(string discardText)
                     {
                         while (startIndex < length)
@@ -469,10 +411,9 @@ namespace System.Internal
                         }
                     }
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.GetLine"]/*' />
-                    /// <devdoc>
-                    ///     Retrieves the next line of the stack.
-                    /// </devdoc>
+                    /// <summary>
+                    /// Retrieves the next line of the stack.
+                    /// </summary>
                     private string GetLine()
                     {
                         endIndex = releventStack.IndexOf('\r', startIndex);
@@ -494,19 +435,17 @@ namespace System.Internal
                         return line;
                     }
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.ToString"]/*' />
-                    /// <devdoc>
-                    ///     Rereives the string of the parsed stack trace
-                    /// </devdoc>
+                    /// <summary>
+                    /// Rereives the string of the parsed stack trace
+                    /// </summary>
                     public override string ToString()
                     {
                         return releventStack.Substring(startIndex);
                     }
 
-                    /// <include file='doc\DebugHandleTracker.uex' path='docs/doc[@for="DebugHandleTracker.HandleType.HandleEntry.StackParser.Truncate"]/*' />
-                    /// <devdoc>
-                    ///     Truncates the stack trace, saving the given # of lines.
-                    /// </devdoc>
+                    /// <summary>
+                    /// Truncates the stack trace, saving the given # of lines.
+                    /// </summary>
                     public void Truncate(int lines)
                     {
                         string truncatedStack = "";
@@ -532,7 +471,5 @@ namespace System.Internal
                 }
             }
         }
-
-        //#endif // DEBUG
     }
 }

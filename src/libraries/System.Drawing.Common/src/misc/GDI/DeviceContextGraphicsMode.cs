@@ -4,9 +4,9 @@
 
 namespace System.Drawing.Internal
 {
-    /// <devdoc>
-    ///    Specifies the graphics mode of a device context.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the graphics mode of a device context.
+    /// </summary>
     internal enum DeviceContextGraphicsMode
     {
         /*
@@ -35,14 +35,5 @@ namespace System.Drawing.Internal
         the XFORM structure pointed to by lpXform is ignored. 
         */
         ModifyWorldIdentity = 1
-
-        /*
-        GM_COMPATIBLE       = 1,
-        GM_ADVANCED         = 2,
-        
-        MWT_IDENTITY        = 1,
-        MWT_LEFTMULTIPLY  // Multiplies the current transformation by the data in the XFORM structure. (The data in the XFORM structure becomes the left multiplicand, and the data for the current transformation becomes the right multiplicand.) 
-        MWT_RIGHTMULTIPLY // Multiplies the current transformation by the data in the XFORM structure. (The data in the XFORM structure becomes the right multiplicand, and the data for the current transformation becomes the left multiplicand.) 
-        */
     }
 }

@@ -8,18 +8,14 @@ namespace System.Drawing.Text
     using System.Runtime.InteropServices;
     using System.Globalization;
 
-    /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection"]/*' />
-    /// <devdoc>
-    ///    Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
-    /// </devdoc>
+    /// <summary>
+    /// Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
+    /// </summary>
     public sealed class PrivateFontCollection : FontCollection
     {
-        /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection.PrivateFontCollection"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Text.PrivateFontCollection'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.Text.PrivateFontCollection'/> class.
+        /// </summary>
         public PrivateFontCollection()
         {
             nativeFontCollection = IntPtr.Zero;
@@ -30,13 +26,9 @@ namespace System.Drawing.Text
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection.Dispose"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Cleans up Windows resources for this
-        ///    <see cref='System.Drawing.Text.PrivateFontCollection'/> .
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
+        /// </summary>
         protected override void Dispose(bool disposing)
         {
             if (nativeFontCollection != IntPtr.Zero)
@@ -69,13 +61,9 @@ namespace System.Drawing.Text
             base.Dispose(disposing);
         }
 
-        /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection.AddFontFile"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Adds a font from the specified file to
-        ///       this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Adds a font from the specified file to this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
+        /// </summary>
         public void AddFontFile(string filename)
         {
             int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, nativeFontCollection), filename);
@@ -87,11 +75,9 @@ namespace System.Drawing.Text
             SafeNativeMethods.AddFontFile(filename);
         }
 
-        /// <include file='doc\PrivateFontCollection.uex' path='docs/doc[@for="PrivateFontCollection.AddMemoryFont"]/*' />
-        /// <devdoc>
-        ///    Adds a font contained in system memory to
-        ///    this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Adds a font contained in system memory to this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
+        /// </summary>
         public void AddMemoryFont(IntPtr memory, int length)
         {
             int status = SafeNativeMethods.Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, nativeFontCollection), new HandleRef(null, memory), length);
