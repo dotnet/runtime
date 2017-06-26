@@ -980,7 +980,7 @@ namespace System.Net.Http
                 _writeOffset += toCopy;
                 offset += toCopy;
 
-                Debug.Assert(offset <= BufferSize, $"Expected {nameof(offset)} to be <= {bytes.Length}, got {offset}");
+                Debug.Assert(offset <= bytes.Length, $"Expected {nameof(offset)} to be <= {bytes.Length}, got {offset}");
                 Debug.Assert(_writeOffset <= BufferSize, $"Expected {nameof(_writeOffset)} to be <= {BufferSize}, got {_writeOffset}");
                 if (offset == bytes.Length)
                 {
