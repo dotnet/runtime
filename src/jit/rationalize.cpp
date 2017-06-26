@@ -790,11 +790,18 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
                 BlockRange().Delete(comp, m_block, std::move(lhsRange));
             }
+            else
+            {
+                op1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+            }
+
+            BlockRange().Remove(node);
 
             GenTree* replacement = node->gtGetOp2();
             if (!use.IsDummyUse())
             {
                 use.ReplaceWith(comp, replacement);
+                node = replacement;
             }
             else
             {
@@ -812,9 +819,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
                     BlockRange().Delete(comp, m_block, std::move(rhsRange));
                 }
+                else
+                {
+                    node = replacement;
+                }
             }
-
-            BlockRange().Remove(node);
         }
         break;
 
@@ -984,6 +993,11 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             node->gtFlags &= ~GTF_CALL;
         }
 
+        if (use.IsDummyUse())
+        {
+            node->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+        }
+
         if (node->TypeGet() == TYP_LONG)
         {
             comp->compLongUsed = true;
@@ -1096,7 +1110,7 @@ void Rationalizer::DoPhase()
                                  this, true);
         }
 
-        assert(BlockRange().CheckLIR(comp));
+        assert(BlockRange().CheckLIR(comp, true));
     }
 
     comp->compRationalIRForm = true;

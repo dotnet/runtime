@@ -2278,6 +2278,11 @@ bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, Ge
         // If the range of the operands contains unrelated code or if it contains any side effects,
         // do not remove it. Instead, just remove the store.
 
+        for (GenTree* operand : node->Operands())
+        {
+            operand->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+        }
+
         *next = node->gtPrev;
     }
     else
