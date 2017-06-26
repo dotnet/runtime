@@ -908,16 +908,6 @@ namespace System.Net.Http
             }
         }
 
-        private Task WriteCharAsync(char c, CancellationToken cancellationToken)
-        {
-            if ((c & 0xFF80) != 0)
-            {
-                return Task.FromException(new HttpRequestException("Non-ASCII characters found"));
-            }
-
-            return WriteByteAsync((byte)c, cancellationToken);
-        }
-
         private Task WriteByteAsync(byte b, CancellationToken cancellationToken)
         {
             if (_writeOffset < BufferSize)
@@ -990,12 +980,29 @@ namespace System.Net.Http
             }
         }
 
-        private async Task WriteStringAsync(string s, CancellationToken cancellationToken)
+        private Task WriteStringAsync(string s, CancellationToken cancellationToken)
         {
-            for (int i = 0; i < s.Length; i++)
+            // If there's enough space in the buffer to just copy all of the string's bytes, do so.
+            // Unlike WriteAsciiStringAsync, validate each char along the way.
+            int offset = _writeOffset;
+            if (s.Length <= BufferSize - offset)
             {
-                await WriteCharAsync(s[i], cancellationToken).ConfigureAwait(false);
+                byte[] writeBuffer = _writeBuffer;
+                foreach (char c in s)
+                {
+                    if ((c & 0xFF80) != 0)
+                    {
+                        throw new HttpRequestException("Non-ASCII characters found");
+                    }
+                    writeBuffer[offset++] = (byte)c;
+                }
+                _writeOffset = offset;
+                return Task.CompletedTask;
             }
+
+            // Otherwise, fall back to doing a normal slow string write; we could optimize away
+            // the extra checks later, but the case where we cross a buffer boundary should be rare.
+            return WriteStringAsyncSlow(s, cancellationToken);
         }
 
         private Task WriteAsciiStringAsync(string s, CancellationToken cancellationToken)
@@ -1013,9 +1020,22 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            // Otherwise, fall back to doing a normal string write; we could optimize away
+            // Otherwise, fall back to doing a normal slow string write; we could optimize away
             // the extra checks later, but the case where we cross a buffer boundary should be rare.
-            return WriteStringAsync(s, cancellationToken);
+            return WriteStringAsyncSlow(s, cancellationToken);
+        }
+
+        private async Task WriteStringAsyncSlow(string s, CancellationToken cancellationToken)
+        {
+            for (int i = 0; i < s.Length; i++)
+            {
+                char c = s[i];
+                if ((c & 0xFF80) != 0)
+                {
+                    throw new HttpRequestException("Non-ASCII characters found");
+                }
+                await WriteByteAsync((byte)c, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         private Task FlushAsync(CancellationToken cancellationToken)
