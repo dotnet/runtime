@@ -2467,7 +2467,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("region");
 
             int status = SafeNativeMethods.Gdip.GdipFillRegion(new HandleRef(this, NativeGraphics), new HandleRef(brush, brush.NativeBrush),
-                                                new HandleRef(region, region.nativeRegion));
+                                                new HandleRef(region, region._nativeRegion));
 
             //check error status sensitive to TS problems
             CheckErrorStatus(status);
@@ -2707,7 +2707,7 @@ namespace System.Drawing
             for (int f = 0; f < count; f++)
             {
                 regions[f] = new Region();
-                gpRegions[f] = (IntPtr)regions[f].nativeRegion;
+                gpRegions[f] = (IntPtr)regions[f]._nativeRegion;
             }
 
             status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(new HandleRef(this, NativeGraphics), text, text.Length, new HandleRef(font, font.NativeFont), ref grf,
@@ -4161,7 +4161,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("region");
             }
 
-            int status = SafeNativeMethods.Gdip.GdipSetClipRegion(new HandleRef(this, NativeGraphics), new HandleRef(region, region.nativeRegion), combineMode);
+            int status = SafeNativeMethods.Gdip.GdipSetClipRegion(new HandleRef(this, NativeGraphics), new HandleRef(region, region._nativeRegion), combineMode);
 
             if (status != SafeNativeMethods.Gdip.Ok)
             {
@@ -4205,7 +4205,7 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException("region");
 
-            int status = SafeNativeMethods.Gdip.GdipSetClipRegion(new HandleRef(this, NativeGraphics), new HandleRef(region, region.nativeRegion),
+            int status = SafeNativeMethods.Gdip.GdipSetClipRegion(new HandleRef(this, NativeGraphics), new HandleRef(region, region._nativeRegion),
                                                    CombineMode.Intersect);
 
             if (status != SafeNativeMethods.Gdip.Ok)
@@ -4237,7 +4237,7 @@ namespace System.Drawing
                 throw new ArgumentNullException("region");
 
             int status = SafeNativeMethods.Gdip.GdipSetClipRegion(new HandleRef(this, NativeGraphics),
-                                                   new HandleRef(region, region.nativeRegion),
+                                                   new HandleRef(region, region._nativeRegion),
                                                    CombineMode.Exclude);
 
             if (status != SafeNativeMethods.Gdip.Ok)
@@ -4373,7 +4373,7 @@ namespace System.Drawing
             {
                 Region region = new Region();
 
-                int status = SafeNativeMethods.Gdip.GdipGetClip(new HandleRef(this, NativeGraphics), new HandleRef(region, region.nativeRegion));
+                int status = SafeNativeMethods.Gdip.GdipGetClip(new HandleRef(this, NativeGraphics), new HandleRef(region, region._nativeRegion));
 
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {

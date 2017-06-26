@@ -105,6 +105,25 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Ctor_RegionDataOfRegionWithPath_Success()
+        {
+            using (var graphicsPath = new GraphicsPath())
+            {
+                graphicsPath.AddRectangle(new Rectangle(1, 2, 3, 4));
+                Ctor_RegionData(new Region(graphicsPath));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Ctor_RegionDataOfRegionWithRegionData_Success()
+        {
+            using (var region = new Region(new Rectangle(1, 2, 3, 4)))
+            {
+                Ctor_RegionData(new Region(region.GetRegionData()));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullRegionData_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("rgnData", () => new Region((RegionData)null));
@@ -113,6 +132,7 @@ namespace System.Drawing.Tests
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(0)]
         [InlineData(1)]
+        [InlineData(7)]
         [InlineData(256)]
         public void Ctor_InvalidRegionData_ThrowsExternalException(int dataLength)
         {
