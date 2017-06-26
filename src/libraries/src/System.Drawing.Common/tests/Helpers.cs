@@ -9,8 +9,8 @@ namespace System.Drawing.Tests
 {
     public static class Helpers
     {
-        public static string GetTestBitmapPath(string name) => GetTestPath("bitmaps", fileName);
-        public static string GetTestFontPath(string name) => GetTestPath("fonts", fileName);
+        public static string GetTestBitmapPath(string fileName) => GetTestPath("bitmaps", fileName);
+        public static string GetTestFontPath(string fileName) => GetTestPath("fonts", fileName);
 
         private static string GetTestPath(string directoryName, string fileName) => Path.Combine(AppContext.BaseDirectory, directoryName, fileName);
 
