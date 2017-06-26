@@ -207,19 +207,34 @@ class Object
         m_pMethTab = pMT;
     }
 
-    VOID SetMethodTable(MethodTable *pMT)
+    VOID SetMethodTable(MethodTable *pMT
+                        DEBUG_ARG(BOOL bAllowArray = FALSE))
     { 
         LIMITED_METHOD_CONTRACT;
         m_pMethTab = pMT; 
+
+#ifdef _DEBUG
+        if (!bAllowArray)
+        {
+            AssertNotArray();
+        }
+#endif // _DEBUG
     }
 
-    VOID SetMethodTableForLargeObject(MethodTable *pMT)
+    VOID SetMethodTableForLargeObject(MethodTable *pMT
+                                      DEBUG_ARG(BOOL bAllowArray = FALSE))
     {
         // This function must be used if the allocation occurs on the large object heap, and the method table might be a collectible type
         WRAPPER_NO_CONTRACT;
         ErectWriteBarrierForMT(&m_pMethTab, pMT);
+
+#ifdef _DEBUG
+        if (!bAllowArray)
+        {
+            AssertNotArray();
+        }
+#endif // _DEBUG
     }
- 
 #endif //!DACCESS_COMPILE
 
     // An object might be a proxy of some sort, with a thunking VTable.  If so, we can
@@ -664,6 +679,15 @@ class Object
     BOOL ShouldCheckAppDomainAgile(BOOL raiseAssert, BOOL *pfResult);
 #endif
 
+#ifdef _DEBUG
+    void AssertNotArray()
+    {
+        if (m_pMethTab->IsArray())
+        {
+            _ASSERTE(!"ArrayBase::SetArrayMethodTable/ArrayBase::SetArrayMethodTableForLargeObject should be used for arrays");
+        }
+    }
+#endif // _DEBUG
 };
 
 /*
@@ -745,10 +769,10 @@ class ArrayBase : public Object
     friend class GCHeap;
     friend class CObjectHeader;
     friend class Object;
-    friend OBJECTREF AllocateArrayEx(TypeHandle arrayClass, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap DEBUG_ARG(BOOL bDontSetAppDomain)); 
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap DEBUG_ARG(BOOL bDontSetAppDomain)); 
     friend OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap);
-    friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
-    friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_, INT_PTR size);
+    friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
+    friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
     friend struct _DacGlobals;
@@ -789,6 +813,11 @@ public:
 
         // Total element count for the array
     inline DWORD GetNumComponents() const;
+
+#ifndef DACCESS_COMPILE
+    inline void SetArrayMethodTable(MethodTable *pArrayMT);
+    inline void SetArrayMethodTableForLargeObject(MethodTable *pArrayMT);
+#endif // !DACCESS_COMPILE
 
         // Get pointer to elements, handles any number of dimensions
     PTR_BYTE GetDataPtr(BOOL inGC = FALSE) const {
@@ -865,6 +894,13 @@ public:
 
     inline static unsigned GetBoundsOffset(MethodTable* pMT);
     inline static unsigned GetLowerBoundsOffset(MethodTable* pMT);
+
+private:
+#ifndef DACCESS_COMPILE
+#ifdef _DEBUG
+    void AssertArrayTypeDescLoaded();
+#endif // _DEBUG
+#endif // !DACCESS_COMPILE
 };
 
 //
@@ -905,7 +941,7 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(TypeHandle arrayClass, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap); 
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap); 
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 

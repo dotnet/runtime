@@ -5902,6 +5902,19 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
     }
 
+    if (level >= CLASS_DEPENDENCIES_LOADED && IsArray())
+    {
+        // The array type should be loaded, if template method table is loaded
+        // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject
+        TypeHandle th = ClassLoader::LoadArrayTypeThrowing(GetApproxArrayElementTypeHandle(),
+                                                           GetInternalCorElementType(),
+                                                           GetRank(),
+                                                           ClassLoader::LoadTypes,
+                                                           level);
+        _ASSERTE(th.IsTypeDesc() && th.IsArray());
+        _ASSERTE(!(level == CLASS_LOADED && !th.IsFullyLoaded()));
+    }
+
     END_SO_INTOLERANT_CODE;
     
 #endif //!DACCESS_COMPILE

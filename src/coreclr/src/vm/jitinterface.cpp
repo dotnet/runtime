@@ -2670,7 +2670,14 @@ void CEEInfo::embedGenericHandle(
 
         pResult->handleType = CORINFO_HANDLETYPE_CLASS;
 
-        pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
+        if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
+        {
+            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsArray()->GetTemplateMethodTable();
+        }
+        else
+        {
+            pResult->compileTimeHandle = (CORINFO_GENERIC_HANDLE)th.AsPtr();
+        }
 
         if (fEmbedParent && pResolvedToken->hMethod != NULL)
         {
@@ -3348,7 +3355,10 @@ NoSpecialCase:
     case TypeHandleSlot:
         {
             if (pResolvedToken->tokenType == CORINFO_TOKENKIND_Newarr)
+            {
+                sigBuilder.AppendElementType((CorElementType)ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG);
                 sigBuilder.AppendElementType(ELEMENT_TYPE_SZARRAY);
+            }
 
             // Note that we can come here with pResolvedToken->pTypeSpec == NULL for invalid IL that 
             // directly references __Canon

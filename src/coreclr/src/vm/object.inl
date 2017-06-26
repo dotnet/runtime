@@ -146,6 +146,7 @@ inline /* static */ TypeHandle ArrayBase::GetTypeHandle(MethodTable * pMT)
     // for T[] is available and restored
 
     // @todo  This should be turned into a probe with a hard SO when we have one
+    // See also: ArrayBase::SetArrayMethodTable, ArrayBase::SetArrayMethodTableForLargeObject and MethodTable::DoFullyLoad
     CONTRACT_VIOLATION(SOToleranceViolation);
     // == FailIfNotLoadedOrNotRestored
     TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(pMT->GetApproxArrayElementTypeHandle(), kind, rank, ClassLoader::DontLoadTypes);  
@@ -173,6 +174,32 @@ inline DWORD ArrayBase::GetNumComponents() const
     SUPPORTS_DAC;
     return m_NumComponents; 
 }
+
+#ifndef DACCESS_COMPILE
+inline void ArrayBase::SetArrayMethodTable(MethodTable *pArrayMT)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SetMethodTable(pArrayMT
+                   DEBUG_ARG(TRUE));
+
+#ifdef _DEBUG
+    AssertArrayTypeDescLoaded();
+#endif // _DEBUG
+}
+
+inline void ArrayBase::SetArrayMethodTableForLargeObject(MethodTable *pArrayMT)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SetMethodTableForLargeObject(pArrayMT
+                                 DEBUG_ARG(TRUE));
+
+#ifdef _DEBUG
+    AssertArrayTypeDescLoaded();
+#endif // _DEBUG
+}
+#endif // !DACCESS_COMPILE
 
 inline /* static */ unsigned ArrayBase::GetDataPtrOffset(MethodTable* pMT)
 {

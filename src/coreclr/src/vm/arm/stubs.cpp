@@ -2560,9 +2560,9 @@ static const LPVOID InlineGetThreadLocations[] = {
 
 //EXTERN_C Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
 Object* JIT_TrialAllocSFastMP(CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C Object* JIT_NewArr1OBJ_MP(CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1OBJ_MP(CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* AllocateStringFastMP(CLR_I4 cch);
-EXTERN_C Object* JIT_NewArr1VC_MP(CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR size);
+EXTERN_C Object* JIT_NewArr1VC_MP(CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
 EXTERN_C Object* JIT_BoxFastMP(CORINFO_CLASS_HANDLE type, void* unboxedData);
 
 
