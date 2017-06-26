@@ -36,7 +36,7 @@ namespace System.Net.Http
             _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             HttpConnection connection = null;
 
@@ -47,12 +47,16 @@ namespace System.Net.Http
                 connection = pool.GetConnection();
             }
 
-            if (connection == null)
-            {
-                // No connection available in pool.  Create a new one.
-                connection = await CreateConnection(request, key, pool).ConfigureAwait(false);
-            }
+            return connection != null ?
+                connection.SendAsync(request, cancellationToken) :
+                SendAsyncWithNewConnection(key, pool, request, cancellationToken);
+        }
 
+        private async Task<HttpResponseMessage> SendAsyncWithNewConnection(
+            HttpConnectionKey key, HttpConnectionPool pool,
+            HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var connection = await CreateConnection(request, key, pool).ConfigureAwait(false);
             return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
