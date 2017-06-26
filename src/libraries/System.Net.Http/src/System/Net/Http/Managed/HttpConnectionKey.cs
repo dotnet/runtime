@@ -13,8 +13,8 @@ namespace System.Net.Http
         public HttpConnectionKey(Uri uri)
         {
             UsingSSL = 
-                uri.Scheme == "http" ? false :
-                uri.Scheme == "https" ? true :
+                uri.Scheme == UriScheme.Http ? false :
+                uri.Scheme == UriScheme.Https ? true :
                 throw new ArgumentException("Invalid Uri scheme", nameof(uri));
 
             Host = uri.Host;

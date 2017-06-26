@@ -49,12 +49,12 @@ namespace System.Net.Http
         private async Task<HttpResponseMessage> SendWithProxyAsync(
             Uri proxyUri, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (proxyUri.Scheme != "http")
+            if (proxyUri.Scheme != UriScheme.Http)
             {
                 throw new InvalidOperationException($"invalid scheme {proxyUri.Scheme} for proxy");
             }
 
-            if (request.RequestUri.Scheme == "https")
+            if (request.RequestUri.Scheme == UriScheme.Https)
             {
                 // TODO: Implement SSL tunneling through proxy
                 throw new NotImplementedException("no support for SSL tunneling through proxy");
@@ -71,14 +71,15 @@ namespace System.Net.Http
                 foreach (AuthenticationHeaderValue h in response.Headers.ProxyAuthenticate)
                 {
                     // We only support Basic auth, ignore others
-                    if (h.Scheme == "Basic")
+                    const string Basic = "Basic";
+                    if (h.Scheme == Basic)
                     {
-                        NetworkCredential credential = _proxy.Credentials.GetCredential(proxyUri, "Basic");
+                        NetworkCredential credential = _proxy.Credentials.GetCredential(proxyUri, Basic);
                         if (credential != null)
                         {
                             response.Dispose();
 
-                            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic",
+                            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(Basic,
                                 BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
 
                             connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);

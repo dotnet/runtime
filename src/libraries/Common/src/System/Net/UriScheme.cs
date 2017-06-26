@@ -4,7 +4,7 @@
 
 namespace System.Net
 {
-    internal class UriScheme
+    internal static class UriScheme
     {
         public const string File = "file";
         public const string Ftp = "ftp";

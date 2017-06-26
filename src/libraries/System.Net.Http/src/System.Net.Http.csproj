@@ -217,6 +217,9 @@
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+      <Link>Common\System\Net\UriScheme.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
     </Compile>
