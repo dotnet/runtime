@@ -2,29 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Globalization;
+
 namespace System.Drawing.Printing
 {
-    using System.ComponentModel;
-    using System.Globalization;
-
-    /// <include file='doc\PrinterResolution.uex' path='docs/doc[@for="PrinterResolution"]/*' />
-    /// <devdoc>
-    ///    <para> Retrieves
-    ///       the resolution supported by a printer.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Retrieves the resolution supported by a printer.
+    /// </summary>
     public partial class PrinterResolution
     {
         private int _x;
         private int _y;
         private PrinterResolutionKind _kind;
 
-        /// <include file='doc\PrinterResolution.uex' path='docs/doc[@for="PrinterResolution.PrinterResolution"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterResolution'/> class with default properties.
-        ///       This constructor is required for the serialization of the <see cref='System.Drawing.Printing.PrinterResolution'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PrinterResolution'/> class with default properties.
+        /// </summary>
         public PrinterResolution()
         {
             _kind = PrinterResolutionKind.Custom;
@@ -37,14 +31,9 @@ namespace System.Drawing.Printing
             _y = y;
         }
 
-        /// <include file='doc\PrinterResolution.uex' path='docs/doc[@for="PrinterResolution.Kind"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
-        ///       a value indicating the kind of printer resolution.
-        ///       Setter added to enable serialization of the PrinterSettings object.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating the kind of printer resolution.
+        /// </summary>
         public PrinterResolutionKind Kind
         {
             get { return _kind; }
@@ -60,14 +49,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterResolution.uex' path='docs/doc[@for="PrinterResolution.X"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the printer resolution in the horizontal direction,
-        ///       in dots per inch.
-        ///       Setter added to enable serialization of the PrinterSettings object.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the printer resolution in the horizontal direction, in dots per inch.
+        /// </summary>
         public int X
         {
             get
@@ -80,13 +64,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterResolution.uex' path='docs/doc[@for="PrinterResolution.Y"]/*' />
-        /// <devdoc>
-        ///    <para> Gets the printer resolution in the vertical direction,
-        ///       in dots per inch.
-        ///       Setter added to enable serialization of the PrinterSettings object.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the printer resolution in the vertical direction, in dots per inch.
+        /// </summary>
         public int Y
         {
             get
@@ -99,14 +79,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterResolution.uex' path='docs/doc[@for="PrinterResolution.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the PrinterResolution in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the PrinterResolution in String form.
+        /// </summary>
         public override string ToString()
         {
             if (_kind != PrinterResolutionKind.Custom)

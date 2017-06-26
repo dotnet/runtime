@@ -4,44 +4,29 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\Duplex.uex' path='docs/doc[@for="Duplex"]/*' />
-    /// <devdoc>
-    ///    <para>Specifies the printer's duplex setting.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the printer's duplex setting.
+    /// </summary>
     public enum Duplex
     {
-        /// <include file='doc\Duplex.uex' path='docs/doc[@for="Duplex.Default"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The printer's default duplex setting.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The printer's default duplex setting.
+        /// </summary>
         Default = -1,
 
-        /// <include file='doc\Duplex.uex' path='docs/doc[@for="Duplex.Simplex"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Single-sided printing.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Single-sided printing.
+        /// </summary>
         Simplex = SafeNativeMethods.DMDUP_SIMPLEX,
 
-        /// <include file='doc\Duplex.uex' path='docs/doc[@for="Duplex.Horizontal"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Double-sided, horizontal printing.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Double-sided, horizontal printing.
+        /// </summary>
         Horizontal = SafeNativeMethods.DMDUP_HORIZONTAL,
 
-        /// <include file='doc\Duplex.uex' path='docs/doc[@for="Duplex.Vertical"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Double-sided, vertical printing.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Double-sided, vertical printing.
+        /// </summary>
         Vertical = SafeNativeMethods.DMDUP_VERTICAL,
     }
 }

@@ -4,11 +4,9 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs"]/*' />
-    /// <devdoc>
-    /// <para>Provides data for the <see cref='E:System.Drawing.Printing.PrintDocument.PrintPage'/>
-    /// event.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Provides data for the <see cref='PrintDocument.PrintPage'/> event.
+    /// </summary>
     // NOTE: Please keep this class consistent with PaintEventArgs.
     public class PrintPageEventArgs : EventArgs
     {
@@ -24,10 +22,9 @@ namespace System.Drawing.Printing
         internal bool CopySettingsToDevMode = true;
 
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.PrintPageEventArgs"]/*' />
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Drawing.Printing.PrintPageEventArgs'/> class.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PrintPageEventArgs'/> class.
+        /// </summary>
         public PrintPageEventArgs(Graphics graphics, Rectangle marginBounds, Rectangle pageBounds, PageSettings pageSettings)
         {
             _graphics = graphics; // may be null, see PrintController
@@ -36,24 +33,18 @@ namespace System.Drawing.Printing
             _pageSettings = pageSettings;
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.Cancel"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets a value indicating whether the print job should be canceled.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating whether the print job should be canceled.
+        /// </summary>
         public bool Cancel
         {
             get { return _cancel; }
             set { _cancel = value; }
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.Graphics"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the <see cref='System.Drawing.Graphics'/>
-        ///       used to paint the
-        ///       item.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the <see cref='System.Drawing.Graphics'/> used to paint the item.
+        /// </summary>
         public Graphics Graphics
         {
             get
@@ -62,21 +53,18 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.HasMorePages"]/*' />
-        /// <devdoc>
-        ///    <para> Gets or sets a value indicating whether an additional page should
-        ///       be printed.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating whether an additional page should be printed.
+        /// </summary>
         public bool HasMorePages
         {
             get { return _hasMorePages; }
             set { _hasMorePages = value; }
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.MarginBounds"]/*' />
-        /// <devdoc>
-        ///    <para>Gets the rectangular area that represents the portion of the page between the margins.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the rectangular area that represents the portion of the page between the margins.
+        /// </summary>
         public Rectangle MarginBounds
         {
             get
@@ -85,12 +73,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.PageBounds"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the rectangular area that represents the total area of the page.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the rectangular area that represents the total area of the page.
+        /// </summary>
         public Rectangle PageBounds
         {
             get
@@ -99,11 +84,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.PageSettings"]/*' />
-        /// <devdoc>
-        ///    <para>Gets
-        ///       the page settings for the current page.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the page settings for the current page.
+        /// </summary>
         public PageSettings PageSettings
         {
             get
@@ -112,14 +95,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintPageEvent.uex' path='docs/doc[@for="PrintPageEventArgs.Dispose"]/*' />
-        /// <devdoc>
-        ///    <para>Disposes
-        ///       of the resources (other than memory) used by
-        ///       the <see cref='System.Drawing.Printing.PrintPageEventArgs'/>.</para>
-        /// </devdoc>
-        // We want a way to dispose the GDI+ Graphics, but we don't want to create one
-        // simply to dispose it
+        /// <summary>
+        /// Disposes of the resources (other than memory) used by the <see cref='PrintPageEventArgs'/>.
+        /// </summary>
         internal void Dispose()
         {
             _graphics.Dispose();

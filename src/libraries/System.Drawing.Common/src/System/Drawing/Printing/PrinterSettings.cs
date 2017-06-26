@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Imaging;
+using System.Drawing.Internal;
+using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Printing
 {
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Drawing.Imaging;
-    using System.Drawing.Internal;
-    using System.Globalization;
-    using System.IO;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings"]/*' />
-    /// <devdoc>
-    ///    Information about how a document should be printed, including which printer
-    ///    to print it on.
-    /// </devdoc>
+    /// <summary>
+    /// Information about how a document should be printed, including which printer to print it on.
+    /// </summary>
     public partial class PrinterSettings : ICloneable
     {
         // All read/write data is stored in managed code, and whenever we need to call Win32,
@@ -51,34 +49,25 @@ namespace System.Drawing.Printing
         private short _devmodebytes;
         private byte[] _cachedDevmode;
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterSettings"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterSettings'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PrinterSettings'/> class.
+        /// </summary>
         public PrinterSettings()
         {
             _defaultPageSettings = new PageSettings(this);
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.CanDuplex"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether the printer supports duplex (double-sided) printing.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether the printer supports duplex (double-sided) printing.
+        /// </summary>
         public bool CanDuplex
         {
             get { return DeviceCapabilities(SafeNativeMethods.DC_DUPLEX, IntPtr.Zero, 0) == 1; }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.Copies"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the number of copies to print.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the number of copies to print.
+        /// </summary>
         public short Copies
         {
             get
@@ -95,22 +84,19 @@ namespace System.Drawing.Printing
                                                              "value", value.ToString(CultureInfo.CurrentCulture),
                                                              (0).ToString(CultureInfo.CurrentCulture)));
                 /*
-                We shouldnt allow copies to be set since the copies can be a large number 
-                and can be reflected in PrintDialog. So for the Copies property,
-                we prefer that for SafePrinting, copied cannot be set programmatically 
-                but through the print dialog. 
-                Any lower security could set copies to anything. Vs Whidbey 93475*/
+                    We shouldnt allow copies to be set since the copies can be a large number 
+                    and can be reflected in PrintDialog. So for the Copies property,
+                    we prefer that for SafePrinting, copied cannot be set programmatically 
+                    but through the print dialog. 
+                    Any lower security could set copies to anything.
+                */
                 _copies = value;
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.Collate"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets
-        ///       a value indicating whether the print out is collated.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating whether the print out is collated.
+        /// </summary>
         public bool Collate
         {
             get
@@ -123,12 +109,9 @@ namespace System.Drawing.Printing
             set { _collate = value; }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.DefaultPageSettings"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the default page settings for this printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the default page settings for this printer.
+        /// </summary>
         public PageSettings DefaultPageSettings
         {
             get { return _defaultPageSettings; }
@@ -139,31 +122,11 @@ namespace System.Drawing.Printing
         internal string DriverName
         {
             get { return _driverName; }
-            // set { driverName = value;}
         }
 
-        /* // No point in having a driver version if you can't get the driver name
         /// <summary>
-        ///    <para>
-        ///       Gets the printer driver version number.
-        ///    </para>
+        /// Gets or sets the printer's duplex setting.
         /// </summary>
-        /// <value>
-        ///    <para>
-        ///       The printer driver version number.
-        ///    </para>
-        /// </value>
-        public int DriverVersion {
-            get { return DeviceCapabilities(SafeNativeMethods.DC_DRIVER, 0, -1);}
-        }
-        */
-
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.Duplex"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the printer's duplex setting.
-        ///    </para>
-        /// </devdoc>
         public Duplex Duplex
         {
             get
@@ -184,10 +147,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.FromPage"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets the first page to print.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the first page to print.
+        /// </summary>
         public int FromPage
         {
             get { return _fromPage; }
@@ -203,12 +165,9 @@ namespace System.Drawing.Printing
 
 
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.InstalledPrinters"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the names of all printers installed on the machine.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the names of all printers installed on the machine.
+        /// </summary>
         public static StringCollection InstalledPrinters
         {
             get
@@ -256,13 +215,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.IsDefaultPrinter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether the <see cref='System.Drawing.Printing.PrinterSettings.PrinterName'/>
-        ///       property designates the default printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether the <see cref='PrinterName'/> property designates the default printer.
+        /// </summary>
         public bool IsDefaultPrinter
         {
             get
@@ -271,12 +226,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.IsPlotter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether the printer is a plotter, as opposed to a raster printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether the printer is a plotter, as opposed to a raster printer.
+        /// </summary>
         public bool IsPlotter
         {
             get
@@ -285,13 +237,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.IsValid"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether the <see cref='System.Drawing.Printing.PrinterSettings.PrinterName'/>
-        ///       property designates a valid printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether the <see cref='PrinterName'/> property designates a valid printer.
+        /// </summary>
         public bool IsValid
         {
             get
@@ -300,36 +248,25 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.LandscapeAngle"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the angle, in degrees, which the portrait orientation is rotated
-        ///       to produce the landscape orientation.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the angle, in degrees, which the portrait orientation is rotated to produce the landscape orientation.
+        /// </summary>
         public int LandscapeAngle
         {
             get { return DeviceCapabilities(SafeNativeMethods.DC_ORIENTATION, IntPtr.Zero, 0); }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.MaximumCopies"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the maximum number of copies allowed by the printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the maximum number of copies allowed by the printer.
+        /// </summary>
         public int MaximumCopies
         {
             get { return DeviceCapabilities(SafeNativeMethods.DC_COPIES, IntPtr.Zero, 1); }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.MaximumPage"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the highest <see cref='System.Drawing.Printing.PrinterSettings.FromPage'/> or <see cref='System.Drawing.Printing.PrinterSettings.ToPage'/>
-        ///       which may be selected in a print dialog box.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the highest <see cref='FromPage'/> or <see cref='ToPage'/> which may be selected in a print dialog box.
+        /// </summary>
         public int MaximumPage
         {
             get { return _maxPage; }
@@ -343,11 +280,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.MinimumPage"]/*' />
-        /// <devdoc>
-        /// <para>Gets or sets the lowest <see cref='System.Drawing.Printing.PrinterSettings.FromPage'/> or <see cref='System.Drawing.Printing.PrinterSettings.ToPage'/>
-        /// which may be selected in a print dialog box.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the lowest <see cref='FromPage'/> or <see cref='ToPage'/> which may be selected in a print dialog box.
+        /// </summary>
         public int MinimumPage
         {
             get { return _minPage; }
@@ -373,12 +308,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrintFileName"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Indicates the name of the printerfile.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Indicates the name of the printerfile.
+        /// </summary>
         public string PrintFileName
         {
             get
@@ -396,42 +328,31 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizes"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the paper sizes supported by this printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the paper sizes supported by this printer.
+        /// </summary>
         public PaperSizeCollection PaperSizes
         {
             get { return new PaperSizeCollection(Get_PaperSizes()); }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSources"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the paper sources available on this printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the paper sources available on this printer.
+        /// </summary>
         public PaperSourceCollection PaperSources
         {
             get { return new PaperSourceCollection(Get_PaperSources()); }
         }
 
-        /// <devdoc>
-        ///    <para>
-        ///        Whether the print dialog has been displayed.  In SafePrinting mode,
-        ///        a print dialog is required to print.  After printing,
-        ///        this property is set to false if the program does not have AllPrinting;
-        ///        this guarantees a document is only printed once each time the print dialog is shown.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Whether the print dialog has been displayed.  In SafePrinting mode, a print dialog is required to print.
+        /// After printing, this property is set to false if the program does not have AllPrinting; this guarantees
+        /// a document is only printed once each time the print dialog is shown.
+        /// </summary>
         internal bool PrintDialogDisplayed
         {
             get
             {
-                // no security check
-
                 return _printDialogDisplayed;
             }
 
@@ -441,11 +362,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrintRange"]/*' />
-        /// <devdoc>
-        ///    <para> 
-        ///       Gets or sets the pages the user has asked to print.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the pages the user has asked to print.
+        /// </summary>
         public PrintRange PrintRange
         {
             get { return _printRange; }
@@ -458,10 +377,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrintToFile"]/*' />
-        /// <devdoc>
-        ///       Indicates whether to print to a file instead of a port.
-        /// </devdoc>
+        /// <summary>
+        /// Indicates whether to print to a file instead of a port.
+        /// </summary>
         public bool PrintToFile
         {
             get
@@ -474,12 +392,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterName"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the name of the printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the name of the printer.
+        /// </summary>
         public string PrinterName
         {
             get
@@ -508,28 +423,24 @@ namespace System.Drawing.Printing
                 _cachedDevmode = null;
                 _extrainfo = null;
                 _printerName = value;
-                // VsWhidbey : 235920: PrinterName can be set through a fulltrusted assembly without using  the PrintDialog. 
+                // PrinterName can be set through a fulltrusted assembly without using  the PrintDialog. 
                 // So dont set this variable here.
                 //PrintDialogDisplayed = true;
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutions"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the resolutions supported by this printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the resolutions supported by this printer.
+        /// </summary>
         public PrinterResolutionCollection PrinterResolutions
         {
             get { return new PrinterResolutionCollection(Get_PrinterResolutions()); }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.IsDirectPrintingSupported"]/*' />
-        /// <devdoc>
-        ///     If the image is a JPEG or a PNG (Image.RawFormat) and the printer returns true
-        ///     from ExtEscape(CHECKJPEGFORMAT) or ExtEscape(CHECKPNGFORMAT) then this function returns true.
-        /// </devdoc>
+        /// <summary>
+        /// If the image is a JPEG or a PNG (Image.RawFormat) and the printer returns true from
+        /// ExtEscape(CHECKJPEGFORMAT) or ExtEscape(CHECKPNGFORMAT) then this function returns true.
+        /// </summary>
         public bool IsDirectPrintingSupported(ImageFormat imageFormat)
         {
             bool isDirectPrintingSupported = false;
@@ -551,18 +462,13 @@ namespace System.Drawing.Printing
             return isDirectPrintingSupported;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.IsDirectPrintingSupported"]/*' />
-        /// <devdoc>
-        ///    <para>
+        /// <summary>
         /// This method utilizes the CHECKJPEGFORMAT/CHECKPNGFORMAT printer escape functions
         /// to determine whether the printer can handle a JPEG image.
-        /// See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/gdi/prntspol_51ys.asp
-        /// for more information on this printer escape function.
         ///
         /// If the image is a JPEG or a PNG (Image.RawFormat) and the printer returns true
         /// from ExtEscape(CHECKJPEGFORMAT) or ExtEscape(CHECKPNGFORMAT) then this function returns true.
-        ///    </para>
-        /// </devdoc>
+        /// </summary>
         public bool IsDirectPrintingSupported(Image image)
         {
             bool isDirectPrintingSupported = false;
@@ -608,13 +514,9 @@ namespace System.Drawing.Printing
             return isDirectPrintingSupported;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.SupportsColor"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a
-        ///       value indicating whether the printer supports color printing.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether the printer supports color printing.
+        /// </summary>
         public bool SupportsColor
         {
             get
@@ -623,10 +525,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.ToPage"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the last page to print.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the last page to print.
+        /// </summary>
         public int ToPage
         {
             get { return _toPage; }
@@ -640,19 +541,16 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.Clone"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Creates an identical copy of this object.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Creates an identical copy of this object.
+        /// </summary>
         public object Clone()
         {
             PrinterSettings clone = (PrinterSettings)MemberwiseClone();
             clone._printDialogDisplayed = false;
             return clone;
         }
- // what is done in copytohdevmode cannot give unwanted access AllPrinting permission
+        // what is done in copytohdevmode cannot give unwanted access AllPrinting permission
         internal DeviceContext CreateDeviceContext(PageSettings pageSettings)
         {
             IntPtr modeHandle = GetHdevmodeInternal();
@@ -679,7 +577,8 @@ namespace System.Drawing.Printing
             return dc;
         }
 
-        // A read-only DC, which is faster than CreateHdc         // what is done in copytohdevmode cannot give unwanted access AllPrinting permission
+        // A read-only DC, which is faster than CreateHdc
+        // what is done in copytohdevmode cannot give unwanted access AllPrinting permission
         internal DeviceContext CreateInformationContext(PageSettings pageSettings)
         {
             IntPtr modeHandle = GetHdevmodeInternal();
@@ -707,13 +606,12 @@ namespace System.Drawing.Printing
             return dc;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.CreateMeasurementGraphics"]/*' />
         public Graphics CreateMeasurementGraphics()
         {
             return CreateMeasurementGraphics(DefaultPageSettings);
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.CreateMeasurementGraphics2"]/*' /> //whatever the call stack calling HardMarginX and HardMarginY here is safe
+        //whatever the call stack calling HardMarginX and HardMarginY here is safe
         public Graphics CreateMeasurementGraphics(bool honorOriginAtMargins)
         {
             Graphics g = CreateMeasurementGraphics();
@@ -725,7 +623,6 @@ namespace System.Drawing.Printing
             return g;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.CreateMeasurementGraphics3"]/*' />
         public Graphics CreateMeasurementGraphics(PageSettings pageSettings)
         {
             // returns the Graphics object for the printer
@@ -735,7 +632,7 @@ namespace System.Drawing.Printing
             return g;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.CreateMeasurementGraphics4"]/*' /> //whatever the call stack calling HardMarginX and HardMarginY here is safe
+        //whatever the call stack calling HardMarginX and HardMarginY here is safe
         public Graphics CreateMeasurementGraphics(PageSettings pageSettings, bool honorOriginAtMargins)
         {
             Graphics g = CreateMeasurementGraphics();
@@ -952,13 +849,12 @@ namespace System.Drawing.Printing
             return result;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.GetHdevmode"]/*' />
-        /// <devdoc>
-        ///    <para>Creates a handle to a DEVMODE structure which correspond too the printer settings.
-        ///       When you are done with the handle, you must deallocate it yourself:
-        ///       Windows.GlobalFree(handle);
-        ///       Where "handle" is the return value from this method.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Creates a handle to a DEVMODE structure which correspond too the printer settings.When you are done with the
+        /// handle, you must deallocate it yourself:
+        ///   Windows.GlobalFree(handle);
+        ///   Where "handle" is the return value from this method.
+        /// </summary>
         public IntPtr GetHdevmode()
         {
             // Don't assert unmanaged code -- anyone using handles should have unmanaged code permission
@@ -1014,12 +910,14 @@ namespace System.Drawing.Printing
             }
             if ((mode.dmFields & SafeNativeMethods.DM_COPIES) == SafeNativeMethods.DM_COPIES)
             {
-                if (_copies != -1) mode.dmCopies = _copies;
+                if (_copies != -1)
+                    mode.dmCopies = _copies;
             }
 
             if ((mode.dmFields & SafeNativeMethods.DM_DUPLEX) == SafeNativeMethods.DM_DUPLEX)
             {
-                if (unchecked((int)_duplex) != -1) mode.dmDuplex = unchecked((short)_duplex);
+                if (unchecked((int)_duplex) != -1)
+                    mode.dmDuplex = unchecked((short)_duplex);
             }
 
             if ((mode.dmFields & SafeNativeMethods.DM_COLLATE) == SafeNativeMethods.DM_COLLATE)
@@ -1043,36 +941,28 @@ namespace System.Drawing.Printing
             return handle;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.GetHdevmode1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Creates a handle to a DEVMODE structure which correspond to the printer
-        ///       and page settings.
-        ///       When you are done with the handle, you must deallocate it yourself:
-        ///       Windows.GlobalFree(handle);
-        ///       Where "handle" is the return value from this method.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Creates a handle to a DEVMODE structure which correspond to the printer and page settings.
+        /// When you are done with the handle, you must deallocate it yourself:
+        ///   Windows.GlobalFree(handle);
+        ///   Where "handle" is the return value from this method.
+        /// </summary>
         public IntPtr GetHdevmode(PageSettings pageSettings)
         {
-            // Don't assert unmanaged code -- anyone using handles should have unmanaged code permission
             IntPtr modeHandle = GetHdevmodeInternal();
             pageSettings.CopyToHdevmode(modeHandle);
 
             return modeHandle;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.GetHdevnames"]/*' />
-        /// <devdoc>
-        ///    Creates a handle to a DEVNAMES structure which correspond to the printer settings.
-        ///    When you are done with the handle, you must deallocate it yourself:
-        ///    Windows.GlobalFree(handle);
-        ///    Where "handle" is the return value from this method.
-        /// </devdoc>
+        /// <summary>
+        /// Creates a handle to a DEVNAMES structure which correspond to the printer settings.
+        /// When you are done with the handle, you must deallocate it yourself:
+        ///   Windows.GlobalFree(handle);
+        ///   Where "handle" is the return value from this method.
+        /// </summary>
         public IntPtr GetHdevnames()
         {
-            // Don't assert unmanaged code -- anyone using handles should have unmanaged code permission
-
             string printerName = PrinterName; // the PrinterName property is slow when using the default printer
             string driver = DriverName;  // make sure we are writing out exactly the same string as we got the length of
             string outPort = OutputPort;
@@ -1128,18 +1018,42 @@ namespace System.Drawing.Printing
                 SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
                 switch (field)
                 {
-                    case ModeField.Orientation: result = mode.dmOrientation; break;
-                    case ModeField.PaperSize: result = mode.dmPaperSize; break;
-                    case ModeField.PaperLength: result = mode.dmPaperLength; break;
-                    case ModeField.PaperWidth: result = mode.dmPaperWidth; break;
-                    case ModeField.Copies: result = mode.dmCopies; break;
-                    case ModeField.DefaultSource: result = mode.dmDefaultSource; break;
-                    case ModeField.PrintQuality: result = mode.dmPrintQuality; break;
-                    case ModeField.Color: result = mode.dmColor; break;
-                    case ModeField.Duplex: result = mode.dmDuplex; break;
-                    case ModeField.YResolution: result = mode.dmYResolution; break;
-                    case ModeField.TTOption: result = mode.dmTTOption; break;
-                    case ModeField.Collate: result = mode.dmCollate; break;
+                    case ModeField.Orientation:
+                        result = mode.dmOrientation;
+                        break;
+                    case ModeField.PaperSize:
+                        result = mode.dmPaperSize;
+                        break;
+                    case ModeField.PaperLength:
+                        result = mode.dmPaperLength;
+                        break;
+                    case ModeField.PaperWidth:
+                        result = mode.dmPaperWidth;
+                        break;
+                    case ModeField.Copies:
+                        result = mode.dmCopies;
+                        break;
+                    case ModeField.DefaultSource:
+                        result = mode.dmDefaultSource;
+                        break;
+                    case ModeField.PrintQuality:
+                        result = mode.dmPrintQuality;
+                        break;
+                    case ModeField.Color:
+                        result = mode.dmColor;
+                        break;
+                    case ModeField.Duplex:
+                        result = mode.dmDuplex;
+                        break;
+                    case ModeField.YResolution:
+                        result = mode.dmYResolution;
+                        break;
+                    case ModeField.TTOption:
+                        result = mode.dmTTOption;
+                        break;
+                    case ModeField.Collate:
+                        result = mode.dmCollate;
+                        break;
                     default:
                         Debug.Fail("Invalid field in GetModeField");
                         result = defaultValue;
@@ -1285,12 +1199,9 @@ namespace System.Drawing.Printing
             return result;
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.SetHdevmode"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Copies the relevant information out of the handle and into the PrinterSettings.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Copies the relevant information out of the handle and into the PrinterSettings.
+        /// </summary>
         public void SetHdevmode(IntPtr hdevmode)
         {
             if (hdevmode == IntPtr.Zero)
@@ -1333,10 +1244,9 @@ namespace System.Drawing.Printing
             SafeNativeMethods.GlobalUnlock(new HandleRef(null, hdevmode));
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.SetHdevnames"]/*' />
-        /// <devdoc>
-        ///    <para>Copies the relevant information out of the handle and into the PrinterSettings.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Copies the relevant information out of the handle and into the PrinterSettings.
+        /// </summary>
         public void SetHdevnames(IntPtr hdevnames)
         {
             if (hdevnames == IntPtr.Zero)
@@ -1353,14 +1263,9 @@ namespace System.Drawing.Printing
             SafeNativeMethods.GlobalUnlock(new HandleRef(null, hdevnames));
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the PrinterSettings in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the PrinterSettings in String form.
+        /// </summary>
         public override string ToString()
         {
             string printerName = PrinterName;
@@ -1368,8 +1273,6 @@ namespace System.Drawing.Printing
             + printerName
             + " Copies=" + Copies.ToString(CultureInfo.InvariantCulture)
             + " Collate=" + Collate.ToString(CultureInfo.InvariantCulture)
-            //            + " DriverName=" + DriverName.ToString(CultureInfo.InvariantCulture)
-            //            + " DriverVersion=" + DriverVersion.ToString(CultureInfo.InvariantCulture)
             + " Duplex=" + Duplex.ToString()
             + " FromPage=" + FromPage.ToString(CultureInfo.InvariantCulture)
             + " LandscapeAngle=" + LandscapeAngle.ToString(CultureInfo.InvariantCulture)
@@ -1382,7 +1285,8 @@ namespace System.Drawing.Printing
         // Write null terminated string, return length of string in characters (including null)
         private short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
         {
-            if (str == null) str = "";
+            if (str == null)
+                str = "";
             IntPtr address = (IntPtr)(checked((long)bufferStart + index * Marshal.SystemDefaultCharSize));
 
             char[] data = str.ToCharArray();
@@ -1392,33 +1296,24 @@ namespace System.Drawing.Printing
             return checked((short)(str.Length + 1));
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Collection of PaperSize's...
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Collection of PaperSize's...
+        /// </summary>
         public class PaperSizeCollection : ICollection
         {
             private PaperSize[] _array;
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.PaperSizeCollection"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterSettings.PaperSizeCollection'/> class.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterSettings.PaperSizeCollection'/> class.
+            /// </summary>
             public PaperSizeCollection(PaperSize[] array)
             {
                 _array = array;
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.Count"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Gets a value indicating the number of paper sizes.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Gets a value indicating the number of paper sizes.
+            /// </summary>
             public int Count
             {
                 get
@@ -1427,12 +1322,9 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.this"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Retrieves the PaperSize with the specified index.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Retrieves the PaperSize with the specified index.
+            /// </summary>
             public virtual PaperSize this[int index]
             {
                 get
@@ -1441,19 +1333,11 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.GetEnumerator"]/*' />
-            /// <devdoc>
-            /// </devdoc>
             public IEnumerator GetEnumerator()
             {
                 return new ArrayEnumerator(_array, 0, Count);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.ICollection.Count"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             int ICollection.Count
             {
                 get
@@ -1463,11 +1347,6 @@ namespace System.Drawing.Printing
             }
 
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.ICollection.IsSynchronized"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             bool ICollection.IsSynchronized
             {
                 get
@@ -1476,11 +1355,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.ICollection.SyncRoot"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             object ICollection.SyncRoot
             {
                 get
@@ -1489,11 +1363,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PaperSizeCollection.ICollection.CopyTo"]/*' />
-            /// <devdoc>        
-            /// ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             void ICollection.CopyTo(Array array, int index)
             {
                 Array.Copy(_array, index, array, 0, _array.Length);
@@ -1504,21 +1373,11 @@ namespace System.Drawing.Printing
                 Array.Copy(_array, index, paperSizes, 0, _array.Length);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.IEnumerable.GetEnumerator"]/*' />
-            /// <devdoc>        
-            ///    IEnumerable private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSizeCollection.Add"]/*' />
-            /// <devdoc>        
-            /// Empty implementation required for serialization of PrinterSettings object.
-            /// </devdoc>
-            /// <internalonly/>
             [
                 EditorBrowsable(EditorBrowsableState.Never)
             ]
@@ -1532,33 +1391,21 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Collection of PaperSource's...
-        ///    </para>
-        /// </devdoc>
         public class PaperSourceCollection : ICollection
         {
             private PaperSource[] _array;
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.PaperSourceCollection"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterSettings.PaperSourceCollection'/> class.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Initializes a new instance of the <see cref='PaperSourceCollection'/> class.
+            /// </summary>
             public PaperSourceCollection(PaperSource[] array)
             {
                 _array = array;
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.Count"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Gets a value indicating the number of paper sources.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Gets a value indicating the number of paper sources.
+            /// </summary>
             public int Count
             {
                 get
@@ -1567,12 +1414,9 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.this"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Gets the PaperSource with the specified index.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Gets the PaperSource with the specified index.
+            /// </summary>
             public virtual PaperSource this[int index]
             {
                 get
@@ -1581,23 +1425,11 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.GetEnumerator"]/*' />
-            /// <devdoc>
-            /// </devdoc>
-            /// <devdoc>
-            /// </devdoc>
-            /// <devdoc>
-            /// </devdoc>
             public IEnumerator GetEnumerator()
             {
                 return new ArrayEnumerator(_array, 0, Count);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.ICollection.Count"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             int ICollection.Count
             {
                 get
@@ -1607,11 +1439,6 @@ namespace System.Drawing.Printing
             }
 
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.ICollection.IsSynchronized"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             bool ICollection.IsSynchronized
             {
                 get
@@ -1620,11 +1447,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.ICollection.SyncRoot"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             object ICollection.SyncRoot
             {
                 get
@@ -1633,11 +1455,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PaperSourceCollection.ICollection.CopyTo"]/*' />
-            /// <devdoc>        
-            /// ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             void ICollection.CopyTo(Array array, int index)
             {
                 Array.Copy(_array, index, array, 0, _array.Length);
@@ -1648,24 +1465,12 @@ namespace System.Drawing.Printing
                 Array.Copy(_array, index, paperSources, 0, _array.Length);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.IEnumerable.GetEnumerator"]/*' />
-            /// <devdoc>        
-            ///    IEnumerable private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PaperSourceCollection.Add"]/*' />
-            /// <devdoc>        
-            /// Empty implementation required for serialization of PrinterSettings object.
-            /// </devdoc>
-            /// <internalonly/>
-            [
-                EditorBrowsable(EditorBrowsableState.Never)
-            ]
+            [EditorBrowsable(EditorBrowsableState.Never)]
             public Int32 Add(PaperSource paperSource)
             {
                 PaperSource[] newArray = new PaperSource[Count + 1];
@@ -1676,34 +1481,21 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Collection of PrinterResolution's...
-        ///    </para>
-        /// </devdoc>
         public class PrinterResolutionCollection : ICollection
         {
             private PrinterResolution[] _array;
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.PrinterResolutionCollection"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterSettings.PrinterResolutionCollection'/> class.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Initializes a new instance of the <see cref='PrinterResolutionCollection'/> class.
+            /// </summary>
             public PrinterResolutionCollection(PrinterResolution[] array)
             {
                 _array = array;
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.Count"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Gets a
-            ///       value indicating the number of available printer resolutions.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Gets a value indicating the number of available printer resolutions.
+            /// </summary>
             public int Count
             {
                 get
@@ -1712,12 +1504,9 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.this"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Retrieves the PrinterResolution with the specified index.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Retrieves the PrinterResolution with the specified index.
+            /// </summary>
             public virtual PrinterResolution this[int index]
             {
                 get
@@ -1726,23 +1515,11 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.GetEnumerator"]/*' />
-            /// <devdoc>
-            /// </devdoc>
-            /// <devdoc>
-            /// </devdoc>
-            /// <devdoc>
-            /// </devdoc>
             public IEnumerator GetEnumerator()
             {
                 return new ArrayEnumerator(_array, 0, Count);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.ICollection.Count"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             int ICollection.Count
             {
                 get
@@ -1751,12 +1528,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.ICollection.IsSynchronized"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             bool ICollection.IsSynchronized
             {
                 get
@@ -1765,11 +1536,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.ICollection.SyncRoot"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             object ICollection.SyncRoot
             {
                 get
@@ -1778,11 +1544,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterResolutionCollection.ICollection.CopyTo"]/*' />
-            /// <devdoc>        
-            /// ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             void ICollection.CopyTo(Array array, int index)
             {
                 Array.Copy(_array, index, array, 0, _array.Length);
@@ -1793,24 +1554,12 @@ namespace System.Drawing.Printing
                 Array.Copy(_array, index, printerResolutions, 0, _array.Length);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.IEnumerable.GetEnumerator"]/*' />
-            /// <devdoc>        
-            ///    IEnumerable private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.PrinterResolutionCollection.Add"]/*' />
-            /// <devdoc>        
-            /// Empty implementation required for serialization of PrinterSettings object.
-            /// </devdoc>
-            /// <internalonly/>
-            [
-                EditorBrowsable(EditorBrowsableState.Never)
-            ]
+            [EditorBrowsable(EditorBrowsableState.Never)]
             public Int32 Add(PrinterResolution printerResolution)
             {
                 PrinterResolution[] newArray = new PrinterResolution[Count + 1];
@@ -1821,34 +1570,21 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Collection of String's...
-        ///    </para>
-        /// </devdoc>
-        /// <internalonly/>
         public class StringCollection : ICollection
         {
             private String[] _array;
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.StringCollection"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PrinterSettings.StringCollection'/> class.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Initializes a new instance of the <see cref='StringCollection'/> class.
+            /// </summary>
             public StringCollection(String[] array)
             {
                 _array = array;
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.Count"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Gets a value indicating the number of strings.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Gets a value indicating the number of strings.
+            /// </summary>
             public int Count
             {
                 get
@@ -1857,12 +1593,9 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.this"]/*' />
-            /// <devdoc>
-            ///    <para>
-            ///       Gets the string with the specified index.
-            ///    </para>
-            /// </devdoc>
+            /// <summary>
+            /// Gets the string with the specified index.
+            /// </summary>
             public virtual String this[int index]
             {
                 get
@@ -1871,23 +1604,11 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.GetEnumerator"]/*' />
-            /// <devdoc>
-            /// </devdoc>
-            /// <devdoc>
-            /// </devdoc>
-            /// <devdoc>
-            /// </devdoc>
             public IEnumerator GetEnumerator()
             {
                 return new ArrayEnumerator(_array, 0, Count);
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.ICollection.Count"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             int ICollection.Count
             {
                 get
@@ -1896,12 +1617,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.ICollection.IsSynchronized"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             bool ICollection.IsSynchronized
             {
                 get
@@ -1910,11 +1625,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="PrinterSettings.StringCollection.ICollection.SyncRoot"]/*' />
-            /// <devdoc>        
-            ///    ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             object ICollection.SyncRoot
             {
                 get
@@ -1923,11 +1633,6 @@ namespace System.Drawing.Printing
                 }
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="StringCollection.ICollection.CopyTo"]/*' />
-            /// <devdoc>        
-            /// ICollection private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             void ICollection.CopyTo(Array array, int index)
             {
                 Array.Copy(_array, index, array, 0, _array.Length);
@@ -1939,23 +1644,11 @@ namespace System.Drawing.Printing
                 Array.Copy(_array, index, strings, 0, _array.Length);
             }
 
-
-
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="StringCollection.IEnumerable.GetEnumerator"]/*' />
-            /// <devdoc>        
-            /// IEnumerable private interface implementation.        
-            /// </devdoc>
-            /// <internalonly/>
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return GetEnumerator();
             }
 
-            /// <include file='doc\PrinterSettings.uex' path='docs/doc[@for="StringCollection.Add"]/*' />
-            /// <devdoc>        
-            /// Empty implementation required for serialization of PrinterSettings object.
-            /// </devdoc>
-            /// <internalonly/>
             [
                 EditorBrowsable(EditorBrowsableState.Never)
             ]
@@ -1997,7 +1690,8 @@ namespace System.Drawing.Printing
 
             public bool MoveNext()
             {
-                if (_index >= _endIndex) return false;
+                if (_index >= _endIndex)
+                    return false;
                 _item = _array[_index++];
                 return true;
             }
@@ -2012,5 +1706,3 @@ namespace System.Drawing.Printing
         }
     }
 }
-
-

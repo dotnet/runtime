@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Drawing.Internal;
+using System.Drawing.Printing;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing
 {
-    using System.Drawing.Internal;
-    using System.Drawing.Printing;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\PrintPreviewGraphics.uex' path='docs/doc[@for="PrintPreviewGraphics"]/*' />
-    /// <devdoc>
-    ///    <para> Retrives the printer graphics during preview.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Retrives the printer graphics during preview.
+    /// </summary>
     internal class PrintPreviewGraphics
     {
         private PrintPageEventArgs _printPageEventArgs;
@@ -23,10 +22,9 @@ namespace System.Drawing
             _printDocument = document;
         }
 
-        /// <include file='doc\PrintPreviewGraphics.uex' path='docs/doc[@for="PrintPreviewGraphics.VisibleClipBounds"]/*' />
-        /// <devdoc>
-        ///     Gets the Visible bounds of this graphics object. Used during print preview.    
-        /// </devdoc>
+        /// <summary>
+        /// Gets the Visible bounds of this graphics object. Used during print preview.
+        /// </summary>
         public RectangleF VisibleClipBounds
         {
             get
