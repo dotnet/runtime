@@ -1151,7 +1151,7 @@ namespace System.Net.Http
             return count;
         }
 
-        private async Task CopyFromBuffer(Stream destination, int count, CancellationToken cancellationToken)
+        private async Task CopyFromBufferAsync(Stream destination, int count, CancellationToken cancellationToken)
         {
             Debug.Assert(count <= _readLength - _readOffset);
 
@@ -1166,7 +1166,7 @@ namespace System.Net.Http
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
             {
-                await CopyFromBuffer(destination, remaining, cancellationToken).ConfigureAwait(false);
+                await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
             }
 
             while (true)
@@ -1178,7 +1178,7 @@ namespace System.Net.Http
                     break;
                 }
 
-                await CopyFromBuffer(destination, _readLength, cancellationToken).ConfigureAwait(false);
+                await CopyFromBufferAsync(destination, _readLength, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -1192,7 +1192,7 @@ namespace System.Net.Http
             if (remaining > 0)
             {
                 remaining = (int)Math.Min(remaining, length);
-                await CopyFromBuffer(destination, remaining, cancellationToken).ConfigureAwait(false);
+                await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
 
                 length -= remaining;
                 if (length == 0)
@@ -1210,7 +1210,7 @@ namespace System.Net.Http
                 }
 
                 remaining = (int)Math.Min(_readLength, length);
-                await CopyFromBuffer(destination, remaining, cancellationToken).ConfigureAwait(false);
+                await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
 
                 length -= remaining;
                 if (length == 0)
