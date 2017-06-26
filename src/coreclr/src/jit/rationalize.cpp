@@ -137,7 +137,7 @@ void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
 //    None.
 //
 
-void Rationalizer::RewriteNodeAsCall(GenTree** use,
+void Rationalizer::RewriteNodeAsCall(GenTree**             use,
                                      ArrayStack<GenTree*>& parents,
                                      CORINFO_METHOD_HANDLE callHnd,
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -145,7 +145,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree** use,
 #endif
                                      GenTreeArgList* args)
 {
-    GenTree* tree = *use;
+    GenTree* tree          = *use;
     GenTree* treeFirstNode = comp->fgGetFirstNode(tree);
     GenTree* treeLastNode  = tree;
     GenTree* treePrevNode  = treeFirstNode->gtPrev;
@@ -195,7 +195,7 @@ void Rationalizer::RewriteNodeAsCall(GenTree** use,
     }
     else
     {
-        // Update the linear oder start of "m_statement" if treeFirstNode
+        // Update the linear order start of "m_statement" if treeFirstNode
         // appears to have replaced the original first node.
         assert(treeFirstNode == m_statement->gtStmt.gtStmtList);
         m_statement->gtStmt.gtStmtList = comp->fgGetFirstNode(call);
