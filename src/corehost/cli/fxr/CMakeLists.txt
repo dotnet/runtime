@@ -58,6 +58,7 @@ if(WIN32)
     list(APPEND RESOURCES ../native.rc)
 endif()
 add_library(hostfxr SHARED ${SOURCES} ${RESOURCES})
+set_target_properties(hostfxr PROPERTIES MACOSX_RPATH TRUE)
 
 # Specify the import library to link against for Arm32 build since the default set is minimal
 if (WIN32 AND CLI_CMAKE_PLATFORM_ARCH_ARM)
