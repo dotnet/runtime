@@ -13,7 +13,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml.Serialization;
 
     // sealed because the ctor results in a call to the virtual InsertItem method
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public sealed class SyndicationElementExtensionCollection : Collection<SyndicationElementExtension>
     {
         private XmlBuffer _buffer;
@@ -103,10 +102,10 @@ namespace Microsoft.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(XmlReaderWrapper));
         }
 
-        public XmlReaderWrapper GetReaderAtElementExtensions()
+        public XmlReader GetReaderAtElementExtensions()
         {
             XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
-            XmlReaderWrapper reader = new XmlReaderWrapper(extensionsBuffer.GetReader(0));
+            XmlReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
         }

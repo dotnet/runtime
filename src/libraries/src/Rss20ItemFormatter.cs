@@ -8,11 +8,12 @@ namespace Microsoft.ServiceModel.Syndication
     using System;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
+
     [XmlRoot(ElementName = Rss20Constants.ItemTag, Namespace = Rss20Constants.Rss20Namespace)]
     public class Rss20ItemFormatter : SyndicationItemFormatter
     {
@@ -104,26 +105,17 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public override bool CanRead(XmlReaderWrapper reader)
+        public override bool CanRead(XmlReader reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
+
             return reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
         }
 
         
-
-        void ReadXml(XmlReaderWrapper reader)
-        {
-            if (reader == null)
-            {
-                throw new ArgumentNullException("reader");
-            }
-            ReadItem(reader);
-        }
-
         void WriteXml(XmlWriter writer)
         {
             if (writer == null)
@@ -133,13 +125,14 @@ namespace Microsoft.ServiceModel.Syndication
             WriteItem(writer);
         }
 
-        public override void ReadFrom(XmlReaderWrapper reader)
+        public override async Task ReadFromAsync(XmlReader reader)
         {
             if (!CanRead(reader))
             {
                 throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
-            ReadItem(reader);
+
+            await ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -158,10 +151,10 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
 
-        private void ReadItem(XmlReaderWrapper reader)
+        private async Task ReadItemAsync(XmlReaderWrapper reader)
         {
             SetItem(CreateItemInstance());
-            _feedSerializer.ReadItemFrom(new XmlReaderWrapper(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
+            await _feedSerializer.ReadItemFromAsync(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
         private void WriteItem(XmlWriter writer)

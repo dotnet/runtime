@@ -10,6 +10,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
 
 
@@ -267,39 +268,39 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
-        {
-            return Load(reader, formatter, new Atom10FeedFormatter());
-        }
+        //public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
+        //{
+        //    return Load(reader, formatter, new Atom10FeedFormatter());
+        //}
 
-        public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter)
-        {
-            return Load(reader, new Rss20FeedFormatter(), formatter);
-        }
+        //public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter)
+        //{
+        //    return Load(reader, new Rss20FeedFormatter(), formatter);
+        //}
 
-        public static SyndicationFeed Load(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
-        {
-            if (reader1 == null)
-            {
-                throw new ArgumentNullException("reader");
-            }
+        //public static SyndicationFeed Load(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
+        //{
+        //    if (reader1 == null)
+        //    {
+        //        throw new ArgumentNullException("reader");
+        //    }
 
-            XmlReaderWrapper reader = new XmlReaderWrapper(reader1);
+        //    XmlReaderWrapper reader = new XmlReaderWrapper(reader1);
 
-            Atom10FeedFormatter atomSerializer = Atomformatter;
-            if (atomSerializer.CanRead(reader))
-            {
-                atomSerializer.ReadFrom(reader);
-                return atomSerializer.Feed;
-            }
-            Rss20FeedFormatter rssSerializer = Rssformatter;
-            if (rssSerializer.CanRead(reader))
-            {
-                rssSerializer.ReadFrom(reader);
-                return rssSerializer.Feed;
-            }
-            throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
-        }
+        //    Atom10FeedFormatter atomSerializer = Atomformatter;
+        //    if (atomSerializer.CanRead(reader))
+        //    {
+        //        atomSerializer.ReadFrom(reader);
+        //        return atomSerializer.Feed;
+        //    }
+        //    Rss20FeedFormatter rssSerializer = Rssformatter;
+        //    if (rssSerializer.CanRead(reader))
+        //    {
+        //        rssSerializer.ReadFrom(reader);
+        //        return rssSerializer.Feed;
+        //    }
+        //    throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+        //}
 
 
         public static SyndicationFeed Load(XmlReader reader)
@@ -307,28 +308,34 @@ namespace Microsoft.ServiceModel.Syndication
             return Load<SyndicationFeed>(reader);
         }
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader1)
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader)
             where TSyndicationFeed : SyndicationFeed, new()
         {
-            if (reader1 == null)
-            {
-                throw new ArgumentNullException("reader");
-            }
+            return LoadAsync<TSyndicationFeed>(reader).GetAwaiter().GetResult();
+        }
 
-            XmlReaderWrapper reader = new XmlReaderWrapper(reader1);
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader)
+        {
+            return await LoadAsync<SyndicationFeed>(reader);
+        }
 
+        public static async Task<TSyndicationFeed> LoadAsync<TSyndicationFeed>(XmlReader reader)
+            where TSyndicationFeed : SyndicationFeed, new()
+        {
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {
-                atomSerializer.ReadFrom(reader);
+                await atomSerializer.ReadFromAsync(reader);
                 return atomSerializer.Feed as TSyndicationFeed;
             }
+
             Rss20FeedFormatter<TSyndicationFeed> rssSerializer = new Rss20FeedFormatter<TSyndicationFeed>();
             if (rssSerializer.CanRead(reader))
             {
-                rssSerializer.ReadFrom(reader);
+                await rssSerializer.ReadFromAsync(reader);
                 return rssSerializer.Feed as TSyndicationFeed;
             }
+
             throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
