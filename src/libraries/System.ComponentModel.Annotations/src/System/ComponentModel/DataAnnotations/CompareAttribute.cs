@@ -25,10 +25,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public string OtherPropertyDisplayName { get; internal set; }
 
-        public override bool RequiresValidationContext
-        {
-            get { return true; }
-        }
+        public override bool RequiresValidationContext => true;
 
         public override string FormatErrorMessage(string name)
         {
