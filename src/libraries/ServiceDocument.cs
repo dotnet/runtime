@@ -77,7 +77,7 @@ namespace Microsoft.ServiceModel.Syndication
             where TServiceDocument : ServiceDocument, new()
         {
             AtomPub10ServiceDocumentFormatter<TServiceDocument> formatter = new AtomPub10ServiceDocumentFormatter<TServiceDocument>();
-            formatter.ReadFrom(reader);
+            formatter.ReadFromAsync(reader);
             return (TServiceDocument)(object)formatter.Document;
         }
 

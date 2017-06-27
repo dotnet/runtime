@@ -409,7 +409,7 @@ namespace Microsoft.ServiceModel.Syndication
 
                         if (notHandled)
                         {
-                            bool parsedExtension = _serializeExtensionsAsAtom && _atomSerializer.TryParseItemElementFrom(reader, result);
+                            bool parsedExtension = _serializeExtensionsAsAtom && _atomSerializer.TryParseItemElementFromAsync(reader, result).Result;
 
                             if (!parsedExtension)
                             {
@@ -671,7 +671,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     if (reader.LocalName == "base" && reader.NamespaceURI == Atom10FeedFormatter.XmlNs)
                     {
-                        link.BaseUri = FeedUtils.CombineXmlBase(link.BaseUri, reader.Value);
+                        link.BaseUri = FeedUtils.CombineXmlBase(link.BaseUri, await reader.GetValueAsync());
                     }
                     else if (!FeedUtils.IsXmlns(reader.LocalName, reader.NamespaceURI))
                     {
@@ -1199,7 +1199,7 @@ namespace Microsoft.ServiceModel.Syndication
 
                     if (notHandled)
                     {
-                        bool parsedExtension = _serializeExtensionsAsAtom && _atomSerializer.TryParseFeedElementFrom(reader, result);
+                        bool parsedExtension = _serializeExtensionsAsAtom && await _atomSerializer.TryParseFeedElementFromAsync(reader, result);
 
                         if (!parsedExtension)
                         {
@@ -1247,179 +1247,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        //private void ReadXml(XmlReaderWrapper reader, SyndicationFeed result)
-        //{
-        //    try
-        //    {
-        //        string baseUri = null;
-        //        reader.MoveToContent();
-        //        string version = reader.GetAttribute(Rss20Constants.VersionTag, Rss20Constants.Rss20Namespace);
-        //        if (version != Rss20Constants.Version)
-        //        {
-        //            throw new NotSupportedException(FeedUtils.AddLineInfo(reader, (String.Format(SR.UnsupportedRssVersion, version))));
-        //        }
-        //        if (reader.AttributeCount > 1)
-        //        {
-        //            string tmp = reader.GetAttribute("base", Atom10FeedFormatter.XmlNs);
-        //            if (!string.IsNullOrEmpty(tmp))
-        //            {
-        //                baseUri = tmp;
-        //            }
-        //        }
-        //        reader.ReadStartElement();
-        //        reader.MoveToContent();
-        //        if (reader.HasAttributes)
-        //        {
-        //            while (reader.MoveToNextAttribute())
-        //            {
-        //                string ns = reader.NamespaceURI;
-        //                string name = reader.LocalName;
-        //                if (name == "base" && ns == Atom10FeedFormatter.XmlNs)
-        //                {
-        //                    baseUri = reader.Value;
-        //                    continue;
-        //                }
-        //                if (FeedUtils.IsXmlns(name, ns) || FeedUtils.IsXmlSchemaType(name, ns))
-        //                {
-        //                    continue;
-        //                }
-        //                string val = reader.Value;
-        //                if (!TryParseAttribute(name, ns, val, result, this.Version))
-        //                {
-        //                    if (_preserveAttributeExtensions)
-        //                    {
-        //                        result.AttributeExtensions.Add(new XmlQualifiedName(name, ns), val);
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        if (!string.IsNullOrEmpty(baseUri))
-        //        {
-        //            result.BaseUri = new Uri(baseUri, UriKind.RelativeOrAbsolute);
-        //        }
-        //        bool areAllItemsRead = true;
-        //        bool readItemsAtLeastOnce = false;
-        //        reader.ReadStartElement(Rss20Constants.ChannelTag, Rss20Constants.Rss20Namespace);
-
-        //        XmlBuffer buffer = null;
-        //        XmlDictionaryWriter extWriter = null;
-        //        try
-        //        {
-        //            while (reader.IsStartElement())
-        //            {
-        //                string s = reader.Value + " " + reader.Name;
-        //                if (reader.IsStartElement(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    result.Title = TitleParser(reader);
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    //result.Links.Add(ReadAlternateLink(reader, result.BaseUri));
-        //                    result.Links.Add(OnReadLink(reader, result.BaseUri));
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    result.Description = DescriptionParser(reader);
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.LanguageTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    result.Language = LanguageParser(reader);
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.CopyrightTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    result.Copyright = CopyrightParser(reader);
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.ManagingEditorTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    //result.Authors.Add(ReadPerson(reader, result)); //original
-        //                    result.Authors.Add(ManagingEditorParser(reader, result));
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.LastBuildDateTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    //The code below is now handled by a delegate in CustomParsers
-        //                    bool canReadContent = !reader.IsEmptyElement;
-        //                    reader.ReadStartElement();
-        //                    if (canReadContent)
-        //                    {
-        //                        string str = reader.ReadString();
-        //                        if (!string.IsNullOrEmpty(str))
-        //                        {
-        //                            result.LastUpdatedTime = DateParser(str, reader); // <<=== here | original DateFromString(str, reader);
-        //                        }
-        //                        reader.ReadEndElement();
-        //                    }
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.CategoryTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    result.Categories.Add(ReadCategory(reader, result));
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.GeneratorTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    result.Generator = GeneratorParser(reader);
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.ImageTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    ImageParser(reader, result);
-        //                }
-        //                else if (reader.IsStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
-        //                {
-        //                    if (readItemsAtLeastOnce)
-        //                    {
-        //                        throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
-        //                    }
-
-        //                    result.Items = ReadItems(reader, result, out areAllItemsRead);
-        //                    readItemsAtLeastOnce = true;
-        //                    // if the derived class is reading the items lazily, then stop reading from the stream
-        //                    if (!areAllItemsRead)
-        //                    {
-        //                        break;
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    bool parsedExtension = _serializeExtensionsAsAtom && _atomSerializer.TryParseFeedElementFrom(reader, result);
-        //                    if (!parsedExtension)
-        //                    {
-        //                        parsedExtension = TryParseElement(reader, result, this.Version);
-        //                    }
-        //                    if (!parsedExtension)
-        //                    {
-        //                        if (_preserveElementExtensions)
-        //                        {
-        //                            CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, _maxExtensionSize);
-        //                        }
-        //                        else
-        //                        {
-        //                            reader.Skip();
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //            LoadElementExtensions(buffer, extWriter, result);
-        //        }
-        //        finally
-        //        {
-        //            if (extWriter != null)
-        //            {
-        //                ((IDisposable)extWriter).Dispose();
-        //            }
-        //        }
-        //        if (areAllItemsRead)
-        //        {
-        //            reader.ReadEndElement(); // channel   
-        //            reader.ReadEndElement(); // rss
-        //        }
-        //    }
-        //    catch (FormatException e)
-        //    {
-        //        new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
-        //    }
-        //    catch (ArgumentException e)
-        //    {
-        //        new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
-        //    }
-        //}
+        
 
         private void WriteAlternateLink(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {

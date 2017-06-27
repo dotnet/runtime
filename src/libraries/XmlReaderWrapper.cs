@@ -4,7 +4,7 @@ using System.Xml;
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    public class XmlReaderWrapper : XmlReader
+    internal class XmlReaderWrapper : XmlReader
     {
         private XmlReader reader;
 
@@ -19,6 +19,7 @@ namespace Microsoft.ServiceModel.Syndication
         private Func<string, string, Task<bool>> isStartElementFunc2;
         private Func<Task> skipFunc;
         private Func<Task<bool>> readFunc;
+        private Func<Task<string>> readInnerXmlFunc;
 
         private XmlReaderWrapper(XmlReader reader)
         {
@@ -59,6 +60,7 @@ namespace Microsoft.ServiceModel.Syndication
             this.isStartElementFunc2 = new Func<string, string, Task<bool>>(async (localname, ns) => { return await IsStartElementAsync(this.reader, localname, ns); });
             this.skipFunc = new Func<Task>(async () => { await this.reader.SkipAsync(); });
             this.readFunc = new Func<Task<bool>>(async () => { return await this.reader.ReadAsync(); });
+            this.readInnerXmlFunc = new Func<Task<string>>(async () => { return await this.ReadInnerXmlAsync(); });
         }
 
         private void Init()
@@ -74,6 +76,7 @@ namespace Microsoft.ServiceModel.Syndication
             this.isStartElementFunc2 = new Func<string, string, Task<bool>>((localname, ns) => { return Task.FromResult<bool>(this.reader.IsStartElement(localname, ns)); });
             this.skipFunc = new Func<Task>(() => { this.reader.Skip(); return Task.CompletedTask; });
             this.readFunc = new Func<Task<bool>>(() => { return Task.FromResult<bool>(this.reader.Read()); });
+            this.readInnerXmlFunc = new Func<Task<string>>(() => { return Task.FromResult<string>(this.reader.ReadInnerXml()); });
         }
 
         public override XmlNodeType NodeType
@@ -286,7 +289,10 @@ namespace Microsoft.ServiceModel.Syndication
         {
             return this.readFunc();
         }
-
+        public override Task<string> ReadInnerXmlAsync()
+        {
+            return readInnerXmlFunc();
+        }
         private static async Task ReadStartElementAsync(XmlReader reader)
         {
             if (await reader.MoveToContentAsync() != XmlNodeType.Element)
@@ -560,5 +566,7 @@ namespace Microsoft.ServiceModel.Syndication
                 }
             } while (await reader.ReadAsync() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
+
+        
     }
 }

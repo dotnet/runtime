@@ -109,7 +109,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
 
-            ReadItem(reader);
+            await ReadItem(reader);
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -128,10 +128,10 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
 
-        private void ReadItem(XmlReader reader)
+        private async Task ReadItem(XmlReader reader)
         {
             SetItem(CreateItemInstance());
-            _feedSerializer.ReadItemFrom(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
+            await _feedSerializer.ReadItemFrom(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
         private void WriteItem(XmlWriter writer)

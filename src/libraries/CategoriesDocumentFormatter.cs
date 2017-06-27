@@ -7,10 +7,9 @@ namespace Microsoft.ServiceModel.Syndication
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Threading.Tasks;
     using System.Xml;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
-    [DataContract]
     public abstract class CategoriesDocumentFormatter
     {
         private CategoriesDocument _document;
@@ -35,8 +34,8 @@ namespace Microsoft.ServiceModel.Syndication
         public abstract string Version
         { get; }
 
-        public abstract bool CanRead(XmlReaderWrapper reader);
-        public abstract void ReadFrom(XmlReaderWrapper reader);
+        public abstract Task<bool> CanReadAsync(XmlReader reader);
+        public abstract Task ReadFrom(XmlReader reader);
         public abstract void WriteTo(XmlWriter writer);
 
         protected virtual InlineCategoriesDocument CreateInlineCategoriesDocument()
