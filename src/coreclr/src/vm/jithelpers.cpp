@@ -3186,7 +3186,7 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
     // is this a primitive type?
     //
 
-    CorElementType elemType = pArrayMT->GetInternalCorElementType();
+    CorElementType elemType = pArrayMT->GetArrayElementType();
 
     if (CorTypeInfo::IsPrimitiveType(elemType)
 #ifdef FEATURE_64BIT_ALIGNMENT
