@@ -12,6 +12,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21217", TargetFrameworkMonikers.UapAot)]
         public void Ctor_SortKeys(bool critical)
         {
             SortKey[] sortKeys = new SortKey[] { new SortKey("name1", "rule1", true), new SortKey("name2", "rule2", false) };
@@ -91,6 +92,7 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21217", TargetFrameworkMonikers.UapAot)]
         public void SortKeys_GetNull_ReturnsEmptyArray()
         {
             var control = new SortRequestControl();

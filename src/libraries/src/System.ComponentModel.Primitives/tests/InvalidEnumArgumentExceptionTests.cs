@@ -90,6 +90,7 @@ namespace System.ComponentModel.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21214", TargetFrameworkMonikers.UapAot)]
         public void Deserialize_ThrowsPlatformNotSupportedException()
         {
             var binaryFormatter = new BinaryFormatter();
