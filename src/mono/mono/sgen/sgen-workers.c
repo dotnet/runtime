@@ -383,8 +383,10 @@ sgen_workers_stop_all_workers (int generation)
 {
 	WorkerContext *context = &worker_contexts [generation];
 
+	mono_os_mutex_lock (&context->finished_lock);
 	context->finish_callback = NULL;
-	mono_memory_write_barrier ();
+	mono_os_mutex_unlock (&context->finished_lock);
+
 	context->forced_stop = TRUE;
 
 	sgen_thread_pool_wait_for_all_jobs (context->thread_pool_context);
@@ -435,6 +437,7 @@ sgen_workers_join (int generation)
 	WorkerContext *context = &worker_contexts [generation];
 	int i;
 
+	SGEN_ASSERT (0, !context->finish_callback, "Why are we joining concurrent mark early");
 	/*
 	 * It might be the case that a worker didn't get to run anything
 	 * in this context, because it was stuck working on a long job
