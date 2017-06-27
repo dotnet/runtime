@@ -1003,7 +1003,7 @@ void Rationalizer::DoPhase()
 
             BlockRange().InsertAtEnd(LIR::Range(statement->gtStmtList, statement->gtStmtExpr));
 
-            nextStatement = statement->getNextStmt();
+            nextStatement     = statement->getNextStmt();
             statement->gtNext = nullptr;
             statement->gtPrev = nullptr;
 
@@ -1024,30 +1024,28 @@ void Rationalizer::DoPhase()
             //
             // This walk also clears the GTF_VAR_USEDEF bit on locals, which is not necessary
             // in the backend.
-            auto prePass =
-                [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
-                    auto* const thisPhase = reinterpret_cast<Rationalizer*>(walkData->pCallbackData);
+            auto prePass = [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
+                auto* const thisPhase = reinterpret_cast<Rationalizer*>(walkData->pCallbackData);
 
-                    GenTree* node = *use;
-                    if (node->OperGet() == GT_INTRINSIC &&
-                        Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
-                    {
-                        thisPhase->RewriteIntrinsicAsUserCall(use, *walkData->parentStack);
-                    }
-                    else if (node->OperIsLocal())
-                    {
-                        node->gtFlags &= ~GTF_VAR_USEDEF;
-                    }
+                GenTree* node = *use;
+                if (node->OperGet() == GT_INTRINSIC &&
+                    Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
+                {
+                    thisPhase->RewriteIntrinsicAsUserCall(use, *walkData->parentStack);
+                }
+                else if (node->OperIsLocal())
+                {
+                    node->gtFlags &= ~GTF_VAR_USEDEF;
+                }
 
-                    return Compiler::WALK_CONTINUE;
-                };
+                return Compiler::WALK_CONTINUE;
+            };
 
             // Rewrite HIR nodes into LIR nodes.
-            auto postPass =
-                [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
-                    return reinterpret_cast<Rationalizer*>(walkData->pCallbackData)
-                        ->RewriteNode(use, *walkData->parentStack);
-                };
+            auto postPass = [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
+                return reinterpret_cast<Rationalizer*>(walkData->pCallbackData)
+                    ->RewriteNode(use, *walkData->parentStack);
+            };
 
             m_block = block;
             comp->fgWalkTree(&statement->gtStmtExpr, prePass, postPass, this);
