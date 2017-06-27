@@ -110,6 +110,8 @@ namespace System.Net.Http
             }
         }
 
+        internal bool HasHeaders => _headers != null;
+
         public IDictionary<String, Object> Properties
         {
             get

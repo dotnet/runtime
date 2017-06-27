@@ -862,7 +862,10 @@ namespace System.Net.Http
             await WriteBytesAsync(s_spaceHttp11NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
 
             // Write request headers
-            await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
+            if (request.HasHeaders)
+            {
+                await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
+            }
 
             if (requestContent == null)
             {
@@ -882,7 +885,7 @@ namespace System.Net.Http
 
             // Write special additional headers.  If a host isn't in the headers list, then a Host header
             // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
-            if (request.Headers.Host == null)
+            if (!request.HasHeaders || request.Headers.Host == null)
             {
                 await WriteHostHeaderAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
             }
