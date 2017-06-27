@@ -4481,14 +4481,6 @@ public:
 #endif
     };
 
-    template <bool      computeStack>
-    static fgWalkResult fgWalkTreePreRec(GenTreePtr* pTree, fgWalkData* fgWalkPre);
-
-    // general purpose tree-walker that is capable of doing pre- and post- order
-    // callbacks at the same time
-    template <bool doPreOrder, bool doPostOrder>
-    static fgWalkResult fgWalkTreeRec(GenTreePtr* pTree, fgWalkData* fgWalkPre);
-
     fgWalkResult fgWalkTreePre(GenTreePtr*  pTree,
                                fgWalkPreFn* visitor,
                                void*        pCallBackData = nullptr,
@@ -4503,9 +4495,6 @@ public:
     void fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData);
 
     //----- Postorder
-
-    template <bool      computeStack>
-    static fgWalkResult fgWalkTreePostRec(GenTreePtr* pTree, fgWalkData* fgWalkPre);
 
     fgWalkResult fgWalkTreePost(GenTreePtr*   pTree,
                                 fgWalkPostFn* visitor,
@@ -9848,6 +9837,47 @@ public:
         }
 
         return result;
+    }
+};
+
+template <bool computeStack, bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
+class GenericTreeWalker final : public GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+{
+public:
+    enum
+    {
+        ComputeStack = computeStack,
+        DoPreOrder = doPreOrder,
+        DoPostOrder = doPostOrder,
+        DoLclVarsOnly = doLclVarsOnly,
+        UseExecutionOrder = useExecutionOrder,
+    };
+
+private:
+    Compiler::fgWalkData* m_walkData;
+
+public:
+    GenericTreeWalker(Compiler::fgWalkData* walkData)
+        : GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(walkData->compiler), m_walkData(walkData)
+    {
+        assert(walkData != nullptr);
+
+        if (computeStack)
+        {
+            walkData->parentStack = &this->m_ancestors;
+        }
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_walkData->parent = user;
+        return m_walkData->wtprVisitorFn(use, m_walkData);
+    }
+
+    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_walkData->parent = user;
+        return m_walkData->wtpoVisitorFn(use, m_walkData);
     }
 };
 
