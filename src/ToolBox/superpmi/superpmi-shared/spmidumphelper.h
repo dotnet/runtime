@@ -20,6 +20,13 @@ public:
     static std::string DumpAgnostic_CORINFO_RESOLVED_TOKENout(
         const MethodContext::Agnostic_CORINFO_RESOLVED_TOKENout& tokenOut);
     static std::string DumpAgnostic_CORINFO_RESOLVED_TOKEN(const MethodContext::Agnostic_CORINFO_RESOLVED_TOKEN& token);
+    static std::string DumpAgnostic_CORINFO_LOOKUP_KIND(const MethodContext::Agnostic_CORINFO_LOOKUP_KIND& lookupKind);
+    static std::string DumpAgnostic_CORINFO_CONST_LOOKUP(
+        const MethodContext::Agnostic_CORINFO_CONST_LOOKUP& constLookup);
+    static std::string DumpAgnostic_CORINFO_RUNTIME_LOOKUP(
+        const MethodContext::Agnostic_CORINFO_RUNTIME_LOOKUP& lookup);
+    static std::string DumpAgnostic_CORINFO_LOOKUP(const MethodContext::Agnostic_CORINFO_LOOKUP& lookup);
+    static std::string DumpAgnostic_CORINFO_SIG_INFO(const MethodContext::Agnostic_CORINFO_SIG_INFO& sigInfo);
 
 private:
     static const int MAX_BUFFER_SIZE = 1000;
