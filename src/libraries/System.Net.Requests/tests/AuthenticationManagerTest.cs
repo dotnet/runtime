@@ -26,7 +26,6 @@ namespace System.Net.Tests
             Assert.Throws<ArgumentNullException>(() => AuthenticationManager.Register(null));
         }
 
-        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void Register_Unregister_ModuleCountUnchanged()
         {
@@ -42,7 +41,6 @@ namespace System.Net.Tests
             }).Dispose();           
         }
 
-        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         public void Register_UnregisterByScheme_ModuleCountUnchanged()
         {
             RemoteInvoke(() =>
@@ -66,7 +64,6 @@ namespace System.Net.Tests
             Assert.Equal(PlatformDetection.IsFullFramework ? 5 : 0, count);
         }
 
-        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void CredentialPolicy_Roundtrip()
         {
@@ -85,7 +82,6 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void CustomTargetNameDictionary_ValidCollection()
         {
