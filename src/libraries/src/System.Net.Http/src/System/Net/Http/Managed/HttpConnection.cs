@@ -785,10 +785,38 @@ namespace System.Net.Http
             if (!uri.IsDefaultPort)
             {
                 await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);
-                await WriteAsciiStringAsync(uri.Port.ToString(CultureInfo.InvariantCulture), cancellationToken).ConfigureAwait(false);
+                await WriteFormattedInt32Async(uri.Port, cancellationToken).ConfigureAwait(false);
             }
 
             await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+        }
+
+        private Task WriteFormattedInt32Async(int value, CancellationToken cancellationToken)
+        {
+            const int MaxFormattedInt32Length = 10; // number of digits in int.MaxValue.ToString()
+
+            // If the maximum possible number of digits fits in our buffer, we can format synchronously
+            if (_writeOffset <= BufferSize - MaxFormattedInt32Length)
+            {
+                if (value == 0)
+                {
+                    _writeBuffer[_writeOffset++] = (byte)'0';
+                }
+                else
+                {
+                    int initialOffset = _writeOffset;
+                    while (value > 0)
+                    {
+                        value = Math.DivRem(value, 10, out int digit);
+                        _writeBuffer[_writeOffset++] = (byte)('0' + digit);
+                    }
+                    Array.Reverse(_writeBuffer, initialOffset, _writeOffset - initialOffset);
+                }
+                return Task.CompletedTask;
+            }
+
+            // Otherwise, do it the slower way.
+            return WriteAsciiStringAsync(value.ToString(CultureInfo.InvariantCulture), cancellationToken);
         }
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
