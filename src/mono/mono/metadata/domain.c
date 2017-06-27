@@ -1208,7 +1208,9 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	domain->setup = NULL;
 
+#ifndef HAVE_BOEHM_GC
 	mono_gc_deregister_root ((char*)&(domain->MONO_DOMAIN_FIRST_GC_TRACKED));
+#endif
 
 	mono_appdomains_lock ();
 	appdomains_list [domain->domain_id] = NULL;
