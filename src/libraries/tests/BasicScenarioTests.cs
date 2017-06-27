@@ -162,7 +162,6 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 //File.Delete(AtomPath);
             }
         }
-      
 
         [Fact]
         public static void SyndicationFeed_RSS20_Load_customImageDataInFeed()
@@ -215,44 +214,53 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             }
         }
 
-
         [Fact]
         public static async Task SyndicationFeed_LoadAsync_Rss() {
 
+            // *** SETUP *** \\
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
-            XmlReader reader2 = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+            XmlReader reader = null;
+            try
+            {
+                // *** EXECUTE *** \\
+                reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+                Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(rss);
 
-
-            Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(reader2);
-
-           
-
-            //atom.re
-
-            await Task.WhenAll(rss);
-
-            Assert.True(rss.Result.Items != null);
+                // *** ASSERT *** \\
+                Assert.True(rss.Result.Items != null);
+            }
+            catch
+            {
+                // *** CLEANUP *** \\
+                reader.Close();
+            }
         }
 
         [Fact]
         public static async Task SyndicationFeed_LoadAsync_Atom()
         {
 
+            // *** SETUP *** \\
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
-            XmlReader reader = XmlReader.Create(@"TestFeeds\atom_complex_example.xml", setting);
+            XmlReader reader = null;
 
-
-            Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
-
-
-
-            //atom.re
-
-            await Task.WhenAll(atom);
-
-            Assert.True(atom.Result.Items != null);
+            try
+            {
+                reader = XmlReader.Create(@"TestFeeds\atom_complex_example.xml", setting);
+                // *** EXECUTE *** \\
+                Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(atom);
+                // *** ASSERT *** \\
+                Assert.True(atom.Result.Items != null);
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                reader.Close();
+            }
         }
 
         [Fact]
@@ -260,24 +268,58 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         {
             // *** SETUP *** \\
             XmlReader reader = XmlReader.Create(@"TestFeeds\RssDisjointItems.xml");
-            
-            // *** EXECUTE *** \\
-            SyndicationFeed sf = SyndicationFeed.Load(reader);
 
-
-            // *** ASSERT *** \\
-            int count = 0;
-            foreach(var item in sf.Items)
+            try
             {
-                count++;
+                // *** EXECUTE *** \\
+                SyndicationFeed sf = SyndicationFeed.Load(reader);
+
+                // *** ASSERT *** \\
+                int count = 0;
+                foreach (var item in sf.Items)
+                {
+                    count++;
+                }
+
+                Assert.True(count == 2);
             }
-
-            Assert.True(count == 2);
-
-            // *** CLEANUP *** \\
-            reader.Close();
+            catch
+            {
+                // *** CLEANUP *** \\
+                reader.Close();
+            }
         }
 
+
+        [Fact]
+        public static void SyndicationFeed_Atom_TestDisjointItems()
+        {
+            // *** SETUP *** \\
+            XmlReader reader = XmlReader.Create(@"TestFeeds\AtomDisjointItems.xml");
+
+            try
+            {
+                // *** EXECUTE *** \\
+                SyndicationFeed sf = SyndicationFeed.Load(reader);
+
+                // *** ASSERT *** \\
+                int count = 0;
+                foreach (var item in sf.Items)
+                {
+                    count++;
+                }
+
+                Assert.True(count == 2);
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                reader.Close();
+            }
+
+
+
+        }
     }
 }
 

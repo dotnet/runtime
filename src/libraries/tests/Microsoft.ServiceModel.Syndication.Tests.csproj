@@ -30,6 +30,9 @@
     <None Update="TestFeeds\atom_complex_example.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="TestFeeds\AtomDisjointItems.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestFeeds\example_feed_xml_atom.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
