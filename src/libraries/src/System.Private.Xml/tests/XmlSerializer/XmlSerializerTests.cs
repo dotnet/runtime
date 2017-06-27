@@ -3279,7 +3279,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.value, ((DerivedClass)actual).value);
     }
 
-#if !uap
+#if !uapaot
     [Fact]
     public static void Xml_DefaultValueAttributeSetToNaNTest()
     {

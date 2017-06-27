@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-#if !uap
+#if !FEATURE_SERIALIZATION_UAPAOT
 namespace System.Xml.Serialization
 {
     using System;
