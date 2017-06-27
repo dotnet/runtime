@@ -58,7 +58,7 @@ namespace System.Reflection.Metadata
 
         public CustomAttributeHandleCollection GetCustomAttributes()
         {
-            return _reader.CustomAttributes;
+            return new CustomAttributeHandleCollection(_reader, EntityHandle.ModuleDefinition);
         }
     }
 }
