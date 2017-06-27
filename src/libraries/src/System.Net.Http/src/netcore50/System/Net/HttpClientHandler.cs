@@ -362,37 +362,23 @@ namespace System.Net.Http
 
         public bool CheckCertificateRevocationList
         {
-            // We can't get this property to actually work yet since the current WinRT Windows.Web.Http APIs don't have a setting for this.
-            // FYI: The WinRT API always checks for certificate revocation. If the revocation status can't be determined completely, i.e.
-            // the revocation server is offline, then the request is still allowed.
+            // The WinRT API always checks for certificate revocation. If the revocation status is indeterminate
+            // (such as revocation server is offline), then the WinRT API will indicate "success" and not fail
+            // the request.
             get { return true; }
             set
             {
                 CheckDisposedOrStarted();
-                /*TODO#18116
-                if (!value)
-                {
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, nameof(CheckCertificateRevocationList)));
-                }
-                */
             }
         }
 
         public SslProtocols SslProtocols
         {
+            // The WinRT API does not expose a property to control this. It always uses the system default.
             get { return SslProtocols.None; }
             set
             {
                 CheckDisposedOrStarted();
-                if (value != SslProtocols.None)
-                {
-                    /*
-                    TODO:#18116
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, nameof(SslProtocols)));
-                   */
-                }
             }
         }
 

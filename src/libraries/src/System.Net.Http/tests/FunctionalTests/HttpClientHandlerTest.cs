@@ -10,6 +10,7 @@ using System.Net.Sockets;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -145,7 +146,9 @@ namespace System.Net.Http.Functional.Tests
                 // Changes from .NET Framework (Desktop).
                 if (!PlatformDetection.IsFullFramework)
                 {
+                    Assert.False(handler.CheckCertificateRevocationList);
                     Assert.Equal(0, handler.MaxRequestContentBufferSize);
+                    Assert.Equal(SslProtocols.None, handler.SslProtocols);
                 }
             }
         }
@@ -155,9 +158,11 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new HttpClientHandler())
             {
+                Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(10, handler.MaxAutomaticRedirections);
                 Assert.Equal(-1, handler.MaxResponseHeadersLength);
                 Assert.True(handler.PreAuthenticate);
+                Assert.Equal(SslProtocols.None, handler.SslProtocols);
                 Assert.False(handler.SupportsProxy);
                 Assert.False(handler.SupportsRedirectConfiguration);
             }
