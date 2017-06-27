@@ -22,7 +22,7 @@
     <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.nupkg" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RuntimePackageFile>
-    <UWPArtifactsToUpload Include="$(UWPOutputDir)Microsoft.NET.CoreRuntime.2.0*.appx" >
+    <UWPArtifactsToUpload Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </UWPArtifactsToUpload>
     <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
