@@ -10,7 +10,6 @@ namespace System.IO.MemoryMappedFiles.Tests
     public class CrossProcessTests : RemoteExecutorTestBase
     {
         [Fact]
-        [ActiveIssue(19909, TargetFrameworkMonikers.Uap)] // Remote executor in Uap and Process.Start() in UapAot
         public void DataShared()
         {
             // Create a new file and load it into an MMF
@@ -28,7 +27,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 acc.Flush();
 
                 // Spawn and then wait for the other process, which will verify the data and write its own known pattern
-                RemoteInvoke(DataShared_OtherProcess, $"\"{file.Path}\"").Dispose();
+                RemoteInvoke(DataShared_OtherProcess, file.Path).Dispose();
 
                 // Now verify we're seeing the data from the other process
                 for (int i = 0; i < capacity; i++)
