@@ -25,7 +25,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(19909, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFramework: NetEventSource is only part of .NET Core;")]
         public void EventSource_EventsRaisedAsExpected()
         {
