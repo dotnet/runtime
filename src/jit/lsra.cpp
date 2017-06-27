@@ -5742,23 +5742,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             // the next ref, remember it.
             else if ((bestScore & UNASSIGNED) != 0 && intervalToUnassign != nullptr)
             {
-                availablePhysRegInterval->previousInterval = intervalToUnassign;
-#ifdef _TARGET_ARM_
-                // TODO-ARM-Throughput: For ARM, this should not be necessary, i.e. keeping a same
-                // previous interval in two RegRecords, because we will always manage the register
-                // assignment of TYP_DOUBLE intervals together.
-                // Later we should be able to remove this and update unassignPhysReg() where
-                // previousInterval is used. Please also take a look at unassignPhysReg().
-
-                // Update overlapping floating point register for TYP_DOUBLE
-                if (intervalToUnassign->registerType == TYP_DOUBLE)
-                {
-                    assert(isFloatRegType(availablePhysRegInterval->registerType));
-                    regNumber  nextRegNum        = REG_NEXT(availablePhysRegInterval->regNum);
-                    RegRecord* nextRegRec        = getRegisterRecord(nextRegNum);
-                    nextRegRec->previousInterval = intervalToUnassign;
-                }
-#endif
+                updatePreviousInterval(availablePhysRegInterval, intervalToUnassign, intervalToUnassign->registerType);
             }
         }
         else
@@ -6178,20 +6162,7 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
         unassignPhysReg(regRec->regNum);
     }
 
-    regRec->assignedInterval = interval;
-
-#ifdef _TARGET_ARM_
-    // Update second RegRecord of double register
-    if ((interval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
-    {
-        assert(genIsValidDoubleReg(regRec->regNum));
-
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
-
-        nextRegRec->assignedInterval = interval;
-    }
-#endif // _TARGET_ARM_
+    updateAssignedInterval(regRec, interval, interval->registerType);
 }
 
 // Assign the given physical register interval to the given interval
@@ -6393,20 +6364,7 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
         assert(spillRefPosition->getInterval() == assignedInterval);
     }
 
-    regRec->assignedInterval = nullptr;
-
-#ifdef _TARGET_ARM_
-    // Update second RegRecord of double register
-    if ((assignedInterval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
-    {
-        assert(genIsValidDoubleReg(regRec->regNum));
-
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
-
-        nextRegRec->assignedInterval = nullptr;
-    }
-#endif // _TARGET_ARM_
+    updateAssignedInterval(regRec, nullptr, assignedInterval->registerType);
 }
 
 //------------------------------------------------------------------------
@@ -6564,6 +6522,10 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
         regRec->previousInterval = nullptr;
 
 #ifdef _TARGET_ARM_
+        // Note:
+        //   We can not use updateAssignedInterval() and updatePreviousInterval() here,
+        //   because regRec may not be a even-numbered float register.
+
         // Update second half RegRecord of a double register for TYP_DOUBLE
         if (regRec->assignedInterval->registerType == TYP_DOUBLE)
         {
@@ -6588,20 +6550,8 @@ void LinearScan::unassignPhysReg(RegRecord* regRec, RefPosition* spillRefPositio
     }
     else
     {
-        regRec->assignedInterval = nullptr;
-        regRec->previousInterval = nullptr;
-
-#ifdef _TARGET_ARM_
-        // Update second half RegRecord of a double register for TYP_DOUBLE
-        if (assignedInterval->registerType == TYP_DOUBLE)
-        {
-            assert(isFloatRegType(regRec->registerType));
-            assert(genIsValidDoubleReg(regRec->regNum));
-
-            nextRegRec->assignedInterval = nullptr;
-            nextRegRec->previousInterval = nullptr;
-        }
-#endif // _TARGET_ARM_
+        updateAssignedInterval(regRec, nullptr, assignedInterval->registerType);
+        updatePreviousInterval(regRec, nullptr, assignedInterval->registerType);
     }
 }
 
@@ -8056,6 +8006,42 @@ void LinearScan::updateAssignedInterval(RegRecord* reg, Interval* interval, Regi
         RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
 
         anotherHalfReg->assignedInterval = interval;
+    }
+#endif
+}
+
+//-----------------------------------------------------------------------------
+// updatePreviousInterval: Update previous interval of register.
+//
+// Arguments:
+//    reg      -    register to be updated
+//    interval -    interval to be assigned
+//    regType  -    regsiter type
+//
+// Return Value:
+//    None
+//
+// Assumptions:
+//    For ARM32, when "regType" is TYP_DOUBLE, "reg" should be a even-numbered
+//    float register, i.e. lower half of double register.
+//
+// Note:
+//    For ARM32, two float registers consisting a double register are updated
+//    together when "regType" is TYP_DOUBLE.
+//
+void LinearScan::updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType)
+{
+    reg->previousInterval = interval;
+
+#ifdef _TARGET_ARM_
+    // Update overlapping floating point register for TYP_DOUBLE
+    if (regType == TYP_DOUBLE)
+    {
+        assert(genIsValidDoubleReg(reg->regNum));
+
+        RegRecord* anotherHalfReg = findAnotherHalfRegRec(reg);
+
+        anotherHalfReg->previousInterval = interval;
     }
 #endif
 }
