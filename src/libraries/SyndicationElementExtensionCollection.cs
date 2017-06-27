@@ -93,13 +93,13 @@ namespace Microsoft.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(xmlSerializerExtension, serializer));
         }
 
-        public void Add(XmlReaderWrapper XmlReaderWrapper)
+        public void Add(XmlReader reader)
         {
-            if (XmlReaderWrapper == null)
+            if (reader == null)
             {
                 throw new ArgumentNullException("XmlReaderWrapper");
             }
-            base.Add(new SyndicationElementExtension(XmlReaderWrapper));
+            base.Add(new SyndicationElementExtension(reader));
         }
 
         public XmlReader GetReaderAtElementExtensions()

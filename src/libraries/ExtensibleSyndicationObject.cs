@@ -80,7 +80,7 @@ namespace Microsoft.ServiceModel.Syndication
             return buffer;
         }
 
-        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
             if (readerOverUnparsedExtensions == null)
             {

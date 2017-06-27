@@ -34,41 +34,41 @@ namespace Microsoft.ServiceModel.Syndication
         private bool _preserveElementExtensions;
         private bool _serializeExtensionsAsAtom;
 
-        //Custom Parsers
-        public Func<string, XmlReaderWrapper, DateTimeOffset> DateParser { get; set; } // ParseDate
-        public Func<XmlReaderWrapper, TextSyndicationContent> TitleParser { get; set; }
-        public Func<XmlReaderWrapper, TextSyndicationContent> DescriptionParser { get; set; }
-        public Func<XmlReaderWrapper, string> LanguageParser { get; set; }
-        public Func<XmlReaderWrapper, TextSyndicationContent> CopyrightParser { get; set; }
-        public Func<XmlReaderWrapper, string> GeneratorParser { get; set; }
-        public Func<XmlReaderWrapper, Uri, SyndicationLink> OnReadLink { get; set; }
-        public Func<XmlReaderWrapper, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
-        public Func<XmlReaderWrapper, SyndicationFeed, bool> ImageParser { get; set; }
-        public Func<XmlReaderWrapper,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
-        public Func<XmlReaderWrapper, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
+        ////Custom Parsers
+        public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; } // ParseDate
+        //public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
+        //public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
+        //public Func<XmlReader, string> LanguageParser { get; set; }
+        //public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
+        //public Func<XmlReader, string> GeneratorParser { get; set; }
+        //public Func<XmlReader, Uri, SyndicationLink> OnReadLink { get; set; }
+        //public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
+        //public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
+        //public Func<XmlReader,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
+        //public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
 
 
 
 
-        private bool OnReadImage(XmlReaderWrapper reader, SyndicationFeed result)
+        private async Task<bool> OnReadImage(XmlReaderWrapper reader, SyndicationFeed result)
         {
-            reader.ReadStartElement();
-            while (reader.IsStartElement())
+            await reader.ReadStartElementAsync();
+            while (await reader.IsStartElementAsync())
             {
-                if (reader.IsStartElement(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
+                if (await reader.IsStartElementAsync(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
                 {
-                    result.ImageUrl = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
+                    result.ImageUrl = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
                 }
-                else if(reader.IsStartElement("link",Rss20Constants.Rss20Namespace))
+                else if(await reader.IsStartElementAsync("link",Rss20Constants.Rss20Namespace))
                 {
-                    result.ImageLink = new Uri(reader.ReadElementString(), UriKind.RelativeOrAbsolute);
+                    result.ImageLink = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
                 }
-                else if (reader.IsStartElement("title", Rss20Constants.Rss20Namespace))
+                else if (await reader.IsStartElementAsync("title", Rss20Constants.Rss20Namespace))
                 {
-                    result.ImageTitle = new TextSyndicationContent(reader.ReadElementString());
+                    result.ImageTitle = new TextSyndicationContent(await reader.ReadElementStringAsync());
                 }
             }
-            reader.ReadEndElement(); // image
+            await reader.ReadEndElementAsync(); // image
             return true;
         }
 
@@ -76,28 +76,29 @@ namespace Microsoft.ServiceModel.Syndication
         //{
         //    //return ReadItem(reader,result);
         //}
-        private TextSyndicationContent OnReadTitle(XmlReaderWrapper reader)
+        private TextSyndicationContent OnReadTitle(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private TextSyndicationContent DescriptionParserAction(XmlReaderWrapper reader)
+        private TextSyndicationContent DescriptionParserAction(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private String LanguageParserAction(XmlReaderWrapper reader)
+        private String LanguageParserAction(XmlReader reader)
         {
             return reader.ReadElementString();
         }
 
-        private TextSyndicationContent CopyrightParserAction(XmlReaderWrapper reader)
+        private TextSyndicationContent CopyrightParserAction(XmlReader reader)
         {
             return new TextSyndicationContent(reader.ReadElementString());
         }
 
-        private string GeneratorParserAction(XmlReaderWrapper reader)
+        private string GeneratorParserAction(XmlReader reader)
         {
+            //XmlReaderWrapper readerWrapped = 
             return reader.ReadElementString();
         }
 
@@ -118,16 +119,16 @@ namespace Microsoft.ServiceModel.Syndication
         private void LoadDefaultParsers()
         {
             DateParser = DateParserAction;
-            TitleParser = OnReadTitle;
-            DescriptionParser = DescriptionParserAction;
-            LanguageParser = LanguageParserAction;
-            CopyrightParser = CopyrightParserAction;
-            GeneratorParser = GeneratorParserAction;
-            //ManagingEditorParser = ManagingEditorParserAction;
-            //OnReadLink = LinkParserAction;
-            //FeedCategoryParser = ReadCategory;
-            //ItemParser = OnReadItem;
-            ImageParser = OnReadImage;
+            //TitleParser = OnReadTitle;
+            //DescriptionParser = DescriptionParserAction;
+            //LanguageParser = LanguageParserAction;
+            //CopyrightParser = CopyrightParserAction;
+            //GeneratorParser = GeneratorParserAction;
+            ////ManagingEditorParser = ManagingEditorParserAction;
+            ////OnReadLink = LinkParserAction;
+            ////FeedCategoryParser = ReadCategory;
+            ////ItemParser = OnReadItem;
+            //ImageParser = OnReadImage;
         }
 
         public Rss20FeedFormatter()
@@ -479,7 +480,7 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
         }
 
-        protected virtual async Task<SyndicationItem> ReadItemAsync(XmlReaderWrapper reader, SyndicationFeed feed)
+        protected virtual async Task<SyndicationItem> ReadItemAsync(XmlReader reader, SyndicationFeed feed)
         {
             if (feed == null)
             {
@@ -490,7 +491,8 @@ namespace Microsoft.ServiceModel.Syndication
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
             }
             SyndicationItem item = CreateItem(feed);
-            await ReadItemFromAsync(reader, item, feed.BaseUri); // delegate => ItemParser(reader,item,feed.BaseUri);//
+            XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
+            await ReadItemFromAsync(readerWrapper, item, feed.BaseUri); // delegate => ItemParser(reader,item,feed.BaseUri);//
             return item;
         }
 
@@ -1606,7 +1608,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         // Custom parsers
-        public DateTimeOffset DateParserAction(string dateTimeString, XmlReaderWrapper reader)
+        public DateTimeOffset DateParserAction(string dateTimeString, XmlReader reader)
         {
             bool parsed = false;
             //try

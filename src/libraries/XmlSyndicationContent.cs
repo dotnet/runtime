@@ -19,7 +19,7 @@ namespace Microsoft.ServiceModel.Syndication
         // Saves the element in the reader to the buffer (attributes preserved)
         // Type is populated from type attribute on reader
         // Reader must be positioned at an element
-        public XmlSyndicationContent(XmlReaderWrapper reader)
+        public XmlSyndicationContent(XmlReader reader)
         {
             if (reader == null)
             {

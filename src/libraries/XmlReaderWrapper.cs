@@ -8,18 +8,18 @@ namespace Microsoft.ServiceModel.Syndication
     {
         private XmlReader reader;
 
-        private Func<Task<string>> getValueFunc;
-        private Func<Task<string>> readElementStringFunc;
-        private Func<Task<string>> readStringFunc;
-        private Func<Task> readEndElementFunc;
-        private Func<Task<XmlNodeType>> moveToContentFunc;
-        private Func<Task> readStartElementFunc;
-        private Func<string, string, Task> readStartElementFunc2;
-        private Func<Task<bool>> isStartElementFunc;
-        private Func<string, string, Task<bool>> isStartElementFunc2;
-        private Func<Task> skipFunc;
-        private Func<Task<bool>> readFunc;
-        private Func<Task<string>> readInnerXmlFunc;
+        private Func<XmlReaderWrapper, Task<string>> getValueFunc;
+        private Func<XmlReaderWrapper, Task<string>> readElementStringFunc;
+        private Func<XmlReaderWrapper, Task<string>> readStringFunc;
+        private Func<XmlReaderWrapper, Task> readEndElementFunc;
+        private Func<XmlReaderWrapper, Task<XmlNodeType>> moveToContentFunc;
+        private Func<XmlReaderWrapper, Task> readStartElementFunc;
+        private Func<XmlReaderWrapper, string, string, Task> readStartElementFunc2;
+        private Func<XmlReaderWrapper, Task<bool>> isStartElementFunc;
+        private Func<XmlReaderWrapper, string, string, Task<bool>> isStartElementFunc2;
+        private Func<XmlReaderWrapper, Task> skipFunc;
+        private Func<XmlReaderWrapper, Task<bool>> readFunc;
+        private Func<XmlReaderWrapper, Task<string>> readInnerXmlFunc;
 
         private XmlReaderWrapper(XmlReader reader)
         {
@@ -49,34 +49,36 @@ namespace Microsoft.ServiceModel.Syndication
 
         private void InitAsync()
         {
-            this.getValueFunc = new Func<Task<string>>(async () => { return await this.reader.GetValueAsync(); });
-            this.readElementStringFunc = new Func<Task<string>>(async () => { return await ReadElementStringAsync(this.reader); });
-            this.readStringFunc = new Func<Task<string>>(async () => { return await ReadStringAsync(this.reader); });
-            this.readEndElementFunc = new Func<Task>(async () => { await ReadEndElementAsync(this.reader); });
-            this.moveToContentFunc = new Func<Task<XmlNodeType>>(async () => { return await this.reader.MoveToContentAsync(); });
-            this.readStartElementFunc = new Func<Task>(async () => { await ReadStartElementAsync(this.reader); });
-            this.readStartElementFunc2 = new Func<string, string, Task>(async (localname, ns) => { await ReadStartElementAsync(this.reader, localname, ns); });
-            this.isStartElementFunc = new Func<Task<bool>>(async () => { return await IsStartElementAsync(this.reader); });
-            this.isStartElementFunc2 = new Func<string, string, Task<bool>>(async (localname, ns) => { return await IsStartElementAsync(this.reader, localname, ns); });
-            this.skipFunc = new Func<Task>(async () => { await this.reader.SkipAsync(); });
-            this.readFunc = new Func<Task<bool>>(async () => { return await this.reader.ReadAsync(); });
-            this.readInnerXmlFunc = new Func<Task<string>>(async () => { return await this.ReadInnerXmlAsync(); });
+            this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.GetValueAsync(); });
+
+            this.readElementStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return ReadElementStringAsync(thisPtr.reader); });
+            this.readStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return ReadStringAsync(thisPtr.reader); });
+            this.readEndElementFunc = new Func<XmlReaderWrapper, Task>( (thisPtr) => {  return ReadEndElementAsync(thisPtr.reader); });
+            this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return thisPtr.reader.MoveToContentAsync(); });
+            this.readStartElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return ReadStartElementAsync(thisPtr.reader); });
+            this.readStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task>((thisPtr, localname, ns) => { return ReadStartElementAsync(thisPtr.reader, localname, ns); });
+            this.isStartElementFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return IsStartElementAsync(thisPtr.reader); });
+            this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return IsStartElementAsync(thisPtr.reader, localname, ns); });
+            this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return thisPtr.reader.SkipAsync(); });
+            this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return thisPtr.reader.ReadAsync(); });
+            this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.ReadInnerXmlAsync(); });
         }
 
         private void Init()
         {
-            this.getValueFunc = new Func<Task<string>>(() => { return Task.FromResult<string>(this.reader.Value); });
-            this.readElementStringFunc = new Func<Task<string>>(() => { return Task.FromResult<string>(this.reader.ReadElementString()); });
-            this.readStringFunc = new Func<Task<string>>(() => { return Task.FromResult<string>(this.reader.ReadString()); });
-            this.readEndElementFunc = new Func<Task>(() => { this.reader.ReadEndElement(); return Task.CompletedTask; });
-            this.moveToContentFunc = new Func<Task<XmlNodeType>>(() => { return Task.FromResult<XmlNodeType>(this.reader.MoveToContent()); });
-            this.readStartElementFunc = new Func<Task>(() => { this.reader.ReadStartElement(); return Task.CompletedTask; });
-            this.readStartElementFunc2 = new Func<string, string, Task>((localname, ns) => { this.reader.ReadStartElement(localname, ns); return Task.CompletedTask; });
-            this.isStartElementFunc = new Func<Task<bool>>(() => { return Task.FromResult<bool>(this.reader.IsStartElement()); });
-            this.isStartElementFunc2 = new Func<string, string, Task<bool>>((localname, ns) => { return Task.FromResult<bool>(this.reader.IsStartElement(localname, ns)); });
-            this.skipFunc = new Func<Task>(() => { this.reader.Skip(); return Task.CompletedTask; });
-            this.readFunc = new Func<Task<bool>>(() => { return Task.FromResult<bool>(this.reader.Read()); });
-            this.readInnerXmlFunc = new Func<Task<string>>(() => { return Task.FromResult<string>(this.reader.ReadInnerXml()); });
+            this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(thisPtr.reader.Value); });
+
+            this.readElementStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadElementString()); });
+            this.readStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadString()); });
+            this.readEndElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.ReadEndElement(); return Task.CompletedTask; });
+            this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return Task.FromResult<XmlNodeType>(this.reader.MoveToContent()); });
+            this.readStartElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.ReadStartElement(); return Task.CompletedTask; });
+            this.readStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task>((thisPtr, localname, ns) => { this.reader.ReadStartElement(localname, ns); return Task.CompletedTask; });
+            this.isStartElementFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return Task.FromResult<bool>(this.reader.IsStartElement()); });
+            this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return Task.FromResult<bool>(this.reader.IsStartElement(localname, ns)); });
+            this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.Skip(); return Task.CompletedTask; });
+            this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return Task.FromResult<bool>(this.reader.Read()); });
+            this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadInnerXml()); });
         }
 
         public override XmlNodeType NodeType
@@ -237,61 +239,61 @@ namespace Microsoft.ServiceModel.Syndication
 
         public override Task<string> GetValueAsync()
         {
-            return this.getValueFunc();
+            return this.getValueFunc(this);
         }
 
         public Task<string> ReadElementStringAsync()
         {
-            return this.readElementStringFunc();
+            return this.readElementStringFunc(this);
         }
 
         public Task<string> ReadStringAsync()
         {
-            return this.readStringFunc();
+            return this.readStringFunc(this);
         }
 
         public Task ReadEndElementAsync()
         {
-            return this.readEndElementFunc();
+            return this.readEndElementFunc(this);
         }
 
         public override Task<XmlNodeType> MoveToContentAsync()
         {
-            return this.moveToContentFunc();
+            return this.moveToContentFunc(this);
         }
 
         public Task ReadStartElementAsync()
         {
-            return this.readStartElementFunc();
+            return this.readStartElementFunc(this);
         }
 
         public Task ReadStartElementAsync(string localname, string ns)
         {
-            return this.readStartElementFunc2(localname, ns);
+            return this.readStartElementFunc2(this, localname, ns);
         }
 
         public Task<bool> IsStartElementAsync()
         {
-            return this.isStartElementFunc();
+            return this.isStartElementFunc(this);
         }
 
         public Task<bool> IsStartElementAsync(string localname, string ns)
         {
-            return this.isStartElementFunc2(localname, ns);
+            return this.isStartElementFunc2(this, localname, ns);
         }
 
         public override Task SkipAsync()
         {
-            return this.skipFunc();
+            return this.skipFunc(this);
         }
 
         public override Task<bool> ReadAsync()
         {
-            return this.readFunc();
+            return this.readFunc(this);
         }
         public override Task<string> ReadInnerXmlAsync()
         {
-            return readInnerXmlFunc();
+            return readInnerXmlFunc(this);
         }
         private static async Task ReadStartElementAsync(XmlReader reader)
         {

@@ -291,11 +291,26 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
             Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(reader2);
 
+           
+
+            //atom.re
+
             await Task.WhenAll(atom, rss);
 
             Assert.True(atom.Result.Items != null);
             Assert.True(rss.Result.Items != null);
         }
+
+        [Fact]
+        public static async Task SyndicationFeed_BigFeedTest()
+        {
+            
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.Async = true;
+            XmlReader reader = XmlReader.Create(@"TestFeeds\feed300_mb.xml",settings);
+            SyndicationFeed sf = await SyndicationFeed.LoadAsync(reader);
+        }
+
     }
 }
 

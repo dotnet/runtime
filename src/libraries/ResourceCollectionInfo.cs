@@ -143,7 +143,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
+        protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
         }

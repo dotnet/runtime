@@ -23,20 +23,20 @@ namespace Microsoft.ServiceModel.Syndication
         private string _outerName;
         private string _outerNamespace;
 
-        public SyndicationElementExtension(XmlReaderWrapper XmlReaderWrapper)
+        public SyndicationElementExtension(XmlReader reader)
         {
-            if (XmlReaderWrapper == null)
+            if (reader == null)
             {
                 throw new ArgumentNullException("XmlReaderWrapper");
             }
-            SyndicationFeedFormatter.MoveToStartElement(XmlReaderWrapper);
-            _outerName = XmlReaderWrapper.LocalName;
-            _outerNamespace = XmlReaderWrapper.NamespaceURI;
+            SyndicationFeedFormatter.MoveToStartElement(reader);
+            _outerName = reader.LocalName;
+            _outerNamespace = reader.NamespaceURI;
             _buffer = new XmlBuffer(int.MaxValue);
             using (XmlDictionaryWriter writer = _buffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                writer.WriteNode(XmlReaderWrapper, false);
+                writer.WriteNode(reader, false);
                 writer.WriteEndElement();
             }
             _buffer.CloseSection();

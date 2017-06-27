@@ -8,6 +8,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -69,10 +70,10 @@ namespace Microsoft.ServiceModel.Syndication
             return new ReferencedCategoriesDocument(linkToCategoriesDocument);
         }
 
-        public static CategoriesDocument Load(XmlReaderWrapper reader)
+        public static async Task<CategoriesDocument> Load(XmlReader reader)
         {
             AtomPub10CategoriesDocumentFormatter formatter = new AtomPub10CategoriesDocumentFormatter();
-            formatter.ReadFrom(reader);
+            await formatter.ReadFrom(reader);
             return formatter.Document;
         }
 
@@ -91,7 +92,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
+        protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
         }

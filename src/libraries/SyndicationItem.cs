@@ -294,13 +294,13 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseContent(XmlReaderWrapper reader, string contentType, string version, out SyndicationContent content)
+        protected internal virtual bool TryParseContent(XmlReader reader, string contentType, string version, out SyndicationContent content)
         {
             content = null;
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
+        protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
         }
@@ -315,7 +315,7 @@ namespace Microsoft.ServiceModel.Syndication
             _extensions.WriteElementExtensions(writer);
         }
 
-        internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)
+        internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
             _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
