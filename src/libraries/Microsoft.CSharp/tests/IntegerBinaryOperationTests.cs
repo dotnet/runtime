@@ -497,7 +497,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         [MemberData(nameof(UInt64TestMultiplications))]
         [MemberData(nameof(UInt64TestNotEquals))]
         [MemberData(nameof(UInt64TestSubtractions))]
-        [ActiveIssue("temp")]
         public void ConstantExpressions(object x, object y, ExpressionType type, object result, bool shouldSucceedChecked)
         {
             var callsite = GetBinaryOperationCallSite(type, false, true, true);
