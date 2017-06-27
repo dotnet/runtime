@@ -180,7 +180,7 @@ static DynPtrArray color_merge_array;
 // Running hash of the contents of the color_merge_array.
 static unsigned int color_merge_array_hash;
 
-static void color_merge_array_empty ()
+static void color_merge_array_empty (void)
 {
 	dyn_array_ptr_empty (&color_merge_array);
 	color_merge_array_hash = 0;

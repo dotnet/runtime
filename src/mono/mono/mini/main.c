@@ -136,7 +136,7 @@ static GSList *bundle_library_paths;
 static char *bundled_dylibrary_directory;
 
 static void
-delete_bundled_libraries ()
+delete_bundled_libraries (void)
 {
 	GSList *list;
 
@@ -147,7 +147,7 @@ delete_bundled_libraries ()
 }
 
 static void
-bundle_save_library_initialize ()
+bundle_save_library_initialize (void)
 {
 	bundle_save_library_initialized = 1;
 	char *path = g_build_filename (g_get_tmp_dir (), "mono-bundle-XXXXXX", NULL);

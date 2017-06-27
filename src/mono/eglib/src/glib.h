@@ -14,6 +14,7 @@
 #endif
 
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <eglib-config.h>
 #ifndef EGLIB_NO_REMAP

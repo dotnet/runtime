@@ -13,13 +13,11 @@
 #include <mono/metadata/handle.h>
 
 static void
-test2_arena_push_pop ()
+test2_arena_push_pop (void)
 {
 	HandleStack *h = mono_handle_stack_alloc ();
 	mono_handle_stack_free (h);
 }
-
-
 
 int
 main (int argc, const char* argv[])

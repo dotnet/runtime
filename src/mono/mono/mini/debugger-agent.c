@@ -4792,7 +4792,7 @@ set_set_notification_for_wait_completion_flag (StackFrame *frame)
 static MonoMethod* notify_debugger_of_wait_completion_method_cache = NULL;
 
 static MonoMethod*
-get_notify_debugger_of_wait_completion_method ()
+get_notify_debugger_of_wait_completion_method (void)
 {
 	if (notify_debugger_of_wait_completion_method_cache != NULL)
 		return notify_debugger_of_wait_completion_method_cache;

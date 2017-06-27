@@ -71,7 +71,7 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
 
 #if defined(HAVE_BOEHM_GC) || defined(HAVE_NULL_GC)
 static HandleStack*
-new_handle_stack ()
+new_handle_stack (void)
 {
 	return (HandleStack *)mono_gc_alloc_fixed (sizeof (HandleStack), MONO_GC_DESCRIPTOR_NULL, MONO_ROOT_SOURCE_HANDLE, "Thread Handle Stack");
 }
@@ -83,7 +83,7 @@ free_handle_stack (HandleStack *stack)
 }
 
 static HandleChunk*
-new_handle_chunk ()
+new_handle_chunk (void)
 {
 #if defined(HAVE_BOEHM_GC)
 	return (HandleChunk *)GC_MALLOC (sizeof (HandleChunk));
@@ -101,7 +101,7 @@ free_handle_chunk (HandleChunk *chunk)
 }
 #else
 static HandleStack*
-new_handle_stack ()
+new_handle_stack (void)
 {
 	return g_new (HandleStack, 1);
 }
@@ -113,7 +113,7 @@ free_handle_stack (HandleStack *stack)
 }
 
 static HandleChunk*
-new_handle_chunk ()
+new_handle_chunk (void)
 {
 	return g_new (HandleChunk, 1);
 }

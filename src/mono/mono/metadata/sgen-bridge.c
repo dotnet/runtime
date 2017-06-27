@@ -94,7 +94,7 @@ bridge_processor_name (const char *name)
 }
 
 static gboolean
-bridge_processor_started ()
+bridge_processor_started (void)
 {
 	return bridge_processor.reset_data != NULL;
 }
@@ -139,7 +139,7 @@ init_bridge_processor (SgenBridgeProcessor *processor, BridgeProcessorSelection 
  * is done initing. Actual initialization then only occurs if it is ready.
  */
 void
-sgen_init_bridge ()
+sgen_init_bridge (void)
 {
 	if (sgen_gc_initialized ()) {
 		// This lock is not initialized until the GC is
