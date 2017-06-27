@@ -219,7 +219,11 @@ namespace System.Tests
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
-            bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
+            bool lookForSetValue = (target == EnvironmentVariableTarget.Process) ||
+                                    // On the Project N corelib, it doesn't attempt to set machine/user environment variables;
+                                    // it just returns silently. So don't try.
+                                    (PlatformDetection.IsWindowsAndElevated && !PlatformDetection.IsNetNative);
+
 
             string key = $"EnumerateEnvironmentVariables ({target})";
             string value = Path.GetRandomFileName();
