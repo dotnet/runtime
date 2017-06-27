@@ -38,7 +38,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(20136, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void Select_Success()
         {
