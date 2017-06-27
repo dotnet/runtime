@@ -6177,20 +6177,8 @@ void LinearScan::checkAndAssignInterval(RegRecord* regRec, Interval* interval)
         unassignPhysReg(regRec->regNum);
     }
 
-    regRec->assignedInterval = interval;
 
-#ifdef _TARGET_ARM_
-    // Update second RegRecord of double register
-    if ((interval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
-    {
-        assert(genIsValidDoubleReg(regRec->regNum));
-
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
-
-        nextRegRec->assignedInterval = interval;
-    }
-#endif // _TARGET_ARM_
+    updateAssignedInterval(regRec, interval, interval->registerType);
 }
 
 // Assign the given physical register interval to the given interval
@@ -6392,20 +6380,7 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
         assert(spillRefPosition->getInterval() == assignedInterval);
     }
 
-    regRec->assignedInterval = nullptr;
-
-#ifdef _TARGET_ARM_
-    // Update second RegRecord of double register
-    if ((assignedInterval->registerType == TYP_DOUBLE) && isFloatRegType(regRec->registerType))
-    {
-        assert(genIsValidDoubleReg(regRec->regNum));
-
-        regNumber  nextRegNum = REG_NEXT(regRec->regNum);
-        RegRecord* nextRegRec = getRegisterRecord(nextRegNum);
-
-        nextRegRec->assignedInterval = nullptr;
-    }
-#endif // _TARGET_ARM_
+    updateAssignedInterval(regRec, nullptr, assignedInterval->registerType);
 }
 
 //------------------------------------------------------------------------
