@@ -284,69 +284,67 @@ namespace System.Net.Http.Headers
 
         public CacheControlHeaderValue CacheControl
         {
-            get { return _generalHeaders.CacheControl; }
-            set { _generalHeaders.CacheControl = value; }
+            get { return GeneralHeaders.CacheControl; }
+            set { GeneralHeaders.CacheControl = value; }
         }
 
         public HttpHeaderValueCollection<string> Connection
         {
-            get { return _generalHeaders.Connection; }
+            get { return GeneralHeaders.Connection; }
         }
 
         public bool? ConnectionClose
         {
-            get { return _generalHeaders.ConnectionClose; }
-            set { _generalHeaders.ConnectionClose = value; }
+            get { return GeneralHeaders.ConnectionClose; }
+            set { GeneralHeaders.ConnectionClose = value; }
         }
 
         public DateTimeOffset? Date
         {
-            get { return _generalHeaders.Date; }
-            set { _generalHeaders.Date = value; }
+            get { return GeneralHeaders.Date; }
+            set { GeneralHeaders.Date = value; }
         }
 
         public HttpHeaderValueCollection<NameValueHeaderValue> Pragma
         {
-            get { return _generalHeaders.Pragma; }
+            get { return GeneralHeaders.Pragma; }
         }
 
         public HttpHeaderValueCollection<string> Trailer
         {
-            get { return _generalHeaders.Trailer; }
+            get { return GeneralHeaders.Trailer; }
         }
 
         public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding
         {
-            get { return _generalHeaders.TransferEncoding; }
+            get { return GeneralHeaders.TransferEncoding; }
         }
 
         public bool? TransferEncodingChunked
         {
-            get { return _generalHeaders.TransferEncodingChunked; }
-            set { _generalHeaders.TransferEncodingChunked = value; }
+            get { return GeneralHeaders.TransferEncodingChunked; }
+            set { GeneralHeaders.TransferEncodingChunked = value; }
         }
 
         public HttpHeaderValueCollection<ProductHeaderValue> Upgrade
         {
-            get { return _generalHeaders.Upgrade; }
+            get { return GeneralHeaders.Upgrade; }
         }
 
         public HttpHeaderValueCollection<ViaHeaderValue> Via
         {
-            get { return _generalHeaders.Via; }
+            get { return GeneralHeaders.Via; }
         }
 
         public HttpHeaderValueCollection<WarningHeaderValue> Warning
         {
-            get { return _generalHeaders.Warning; }
+            get { return GeneralHeaders.Warning; }
         }
 
         #endregion
 
         internal HttpRequestHeaders()
         {
-            _generalHeaders = new HttpGeneralHeaders(this);
-
             base.SetConfiguration(s_parserStore, s_invalidHeaders);
         }
 
@@ -422,7 +420,10 @@ namespace System.Net.Http.Headers
             Debug.Assert(sourceRequestHeaders != null);
 
             // Copy special values but do not overwrite.
-            _generalHeaders.AddSpecialsFrom(sourceRequestHeaders._generalHeaders);
+            if (sourceRequestHeaders._generalHeaders != null)
+            {
+                GeneralHeaders.AddSpecialsFrom(sourceRequestHeaders._generalHeaders);
+            }
 
             bool? expectContinue = ExpectContinue;
             if (!expectContinue.HasValue)
@@ -430,5 +431,7 @@ namespace System.Net.Http.Headers
                 ExpectContinue = sourceRequestHeaders.ExpectContinue;
             }
         }
+
+        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
     }
 }
