@@ -13,8 +13,8 @@ namespace System.Net.Http
         public HttpConnectionKey(Uri uri)
         {
             UsingSSL = 
-                uri.Scheme == "http" ? false :
-                uri.Scheme == "https" ? true :
+                uri.Scheme == UriScheme.Http ? false :
+                uri.Scheme == UriScheme.Https ? true :
                 throw new ArgumentException("Invalid Uri scheme", nameof(uri));
 
             Host = uri.Host;
@@ -22,7 +22,7 @@ namespace System.Net.Http
         }
 
         public override int GetHashCode() =>
-            UsingSSL.GetHashCode() ^ Host.GetHashCode() ^ Port.GetHashCode();
+            UsingSSL.GetHashCode() << 16 ^ Host.GetHashCode() ^ Port.GetHashCode();
 
         public override bool Equals(object obj) =>
             obj != null &&

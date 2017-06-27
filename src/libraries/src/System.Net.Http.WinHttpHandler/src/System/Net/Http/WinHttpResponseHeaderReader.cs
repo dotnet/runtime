@@ -11,9 +11,6 @@ namespace System.Net.Http
     /// </summary>
     internal struct WinHttpResponseHeaderReader
     {
-        private const string Gzip = "gzip";
-        private const string Deflate = "deflate";
-
         private readonly char[] _buffer;
         private readonly int _length;
         private int _position;
@@ -65,7 +62,7 @@ namespace System.Net.Http
                 int valueLength = startIndex + length - colonIndex - 1;
                 CharArrayHelpers.Trim(_buffer, ref valueStartIndex, ref valueLength);
 
-                value = GetHeaderValue(name, _buffer, valueStartIndex, valueLength);
+                value = HttpKnownHeaderNames.GetHeaderValue(name, _buffer, valueStartIndex, valueLength);
 
                 return true;
             }
@@ -126,36 +123,6 @@ namespace System.Net.Http
             startIndex = 0;
             length = 0;
             return false;
-        }
-
-        private static string GetHeaderValue(string name, char[] array, int startIndex, int length)
-        {
-            Debug.Assert(name != null);
-            CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
-
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            // If it's a known header value, use the known value instead of allocating a new string.
-
-            // Do a really quick reference equals check to see if name is the same object as
-            // HttpKnownHeaderNames.ContentEncoding, in which case the value is very likely to
-            // be either "gzip" or "deflate".
-            if (object.ReferenceEquals(name, HttpKnownHeaderNames.ContentEncoding))
-            {
-                if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(Gzip, array, startIndex, length))
-                {
-                    return Gzip;
-                }
-                else if (CharArrayHelpers.EqualsOrdinalAsciiIgnoreCase(Deflate, array, startIndex, length))
-                {
-                    return Deflate;
-                }
-            }
-
-            return new string(array, startIndex, length);
         }
     }
 }
