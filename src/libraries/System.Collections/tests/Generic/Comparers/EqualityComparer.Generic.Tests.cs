@@ -31,7 +31,6 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corert#1736", TargetFrameworkMonikers.Uap)]
         public void EqualityComparer_EqualsShouldBeOverriddenAndWorkForDifferentInstances_cloned()
         {
             var comparer = EqualityComparer<T>.Default;
@@ -58,7 +57,6 @@ namespace System.Collections.Generic.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corert#1736", TargetFrameworkMonikers.Uap)]
         public void EqualityComparer_GetHashCodeShouldBeOverriddenAndBeTheSameAsLongAsTheTypeIsTheSame_cloned()
         {
             var comparer = EqualityComparer<T>.Default;
