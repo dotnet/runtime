@@ -34,6 +34,7 @@ typedef struct {
 	MonoW32HandleType type;
 	guint ref;
 	gboolean signalled;
+	gboolean in_use;
 	mono_mutex_t signal_mutex;
 	mono_cond_t signal_cond;
 	gpointer specific;
@@ -176,6 +177,17 @@ mono_w32handle_issignalled (gpointer handle)
 	}
 
 	return handle_data->signalled;
+}
+
+static void
+mono_w32handle_set_in_use (gpointer handle, gboolean in_use)
+{
+	MonoW32HandleBase *handle_data;
+
+	if (!mono_w32handle_lookup_data (handle, &handle_data))
+		g_assert_not_reached ();
+
+	handle_data->in_use = in_use;
 }
 
 static void
@@ -663,6 +675,8 @@ w32handle_destroy (gpointer handle)
 
 	if (!mono_w32handle_lookup_data (handle, &handle_data))
 		g_error ("%s: unknown handle %p", __func__, handle);
+
+	g_assert (!handle_data->in_use);
 
 	type = handle_data->type;
 	handle_specific = handle_data->specific;
@@ -1183,6 +1197,8 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
+	mono_w32handle_set_in_use (handle, TRUE);
+
 	for (;;) {
 		gint waited;
 
@@ -1222,6 +1238,8 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 	}
 
 done:
+	mono_w32handle_set_in_use (handle, FALSE);
+
 	mono_w32handle_unlock_handle (handle);
 
 	return ret;
