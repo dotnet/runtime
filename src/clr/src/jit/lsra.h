@@ -699,6 +699,7 @@ private:
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
 
