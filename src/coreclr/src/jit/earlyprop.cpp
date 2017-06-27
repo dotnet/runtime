@@ -325,7 +325,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             actualValCopy = gtNewLargeOperNode(GT_ADD, TYP_INT);
         }
 
-        fgWalkTreePre(&tree, Compiler::lvaDecRefCntsCB, (void*)this, true);
+        DecLclVarRefCountsVisitor::WalkTree(this, tree);
 
         actualValCopy->CopyFrom(actualVal, this);
         actualValCopy->gtType = origType;
@@ -334,7 +334,7 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
             actualValCopy->LabelIndex(this);
         }
 
-        fgWalkTreePre(&actualValCopy, Compiler::lvaIncRefCntsCB, (void*)this, true);
+        IncLclVarRefCountsVisitor::WalkTree(this, actualValCopy);
 
         if (actualValCopy != tree)
         {
