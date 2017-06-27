@@ -2818,7 +2818,6 @@ protected:
 #endif
     BasicBlock::weight_t lvaMarkRefsWeight;
 
-    static fgWalkPreFn lvaMarkLclRefsCallback;
     void lvaMarkLclRefs(GenTreePtr tree);
 
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
