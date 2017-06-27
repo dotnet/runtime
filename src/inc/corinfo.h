@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* e5708e9e-dd18-4287-8745-5d10ff2697cf */
-    0xe5708e9e,
-    0xdd18,
-    0x4287,
-    { 0x87, 0x45, 0x5d, 0x10, 0xff, 0x26, 0x97, 0xcf }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 28eb875f-b6a9-4a04-9ba7-69ba59deed46 */
+    0x28eb875f,
+    0xb6a9,
+    0x4a04,
+    { 0x9b, 0xa7, 0x69, 0xba, 0x59, 0xde, 0xed, 0x46 }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -400,6 +400,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
     CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
+    CORINFO_HELP_NEWARR_1_R2R_DIRECT, // wrapper for R2R direct call, which extracts method table from ArrayTypeDesc
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
     CORINFO_HELP_NEWARR_1_ALIGN8,   // like VC, but aligns the array start
