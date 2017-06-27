@@ -17,6 +17,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void FindByTransportType_ForestNoDomainAssociatedWithoutName_ThrowsActiveDirectoryOperationException()
         {
             var context = new DirectoryContext(DirectoryContextType.Forest);
@@ -58,6 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void FindByTransportType_ConfigurationSetTypeWithName_Throws()
         {
             var context = new DirectoryContext(DirectoryContextType.ConfigurationSet, "Name");
