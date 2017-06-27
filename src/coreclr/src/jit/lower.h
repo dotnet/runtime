@@ -134,6 +134,8 @@ private:
 
     void TreeNodeInfoInitCheckByteable(GenTree* tree);
 
+    void SetDelayFree(GenTree* delayUseSrc);
+
 #if defined(_TARGET_XARCH_)
     void TreeNodeInfoInitSimple(GenTree* tree);
 
@@ -279,7 +281,7 @@ private:
     bool IsContainableImmed(GenTree* parentNode, GenTree* childNode);
 
     // Return true if 'node' is a containable memory op.
-    bool IsContainableMemoryOp(GenTree* node);
+    bool IsContainableMemoryOp(GenTree* node, bool useTracked);
 
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode);
