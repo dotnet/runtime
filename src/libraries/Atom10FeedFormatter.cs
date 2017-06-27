@@ -866,6 +866,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             await reader.MoveToContentAsync();
 
+            //fix to accept non contiguous items
+            NullNotAllowedCollection<SyndicationItem> feedItems = new NullNotAllowedCollection<SyndicationItem>();
+
             bool elementIsEmpty = false;
             if (!isSourceFeed)
             {
@@ -924,12 +927,22 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
                         {
-                            if (readItemsAtLeastOnce)
+                            //if (readItemsAtLeastOnce)
+                            //{
+                            //    throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
+                            //}
+
+                            //result.Items = await ReadItemsAsync(reader, result); ;  // JERRY MAKE THIS ASYNC
+
+
+                            //XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
+
+                            while (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
                             {
-                                throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
+                                feedItems.Add(await ReadItemAsync(reader, result));
                             }
 
-                            result.Items = await ReadItemsAsync(reader, result); ;  // JERRY MAKE THIS ASYNC
+
                             areAllItemsRead = true;
                             readItemsAtLeastOnce = true;
                             // if the derived class is reading the items lazily, then stop reading from the stream
@@ -960,7 +973,8 @@ namespace Microsoft.ServiceModel.Syndication
                             }
                         }
                     }
-
+                    //Add all read items to the feed
+                    result.Items = feedItems;
                     LoadElementExtensions(buffer, extWriter, result);  // JERRY MAKE THIS ASYNC
                 }
                 finally

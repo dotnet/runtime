@@ -484,11 +484,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
+                throw new ArgumentNullException("feed");
             }
             if (reader == null)
             {
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("reader");
+                throw new ArgumentNullException("reader");
             }
             SyndicationItem item = CreateItem(feed);
             XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);

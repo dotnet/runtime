@@ -50,7 +50,6 @@ namespace Microsoft.ServiceModel.Syndication
         private void InitAsync()
         {
             this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.GetValueAsync(); });
-
             this.readElementStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return ReadElementStringAsync(thisPtr.reader); });
             this.readStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return ReadStringAsync(thisPtr.reader); });
             this.readEndElementFunc = new Func<XmlReaderWrapper, Task>( (thisPtr) => {  return ReadEndElementAsync(thisPtr.reader); });
@@ -67,7 +66,6 @@ namespace Microsoft.ServiceModel.Syndication
         private void Init()
         {
             this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(thisPtr.reader.Value); });
-
             this.readElementStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadElementString()); });
             this.readStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadString()); });
             this.readEndElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.ReadEndElement(); return Task.CompletedTask; });
