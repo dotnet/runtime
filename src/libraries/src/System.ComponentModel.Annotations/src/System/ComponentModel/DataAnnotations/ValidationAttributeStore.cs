@@ -253,6 +253,7 @@ nameof(propertyName));
             internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
                 : base(attributes)
             {
+                Debug.Assert(propertyType != null);
                 _propertyType = propertyType;
             }
 

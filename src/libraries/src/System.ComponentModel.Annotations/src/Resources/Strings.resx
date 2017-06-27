@@ -133,6 +133,9 @@
   <data name="MinLengthAttribute_ValidationError" xml:space="preserve">
     <value>The field {0} must be a string or array type with a minimum length of '{1}'.</value>
   </data>
+  <data name="LengthAttribute_InvalidValueType" xml:space="preserve">
+    <value>The field of type {0} must be a string, array or ICollection type.</value>
+  </data>
   <data name="PhoneAttribute_Invalid" xml:space="preserve">
     <value>The {0} field is not a valid phone number.</value>
   </data>
