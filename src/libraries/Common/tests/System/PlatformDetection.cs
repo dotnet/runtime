@@ -153,6 +153,7 @@ namespace System
             }
         }
 
+        public static bool IsNotWinRT => !IsWinRT;
         public static bool IsWinRTSupported => IsWinRT || (IsWindows && !IsWindows7);
         public static bool IsNotWinRTSupported => !IsWinRTSupported;
 
