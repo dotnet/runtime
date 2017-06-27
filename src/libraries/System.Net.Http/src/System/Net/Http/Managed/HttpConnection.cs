@@ -641,7 +641,7 @@ namespace System.Net.Http
             }
 
             string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-            response.ReasonPhrase = CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Offset) ?
+            response.ReasonPhrase = CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Length) ?
                 knownReasonPhrase :
                 _sb.ToString();
 
@@ -670,7 +670,7 @@ namespace System.Net.Http
                 }
 
                 string headerName;
-                if (!HttpKnownHeaderNames.TryGetHeaderName(_sb.Chars, 0, _sb.Offset, out headerName))
+                if (!HttpKnownHeaderNames.TryGetHeaderName(_sb.Chars, 0, _sb.Length, out headerName))
                 {
                     headerName = _sb.ToString();
                 }
@@ -695,7 +695,7 @@ namespace System.Net.Http
                     throw new HttpRequestException("Saw CR without LF while parsing headers");
                 }
 
-                string headerValue = HttpKnownHeaderNames.GetHeaderValue(headerName, _sb.Chars, 0, _sb.Offset);
+                string headerValue = HttpKnownHeaderNames.GetHeaderValue(headerName, _sb.Chars, 0, _sb.Length);
 
                 // TryAddWithoutValidation will fail if the header name has trailing whitespace.
                 // So, trim it here.
@@ -1262,28 +1262,28 @@ namespace System.Net.Http
         private struct ValueStringBuilder
         {
             public char[] Chars;
-            public int Offset;
+            public int Length;
 
             public ValueStringBuilder(int initialCapacity)
             {
                 Chars = new char[initialCapacity];
-                Offset = 0;
+                Length = 0;
             }
 
             public void Append(char c)
             {
-                if (Offset == Chars.Length)
+                if (Length == Chars.Length)
                 {
                     Grow();
                 }
-                Chars[Offset++] = c;
+                Chars[Length++] = c;
             }
 
             private void Grow() => Array.Resize(ref Chars, Chars.Length * 2);
 
-            public void Clear() => Offset = 0;
+            public void Clear() => Length = 0;
 
-            public override string ToString() => new string(Chars, 0, Offset);
+            public override string ToString() => new string(Chars, 0, Length);
         }
     }
 }
