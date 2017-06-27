@@ -14,32 +14,28 @@ namespace System.Drawing
     /// <summary>
     /// Defines an object used to draw lines and curves.
     /// </summary>
-    public sealed class Pen : MarshalByRefObject, ISystemColorTracker, ICloneable, IDisposable
+    public sealed class Pen : MarshalByRefObject, ICloneable, IDisposable
+#if FEATURE_SYSTEM_EVENTS
+        , ISystemColorTracker
+#endif
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
 #endif
 
-        // handle to native GDI+ pen object.
+        // Handle to native GDI+ pen object.
         private IntPtr _nativePen;
 
-        // GDI+ doesn't understand system colors, so we need to cache the value here
+        // GDI+ doesn't understand system colors, so we need to cache the value here.
         private Color _color;
         private bool _immutable;
 
         /// <summary>
         /// Creates a Pen from a native GDI+ object.
         /// </summary>
-        private Pen(IntPtr nativePen)
-        {
-            SetNativePen(nativePen);
-        }
+        private Pen(IntPtr nativePen) => SetNativePen(nativePen);
 
-
-        internal Pen(Color color, bool immutable) : this(color)
-        {
-            _immutable = immutable;
-        }
+        internal Pen(Color color, bool immutable) : this(color) =>  _immutable = immutable;
 
         /// <summary>
         /// Initializes a new instance of the Pen class with the specified <see cref='Color'/>.
@@ -61,9 +57,7 @@ namespace System.Drawing
                                                 width,
                                                 (int)GraphicsUnit.World,
                                                 out pen);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetNativePen(pen);
 
@@ -86,62 +80,41 @@ namespace System.Drawing
         /// Initializes a new instance of the <see cref='Pen'/> class with the specified <see cref='Drawing.Brush'/> and width.
         /// </summary>
         public Pen(Brush brush, float width)
-        {
-            IntPtr pen = IntPtr.Zero;
-
+        {            
             if (brush == null)
-                throw new ArgumentNullException("brush");
+            {
+                throw new ArgumentNullException(nameof(brush));
+            }
 
+            IntPtr pen = IntPtr.Zero;
             int status = SafeNativeMethods.Gdip.GdipCreatePen2(new HandleRef(brush, brush.NativeBrush),
                 width,
                 (int)GraphicsUnit.World,
                 out pen);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetNativePen(pen);
         }
 
         internal void SetNativePen(IntPtr nativePen)
         {
-            if (nativePen == IntPtr.Zero)
-            {
-                throw new ArgumentNullException("nativePen");
-            }
-
+            Debug.Assert(nativePen != IntPtr.Zero);
             _nativePen = nativePen;
         }
 
-        /// <summary>
-        /// Gets the GDI+ native object.
-        /// </summary>
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
-        internal IntPtr NativePen
-        {
-            get
-            {
-                //Need to comment this line out to allow for checking this.NativePen == IntPtr.Zero.
-                //Debug.Assert(this.nativePen != IntPtr.Zero, "this.nativePen == null." );
-                return _nativePen;
-            }
-        }
+        internal IntPtr NativePen => _nativePen;
 
         /// <summary>
         /// Creates an exact copy of this <see cref='System.Drawing.Pen'/>.
         /// </summary>
         public object Clone()
         {
-            IntPtr clonePen = IntPtr.Zero;
+            IntPtr clonedPen = IntPtr.Zero;
+            int status = SafeNativeMethods.Gdip.GdipClonePen(new HandleRef(this, NativePen), out clonedPen);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
-            int status = SafeNativeMethods.Gdip.GdipClonePen(new HandleRef(this, NativePen), out clonePen);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
-
-            return new Pen(clonePen);
+            return new Pen(clonedPen);
         }
 
         /// <summary>
@@ -157,20 +130,21 @@ namespace System.Drawing
         {
 #if FINALIZATION_WATCH
             if (!disposing && nativePen != IntPtr.Zero)
+            {
                 Debug.WriteLine("**********************\nDisposed through finalization:\n" + allocationSite);
+            }
 #endif
 
             if (!disposing)
             {
-                // If we are finalizing, then we will be unreachable soon.  Finalize calls dispose to
+                // If we are finalizing, then we will be unreachable soon. Finalize calls dispose to
                 // release resources, so we must make sure that during finalization we are
                 // not immutable.
-                //
                 _immutable = false;
             }
             else if (_immutable)
             {
-                throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Brush"));
+                throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Brush)));
             }
 
             if (_nativePen != IntPtr.Zero)
@@ -185,14 +159,8 @@ namespace System.Drawing
                     Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif       
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
                 {
-                    if (ClientUtils.IsSecurityOrCriticalException(ex))
-                    {
-                        throw;
-                    }
-
-                    Debug.Fail("Exception thrown during Dispose: " + ex.ToString());
                 }
                 finally
                 {
@@ -204,10 +172,7 @@ namespace System.Drawing
         /// <summary>
         /// Cleans up Windows resources for this <see cref='System.Drawing.Pen'/>.
         /// </summary>
-        ~Pen()
-        {
-            Dispose(false);
-        }
+        ~Pen() => Dispose(false);
 
         /// <summary>
         /// Gets or sets the width of this <see cref='System.Drawing.Pen'/>.
@@ -216,25 +181,21 @@ namespace System.Drawing
         {
             get
             {
-                float[] width = new float[] { 0 };
-
+                var width = new float[] { 0 };
                 int status = SafeNativeMethods.Gdip.GdipGetPenWidth(new HandleRef(this, NativePen), width);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return width[0];
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenWidth(new HandleRef(this, NativePen), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -244,12 +205,13 @@ namespace System.Drawing
         public void SetLineCap(LineCap startCap, LineCap endCap, DashCap dashCap)
         {
             if (_immutable)
-                throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+            {
+                throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+            }
+
             int status = SafeNativeMethods.Gdip.GdipSetPenLineCap197819(new HandleRef(this, NativePen),
                 unchecked((int)startCap), unchecked((int)endCap), unchecked((int)dashCap));
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -261,15 +223,12 @@ namespace System.Drawing
             {
                 int startCap = 0;
                 int status = SafeNativeMethods.Gdip.GdipGetPenStartCap(new HandleRef(this, NativePen), out startCap);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return (LineCap)startCap;
             }
             set
             {
-                //validate the enum value
                 switch (value)
                 {
                     case LineCap.Flat:
@@ -285,15 +244,15 @@ namespace System.Drawing
                     case LineCap.Custom:
                         break;
                     default:
-                        throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(LineCap));
+                        throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(LineCap));
                 }
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenStartCap(new HandleRef(this, NativePen), unchecked((int)value));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -306,15 +265,12 @@ namespace System.Drawing
             {
                 int endCap = 0;
                 int status = SafeNativeMethods.Gdip.GdipGetPenEndCap(new HandleRef(this, NativePen), out endCap);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return (LineCap)endCap;
             }
             set
             {
-                //validate the enum value
                 switch (value)
                 {
                     case LineCap.Flat:
@@ -330,16 +286,16 @@ namespace System.Drawing
                     case LineCap.Custom:
                         break;
                     default:
-                        throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(LineCap));
+                        throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(LineCap));
                 }
 
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenEndCap(new HandleRef(this, NativePen), unchecked((int)value));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -352,31 +308,27 @@ namespace System.Drawing
             {
                 int dashCap = 0;
                 int status = SafeNativeMethods.Gdip.GdipGetPenDashCap197819(new HandleRef(this, NativePen), out dashCap);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return (DashCap)dashCap;
             }
-
             set
             {
-                //validate the enum value
                 if (!ClientUtils.IsEnumValid_NotSequential(value, unchecked((int)value),
                                                     (int)DashCap.Flat,
                                                     (int)DashCap.Round,
                                                     (int)DashCap.Triangle))
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(DashCap));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(DashCap));
                 }
 
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenDashCap197819(new HandleRef(this, NativePen), unchecked((int)value));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -389,28 +341,24 @@ namespace System.Drawing
             {
                 int lineJoin = 0;
                 int status = SafeNativeMethods.Gdip.GdipGetPenLineJoin(new HandleRef(this, NativePen), out lineJoin);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return (LineJoin)lineJoin;
             }
-
             set
             {
-                //valid values are 0x0 to 0x3
                 if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)LineJoin.Miter, (int)LineJoin.MiterClipped))
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(LineJoin));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(LineJoin));
                 }
 
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenLineJoin(new HandleRef(this, NativePen), unchecked((int)value));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -423,23 +371,20 @@ namespace System.Drawing
             {
                 IntPtr lineCap = IntPtr.Zero;
                 int status = SafeNativeMethods.Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return CustomLineCap.CreateCustomLineCapObject(lineCap);
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
                                                               new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -452,23 +397,20 @@ namespace System.Drawing
             {
                 IntPtr lineCap = IntPtr.Zero;
                 int status = SafeNativeMethods.Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return CustomLineCap.CreateCustomLineCapObject(lineCap);
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenCustomEndCap(new HandleRef(this, NativePen),
                                                             new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -479,24 +421,21 @@ namespace System.Drawing
         {
             get
             {
-                float[] miterLimit = new float[] { 0 };
+                var miterLimit = new float[] { 0 };
                 int status = SafeNativeMethods.Gdip.GdipGetPenMiterLimit(new HandleRef(this, NativePen), miterLimit);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return miterLimit[0];
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenMiterLimit(new HandleRef(this, NativePen), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -508,30 +447,25 @@ namespace System.Drawing
             get
             {
                 PenAlignment penMode = 0;
-
                 int status = SafeNativeMethods.Gdip.GdipGetPenMode(new HandleRef(this, NativePen), out penMode);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return (PenAlignment)penMode;
             }
             set
             {
-                //validate the enum value
-                //valid values are 0x0 to 0x4
                 if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)PenAlignment.Center, (int)PenAlignment.Right))
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(PenAlignment));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PenAlignment));
                 }
 
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenMode(new HandleRef(this, NativePen), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -542,12 +476,9 @@ namespace System.Drawing
         {
             get
             {
-                Matrix matrix = new Matrix();
-
+                var matrix = new Matrix();
                 int status = SafeNativeMethods.Gdip.GdipGetPenTransform(new HandleRef(this, NativePen), new HandleRef(matrix, matrix.nativeMatrix));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return matrix;
             }
@@ -555,17 +486,17 @@ namespace System.Drawing
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenTransform(new HandleRef(this, NativePen), new HandleRef(value, value.nativeMatrix));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -575,18 +506,13 @@ namespace System.Drawing
         public void ResetTransform()
         {
             int status = SafeNativeMethods.Gdip.GdipResetPenTransform(new HandleRef(this, NativePen));
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
         /// Multiplies the transform matrix for this <see cref='Pen'/> by the specified <see cref='Matrix'/>.
         /// </summary>
-        public void MultiplyTransform(Matrix matrix)
-        {
-            MultiplyTransform(matrix, MatrixOrder.Prepend);
-        }
+        public void MultiplyTransform(Matrix matrix) => MultiplyTransform(matrix, MatrixOrder.Prepend);
 
         /// <summary>
         /// Multiplies the transform matrix for this <see cref='Pen'/> by the specified <see cref='Matrix'/> in the specified order.
@@ -596,19 +522,14 @@ namespace System.Drawing
             int status = SafeNativeMethods.Gdip.GdipMultiplyPenTransform(new HandleRef(this, NativePen),
                                                           new HandleRef(matrix, matrix.nativeMatrix),
                                                           order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
         /// Translates the local geometrical transform by the specified dimmensions. This method prepends the translation
         /// to the transform.
         /// </summary>
-        public void TranslateTransform(float dx, float dy)
-        {
-            TranslateTransform(dx, dy, MatrixOrder.Prepend);
-        }
+        public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
 
         /// <summary>
         /// Translates the local geometrical transform by the specified dimmensions in the specified order.
@@ -617,18 +538,13 @@ namespace System.Drawing
         {
             int status = SafeNativeMethods.Gdip.GdipTranslatePenTransform(new HandleRef(this, NativePen),
                                                            dx, dy, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
         /// Scales the local geometric transform by the specified amounts. This method prepends the scaling matrix to the transform.
         /// </summary>
-        public void ScaleTransform(float sx, float sy)
-        {
-            ScaleTransform(sx, sy, MatrixOrder.Prepend);
-        }
+        public void ScaleTransform(float sx, float sy) => ScaleTransform(sx, sy, MatrixOrder.Prepend);
 
         /// <summary>
         /// Scales the local geometric transform by the specified amounts in the specified order.
@@ -637,18 +553,13 @@ namespace System.Drawing
         {
             int status = SafeNativeMethods.Gdip.GdipScalePenTransform(new HandleRef(this, NativePen),
                                                        sx, sy, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
         /// Rotates the local geometric transform by the specified amount. This method prepends the rotation to the transform.
         /// </summary>
-        public void RotateTransform(float angle)
-        {
-            RotateTransform(angle, MatrixOrder.Prepend);
-        }
+        public void RotateTransform(float angle) => RotateTransform(angle, MatrixOrder.Prepend);
 
         /// <summary>
         /// Rotates the local geometric transform by the specified amount in the specified order.
@@ -657,17 +568,14 @@ namespace System.Drawing
         {
             int status = SafeNativeMethods.Gdip.GdipRotatePenTransform(new HandleRef(this, NativePen),
                                                         angle, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         private void InternalSetColor(Color value)
         {
             int status = SafeNativeMethods.Gdip.GdipSetPenColor(new HandleRef(this, NativePen),
                                                  _color.ToArgb());
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             _color = value;
         }
@@ -680,11 +588,8 @@ namespace System.Drawing
             get
             {
                 int type = -1;
-
                 int status = SafeNativeMethods.Gdip.GdipGetPenFillType(new HandleRef(this, NativePen), out type);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return (PenType)type;
             }
@@ -701,21 +606,20 @@ namespace System.Drawing
                 {
                     int colorARGB = 0;
                     int status = SafeNativeMethods.Gdip.GdipGetPenColor(new HandleRef(this, NativePen), out colorARGB);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                        throw SafeNativeMethods.Gdip.StatusException(status);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
 
                     _color = Color.FromArgb(colorARGB);
                 }
 
-                // GDI+ doesn't understand system colors, so we can't use GdipGetPenColor in the general case
+                // GDI+ doesn't understand system colors, so we can't use GdipGetPenColor in the general case.
                 return _color;
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 if (value != _color)
                 {
@@ -772,31 +676,29 @@ namespace System.Drawing
 
                 return brush;
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenBrushFill(new HandleRef(this, NativePen),
                     new HandleRef(value, value.NativeBrush));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
         private IntPtr GetNativeBrush()
         {
             IntPtr nativeBrush = IntPtr.Zero;
-
             int status = SafeNativeMethods.Gdip.GdipGetPenBrushFill(new HandleRef(this, NativePen), out nativeBrush);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
             return nativeBrush;
         }
@@ -808,37 +710,30 @@ namespace System.Drawing
         {
             get
             {
-                int dashstyle = 0;
+                int dashStyle = 0;
+                int status = SafeNativeMethods.Gdip.GdipGetPenDashStyle(new HandleRef(this, NativePen), out dashStyle);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
-                int status = SafeNativeMethods.Gdip.GdipGetPenDashStyle(new HandleRef(this, NativePen), out dashstyle);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                return (DashStyle)dashstyle;
+                return (DashStyle)dashStyle;
             }
-
             set
             {
                 //valid values are 0x0 to 0x5
                 if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)DashStyle.Solid, (int)DashStyle.Custom))
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(DashStyle));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(DashStyle));
                 }
 
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
-
-                int status = SafeNativeMethods.Gdip.GdipSetPenDashStyle(new HandleRef(this, NativePen), unchecked((int)value));
-
-                if (status != SafeNativeMethods.Gdip.Ok)
                 {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
                 }
 
-                //if we just set pen style to "custom" without defining the custom dash pattern,
-                //lets make sure we can return a valid value...
-                //
+                int status = SafeNativeMethods.Gdip.GdipSetPenDashStyle(new HandleRef(this, NativePen), unchecked((int)value));
+                SafeNativeMethods.Gdip.CheckStatus(status);
+
+                // If we just set the pen style to Custom without defining the custom dash pattern,
+                // make sure that we can return a valid value.
                 if (value == DashStyle.Custom)
                 {
                     EnsureValidDashPattern();
@@ -854,13 +749,11 @@ namespace System.Drawing
         {
             int retval = 0;
             int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out retval);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             if (retval == 0)
             {
-                //just set to a solid pattern
+                // Set to a solid pattern.
                 DashPattern = new float[] { 1 };
             }
         }
@@ -872,24 +765,21 @@ namespace System.Drawing
         {
             get
             {
-                float[] dashoffset = new float[] { 0 };
+                var dashOffset = new float[] { 0 };
+                int status = SafeNativeMethods.Gdip.GdipGetPenDashOffset(new HandleRef(this, NativePen), dashOffset);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
-                int status = SafeNativeMethods.Gdip.GdipGetPenDashOffset(new HandleRef(this, NativePen), dashoffset);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                return dashoffset[0];
+                return dashOffset[0];
             }
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenDashOffset(new HandleRef(this, NativePen), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -900,56 +790,41 @@ namespace System.Drawing
         {
             get
             {
-                float[] dashArray;
-
-                // Figure out how many dash elements we have
-
-                int retval = 0;
-                int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out retval);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                int count = retval;
-
+                int count = 0;
+                int status = SafeNativeMethods.Gdip.GdipGetPenDashCount(new HandleRef(this, NativePen), out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
+            
                 // Allocate temporary native memory buffer
-                // and pass it to GDI+ to retrieve dash array elements
-
+                // and pass it to GDI+ to retrieve dash array elements.
                 IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
                 try
                 {
                     status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), buf, count);
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    SafeNativeMethods.Gdip.CheckStatus(status);
 
-                    dashArray = new float[count];
-
+                    var dashArray = new float[count];
                     Marshal.Copy(buf, dashArray, 0, count);
+                    return dashArray;
                 }
                 finally
                 {
                     Marshal.FreeHGlobal(buf);
                 }
-
-                return dashArray;
             }
-
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
 
-                //validate the DashPattern value being set
                 if (value == null || value.Length == 0)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidDashPattern));
                 }
 
                 int count = value.Length;
-
                 IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
 
                 try
@@ -957,11 +832,7 @@ namespace System.Drawing
                     Marshal.Copy(value, 0, buf, count);
 
                     int status = SafeNativeMethods.Gdip.GdipSetPenDashArray(new HandleRef(this, NativePen), new HandleRef(buf, buf), count);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 finally
                 {
@@ -978,36 +849,35 @@ namespace System.Drawing
             get
             {
                 int count = 0;
-
                 int status = SafeNativeMethods.Gdip.GdipGetPenCompoundCount(new HandleRef(this, NativePen), out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                float[] array = new float[count];
-
+                var array = new float[count];
                 status = SafeNativeMethods.Gdip.GdipGetPenCompoundArray(new HandleRef(this, NativePen), array, count);
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return array;
             }
             set
             {
                 if (_immutable)
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, "Pen"));
+                {
+                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenCompoundArray(new HandleRef(this, NativePen), value, value.Length);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
+#if FEATURE_SYSTEM_EVENTS
         void ISystemColorTracker.OnSystemColorChanged()
         {
             if (NativePen != IntPtr.Zero)
+            {
                 InternalSetColor(_color);
+            }
         }
+#endif
     }
 }
