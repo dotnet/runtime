@@ -623,7 +623,6 @@ namespace System.Net.Sockets.Tests
         [InlineData(4096)]
         [InlineData(4095)]
         [InlineData(1024*1024)]
-        [ActiveIssue(21158, TargetFrameworkMonikers.Uap)]
         public async Task CopyToAsync_AllDataCopied(int byteCount)
         {
             await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
