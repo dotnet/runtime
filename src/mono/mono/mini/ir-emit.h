@@ -231,16 +231,13 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
         (dest)->inst_imm = (imm); \
 	} while (0)
 
-#ifdef MONO_ARCH_NEED_GOT_VAR
-
 #define NEW_PATCH_INFO(cfg,dest,el1,el2) do {	\
         MONO_INST_NEW ((cfg), (dest), OP_PATCH_INFO); \
 		(dest)->inst_left = (gpointer)(el1);	\
 		(dest)->inst_right = (gpointer)(el2);	\
 	} while (0)
 
-/* FIXME: Add the PUSH_GOT_ENTRY optimizations */
-#define NEW_AOTCONST(cfg,dest,patch_type,cons) do {			\
+#define NEW_AOTCONST_GOT_VAR(cfg,dest,patch_type,cons) do {			\
         MONO_INST_NEW ((cfg), (dest), cfg->compile_aot ? OP_GOT_ENTRY : OP_PCONST); \
 		if (cfg->compile_aot) {					\
 			MonoInst *group, *got_loc;		\
@@ -256,7 +253,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
 	} while (0)
 
-#define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,generic_context,stack_type,stack_class) do { \
+#define NEW_AOTCONST_TOKEN_GOT_VAR(cfg,dest,patch_type,image,token,generic_context,stack_type,stack_class) do { \
 		MonoInst *group, *got_loc;			\
         MONO_INST_NEW ((cfg), (dest), OP_GOT_ENTRY); \
 		got_loc = mono_get_got_var (cfg);			\
@@ -269,26 +266,30 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		(dest)->dreg = alloc_dreg ((cfg), (stack_type));	\
 	} while (0)
 
-#else
-
 #define NEW_AOTCONST(cfg,dest,patch_type,cons) do {    \
+	if (cfg->backend->need_got_var && !cfg->llvm_only) {	\
+		NEW_AOTCONST_GOT_VAR ((cfg), (dest), (patch_type), (cons)); \
+	} else { \
         MONO_INST_NEW ((cfg), (dest), cfg->compile_aot ? OP_AOTCONST : OP_PCONST); \
 		(dest)->inst_p0 = (cons);	\
 		(dest)->inst_i1 = (MonoInst *)(patch_type); \
 		(dest)->type = STACK_PTR;	\
 		(dest)->dreg = alloc_dreg ((cfg), STACK_PTR);	\
+	}													\
     } while (0)
 
 #define NEW_AOTCONST_TOKEN(cfg,dest,patch_type,image,token,generic_context,stack_type,stack_class) do { \
+	if (cfg->backend->need_got_var && !cfg->llvm_only) {	\
+		NEW_AOTCONST_TOKEN_GOT_VAR ((cfg), (dest), (patch_type), (image), (token), (generic_context), (stack_type), (stack_class)); \
+	} else { \
         MONO_INST_NEW ((cfg), (dest), OP_AOTCONST); \
 		(dest)->inst_p0 = mono_jump_info_token_new2 ((cfg)->mempool, (image), (token), (generic_context)); \
 		(dest)->inst_p1 = (gpointer)(patch_type); \
 		(dest)->type = (stack_type);	\
         (dest)->klass = (stack_class);          \
 		(dest)->dreg = alloc_dreg ((cfg), (stack_type));	\
+	} \
     } while (0)
-
-#endif
 
 #define NEW_CLASSCONST(cfg,dest,val) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_CLASS, (val))
 
