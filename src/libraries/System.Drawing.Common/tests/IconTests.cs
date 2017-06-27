@@ -240,13 +240,21 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21360)]
-        public void Ctor_InvalidIconHandle_SetsHandleToZero()
+        public void Ctor_InvalidHandle_Success()
         {
-            using (Icon source = Icon.FromHandle((IntPtr)100))
-            using (var icon = new Icon(source, 10, 10))
+            using (Icon icon = Icon.FromHandle((IntPtr)1))
+            using (var stream = new MemoryStream())
             {
-                Assert.Throws<ObjectDisposedException>(() => icon.Handle);
+                Exception ex = Assert.ThrowsAny<Exception>(() => icon.Save(stream));
+                Assert.True(ex is COMException || ex is ObjectDisposedException, $"{ex.GetType().ToString()} was thrown.");
+
+                Assert.Throws<ArgumentException>(null, () => icon.ToBitmap());
+                Assert.Equal(Size.Empty, icon.Size);
+
+                using (var newIcon = new Icon(icon, 10, 10))
+                {
+                    Assert.Throws<ObjectDisposedException>(() => newIcon.Handle);
+                }
             }
         }
 
@@ -485,28 +493,6 @@ namespace System.Drawing.Tests
             Assert.Throws<ObjectDisposedException>(() => icon.Save(new MemoryStream()));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21360)]
-        public void Save_InvalidHandle_ThrowsCOMOrObjectDisposedException()
-        {
-            using (Icon icon = Icon.FromHandle((IntPtr)100))
-            using (var stream = new MemoryStream())
-            {
-                Exception ex = Assert.ThrowsAny<Exception>(() => icon.Save(stream));
-                Assert.True(ex is COMException || ex is ObjectDisposedException, $"{ex.GetType().ToString()} was thrown.");
-            }
-        }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21360)]
-        public void ToBitmap_InvalidHandle_ThrowsArgumentException()
-        {
-            using (Icon icon = Icon.FromHandle((IntPtr)100))
-            {
-                Assert.Throws<ArgumentException>(null, () => icon.ToBitmap());
-            }
-        }
-
         public static IEnumerable<object[]> ToBitmap_TestData()
         {
             yield return new object[] { new Icon(Helpers.GetTestBitmapPath("16x16_one_entry_4bit.ico")) };
@@ -719,16 +705,6 @@ namespace System.Drawing.Tests
         public void FromHandle_Zero_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>(null, () => Icon.FromHandle(IntPtr.Zero));
-        }
-
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21360)]
-        public void Size_GetFromInvalidHandle_ReturnsZeroSize()
-        {
-            using (Icon icon = Icon.FromHandle((IntPtr)100))
-            {
-                Assert.Equal(Size.Empty, icon.Size);
-            }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
