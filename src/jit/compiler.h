@@ -2636,11 +2636,9 @@ public:
 
     VARSET_VALRET_TP lvaStmtLclMask(GenTreePtr stmt);
 
-    static fgWalkPreFn lvaIncRefCntsCB;
     void lvaIncRefCnts(GenTreePtr tree);
-
-    static fgWalkPreFn lvaDecRefCntsCB;
     void lvaDecRefCnts(GenTreePtr tree);
+
     void lvaDecRefCnts(BasicBlock* basicBlock, GenTreePtr tree);
     void lvaRecursiveDecRefCounts(GenTreePtr tree);
     void lvaRecursiveIncRefCounts(GenTreePtr tree);
@@ -9879,6 +9877,36 @@ public:
         m_walkData->parent = user;
         return m_walkData->wtpoVisitorFn(use, m_walkData);
     }
+};
+
+class IncLclVarRefCountsVisitor final : public GenTreeVisitor<IncLclVarRefCountsVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+        DoLclVarsOnly = true
+    };
+
+    IncLclVarRefCountsVisitor(Compiler* compiler);
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
+
+    static Compiler::fgWalkResult WalkTree(Compiler* compiler, GenTree* tree);
+};
+
+class DecLclVarRefCountsVisitor final : public GenTreeVisitor<DecLclVarRefCountsVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder = true,
+        DoLclVarsOnly = true
+    };
+
+    DecLclVarRefCountsVisitor(Compiler* compiler);
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
+
+    static Compiler::fgWalkResult WalkTree(Compiler* compiler, GenTree* tree);
 };
 
 /*
