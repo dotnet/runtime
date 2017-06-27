@@ -193,7 +193,52 @@ namespace System.Runtime.Serialization.Json
                 }
                 else if (keyParseMode == KeyParseMode.UsingCustomParse)
                 {
-                    pairKey = keyDataContract.ParseMethod.Invoke(null, new object[] { keyString });
+                    TypeCode typeCode = Type.GetTypeCode(keyDataContract.UnderlyingType);
+                    switch (typeCode)
+                    {
+                        case TypeCode.Boolean:
+                            pairKey = Boolean.Parse(keyString);
+                            break;
+                        case TypeCode.Int16:
+                            pairKey = Int16.Parse(keyString);
+                            break;
+                        case TypeCode.Int32:
+                            pairKey = Int32.Parse(keyString);
+                            break;
+                        case TypeCode.Int64:
+                            pairKey = Int64.Parse(keyString);
+                            break;
+                        case TypeCode.Char:
+                            pairKey = Char.Parse(keyString);
+                            break;
+                        case TypeCode.Byte:
+                            pairKey = Byte.Parse(keyString);
+                            break;
+                        case TypeCode.SByte:
+                            pairKey = SByte.Parse(keyString);
+                            break;
+                        case TypeCode.Double:
+                            pairKey = Double.Parse(keyString);
+                            break;
+                        case TypeCode.Decimal:
+                            pairKey = Decimal.Parse(keyString);
+                            break;
+                        case TypeCode.Single:
+                            pairKey = Single.Parse(keyString);
+                            break;
+                        case TypeCode.UInt16:
+                            pairKey = UInt16.Parse(keyString);
+                            break;
+                        case TypeCode.UInt32:
+                            pairKey = UInt32.Parse(keyString);
+                            break;
+                        case TypeCode.UInt64:
+                            pairKey = UInt64.Parse(keyString);
+                            break;
+                        default:
+                            pairKey = keyDataContract.ParseMethod.Invoke(null, new object[] { keyString });
+                            break;
+                    }
                 }
                 else
                 {

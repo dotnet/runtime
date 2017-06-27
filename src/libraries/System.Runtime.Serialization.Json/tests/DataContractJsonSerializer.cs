@@ -444,9 +444,6 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
-#if ReflectionOnly
-    [ActiveIssue("dotnet/corefx #21143", TargetFrameworkMonikers.UapAot)]
-#endif
     public static void DCJS_GetOonlyDictionary_UseSimpleDictionaryFormat()
     {
         var x = new TypeWithDictionaryGenericMembers();
@@ -471,6 +468,30 @@ public static partial class DataContractJsonSerializerTests
         Assert.True(y.RO2.Count == 2);
         Assert.True(y.RO2[true] == 'a');
         Assert.True(y.RO2[false] == 'b');
+    }
+
+
+    [Fact]
+    public static void DCJS_Dictionary_UseSimpleDictionaryFormat_VariousKeyTypes()
+    {
+        DCJS_Dictionary_UseSimpleDictionaryFormat((int)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((uint)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((short)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((long)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((byte)1, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((double)1.0, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((float)1.0, 1);
+        DCJS_Dictionary_UseSimpleDictionaryFormat((char)'a', 1);
+    }
+
+    private static void DCJS_Dictionary_UseSimpleDictionaryFormat<T>(T key, int value)
+    {
+        var settings = new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true };
+        var dict = new Dictionary<T, int>() { { key, 1 } };
+        var actual = SerializeAndDeserialize(dict, string.Empty, settings, skipStringCompare: true);
+        Assert.NotNull(actual);
+        Assert.Equal(dict.Count, actual.Count);
+        Assert.Equal(dict[key], actual[key]);
     }
 
     [Fact]
