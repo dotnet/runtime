@@ -683,6 +683,8 @@ w32handle_destroy (gpointer handle)
 		close_func (handle, handle_specific);
 	}
 
+	memset (handle_specific, 0, mono_w32handle_ops_typesize (type));
+
 	g_free (handle_specific);
 }
 
