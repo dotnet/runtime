@@ -238,7 +238,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(IncompatibleAddObject_TestData))]
-        [ActiveIssue(21088)]
         public void AddObject_Incompatible_ThrowsInvalidCastException(object left, object right)
         {
             Assert.Throws<InvalidCastException>(() => Operators.AddObject(left, right));

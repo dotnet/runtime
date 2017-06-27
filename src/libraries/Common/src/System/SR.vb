@@ -25,7 +25,7 @@ Namespace System
 
                     ' The following constructor ResourceManager(Type) is going to be replaced by the private constructor ResourceManager(String)
                     ' we'll pass s_resourcesName to this constructor
-                    SR.s_resourceManager = New ResourceManager(GetType(SR))
+                    SR.s_resourceManager = New ResourceManager(SR.ResourceType)
                 End If
                 Return SR.s_resourceManager
             End Get
