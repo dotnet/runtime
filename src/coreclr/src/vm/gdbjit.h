@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: gdbjit.h
-// 
+//
 
 //
 // Header file for GDB JIT interface implemenation.
@@ -27,7 +27,7 @@
     typedef Elf32_Shdr  Elf_Shdr;
     typedef Elf32_Sym   Elf_Sym;
     const uint16_t DW_FORM_size = DW_FORM_data4;
-#define ADDRESS_SIZE 4    
+#define ADDRESS_SIZE 4
 #elif defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
     typedef Elf64_Ehdr  Elf_Ehdr;
     typedef Elf64_Shdr  Elf_Shdr;
@@ -39,7 +39,7 @@
 #endif
 
 
-static constexpr const int CorElementTypeToDWEncoding[] = 
+static constexpr const int CorElementTypeToDWEncoding[] =
 {
 /* ELEMENT_TYPE_END */          0,
 /* ELEMENT_TYPE_VOID */         DW_ATE_address,
@@ -140,7 +140,7 @@ public:
     NewArrayHolder< NewArrayHolder<char> > localsName;
     NewArrayHolder<Scope> localsScope;
     ULONG32 countVars;
-    ICorDebugInfo::NativeVarInfo *pVars;
+    NewArrayHolder<ICorDebugInfo::NativeVarInfo> vars;
 };
 
 class TypeMember;
@@ -148,7 +148,7 @@ class TypeMember;
 class TypeInfoBase : public DwarfDumpable
 {
 public:
-    TypeInfoBase(TypeHandle typeHandle) 
+    TypeInfoBase(TypeHandle typeHandle)
         : m_type_name(nullptr),
           m_type_name_offset(0),
           m_type_size(0),
@@ -347,7 +347,7 @@ public:
     class TypeKeyHashTraits : public DefaultSHashTraits< KeyValuePair<TypeKey*,VALUE> >
     {
     public:
-        // explicitly declare local typedefs for these traits types, otherwise 
+        // explicitly declare local typedefs for these traits types, otherwise
         // the compiler may get confused
         typedef typename DefaultSHashTraits< KeyValuePair<TypeKey*,VALUE> >::element_t element_t;
         typedef typename DefaultSHashTraits< KeyValuePair<TypeKey*,VALUE> >::count_t count_t;

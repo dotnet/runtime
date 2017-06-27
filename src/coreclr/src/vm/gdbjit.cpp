@@ -273,7 +273,7 @@ HRESULT GetArgNameByILIndex(MethodDesc* methodDescPtr, unsigned index, NewArrayH
 // Copy-pasted from src/debug/di/module.cpp
 HRESULT FindNativeInfoInILVariable(DWORD dwIndex,
                                    SIZE_T ip,
-                                   ICorDebugInfo::NativeVarInfo** nativeInfoList,
+                                   ICorDebugInfo::NativeVarInfo* nativeInfoList,
                                    unsigned int nativeInfoCount,
                                    ICorDebugInfo::NativeVarInfo** ppNativeInfo)
 {
@@ -282,26 +282,26 @@ HRESULT FindNativeInfoInILVariable(DWORD dwIndex,
     int lastGoodOne = -1;
     for (unsigned int i = 0; i < (unsigned)nativeInfoCount; i++)
     {
-        if ((*nativeInfoList)[i].varNumber == dwIndex)
+        if (nativeInfoList[i].varNumber == dwIndex)
         {
-            if ((lastGoodOne == -1) || ((*nativeInfoList)[lastGoodOne].startOffset < (*nativeInfoList)[i].startOffset))
+            if ((lastGoodOne == -1) || (nativeInfoList[lastGoodOne].startOffset < nativeInfoList[i].startOffset))
             {
                 lastGoodOne = i;
             }
 
-            if (((*nativeInfoList)[i].startOffset <= ip) &&
-                ((*nativeInfoList)[i].endOffset > ip))
+            if ((nativeInfoList[i].startOffset <= ip) &&
+                (nativeInfoList[i].endOffset > ip))
             {
-                *ppNativeInfo = &((*nativeInfoList)[i]);
+                *ppNativeInfo = &(nativeInfoList[i]);
 
                 return S_OK;
             }
         }
     }
 
-    if ((lastGoodOne > -1) && ((*nativeInfoList)[lastGoodOne].endOffset == ip))
+    if ((lastGoodOne > -1) && (nativeInfoList[lastGoodOne].endOffset == ip))
     {
-        *ppNativeInfo = &((*nativeInfoList)[lastGoodOne]);
+        *ppNativeInfo = &(nativeInfoList[lastGoodOne]);
         return S_OK;
     }
 
@@ -384,7 +384,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
     int i;
     for (i = 0; i < m_num_args - thisOffs; i++)
     {
-        if (FindNativeInfoInILVariable(i + thisOffs, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) == S_OK)
+        if (FindNativeInfoInILVariable(i + thisOffs, startNativeOffset, locals.vars, locals.countVars, &nativeVar) == S_OK)
         {
             vars[i + thisOffs].m_var_type = GetArgTypeInfo(md, pTypeMap, i + 1, method);
             GetArgNameByILIndex(md, i + thisOffs, vars[i + thisOffs].m_var_name);
@@ -396,7 +396,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
     //Add info about 'this' as first argument
     if (thisOffs == 1)
     {
-        if (FindNativeInfoInILVariable(0, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) == S_OK)
+        if (FindNativeInfoInILVariable(0, startNativeOffset, locals.vars, locals.countVars, &nativeVar) == S_OK)
         {
             TypeHandle th = TypeHandle(md->GetMethodTable());
             if (th.IsValueType())
@@ -413,7 +413,7 @@ HRESULT FunctionMember::GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
     for (; i < m_num_vars; i++)
     {
         if (FindNativeInfoInILVariable(
-                i, startNativeOffset, &locals.pVars, locals.countVars, &nativeVar) == S_OK)
+                i, startNativeOffset, locals.vars, locals.countVars, &nativeVar) == S_OK)
         {
             int ilIndex = i - m_num_args;
             vars[i].m_var_type = GetLocalTypeInfo(md, pTypeMap, ilIndex, method);
@@ -489,7 +489,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
     if (!getInfoForMethodDelegate)
         return E_FAIL;
 
-    if (GetMethodNativeMap(methodDescPtr, &numMap, map, &locals.countVars, &locals.pVars) != S_OK)
+    if (GetMethodNativeMap(methodDescPtr, &numMap, map, &locals.countVars, &locals.vars) != S_OK)
         return E_FAIL;
 
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
@@ -561,7 +561,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
 int Leb128Encode(uint32_t num, char* buf, int size)
 {
     int i = 0;
-    
+
     do
     {
         uint8_t byte = num & 0x7F;
@@ -573,7 +573,7 @@ int Leb128Encode(uint32_t num, char* buf, int size)
         buf[i++] = byte;
     }
     while (num != 0);
-    
+
     return i;
 }
 
@@ -582,19 +582,19 @@ int Leb128Encode(int32_t num, char* buf, int size)
 {
     int i = 0;
     bool hasMore = true, isNegative = num < 0;
-    
+
     while (hasMore && i < size)
     {
         uint8_t byte = num & 0x7F;
         num >>= 7;
-        
+
         if ((num == 0 && (byte & 0x40) == 0) || (num  == -1 && (byte & 0x40) == 0x40))
             hasMore = false;
         else
             byte |= 0x80;
         buf[i++] = byte;
     }
-    
+
     return i;
 }
 
@@ -918,7 +918,7 @@ void TypeInfoBase::DumpStrings(char* ptr, int& offset)
     offset += strlen(m_type_name) + 1;
 }
 
-void TypeInfoBase::CalculateName() 
+void TypeInfoBase::CalculateName()
 {
     // name the type
     SString sName;
@@ -1964,15 +1964,15 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     {
         return;
     }
-    
+
     DebugStrings[1] = szModuleFile;
-    
+
     /* Build .debug_str section */
     if (!BuildDebugStrings(dbgStr, pTypeMap, method))
     {
         return;
     }
-    
+
     /* Build .debug_info section */
     if (!BuildDebugInfo(dbgInfo, pTypeMap, method))
     {
@@ -1990,13 +1990,13 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     {
         return;
     }
-    
+
     /* Build debug_pubtype section */
     if (!BuildDebugPub(dbgPubType, "int", dbgInfo.MemSize, 0x1a))
     {
         return;
     }
-    
+
     /* Build .strtab section */
     symbolNames[0].m_name = "";
     for (int i = 0; i < method.GetCount(); ++i)
@@ -2081,10 +2081,10 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     header->e_flags = EF_ARM_EABI_VER5;
 #ifdef ARM_SOFTFP
     header->e_flags |= EF_ARM_SOFT_FLOAT;
-#else    
+#else
     header->e_flags |= EF_ARM_VFP_FLOAT;
 #endif
-#endif    
+#endif
     header->e_shoff = offset;
     header->e_shentsize = sizeof(Elf_Shdr);
     int thunks_count = symbolCount - method.GetCount() - 1;
@@ -2135,7 +2135,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     jit_symbols->next_entry = jit_symbols->prev_entry = 0;
     jit_symbols->symfile_addr = elfFile.MemPtr;
     jit_symbols->symfile_size = elfFile.MemSize;
-    
+
     /* Link into list */
     jit_code_entry *head = __jit_debug_descriptor.first_entry;
     __jit_debug_descriptor.first_entry = jit_symbols;
@@ -2144,7 +2144,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
         jit_symbols->next_entry = head;
         head->prev_entry = jit_symbols;
     }
-    
+
     jit_symbols.SuppressRelease();
 
     /* Notify the debugger */
@@ -2164,13 +2164,13 @@ void NotifyGdb::MethodDropped(MethodDesc* methodDescPtr)
 
     if (pCode == NULL)
         return;
-    
+
     /* Find relevant entry */
     for (jit_code_entry* jit_symbols = __jit_debug_descriptor.first_entry; jit_symbols != 0; jit_symbols = jit_symbols->next_entry)
     {
         const char* ptr = jit_symbols->symfile_addr;
         uint64_t size = jit_symbols->symfile_size;
-        
+
         const Elf_Ehdr* pEhdr = reinterpret_cast<const Elf_Ehdr*>(ptr);
         const Elf_Shdr* pShdr = reinterpret_cast<const Elf_Shdr*>(ptr + pEhdr->e_shoff);
         pShdr += textSectionIndex; // bump to .text section
@@ -2180,10 +2180,10 @@ void NotifyGdb::MethodDropped(MethodDesc* methodDescPtr)
             __jit_debug_descriptor.relevant_entry = jit_symbols;
             __jit_debug_descriptor.action_flag = JIT_UNREGISTER_FN;
             __jit_debug_register_code();
-            
+
             /* Free memory */
             delete[] ptr;
-            
+
             /* Unlink from list */
             if (jit_symbols->prev_entry == 0)
                 __jit_debug_descriptor.first_entry = jit_symbols->next_entry;
@@ -2199,16 +2199,16 @@ void NotifyGdb::MethodDropped(MethodDesc* methodDescPtr)
 bool NotifyGdb::BuildLineTable(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines)
 {
     MemBuf fileTable, lineProg;
-    
+
     /* Build file table */
     if (!BuildFileTable(fileTable, lines, nlines))
         return false;
-    /* Build line info program */ 
+    /* Build line info program */
     if (!BuildLineProg(lineProg, startAddr, codeSize, lines, nlines))
     {
         return false;
     }
-    
+
     buf.MemSize = sizeof(DwarfLineNumHeader) + 1 + fileTable.MemSize + lineProg.MemSize;
     buf.MemPtr = new char[buf.MemSize];
 
@@ -2231,7 +2231,7 @@ bool NotifyGdb::BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines)
 {
     NewArrayHolder<const char*> files = nullptr;
     unsigned nfiles = 0;
-    
+
     /* GetValue file names and replace them with indices in file table */
     files = new const char*[nlines];
     if (files == nullptr)
@@ -2255,23 +2255,23 @@ bool NotifyGdb::BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines)
                 break;
             }
         }
-        
+
         /* add new source file */
         if (!found)
         {
             files[nfiles++] = fileName;
         }
     }
-    
+
     /* build file table */
     unsigned totalSize = 0;
-    
+
     for (unsigned i = 0; i < nfiles; ++i)
     {
         totalSize += strlen(files[i]) + 1 + 3;
     }
     totalSize += 1;
-    
+
     buf.MemSize = totalSize;
     buf.MemPtr = new char[buf.MemSize];
 
@@ -2377,7 +2377,7 @@ static void fixLineMapping(SymbolsInfo* lines, unsigned nlines)
 bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines)
 {
     static char cnv_buf[16];
-    
+
     /* reserve memory assuming worst case: set address, advance line command, set proglogue/epilogue and copy for each line */
     buf.MemSize =
                 + 6                              /* set file command */
@@ -2389,7 +2389,7 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
                 + 3;                             /* end of sequence command */
     buf.MemPtr = new char[buf.MemSize];
     char* ptr = buf.MemPtr;
-  
+
     if (buf.MemPtr == nullptr)
         return false;
 
@@ -2438,8 +2438,8 @@ bool NotifyGdb::BuildLineProg(MemBuf& buf, PCODE startAddr, TADDR codeSize, Symb
         IssueParamCommand(ptr, DW_LNS_advance_pc, cnv_buf, len);
     }
 
-    IssueEndOfSequence(ptr); 
-    
+    IssueEndOfSequence(ptr);
+
     buf.MemSize = ptr - buf.MemPtr;
     return true;
 }
@@ -2575,7 +2575,7 @@ bool NotifyGdb::BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMe
 bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint32_t die_offset)
 {
     uint32_t length = sizeof(DwarfPubHeader) + sizeof(uint32_t) + strlen(name) + 1 + sizeof(uint32_t);
-    
+
     buf.MemSize = length;
     buf.MemPtr = new char[buf.MemSize];
 
@@ -2587,7 +2587,7 @@ bool NotifyGdb::BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint
     *reinterpret_cast<uint32_t*>(buf.MemPtr + sizeof(DwarfPubHeader)) = die_offset;
     strcpy(buf.MemPtr + sizeof(DwarfPubHeader) + sizeof(uint32_t), name);
     *reinterpret_cast<uint32_t*>(buf.MemPtr + length - sizeof(uint32_t)) = 0;
-    
+
     return true;
 }
 
@@ -2648,7 +2648,7 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf, NewArrayHolder<Elf_Symbol> 
     for (int i = 0; i < symbolCount; ++i)
         len += strlen(symbolNames[i].m_name) + 1;
     len++; // end table with zero-length string
-    
+
     buf.MemSize = len;
     buf.MemPtr = new char[buf.MemSize];
 
@@ -2660,7 +2660,7 @@ bool NotifyGdb::BuildStringTableSection(MemBuf& buf, NewArrayHolder<Elf_Symbol> 
         ptr += strlen(symbolNames[i].m_name) + 1;
     }
     buf.MemPtr[buf.MemSize-1] = 0;
-    
+
     return true;
 }
 
@@ -2681,7 +2681,7 @@ bool NotifyGdb::BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize,
     sym[0].st_value = 0;
     sym[0].st_size = 0;
     sym[0].st_shndx = SHN_UNDEF;
-    
+
     for (int i = 1; i < 1 + method.GetCount(); ++i)
     {
         sym[i].st_name = symbolNames[i].m_off;
@@ -2803,14 +2803,14 @@ bool NotifyGdb::BuildELFHeader(MemBuf& buf)
 void NotifyGdb::SplitPathname(const char* path, const char*& pathName, const char*& fileName)
 {
     char* pSlash = strrchr(path, '/');
-    
+
     if (pSlash != nullptr)
     {
         *pSlash = 0;
         fileName = ++pSlash;
         pathName = path;
     }
-    else 
+    else
     {
         fileName = path;
         pathName = nullptr;
@@ -2850,7 +2850,7 @@ Elf32_Ehdr::Elf32_Ehdr()
     e_machine = EM_386;
 #elif defined(_TARGET_ARM_)
     e_machine = EM_ARM;
-#endif    
+#endif
     e_flags = 0;
     e_version = 1;
     e_entry = 0;
