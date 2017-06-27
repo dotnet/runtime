@@ -25,7 +25,7 @@ namespace System.Net.Http
             _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             Uri proxyUri = null;
             try
@@ -41,17 +41,20 @@ namespace System.Net.Http
                 // TODO: This seems a bit questionable, but it's what the tests expect
             }
 
-            if (proxyUri == null)
-            {
-                return await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            }
+            return proxyUri == null ?
+                _innerHandler.SendAsync(request, cancellationToken) :
+                SendWithProxyAsync(proxyUri, request, cancellationToken);
+        }
 
-            if (proxyUri.Scheme != "http")
+        private async Task<HttpResponseMessage> SendWithProxyAsync(
+            Uri proxyUri, HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (proxyUri.Scheme != UriScheme.Http)
             {
                 throw new InvalidOperationException($"invalid scheme {proxyUri.Scheme} for proxy");
             }
 
-            if (request.RequestUri.Scheme == "https")
+            if (request.RequestUri.Scheme == UriScheme.Https)
             {
                 // TODO: Implement SSL tunneling through proxy
                 throw new NotImplementedException("no support for SSL tunneling through proxy");
@@ -68,14 +71,15 @@ namespace System.Net.Http
                 foreach (AuthenticationHeaderValue h in response.Headers.ProxyAuthenticate)
                 {
                     // We only support Basic auth, ignore others
-                    if (h.Scheme == "Basic")
+                    const string Basic = "Basic";
+                    if (h.Scheme == Basic)
                     {
-                        NetworkCredential credential = _proxy.Credentials.GetCredential(proxyUri, "Basic");
+                        NetworkCredential credential = _proxy.Credentials.GetCredential(proxyUri, Basic);
                         if (credential != null)
                         {
                             response.Dispose();
 
-                            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue("Basic",
+                            request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(Basic,
                                 BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
 
                             connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
@@ -116,7 +120,7 @@ namespace System.Net.Http
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !!_disposed)
+            if (disposing && !_disposed)
             {
                 _disposed = true;
 

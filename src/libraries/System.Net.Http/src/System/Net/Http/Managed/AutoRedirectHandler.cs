@@ -27,7 +27,7 @@ namespace System.Net.Http
         {
             HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-            int redirectCount = 0;
+            uint redirectCount = 0;
             while (true)
             {
                 bool needRedirect = false;
@@ -72,8 +72,8 @@ namespace System.Net.Http
 
                 // Disallow automatic redirection from https to http
                 bool allowed =
-                    (request.RequestUri.Scheme == "http" && (location.Scheme == "http" || location.Scheme == "https")) ||
-                    (request.RequestUri.Scheme == "https" && location.Scheme == "https");
+                    (request.RequestUri.Scheme == UriScheme.Http && (location.Scheme == UriScheme.Http || location.Scheme == UriScheme.Https)) ||
+                    (request.RequestUri.Scheme == UriScheme.Https && location.Scheme == UriScheme.Https);
                 if (!allowed)
                 {
                     break;
