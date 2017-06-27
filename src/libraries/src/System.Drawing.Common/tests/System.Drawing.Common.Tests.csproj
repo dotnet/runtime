@@ -31,6 +31,7 @@
     <Compile Include="StringFormatTests.cs" />
     <Compile Include="SystemBrushesTests.cs" />
     <Compile Include="SystemIconsTests.cs" />
+    <Compile Include="TextureBrushTests.cs" />
     <Compile Include="SystemPensTest.cs" />
     <Compile Include="Drawing2D\BlendTests.cs" />
     <Compile Include="Drawing2D\ColorBlendTests.cs" />

@@ -4,12 +4,30 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Drawing.Tests
 {
     public static class Helpers
     {
         public static string GetTestBitmapPath(string name) => Path.Combine(AppContext.BaseDirectory, "bitmaps", name);
+
+        public static void VerifyBitmap(Bitmap bitmap, Color[][] colors)
+        {
+            for (int y = 0; y < colors.Length; y++)
+            {
+                for (int x = 0; x < colors[y].Length; x++)
+                {
+                    Color expectedColor = Color.FromArgb(colors[y][x].ToArgb());
+                    Color actualColor = bitmap.GetPixel(x, y);
+
+                    if (expectedColor != actualColor)
+                    {
+                        throw new AssertActualExpectedException(expectedColor, actualColor, $"{x},{y}");
+                    }
+                }
+            }
+        }
 
         private static Rectangle GetRectangle(RECT rect)
         {
