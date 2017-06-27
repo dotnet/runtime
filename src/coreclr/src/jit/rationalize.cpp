@@ -971,13 +971,60 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
 
 void Rationalizer::DoPhase()
 {
+    class RationalizeVisitor final : public GenTreeVisitor<RationalizeVisitor>
+    {
+        Rationalizer& m_rationalizer;
+
+    public:
+        enum
+        {
+            ComputeStack = true,
+            DoPreOrder = true,
+            DoPostOrder = true,
+            UseExecutionOrder = true,
+        };
+
+        RationalizeVisitor(Rationalizer& rationalizer)
+            : GenTreeVisitor<RationalizeVisitor>(rationalizer.comp), m_rationalizer(rationalizer)
+        {
+        }
+
+        // Rewrite intrinsics that are not supported by the target back into user calls.
+        // This needs to be done before the transition to LIR because it relies on the use
+        // of fgMorphArgs, which is designed to operate on HIR. Once this is done for a
+        // particular statement, link that statement's nodes into the current basic block.
+        //
+        // This visit also clears the GTF_VAR_USEDEF bit on locals, which is not necessary
+        // in the backend.
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const node = *use;
+            if (node->OperGet() == GT_INTRINSIC &&
+                Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
+            {
+                m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
+            }
+            else if (node->OperIsLocal())
+            {
+                node->gtFlags &= ~GTF_VAR_USEDEF;
+            }
+
+            return Compiler::WALK_CONTINUE;
+        }
+
+        // Rewrite HIR nodes into LIR nodes.
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+        {
+            return m_rationalizer.RewriteNode(use, this->m_ancestors);
+        }
+    };
+
     DBEXEC(TRUE, SanityCheck());
 
     comp->compCurBB = nullptr;
     comp->fgOrder   = Compiler::FGOrderLinear;
 
-    BasicBlock* firstBlock = comp->fgFirstBB;
-
+    RationalizeVisitor visitor(*this);
     for (BasicBlock* block = comp->fgFirstBB; block != nullptr; block = block->bbNext)
     {
         comp->compCurBB = block;
@@ -1017,38 +1064,8 @@ void Rationalizer::DoPhase()
                 BlockRange().InsertBefore(statement->gtStmtList, statement);
             }
 
-            // Rewrite intrinsics that are not supported by the target back into user calls.
-            // This needs to be done before the transition to LIR because it relies on the use
-            // of fgMorphArgs, which is designed to operate on HIR. Once this is done for a
-            // particular statement, link that statement's nodes into the current basic block.
-            //
-            // This walk also clears the GTF_VAR_USEDEF bit on locals, which is not necessary
-            // in the backend.
-            auto prePass = [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
-                auto* const thisPhase = reinterpret_cast<Rationalizer*>(walkData->pCallbackData);
-
-                GenTree* node = *use;
-                if (node->OperGet() == GT_INTRINSIC &&
-                    Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
-                {
-                    thisPhase->RewriteIntrinsicAsUserCall(use, *walkData->parentStack);
-                }
-                else if (node->OperIsLocal())
-                {
-                    node->gtFlags &= ~GTF_VAR_USEDEF;
-                }
-
-                return Compiler::WALK_CONTINUE;
-            };
-
-            // Rewrite HIR nodes into LIR nodes.
-            auto postPass = [](GenTree** use, Compiler::fgWalkData* walkData) -> Compiler::fgWalkResult {
-                return reinterpret_cast<Rationalizer*>(walkData->pCallbackData)
-                    ->RewriteNode(use, *walkData->parentStack);
-            };
-
             m_block = block;
-            comp->fgWalkTree(&statement->gtStmtExpr, prePass, postPass, this);
+            visitor.WalkTree(&statement->gtStmtExpr, nullptr);
         }
 
         assert(BlockRange().CheckLIR(comp, true));
