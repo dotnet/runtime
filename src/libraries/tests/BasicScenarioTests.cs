@@ -12,6 +12,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
     using Microsoft.ServiceModel.Syndication;
     using System.Xml;
     using System.IO;
+    using System.Threading.Tasks;
 
     public static class BasicScenarioTests
     {
@@ -46,7 +47,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         }
 
         [Fact]
-        public static void SyndicationFeed_Load_Write_Feed()
+        public static void SyndicationFeed_Load_Write_RSS_Feed()
         {
             string path = "SyndicationFeed-Load-Write.xml";
 
@@ -74,7 +75,34 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             }
         }
 
+        [Fact]
+        public static void SyndicationFeed_Load_Write_Atom_Feed()
+        {
+            string path = "SyndicationFeed-Load-Write-Atom.xml";
 
+            try
+            {
+                // *** SETUP *** \\\
+                XmlReader xmlr = XmlReader.Create(@"TestFeeds\SimpleAtomFeed.xml");
+                SyndicationFeed sf = SyndicationFeed.Load(xmlr);
+                Assert.True(sf != null);
+
+                // *** EXECUTE *** \\
+                //Write the same feed that was read.
+                XmlWriter xmlw = XmlWriter.Create(path);
+                Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
+                atomFeed.WriteTo(xmlw);
+                xmlw.Close();
+
+                // *** VALIDATE *** \\
+                Assert.True(File.Exists(path));
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                File.Delete(path);
+            }
+        }
         [Fact]
         public static void SyndicationFeed_Write_RSS_Atom()
         {
@@ -130,8 +158,8 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             finally
             {
                 // *** CLEANUP *** \\
-                File.Delete(RssPath);
-                File.Delete(AtomPath);
+                //File.Delete(RssPath);
+                //File.Delete(AtomPath);
             }
         }
 
@@ -243,6 +271,30 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 // *** CLEANUP *** \\
                 File.Delete(resultPath);
             }
+        }
+
+
+        [Fact]
+        public static void SyndicationFeed_RSS20_Atom10_AsyncTest()
+        {
+            test().Wait();
+        }
+
+        public static async Task test() {
+
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = XmlReader.Create(@"TestFeeds\SimpleAtomFeed.xml",setting);
+            XmlReader reader2 = XmlReader.Create(@"TestFeeds\SimpleRssFeed.xml", setting);
+
+
+            Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
+            Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(reader2);
+
+            await Task.WhenAll(atom, rss);
+
+            Assert.True(atom.Result.Items != null);
+            Assert.True(rss.Result.Items != null);
         }
     }
 }

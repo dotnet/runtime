@@ -8,10 +8,9 @@ namespace Microsoft.ServiceModel.Syndication
 
     using Microsoft.ServiceModel.Syndication.Resources;
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
-    using System.Xml.Schema;
     using System.Xml.Serialization;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -79,24 +78,25 @@ namespace Microsoft.ServiceModel.Syndication
             get { return App10Constants.Namespace; }
         }
 
-        public override bool CanRead(XmlReaderWrapper reader)
-        {
+        public override async Task<bool> CanReadAsync(XmlReader reader)
+        {            
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
-            return reader.IsStartElement(App10Constants.Categories, App10Constants.Namespace);
+            XmlReaderWrapper wrappedReader = XmlReaderWrapper.CreateFromReader(reader);
+            return await wrappedReader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace);
         }
 
         
 
-        void ReadXml(XmlReaderWrapper reader)
+        async Task ReadXmlAsync(XmlReaderWrapper reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
-            ReadDocument(reader);
+            await ReadDocumentAsync(reader);
         }
 
         void WriteXml(XmlWriter writer)
@@ -112,17 +112,18 @@ namespace Microsoft.ServiceModel.Syndication
             WriteDocument(writer);
         }
 
-        public override void ReadFrom(XmlReaderWrapper reader)
+        public override async Task ReadFrom(XmlReader reader)
         {
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
-            if (!CanRead(reader))
+            if (!await CanReadAsync(reader))
             {
                 throw new XmlException(String.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
-            ReadDocument(reader);
+
+            await ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
         public override void WriteTo(XmlWriter writer)
@@ -164,11 +165,11 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void ReadDocument(XmlReaderWrapper reader)
+        private async Task ReadDocumentAsync(XmlReaderWrapper reader)
         {
             try
             {
-                SyndicationFeedFormatter.MoveToStartElement(reader);
+                await SyndicationFeedFormatter.MoveToStartElementAsync(reader);
                 SetDocument(AtomPub10ServiceDocumentFormatter.ReadCategories(reader, null,
                     delegate ()
                     {
@@ -182,7 +183,7 @@ namespace Microsoft.ServiceModel.Syndication
                     this.Version,
                     _preserveElementExtensions,
                     _preserveAttributeExtensions,
-                    _maxExtensionSize));
+                    _maxExtensionSize).Result);
             }
             catch (FormatException e)
             {
