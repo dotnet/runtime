@@ -6,15 +6,52 @@
     <!-- don't build project references from pkgprojs during the packages build phase,
          they will be built during the source build phase -->
     <AdditionalProperties>BuildPackageLibraryReferences=false</AdditionalProperties>
+    <ProjectsBasePath>$(MSBuildThisFileDirectory)\projects</ProjectsBasePath>
+  </PropertyGroup>
+  
+  <!-- required to build the projects in their specified order -->
+  <!-- This ensures the MakeAppx target in Microsoft.NET.CoreRuntime runs before
+       Microsoft.Net.UWPCoreRuntimeSdk's packaging targets -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(OSEnvironment)' != 'Windows_NT' or '$(Platform)' == 'arm64'" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NET.CoreRuntime.builds" Condition="'$(OSEnvironment)' != 'Windows_NT' or '$(Platform)' == 'arm64'" />
-    <Project Include="$(MSBuildThisFileDirectory)\projects\*\*.builds" Exclude="@(ProjectExclusions)">
+  <!-- Projects exluded from Unix / Arm64 -->
+  <ItemGroup Condition="'$(OSEnvironment)' == 'Windows_NT' and '$(Platform)' != 'arm64'">
+    <Project Include="$(ProjectsBasePath)\Microsoft.NET.CoreRuntime\Microsoft.NET.CoreRuntime.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    
+    <Project Include="$(ProjectsBasePath)\Microsoft.Net.UWPCoreRuntimeSdk\Microsoft.Net.UWPCoreRuntimeSdk.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    
+    <Project Include="$(ProjectsBasePath)\Microsoft.NETCore.UniversalWindowsPlatform\Microsoft.NETCore.UniversalWindowsPlatform.builds">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>
 
+  <ItemGroup>
+    <Project Include="$(ProjectsBasePath)\Microsoft.NETCore.App\Microsoft.NETCore.App.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    
+    <Project Include="$(ProjectsBasePath)\Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    
+    <Project Include="$(ProjectsBasePath)\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHost.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    
+    <Project Include="$(ProjectsBasePath)\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    
+    <Project Include="$(ProjectsBasePath)\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.builds">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+  </ItemGroup>
+  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 </Project>

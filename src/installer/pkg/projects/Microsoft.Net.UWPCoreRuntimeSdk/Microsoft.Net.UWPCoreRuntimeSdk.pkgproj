@@ -6,12 +6,20 @@
     <Version>$(ProductVersion)</Version>
   </PropertyGroup>
 
+  <!-- Redistributed package content from other nuget packages-->
   <ItemGroup>
-    <File Include="files\Microsoft.Net.UWPCoreRuntimeSdk.props">
+    <ProjectReference Include="src\Microsoft.Net.UWPCoreRuntimeSdk.depproj">
+      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Identity / Reference package content -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <File Include="files\build\*">
       <TargetPath>build</TargetPath>
     </File>
-    <File Include="files\Microsoft.Net.UWPCoreRuntimeSdk.targets">
-      <TargetPath>build</TargetPath>
+    <File Include="files\tools\CoreRuntime\*">
+      <TargetPath>tools/CoreRuntime</TargetPath>
     </File>
   </ItemGroup>
 
