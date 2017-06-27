@@ -174,7 +174,12 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // (On Windows CERT_CHAIN_PARA.pStrongSignPara is NULL, so "strongness" checks
         // are not performed).
     }
-
+    else if (CFEqual(keyString, CFSTR("StatusCodes")))
+    {
+        // 10.13 added a StatusCodes value which may be a numeric rehashing of the string data.
+        // It doesn't represent a new error code, and we're still getting the old ones, so
+        // just ignore it for now.
+    }
     else
     {
 #ifdef DEBUGGING_UNKNOWN_VALUE
