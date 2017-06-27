@@ -6,7 +6,12 @@ namespace System.Tests
 {
     public partial class Perf_String
     {
-        public static IEnumerable<object[]> ContainsStringComparisonArgs => Permutations(s_compareOptions, TestStringSizes());
+        private static readonly object[] s_testStringSizes = new object[]
+        {
+            10, 100, 1000
+        };
+
+        public static IEnumerable<object[]> ContainsStringComparisonArgs => Permutations(s_compareOptions, s_testStringSizes);
 
         [Benchmark]
         [MemberData(nameof(ContainsStringComparisonArgs))]
