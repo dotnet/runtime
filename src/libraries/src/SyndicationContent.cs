@@ -73,7 +73,7 @@ namespace Microsoft.ServiceModel.Syndication
             return new XmlSyndicationContent(Atom10Constants.XmlMediaType, dataContractObject, dataContractSerializer);
         }
 
-        public static XmlSyndicationContent CreateXmlContent(XmlReaderWrapper XmlReaderWrapper)
+        public static XmlSyndicationContent CreateXmlContent(XmlReader XmlReaderWrapper)
         {
             return new XmlSyndicationContent(XmlReaderWrapper);
         }

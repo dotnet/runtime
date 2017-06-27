@@ -111,22 +111,22 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreatePerson(item);
         }
 
-        protected static void LoadElementExtensions(XmlReaderWrapper reader, SyndicationItem item, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReader reader, SyndicationItem item, int maxExtensionSize)
         {
             SyndicationFeedFormatter.LoadElementExtensions(reader, item, maxExtensionSize);
         }
 
-        protected static void LoadElementExtensions(XmlReaderWrapper reader, SyndicationCategory category, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReader reader, SyndicationCategory category, int maxExtensionSize)
         {
             SyndicationFeedFormatter.LoadElementExtensions(reader, category, maxExtensionSize);
         }
 
-        protected static void LoadElementExtensions(XmlReaderWrapper reader, SyndicationLink link, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReader reader, SyndicationLink link, int maxExtensionSize)
         {
             SyndicationFeedFormatter.LoadElementExtensions(reader, link, maxExtensionSize);
         }
 
-        protected static void LoadElementExtensions(XmlReaderWrapper reader, SyndicationPerson person, int maxExtensionSize)
+        protected static void LoadElementExtensions(XmlReader reader, SyndicationPerson person, int maxExtensionSize)
         {
             SyndicationFeedFormatter.LoadElementExtensions(reader, person, maxExtensionSize);
         }
@@ -152,28 +152,28 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
 
-        protected static bool TryParseContent(XmlReaderWrapper reader, SyndicationItem item, string contentType, string version, out SyndicationContent content)
+        protected static bool TryParseContent(XmlReader reader, SyndicationItem item, string contentType, string version, out SyndicationContent content)
         {
             return SyndicationFeedFormatter.TryParseContent(reader, item, contentType, version, out content);
         }
 
 
-        protected static bool TryParseElement(XmlReaderWrapper reader, SyndicationItem item, string version)
+        protected static bool TryParseElement(XmlReader reader, SyndicationItem item, string version)
         {
             return SyndicationFeedFormatter.TryParseElement(reader, item, version);
         }
 
-        protected static bool TryParseElement(XmlReaderWrapper reader, SyndicationCategory category, string version)
+        protected static bool TryParseElement(XmlReader  reader, SyndicationCategory category, string version)
         {
             return SyndicationFeedFormatter.TryParseElement(reader, category, version);
         }
 
-        protected static bool TryParseElement(XmlReaderWrapper reader, SyndicationLink link, string version)
+        protected static bool TryParseElement(XmlReader reader, SyndicationLink link, string version)
         {
             return SyndicationFeedFormatter.TryParseElement(reader, link, version);
         }
 
-        protected static bool TryParseElement(XmlReaderWrapper reader, SyndicationPerson person, string version)
+        protected static bool TryParseElement(XmlReader reader, SyndicationPerson person, string version)
         {
             return SyndicationFeedFormatter.TryParseElement(reader, person, version);
         }

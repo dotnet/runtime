@@ -8,6 +8,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -68,12 +69,12 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public static ServiceDocument Load(XmlReaderWrapper reader)
+        public static ServiceDocument Load(XmlReader reader)
         {
             return Load<ServiceDocument>(reader);
         }
 
-        public static TServiceDocument Load<TServiceDocument>(XmlReaderWrapper reader)
+        public static TServiceDocument Load<TServiceDocument>(XmlReader reader)
             where TServiceDocument : ServiceDocument, new()
         {
             AtomPub10ServiceDocumentFormatter<TServiceDocument> formatter = new AtomPub10ServiceDocumentFormatter<TServiceDocument>();
@@ -101,7 +102,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual bool TryParseElement(XmlReaderWrapper reader, string version)
+        protected internal virtual bool TryParseElement(XmlReader reader, string version)
         {
             return false;
         }

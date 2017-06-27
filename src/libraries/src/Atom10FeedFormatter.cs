@@ -497,7 +497,7 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationFeedFormatter.CreateFeedInstance(_feedType);
         }
 
-        protected virtual async Task<SyndicationItem> ReadItemAsync(XmlReaderWrapper reader, SyndicationFeed feed)
+        protected virtual async Task<SyndicationItem> ReadItemAsync(XmlReader reader, SyndicationFeed feed)
         {
             if (feed == null)
             {
@@ -508,11 +508,14 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException("reader");
             }
             SyndicationItem item = CreateItem(feed);
-            await ReadItemFromAsync(reader, item, feed.BaseUri);
+
+            XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
+
+            await ReadItemFromAsync(readerWrapper, item, feed.BaseUri);
             return item;
         }
 
-        protected virtual async Task<IEnumerable<SyndicationItem>> ReadItemsAsync(XmlReaderWrapper reader, SyndicationFeed feed)
+        protected virtual async Task<IEnumerable<SyndicationItem>> ReadItemsAsync(XmlReader reader, SyndicationFeed feed)
         {
             if (feed == null)
             {
@@ -523,7 +526,10 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException("reader");
             }
             NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
-            while (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
+
+            XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
+
+            while (await readerWrapper.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
             {
                 items.Add(await ReadItemAsync(reader, feed));
             }
