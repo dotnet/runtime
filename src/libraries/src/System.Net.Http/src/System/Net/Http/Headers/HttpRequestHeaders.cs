@@ -322,7 +322,7 @@ namespace System.Net.Http.Headers
 
         public bool? TransferEncodingChunked
         {
-            get { return GeneralHeaders.TransferEncodingChunked; }
+            get { return HttpGeneralHeaders.GetTransferEncodingChunked(this, _generalHeaders); } // special-cased to avoid forcing _generalHeaders initialization
             set { GeneralHeaders.TransferEncodingChunked = value; }
         }
 
