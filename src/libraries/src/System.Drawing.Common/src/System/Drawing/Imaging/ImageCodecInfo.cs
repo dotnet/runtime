@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
     // sdkinc\imaging.h
-    /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     public sealed class ImageCodecInfo
     {
         private Guid _clsid;
@@ -29,37 +25,24 @@ namespace System.Drawing.Imaging
         {
         }
 
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.Clsid"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public Guid Clsid
         {
             get { return _clsid; }
             set { _clsid = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.FormatID"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public Guid FormatID
         {
             get { return _formatID; }
             set { _formatID = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.CodecName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public string CodecName
         {
             get { return _codecName; }
             set { _codecName = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.DllName"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public string DllName
         {
             get
@@ -71,65 +54,44 @@ namespace System.Drawing.Imaging
                 _dllName = value;
             }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.FormatDescription"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public string FormatDescription
         {
             get { return _formatDescription; }
             set { _formatDescription = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.FilenameExtension"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public string FilenameExtension
         {
             get { return _filenameExtension; }
             set { _filenameExtension = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.MimeType"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public string MimeType
         {
             get { return _mimeType; }
             set { _mimeType = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.Flags"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public ImageCodecFlags Flags
         {
             get { return _flags; }
             set { _flags = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.Version"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public int Version
         {
             get { return _version; }
             set { _version = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.SignaturePatterns"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         [CLSCompliant(false)]
         public byte[][] SignaturePatterns
         {
             get { return _signaturePatterns; }
             set { _signaturePatterns = value; }
         }
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.SignatureMasks"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         [CLSCompliant(false)]
         public byte[][] SignatureMasks
         {
@@ -139,10 +101,6 @@ namespace System.Drawing.Imaging
 
         // Encoder/Decoder selection APIs
 
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.GetImageDecoders"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static ImageCodecInfo[] GetImageDecoders()
         {
             ImageCodecInfo[] imageCodecs;
@@ -177,10 +135,6 @@ namespace System.Drawing.Imaging
             return imageCodecs;
         }
 
-        /// <include file='doc\ImageCodecInfo.uex' path='docs/doc[@for="ImageCodecInfo.GetImageEncoders"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static ImageCodecInfo[] GetImageEncoders()
         {
             ImageCodecInfo[] imageCodecs;
@@ -214,55 +168,6 @@ namespace System.Drawing.Imaging
 
             return imageCodecs;
         }
-
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-         internal static ImageCodecInfoPrivate ConvertToMemory(ImageCodecInfo imagecs)
-         {
-             ImageCodecInfoPrivate imagecsp = new ImageCodecInfoPrivate();
-             
-             imagecsp.Clsid = imagecs.Clsid;
-             imagecsp.FormatID = imagecs.FormatID;
-             
-             imagecsp.CodecName = Marshal.StringToHGlobalUni(imagecs.CodecName);
-             imagecsp.DllName = Marshal.StringToHGlobalUni(imagecs.DllName);
-             imagecsp.FormatDescription = Marshal.StringToHGlobalUni(imagecs.FormatDescription);
-             imagecsp.FilenameExtension = Marshal.StringToHGlobalUni(imagecs.FilenameExtension);
-             imagecsp.MimeType = Marshal.StringToHGlobalUni(imagecs.MimeType);
-             
-             imagecsp.Flags = (int)imagecs.Flags;
-             imagecsp.Version = (int)imagecs.Version;
-             imagecsp.SigCount = imagecs.SignaturePatterns.Length;
-             imagecsp.SigSize = imagecs.SignaturePatterns[0].Length;
-             
-             imagecsp.SigPattern = Marshal.AllocHGlobal(imagecsp.SigCount*imagecsp.SigSize);
-             imagecsp.SigMask = Marshal.AllocHGlobal(imagecsp.SigCount*imagecsp.SigSize);
-             
-             for (int i=0; i<imagecsp.SigCount; i++)
-             {
-                 Marshal.Copy(imagecs.SignaturePatterns[i], 
-                              0, 
-                              (IntPtr)((long)imagecsp.SigPattern + i*imagecsp.SigSize), 
-                              imagecsp.SigSize);
-                                  
-                 Marshal.Copy(imagecs.SignatureMasks[i], 
-                              0, 
-                              (IntPtr)((long)imagecsp.SigMask + i*imagecsp.SigSize), 
-                              imagecsp.SigSize);
-             }
-                          
-             return imagecsp;
-         }
-
-         internal static void FreeMemory(ImageCodecInfoPrivate imagecodecp)
-         {
-             Marshal.FreeHGlobal(imagecodecp.CodecName);
-             Marshal.FreeHGlobal(imagecodecp.FormatDescription);
-             Marshal.FreeHGlobal(imagecodecp.FilenameExtension);
-             Marshal.FreeHGlobal(imagecodecp.MimeType);
-             Marshal.FreeHGlobal(imagecodecp.SigPattern);
-             Marshal.FreeHGlobal(imagecodecp.SigMask);
-         }
-         */
 
         private static ImageCodecInfo[] ConvertFromMemory(IntPtr memoryStart, int numCodecs)
         {

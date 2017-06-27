@@ -9,7 +9,7 @@ namespace System.Drawing
     using System.Drawing.Imaging;
     using System.Threading;
 
-    /// <devdoc>
+    /// <summary>
     ///     Animates one or more images that have time-based frames.
     ///     See the ImageInfo.cs file for the helper nested ImageInfo class.
     ///     
@@ -31,35 +31,35 @@ namespace System.Drawing
     ///     section lock using the image ref the image access is not from the same thread that executes ImageAnimator
     ///     code.  If the user code locks on the image ref forever a deadlock will happen preventing the animiation 
     ///     from occurring.
-    /// </devdoc>                                
+    /// </summary>                                
     public sealed partial class ImageAnimator
     {
-        /// <devdoc>
+        /// <summary>
         ///     A list of images to be animated.    
-        /// </devdoc>
+        /// </summary>
         private static List<ImageInfo> s_imageInfoList;
 
-        /// <devdoc>
+        /// <summary>
         ///     A variable to flag when an image or images need to be updated due to the selection of a new frame
         ///     in an image.  We don't need to synchronize access to this variable, in the case it is true we don't
         ///     do anything, otherwise the worse case is where a thread attempts to update the image's frame after
         ///     another one did which is harmless.
-        /// </devdoc>
+        /// </summary>
         private static bool s_anyFrameDirty;
 
-        /// <devdoc>
+        /// <summary>
         ///     The thread used for animating the images.
-        /// </devdoc>
+        /// </summary>
         private static Thread s_animationThread;
 
-        /// <devdoc>
+        /// <summary>
         ///     Lock that allows either concurrent read-access to the images list for multiple threads, or write- 
         ///     access to it for a single thread.  Observe that synchronization access to image objects are done
         ///     with critical sections (lock).
-        /// </devdoc>
+        /// </summary>
         private static ReaderWriterLock s_rwImgListLock = new ReaderWriterLock();
 
-        /// <devdoc>
+        /// <summary>
         ///     Flag to avoid a deadlock when waiting on a write-lock and a an attemp to acquire a read-lock is 
         ///     made in the same thread. If RWLock is currently owned by another thread, the current thread is going to wait on an 
         ///     event using CoWaitForMultipleHandles while pumps message. 
@@ -75,7 +75,7 @@ namespace System.Drawing
         ///     a reader lock while pumping message, the thread is blocked forever.
         ///     This TLS variable is used to flag the above situation and avoid the deadlock, it is ThreadStatic so each
         ///     thread calling into ImageAnimator is garded against this problem.
-		/// </devdoc>
+		/// </summary>
 
 
 
@@ -83,16 +83,16 @@ namespace System.Drawing
         [ThreadStatic]
         private static int t_threadWriterLockWaitCount;
 
-        /// <devdoc>
+        /// <summary>
         ///     Prevent instantiation of this class.
-        /// </devdoc>
+        /// </summary>
         private ImageAnimator()
         {
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Advances the frame in the specified image. The new frame is drawn the next time the image is rendered.
-        /// </devdoc>
+        /// </summary>
         public static void UpdateFrames(Image image)
         {
             if (!s_anyFrameDirty || image == null || s_imageInfoList == null)
@@ -153,9 +153,9 @@ namespace System.Drawing
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Advances the frame in all images currently being animated. The new frame is drawn the next time the image is rendered.
-        /// </devdoc>
+        /// </summary>
         public static void UpdateFrames()
         {
             if (!s_anyFrameDirty || s_imageInfoList == null)
@@ -190,10 +190,10 @@ namespace System.Drawing
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Adds an image to the image manager.  If the image does not support animation this method does nothing.
         ///     This method creates the image list and spawns the animation thread the first time it is called.
-        /// </devdoc>
+        /// </summary>
         public static void Animate(Image image, EventHandler onFrameChangedHandler)
         {
             if (image == null)
@@ -282,9 +282,9 @@ namespace System.Drawing
             }
         }
 
-        /// <devdoc>
+        /// <summary>
         ///    Whether or not the image has multiple time-based frames.
-        /// </devdoc>
+        /// </summary>
         public static bool CanAnimate(Image image)
         {
             if (image == null)
@@ -312,9 +312,9 @@ namespace System.Drawing
             return false;
         }
 
-        /// <devdoc>
+        /// <summary>
         ///     Removes an image from the image manager so it is no longer animated.
-        /// </devdoc>
+        /// </summary>
         public static void StopAnimate(Image image, EventHandler onFrameChangedHandler)
         {
             // Make sure we have a list of images                       
@@ -378,13 +378,13 @@ namespace System.Drawing
         }
 
 
-        /// <devdoc>
+        /// <summary>
         ///     Worker thread procedure which implements the main animation loop.
         ///     NOTE: This is the ONLY code the worker thread executes, keeping it in one method helps better understand 
         ///     any synchronization issues.  
         ///     WARNING: Also, this is the only place where ImageInfo objects (not the contained image object) are modified,
         ///     so no access synchronization is required to modify them.
-        /// </devdoc>
+        /// </summary>
         private static void AnimateImages50ms()
         {
             Debug.Assert(s_imageInfoList != null, "Null images list");

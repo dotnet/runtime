@@ -2,17 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Globalization;
+
 namespace System.Drawing.Printing
 {
-    using System.Globalization;
-
-    /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies
-    ///       the size of a piece of paper.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the size of a piece of paper.
+    /// </summary>
     public partial class PaperSize
     {
         private PaperKind _kind;
@@ -23,13 +19,9 @@ namespace System.Drawing.Printing
         private int _height;
         private bool _createdByDefaultConstructor;
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.PaperSize2"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PaperSize'/> class with default properties.
-        ///       This constructor is required for the serialization of the <see cref='System.Drawing.Printing.PaperSize'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PaperSize'/> class with default properties.
+        /// </summary>
         public PaperSize()
         {
             _kind = PaperKind.Custom;
@@ -45,12 +37,9 @@ namespace System.Drawing.Printing
             _height = height;
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.PaperSize"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PaperSize'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.Printing.PaperSize'/> class.
+        /// </summary>
         public PaperSize(string name, int width, int height)
         {
             _kind = PaperKind.Custom;
@@ -59,11 +48,9 @@ namespace System.Drawing.Printing
             _height = height;
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.Height"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets
-        ///       the height of the paper, in hundredths of an inch.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the height of the paper, in hundredths of an inch.
+        /// </summary>
         public int Height
         {
             get
@@ -73,18 +60,15 @@ namespace System.Drawing.Printing
 
             set
             {
-                if (_kind != PaperKind.Custom && !_createdByDefaultConstructor) throw new ArgumentException(SR.Format(SR.PSizeNotCustom));
+                if (_kind != PaperKind.Custom && !_createdByDefaultConstructor)
+                    throw new ArgumentException(SR.Format(SR.PSizeNotCustom));
                 _height = value;
             }
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.Kind"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the type of paper.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the type of paper.
+        /// </summary>
         public PaperKind Kind
         {
             get
@@ -97,40 +81,33 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.PaperName"]/*' />
-        /// <devdoc>
-        ///    <para>Gets
-        ///       or sets the name of the type of paper.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the name of the type of paper.
+        /// </summary>
         public string PaperName
         {
             get { return _name; }
 
             set
             {
-                if (_kind != PaperKind.Custom && !_createdByDefaultConstructor) throw new ArgumentException(SR.Format(SR.PSizeNotCustom));
+                if (_kind != PaperKind.Custom && !_createdByDefaultConstructor)
+                    throw new ArgumentException(SR.Format(SR.PSizeNotCustom));
                 _name = value;
             }
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.RawKind"]/*' />
-        /// <devdoc>
-        /// <para>
+        /// <summary>
         /// Same as Kind, but values larger than or equal to DMPAPER_LAST do not map to PaperKind.Custom.
-        /// This property is needed for serialization of the PrinterSettings object.
-        /// </para>
-        /// </devdoc>
+        /// </summary>
         public int RawKind
         {
             get { return unchecked((int)_kind); }
             set { _kind = unchecked((PaperKind)value); }
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.Width"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets
-        ///       the width of the paper, in hundredths of an inch.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the width of the paper, in hundredths of an inch.
+        /// </summary>
         public int Width
         {
             get
@@ -140,19 +117,15 @@ namespace System.Drawing.Printing
 
             set
             {
-                if (_kind != PaperKind.Custom && !_createdByDefaultConstructor) throw new ArgumentException(SR.Format(SR.PSizeNotCustom));
+                if (_kind != PaperKind.Custom && !_createdByDefaultConstructor)
+                    throw new ArgumentException(SR.Format(SR.PSizeNotCustom));
                 _width = value;
             }
         }
 
-        /// <include file='doc\PaperSize.uex' path='docs/doc[@for="PaperSize.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the PaperSize in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the PaperSize in String form.
+        /// </summary>
         public override string ToString()
         {
             return "[PaperSize " + PaperName

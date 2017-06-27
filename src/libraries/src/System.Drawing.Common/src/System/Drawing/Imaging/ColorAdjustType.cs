@@ -4,63 +4,40 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * Color adjust type constants
-     */
-    /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType"]/*' />
-    /// <devdoc>
-    ///    Specifies which GDI+ objects use color
-    ///    adjustment information.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies which GDI+ objects use color adjustment information.
+    /// </summary>
     public enum ColorAdjustType
     {
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Default"]/*' />
-        /// <devdoc>
-        ///    Defines color adjustment information that is
-        ///    used by all GDI+ objects that do not have their own color adjustment
-        ///    information.
-        /// </devdoc>
+        /// <summary>
+        /// Defines color adjustment information that is used by all GDI+ objects that do not have their own color
+        /// adjustment information.
+        /// </summary>
         Default = 0,
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Bitmap"]/*' />
-        /// <devdoc>
-        ///    Defines color adjustment information for
-        /// <see cref='System.Drawing.Bitmap'/> 
+        /// <summary>
+        /// Defines color adjustment information for <see cref='Drawing.Bitmap'/> 
         /// objects.
-        /// </devdoc>
+        /// </summary>
         Bitmap,
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Brush"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Defines color adjustment information for <see cref='System.Drawing.Brush'/> objects.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Defines color adjustment information for <see cref='Drawing.Brush'/> objects.
+        /// </summary>
         Brush,
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Pen"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Defines color adjustment information for <see cref='System.Drawing.Pen'/> objects.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Defines color adjustment information for <see cref='Drawing.Pen'/> objects.
+        /// </summary>
         Pen,
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Text"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Defines color adjustment information for text.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Defines color adjustment information for text.
+        /// </summary>
         Text,
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Count"]/*' />
-        /// <devdoc>
-        ///    Specifies the number of types specified.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the number of types specified.
+        /// </summary>
         Count,
-        /// <include file='doc\ColorAdjustType.uex' path='docs/doc[@for="ColorAdjustType.Any"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies the number of types specified.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the number of types specified.
+        /// </summary>
         Any
     }
 }
-

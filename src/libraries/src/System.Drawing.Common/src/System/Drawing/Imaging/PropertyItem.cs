@@ -5,11 +5,9 @@
 namespace System.Drawing.Imaging
 {
     // sdkinc\imaging.h
-    /// <include file='doc\PropertyItem.uex' path='docs/doc[@for="PropertyItem"]/*' />
-    /// <devdoc>
-    ///    Encapsulates a metadata property to be
-    ///    included in an image file.
-    /// </devdoc>
+    /// <summary>
+    /// Encapsulates a metadata property to be included in an image file.
+    /// </summary>
     public sealed class PropertyItem
     {
         private int _id;
@@ -21,37 +19,33 @@ namespace System.Drawing.Imaging
         {
         }
 
-        /// <include file='doc\PropertyItem.uex' path='docs/doc[@for="PropertyItem.Id"]/*' />
-        /// <devdoc>
-        ///    Represents the ID of the property.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the ID of the property.
+        /// </summary>
         public int Id
         {
             get { return _id; }
             set { _id = value; }
         }
-        /// <include file='doc\PropertyItem.uex' path='docs/doc[@for="PropertyItem.Len"]/*' />
-        /// <devdoc>
-        ///    Represents the length of the property.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the length of the property.
+        /// </summary>
         public int Len
         {
             get { return _len; }
             set { _len = value; }
         }
-        /// <include file='doc\PropertyItem.uex' path='docs/doc[@for="PropertyItem.Type"]/*' />
-        /// <devdoc>
-        ///    Represents the type of the property.
-        /// </devdoc>
+        /// <summary>
+        /// Represents the type of the property.
+        /// </summary>
         public short Type
         {
             get { return _type; }
             set { _type = value; }
         }
-        /// <include file='doc\PropertyItem.uex' path='docs/doc[@for="PropertyItem.Value"]/*' />
-        /// <devdoc>
-        ///    Contains the property value.
-        /// </devdoc>
+        /// <summary>
+        /// Contains the property value.
+        /// </summary>
         public byte[] Value
         {
             get { return _value; }
@@ -59,4 +53,3 @@ namespace System.Drawing.Imaging
         }
     }
 }
-

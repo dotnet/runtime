@@ -9,92 +9,69 @@ namespace System.Drawing
     using System.IO;
     using DpiHelper = System.Windows.Forms.DpiHelper;
 
-    /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute"]/*' />
-    /// <devdoc>
-    ///     ToolboxBitmapAttribute defines the images associated with
-    ///     a specified component. The component can offer a small
-    ///     and large image (large is optional).
-    ///
-    /// </devdoc>
+    /// <summary>
+    /// ToolboxBitmapAttribute defines the images associated with a specified component.
+    /// The component can offer a small and large image (large is optional).
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class)]
     public class ToolboxBitmapAttribute : Attribute
     {
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.smallImage"]/*' />
-        /// <devdoc>
-        ///     The small image for this component
-        /// </devdoc>
+        /// <summary>
+        /// The small image for this component
+        /// </summary>
         private Image _smallImage;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.largeImage"]/*' />
-        /// <devdoc>
-        ///     The large image for this component.
-        /// </devdoc>
+        /// <summary>
+        /// The large image for this component.
+        /// </summary>
         private Image _largeImage;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.originalBitmap"]/*' />
-        /// <devdoc>
-        ///     The original small image for this component, before scaling per DPI.
-        /// </devdoc>
+        /// <summary>
+        /// The original small image for this component, before scaling per DPI.
+        /// </summary>
         private Bitmap _originalBitmap;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.imageFile"]/*' />
-        /// <devdoc>
-        ///     The path to the image file for this toolbox item, if any.
-        /// </devdoc>
+        /// <summary>
+        /// The path to the image file for this toolbox item, if any.
+        /// </summary>
         private string _imageFile;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.imagetype"]/*' />
-        /// <devdoc>
-        ///     The Type used to retrieve the toolbox image for this component, if provided upon initialization of this class.
-        /// </devdoc>
+        /// <summary>
+        /// The Type used to retrieve the toolbox image for this component, if provided upon initialization of this class.
+        /// </summary>
         private Type _imageType;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.imageName"]/*' />
-        /// <devdoc>
-        ///     The resource name of the toolbox image for the component, if provided upon initialization of this class.
-        /// </devdoc>
+        /// <summary>
+        /// The resource name of the toolbox image for the component, if provided upon initialization of this class.
+        /// </summary>
         private string _imageName;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.largeSize"]/*' />
-        /// <devdoc>
-        ///     The default size of the large image.
-        /// </devdoc>
+        /// <summary>
+        /// The default size of the large image.
+        /// </summary>
         private static readonly Size s_largeSize = new Size(32, 32);
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.smallSize"]/*' />
-        /// <devdoc>
-        ///     The default size of the large image.
-        /// </devdoc>
+        /// <summary>
+        /// The default size of the large image.
+        /// </summary>
         private static readonly Size s_smallSize = new Size(16, 16);
 
         // Used to help cache the last result of BitmapSelector.GetFileName
         private static string s_lastOriginalFileName;
         private static string s_lastUpdatedFileName;
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.ToolboxBitmapAttribute"]/*' />
-        /// <devdoc>
-        ///     Constructs a new ToolboxBitmapAttribute.
-        /// </devdoc>
         public ToolboxBitmapAttribute(string imageFile)
             : this(GetImageFromFile(imageFile, false), GetImageFromFile(imageFile, true))
         {
             _imageFile = imageFile;
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.ToolboxBitmapAttribute1"]/*' />
-        /// <devdoc>
-        ///     Constructs a new ToolboxBitmapAttribute.
-        /// </devdoc>
         public ToolboxBitmapAttribute(Type t)
             : this(GetImageFromResource(t, null, false), GetImageFromResource(t, null, true))
         {
             _imageType = t;
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.ToolboxBitmapAttribute2"]/*' />
-        /// <devdoc>
-        ///     Constructs a new ToolboxBitmapAttribute.
-        /// </devdoc>
         public ToolboxBitmapAttribute(Type t, string name)
             : this(GetImageFromResource(t, name, false), GetImageFromResource(t, name, true))
         {
@@ -102,21 +79,12 @@ namespace System.Drawing
             _imageName = name;
         }
 
-
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.ToolboxBitmapAttribute3"]/*' />
-        /// <devdoc>
-        ///     Constructs a new ToolboxBitmapAttribute.
-        /// </devdoc>
         private ToolboxBitmapAttribute(Image smallImage, Image largeImage)
         {
             _smallImage = smallImage;
             _largeImage = largeImage;
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.Equals"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public override bool Equals(object value)
         {
             if (value == this)
@@ -133,27 +101,16 @@ namespace System.Drawing
             return false;
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetHashCode"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public override int GetHashCode()
         {
             return base.GetHashCode();
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImage"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public Image GetImage(object component)
         {
             return GetImage(component, true);
         }
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImage1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public Image GetImage(object component, bool large)
         {
             if (component != null)
@@ -162,28 +119,17 @@ namespace System.Drawing
             }
             return null;
         }
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImage2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
+
         public Image GetImage(Type type)
         {
             return GetImage(type, false);
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImage3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public Image GetImage(Type type, bool large)
         {
             return GetImage(type, null, large);
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImage4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public Image GetImage(Type type, string imgName, bool large)
         {
             if ((large && _largeImage == null) ||
@@ -367,7 +313,6 @@ namespace System.Drawing
             Image img = null;
 
             // load the image from the manifest resources. 
-            //
             Stream stream = BitmapSelector.GetResourceStream(t, bitmapname);
             if (stream != null)
             {
@@ -398,19 +343,11 @@ namespace System.Drawing
             return GetIconFromStream(BitmapSelector.GetResourceStream(t, bitmapname), large, scaled);
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImageFromResource"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static Image GetImageFromResource(Type t, string imageName, bool large)
         {
             return GetImageFromResource(t, imageName, large, true /*scaled*/);
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.GetImageFromResource"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         internal static Image GetImageFromResource(Type t, string imageName, bool large, bool scaled)
         {
             Image img = null;
@@ -491,16 +428,12 @@ namespace System.Drawing
             img.SetPixel(0, img.Height - 1, newBottomLeft);
         }
 
-        /// <include file='doc\ToolboxBitmapAttribute.uex' path='docs/doc[@for="ToolboxBitmapAttribute.Default"]/*' />
-        /// <devdoc>
-        ///     Default name is null
-        /// </devdoc>        
         public static readonly ToolboxBitmapAttribute Default = new ToolboxBitmapAttribute((Image)null, (Image)null);
 
         private static readonly ToolboxBitmapAttribute s_defaultComponent;
         static ToolboxBitmapAttribute()
         {
-            //Fix for Dev10 560430. When we call Gdip.DummyFunction, JIT will make sure Gdip..cctor will be called before
+            // Ensure Gdip type initializer has run.
             SafeNativeMethods.Gdip.DummyFunction();
 
             Bitmap bitmap = null;

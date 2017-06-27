@@ -2,45 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.IO;
+using System.Drawing.Internal;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-    using System.IO;
-    using System.Drawing.Internal;
-
-    /**
-     * Represent a metafile image
-     */
-    /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile"]/*' />
-    /// <devdoc>
-    ///    Defines a graphic metafile. A metafile
-    ///    contains records that describe a sequence of graphics operations that can be
-    ///    recorded and played back.
-    /// </devdoc>
+    /// <summary>
+    /// Defines a graphic metafile. A metafile contains records that describe a sequence of graphics operations that
+    /// can be recorded and played back.
+    /// </summary>
     public sealed partial class Metafile : Image
     {
-        /*
-         * Create a new metafile object from a metafile handle (WMF)
-         */
-
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified handle and
-        ///    <see cref='System.Drawing.Imaging.WmfPlaceableFileHeader'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle and
+        /// <see cref='WmfPlaceableFileHeader'/>.
+        /// </summary>
         public Metafile(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader) :
         this(hmetafile, wmfHeader, false)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified handle and
-        ///    <see cref='System.Drawing.Imaging.WmfPlaceableFileHeader'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle and
+        /// <see cref='WmfPlaceableFileHeader'/>.
+        /// </summary>
         public Metafile(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader, bool deleteWmf)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -53,17 +38,10 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /*
-         * Create a new metafile object from an enhanced metafile handle
-         */
-
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile2"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified handle and <see cref='System.Drawing.Imaging.WmfPlaceableFileHeader'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle and
+        /// <see cref='WmfPlaceableFileHeader'/>.
+        /// </summary>
         public Metafile(IntPtr henhmetafile, bool deleteEmf)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -76,13 +54,9 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /**
-         * Create a new metafile object from a file
-         */
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile3"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified filename.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified filename.
+        /// </summary>
         public Metafile(string filename)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -95,13 +69,9 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /**
-         * Create a new metafile object from a stream
-         */
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile4"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified stream.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified stream.
+        /// </summary>
         public Metafile(Stream stream)
         {
             if (stream == null)
@@ -119,22 +89,16 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile5"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified handle to a
-        ///    device context.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle to a device context.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, EmfType emfType) :
         this(referenceHdc, emfType, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile6"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified handle to a device context.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified handle to a device context.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, EmfType emfType, String description)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -152,46 +116,34 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile7"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified device context,
-        ///       bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, RectangleF frameRect) :
         this(referenceHdc, frameRect, MetafileFrameUnit.GdiCompatible)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile8"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified device context,
-        ///       bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit) :
         this(referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile9"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified device context, bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type) :
         this(referenceHdc, frameRect, frameUnit, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile10"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified device context,
-        ///       bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, String description)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -209,46 +161,34 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile11"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified device context, bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, Rectangle frameRect) :
         this(referenceHdc, frameRect, MetafileFrameUnit.GdiCompatible)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile12"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified device context, bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit) :
         this(referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile13"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified device context, bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type) :
         this(referenceHdc, frameRect, frameUnit, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile14"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified device context, bounded by the specified rectangle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified device context, bounded
+        /// by the specified rectangle.
+        /// </summary>
         public Metafile(IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string desc)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -281,32 +221,23 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile15"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the specified
-        ///    filename.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc) :
         this(fileName, referenceHdc, EmfType.EmfPlusDual, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile16"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the specified
-        ///       filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, EmfType type) :
         this(fileName, referenceHdc, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile17"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, EmfType type, String description)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -324,56 +255,39 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile18"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect) :
         this(fileName, referenceHdc, frameRect, MetafileFrameUnit.GdiCompatible)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile19"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit) :
         this(fileName, referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile20"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit, EmfType type) :
         this(fileName, referenceHdc, frameRect, frameUnit, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile21"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, string desc) :
         this(fileName, referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual, desc)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile22"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit, EmfType type, String description)
         {
@@ -394,59 +308,39 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile23"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect) :
         this(fileName, referenceHdc, frameRect, MetafileFrameUnit.GdiCompatible)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile24"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect,
                         MetafileFrameUnit frameUnit) :
         this(fileName, referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile25"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect,
                         MetafileFrameUnit frameUnit, EmfType type) :
         this(fileName, referenceHdc, frameRect, frameUnit, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile26"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, string description) :
         this(fileName, referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual, description)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile27"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string description)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -481,34 +375,23 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile28"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified data
-        ///       stream.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc) :
         this(stream, referenceHdc, EmfType.EmfPlusDual, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile29"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified data
-        ///       stream.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, EmfType type) :
         this(stream, referenceHdc, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile30"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified data stream.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string description)
         {
             IntPtr metafile = IntPtr.Zero;
@@ -527,47 +410,32 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile31"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the specified data stream.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect) :
         this(stream, referenceHdc, frameRect, MetafileFrameUnit.GdiCompatible)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile32"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit) :
         this(stream, referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile33"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit, EmfType type) :
         this(stream, referenceHdc, frameRect, frameUnit, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile34"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect,
                         MetafileFrameUnit frameUnit, EmfType type, string description)
         {
@@ -588,48 +456,32 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile35"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class from the
-        ///       specified data stream.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect) :
         this(stream, referenceHdc, frameRect, MetafileFrameUnit.GdiCompatible)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile36"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect,
                         MetafileFrameUnit frameUnit) :
         this(stream, referenceHdc, frameRect, frameUnit, EmfType.EmfPlusDual)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile37"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect,
                         MetafileFrameUnit frameUnit, EmfType type) :
         this(stream, referenceHdc, frameRect, frameUnit, type, null)
         { }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.Metafile38"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Imaging.Metafile'/> class with the
-        ///       specified filename.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
+        /// </summary>
         public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit,
                         EmfType type, string description)
         {
@@ -665,12 +517,9 @@ namespace System.Drawing.Imaging
             SetNativeImage(metafile);
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetMetafileHeader"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the <see cref='System.Drawing.Imaging.MetafileHeader'/> associated with the specified <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the <see cref='MetafileHeader'/> associated with the specified <see cref='Metafile'/>.
+        /// </summary>
         public static MetafileHeader GetMetafileHeader(IntPtr hmetafile, WmfPlaceableFileHeader wmfHeader)
         {
             MetafileHeader header = new MetafileHeader();
@@ -685,12 +534,9 @@ namespace System.Drawing.Imaging
             return header;
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetMetafileHeader1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the <see cref='System.Drawing.Imaging.MetafileHeader'/> associated with the specified <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the <see cref='MetafileHeader'/> associated with the specified <see cref='Metafile'/>.
+        /// </summary>
         public static MetafileHeader GetMetafileHeader(IntPtr henhmetafile)
         {
             MetafileHeader header = new MetafileHeader();
@@ -704,12 +550,9 @@ namespace System.Drawing.Imaging
             return header;
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetMetafileHeader2"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the <see cref='System.Drawing.Imaging.MetafileHeader'/> associated with the specified <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the <see cref='MetafileHeader'/> associated with the specified <see cref='Metafile'/>.
+        /// </summary>
         public static MetafileHeader GetMetafileHeader(string fileName)
         {
             MetafileHeader header = new MetafileHeader();
@@ -753,12 +596,9 @@ namespace System.Drawing.Imaging
             return header;
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetMetafileHeader3"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the <see cref='System.Drawing.Imaging.MetafileHeader'/> associated with the specified <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the <see cref='MetafileHeader'/> associated with the specified <see cref='Metafile'/>.
+        /// </summary>
         public static MetafileHeader GetMetafileHeader(Stream stream)
         {
             MetafileHeader header;
@@ -804,12 +644,9 @@ namespace System.Drawing.Imaging
             return header;
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetMetafileHeader4"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns the <see cref='System.Drawing.Imaging.MetafileHeader'/> associated with this <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the <see cref='MetafileHeader'/> associated with this <see cref='Metafile'/>.
+        /// </summary>
         public MetafileHeader GetMetafileHeader()
         {
             MetafileHeader header;
@@ -855,11 +692,9 @@ namespace System.Drawing.Imaging
             return header;
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.GetHenhmetafile"]/*' />
-        /// <devdoc>
-        ///    Returns a Windows handle to an enhanced
-        /// <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a Windows handle to an enhanced <see cref='Metafile'/>.
+        /// </summary>
         public IntPtr GetHenhmetafile()
         {
             IntPtr hEmf = IntPtr.Zero;
@@ -872,10 +707,9 @@ namespace System.Drawing.Imaging
             return hEmf;
         }
 
-        /// <include file='doc\Metafile.uex' path='docs/doc[@for="Metafile.PlayRecord"]/*' />
-        /// <devdoc>
-        ///    Plays an EMF+ file.
-        /// </devdoc>
+        /// <summary>
+        /// Plays an EMF+ file.
+        /// </summary>
         public void PlayRecord(EmfPlusRecordType recordType,
                                int flags,
                                int dataSize,

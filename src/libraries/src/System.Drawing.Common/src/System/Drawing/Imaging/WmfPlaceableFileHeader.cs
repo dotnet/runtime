@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader"]/*' />
-    /// <devdoc>
-    ///    Defines an Placeable Metafile.
-    /// </devdoc>
+    /// <summary>
+    /// Defines an Placeable Metafile.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public sealed class WmfPlaceableFileHeader
     {
@@ -23,105 +22,81 @@ namespace System.Drawing.Imaging
         private int _reserved;
         private short _checksum;
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.Key"]/*' />
-        /// <devdoc>
-        ///    Indicates the presence of a placeable
-        ///    metafile header.
-        /// </devdoc>
+        /// <summary>
+        /// Indicates the presence of a placeable metafile header.
+        /// </summary>
         public int Key
         {
             get { return _key; }
             set { _key = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.Hmf"]/*' />
-        /// <devdoc>
-        ///    Stores the handle of the metafile in
-        ///    memory.
-        /// </devdoc>
+        /// <summary>
+        /// Stores the handle of the metafile in memory.
+        /// </summary>
         public short Hmf
         {
             get { return _hmf; }
             set { _hmf = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.BboxLeft"]/*' />
-        /// <devdoc>
-        ///    The x-coordinate of the upper-left corner
-        ///    of the bounding rectangle of the metafile image on the output device.
-        /// </devdoc>
+        /// <summary>
+        /// The x-coordinate of the upper-left corner of the bounding rectangle of the metafile image on the output device.
+        /// </summary>
         public short BboxLeft
         {
             get { return _bboxLeft; }
             set { _bboxLeft = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.BboxTop"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The y-coordinate of the upper-left corner of the bounding rectangle of the
-        ///       metafile image on the output device.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The y-coordinate of the upper-left corner of the bounding rectangle of the metafile image on the output device.
+        /// </summary>
         public short BboxTop
         {
             get { return _bboxTop; }
             set { _bboxTop = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.BboxRight"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The x-coordinate of the lower-right corner of the bounding rectangle of the
-        ///       metafile image on the output device.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The x-coordinate of the lower-right corner of the bounding rectangle of the metafile image on the output device.
+        /// </summary>
         public short BboxRight
         {
             get { return _bboxRight; }
             set { _bboxRight = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.BboxBottom"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The y-coordinate of the lower-right corner of the bounding rectangle of the
-        ///       metafile image on the output device.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The y-coordinate of the lower-right corner of the bounding rectangle of the metafile image on the output device.
+        /// </summary>
         public short BboxBottom
         {
             get { return _bboxBottom; }
             set { _bboxBottom = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.Inch"]/*' />
-        /// <devdoc>
-        ///    Indicates the number of twips per inch.
-        /// </devdoc>
+        /// <summary>
+        /// Indicates the number of twips per inch.
+        /// </summary>
         public short Inch
         {
             get { return _inch; }
             set { _inch = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.Reserved"]/*' />
-        /// <devdoc>
-        ///    Reserved. Do not use.
-        /// </devdoc>
+        /// <summary>
+        ///  Reserved. Do not use.
+        /// </summary>
         public int Reserved
         {
             get { return _reserved; }
             set { _reserved = value; }
         }
 
-        /// <include file='doc\WmfPlaceableFileHeader.uex' path='docs/doc[@for="WmfPlaceableFileHeader.Checksum"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Indicates the checksum value for the
-        ///       previous ten WORDs in the header.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Indicates the checksum value for the previous ten WORDs in the header.
+        /// </summary>
         public short Checksum
         {
             get { return _checksum; }

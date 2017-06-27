@@ -4,10 +4,10 @@
 
 namespace System.Drawing.Internal
 {
-    /// <devdoc>
-    ///     Enumeration defining the different Graphics properties to apply to a WindowsGraphics when creating it
-    ///     from a Graphics object.
-    /// </devdoc>
+    /// <summary>
+    /// Enumeration defining the different Graphics properties to apply to a WindowsGraphics when creating it from a
+    /// Graphics object.
+    /// </summary>
     [Flags]
     internal enum ApplyGraphicsProperties
     {

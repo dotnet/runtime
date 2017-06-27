@@ -4,47 +4,34 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * MetafileType Type
-     */
-    /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the format of a <see cref='System.Drawing.Imaging.Metafile'/>.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the format of a <see cref='Metafile'/>.
+    /// </summary>
     public enum MetafileType
     {
-        /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType.Invalid"]/*' />
-        /// <devdoc>
-        ///    Specifies an invalid type.
-        /// </devdoc>
-        Invalid,            // Invalid metafile
-                            /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType.Wmf"]/*' />
-                            /// <devdoc>
-                            ///    Specifies a standard Windows metafile.
-                            /// </devdoc>
-        Wmf,                // Standard WMF
-                            /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType.WmfPlaceable"]/*' />
-                            /// <devdoc>
-                            ///    Specifies a Windows Placeable metafile.
-                            /// </devdoc>
-        WmfPlaceable,           // Placeable Metafile format
-                                /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType.Emf"]/*' />
-                                /// <devdoc>
-                                ///    Specifies a Windows enhanced metafile.
-                                /// </devdoc>
-        Emf,                // EMF (not EMF+)
-                            /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType.EmfPlusOnly"]/*' />
-                            /// <devdoc>
-                            ///    Specifies a Windows enhanced metafile plus.
-                            /// </devdoc>
-        EmfPlusOnly,        // EMF+ without dual, down-level records
-                            /// <include file='doc\MetafileType.uex' path='docs/doc[@for="MetafileType.EmfPlusDual"]/*' />
-                            /// <devdoc>
-                            ///    Specifies both enhanced and enhanced plus
-                            ///    commands in the same file.
-                            /// </devdoc>
-        EmfPlusDual,        // EMF+ with dual, down-level records
+        /// <summary>
+        /// Specifies an invalid type.
+        /// </summary>
+        Invalid,
+        /// <summary>
+        /// Specifies a standard Windows metafile.
+        /// </summary>
+        Wmf,
+        /// <summary>
+        /// Specifies a Windows Placeable metafile.
+        /// </summary>
+        WmfPlaceable,
+        /// <summary>
+        /// Specifies a Windows enhanced metafile.
+        /// </summary>
+        Emf,
+        /// <summary>
+        /// Specifies a Windows enhanced metafile plus.
+        /// </summary>
+        EmfPlusOnly,
+        /// <summary>
+        /// Specifies both enhanced and enhanced plus commands in the same file.
+        /// </summary>
+        EmfPlusDual,
     }
 }

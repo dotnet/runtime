@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData"]/*' />
-    /// <devdoc>
-    ///    Specifies the attributes of a bitmap image.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the attributes of a bitmap image.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public sealed class BitmapData
     {
@@ -20,41 +19,36 @@ namespace System.Drawing.Imaging
         private IntPtr _scan0;
         private int _reserved;
 
-        /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData.Width"]/*' />
-        /// <devdoc>
-        ///    Specifies the pixel width of the <see cref='System.Drawing.Bitmap'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the pixel width of the <see cref='Bitmap'/>.
+        /// </summary>
         public int Width
         {
             get { return _width; }
             set { _width = value; }
         }
 
-        /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData.Height"]/*' />
-        /// <devdoc>
-        ///    Specifies the pixel height of the <see cref='System.Drawing.Bitmap'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the pixel height of the <see cref='Bitmap'/>.
+        /// </summary>
         public int Height
         {
             get { return _height; }
             set { _height = value; }
         }
 
-        /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData.Stride"]/*' />
-        /// <devdoc>
-        ///    Specifies the stride width of the <see cref='System.Drawing.Bitmap'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the stride width of the <see cref='Bitmap'/>.
+        /// </summary>
         public int Stride
         {
             get { return _stride; }
             set { _stride = value; }
         }
 
-        /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData.PixelFormat"]/*' />
-        /// <devdoc>
-        ///    Specifies the format of the pixel
-        ///    information in this <see cref='System.Drawing.Bitmap'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the format of the pixel information in this <see cref='Bitmap'/>.
+        /// </summary>
         public PixelFormat PixelFormat
         {
             get { return (PixelFormat)_pixelFormat; }
@@ -95,24 +89,20 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData.Scan0"]/*' />
-        /// <devdoc>
-        ///    Specifies the address of the pixel data.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies the address of the pixel data.
+        /// </summary>
         public IntPtr Scan0
         {
             get { return _scan0; }
             set { _scan0 = value; }
         }
 
-        /// <include file='doc\BitmapData.uex' path='docs/doc[@for="BitmapData.Reserved"]/*' />
-        /// <devdoc>
-        ///    Reserved. Do not use.
-        /// </devdoc>
+        /// <summary>
+        /// Reserved. Do not use.
+        /// </summary>
         public int Reserved
         {
-            // why make public??
-            //
             get { return _reserved; }
             set { _reserved = value; }
         }

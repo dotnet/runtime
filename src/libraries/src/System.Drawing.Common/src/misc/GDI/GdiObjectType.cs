@@ -4,9 +4,9 @@
 
 namespace System.Drawing.Internal
 {
-    /// <devdoc>
-    ///    Specifies the the type of a GDI object.
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the the type of a GDI object.
+    /// </summary>
     internal enum GdiObjectType
     {
         Pen = 1,
@@ -23,17 +23,5 @@ namespace System.Drawing.Internal
         EnhancedMetafileDC = 12,
         EnhMetafile = 13,
         ColorSpace = 14
-
-        /*
-        OBJ_PEN       = 1,
-        OBJ_BRUSH     = 2,
-        OBJ_FONT      = 6,
-        OBJ_EXTPEN    = 11,
-            
-        OBJ_DC        = 3,
-        OBJ_METADC    = 4,
-        OBJ_MEMDC     = 10,
-        OBJ_ENHMETADC = 12,
-    */
     }
 }

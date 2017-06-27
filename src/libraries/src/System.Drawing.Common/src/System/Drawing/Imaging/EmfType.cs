@@ -4,40 +4,22 @@
 
 namespace System.Drawing.Imaging
 {
-    /**
-     * EmfType Type
-     */
-    /// <include file='doc\EmfType.uex' path='docs/doc[@for="EmfType"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the metafile type.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the metafile type.
+    /// </summary>
     public enum EmfType
     {
-        /// <include file='doc\EmfType.uex' path='docs/doc[@for="EmfType.EmfOnly"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Windows enhanced metafile. Contains GDI commands. Metafiles of this type are
-        ///       refered to as an EMF file.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Windows enhanced metafile. Contains GDI commands. Metafiles of this type are refered to as an EMF file.
+        /// </summary>
         EmfOnly = MetafileType.Emf,
-        /// <include file='doc\EmfType.uex' path='docs/doc[@for="EmfType.EmfPlusOnly"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Windows enhanced metafile plus. Contains GDI+ commands. Metafiles of this
-        ///       type are refered to as an EMF+ file.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Windows enhanced metafile plus. Contains GDI+ commands. Metafiles of this type are refered to as an EMF+ file.
+        /// </summary>
         EmfPlusOnly = MetafileType.EmfPlusOnly,
-        /// <include file='doc\EmfType.uex' path='docs/doc[@for="EmfType.EmfPlusDual"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Dual Windows enhanced metafile. Contains equivalent GDI and GDI+ commands.
-        ///       Metafiles of this type are refered to as an EMF+ file.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Dual Windows enhanced metafile. Contains equivalent GDI and GDI+ commands. Metafiles of this type are refered to as an EMF+ file.
+        /// </summary>
         EmfPlusDual = MetafileType.EmfPlusDual
     }
 }

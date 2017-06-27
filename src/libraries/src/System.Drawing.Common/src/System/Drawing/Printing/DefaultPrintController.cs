@@ -2,29 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Internal;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Printing
 {
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Drawing.Internal;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\DefaultPrintController.uex' path='docs/doc[@for="StandardPrintController"]/*' />
-    /// <devdoc>
-    ///    <para>Specifies a print controller that sends information to a printer.
-    ///       </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies a print controller that sends information to a printer.
+    /// </summary>
     public class StandardPrintController : PrintController
     {
         private DeviceContext _dc;
         private Graphics _graphics;
 
-        /// <include file='doc\DefaultPrintController.uex' path='docs/doc[@for="StandardPrintController.OnStartPrint"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements StartPrint for printing to a physical printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements StartPrint for printing to a physical printer.
+        /// </summary>
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert(_dc == null && _graphics == null, "PrintController methods called in the wrong order?");
@@ -59,12 +54,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\DefaultPrintController.uex' path='docs/doc[@for="StandardPrintController.OnStartPage"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements StartPage for printing to a physical printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements StartPage for printing to a physical printer.
+        /// </summary>
         public override Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
@@ -110,12 +102,9 @@ namespace System.Drawing.Printing
             return _graphics;
         }
 
-        /// <include file='doc\DefaultPrintController.uex' path='docs/doc[@for="StandardPrintController.OnEndPage"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements EndPage for printing to a physical printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements EndPage for printing to a physical printer.
+        /// </summary>
         public override void OnEndPage(PrintDocument document, PrintPageEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics != null, "PrintController methods called in the wrong order?");
@@ -134,12 +123,9 @@ namespace System.Drawing.Printing
             base.OnEndPage(document, e);
         }
 
-        /// <include file='doc\DefaultPrintController.uex' path='docs/doc[@for="StandardPrintController.OnEndPrint"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements EndPrint for printing to a physical printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements EndPrint for printing to a physical printer.
+        /// </summary>
         public override void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");

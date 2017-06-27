@@ -10,23 +10,15 @@ namespace System.Drawing
     using System.Runtime.InteropServices;
     using System.Globalization;
 
-    /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange"]/*' />
     [StructLayout(LayoutKind.Sequential)]
     public struct CharacterRange
     {
         private int _first;
         private int _length;
 
-        /**
-        * Create a new CharacterRange object
-        */
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange.CharacterRange"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.CharacterRange'/> class
-        ///       with the specified coordinates.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='CharacterRange'/> class with the specifiedcoordinates.
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public CharacterRange(int First, int Length)
         {
@@ -34,10 +26,9 @@ namespace System.Drawing
             _length = Length;
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange.First"]/*' />
-        /// <devdoc>
-        ///    Gets the First character position of this <see cref='System.Drawing.CharacterRange'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the First character position of this <see cref='CharacterRange'/>.
+        /// </summary>
         public int First
         {
             get
@@ -50,12 +41,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange.Length"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the Length of this <see cref='System.Drawing.CharacterRange'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the Length of this <see cref='CharacterRange'/>.
+        /// </summary>
         public int Length
         {
             get
@@ -77,34 +65,26 @@ namespace System.Drawing
             return ((_first == cr.First) && (_length == cr.Length));
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange.EqualOperator"]/*' />
         public static bool operator ==(CharacterRange cr1, CharacterRange cr2)
         {
             return ((cr1.First == cr2.First) && (cr1.Length == cr2.Length));
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange.InequalOperator"]/*' />
         public static bool operator !=(CharacterRange cr1, CharacterRange cr2)
         {
             return !(cr1 == cr2);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="CharacterRange.GetHashCode"]/*' />
         public override int GetHashCode()
         {
             return unchecked(_first << 8 + _length);
         }
     }
 
-    /**
-     * Represent a Stringformat object
-     */
-    /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat"]/*' />
-    /// <devdoc>
-    ///    Encapsulates text layout information (such
-    ///    as alignment and linespacing), display manipulations (such as ellipsis insertion
-    ///    and national digit substitution) and OpenType features.
-    /// </devdoc>
+    /// <summary>
+    /// Encapsulates text layout information (such as alignment and linespacing), display manipulations (such as
+    /// ellipsis insertion and national digit substitution) and OpenType features.
+    /// </summary>
     public sealed class StringFormat : MarshalByRefObject, ICloneable, IDisposable
     {
         internal IntPtr nativeFormat;
@@ -114,30 +94,25 @@ namespace System.Drawing
             nativeFormat = format;
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.StringFormat"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.StringFormat'/>
-        ///    class.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='StringFormat'/> class.
+        /// </summary>
         public StringFormat() : this(0, 0)
         {
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.StringFormat1"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.StringFormat'/>
-        ///    class with the specified <see cref='System.Drawing.StringFormatFlags'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='StringFormat'/> class with the specified <see cref='System.Drawing.StringFormatFlags'/>.
+        /// </summary>
         public StringFormat(StringFormatFlags options) :
         this(options, 0)
         {
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.StringFormat2"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.StringFormat'/>
-        ///    class with the specified <see cref='System.Drawing.StringFormatFlags'/> and language.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='StringFormat'/> class with the specified
+        /// <see cref='System.Drawing.StringFormatFlags'/> and language.
+        /// </summary>
         public StringFormat(StringFormatFlags options, int language)
         {
             int status = SafeNativeMethods.Gdip.GdipCreateStringFormat(options, language, out nativeFormat);
@@ -146,13 +121,10 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.StringFormat3"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.StringFormat'/> class from the specified
-        ///       existing <see cref='System.Drawing.StringFormat'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='StringFormat'/> class from the specified
+        /// existing <see cref='System.Drawing.StringFormat'/>.
+        /// </summary>
         public StringFormat(StringFormat format)
         {
             if (format == null)
@@ -166,18 +138,15 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.Dispose"]/*' />
-        /// <devdoc>
-        ///    Cleans up Windows resources for this
-        /// <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='StringFormat'/>.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.Dispose2"]/*' />
         private void Dispose(bool disposing)
         {
             if (nativeFormat != IntPtr.Zero)
@@ -208,10 +177,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.Clone"]/*' />
-        /// <devdoc>
-        ///    Creates an exact copy of this <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Creates an exact copy of this <see cref='StringFormat'/>.
+        /// </summary>
         public object Clone()
         {
             IntPtr cloneFormat = IntPtr.Zero;
@@ -227,10 +195,9 @@ namespace System.Drawing
         }
 
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.FormatFlags"]/*' />
-        /// <devdoc>
-        ///    Gets or sets a <see cref='System.Drawing.StringFormatFlags'/> that contains formatting information.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a <see cref='StringFormatFlags'/> that contains formatting information.
+        /// </summary>
         public StringFormatFlags FormatFlags
         {
             get
@@ -253,13 +220,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.SetMeasurableCharacterRanges"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Sets the measure of characters to the specified
-        ///       range.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Sets the measure of characters to the specified range.
+        /// </summary>
         public void SetMeasurableCharacterRanges(CharacterRange[] ranges)
         {
             int status = SafeNativeMethods.Gdip.GdipSetStringFormatMeasurableCharacterRanges(new HandleRef(this, nativeFormat), ranges.Length, ranges);
@@ -269,10 +232,9 @@ namespace System.Drawing
         }
 
         // For English, this is horizontal alignment
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.Alignment"]/*' />
-        /// <devdoc>
-        ///    Specifies text alignment information.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies text alignment information.
+        /// </summary>
         public StringAlignment Alignment
         {
             get
@@ -301,10 +263,9 @@ namespace System.Drawing
         }
 
         // For English, this is vertical alignment
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.LineAlignment"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the line alignment.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the line alignment.
+        /// </summary>
         public StringAlignment LineAlignment
         {
             get
@@ -331,12 +292,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.HotkeyPrefix"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the <see cref='System.Drawing.StringFormat.HotkeyPrefix'/> for this <see cref='System.Drawing.StringFormat'/> .
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the <see cref='HotkeyPrefix'/> for this <see cref='StringFormat'/> .
+        /// </summary>
         public HotkeyPrefix HotkeyPrefix
         {
             get
@@ -364,10 +322,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.SetTabStops"]/*' />
-        /// <devdoc>
-        ///    Sets tab stops for this <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Sets tab stops for this <see cref='StringFormat'/>.
+        /// </summary>
         public void SetTabStops(float firstTabOffset, float[] tabStops)
         {
             if (firstTabOffset < 0)
@@ -379,10 +336,9 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.GetTabStops"]/*' />
-        /// <devdoc>
-        ///    Gets the tab stops for this <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the tab stops for this <see cref='StringFormat'/>.
+        /// </summary>
         public float[] GetTabStops(out float firstTabOffset)
         {
             int count = 0;
@@ -404,11 +360,9 @@ namespace System.Drawing
         // String trimming. How to handle more text than can be displayed
         // in the limits available.
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.Trimming"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the <see cref='System.Drawing.StringTrimming'/>
-        ///    for this <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the <see cref='StringTrimming'/> for this <see cref='StringFormat'/>.
+        /// </summary>
         public StringTrimming Trimming
         {
             get
@@ -436,18 +390,17 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.GenericDefault"]/*' />
-        /// <devdoc>
-        ///    Gets a generic default <see cref='System.Drawing.StringFormat'/>.
-        ///    Remarks from MSDN: A generic, default StringFormat object has the following characteristics: 
-        ///         - No string format flags are set. 
-        ///         - Character alignment and line alignment are set to StringAlignmentNear. 
-        ///         - Language ID is set to neutral language, which means that the current language associated with the calling thread is used. 
-        ///         - String digit substitution is set to StringDigitSubstituteUser. 
-        ///         - Hot key prefix is set to HotkeyPrefixNone. 
-        ///         - Number of tab stops is set to zero. 
-        ///         - String trimming is set to StringTrimmingCharacter. 
-        /// </devdoc>
+        /// <summary>
+        /// Gets a generic default <see cref='StringFormat'/>.
+        /// Remarks from MSDN: A generic, default StringFormat object has the following characteristics: 
+        /// - No string format flags are set. 
+        /// - Character alignment and line alignment are set to StringAlignmentNear. 
+        /// - Language ID is set to neutral language, which means that the current language associated with the calling thread is used. 
+        /// - String digit substitution is set to StringDigitSubstituteUser. 
+        /// - Hot key prefix is set to HotkeyPrefixNone. 
+        /// - Number of tab stops is set to zero. 
+        /// - String trimming is set to StringTrimmingCharacter. 
+        /// </summary>
         public static StringFormat GenericDefault
         {
             get
@@ -462,18 +415,17 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.GenericTypographic"]/*' />
-        /// <devdoc>
-        ///    Gets a generic typographic <see cref='System.Drawing.StringFormat'/>.
-        ///    Remarks from MSDN: A generic, typographic StringFormat object has the following characteristics: 
-        ///         - String format flags StringFormatFlagsLineLimit, StringFormatFlagsNoClip, and StringFormatFlagsNoFitBlackBox are set. 
-        ///         - Character alignment and line alignment are set to StringAlignmentNear. 
-        ///         - Language ID is set to neutral language, which means that the current language associated with the calling thread is used.
-        ///         - String digit substitution is set to StringDigitSubstituteUser. 
-        ///         - Hot key prefix is set to HotkeyPrefixNone. 
-        ///         - Number of tab stops is set to zero. 
-        ///         - String trimming is set to StringTrimmingNone. 
-        /// </devdoc>
+        /// <summary>
+        /// Gets a generic typographic <see cref='StringFormat'/>.
+        /// Remarks from MSDN: A generic, typographic StringFormat object has the following characteristics: 
+        /// - String format flags StringFormatFlagsLineLimit, StringFormatFlagsNoClip, and StringFormatFlagsNoFitBlackBox are set. 
+        /// - Character alignment and line alignment are set to StringAlignmentNear. 
+        /// - Language ID is set to neutral language, which means that the current language associated with the calling thread is used.
+        /// - String digit substitution is set to StringDigitSubstituteUser. 
+        /// - Hot key prefix is set to HotkeyPrefixNone. 
+        /// - Number of tab stops is set to zero. 
+        /// - String trimming is set to StringTrimmingNone. 
+        /// </summary>
         public static StringFormat GenericTypographic
         {
             get
@@ -488,10 +440,6 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.SetDigitSubstitution"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void SetDigitSubstitution(int language, StringDigitSubstitute substitute)
         {
             int status = SafeNativeMethods.Gdip.GdipSetStringFormatDigitSubstitution(new HandleRef(this, nativeFormat), language, substitute);
@@ -500,11 +448,9 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.DigitSubstitutionMethod"]/*' />
-        /// <devdoc>
-        ///    Gets the <see cref='System.Drawing.StringDigitSubstitute'/>
-        ///    for this <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the <see cref='StringDigitSubstitute'/> for this <see cref='StringFormat'/>.
+        /// </summary>
         public StringDigitSubstitute DigitSubstitutionMethod
         {
             get
@@ -521,11 +467,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.DigitSubstitutionLanguage"]/*' />
-        /// <devdoc>
-        ///    Gets the language of <see cref='System.Drawing.StringDigitSubstitute'/>
-        ///    for this <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the language of <see cref='StringDigitSubstitute'/> for this <see cref='StringFormat'/>.
+        /// </summary>
         public int DigitSubstitutionLanguage
         {
             get
@@ -541,24 +485,17 @@ namespace System.Drawing
             }
         }
 
-        /**
-          * Object cleanup
-          */
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.Finalize"]/*' />
-        /// <devdoc>
-        ///    Cleans up Windows resources for this
-        /// <see cref='System.Drawing.StringFormat'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='StringFormat'/>.
+        /// </summary>
         ~StringFormat()
         {
             Dispose(false);
         }
 
-        /// <include file='doc\StringFormat.uex' path='docs/doc[@for="StringFormat.ToString"]/*' />
-        /// <devdoc>
-        ///    Converts this <see cref='System.Drawing.StringFormat'/> to
-        ///    a human-readable string.
-        /// </devdoc>
+        /// <summary>
+        /// Converts this <see cref='StringFormat'/> to a human-readable string.
+        /// </summary>
         public override string ToString()
         {
             return "[StringFormat, FormatFlags=" + FormatFlags.ToString() + "]";

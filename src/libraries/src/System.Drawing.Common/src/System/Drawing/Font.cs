@@ -2,23 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Internal;
+using System.Globalization;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing
 {
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Drawing.Internal;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-
-    /*
-    * Represent a font object
-    */
-
-    /// <include file='doc\Font.uex' path='docs/doc[@for="Font"]/*' />
-    /// <devdoc>
-    ///    Defines a particular format for text,
-    ///    including font face, size, and style attributes.
-    /// </devdoc>
+    /// <summary>
+    /// Defines a particular format for text, including font face, size, and style attributes.
+    /// </summary>
     [ComVisible(true)]
     public sealed partial class Font : MarshalByRefObject, ICloneable, IDisposable
     {
@@ -35,9 +29,9 @@ namespace System.Drawing
         private string _systemFontName = "";
         private string _originalFontName;
 
-        ///<devdoc>
-        ///     Creates the GDI+ native font object.
-        ///</devdoc>
+        ///<summary>
+        /// Creates the GDI+ native font object.
+        ///</summary>
         private void CreateNativeFont()
         {
             Debug.Assert(_nativeFont == IntPtr.Zero, "nativeFont already initialized, this will generate a handle leak.");
@@ -63,13 +57,10 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Font'/> class from
-        ///       the specified existing <see cref='System.Drawing.Font'/> and <see cref='System.Drawing.FontStyle'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class from the specified existing <see cref='Font'/>
+        /// and <see cref='FontStyle'/>.
+        /// </summary>
         public Font(Font prototype, FontStyle newStyle)
         {
             // Copy over the originalFontName because it won't get initialized
@@ -77,52 +68,42 @@ namespace System.Drawing
             Initialize(prototype.FontFamily, prototype.Size, newStyle, prototype.Unit, SafeNativeMethods.DEFAULT_CHARSET, false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font1"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit)
         {
             Initialize(family, emSize, style, unit, SafeNativeMethods.DEFAULT_CHARSET, false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font9"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet)
         {
             Initialize(family, emSize, style, unit, gdiCharSet, false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font11"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
             Initialize(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font10"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet)
         {
             Initialize(familyName, emSize, style, unit, gdiCharSet, IsVerticalName(familyName));
         }
 
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font12"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
             if (float.IsNaN(emSize) || float.IsInfinity(emSize) || emSize <= 0)
@@ -133,83 +114,65 @@ namespace System.Drawing
             Initialize(familyName, emSize, style, unit, gdiCharSet, gdiVerticalFont);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font2"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(FontFamily family, float emSize, FontStyle style)
         {
             Initialize(family, emSize, style, GraphicsUnit.Point, SafeNativeMethods.DEFAULT_CHARSET, false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font3"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(FontFamily family, float emSize, GraphicsUnit unit)
         {
             Initialize(family, emSize, FontStyle.Regular, unit, SafeNativeMethods.DEFAULT_CHARSET, false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font4"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(FontFamily family, float emSize)
         {
             Initialize(family, emSize, FontStyle.Regular, GraphicsUnit.Point, SafeNativeMethods.DEFAULT_CHARSET, false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font5"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(string familyName, float emSize, FontStyle style, GraphicsUnit unit)
         {
             Initialize(familyName, emSize, style, unit, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(familyName));
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font6"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///       the specified
-        ///       attributes.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(string familyName, float emSize, FontStyle style)
         {
             Initialize(familyName, emSize, style, GraphicsUnit.Point, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(familyName));
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font7"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(string familyName, float emSize, GraphicsUnit unit)
         {
             Initialize(familyName, emSize, FontStyle.Regular, unit, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(familyName));
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Font8"]/*' />
-        /// <devdoc>
-        ///    Initializes a new instance of the <see cref='System.Drawing.Font'/> class with
-        ///    the specified attributes.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
+        /// </summary>
         public Font(string familyName, float emSize)
         {
             Initialize(familyName, emSize, FontStyle.Regular, GraphicsUnit.Point, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(familyName));
         }
 
-        /// <devdoc>
-        ///     Constructor to initialize fields from an exisiting native GDI+ object reference.
-        ///     Used by ToLogFont.
-        /// </devdoc>
+        /// <summary>
+        /// Constructor to initialize fields from an exisiting native GDI+ object reference. Used by ToLogFont.
+        /// </summary>
         private Font(IntPtr nativeFont, byte gdiCharSet, bool gdiVerticalFont)
         {
             Debug.Assert(_nativeFont == IntPtr.Zero, "GDI+ native font already initialized, this will generate a handle leak");
@@ -248,9 +211,9 @@ namespace System.Drawing
             Initialize(_fontFamily, size, style, unit, gdiCharSet, gdiVerticalFont);
         }
 
-        /// <devdoc>
-        ///     Initializes this object's fields.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes this object's fields.
+        /// </summary>
         private void Initialize(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
             _originalFontName = familyName;
@@ -259,9 +222,9 @@ namespace System.Drawing
             Initialize(_fontFamily, emSize, style, unit, gdiCharSet, gdiVerticalFont);
         }
 
-        /// <devdoc>
-        ///     Initializes this object's fields.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes this object's fields.
+        /// </summary>
         private void Initialize(FontFamily family, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
             if (family == null)
@@ -300,11 +263,9 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.FromHfont"]/*' />
-        /// <devdoc>
-        ///    Creates a <see cref='System.Drawing.Font'/> from the specified Windows
-        ///    handle.
-        /// </devdoc>
+        /// <summary>
+        /// Creates a <see cref='System.Drawing.Font'/> from the specified Windows handle.
+        /// </summary>
         public static Font FromHfont(IntPtr hfont)
         {
             SafeNativeMethods.LOGFONT lf = new SafeNativeMethods.LOGFONT();
@@ -324,11 +285,6 @@ namespace System.Drawing
             return result;
         }
 
-
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.FromLogFont"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static Font FromLogFont(object lf)
         {
             IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
@@ -344,10 +300,6 @@ namespace System.Drawing
             return result;
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.FromLogFont1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static Font FromLogFont(object lf, IntPtr hdc)
         {
             IntPtr font = IntPtr.Zero;
@@ -369,11 +321,9 @@ namespace System.Drawing
 #pragma warning restore 0618
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.FromHdc"]/*' />
-        /// <devdoc>
-        ///    Creates a Font from the specified Windows
-        ///    handle to a device context.
-        /// </devdoc>
+        /// <summary>
+        /// Creates a Font from the specified Windows handle to a device context.
+        /// </summary>
         public static Font FromHdc(IntPtr hdc)
         {
             IntPtr font = IntPtr.Zero;
@@ -390,10 +340,9 @@ namespace System.Drawing
         }
 
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Clone"]/*' />
-        /// <devdoc>
-        ///    Creates an exact copy of this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Creates an exact copy of this <see cref='Font'/>.
+        /// </summary>
         public object Clone()
         {
             IntPtr cloneFont = IntPtr.Zero;
@@ -409,10 +358,9 @@ namespace System.Drawing
         }
 
 
-        /// <devdoc>
-        ///     Get native GDI+ object pointer.
-        ///     This property triggers the creation of the GDI+ native object if not initialized yet.
-        /// </devdoc>
+        /// <summary>
+        /// Get native GDI+ object pointer. This property triggers the creation of the GDI+ native object if not initialized yet.
+        /// </summary>
         internal IntPtr NativeFont
         {
             get
@@ -422,10 +370,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.FontFamily"]/*' />
-        /// <devdoc>
-        ///    Gets the <see cref='System.Drawing.FontFamily'/> of this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the <see cref='Drawing.FontFamily'/> of this <see cref='Font'/>.
+        /// </summary>
         [Browsable(false)]
         public FontFamily FontFamily
         {
@@ -447,19 +394,17 @@ namespace System.Drawing
             GC.SuppressFinalize(_fontFamily);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Finalize"]/*' />
-        /// <devdoc>
-        ///    Cleans up Windows resources for this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='Font'/>.
+        /// </summary>
         ~Font()
         {
             Dispose(false);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Dispose"]/*' />
-        /// <devdoc>
-        ///    Cleans up Windows resources for this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='Font'/>.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -501,12 +446,9 @@ namespace System.Drawing
             return familyName != null && familyName.Length > 0 && familyName[0] == '@';
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Bold"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether this <see cref='System.Drawing.Font'/> is bold.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether this <see cref='System.Drawing.Font'/> is bold.
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool Bold
         {
@@ -516,15 +458,14 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.GdiCharSet"]/*' />
-        /// <devdoc>
+        /// <summary>
         ///     Returns the GDI char set for this instance of a font. This will only
         ///     be valid if this font was created from a classic GDI font definition,
         ///     like a LOGFONT or HFONT, or it was passed into the constructor.
         ///
         ///     This is here for compatability with native Win32 intrinsic controls
         ///     on non-Unicode platforms.
-        /// </devdoc>
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public byte GdiCharSet
         {
@@ -534,16 +475,12 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.GdiVerticalFont"]/*' />
-        /// <devdoc>
-        ///     Determines if this font was created to represt a GDI vertical font.
-        ///     his will only be valid if this font was created from a classic GDI
-        ///     font definition, like a LOGFONT or HFONT, or it was passed into the 
-        ///     constructor.
+        /// <summary>
+        /// Determines if this font was created to represt a GDI vertical font. This will only be valid if this font
+        /// was created from a classic GDIfont definition, like a LOGFONT or HFONT, or it was passed into the constructor.
         ///
-        ///     This is here for compatability with native Win32 intrinsic controls
-        ///     on non-Unicode platforms.
-        /// </devdoc>
+        /// This is here for compatability with native Win32 intrinsic controls on non-Unicode platforms.
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool GdiVerticalFont
         {
@@ -553,12 +490,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Italic"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether this <see cref='System.Drawing.Font'/> is Italic.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether this <see cref='Font'/> is Italic.
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool Italic
         {
@@ -568,37 +502,27 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Name"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the face name of this <see cref='System.Drawing.Font'/> .
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the face name of this <see cref='Font'/> .
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string Name
         {
             get { return FontFamily.Name; }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.OriginalFontName"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       This property is required by the framework and not intended to be used directly.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// This property is required by the framework and not intended to be used directly.
+        /// </summary>
         [Browsable(false)]
         public string OriginalFontName
         {
             get { return _originalFontName; }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Strikeout"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether this <see cref='System.Drawing.Font'/> is strikeout (has a line
-        ///       through it).
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether this <see cref='Font'/> is strikeout (has a line through it).
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool Strikeout
         {
@@ -608,12 +532,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Underline"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets a value indicating whether this <see cref='System.Drawing.Font'/> is underlined.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets a value indicating whether this <see cref='Font'/> is underlined.
+        /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool Underline
         {
@@ -623,11 +544,10 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Equals"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    specified object is a <see cref='System.Drawing.Font'/> equivalent to this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the specified object is a <see cref='Font'/> equivalent to this
+        /// <see cref='Font'/>.
+        /// </summary>
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -657,10 +577,9 @@ namespace System.Drawing
 
 
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.GetHashCode"]/*' />
-        /// <devdoc>
-        ///    Gets the hash code for this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the hash code for this <see cref='Font'/>.
+        /// </summary>
         public override int GetHashCode()
         {
             return unchecked((int)((((UInt32)_fontStyle << 13) | ((UInt32)_fontStyle >> 19)) ^
@@ -677,11 +596,9 @@ namespace System.Drawing
             return familyName;
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.ToString"]/*' />
-        /// <devdoc>
-        ///    Returns a human-readable string
-        ///    representation of this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a human-readable string representation of this <see cref='Font'/>.
+        /// </summary>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "[{0}: Name={1}, Size={2}, Units={3}, GdiCharSet={4}, GdiVerticalFont={5}]",
@@ -693,14 +610,6 @@ namespace System.Drawing
                                     _gdiVerticalFont);
         }
 
-
-
-        // Operations
-
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.ToLogFont"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void ToLogFont(object logFont)
         {
             IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
@@ -723,10 +632,6 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.ToLogFont1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public unsafe void ToLogFont(object logFont, Graphics graphics)
         {
             if (graphics == null)
@@ -759,10 +664,9 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.ToHfont"]/*' />
-        /// <devdoc>
-        ///    Returns a handle to this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a handle to this <see cref='Font'/>.
+        /// </summary>
         public IntPtr ToHfont()
         {
             SafeNativeMethods.LOGFONT lf = new SafeNativeMethods.LOGFONT();
@@ -779,11 +683,9 @@ namespace System.Drawing
             return handle;
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.GetHeight"]/*' />
-        /// <devdoc>
-        ///    Returns the height of this Font in the
-        ///    specified graphics context.
-        /// </devdoc>
+        /// <summary>
+        /// Returns the height of this Font in the specified graphics context.
+        /// </summary>
         public float GetHeight(Graphics graphics)
         {
             if (graphics == null)
@@ -799,9 +701,6 @@ namespace System.Drawing
             return ht;
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.GetHeight1"]/*' />
-        /// <devdoc>
-        /// </devdoc>
         public float GetHeight()
         {
             IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
@@ -821,10 +720,6 @@ namespace System.Drawing
             return height;
         }
 
-
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.GetHeight2"]/*' />
-        /// <devdoc>
-        /// </devdoc>
         public float GetHeight(float dpi)
         {
             float ht;
@@ -837,11 +732,9 @@ namespace System.Drawing
             return ht;
         }
 
-
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Style"]/*' />
-        /// <devdoc>
-        ///    Gets style information for this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets style information for this <see cref='Font'/>.
+        /// </summary>
         [
         Browsable(false)
         ]
@@ -854,10 +747,9 @@ namespace System.Drawing
         }
 
         // Return value is in Unit (the unit the font was created in)
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Size"]/*' />
-        /// <devdoc>
-        ///    Gets the size of this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the size of this <see cref='Font'/>.
+        /// </summary>
         public float Size
         {
             get
@@ -866,10 +758,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.SizeInPoints"]/*' />
-        /// <devdoc>
-        ///    Gets the size, in points, of this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the size, in points, of this <see cref='Font'/>.
+        /// </summary>
         [Browsable(false)]
         public float SizeInPoints
         {
@@ -904,10 +795,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Unit"]/*' />
-        /// <devdoc>
-        ///    Gets the unit of measure for this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the unit of measure for this <see cref='Font'/>.
+        /// </summary>
         public GraphicsUnit Unit
         {
             get
@@ -916,10 +806,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.Height"]/*' />
-        /// <devdoc>
-        ///    Gets the height of this <see cref='System.Drawing.Font'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the height of this <see cref='Font'/>.
+        /// </summary>
         [
         Browsable(false)
         ]
@@ -931,10 +820,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.IsSystemFont"]/*' />
-        /// <devdoc>
-        ///    Returns true if this <see cref='System.Drawing.Font'/> is a SystemFont.
-        /// </devdoc>
+        /// <summary>
+        /// Returns true if this <see cref='Font'/> is a SystemFont.
+        /// </summary>
         [
         Browsable(false)
         ]
@@ -946,10 +834,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Font.uex' path='docs/doc[@for="Font.SystemFontName"]/*' />
-        /// <devdoc>
-        ///    Gets the name of this <see cref='System.Drawing.SystemFont'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the name of this <see cref='Drawing.SystemFont'/>.
+        /// </summary>
         [
         Browsable(false)
         ]
@@ -968,4 +855,3 @@ namespace System.Drawing
         }
     }
 }
-

@@ -2,28 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security;
+
 namespace System.Drawing.Printing
 {
-    using System.Security;
-
-    /// <include file='doc\InvalidPrinterException.uex' path='docs/doc[@for="InvalidPrinterException"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Represents
-    ///       the
-    ///       exception that is thrown when trying to access a printer using invalid printer settings.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Represents the exception that is thrown when trying to access a printer using invalid printer settings.
+    /// </summary>
     public partial class InvalidPrinterException : SystemException
     {
         private PrinterSettings _settings;
 
-        /// <include file='doc\InvalidPrinterException.uex' path='docs/doc[@for="InvalidPrinterException.InvalidPrinterException"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.InvalidPrinterException'/> class.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='InvalidPrinterException'/> class.
+        /// </summary>
         public InvalidPrinterException(PrinterSettings settings)
         : base(GenerateMessage(settings))
         {

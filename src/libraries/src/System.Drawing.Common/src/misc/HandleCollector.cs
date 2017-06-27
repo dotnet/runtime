@@ -23,22 +23,19 @@ namespace System.Internal
 
         private static object s_internalSyncObject = new object();
 
-        /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.Add"]/*' />
-        /// <devdoc>
-        ///     Adds the given handle to the handle collector.  This keeps the
-        ///     handle on a "hot list" of objects that may need to be garbage
-        ///     collected.
-        /// </devdoc>
+        /// <summary>
+        /// Adds the given handle to the handle collector. This keeps the handle on a "hot list" of objects that may
+        /// need to be garbage collected.
+        /// </summary>
         internal static IntPtr Add(IntPtr handle, int type)
         {
             s_handleTypes[type - 1].Add(handle);
             return handle;
         }
 
-        /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.Add"]/*' />
-        /// <devdoc>
-        ///     Suspends GC.Collect
-        /// </devdoc>
+        /// <summary>
+        /// Suspends GC.Collect
+        /// </summary>
         internal static void SuspendCollect()
         {
             lock (s_internalSyncObject)
@@ -47,10 +44,9 @@ namespace System.Internal
             }
         }
 
-        /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.Add"]/*' />
-        /// <devdoc>
-        ///     Resumes GC.Collect
-        /// </devdoc>        
+        /// <summary>
+        /// Resumes GC.Collect
+        /// </summary>        
         internal static void ResumeCollect()
         {
             bool performCollect = false;
@@ -82,10 +78,9 @@ namespace System.Internal
             }
         }
 
-        /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.RegisterType"]/*' />
-        /// <devdoc>
-        ///     Registers a new type of handle with the handle collector.
-        /// </devdoc>
+        /// <summary>
+        /// Registers a new type of handle with the handle collector.
+        /// </summary>
         internal static int RegisterType(string typeName, int expense, int initialThreshold)
         {
             lock (s_internalSyncObject)
@@ -105,21 +100,18 @@ namespace System.Internal
             }
         }
 
-        /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.Remove"]/*' />
-        /// <devdoc>
-        ///     Removes the given handle from the handle collector.  Removing a
-        ///     handle removes it from our "hot list" of objects that should be
-        ///     frequently garbage collected.
-        /// </devdoc>
+        /// <summary>
+        /// Removes the given handle from the handle collector. Removing a handle removes it from our "hot list" of
+        /// objects that should be frequently garbage collected.
+        /// </summary>
         internal static IntPtr Remove(IntPtr handle, int type)
         {
             return s_handleTypes[type - 1].Remove(handle);
         }
 
-        /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.HandleType"]/*' />
-        /// <devdoc>
-        ///     Represents a specific type of handle.
-        /// </devdoc>
+        /// <summary>
+        /// Represents a specific type of handle.
+        /// </summary>
         private class HandleType
         {
             internal readonly string name;
@@ -133,10 +125,9 @@ namespace System.Internal
             private List<IntPtr> handles = new List<IntPtr>();
 #endif
 
-            /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.HandleType.HandleType"]/*' />
-            /// <devdoc>
-            ///     Creates a new handle type.
-            /// </devdoc>
+            /// <summary>
+            /// Creates a new handle type.
+            /// </summary>
             internal HandleType(string name, int expense, int initialThreshHold)
             {
                 this.name = name;
@@ -145,10 +136,9 @@ namespace System.Internal
                 _deltaPercent = 100 - expense;
             }
 
-            /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.HandleType.Add"]/*' />
-            /// <devdoc>
-            ///     Adds a handle to this handle type for monitoring.
-            /// </devdoc>            
+            /// <summary>
+            /// Adds a handle to this handle type for monitoring.
+            /// </summary>            
             internal void Add(IntPtr handle)
             {
                 if (handle == IntPtr.Zero)
@@ -207,11 +197,9 @@ namespace System.Internal
             }
 
 
-            /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.HandleType.GetHandleCount"]/*' />
-            /// <devdoc>
-            ///     Retrieves the outstanding handle count for this
-            ///     handle type.
-            /// </devdoc>
+            /// <summary>
+            /// Retrieves the outstanding handle count for this handle type.
+            /// </summary>
             internal int GetHandleCount()
             {
                 lock (this)
@@ -220,10 +208,9 @@ namespace System.Internal
                 }
             }
 
-            /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.HandleType.NeedCollection"]/*' />
-            /// <devdoc>
-            ///     Determines if this handle type needs a garbage collection pass.
-            /// </devdoc>
+            /// <summary>
+            /// Determines if this handle type needs a garbage collection pass.
+            /// </summary>
             internal bool NeedCollection()
             {
                 if (s_suspendCount > 0)
@@ -243,7 +230,6 @@ namespace System.Internal
                 // need to collect, but if it 10% below the next lowest threshhold we
                 // will bump down a rung.  We need to choose a percentage here or else
                 // we will oscillate.
-                //
                 int oldThreshHold = (100 * _threshHold) / (100 + _deltaPercent);
                 if (oldThreshHold >= _initialThreshHold && _handleCount < (int)(oldThreshHold * .9F))
                 {
@@ -256,10 +242,9 @@ namespace System.Internal
                 return false;
             }
 
-            /// <include file='doc\NativeMethods.uex' path='docs/doc[@for="NativeMethods.HandleCollector.HandleType.Remove"]/*' />
-            /// <devdoc>
-            ///     Removes the given handle from our monitor list.
-            /// </devdoc>
+            /// <summary>
+            /// Removes the given handle from our monitor list.
+            /// </summary>
             internal IntPtr Remove(IntPtr handle)
             {
                 if (handle == IntPtr.Zero)
