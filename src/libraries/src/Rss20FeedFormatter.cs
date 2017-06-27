@@ -1088,6 +1088,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             XmlBuffer buffer = null;
             XmlDictionaryWriter extWriter = null;
+            NullNotAllowedCollection<SyndicationItem> feedItems = new NullNotAllowedCollection<SyndicationItem>();
 
             try
             {
@@ -1151,30 +1152,31 @@ namespace Microsoft.ServiceModel.Syndication
 
                             case Rss20Constants.ImageTag:
                                 {
-                                    await reader.ReadStartElementAsync();
+                                    //await reader.ReadStartElementAsync();
 
-                                    while (reader.IsStartElement())
-                                    {
-                                        if (await reader.IsStartElementAsync(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
-                                        {
-                                            result.ImageUrl = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
-                                        }
-                                        else
-                                        {
-                                            await reader.SkipAsync();
-                                        }
-                                    }
+                                    //while (reader.IsStartElement())
+                                    //{
+                                    //    if (await reader.IsStartElementAsync(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
+                                    //    {
+                                    //        result.ImageUrl = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
+                                    //    }
+                                    //    else
+                                    //    {
+                                    //        await reader.SkipAsync();
+                                    //    }
+                                    //}
 
-                                    await reader.ReadEndElementAsync();
+                                    //await reader.ReadEndElementAsync();
+                                    await OnReadImage(reader,result);
                                     break;
                                 }
 
                             case Rss20Constants.ItemTag:
                                 {
-                                    if (readItemsAtLeastOnce)
-                                    {
-                                        throw new InvalidOperationException();
-                                    }
+                                    //if (readItemsAtLeastOnce)
+                                    //{
+                                    //    throw new InvalidOperationException();
+                                    //}
 
                                     NullNotAllowedCollection<SyndicationItem> items = new NullNotAllowedCollection<SyndicationItem>();
                                     while (await reader.IsStartElementAsync(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace))
@@ -1182,8 +1184,13 @@ namespace Microsoft.ServiceModel.Syndication
                                         items.Add(await ReadItemAsync(reader, result));
                                     }
 
+                                    foreach(var item in items)
+                                    {
+                                        feedItems.Add(item);
+                                    }
+
                                     areAllItemsRead = true;
-                                    result.Items = items;
+                                    //result.Items = items;
                                     readItemsAtLeastOnce = true;
 
                                     break;
@@ -1233,6 +1240,9 @@ namespace Microsoft.ServiceModel.Syndication
                         break;
                     }
                 }
+
+                //asign all read items to feed items.
+                result.Items = feedItems;
                 LoadElementExtensions(buffer, extWriter, result); //JERRY MAKE THIS ASYNC
             }
             finally

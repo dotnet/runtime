@@ -61,7 +61,7 @@ namespace Microsoft.ServiceModel.Syndication
             this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return IsStartElementAsync(thisPtr.reader, localname, ns); });
             this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return thisPtr.reader.SkipAsync(); });
             this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return thisPtr.reader.ReadAsync(); });
-            this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.ReadInnerXmlAsync(); });
+            this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.ReadInnerXmlAsync(); });
         }
 
         private void Init()

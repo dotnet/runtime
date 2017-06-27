@@ -162,65 +162,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 //File.Delete(AtomPath);
             }
         }
-
-
-        ////[Fact]
-        ////public static void SyndicationFeed_RSS20FeedFormatter_UsingCustomParser()
-        ////{
-        ////    //this test will override the default date parser and assign just a new date to the feed
-
-        ////    // *** SETUP *** \\
-        ////    Rss20FeedFormatter rssformater = new Rss20FeedFormatter();
-        ////    string newTitle = "My title is not the original one!";
-        ////    DateTime timeNow = DateTime.Now;
-
-        ////    rssformater.DateParser = delegate (string date, XmlReader xmlr)
-        ////    {
-        ////        return new DateTimeOffset(timeNow);
-        ////    };
-
-        ////    rssformater.ItemParser = delegate (XmlReader reader1, SyndicationFeed result)
-        ////    {
-        ////        while (reader1.Name != "item" || reader1.NodeType != XmlNodeType.EndElement)
-        ////            reader1.Read();
-
-        ////        SyndicationItem item = new SyndicationItem();
-
-        ////        item.Title = new TextSyndicationContent(newTitle);
-        ////        item.Summary = new TextSyndicationContent("I'm not supposed to show a summary...");
-        ////        return item;
-        ////    };
-
-        ////    rssformater.ImageParser = delegate (XmlReader readerD, SyndicationFeed feed)
-        ////    {
-        ////        feed.ImageUrl = new Uri("http://www.customParsedImage.com");
-        ////        readerD.Skip();
-        ////        return true;
-        ////    };
-
-
-        //    try
-        //    {
-        //        // *** EXECUTE *** \\
-        //        XmlReader reader = XmlReader.Create(@"TestFeeds\SimpleRssFeed.xml");
-        //        SyndicationFeed sf = SyndicationFeed.Load(reader, rssformater);
-
-        //        // *** ASSERT *** \\
-        //        foreach (var item in sf.Items)
-        //        {
-        //            Assert.True(item.Title.Text == newTitle);
-        //            Assert.True(sf.LastUpdatedTime == timeNow);
-        //        }
-
-        //    }
-        //    finally
-        //    {
-        //        // *** CLEANUP *** \\
-
-        //    }
-
-
-        //}
+      
 
         [Fact]
         public static void SyndicationFeed_RSS20_Load_customImageDataInFeed()
@@ -275,40 +217,65 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
 
         [Fact]
-        public static void SyndicationFeed_RSS20_Atom10_AsyncTest()
-        {
-            test().Wait();
-        }
-
-        public static async Task test() {
+        public static async Task SyndicationFeed_LoadAsync_Rss() {
 
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
-            XmlReader reader = XmlReader.Create(@"TestFeeds\SimpleAtomFeed.xml",setting);
-            XmlReader reader2 = XmlReader.Create(@"TestFeeds\SimpleRssFeed.xml", setting);
+            XmlReader reader2 = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
 
 
-            Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
             Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(reader2);
 
            
 
             //atom.re
 
-            await Task.WhenAll(atom, rss);
+            await Task.WhenAll(rss);
 
-            Assert.True(atom.Result.Items != null);
             Assert.True(rss.Result.Items != null);
         }
 
         [Fact]
-        public static async Task SyndicationFeed_BigFeedTest()
+        public static async Task SyndicationFeed_LoadAsync_Atom()
         {
+
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = XmlReader.Create(@"TestFeeds\atom_complex_example.xml", setting);
+
+
+            Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
+
+
+
+            //atom.re
+
+            await Task.WhenAll(atom);
+
+            Assert.True(atom.Result.Items != null);
+        }
+
+        [Fact]
+        public static void SyndicationFeed_Rss_TestDisjointItems()
+        {
+            // *** SETUP *** \\
+            XmlReader reader = XmlReader.Create(@"TestFeeds\RssDisjointItems.xml");
             
-            XmlReaderSettings settings = new XmlReaderSettings();
-            settings.Async = true;
-            XmlReader reader = XmlReader.Create(@"TestFeeds\feed300_mb.xml",settings);
-            SyndicationFeed sf = await SyndicationFeed.LoadAsync(reader);
+            // *** EXECUTE *** \\
+            SyndicationFeed sf = SyndicationFeed.Load(reader);
+
+
+            // *** ASSERT *** \\
+            int count = 0;
+            foreach(var item in sf.Items)
+            {
+                count++;
+            }
+
+            Assert.True(count == 2);
+
+            // *** CLEANUP *** \\
+            reader.Close();
         }
 
     }
