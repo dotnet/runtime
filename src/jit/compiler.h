@@ -2435,6 +2435,9 @@ public:
         DNER_LiveAcrossUnmanagedCall,
         DNER_BlockOp,     // Is read or written via a block operation that explicitly takes the address.
         DNER_IsStructArg, // Is a struct passed as an argument in a way that requires a stack location.
+        DNER_DepField,    // It is a field of a dependently promoted struct
+        DNER_NoRegVars,   // opts.compFlags & CLFLG_REGVAR is not set
+        DNER_MinOptsGC,   // It is a GC Ref and we are compiling MinOpts
 #ifdef JIT32_GCENCODER
         DNER_PinningRef,
 #endif
