@@ -2091,6 +2091,14 @@ namespace System.Reflection.Metadata.Tests
                 new byte[] { 01, 00, 00, 00 },
               };
 
+            // ModuleVb01
+            var modTypes = new int[] { 0x0a000003 };
+            var modParents = new int[] { 0x02000002 };
+            var modValues = new byte[][]
+            {
+                new byte[] { 0x01, 00, 0x10, 0x4d, 0x6f, 0x64, 0x56, 0x42, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x50, 0x72, 0x6f, 0x70, 00, 00 }
+            };
+
             var reader = GetMetadataReader(Interop.Interop_Mock01);
 
             int i = 0;
@@ -2114,24 +2122,12 @@ namespace System.Reflection.Metadata.Tests
             }
 
             Assert.Equal(0x37, i);
-        }
 
-        [Fact]
-        public void ValidateModuleCustomAttributes()
-        {
-            // ModuleVb01
-            var modTypes = new int[] { 0x0a000003 };
-            var modParents = new int[] { 0x02000002 };
-            var modValues = new byte[][]
-            {
-                new byte[] { 0x01, 00, 0x10, 0x4d, 0x6f, 0x64, 0x56, 0x42, 0x44, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x50, 0x72, 0x6f, 0x70, 00, 00 }
-            };
-            
-            var reader = GetMetadataReader(NetModule.ModuleVB01, true);
-            var moduleDefinition = reader.GetModuleDefinition();
+            // ====================================================
+            reader = GetMetadataReader(NetModule.ModuleVB01, true);
 
-            int i = 0;
-            foreach (var caHandle in moduleDefinition.GetCustomAttributes())
+            i = 0;
+            foreach (var caHandle in reader.CustomAttributes)
             {
                 var row = reader.GetCustomAttribute(caHandle);
                 Assert.Equal(modTypes[i], row.Constructor.Token);
@@ -2143,6 +2139,7 @@ namespace System.Reflection.Metadata.Tests
                 {
                     Assert.Equal(blob[j], sig[j]);
                 }
+
                 i++;
             }
         }
