@@ -2,21 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing.Drawing2D;
+using System.Drawing.Internal;
+using System.Globalization;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing
 {
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Drawing.Drawing2D;
-    using System.Drawing.Internal;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen"]/*' />
-    /// <devdoc>
-    ///     <para>
-    ///         Defines an object used to draw lines and curves.
-    ///     </para>
-    /// </devdoc>
+    /// <summary>
+    /// Defines an object used to draw lines and curves.
+    /// </summary>
     public sealed class Pen : MarshalByRefObject, ISystemColorTracker, ICloneable, IDisposable
     {
 #if FINALIZATION_WATCH
@@ -30,9 +27,9 @@ namespace System.Drawing
         private Color _color;
         private bool _immutable;
 
-        /// <devdoc>
-        ///     Creates a Pen from a native GDI+ object.
-        /// </devdoc>
+        /// <summary>
+        /// Creates a Pen from a native GDI+ object.
+        /// </summary>
         private Pen(IntPtr nativePen)
         {
             SetNativePen(nativePen);
@@ -44,24 +41,17 @@ namespace System.Drawing
             _immutable = immutable;
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Pen"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the Pen
-        ///       class with the specified <see cref='System.Drawing.Pen.Color'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the Pen class with the specified <see cref='Color'/>.
+        /// </summary>
         public Pen(Color color) : this(color, (float)1.0)
         {
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Pen1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Pen'/>  class with the specified 
-        ///       <see cref='System.Drawing.Pen.Color'/> and <see cref='System.Drawing.Pen.Width'/>.
-        /// </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Pen'/> class with the specified
+        /// <see cref='Color'/> and <see cref='Width'/>.
+        /// </summary>
         public Pen(Color color, float width)
         {
             _color = color;
@@ -85,24 +75,16 @@ namespace System.Drawing
 #endif
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Pen2"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the Pen class with the
-        ///       specified <see cref='System.Drawing.Pen.Brush'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the Pen class with the specified <see cref='Brush'/>.
+        /// </summary>
         public Pen(Brush brush) : this(brush, (float)1.0)
         {
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Pen3"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Pen'/> class with
-        ///       the specified <see cref='System.Drawing.Brush'/> and width.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='Pen'/> class with the specified <see cref='Drawing.Brush'/> and width.
+        /// </summary>
         public Pen(Brush brush, float width)
         {
             IntPtr pen = IntPtr.Zero;
@@ -131,9 +113,9 @@ namespace System.Drawing
             _nativePen = nativePen;
         }
 
-        /// <devdoc>
-        ///    Gets the GDI+ native object.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the GDI+ native object.
+        /// </summary>
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         internal IntPtr NativePen
         {
@@ -145,13 +127,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Create a copy of the pen object
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Clone"]/*' />
-        /// <devdoc>
-        ///     Creates an exact copy of this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Creates an exact copy of this <see cref='System.Drawing.Pen'/>.
+        /// </summary>
         public object Clone()
         {
             IntPtr clonePen = IntPtr.Zero;
@@ -166,13 +144,9 @@ namespace System.Drawing
             return new Pen(clonePen);
         }
 
-        /**
-         * Dispose of resources associated with the Pen object
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Dispose"]/*' />
-        /// <devdoc>
-        ///    Cleans up Windows resources for this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='System.Drawing.Pen'/>.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -227,22 +201,17 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Finalize"]/*' />
-        /// <devdoc>
-        ///    Cleans up Windows resources for this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='System.Drawing.Pen'/>.
+        /// </summary>
         ~Pen()
         {
             Dispose(false);
         }
 
-        /**
-         * Set/get pen width
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Width"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the width of this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the width of this <see cref='System.Drawing.Pen'/>.
+        /// </summary>
         public float Width
         {
             get
@@ -269,16 +238,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Set/get line caps: start, end, and dash
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.SetLineCap"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Sets the values that determine the style of
-        ///       cap used to end lines drawn by this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Sets the values that determine the style of cap used to end lines drawn by this <see cref='Pen'/>.
+        /// </summary>
         public void SetLineCap(LineCap startCap, LineCap endCap, DashCap dashCap)
         {
             if (_immutable)
@@ -290,13 +252,9 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.StartCap"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the cap style used at the
-        ///       beginning of lines drawn with this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the cap style used at the beginning of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public LineCap StartCap
         {
             get
@@ -339,13 +297,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.EndCap"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the cap style used at the end of
-        ///       lines drawn with this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the cap style used at the end of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public LineCap EndCap
         {
             get
@@ -389,11 +343,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.DashCap"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the cap style used at the
-        ///    beginning or end of dashed lines drawn with this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the cap style used at the beginning or end of dashed lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public DashCap DashCap
         {
             get
@@ -428,14 +380,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-        * Set/get line join
-        */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.LineJoin"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the join style for the ends of
-        ///    two overlapping lines drawn with this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the join style for the ends of two overlapping lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public LineJoin LineJoin
         {
             get
@@ -467,16 +414,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Set/get custom start line cap
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.CustomStartCap"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a custom cap style to use at the beginning of lines
-        ///       drawn with this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a custom cap style to use at the beginning of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public CustomLineCap CustomStartCap
         {
             get
@@ -503,16 +443,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Set/get custom end line cap
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.CustomEndCap"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a custom cap style to use at the end of lines
-        ///       drawn with this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a custom cap style to use at the end of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public CustomLineCap CustomEndCap
         {
             get
@@ -539,11 +472,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.MiterLimit"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the limit of the thickness of
-        ///    the join on a mitered corner.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the limit of the thickness of the join on a mitered corner.
+        /// </summary>
         public float MiterLimit
         {
             get
@@ -569,16 +500,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Pen Mode
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Alignment"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets
-        ///       the alignment for objects drawn with this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the alignment for objects drawn with this <see cref='Pen'/>.
+        /// </summary>
         public PenAlignment Alignment
         {
             get
@@ -611,16 +535,9 @@ namespace System.Drawing
             }
         }
 
-        /**
-         * Set/get pen transform
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Transform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets
-        ///       or sets the geometrical transform for objects drawn with this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the geometrical transform for objects drawn with this <see cref='Pen'/>.
+        /// </summary>
         public Matrix Transform
         {
             get
@@ -652,12 +569,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.ResetTransform"]/*' />
-        /// <devdoc>
-        ///    Resets the geometric transform for this
-        /// <see cref='System.Drawing.Pen'/> to 
-        ///    identity.
-        /// </devdoc>
+        /// <summary>
+        /// Resets the geometric transform for this <see cref='Pen'/> to identity.
+        /// </summary>
         public void ResetTransform()
         {
             int status = SafeNativeMethods.Gdip.GdipResetPenTransform(new HandleRef(this, NativePen));
@@ -666,27 +580,17 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.MultiplyTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Multiplies the transform matrix for this
-        ///    <see cref='System.Drawing.Pen'/> by 
-        ///       the specified <see cref='System.Drawing.Drawing2D.Matrix'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Multiplies the transform matrix for this <see cref='Pen'/> by the specified <see cref='Matrix'/>.
+        /// </summary>
         public void MultiplyTransform(Matrix matrix)
         {
             MultiplyTransform(matrix, MatrixOrder.Prepend);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.MultiplyTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Multiplies the transform matrix for this
-        ///    <see cref='System.Drawing.Pen'/> by 
-        ///       the specified <see cref='System.Drawing.Drawing2D.Matrix'/> in the specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Multiplies the transform matrix for this <see cref='Pen'/> by the specified <see cref='Matrix'/> in the specified order.
+        /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipMultiplyPenTransform(new HandleRef(this, NativePen),
@@ -697,24 +601,18 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.TranslateTransform"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Translates the local geometrical transform
-        ///       by the specified dimmensions. This method prepends the translation to the
-        ///       transform.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Translates the local geometrical transform by the specified dimmensions. This method prepends the translation
+        /// to the transform.
+        /// </summary>
         public void TranslateTransform(float dx, float dy)
         {
             TranslateTransform(dx, dy, MatrixOrder.Prepend);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.TranslateTransform1"]/*' />
-        /// <devdoc>
-        ///    Translates the local geometrical transform
-        ///    by the specified dimmensions in the specified order.
-        /// </devdoc>
+        /// <summary>
+        /// Translates the local geometrical transform by the specified dimmensions in the specified order.
+        /// </summary>
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipTranslatePenTransform(new HandleRef(this, NativePen),
@@ -724,23 +622,17 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.ScaleTransform"]/*' />
-        /// <devdoc>
-        ///    Scales the local geometric transform by the
-        ///    specified amounts. This method prepends the scaling matrix to the transform.
-        /// </devdoc>
+        /// <summary>
+        /// Scales the local geometric transform by the specified amounts. This method prepends the scaling matrix to the transform.
+        /// </summary>
         public void ScaleTransform(float sx, float sy)
         {
             ScaleTransform(sx, sy, MatrixOrder.Prepend);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.ScaleTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Scales the local geometric transform by the
-        ///       specified amounts in the specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Scales the local geometric transform by the specified amounts in the specified order.
+        /// </summary>
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipScalePenTransform(new HandleRef(this, NativePen),
@@ -750,23 +642,17 @@ namespace System.Drawing
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.RotateTransform"]/*' />
-        /// <devdoc>
-        ///    Rotates the local geometric transform by the
-        ///    specified amount. This method prepends the rotation to the transform.
-        /// </devdoc>
+        /// <summary>
+        /// Rotates the local geometric transform by the specified amount. This method prepends the rotation to the transform.
+        /// </summary>
         public void RotateTransform(float angle)
         {
             RotateTransform(angle, MatrixOrder.Prepend);
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.RotateTransform1"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Rotates the local geometric transform by the specified
-        ///       amount in the specified order.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Rotates the local geometric transform by the specified amount in the specified order.
+        /// </summary>
         public void RotateTransform(float angle, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipRotatePenTransform(new HandleRef(this, NativePen),
@@ -775,13 +661,6 @@ namespace System.Drawing
             if (status != SafeNativeMethods.Gdip.Ok)
                 throw SafeNativeMethods.Gdip.StatusException(status);
         }
-
-        /**
-         * Set/get pen type (color, line texture, or brush)
-         *
-         * @notes GetLineFill returns either a Brush object
-         *  or a LineTexture object.
-         */
 
         private void InternalSetColor(Color value)
         {
@@ -793,11 +672,9 @@ namespace System.Drawing
             _color = value;
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.PenType"]/*' />
-        /// <devdoc>
-        ///    Gets the style of lines drawn with this
-        /// <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the style of lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public PenType PenType
         {
             get
@@ -813,12 +690,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Color"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the color of this <see cref='System.Drawing.Pen'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the color of this <see cref='Pen'/>.
+        /// </summary>
         public Color Color
         {
             get
@@ -861,11 +735,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.Brush"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the <see cref='System.Drawing.Brush'/> that
-        ///    determines attributes of this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the <see cref='Drawing.Brush'/> that determines attributes of this <see cref='Pen'/>.
+        /// </summary>
         public Brush Brush
         {
             get
@@ -929,14 +801,9 @@ namespace System.Drawing
             return nativeBrush;
         }
 
-        /**
-         * Set/get dash attributes
-         */
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.DashStyle"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the style used for dashed
-        ///    lines drawn with this <see cref='System.Drawing.Pen'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the style used for dashed lines drawn with this <see cref='Pen'/>.
+        /// </summary>
         public DashStyle DashStyle
         {
             get
@@ -979,11 +846,10 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.EnsureValidDashPattern"]/*' />
-        /// <devdoc>
-        ///    This method is called after the user sets the pen's dash style to custom.
-        ///    Here, we make sure that there is a default value set for the custom pattern.
-        /// </devdoc>
+        /// <summary>
+        /// This method is called after the user sets the pen's dash style to custom. Here, we make sure that there
+        /// is a default value set for the custom pattern.
+        /// </summary>
         private void EnsureValidDashPattern()
         {
             int retval = 0;
@@ -999,11 +865,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.DashOffset"]/*' />
-        /// <devdoc>
-        ///    Gets or sets the distance from the start of
-        ///    a line to the beginning of a dash pattern.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the distance from the start of a line to the beginning of a dash pattern.
+        /// </summary>
         public float DashOffset
         {
             get
@@ -1029,13 +893,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.DashPattern"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets an array of cutom dashes and
-        ///       spaces. The dashes are made up of line segments.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets an array of cutom dashes and spaces. The dashes are made up of line segments.
+        /// </summary>
         public float[] DashPattern
         {
             get
@@ -1111,11 +971,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.CompoundArray"]/*' />
-        /// <devdoc>
-        ///    Gets or sets an array of cutom dashes and
-        ///    spaces. The dashes are made up of line segments.
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets an array of cutom dashes and spaces. The dashes are made up of line segments.
+        /// </summary>
         public float[] CompoundArray
         {
             get
@@ -1147,8 +1005,6 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\Pen.uex' path='docs/doc[@for="Pen.ISystemColorTracker.OnSystemColorChanged"]/*' />
-        /// <internalonly/>
         void ISystemColorTracker.OnSystemColorChanged()
         {
             if (NativePen != IntPtr.Zero)

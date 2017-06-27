@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Security.Permissions;
+using System.Threading;
+
 namespace System.Drawing
 {
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.Security.Permissions;
-    using System.Threading;
-
-    /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext"]/*' />
-    /// <devdoc>
-    ///         The BufferedGraphicsContext class can be used to perform standard double buffer
-    ///         rendering techniques.
-    /// </devdoc>
+    /// <summary>
+    /// The BufferedGraphicsContext class can be used to perform standard double buffer rendering techniques.
+    /// </summary>
     public sealed class BufferedGraphicsContext : IDisposable
     {
         private Size _maximumBuffer;
@@ -39,10 +37,9 @@ namespace System.Drawing
         private string _stackAtBusy;
 #endif
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.BufferedGraphicsContext"]/*' />
-        /// <devdoc>
-        ///         Basic constructor.
-        /// </devdoc>
+        /// <summary>
+        /// Basic constructor.
+        /// </summary>
         public BufferedGraphicsContext()
         {
             //by defualt, the size of our maxbuffer will be 3 x standard button size
@@ -52,17 +49,12 @@ namespace System.Drawing
             _bufferSize = Size.Empty;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.Finalizer"]/*' />
-        /// <devdoc>
-        ///         Destructor.
-        /// </devdoc>
         ~BufferedGraphicsContext()
         {
             Dispose(false);
         }
 
         //Internal trace switch for debugging
-        //
         internal static TraceSwitch DoubleBuffering
         {
             get
@@ -75,13 +67,12 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.MaximumBuffer"]/*' />
-        /// <devdoc>
-        ///         Allows you to set the maximum width and height of the buffer that will be retained in memory.
-        ///         You can allocate a buffer of any size, however any request for a buffer that would have a total
-        ///         memory footprint larger that the maximum size will be allocated temporarily and then discarded 
-        ///         with the BufferedGraphics is released.
-        /// </devdoc>
+        /// <summary>
+        /// Allows you to set the maximum width and height of the buffer that will be retained in memory.
+        /// You can allocate a buffer of any size, however any request for a buffer that would have a total
+        /// memory footprint larger that the maximum size will be allocated temporarily and then discarded 
+        /// with the BufferedGraphics is released.
+        /// </summary>
         public Size MaximumBuffer
         {
             get
@@ -108,10 +99,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.Allocate"]/*' />
-        /// <devdoc>
-        ///         Returns a BufferedGraphics that is matched for the specified target Graphics object.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a BufferedGraphics that is matched for the specified target Graphics object.
+        /// </summary>
         public BufferedGraphics Allocate(Graphics targetGraphics, Rectangle targetRectangle)
         {
             if (ShouldUseTempManager(targetRectangle))
@@ -122,10 +112,9 @@ namespace System.Drawing
             return AllocBuffer(targetGraphics, IntPtr.Zero, targetRectangle);
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.Allocate1"]/*' />
-        /// <devdoc>
-        ///         Returns a BufferedGraphics that is matched for the specified target HDC object.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a BufferedGraphics that is matched for the specified target HDC object.
+        /// </summary>
         [SecurityPermission(SecurityAction.LinkDemand, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public BufferedGraphics Allocate(IntPtr targetDC, Rectangle targetRectangle)
         {
@@ -137,10 +126,9 @@ namespace System.Drawing
             return AllocBuffer(null, targetDC, targetRectangle);
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.AllocBuffer"]/*' />
-        /// <devdoc>
-        ///         Returns a BufferedGraphics that is matched for the specified target HDC object.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a BufferedGraphics that is matched for the specified target HDC object.
+        /// </summary>
         private BufferedGraphics AllocBuffer(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
             int oldBusy = Interlocked.CompareExchange(ref _busy, BUFFER_BUSY_PAINTING, BUFFER_FREE);
@@ -194,10 +182,9 @@ namespace System.Drawing
             return _buffer;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.AllocBufferInTempManager"]/*' />
-        /// <devdoc>
-        ///         Returns a BufferedGraphics that is matched for the specified target HDC object.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a BufferedGraphics that is matched for the specified target HDC object.
+        /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope")]
         private BufferedGraphics AllocBufferInTempManager(Graphics targetGraphics, IntPtr targetDC, Rectangle targetRectangle)
         {
@@ -225,31 +212,30 @@ namespace System.Drawing
         }
 
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.bFillBitmapInfo"]/*' />
-        /// <devdoc>
-        // bFillBitmapInfo
-        //
-        // Fills in the fields of a BITMAPINFO so that we can create a bitmap
-        // that matches the format of the display.
-        //
-        // This is done by creating a compatible bitmap and calling GetDIBits
-        // to return the color masks.  This is done with two calls.  The first
-        // call passes in biBitCount = 0 to GetDIBits which will fill in the
-        // base BITMAPINFOHEADER data.  The second call to GetDIBits (passing
-        // in the BITMAPINFO filled in by the first call) will return the color
-        // table or bitmasks, as appropriate.
-        //
-        // Returns:
-        //   TRUE if successful, FALSE otherwise.
-        //
-        // History:
-        //  07-Jun-1995 -by- Gilman Wong [Microsoft]
-        // Wrote it.
-        //
-        //  15-Nov-2000 -by- Chris Anderson [Microsoft]
-        // Ported it to C#
-        //
-        /// </devdoc>
+        /// <summary>
+        /// bFillBitmapInfo
+        ///
+        /// Fills in the fields of a BITMAPINFO so that we can create a bitmap
+        /// that matches the format of the display.
+        /// 
+        /// This is done by creating a compatible bitmap and calling GetDIBits
+        /// to return the color masks.  This is done with two calls.  The first
+        /// call passes in biBitCount = 0 to GetDIBits which will fill in the
+        /// base BITMAPINFOHEADER data.  The second call to GetDIBits (passing
+        /// in the BITMAPINFO filled in by the first call) will return the color
+        /// table or bitmasks, as appropriate.
+        /// 
+        /// Returns:
+        ///   TRUE if successful, FALSE otherwise.
+        /// 
+        /// History:
+        ///  07-Jun-1995 -by- Gilman Wong [Microsoft]
+        /// Wrote it.
+        /// 
+        ///  15-Nov-2000 -by- Chris Anderson [Microsoft]
+        /// Ported it to C#
+        ///
+        /// </summary>
         private bool bFillBitmapInfo(IntPtr hdc, IntPtr hpal, ref NativeMethods.BITMAPINFO_FLAT pbmi)
         {
             IntPtr hbm = IntPtr.Zero;
@@ -315,26 +301,25 @@ namespace System.Drawing
             return bRet;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.bFillColorTable"]/*' />
-        /// <devdoc>
-        // bFillColorTable
-        //
-        // Initialize the color table of the BITMAPINFO pointed to by pbmi.  Colors
-        // are set to the current system palette.
-        //
-        // Note: call only valid for displays of 8bpp or less.
-        //
-        // Returns:
-        //   TRUE if successful, FALSE otherwise.
-        //
-        // History:
-        //  23-Jan-1996 -by- Gilman Wong [Microsoft]
-        // Wrote it.
-        //
-        //  15-Nov-2000 -by- Chris Anderson [Microsoft]
-        // Ported it to C#
-        //
-        /// </devdoc>
+        /// <summary>
+        /// bFillColorTable
+        ///
+        /// Initialize the color table of the BITMAPINFO pointed to by pbmi.  Colors
+        /// are set to the current system palette.
+        ///
+        /// Note: call only valid for displays of 8bpp or less.
+        ///
+        /// Returns:
+        ///   TRUE if successful, FALSE otherwise.
+        ///
+        /// History:
+        ///  23-Jan-1996 -by- Gilman Wong [Microsoft]
+        /// Wrote it.
+        ///
+        ///  15-Nov-2000 -by- Chris Anderson [Microsoft]
+        /// Ported it to C#
+        ///
+        /// </summary>
         private unsafe bool bFillColorTable(IntPtr hdc, IntPtr hpal, ref NativeMethods.BITMAPINFO_FLAT pbmi)
         {
             bool bRet = false;
@@ -389,10 +374,9 @@ namespace System.Drawing
             return bRet;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.CreateBuffer"]/*' />
-        /// <devdoc>
-        ///         Returns a Graphics object representing a buffer.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a Graphics object representing a buffer.
+        /// </summary>
         private Graphics CreateBuffer(IntPtr src, int offsetX, int offsetY, int width, int height)
         {
             //create the compat DC
@@ -430,33 +414,32 @@ namespace System.Drawing
             return _compatGraphics;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.CreateCompatibleDIB"]/*' />
-        /// <devdoc>
-        // CreateCompatibleDIB
-        //
-        // Create a DIB section with an optimal format w.r.t. the specified hdc.
-        //
-        // If DIB <= 8bpp, then the DIB color table is initialized based on the
-        // specified palette.  If the palette handle is NULL, then the system
-        // palette is used.
-        //
-        // Note: The hdc must be a direct DC (not an info or memory DC).
-        //
-        // Note: On palettized displays, if the system palette changes the
-        //       UpdateDIBColorTable function should be called to maintain
-        //       the identity palette mapping between the DIB and the display.
-        //
-        // Returns:
-        //   Valid bitmap handle if successful, NULL if error.
-        //
-        // History:
-        //  23-Jan-1996 -by- Gilman Wong [Microsoft]
-        // Wrote it.
-        //
-        //  15-Nov-2000 -by- Chris Anderson [Microsoft]
-        // Ported it to C#.
-        //
-        /// </devdoc>        
+        /// <summary>
+        /// CreateCompatibleDIB
+        ///
+        /// Create a DIB section with an optimal format w.r.t. the specified hdc.
+        ///
+        /// If DIB <= 8bpp, then the DIB color table is initialized based on the
+        /// specified palette.  If the palette handle is NULL, then the system
+        /// palette is used.
+        ///
+        /// Note: The hdc must be a direct DC (not an info or memory DC).
+        ///
+        /// Note: On palettized displays, if the system palette changes the
+        ///       UpdateDIBColorTable function should be called to maintain
+        ///       the identity palette mapping between the DIB and the display.
+        ///
+        /// Returns:
+        ///   Valid bitmap handle if successful, NULL if error.
+        ///
+        /// History:
+        ///  23-Jan-1996 -by- Gilman Wong [Microsoft]
+        /// Wrote it.
+        ///
+        ///  15-Nov-2000 -by- Chris Anderson [Microsoft]
+        /// Ported it to C#.
+        ///
+        /// </summary>        
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Interoperability", "CA1404:CallGetLastErrorImmediatelyAfterPInvoke")]
         private IntPtr CreateCompatibleDIB(IntPtr hdc, IntPtr hpal, int ulWidth, int ulHeight, ref IntPtr ppvBits)
         {
@@ -468,9 +451,7 @@ namespace System.Drawing
             IntPtr hbmRet = IntPtr.Zero;
             NativeMethods.BITMAPINFO_FLAT pbmi = new NativeMethods.BITMAPINFO_FLAT();
 
-            //
             // Validate hdc.
-            //
             int objType = UnsafeNativeMethods.GetObjectType(new HandleRef(null, hdc));
 
             switch (objType)
@@ -486,9 +467,7 @@ namespace System.Drawing
 
             if (bFillBitmapInfo(hdc, hpal, ref pbmi))
             {
-                //
                 // Change bitmap size to match specified dimensions.
-                //
 
                 pbmi.bmiHeader_biWidth = ulWidth;
                 pbmi.bmiHeader_biHeight = ulHeight;
@@ -508,10 +487,8 @@ namespace System.Drawing
                 pbmi.bmiHeader_biClrUsed = 0;
                 pbmi.bmiHeader_biClrImportant = 0;
 
-                //
                 // Create the DIB section.  Let Win32 allocate the memory and return
                 // a pointer to the bitmap surface.
-                //
 
                 hbmRet = SafeNativeMethods.CreateDIBSection(new HandleRef(null, hdc), ref pbmi, NativeMethods.DIB_RGB_COLORS, ref ppvBits, IntPtr.Zero, 0);
                 Win32Exception ex = null;
@@ -537,19 +514,15 @@ namespace System.Drawing
             return hbmRet;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.Dispose"]/*' />
-        /// <devdoc>
-        ///     Disposes of native handles.
-        /// </devdoc>
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        /// <devdoc>
-        ///         Disposes the DC, but leaves the bitmap alone.
-        /// </devdoc>
+        /// <summary>
+        /// Disposes the DC, but leaves the bitmap alone.
+        /// </summary>
         private void DisposeDC()
         {
             if (_oldBitmap != IntPtr.Zero && _compatDC != IntPtr.Zero)
@@ -566,10 +539,9 @@ namespace System.Drawing
             }
         }
 
-        /// <devdoc>
-        ///         Disposes the bitmap, will ASSERT if bitmap is being used (checks oldbitmap).
-        ///         if ASSERTed, call DisposeDC() first.
-        /// </devdoc>
+        /// <summary>
+        /// Disposes the bitmap, will ASSERT if bitmap is being used (checks oldbitmap). if ASSERTed, call DisposeDC() first.
+        /// </summary>
         private void DisposeBitmap()
         {
             if (_dib != IntPtr.Zero)
@@ -582,10 +554,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.Dispose1"]/*' />
-        /// <devdoc>
-        ///     Disposes of the Graphics buffer.
-        /// </devdoc>
+        /// <summary>
+        /// Disposes of the Graphics buffer.
+        /// </summary>
         private void Dispose(bool disposing)
         {
             Debug.WriteLineIf(DoubleBuffering.TraceInfo, "Dispose(" + disposing + ") {");
@@ -636,36 +607,23 @@ namespace System.Drawing
 #if DEBUG
         private void DumpBitmapInfo(ref NativeMethods.BITMAPINFO_FLAT pbmi)
         {
-            //Debug.WriteLine("biSize --> " + pbmi.bmiHeader_biSize);
             Debug.WriteLine("biWidth --> " + pbmi.bmiHeader_biWidth);
             Debug.WriteLine("biHeight --> " + pbmi.bmiHeader_biHeight);
             Debug.WriteLine("biPlanes --> " + pbmi.bmiHeader_biPlanes);
             Debug.WriteLine("biBitCount --> " + pbmi.bmiHeader_biBitCount);
-            //Debug.WriteLine("biCompression --> " + pbmi.bmiHeader_biCompression);
-            //Debug.WriteLine("biSizeImage --> " + pbmi.bmiHeader_biSizeImage);
-            //Debug.WriteLine("biXPelsPerMeter --> " + pbmi.bmiHeader_biXPelsPerMeter);
-            //Debug.WriteLine("biYPelsPerMeter --> " + pbmi.bmiHeader_biYPelsPerMeter);
-            //Debug.WriteLine("biClrUsed --> " + pbmi.bmiHeader_biClrUsed);
-            //Debug.WriteLine("biClrImportant --> " + pbmi.bmiHeader_biClrImportant);
-            //Debug.Write("bmiColors --> ");
-            //for (int i=0; i<pbmi.bmiColors.Length; i++) {
-            //    Debug.Write(pbmi.bmiColors[i].ToString("X"));
-            //}
             Debug.WriteLine("");
         }
 #endif
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.Invalidate"]/*' />
-        /// <devdoc>
-        ///         Invalidates the cached graphics buffer.
-        /// </devdoc>
+        /// <summary>
+        /// Invalidates the cached graphics buffer.
+        /// </summary>
         public void Invalidate()
         {
             int oldBusy = Interlocked.CompareExchange(ref _busy, BUFFER_BUSY_DISPOSING, BUFFER_FREE);
 
             //if we're not busy with our buffer, lets
             //clean it up now
-            //
             if (oldBusy == BUFFER_FREE)
             {
                 Dispose();
@@ -680,10 +638,9 @@ namespace System.Drawing
             }
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.ReleaseBuffer"]/*' />
-        /// <devdoc>
-        ///         Returns a Graphics object representing a buffer.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a Graphics object representing a buffer.
+        /// </summary>
         internal void ReleaseBuffer(BufferedGraphics buffer)
         {
             Debug.Assert(buffer == _buffer, "Tried to release a bogus buffer");
@@ -703,14 +660,13 @@ namespace System.Drawing
             _busy = BUFFER_FREE;
         }
 
-        /// <include file='doc\BufferedGraphicsContext.uex' path='docs/doc[@for="BufferedGraphicsContext.ShouldUseTempManager"]/*' />
-        /// <devdoc>
-        ///         This routine allows us to control the point were we start using throw away
-        ///         managers for painting. Since the buffer manager stays around (by default)
-        ///         for the life of the app, we don't want to consume too much memory
-        ///         in the buffer. However, re-allocating the buffer for small things (like
-        ///         buttons, labels, etc) will hit us on runtime performance.
-        /// </devdoc>
+        /// <summary>
+        /// This routine allows us to control the point were we start using throw away
+        /// managers for painting. Since the buffer manager stays around (by default)
+        /// for the life of the app, we don't want to consume too much memory
+        /// in the buffer. However, re-allocating the buffer for small things (like
+        /// buttons, labels, etc) will hit us on runtime performance.
+        /// </summary>
         private bool ShouldUseTempManager(Rectangle targetBounds)
         {
             return (targetBounds.Width * targetBounds.Height) > (MaximumBuffer.Width * MaximumBuffer.Height);

@@ -2,20 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Diagnostics;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.Drawing.Internal;
+using System.Drawing.Text;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Printing
 {
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Drawing.Drawing2D;
-    using System.Drawing.Imaging;
-    using System.Drawing.Internal;
-    using System.Drawing.Text;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController"]/*' />
-    /// <devdoc>
-    ///     A PrintController which "prints" to a series of images.
-    /// </devdoc>
+    /// <summary>
+    /// A PrintController which "prints" to a series of images.
+    /// </summary>
     public class PreviewPrintController : PrintController
     {
         private IList _list = new ArrayList(); // list of PreviewPageInfo
@@ -27,12 +26,9 @@ namespace System.Drawing.Printing
         {
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.IsPreview"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       This is new public property which notifies if this controller is used for PrintPreview.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// This is new public property which notifies if this controller is used for PrintPreview.
+        /// </summary>
         public override bool IsPreview
         {
             get
@@ -41,12 +37,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.OnStartPrint"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements StartPrint for generating print preview information.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements StartPrint for generating print preview information.
+        /// </summary>
         public override void OnStartPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert(_dc == null && _graphics == null, "PrintController methods called in the wrong order?");
@@ -64,12 +57,9 @@ namespace System.Drawing.Printing
             _dc = document.PrinterSettings.CreateInformationContext(modeHandle);
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.OnStartPage"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements StartEnd for generating print preview information.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements StartEnd for generating print preview information.
+        /// </summary>
         public override Graphics OnStartPage(PrintDocument document, PrintPageEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
@@ -134,12 +124,9 @@ namespace System.Drawing.Printing
             return _graphics;
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.OnEndPage"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements EndPage for generating print preview information.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements EndPage for generating print preview information.
+        /// </summary>
         public override void OnEndPage(PrintDocument document, PrintPageEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics != null, "PrintController methods called in the wrong order?");
@@ -153,12 +140,9 @@ namespace System.Drawing.Printing
             base.OnEndPage(document, e);
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.OnEndPrint"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Implements EndPrint for generating print preview information.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Implements EndPrint for generating print preview information.
+        /// </summary>
         public override void OnEndPrint(PrintDocument document, PrintEventArgs e)
         {
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
@@ -172,12 +156,6 @@ namespace System.Drawing.Printing
             base.OnEndPrint(document, e);
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.GetPreviewPageInfo"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The "printout".
-        ///    </para>
-        /// </devdoc>
         public PreviewPageInfo[] GetPreviewPageInfo()
         {
             // For security purposes, don't assume our public methods methods are called in any particular order
@@ -188,7 +166,6 @@ namespace System.Drawing.Printing
             return temp;
         }
 
-        /// <include file='doc\PreviewPrintController.uex' path='docs/doc[@for="PreviewPrintController.UseAntiAlias"]/*' />
         public virtual bool UseAntiAlias
         {
             get
@@ -202,4 +179,3 @@ namespace System.Drawing.Printing
         }
     }
 }
-

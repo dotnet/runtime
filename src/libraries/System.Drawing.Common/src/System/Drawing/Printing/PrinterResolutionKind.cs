@@ -4,51 +4,30 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind"]/*' />
-    /// <devdoc>
-    ///    <para>Specifies a printer resolution.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies a printer resolution.
+    /// </summary>
     public enum PrinterResolutionKind
     {
-        /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind.High"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       High resolution.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// High resolution.
+        /// </summary>
         High = SafeNativeMethods.DMRES_HIGH,
-        /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind.Medium"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Medium resolution.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Medium resolution.
+        /// </summary>
         Medium = SafeNativeMethods.DMRES_MEDIUM,
-        /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind.Low"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Low resolution.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Low resolution.
+        /// </summary>
         Low = SafeNativeMethods.DMRES_LOW,
-        /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind.Draft"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Draft-quality resolution.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Draft-quality resolution.
+        /// </summary>
         Draft = SafeNativeMethods.DMRES_DRAFT,
-        /// <include file='doc\PrinterResolutionKind.uex' path='docs/doc[@for="PrinterResolutionKind.Custom"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Custom resolution.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Custom resolution.
+        /// </summary>
         Custom = 0,
     }
 }

@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Drawing.Internal;
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Printing
 {
-    using System.Diagnostics;
-    using System.Drawing.Internal;
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies
-    ///       settings that apply to a single page.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies settings that apply to a single page.
+    /// </summary>
     public partial class PageSettings : ICloneable
     {
         internal PrinterSettings printerSettings;
@@ -26,34 +22,25 @@ namespace System.Drawing.Printing
         private TriState _landscape = TriState.Default;
         private Margins _margins = new Margins();
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PageSettings"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Initializes a new instance of the <see cref='System.Drawing.Printing.PageSettings'/> class using
-        ///       the default printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PageSettings'/> class using the default printer.
+        /// </summary>
         public PageSettings() : this(new PrinterSettings())
         {
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PageSettings1"]/*' />
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Drawing.Printing.PageSettings'/> class using
-        ///    the specified printer.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PageSettings'/> class using the specified printer.
+        /// </summary>
         public PageSettings(PrinterSettings printerSettings)
         {
             Debug.Assert(printerSettings != null, "printerSettings == null");
             this.printerSettings = printerSettings;
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.Bounds"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the bounds of the page, taking into account the Landscape property.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the bounds of the page, taking into account the Landscape property.
+        /// </summary>
         public Rectangle Bounds
         {
             get
@@ -67,12 +54,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.Color"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a value indicating whether the page is printed in color.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating whether the page is printed in color.
+        /// </summary>
         public bool Color
         {
             get
@@ -85,10 +69,9 @@ namespace System.Drawing.Printing
             set { _color = value; }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.HardMarginX"]/*' />
-        /// <devdoc>
-        ///    <para>Returns the x dimension of the hard margin</para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the x dimension of the hard margin
+        /// </summary>
         public float HardMarginX
         {
             get
@@ -111,10 +94,9 @@ namespace System.Drawing.Printing
         }
 
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.HardMarginY"]/*' />
-        /// <devdoc>
-        ///    <para>Returns the y dimension of the hard margin</para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns the y dimension of the hard margin.
+        /// </summary>
         public float HardMarginY
         {
             get
@@ -136,12 +118,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.Landscape"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a value indicating whether the page should be printed in landscape or portrait orientation.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating whether the page should be printed in landscape or portrait orientation.
+        /// </summary>
         public bool Landscape
         {
             get
@@ -154,25 +133,18 @@ namespace System.Drawing.Printing
             set { _landscape = value; }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.Margins"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a value indicating the margins for this page.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating the margins for this page.
+        /// </summary>
         public Margins Margins
         {
             get { return _margins; }
             set { _margins = value; }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PaperSize"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the paper size.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the paper size.
+        /// </summary>
         public PaperSize PaperSize
         {
             get
@@ -182,13 +154,9 @@ namespace System.Drawing.Printing
             set { _paperSize = value; }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PaperSource"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets a value indicating the paper source (i.e. upper bin).
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets a value indicating the paper source (i.e. upper bin).
+        /// </summary>
         public PaperSource PaperSource
         {
             get
@@ -212,12 +180,9 @@ namespace System.Drawing.Printing
             set { _paperSource = value; }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PrintableArea"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the PrintableArea for the printer. Units = 100ths of an inch.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the PrintableArea for the printer. Units = 100ths of an inch.
+        /// </summary>
         public RectangleF PrintableArea
         {
             get
@@ -258,12 +223,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PrinterResolution"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the printer resolution for the page.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the printer resolution for the page.
+        /// </summary>
         public PrinterResolution PrinterResolution
         {
             get
@@ -290,13 +252,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.PrinterSettings"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets or sets the
-        ///       associated printer settings.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the associated printer settings.
+        /// </summary>
         public PrinterSettings PrinterSettings
         {
             get { return printerSettings; }
@@ -308,10 +266,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.Clone"]/*' />
-        /// <devdoc>
-        ///     Copies the settings and margins.
-        /// </devdoc>
+        /// <summary>
+        /// Copies the settings and margins.
+        /// </summary>
         public object Clone()
         {
             PageSettings result = (PageSettings)MemberwiseClone();
@@ -319,12 +276,9 @@ namespace System.Drawing.Printing
             return result;
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.CopyToHdevmode"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Copies the relevant information out of the PageSettings and into the handle.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Copies the relevant information out of the PageSettings and into the handle.
+        /// </summary>
         public void CopyToHdevmode(IntPtr hdevmode)
         {
             IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(null, hdevmode));
@@ -549,12 +503,9 @@ namespace System.Drawing.Printing
                                          mode.dmPrintQuality, mode.dmYResolution);
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.SetHdevmode"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Copies the relevant information out of the handle and into the PageSettings.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Copies the relevant information out of the handle and into the PageSettings.
+        /// </summary>
         public void SetHdevmode(IntPtr hdevmode)
         {
             if (hdevmode == IntPtr.Zero)
@@ -580,14 +531,9 @@ namespace System.Drawing.Printing
             SafeNativeMethods.GlobalUnlock(new HandleRef(null, hdevmode));
         }
 
-        /// <include file='doc\PageSettings.uex' path='docs/doc[@for="PageSettings.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the PageSettings in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the PageSettings in String form.
+        /// </summary>
         public override string ToString()
         {
             return "[PageSettings:"
@@ -601,4 +547,3 @@ namespace System.Drawing.Printing
         }
     }
 }
-

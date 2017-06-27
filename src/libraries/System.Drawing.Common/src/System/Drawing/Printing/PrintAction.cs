@@ -4,34 +4,22 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PrintAction.uex' path='docs/doc[@for="PrintAction"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Specifies the type of action for the <see cref='System.Drawing.Printing.PrintEventArgs'/>.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Specifies the type of action for the <see cref='PrintEventArgs'/>.
+    /// </summary>
     public enum PrintAction
     {
-        /// <include file='doc\PrintAction.uex' path='docs/doc[@for="PrintAction.PrintToFile"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Printing to a file.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Printing to a file.
+        /// </summary>
         PrintToFile,
-        /// <include file='doc\PrintAction.uex' path='docs/doc[@for="PrintAction.PrintToPreview"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Printing to a preview.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Printing to a preview.
+        /// </summary>
         PrintToPreview,
-        /// <include file='doc\PrintAction.uex' path='docs/doc[@for="PrintAction.PrintToPrinter"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Printing to a printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Printing to a printer.
+        /// </summary>
         PrintToPrinter
     }
 }

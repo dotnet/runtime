@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader"]/*' />
-    /// <devdoc>
-    ///    Contains attributes of an
-    ///    associated <see cref='System.Drawing.Imaging.Metafile'/>.
-    /// </devdoc>
+    /// <summary>
+    /// Contains attributes of an associated <see cref='Metafile'/>.
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public sealed class MetafileHeader
     {
@@ -22,10 +20,9 @@ namespace System.Drawing.Imaging
         {
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.Type"]/*' />
-        /// <devdoc>
-        ///    Gets the type of the associated <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the type of the associated <see cref='Metafile'/>.
+        /// </summary>
         public MetafileType Type
         {
             get
@@ -34,13 +31,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.MetafileSize"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the size, in bytes, of the associated
-        ///    <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the size, in bytes, of the associated <see cref='Metafile'/>.
+        /// </summary>
         public int MetafileSize
         {
             get
@@ -49,11 +42,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.Version"]/*' />
-        /// <devdoc>
-        ///    Gets the version number of the associated
-        /// <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the version number of the associated <see cref='Metafile'/>.
+        /// </summary>
         public int Version
         {
             get
@@ -62,21 +53,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-         private EmfPlusFlags EmfPlusFlags
-         {
-             get
-             {
-                 return IsWmf() ? wmf.emfPlusFlags : emf.emfPlusFlags;
-             }
-         }
-         */
-
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.DpiX"]/*' />
-        /// <devdoc>
-        ///    Gets the horizontal resolution, in
-        ///    dots-per-inch, of the associated <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the horizontal resolution, in dots-per-inch, of the associated <see cref='Metafile'/>.
+        /// </summary>
         public float DpiX
         {
             get
@@ -85,11 +64,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.DpiY"]/*' />
-        /// <devdoc>
-        ///    Gets the vertical resolution, in
-        ///    dots-per-inch, of the associated <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the vertical resolution, in dots-per-inch, of the associated <see cref='Metafile'/>.
+        /// </summary>
         public float DpiY
         {
             get
@@ -98,11 +75,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.Bounds"]/*' />
-        /// <devdoc>
-        ///    Gets a <see cref='System.Drawing.Rectangle'/> that bounds the associated
-        /// <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets a <see cref='Rectangle'/> that bounds the associated <see cref='Metafile'/>.
+        /// </summary>
         public Rectangle Bounds
         {
             get
@@ -113,12 +88,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsWmf"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    associated <see cref='System.Drawing.Imaging.Metafile'/> is in the Windows metafile
-        ///    format.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is in the Windows metafile format.
+        /// </summary>
         public bool IsWmf()
         {
             if ((wmf == null) && (emf == null))
@@ -132,14 +104,9 @@ namespace System.Drawing.Imaging
                 return false;
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsWmfPlaceable"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns a value indicating whether the
-        ///       associated <see cref='System.Drawing.Imaging.Metafile'/> is in the Windows Placeable metafile
-        ///       format.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is in the Windows Placeable metafile format.
+        /// </summary>
         public bool IsWmfPlaceable()
         {
             if (wmf == null && emf == null)
@@ -148,12 +115,9 @@ namespace System.Drawing.Imaging
             return ((wmf != null) && (wmf.type == MetafileType.WmfPlaceable));
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsEmf"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    associated <see cref='System.Drawing.Imaging.Metafile'/> is in the Windows enhanced metafile
-        ///    format.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is in the Windows enhanced metafile format.
+        /// </summary>
         public bool IsEmf()
         {
             if (wmf == null && emf == null)
@@ -162,12 +126,10 @@ namespace System.Drawing.Imaging
             return ((emf != null) && (emf.type == MetafileType.Emf));
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsEmfOrEmfPlus"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    associated <see cref='System.Drawing.Imaging.Metafile'/> is in the Windows enhanced metafile
-        ///    format or the Windows enhanced metafile plus.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is in the Windows enhanced
+        /// metafile format or the Windows enhanced metafile plus.
+        /// </summary>
         public bool IsEmfOrEmfPlus()
         {
             if (wmf == null && emf == null)
@@ -176,12 +138,10 @@ namespace System.Drawing.Imaging
             return ((emf != null) && (emf.type >= MetafileType.Emf));
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsEmfPlus"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    associated <see cref='System.Drawing.Imaging.Metafile'/> is in the Windows enhanced metafile
-        ///    plus format.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is in the Windows enhanced
+        /// metafile plus format.
+        /// </summary>
         public bool IsEmfPlus()
         {
             if (wmf == null && emf == null)
@@ -190,13 +150,10 @@ namespace System.Drawing.Imaging
             return ((emf != null) && (emf.type >= MetafileType.EmfPlusOnly));
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsEmfPlusDual"]/*' />
-        /// <devdoc>
-        ///    Returns a value indicating whether the
-        ///    associated <see cref='System.Drawing.Imaging.Metafile'/> is in the Dual enhanced
-        ///    metafile format. This format supports both the enhanced and the enhanced
-        ///    plus format.
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is in the Dual enhanced metafile
+        /// format. This format supports both the enhanced and the enhanced plus format.
+        /// </summary>
         public bool IsEmfPlusDual()
         {
             if (wmf == null && emf == null)
@@ -205,13 +162,10 @@ namespace System.Drawing.Imaging
             return ((emf != null) && (emf.type == MetafileType.EmfPlusDual));
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsEmfPlusOnly"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns a value indicating whether the associated <see cref='System.Drawing.Imaging.Metafile'/> supports only the Windows
-        ///       enhanced metafile plus format.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> supports only the Windows
+        /// enhanced metafile plus format.
+        /// </summary>
         public bool IsEmfPlusOnly()
         {
             if (wmf == null && emf == null)
@@ -220,23 +174,18 @@ namespace System.Drawing.Imaging
             return ((emf != null) && (emf.type == MetafileType.EmfPlusOnly));
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.IsDisplay"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Returns a value indicating whether the associated <see cref='System.Drawing.Imaging.Metafile'/> is device-dependent.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Returns a value indicating whether the associated <see cref='Metafile'/> is device-dependent.
+        /// </summary>
         public bool IsDisplay()
         {
             return IsEmfPlus() &&
                (((unchecked((int)emf.emfPlusFlags)) & ((int)EmfPlusFlags.Display)) != 0);
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.WmfHeader"]/*' />
-        /// <devdoc>
-        ///    Gets the WMF header file for the associated
-        /// <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the WMF header file for the associated <see cref='Metafile'/>.
+        /// </summary>
         public MetaHeader WmfHeader
         {
             get
@@ -248,31 +197,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.EmfHeader"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the WMF header file for the associated <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
-        /* FxCop rule 'AvoidBuildingNonCallableCode' - Left here in case it is needed in the future.
-         internal SafeNativeMethods.ENHMETAHEADER EmfHeader
-         {
-             get
-             {
-                 if (emf == null)
-                     throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
-
-                 return emf.EmfHeader;
-              }
-          }
-        */
-
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.EmfPlusHeaderSize"]/*' />
-        /// <devdoc>
-        ///    Gets the size, in bytes, of the
-        ///    enhanced metafile plus header file.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the size, in bytes, of the enhanced metafile plus header file.
+        /// </summary>
         public int EmfPlusHeaderSize
         {
             get
@@ -284,13 +211,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.LogicalDpiX"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Gets the logical horizontal resolution, in
-        ///       dots-per-inch, of the associated <see cref='System.Drawing.Imaging.Metafile'/>.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the logical horizontal resolution, in dots-per-inch, of the associated <see cref='Metafile'/>.
+        /// </summary>
         public int LogicalDpiX
         {
             get
@@ -302,11 +225,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\MetafileHeader.uex' path='docs/doc[@for="MetafileHeader.LogicalDpiY"]/*' />
-        /// <devdoc>
-        ///    Gets the logical vertical resolution, in
-        ///    dots-per-inch, of the associated <see cref='System.Drawing.Imaging.Metafile'/>.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the logical vertical resolution, in dots-per-inch, of the associated <see cref='Metafile'/>.
+        /// </summary>
         public int LogicalDpiY
         {
             get

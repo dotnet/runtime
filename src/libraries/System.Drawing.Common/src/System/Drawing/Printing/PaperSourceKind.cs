@@ -4,127 +4,78 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Standard paper sources.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Standard paper sources.
+    /// </summary>
     public enum PaperSourceKind
     {
         // Please keep these in SafeNativeMethods.cs order
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Upper"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The upper bin of a printer (or, if the printer only has one bin, the only bin).
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The upper bin of a printer (or, if the printer only has one bin, the only bin).
+        /// </summary>
         Upper = SafeNativeMethods.DMBIN_UPPER,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Lower"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The lower bin of a printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The lower bin of a printer.
+        /// </summary>
         Lower = SafeNativeMethods.DMBIN_LOWER,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Middle"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       The middle bin of a printer.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// The middle bin of a printer.
+        /// </summary>
         Middle = SafeNativeMethods.DMBIN_MIDDLE,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Manual"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Manually-fed paper.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Manually-fed paper.
+        /// </summary>
         Manual = SafeNativeMethods.DMBIN_MANUAL,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Envelope"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       An envelope.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// An envelope.
+        /// </summary>
         Envelope = SafeNativeMethods.DMBIN_ENVELOPE,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.ManualFeed"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       A manually-fed envelope.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// A manually-fed envelope.
+        /// </summary>
         ManualFeed = SafeNativeMethods.DMBIN_ENVMANUAL,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.AutomaticFeed"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Automatic-fed paper.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Automatic-fed paper.
+        /// </summary>
         AutomaticFeed = SafeNativeMethods.DMBIN_AUTO,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.TractorFeed"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       A tractor feed.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// A tractor feed.
+        /// </summary>
         TractorFeed = SafeNativeMethods.DMBIN_TRACTOR,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.SmallFormat"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Small-format paper.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Small-format paper.
+        /// </summary>
         SmallFormat = SafeNativeMethods.DMBIN_SMALLFMT,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.LargeFormat"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Large-format paper.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Large-format paper.
+        /// </summary>
         LargeFormat = SafeNativeMethods.DMBIN_LARGEFMT,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.LargeCapacity"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       A large-capacity
-        ///       bin a printer.
-        ///       
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// A large-capacity bin printer.
+        /// </summary>
         LargeCapacity = SafeNativeMethods.DMBIN_LARGECAPACITY,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Cassette"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       A paper cassette.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// A paper cassette.
+        /// </summary>
         Cassette = SafeNativeMethods.DMBIN_CASSETTE,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.FormSource"]/*' />
-        /// <devdoc>
-        /// </devdoc>
         FormSource = SafeNativeMethods.DMBIN_FORMSOURCE,
 
-        /// <include file='doc\PaperSourceKind.uex' path='docs/doc[@for="PaperSourceKind.Custom"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       A printer-specific paper source.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// A printer-specific paper source.
+        /// </summary>
         Custom = SafeNativeMethods.DMBIN_USER + 1,
     }
 }

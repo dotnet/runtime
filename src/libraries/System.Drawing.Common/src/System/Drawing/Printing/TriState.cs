@@ -71,14 +71,9 @@ namespace System.Drawing.Printing
                 return (value == TriState.True);
         }
 
-        /// <include file='doc\TriState.uex' path='docs/doc[@for="TriState.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the TriState in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the TriState in String form.
+        /// </summary>
         public override string ToString()
         {
             if (this == Default) return "Default";

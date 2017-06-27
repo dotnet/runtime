@@ -6,11 +6,10 @@ namespace System.Drawing.Internal
 {
     using System.Runtime.InteropServices;
 
-    /// <devdoc>
-    ///   This is an extract of the System.Drawing IntNativeMethods in the CommonUI tree.
-    ///   This is done to be able to compile the GDI code in both assemblies System.Drawing
-    ///   and System.Windows.Forms.
-    /// </devdoc>
+    /// <summary>
+    /// This is an extract of the System.Drawing IntNativeMethods in the CommonUI tree.
+    /// This is done to be able to compile the GDI code in both assemblies System.Drawing and System.Windows.Forms.
+    /// </summary>
     [System.Security.SuppressUnmanagedCodeSecurityAttribute()]
     internal static partial class IntSafeNativeMethods
     {
@@ -18,20 +17,20 @@ namespace System.Drawing.Internal
         {
             static CommonHandles() { }
 
-            /// <devdoc>
-            ///     Handle type for enhanced metafiles.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for enhanced metafiles.
+            /// </summary>
             public static readonly int EMF = System.Internal.HandleCollector.RegisterType("EnhancedMetaFile", 20, 500);
 
-            /// <devdoc>
-            ///     Handle type for GDI objects.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for GDI objects.
+            /// </summary>
             public static readonly int GDI = System.Internal.HandleCollector.RegisterType("GDI", 90, 50);
 
-            /// <devdoc>
-            ///     Handle type for HDC's that count against the Win98 limit of five DC's.  HDC's
-            ///     which are not scarce, such as HDC's for bitmaps, are counted as GDIHANDLE's.
-            /// </devdoc>
+            /// <summary>
+            /// Handle type for HDC's that count against the Win98 limit of five DC's. HDC's which are not scarce,
+            /// such as HDC's for bitmaps, are counted as GDIHANDLE's.
+            /// </summary>
             public static readonly int HDC = System.Internal.HandleCollector.RegisterType("HDC", 100, 2); // wait for 2 dc's before collecting
         }
 

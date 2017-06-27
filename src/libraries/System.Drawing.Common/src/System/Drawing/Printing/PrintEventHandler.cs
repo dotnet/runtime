@@ -4,13 +4,11 @@
 
 namespace System.Drawing.Printing
 {
-    /// <include file='doc\PrintEventHandler.uex' path='docs/doc[@for="PrintEventHandler"]/*' />
-    /// <devdoc>
-    ///    <para>
-    ///       Represents the method that will handle the <see cref='E:System.Drawing.Printing.PrintDocument.BeginPrint'/>,
-    ///    <see cref='E:System.Drawing.Printing.PrintDocument.EndPrint'/>, or <see cref='E:System.Drawing.Printing.PrintDocument.QueryPageSettings'/> event of a <see cref='System.Drawing.Printing.PrintDocument'/>.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Represents the method that will handle the <see cref='PrintDocument.BeginPrint'/>,
+    /// <see cref='PrintDocument.EndPrint'/>, or <see cref='PrintDocument.QueryPageSettings'/>
+    /// event of a <see cref='PrintDocument'/>.
+    /// </summary>
     public delegate void PrintEventHandler(object sender, PrintEventArgs e);
 }
 

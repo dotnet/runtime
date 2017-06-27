@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter"]/*' />
-    /// <devdoc>
-    ///    <para>[To be supplied.]</para>
-    /// </devdoc>
     [StructLayout(LayoutKind.Sequential)]
     public sealed class EncoderParameter : IDisposable
     {
@@ -21,16 +17,14 @@ namespace System.Drawing.Imaging
         private EncoderParameterValueType _parameterValueType;   // Value type, like ValueTypeLONG  etc.
         private IntPtr _parameterValue;                 // A pointer to the parameter values
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.Finalize"]/*' />
         ~EncoderParameter()
         {
             Dispose(false);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.Encoder"]/*' />
-        /// <devdoc>
-        ///    Gets/Sets the Encoder for the EncoderPameter.
-        /// </devdoc>
+        /// <summary>
+        /// Gets/Sets the Encoder for the EncoderPameter.
+        /// </summary>
         public Encoder Encoder
         {
             get
@@ -43,10 +37,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.Type"]/*' />
-        /// <devdoc>
-        ///    Gets the EncoderParameterValueType object from the EncoderParameter.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the EncoderParameterValueType object from the EncoderParameter.
+        /// </summary>
         public EncoderParameterValueType Type
         {
             get
@@ -55,10 +48,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.ValueType"]/*' />
-        /// <devdoc>
-        ///    Gets the EncoderParameterValueType object from the EncoderParameter.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the EncoderParameterValueType object from the EncoderParameter.
+        /// </summary>
         public EncoderParameterValueType ValueType
         {
             get
@@ -67,10 +59,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.NumberOfValues"]/*' />
-        /// <devdoc>
-        ///    Gets the NumberOfValues from the EncoderParameter.
-        /// </devdoc>
+        /// <summary>
+        /// Gets the NumberOfValues from the EncoderParameter.
+        /// </summary>
         public int NumberOfValues
         {
             get
@@ -79,11 +70,6 @@ namespace System.Drawing.Imaging
             }
         }
 
-
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.Dispose"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public void Dispose()
         {
             Dispose(true);
@@ -98,10 +84,6 @@ namespace System.Drawing.Imaging
             _parameterValue = IntPtr.Zero;
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, byte value)
         {
             _parameterGuid = encoder.Guid;
@@ -117,10 +99,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, byte value, bool undefined)
         {
             _parameterGuid = encoder.Guid;
@@ -139,10 +117,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, short value)
         {
             _parameterGuid = encoder.Guid;
@@ -158,10 +132,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, long value)
         {
             _parameterGuid = encoder.Guid;
@@ -177,11 +147,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, int numerator, int denominator)
         {
             _parameterGuid = encoder.Guid;
@@ -199,11 +164,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter5"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, long rangebegin, long rangeend)
         {
             _parameterGuid = encoder.Guid;
@@ -221,11 +181,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter6"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder,
                                 int numerator1, int demoninator1,
                                 int numerator2, int demoninator2)
@@ -247,10 +202,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter7"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, string value)
         {
             _parameterGuid = encoder.Guid;
@@ -264,10 +215,6 @@ namespace System.Drawing.Imaging
                 throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.OutOfMemory);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter8"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, byte[] value)
         {
             _parameterGuid = encoder.Guid;
@@ -284,10 +231,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter9"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, byte[] value, bool undefined)
         {
             _parameterGuid = encoder.Guid;
@@ -307,10 +250,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter10"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, short[] value)
         {
             _parameterGuid = encoder.Guid;
@@ -328,10 +267,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter11"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public unsafe EncoderParameter(Encoder encoder, long[] value)
         {
             _parameterGuid = encoder.Guid;
@@ -356,11 +291,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter12"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, int[] numerator, int[] denominator)
         {
             _parameterGuid = encoder.Guid;
@@ -385,11 +315,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter13"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder, long[] rangebegin, long[] rangeend)
         {
             _parameterGuid = encoder.Guid;
@@ -414,11 +339,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter14"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public EncoderParameter(Encoder encoder,
                                 int[] numerator1, int[] denominator1,
                                 int[] numerator2, int[] denominator2)
@@ -449,11 +369,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        // Consider supporting a 'float' and converting to numerator/denominator                               
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter15"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public EncoderParameter(Encoder encoder, int NumberOfValues, int Type, int Value)
@@ -463,13 +378,25 @@ namespace System.Drawing.Imaging
             switch ((EncoderParameterValueType)Type)
             {
                 case EncoderParameterValueType.ValueTypeByte:
-                case EncoderParameterValueType.ValueTypeAscii: size = 1; break;
-                case EncoderParameterValueType.ValueTypeShort: size = 2; break;
-                case EncoderParameterValueType.ValueTypeLong: size = 4; break;
+                case EncoderParameterValueType.ValueTypeAscii:
+                    size = 1;
+                    break;
+                case EncoderParameterValueType.ValueTypeShort:
+                    size = 2;
+                    break;
+                case EncoderParameterValueType.ValueTypeLong:
+                    size = 4;
+                    break;
                 case EncoderParameterValueType.ValueTypeRational:
-                case EncoderParameterValueType.ValueTypeLongRange: size = 2 * 4; break;
-                case EncoderParameterValueType.ValueTypeUndefined: size = 1; break;
-                case EncoderParameterValueType.ValueTypeRationalRange: size = 2 * 2 * 4; break;
+                case EncoderParameterValueType.ValueTypeLongRange:
+                    size = 2 * 4;
+                    break;
+                case EncoderParameterValueType.ValueTypeUndefined:
+                    size = 1;
+                    break;
+                case EncoderParameterValueType.ValueTypeRationalRange:
+                    size = 2 * 2 * 4;
+                    break;
                 default:
                     throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.WrongState);
             }
@@ -492,10 +419,6 @@ namespace System.Drawing.Imaging
             GC.KeepAlive(this);
         }
 
-        /// <include file='doc\EncoderParameter.uex' path='docs/doc[@for="EncoderParameter.EncoderParameter16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2004:RemoveCallsToGCKeepAlive")]
         public EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value)
         {
@@ -504,13 +427,25 @@ namespace System.Drawing.Imaging
             switch (type)
             {
                 case EncoderParameterValueType.ValueTypeByte:
-                case EncoderParameterValueType.ValueTypeAscii: size = 1; break;
-                case EncoderParameterValueType.ValueTypeShort: size = 2; break;
-                case EncoderParameterValueType.ValueTypeLong: size = 4; break;
+                case EncoderParameterValueType.ValueTypeAscii:
+                    size = 1;
+                    break;
+                case EncoderParameterValueType.ValueTypeShort:
+                    size = 2;
+                    break;
+                case EncoderParameterValueType.ValueTypeLong:
+                    size = 4;
+                    break;
                 case EncoderParameterValueType.ValueTypeRational:
-                case EncoderParameterValueType.ValueTypeLongRange: size = 2 * 4; break;
-                case EncoderParameterValueType.ValueTypeUndefined: size = 1; break;
-                case EncoderParameterValueType.ValueTypeRationalRange: size = 2 * 2 * 4; break;
+                case EncoderParameterValueType.ValueTypeLongRange:
+                    size = 2 * 4;
+                    break;
+                case EncoderParameterValueType.ValueTypeUndefined:
+                    size = 1;
+                    break;
+                case EncoderParameterValueType.ValueTypeRationalRange:
+                    size = 2 * 2 * 4;
+                    break;
                 default:
                     throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.WrongState);
             }

@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System.Drawing.Printing
 {
-    using System.ComponentModel;
-
-    /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument"]/*' />
-    /// <devdoc>
-    ///    <para>Defines a reusable object that sends output to the
-    ///       printer.</para>
-    /// </devdoc>
+    /// <summary>
+    /// Defines a reusable object that sends output to the printer.
+    /// </summary>
     [SRDescription(nameof(SR.PrintDocumentDesc))]
     public class PrintDocument : Component
     {
@@ -29,22 +27,17 @@ namespace System.Drawing.Printing
         private bool _originAtMargins;
         private bool _userSetPageSettings;
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.PrintDocument"]/*' />
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Drawing.Printing.PrintDocument'/>
-        /// class.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='PrintDocument'/> class.
+        /// </summary>
         public PrintDocument()
         {
             _defaultPageSettings = new PageSettings(_printerSettings);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.DefaultPageSettings"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets the
-        ///       default
-        ///       page settings for the document being printed.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the default page settings for the document being printed.
+        /// </summary>
         [
         Browsable(false),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
@@ -62,12 +55,10 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.DocumentName"]/*' />
-        /// <devdoc>
-        ///    <para>Gets or sets the name to display to the user while printing the document;
-        ///       for example, in a print status dialog or a printer
-        ///       queue.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the name to display to the user while printing the document; for example, in a print status
+        /// dialog or a printer queue.
+        /// </summary>
         [
         DefaultValue("document"),
         SRDescription(nameof(SR.PDOCdocumentNameDescr))
@@ -84,13 +75,11 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.OriginAtMargins"]/*' />
         // If true, positions the origin of the graphics object 
         // associated with the page at the point just inside
         // the user-specified margins of the page.
         // If false, the graphics origin is at the top-left
         // corner of the printable area of the page.
-        //
         [
         DefaultValue(false),
         SRDescription(nameof(SR.PDOCoriginAtMarginsDescr))
@@ -107,11 +96,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.PrintController"]/*' />
-        /// <devdoc>
-        /// <para>Gets or sets the <see cref='System.Drawing.Printing.PrintController'/> 
-        /// that guides the printing process.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the <see cref='Printing.PrintController'/>  that guides the printing process.
+        /// </summary>
         [
         Browsable(false),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
@@ -133,11 +120,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.PrinterSettings"]/*' />
-        /// <devdoc>
-        ///    <para> Gets or sets the printer on which the
-        ///       document is printed.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets or sets the printer on which the document is printed.
+        /// </summary>
         [
         Browsable(false),
         DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden),
@@ -159,12 +144,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.BeginPrint"]/*' />
-        /// <devdoc>
-        /// <para>Occurs when the <see cref='System.Drawing.Printing.PrintDocument.Print'/> method is called, before 
-        ///    the
-        ///    first page prints.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Occurs when the <see cref='Print'/> method is called, before the first page prints.
+        /// </summary>
         [SRDescription(nameof(SR.PDOCbeginPrintDescr))]
         public event PrintEventHandler BeginPrint
         {
@@ -178,11 +160,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.EndPrint"]/*' />
-        /// <devdoc>
-        /// <para>Occurs when <see cref='System.Drawing.Printing.PrintDocument.Print'/> is
-        ///    called, after the last page is printed.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Occurs when <see cref='Print'/> is called, after the last page is printed.
+        /// </summary>
         [SRDescription(nameof(SR.PDOCendPrintDescr))]
         public event PrintEventHandler EndPrint
         {
@@ -196,10 +176,9 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.PrintPage"]/*' />
-        /// <devdoc>
-        ///    <para>Occurs when a page is printed. </para>
-        /// </devdoc>
+        /// <summary>
+        /// Occurs when a page is printed.
+        /// </summary>
         [SRDescription(nameof(SR.PDOCprintPageDescr))]
         public event PrintPageEventHandler PrintPage
         {
@@ -213,10 +192,6 @@ namespace System.Drawing.Printing
             }
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.QueryPageSettings"]/*' />
-        /// <devdoc>
-        ///    <para>Occurs</para>
-        /// </devdoc>
         [SRDescription(nameof(SR.PDOCqueryPageSettingsDescr))]
         public event QueryPageSettingsEventHandler QueryPageSettings
         {
@@ -235,11 +210,9 @@ namespace System.Drawing.Printing
             OnBeginPrint(e);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.OnBeginPrint"]/*' />
-        /// <devdoc>
-        /// <para>Raises the <see cref='E:System.Drawing.Printing.PrintDocument.BeginPrint'/>
-        /// event.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Raises the <see cref='BeginPrint'/> event.
+        /// </summary>
         protected virtual void OnBeginPrint(PrintEventArgs e)
         {
             if (_beginPrintHandler != null)
@@ -251,11 +224,9 @@ namespace System.Drawing.Printing
             OnEndPrint(e);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.OnEndPrint"]/*' />
-        /// <devdoc>
-        /// <para>Raises the <see cref='E:System.Drawing.Printing.PrintDocument.EndPrint'/>
-        /// event.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Raises the <see cref='EndPrint'/> event.
+        /// </summary>
         protected virtual void OnEndPrint(PrintEventArgs e)
         {
             if (_endPrintHandler != null)
@@ -267,11 +238,9 @@ namespace System.Drawing.Printing
             OnPrintPage(e);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.OnPrintPage"]/*' />
-        /// <devdoc>
-        /// <para>Raises the <see cref='E:System.Drawing.Printing.PrintDocument.PrintPage'/>
-        /// event.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Raises the <see cref='PrintPage'/> event.
+        /// </summary>
         protected virtual void OnPrintPage(PrintPageEventArgs e)
         {
             if (_printPageHandler != null)
@@ -283,40 +252,30 @@ namespace System.Drawing.Printing
             OnQueryPageSettings(e);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.OnQueryPageSettings"]/*' />
-        /// <devdoc>
-        /// <para>Raises the <see cref='E:System.Drawing.Printing.PrintDocument.QueryPageSettings'/> event.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Raises the <see cref='QueryPageSettings'/> event.
+        /// </summary>
         protected virtual void OnQueryPageSettings(QueryPageSettingsEventArgs e)
         {
             if (_queryHandler != null)
                 _queryHandler(this, e);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.Print"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Prints the document.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Prints the document.
+        /// </summary>
         public void Print()
         {
             PrintController controller = PrintController;
             controller.Print(this);
         }
 
-        /// <include file='doc\PrintDocument.uex' path='docs/doc[@for="PrintDocument.ToString"]/*' />
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>
-        ///       Provides some interesting information about the PrintDocument in
-        ///       String form.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Provides some interesting information about the PrintDocument in String form.
+        /// </summary>
         public override string ToString()
         {
             return "[PrintDocument " + DocumentName + "]";
         }
     }
 }
-

@@ -2,32 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Imaging
 {
-    using System.Runtime.InteropServices;
-
-    /// <include file='doc\ColorPalette.uex' path='docs/doc[@for="ColorPalette"]/*' />
-    /// <devdoc>
-    ///    Defines an array of colors that make up a
-    ///    color palette.
-    /// </devdoc>
+    /// <summary>
+    /// Defines an array of colors that make up a color palette.
+    /// </summary>
     public sealed class ColorPalette
     {
-        ///    Note (From VSWhidbey#444618): We don't provide a public constructor for ColorPalette because if we allow 
-        ///    arbitrary creation of color palettes you could in theroy not only change the color entries, but the size 
-        ///    of the palette and that is not valid for an image (meaning you cannot change the palette size for an image).  
-        ///    ColorPalettes are only valid for "indexed" images like GIFs.
+        // We don't provide a public constructor for ColorPalette because if we allow 
+        // arbitrary creation of color palettes you could in theroy not only change the color entries, but the size 
+        // of the palette and that is not valid for an image (meaning you cannot change the palette size for an image).  
+        // ColorPalettes are only valid for "indexed" images like GIFs.
 
         private int _flags;
         private Color[] _entries;
 
-        /// <include file='doc\ColorPalette.uex' path='docs/doc[@for="ColorPalette.Flags"]/*' />
-        /// <devdoc>
-        ///    <para>
-        ///       Specifies how to interpret the color
-        ///       information in the array of colors.
-        ///    </para>
-        /// </devdoc>
+        /// <summary>
+        /// Specifies how to interpret the color information in the array of colors.
+        /// </summary>
         public int Flags
         {
             get
@@ -36,10 +30,9 @@ namespace System.Drawing.Imaging
             }
         }
 
-        /// <include file='doc\ColorPalette.uex' path='docs/doc[@for="ColorPalette.Entries"]/*' />
-        /// <devdoc>
-        ///    Specifies an array of <see cref='System.Drawing.Color'/> objects.
-        /// </devdoc>
+        /// <summary>
+        /// Specifies an array of <see cref='Color'/> objects.
+        /// </summary>
         public Color[] Entries
         {
             get

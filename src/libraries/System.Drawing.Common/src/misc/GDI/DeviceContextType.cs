@@ -4,9 +4,9 @@
 
 namespace System.Drawing.Internal
 {
-    /// <devdoc>
-    ///     Represent the device type the context refers to.
-    /// </devdoc>
+    /// <summary>
+    /// Represent the device type the context refers to.
+    /// </summary>
     internal enum DeviceContextType
     {
         // Unknown device
@@ -31,4 +31,3 @@ namespace System.Drawing.Internal
         Metafile = 0x06 // currently not supported.
     }
 }
-
