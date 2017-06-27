@@ -569,10 +569,168 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<HttpResponseMessage> ParseResponseAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private async Task WriteHeadersAsync(HttpHeaders headers, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = new HttpResponseMessage();
-            response.RequestMessage = request;
+            foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
+            {
+                await WriteAsciiStringAsync(header.Key, cancellationToken).ConfigureAwait(false);
+                await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
+
+                bool first = true;
+                foreach (string headerValue in header.Value)
+                {
+                    if (first)
+                    {
+                        first = false;
+                    }
+                    else
+                    {
+                        await WriteTwoBytesAsync((byte)',', (byte)' ', cancellationToken).ConfigureAwait(false);
+                    }
+                    await WriteStringAsync(headerValue, cancellationToken).ConfigureAwait(false);
+                }
+
+                Debug.Assert(!first, "No values for header??");
+
+                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private async Task WriteHostHeaderAsync(Uri uri, CancellationToken cancellationToken)
+        {
+            await WriteBytesAsync(s_hostKeyAndSeparator, cancellationToken).ConfigureAwait(false);
+
+            await WriteStringAsync(uri.Host, cancellationToken).ConfigureAwait(false);
+            if (!uri.IsDefaultPort)
+            {
+                await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);
+                await WriteFormattedInt32Async(uri.Port, cancellationToken).ConfigureAwait(false);
+            }
+
+            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+        }
+
+        private Task WriteFormattedInt32Async(int value, CancellationToken cancellationToken)
+        {
+            const int MaxFormattedInt32Length = 10; // number of digits in int.MaxValue.ToString()
+
+            // If the maximum possible number of digits fits in our buffer, we can format synchronously
+            if (_writeOffset <= BufferSize - MaxFormattedInt32Length)
+            {
+                if (value == 0)
+                {
+                    _writeBuffer[_writeOffset++] = (byte)'0';
+                }
+                else
+                {
+                    int initialOffset = _writeOffset;
+                    while (value > 0)
+                    {
+                        value = Math.DivRem(value, 10, out int digit);
+                        _writeBuffer[_writeOffset++] = (byte)('0' + digit);
+                    }
+                    Array.Reverse(_writeBuffer, initialOffset, _writeOffset - initialOffset);
+                }
+                return Task.CompletedTask;
+            }
+
+            // Otherwise, do it the slower way.
+            return WriteAsciiStringAsync(value.ToString(CultureInfo.InvariantCulture), cancellationToken);
+        }
+
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            // Send the request.
+
+            if (request.Version.Major != 1 || request.Version.Minor != 1)
+            {
+                throw new PlatformNotSupportedException($"Only HTTP 1.1 supported -- request.Version was {request.Version}");
+            }
+
+            HttpContent requestContent = request.Content;
+
+            // Add headers to define content transfer, if not present
+            if (requestContent != null &&
+                request.Headers.TransferEncodingChunked != true &&
+                requestContent.Headers.ContentLength == null)
+            {
+                // We have content, but neither Transfer-Encoding or Content-Length is set.
+                // TODO: Tests expect Transfer-Encoding here always.
+                // This seems wrong to me; if we can compute the content length,
+                // why not use it instead of falling back to Transfer-Encoding?
+#if false
+                if (requestContent.TryComputeLength(out contentLength))
+                {
+                    // We know the content length, so set the header
+                    requestContent.Headers.ContentLength = contentLength;
+                }
+                else
+#endif
+                {
+                    request.Headers.TransferEncodingChunked = true;
+                }
+            }
+
+            // Write request line
+            await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
+            await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
+
+            await WriteStringAsync(
+                _usingProxy ? request.RequestUri.AbsoluteUri : request.RequestUri.PathAndQuery,
+                cancellationToken).ConfigureAwait(false);
+
+            await WriteBytesAsync(s_spaceHttp11NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
+
+            // Write request headers
+            if (request.HasHeaders)
+            {
+                await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (requestContent == null)
+            {
+                // Write out Content-Length: 0 header to indicate no body, 
+                // unless this is a method that never has a body.
+                if (request.Method != HttpMethod.Get &&
+                    request.Method != HttpMethod.Head)
+                {
+                    await WriteBytesAsync(s_contentLength0NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            else
+            {
+                // Write content headers
+                await WriteHeadersAsync(requestContent.Headers, cancellationToken).ConfigureAwait(false);
+            }
+
+            // Write special additional headers.  If a host isn't in the headers list, then a Host header
+            // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
+            if (!request.HasHeaders || request.Headers.Host == null)
+            {
+                await WriteHostHeaderAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
+            }
+
+            // CRLF for end of headers.
+            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
+
+            // Write body, if any
+            if (requestContent != null)
+            {
+                HttpContentWriteStream stream = (request.Headers.TransferEncodingChunked == true ?
+                    (HttpContentWriteStream)new ChunkedEncodingWriteStream(this) : 
+                    (HttpContentWriteStream)new ContentLengthWriteStream(this));
+
+                // TODO: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
+                await request.Content.CopyToAsync(stream, _transportContext).ConfigureAwait(false);
+                await stream.FinishAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            await FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            // Parse the response.
+
+            var response = new HttpResponseMessage() { RequestMessage = request };
 
             if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'H' ||
                 await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'T' ||
@@ -716,198 +874,19 @@ namespace System.Net.Http
             }
 
             // Instantiate responseStream
-            HttpContentReadStream responseStream;
+            HttpContentReadStream responseStream =
+                request.Method == HttpMethod.Head || status == 204 || status == 304 ? new ContentLengthReadStream(this, 0) : // no response body
+                responseContent.Headers.ContentLength != null ? new ContentLengthReadStream(this, responseContent.Headers.ContentLength.Value) :
+                response.Headers.TransferEncodingChunked == true ? new ChunkedEncodingReadStream(this) :
+                (HttpContentReadStream)new ConnectionCloseReadStream(this);
 
-            if (request.Method == HttpMethod.Head ||
-                status == 204 ||
-                status == 304)
-            {
-                // There is implicitly no response body
-                // TODO: I don't understand why there's any content here at all --
-                // i.e. why not just set response.Content = null?
-                // This is legal for request bodies (e.g. GET).
-                // However, setting response.Content = null causes a bunch of tests to fail.
-                responseStream = new ContentLengthReadStream(this, 0);
-            }
-            else
-            { 
-                if (responseContent.Headers.ContentLength != null)
-                {
-                    responseStream = new ContentLengthReadStream(this, responseContent.Headers.ContentLength.Value);
-                }
-                else if (response.Headers.TransferEncodingChunked == true)
-                {
-                    responseStream = new ChunkedEncodingReadStream(this);
-                }
-                else
-                {
-                    responseStream = new ConnectionCloseReadStream(this);
-                }
-            }
+            // TODO: When there's no response body, why is there any content here at all?
+            // i.e. why not just set response.Content = null? This is legal for request bodies (e.g. GET).
+            // However, setting response.Content = null causes a bunch of tests to fail.
 
             responseContent.SetStream(responseStream);
             response.Content = responseContent;
             return response;
-        }
-
-        private async Task WriteHeadersAsync(HttpHeaders headers, CancellationToken cancellationToken)
-        {
-            foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
-            {
-                await WriteAsciiStringAsync(header.Key, cancellationToken).ConfigureAwait(false);
-                await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
-
-                bool first = true;
-                foreach (string headerValue in header.Value)
-                {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
-                    {
-                        await WriteTwoBytesAsync((byte)',', (byte)' ', cancellationToken).ConfigureAwait(false);
-                    }
-                    await WriteStringAsync(headerValue, cancellationToken).ConfigureAwait(false);
-                }
-
-                Debug.Assert(!first, "No values for header??");
-
-                await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        private async Task WriteHostHeaderAsync(Uri uri, CancellationToken cancellationToken)
-        {
-            await WriteBytesAsync(s_hostKeyAndSeparator, cancellationToken).ConfigureAwait(false);
-
-            await WriteStringAsync(uri.Host, cancellationToken).ConfigureAwait(false);
-            if (!uri.IsDefaultPort)
-            {
-                await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);
-                await WriteFormattedInt32Async(uri.Port, cancellationToken).ConfigureAwait(false);
-            }
-
-            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
-        }
-
-        private Task WriteFormattedInt32Async(int value, CancellationToken cancellationToken)
-        {
-            const int MaxFormattedInt32Length = 10; // number of digits in int.MaxValue.ToString()
-
-            // If the maximum possible number of digits fits in our buffer, we can format synchronously
-            if (_writeOffset <= BufferSize - MaxFormattedInt32Length)
-            {
-                if (value == 0)
-                {
-                    _writeBuffer[_writeOffset++] = (byte)'0';
-                }
-                else
-                {
-                    int initialOffset = _writeOffset;
-                    while (value > 0)
-                    {
-                        value = Math.DivRem(value, 10, out int digit);
-                        _writeBuffer[_writeOffset++] = (byte)('0' + digit);
-                    }
-                    Array.Reverse(_writeBuffer, initialOffset, _writeOffset - initialOffset);
-                }
-                return Task.CompletedTask;
-            }
-
-            // Otherwise, do it the slower way.
-            return WriteAsciiStringAsync(value.ToString(CultureInfo.InvariantCulture), cancellationToken);
-        }
-
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            if (request.Version.Major != 1 || request.Version.Minor != 1)
-            {
-                throw new PlatformNotSupportedException($"Only HTTP 1.1 supported -- request.Version was {request.Version}");
-            }
-
-            HttpContent requestContent = request.Content;
-
-            // Add headers to define content transfer, if not present
-            if (requestContent != null &&
-                request.Headers.TransferEncodingChunked != true &&
-                requestContent.Headers.ContentLength == null)
-            {
-                // We have content, but neither Transfer-Encoding or Content-Length is set.
-                // TODO: Tests expect Transfer-Encoding here always.
-                // This seems wrong to me; if we can compute the content length,
-                // why not use it instead of falling back to Transfer-Encoding?
-#if false
-                if (requestContent.TryComputeLength(out contentLength))
-                {
-                    // We know the content length, so set the header
-                    requestContent.Headers.ContentLength = contentLength;
-                }
-                else
-#endif
-                {
-                    request.Headers.TransferEncodingChunked = true;
-                }
-            }
-
-            // Write request line
-            await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
-            await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
-
-            await WriteStringAsync(
-                _usingProxy ? request.RequestUri.AbsoluteUri : request.RequestUri.PathAndQuery,
-                cancellationToken).ConfigureAwait(false);
-
-            await WriteBytesAsync(s_spaceHttp11NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
-
-            // Write request headers
-            if (request.HasHeaders)
-            {
-                await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (requestContent == null)
-            {
-                // Write out Content-Length: 0 header to indicate no body, 
-                // unless this is a method that never has a body.
-                if (request.Method != HttpMethod.Get &&
-                    request.Method != HttpMethod.Head)
-                {
-                    await WriteBytesAsync(s_contentLength0NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
-                }
-            }
-            else
-            {
-                // Write content headers
-                await WriteHeadersAsync(requestContent.Headers, cancellationToken).ConfigureAwait(false);
-            }
-
-            // Write special additional headers.  If a host isn't in the headers list, then a Host header
-            // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
-            if (!request.HasHeaders || request.Headers.Host == null)
-            {
-                await WriteHostHeaderAsync(request.RequestUri, cancellationToken).ConfigureAwait(false);
-            }
-
-            // CRLF for end of headers.
-            await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
-
-            // Write body, if any
-            if (requestContent != null)
-            {
-                HttpContentWriteStream stream = (request.Headers.TransferEncodingChunked == true ?
-                    (HttpContentWriteStream)new ChunkedEncodingWriteStream(this) : 
-                    (HttpContentWriteStream)new ContentLengthWriteStream(this));
-
-                // TODO: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
-                await request.Content.CopyToAsync(stream, _transportContext).ConfigureAwait(false);
-                await stream.FinishAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            await FlushAsync(cancellationToken).ConfigureAwait(false);
-
-            return await ParseResponseAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         private void WriteToBuffer(byte[] buffer, int offset, int count)
