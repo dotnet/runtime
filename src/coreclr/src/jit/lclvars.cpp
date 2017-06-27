@@ -3792,24 +3792,31 @@ void Compiler::SetVolatileHint(LclVarDsc* varDsc)
 
 /*****************************************************************************
  *
- *  Helper passed to Compiler::fgWalkTreePre() to do variable ref marking.
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::lvaMarkLclRefsCallback(GenTreePtr* pTree, fgWalkData* data)
-{
-    data->compiler->lvaMarkLclRefs(*pTree);
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
- *
  *  Update the local variable reference counts for one basic block
  */
 
 void Compiler::lvaMarkLocalVars(BasicBlock* block)
 {
+    class MarkLocalVarsVisitor final : public GenTreeVisitor<MarkLocalVarsVisitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        MarkLocalVarsVisitor(Compiler* compiler)
+            : GenTreeVisitor<MarkLocalVarsVisitor>(compiler)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_compiler->lvaMarkLclRefs(*use);
+            return WALK_CONTINUE;
+        }
+    };
+
 #if ASSERTION_PROP
     lvaMarkRefsCurBlock = block;
 #endif
@@ -3823,9 +3830,10 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
     }
 #endif
 
+    MarkLocalVarsVisitor visitor(this);
     for (GenTreePtr tree = block->FirstNonPhiDef(); tree; tree = tree->gtNext)
     {
-        noway_assert(tree->gtOper == GT_STMT);
+        assert(tree->gtOper == GT_STMT);
 
 #if ASSERTION_PROP
         lvaMarkRefsCurStmt = tree;
@@ -3838,7 +3846,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
         }
 #endif
 
-        fgWalkTreePre(&tree->gtStmt.gtStmtExpr, Compiler::lvaMarkLclRefsCallback, (void*)this, false);
+        visitor.WalkTree(&tree->gtStmt.gtStmtExpr, nullptr);
     }
 }
 
