@@ -136,6 +136,32 @@ namespace System.ComponentModel.DataAnnotations.Tests
             validationContext.DisplayName = "OverriddenDisplayName";
             Assert.Equal("OverriddenDisplayName", validationContext.DisplayName);
         }
+
+        [Fact]
+        public void DisplayName_NoSuchMemberName_ReturnsMemberName()
+        {
+            var validationContext = new ValidationContext(new object()) { MemberName = "test" };
+            Assert.Equal("test", validationContext.DisplayName);
+        }
+
+        [Fact]
+        public void GetService_CustomServiceProvider_ReturnsNull()
+        {
+            var validationContext = new ValidationContext(new object());
+            validationContext.InitializeServiceProvider(type =>
+            {
+                Assert.Equal(typeof(int), type);
+                return typeof(bool);
+            });
+            Assert.Equal(typeof(bool), validationContext.GetService(typeof(int)));
+        }
+
+        [Fact]
+        public void GetService_NullServiceProvider_ReturnsNull()
+        {
+            var validationContext = new ValidationContext(new object());
+            Assert.Null(validationContext.GetService(typeof(int)));
+        }
     }
 
     public class TestClass

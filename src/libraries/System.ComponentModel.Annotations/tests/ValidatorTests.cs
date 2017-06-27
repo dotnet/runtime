@@ -134,6 +134,72 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("ValidClassAttribute.IsValid failed for class of type " + typeof(InvalidToBeValidated).FullName, validationResults[0].ErrorMessage);
         }
 
+        [Fact]
+        public void TryValidateObject_IValidatableObject_Success()
+        {
+            var instance = new ValidatableSuccess();
+            var context = new ValidationContext(instance);
+
+            var results = new List<ValidationResult>();
+            Assert.True(Validator.TryValidateObject(instance, context, results));
+            Assert.Empty(results);
+        }
+
+        public class ValidatableSuccess : IValidatableObject
+        {
+            public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+                return new ValidationResult[] { ValidationResult.Success };
+            }
+        }
+
+        [Fact]
+        public void TryValidateObject_IValidatableObject_Error()
+        {
+            var instance = new ValidatableError();
+            var context = new ValidationContext(instance);
+
+            var results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(instance, context, results));
+            Assert.Equal("error", Assert.Single(results).ErrorMessage);
+        }
+
+        public class ValidatableError : IValidatableObject
+        {
+            public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+            {
+                return new ValidationResult[] { new ValidationResult("error") };
+            }
+        }
+
+        [Fact]
+        public void TryValidateObject_RequiredNonNull_Success()
+        {
+            var instance = new RequiredFailure { Required = "Text" };
+            var context = new ValidationContext(instance);
+
+            var results = new List<ValidationResult>();
+            Assert.True(Validator.TryValidateObject(instance, context, results));
+            Assert.Empty(results);
+        }
+
+        [Fact]
+        public void TryValidateObject_RequiredNull_Error()
+        {
+            var instance = new RequiredFailure();
+            var context = new ValidationContext(instance);
+
+            var results = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(instance, context, results));
+            Assert.Equal("The Required field is required.", Assert.Single(results).ErrorMessage);
+        }
+
+        public class RequiredFailure
+        {
+            [Required]
+            public string Required { get; set; }
+        }
+
         #endregion TryValidateObject
 
         #region ValidateObject

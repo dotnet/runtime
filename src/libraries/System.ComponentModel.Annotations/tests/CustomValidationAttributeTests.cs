@@ -69,6 +69,26 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(method, attribute.Method);
         }
 
+        [Fact]
+        public void FormatErrorMessage_NotPerformedValidation_ContainsName()
+        {
+            CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArg));
+            string errorMessage = attribute.FormatErrorMessage("name");
+            Assert.Contains("name", errorMessage);
+            Assert.Equal(errorMessage, attribute.FormatErrorMessage("name"));
+        }
+
+        [Fact]
+        public void FormatErrorMessage_PerformedValidation_DoesNotContainName()
+        {
+            CustomValidationAttribute attribute = GetAttribute(nameof(CustomValidator.CorrectValidationMethodOneArg));
+            Assert.False(attribute.IsValid(new TestClass("AnyString")));
+
+            string errorMessage = attribute.FormatErrorMessage("name");
+            Assert.DoesNotContain("name", errorMessage);
+            Assert.Equal(errorMessage, attribute.FormatErrorMessage("name"));
+        }
+
         [Theory]
         [InlineData(nameof(CustomValidator.CorrectValidationMethodOneArg), false)]
         [InlineData(nameof(CustomValidator.CorrectValidationMethodOneArgStronglyTyped), false)]

@@ -56,24 +56,19 @@ namespace System.ComponentModel.DataAnnotations
             {
                 return true;
             }
-            var str = value as string;
-            if (str != null)
+            if (value is string str)
             {
                 length = str.Length;
             }
             else
             {
-                ICollection collection = value as ICollection;
-
-                if (collection != null)
+                if (value is ICollection collection)
                 {
                     length = collection.Count;
                 }
                 else
                 {
-                    // A cast exception previously occurred if a non-{string|array} property was passed
-                    // in so preserve this behavior if the value does not implement ICollection
-                    length = ((Array)value).Length;
+                    throw new InvalidCastException(SR.Format(SR.LengthAttribute_InvalidValueType, value.GetType()));
                 }
             }
 
