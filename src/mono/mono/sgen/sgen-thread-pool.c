@@ -21,6 +21,7 @@ static mono_cond_t done_cond;
 
 static int threads_num;
 static MonoNativeThreadId threads [SGEN_THREADPOOL_MAX_NUM_THREADS];
+static int threads_context [SGEN_THREADPOOL_MAX_NUM_THREADS];
 
 static volatile gboolean threadpool_shutdown;
 static volatile int threads_finished;
@@ -190,7 +191,9 @@ thread_func (int worker_index)
 		SgenThreadPoolJob *job = NULL;
 		SgenThreadPoolContext *context = NULL;
 
+		threads_context [worker_index] = -1;
 		get_work (worker_index, &current_context, &do_idle, &job);
+		threads_context [worker_index] = current_context;
 
 		if (!threadpool_shutdown) {
 			context = &pool_contexts [current_context];
@@ -358,13 +361,13 @@ sgen_thread_pool_idle_signal (int context_id)
 }
 
 void
-sgen_thread_pool_idle_wait (int context_id)
+sgen_thread_pool_idle_wait (int context_id, SgenThreadPoolContinueIdleWaitFunc continue_wait)
 {
 	SGEN_ASSERT (0, pool_contexts [context_id].idle_job_func, "Why are we waiting for idle without an idle function?");
 
 	mono_os_mutex_lock (&lock);
 
-	while (pool_contexts [context_id].continue_idle_job_func (NULL, context_id))
+	while (continue_wait (context_id, threads_context))
 		mono_os_cond_wait (&done_cond, &lock);
 
 	mono_os_mutex_unlock (&lock);

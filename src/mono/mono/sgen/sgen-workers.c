@@ -56,8 +56,6 @@ set_state (WorkerData *data, State old_state, State new_state)
 		SGEN_ASSERT (0, old_state == STATE_WORKING, "We can only transition to NOT WORKING from WORKING");
 	else if (new_state == STATE_WORKING)
 		SGEN_ASSERT (0, old_state == STATE_WORK_ENQUEUED, "We can only transition to WORKING from WORK ENQUEUED");
-	if (new_state == STATE_NOT_WORKING || new_state == STATE_WORKING)
-		SGEN_ASSERT (6, sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Only the worker thread is allowed to transition to NOT_WORKING or WORKING");
 
 	return InterlockedCompareExchange (&data->state, new_state, old_state) == old_state;
 }
@@ -378,6 +376,50 @@ sgen_workers_create_context (int generation, int num_workers)
 	}
 }
 
+/* This is called with thread pool lock so no context switch can happen */
+static gboolean
+continue_idle_wait (int calling_context, int *threads_context)
+{
+	WorkerContext *context;
+	int i;
+
+	if (worker_contexts [GENERATION_OLD].workers_num && calling_context == worker_contexts [GENERATION_OLD].thread_pool_context)
+		context = &worker_contexts [GENERATION_OLD];
+	else if (worker_contexts [GENERATION_NURSERY].workers_num && calling_context == worker_contexts [GENERATION_NURSERY].thread_pool_context)
+		context = &worker_contexts [GENERATION_NURSERY];
+	else
+		g_assert_not_reached ();
+
+	/*
+	 * We assume there are no pending jobs, since this is called only after
+	 * we waited for all the jobs.
+	 */
+	for (i = 0; i < context->active_workers_num; i++) {
+		if (threads_context [i] == calling_context)
+			return TRUE;
+	}
+
+	if (sgen_workers_have_idle_work (context->generation) && !context->forced_stop)
+		return TRUE;
+
+	/*
+	 * At this point there are no jobs to be done, and no objects to be scanned
+	 * in the gray queues. We can simply asynchronously finish all the workers
+	 * from the context that were not finished already (due to being stuck working
+	 * in another context)
+	 */
+
+	for (i = 0; i < context->active_workers_num; i++) {
+		if (context->workers_data [i].state == STATE_WORK_ENQUEUED)
+			set_state (&context->workers_data [i], STATE_WORK_ENQUEUED, STATE_WORKING);
+		if (context->workers_data [i].state == STATE_WORKING)
+			worker_try_finish (&context->workers_data [i]);
+	}
+
+	return FALSE;
+}
+
+
 void
 sgen_workers_stop_all_workers (int generation)
 {
@@ -390,7 +432,7 @@ sgen_workers_stop_all_workers (int generation)
 	context->forced_stop = TRUE;
 
 	sgen_thread_pool_wait_for_all_jobs (context->thread_pool_context);
-	sgen_thread_pool_idle_wait (context->thread_pool_context);
+	sgen_thread_pool_idle_wait (context->thread_pool_context, continue_idle_wait);
 	SGEN_ASSERT (0, !sgen_workers_are_working (context), "Can only signal enqueue work when in no work state");
 
 	context->started = FALSE;
@@ -438,16 +480,9 @@ sgen_workers_join (int generation)
 	int i;
 
 	SGEN_ASSERT (0, !context->finish_callback, "Why are we joining concurrent mark early");
-	/*
-	 * It might be the case that a worker didn't get to run anything
-	 * in this context, because it was stuck working on a long job
-	 * in another context. In this case its state is active (WORK_ENQUEUED)
-	 * and we need to wait for it to finish itself.
-	 * FIXME Avoid having to wait for the worker to report its own finish.
-	 */
 
 	sgen_thread_pool_wait_for_all_jobs (context->thread_pool_context);
-	sgen_thread_pool_idle_wait (context->thread_pool_context);
+	sgen_thread_pool_idle_wait (context->thread_pool_context, continue_idle_wait);
 	SGEN_ASSERT (0, !sgen_workers_are_working (context), "Can only signal enqueue work when in no work state");
 
 	/* At this point all the workers have stopped. */
@@ -460,16 +495,14 @@ sgen_workers_join (int generation)
 }
 
 /*
- * Can only be called if the workers are stopped.
- * If we're stopped, there are also no pending jobs.
+ * Can only be called if the workers are not working in the
+ * context and there are no pending jobs.
  */
 gboolean
 sgen_workers_have_idle_work (int generation)
 {
 	WorkerContext *context = &worker_contexts [generation];
 	int i;
-
-	SGEN_ASSERT (0, context->forced_stop && !sgen_workers_are_working (context), "Checking for idle work should only happen if the workers are stopped.");
 
 	if (!sgen_section_gray_queue_is_empty (&context->workers_distribute_gray_queue))
 		return TRUE;
