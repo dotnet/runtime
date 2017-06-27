@@ -24,21 +24,21 @@ namespace System.Runtime.InteropServices
         {
             Assert.Equal(expected, Marshal.IsComObject(value));
         }
-
-        [ComImport]
-        [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-        public interface IComImportObject { }
-
-        public class InterfaceComImportObject : IComImportObject { }
-
-        [ComImport]
-        [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-        public class InterfaceAndComImportObject : IComImportObject { }
-
-        [ComImport]
-        [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
-        public class ComImportObject { }
-
-        public class SubComImportObject : ComImportObject { }
     }
+
+    [ComImport]
+    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    public interface IComImportObject { }
+
+    public class InterfaceComImportObject : IComImportObject { }
+
+    [ComImport]
+    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    public class InterfaceAndComImportObject : IComImportObject { }
+
+    [ComImport]
+    [Guid("927971f5-0939-11d1-8be1-00c04fd8d503")]
+    public class ComImportObject { }
+
+    public class SubComImportObject : ComImportObject { }
 }
