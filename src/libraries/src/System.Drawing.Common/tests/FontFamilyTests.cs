@@ -11,8 +11,8 @@ namespace System.Drawing.Tests
     public class FontFamilyTests
     {
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData(GenericFontFamilies.Serif - 1, "Courier New")]
-        [InlineData(GenericFontFamilies.Monospace + 1, "Courier New")]
+        [InlineData(GenericFontFamilies.Serif - 1, "Courier New")] // Value is outside the enum range.
+        [InlineData(GenericFontFamilies.Monospace + 1, "Courier New")] // Value is outside the enum range.
         [InlineData(GenericFontFamilies.Monospace, "Courier New")]
         [InlineData(GenericFontFamilies.SansSerif, "Microsoft Sans Serif")]
         [InlineData(GenericFontFamilies.Serif, "Times New Roman")]
@@ -42,7 +42,7 @@ namespace System.Drawing.Tests
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                fontCollection.AddFontFile(Helpers. GetTestFontPath("CodeNewRoman.otf"));
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.otf"));
 
                 using (var fontFamily = new FontFamily("Code New Roman", fontCollection))
                 {
@@ -190,7 +190,7 @@ namespace System.Drawing.Tests
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                fontCollection.AddFontFile(Helpers. GetTestFontPath("CodeNewRoman.otf"));
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.otf"));
 
                 using (var fontFamily = new FontFamily("Code New Roman", fontCollection))
                 {
@@ -233,7 +233,7 @@ namespace System.Drawing.Tests
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                fontCollection.AddFontFile(Helpers. GetTestFontPath("CodeNewRoman.ttf"));
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.ttf"));
 
                 using (var fontFamily = new FontFamily("Code New Roman", fontCollection))
                 {

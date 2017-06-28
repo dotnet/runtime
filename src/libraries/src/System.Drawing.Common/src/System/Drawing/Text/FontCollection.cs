@@ -25,10 +25,7 @@ namespace System.Drawing.Text
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
-        {
-            // Nop.
-        }
+        protected virtual void Dispose(bool disposing) { }
 
         /// <summary>
         /// Gets the array of <see cref='System.Drawing.FontFamily'/> objects associated
