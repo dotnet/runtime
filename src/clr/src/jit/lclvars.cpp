@@ -3805,8 +3805,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
             DoPreOrder = true,
         };
 
-        MarkLocalVarsVisitor(Compiler* compiler)
-            : GenTreeVisitor<MarkLocalVarsVisitor>(compiler)
+        MarkLocalVarsVisitor(Compiler* compiler) : GenTreeVisitor<MarkLocalVarsVisitor>(compiler)
         {
         }
 

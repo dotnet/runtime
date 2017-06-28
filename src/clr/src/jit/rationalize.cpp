@@ -978,9 +978,9 @@ void Rationalizer::DoPhase()
     public:
         enum
         {
-            ComputeStack = true,
-            DoPreOrder = true,
-            DoPostOrder = true,
+            ComputeStack      = true,
+            DoPreOrder        = true,
+            DoPostOrder       = true,
             UseExecutionOrder = true,
         };
 
