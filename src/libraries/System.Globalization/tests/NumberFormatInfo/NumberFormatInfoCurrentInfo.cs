@@ -26,13 +26,11 @@ namespace System.Globalization.Tests
 
             RemoteInvoke((cultureName) =>
             {
-                if (cultureName.Equals("EmptyString"))
-                    cultureName = string.Empty;
                 CultureInfo newCulture = new CultureInfo(cultureName);
                 CultureInfo.CurrentCulture = newCulture;
                 Assert.Same(newCulture.NumberFormat, NumberFormatInfo.CurrentInfo);
                 return SuccessExitCode;
-            }, newCurrentCulture.Name.Length > 0 ? newCurrentCulture.Name : "EmptyString").Dispose();
+            }, newCurrentCulture.Name).Dispose();
         }
 
         [Fact]

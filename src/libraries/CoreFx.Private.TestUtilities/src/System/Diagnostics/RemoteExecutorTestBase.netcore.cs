@@ -13,6 +13,6 @@ namespace System.Diagnostics
         protected static readonly string HostRunnerName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet.exe" : "dotnet";
         protected static readonly string HostRunner = Process.GetCurrentProcess().MainModule.FileName;
  
-        private static readonly string ExtraParameter = TestConsoleApp + " " ;
+        private static readonly string ExtraParameter = TestConsoleApp;
     }
 }

@@ -20,7 +20,7 @@ internal class Outside<T>
 
 namespace System.Tests
 {
-    public static class TypeTests
+    public class TypeTests
     {
         [Theory]
         [InlineData(typeof(int), null)]
@@ -340,38 +340,19 @@ namespace System.Tests
                }, options).Dispose();
         }
 
-        [Fact]
+        [Theory]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() is not supported on UapAot")]
-        public static void GetTypeByNameTypeloadFailure()
+        [InlineData("System.Collections.Generic.Dictionary`2[[Program, TestLoadAssembly], [Program2, TestLoadAssembly]]")]
+        [InlineData("")]
+        public void GetTypeByName_NoSuchType_ThrowsTypeLoadException(string typeName)
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions();
-            RemoteInvoke(() =>
-               {
-                   string test1 = testtype;
-                   //Loading from the wrong path
-                   Assert.Throws<System.IO.FileNotFoundException>(() =>
-                   Type.GetType(test1,
-                     (aName) => aName.Name == "Foo" ?
-                         Assembly.LoadFrom(@".\NoSuchTestLoadAssembly.dll") : null,
-                     typeloader,
-                     true
-                  ));
+            RemoteInvoke(marshalledTypeName =>
+            {
+                Assert.Throws<TypeLoadException>(() => Type.GetType(marshalledTypeName, assemblyloader, typeloader, true));
+                Assert.Null(Type.GetType(marshalledTypeName, assemblyloader, typeloader, false));
 
-                   //Type specified 'Program2' does not exst
-                   string test2 = "System.Collections.Generic.Dictionary`2[[Program, TestLoadAssembly], [Program2, TestLoadAssembly]]";
-                   Assert.Throws<TypeLoadException>(() => Type.GetType(test2, assemblyloader, typeloader, true));
-
-                   //Api does not throw
-                   Type t1 = Type.GetType(test2,
-                                          assemblyloader,
-                                          typeloader,
-                                          false      //no throw
-                    );
-
-                   Assert.Null(t1);
-
-                   return SuccessExitCode;
-               }, options).Dispose();
+                return SuccessExitCode;
+            }, typeName).Dispose();
         }
 
         [Fact]

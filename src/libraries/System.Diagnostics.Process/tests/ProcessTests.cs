@@ -966,9 +966,12 @@ namespace System.Diagnostics.Tests
         [InlineData("b d \\\"\\\"a\\\"\\\"", "b,d,\"\"a\"\"")]
         public void TestArgumentParsing(string inputArguments, string expectedArgv)
         {
-            using (var handle = RemoteInvokeRaw((Func<string, string, string, int>)ConcatThreeArguments,
-                inputArguments,
-                new RemoteInvokeOptions { Start = true, StartInfo = new ProcessStartInfo { RedirectStandardOutput = true } }))
+            var options = new RemoteInvokeOptions
+            {
+                Start = true,
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true }
+            };
+            using (RemoteInvokeHandle handle = RemoteInvokeRaw((Func<string, string, string, int>)ConcatThreeArguments, inputArguments, options))
             {
                 Assert.Equal(expectedArgv, handle.Process.StandardOutput.ReadToEnd());
             }
