@@ -125,8 +125,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.ImpersonateLoggedOnUser.cs">
       <Link>Common\Interop\Interop.ImpersonateLoggedOnUser.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlNtStatusToDosError.cs">
-      <Link>Common\Interop\Interop.RtlNtStatusToDosError.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.LsaNtStatusToWinError.cs">
+      <Link>Common\Interop\Interop.LsaNtStatusToWinError.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LocalFree.cs">
       <Link>Common\Interop\Interop.LocalFree.cs</Link>

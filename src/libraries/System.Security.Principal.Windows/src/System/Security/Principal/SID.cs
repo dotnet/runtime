@@ -1104,10 +1104,10 @@ nameof(binaryForm));
                 }
                 else if (ReturnCode != 0)
                 {
-                    int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(unchecked((int)ReturnCode));
+                    uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError(ReturnCode);
 
                     Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupSids returned {0}", win32ErrorCode));
-                    throw new Win32Exception(win32ErrorCode);
+                    throw new Win32Exception(unchecked((int)win32ErrorCode));
                 }
 
 
