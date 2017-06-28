@@ -15,6 +15,8 @@ using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Windows.Web;
 
+using RTWeb​Socket​Error = Windows.Networking.Sockets.Web​Socket​Error;
+
 namespace System.Net.WebSockets
 {
     internal class WinRTWebSocket : WebSocket
@@ -124,6 +126,11 @@ namespace System.Net.WebSockets
 
         public override void Abort()
         {
+            AbortInternal();
+        }
+
+        private void AbortInternal(WebSocketException customException = null)
+        {
             lock (_stateLock)
             {
                 if ((_state != WebSocketState.None) && (_state != WebSocketState.Connecting))
@@ -135,14 +142,13 @@ namespace System.Net.WebSockets
                     // ClientWebSocket Desktop behavior: a ws that was not connected will not switch state to Aborted.
                     UpdateState(WebSocketState.Closed);
                 }
-
-                Dispose();
             }
 
-            CancelAllOperations();
+            CancelAllOperations(customException);
+            Dispose();
         }
 
-        private void CancelAllOperations()
+        private void CancelAllOperations(WebSocketException customException)
         {
             if (_receiveAsyncBufferTcs != null)
             {
@@ -154,26 +160,40 @@ namespace System.Net.WebSockets
 
             if (_webSocketReceiveResultTcs != null)
             {
-                var exception = new WebSocketException(
-                    WebSocketError.InvalidState,
-                    SR.Format(
-                        SR.net_WebSockets_InvalidState_ClosedOrAborted,
-                        "System.Net.WebSockets.InternalClientWebSocket",
-                        "Aborted"));
+                if (customException != null)
+                {
+                    _webSocketReceiveResultTcs.TrySetException(customException);
+                }
+                else
+                {
+                    var exception = new WebSocketException(
+                        WebSocketError.InvalidState,
+                        SR.Format(
+                            SR.net_WebSockets_InvalidState_ClosedOrAborted,
+                            "System.Net.WebSockets.InternalClientWebSocket",
+                            "Aborted"));
 
-                _webSocketReceiveResultTcs.TrySetException(exception);
+                    _webSocketReceiveResultTcs.TrySetException(exception);
+                }
             }
 
             if (_closeWebSocketReceiveResultTcs != null)
             {
-                var exception = new WebSocketException(
-                    WebSocketError.InvalidState,
-                    SR.Format(
-                        SR.net_WebSockets_InvalidState_ClosedOrAborted,
-                        "System.Net.WebSockets.InternalClientWebSocket",
-                        "Aborted"));
+                if (customException != null)
+                {
+                    _closeWebSocketReceiveResultTcs.TrySetException(customException);
+                }
+                else
+                {
+                    var exception = new WebSocketException(
+                        WebSocketError.InvalidState,
+                        SR.Format(
+                            SR.net_WebSockets_InvalidState_ClosedOrAborted,
+                            "System.Net.WebSockets.InternalClientWebSocket",
+                            "Aborted"));
 
-                _closeWebSocketReceiveResultTcs.TrySetException(exception);
+                    _closeWebSocketReceiveResultTcs.TrySetException(exception);
+                }
             }
         }
 
@@ -279,46 +299,74 @@ namespace System.Net.WebSockets
 
         private void OnMessageReceived(MessageWebSocket sender, MessageWebSocketMessageReceivedEventArgs args)
         {
-            using (DataReader reader = args.GetDataReader())
+            // GetDataReader() throws an exception when either:
+            // (1) The underlying TCP connection is closed prematurely (e.g., FIN/RST received without sending/receiving a WebSocket Close frame).
+            // (2) The server sends invalid data (e.g., corrupt HTTP headers or a message exceeding the MaxMessageSize).
+            //
+            // In both cases, the appropriate thing to do is to close the socket, as we have reached an unexpected state in
+            // the WebSocket protocol.
+            try
             {
-                uint dataAvailable;
-                while ((dataAvailable = reader.UnconsumedBufferLength) > 0)
+                using (DataReader reader = args.GetDataReader())
                 {
-                    ArraySegment<byte> buffer;
-                    try
+                    uint dataAvailable;
+                    while ((dataAvailable = reader.UnconsumedBufferLength) > 0)
                     {
-                        buffer = _receiveAsyncBufferTcs.Task.GetAwaiter().GetResult();
-                    }
-                    catch (OperationCanceledException) // Caused by Abort call on WebSocket
-                    {
-                        return;
-                    }
-                    
-                    _receiveAsyncBufferTcs = new TaskCompletionSource<ArraySegment<byte>>();
-                    WebSocketMessageType messageType;
-                    if (args.MessageType == SocketMessageType.Binary)
-                    {
-                        messageType = WebSocketMessageType.Binary;
-                    }
-                    else
-                    {
-                        messageType = WebSocketMessageType.Text;
-                    }
+                        ArraySegment<byte> buffer;
+                        try
+                        {
+                            buffer = _receiveAsyncBufferTcs.Task.GetAwaiter().GetResult();
+                        }
+                        catch (OperationCanceledException) // Caused by Abort call on WebSocket
+                        {
+                            return;
+                        }
 
-                    bool endOfMessage = false;
-                    uint readCount = Math.Min(dataAvailable, (uint) buffer.Count);
-                    var dataBuffer = reader.ReadBuffer(readCount);
-                    // Safe to cast readCount to int as the maximum value that readCount can be is buffer.Count.
-                    dataBuffer.CopyTo(0, buffer.Array, buffer.Offset, (int) readCount);
-                    if (dataAvailable == readCount)
-                    {
-                        endOfMessage = true;
-                    }
+                        _receiveAsyncBufferTcs = new TaskCompletionSource<ArraySegment<byte>>();
+                        WebSocketMessageType messageType;
+                        if (args.MessageType == SocketMessageType.Binary)
+                        {
+                            messageType = WebSocketMessageType.Binary;
+                        }
+                        else
+                        {
+                            messageType = WebSocketMessageType.Text;
+                        }
 
-                    WebSocketReceiveResult recvResult = new WebSocketReceiveResult((int) readCount, messageType,
-                        endOfMessage);
-                    _webSocketReceiveResultTcs.TrySetResult(recvResult);
+                        bool endOfMessage = false;
+                        uint readCount = Math.Min(dataAvailable, (uint) buffer.Count);
+                        var dataBuffer = reader.ReadBuffer(readCount);
+                        // Safe to cast readCount to int as the maximum value that readCount can be is buffer.Count.
+                        dataBuffer.CopyTo(0, buffer.Array, buffer.Offset, (int) readCount);
+                        if (dataAvailable == readCount)
+                        {
+                            endOfMessage = true;
+                        }
+
+                        WebSocketReceiveResult recvResult = new WebSocketReceiveResult((int) readCount, messageType,
+                            endOfMessage);
+                        _webSocketReceiveResultTcs.TrySetResult(recvResult);
+                    }
                 }
+            }
+            catch (Exception exc)
+            {
+                // WinRT WebSockets always throw exceptions of type System.Exception. However, we can determine whether
+                // or not we're dealing with a known error by using WinRT's WebSocketError.GetStatus method.
+                WebErrorStatus status = RTWeb​Socket​Error.GetStatus(exc.HResult);
+                WebSocketError actualError = WebSocketError.Faulted;
+                switch (status)
+                {
+                    case WebErrorStatus.ConnectionAborted:
+                    case WebErrorStatus.ConnectionReset:
+                    case WebErrorStatus.Disconnected:
+                        actualError = WebSocketError.ConnectionClosedPrematurely;
+                        break;
+                }
+
+                // Propagate a custom exception to any pending SendAsync/ReceiveAsync operations and close the socket.
+                WebSocketException customException = new WebSocketException(actualError, exc);
+                AbortInternal(customException);
             }
         }
 
