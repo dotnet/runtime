@@ -6535,8 +6535,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             assert(this->OperIsBinary());
             return TryGetUseBinOp(def, use);
     }
-
-    unreached();
 }
 
 bool GenTree::TryGetUseList(GenTree* def, GenTree*** use)
