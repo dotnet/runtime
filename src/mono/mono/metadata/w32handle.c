@@ -451,19 +451,17 @@ gpointer mono_w32handle_new_fd (MonoW32HandleType type, int fd,
 	fd_index = SLOT_INDEX (fd);
 	fd_offset = SLOT_OFFSET (fd);
 
+	mono_os_mutex_lock (&scan_mutex);
 	/* Initialize the array entries on demand */
 	if (!private_handles [fd_index]) {
-		mono_os_mutex_lock (&scan_mutex);
-
 		if (!private_handles [fd_index])
 			private_handles [fd_index] = g_new0 (MonoW32HandleBase, HANDLE_PER_SLOT);
-
-		mono_os_mutex_unlock (&scan_mutex);
 	}
 
 	handle_data = &private_handles [fd_index][fd_offset];
 
 	if (handle_data->type != MONO_W32HANDLE_UNUSED) {
+		mono_os_mutex_unlock (&scan_mutex);
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: failed to create %s handle, fd is already in use", __func__, mono_w32handle_ops_typename (type));
 		/* FIXME: clean up this handle?  We can't do anything
 		 * with the fd, cos thats the new one
@@ -474,6 +472,8 @@ gpointer mono_w32handle_new_fd (MonoW32HandleType type, int fd,
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_W32HANDLE, "%s: create %s handle %p", __func__, mono_w32handle_ops_typename (type), GUINT_TO_POINTER(fd));
 
 	mono_w32handle_init_handle (handle_data, type, handle_specific);
+
+	mono_os_mutex_unlock (&scan_mutex);
 
 	return(GUINT_TO_POINTER(fd));
 }
@@ -1080,10 +1080,12 @@ mono_w32handle_timedwait_signal_handle (gpointer handle, guint32 timeout, gboole
 		*alerted = FALSE;
 
 	if (alerted) {
-		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
-		if (*alerted)
-			return 0;
 		mono_w32handle_ref (handle);
+		mono_thread_info_install_interrupt (signal_handle_and_unref, handle, alerted);
+		if (*alerted) {
+			mono_w32handle_unref (handle);
+			return 0;
+		}
 	}
 
 	res = mono_w32handle_timedwait_signal_naked (&handle_data->signal_cond, &handle_data->signal_mutex, timeout, poll, alerted);
