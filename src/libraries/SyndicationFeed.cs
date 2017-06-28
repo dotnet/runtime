@@ -38,6 +38,74 @@ namespace Microsoft.ServiceModel.Syndication
         private Collection<SyndicationLink> _links;
         private TextSyndicationContent _title;
 
+        //new fields for new optional RSS tags
+        private SyndicationLink _documentation;
+        private int _timeToLive;
+        private Collection<int> _skipHours;
+        private Collection<string> _skipDays;
+        private SyndicationTextInput _textInput;
+
+        public SyndicationTextInput TextInput
+        {
+            get
+            {
+                if (_textInput == null)
+                    _textInput = new SyndicationTextInput();
+                return _textInput;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+                _textInput = value;
+            }
+        }
+
+        public SyndicationLink Documentation
+        {
+            get
+            {
+                return _documentation;
+            }
+            set
+            {
+                _documentation = value;
+            }
+        }
+
+        public int TimeToLive
+        {
+            get {
+                return _timeToLive;
+            }
+            set
+            {
+                _timeToLive = value;
+            }
+        }
+
+        public Collection<int> SkipHours
+        {
+            get
+            {
+                if (_skipHours == null)
+                    _skipHours = new Collection<int>();
+                return _skipHours;
+            }
+        }
+
+        public Collection<string> SkipDays
+        {
+            get
+            {
+                if (_skipDays == null)
+                    _skipDays = new Collection<string>();
+                return _skipDays;
+            }
+        }
+ 
+
+        //======================================
         public SyndicationFeed()
             : this((IEnumerable<SyndicationItem>)null)
         {
@@ -278,7 +346,7 @@ namespace Microsoft.ServiceModel.Syndication
         //    return Load(reader, new Rss20FeedFormatter(), formatter);
         //}
 
-        //public static SyndicationFeed Load(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter) 
+        //public static SyndicationFeed Load(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter)
         //{
         //    if (reader1 == null)
         //    {
