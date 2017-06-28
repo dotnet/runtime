@@ -20,6 +20,32 @@ using System.Diagnostics.Tracing;
 namespace System.Threading
 {
 #if FEATURE_APPX
+
+    [WindowsRuntimeImport]
+    [Guid("DFA2DC9C-1A2D-4917-98F2-939AF1D6E0C8")]
+    public delegate void DispatcherQueueHandler();
+
+    public enum DispatcherQueuePriority
+    {
+        Low = -10,
+        Normal = 0,
+        High = 10
+    }
+
+    [ComImport]
+    [WindowsRuntimeImport]
+    [Guid("603E88E4-A338-4FFE-A457-A5CFB9CEB899")]
+    internal interface IDispatcherQueue
+    {
+        // This returns a DispatcherQueueTimer but we don't use this method, so I
+        // just made it 'object' to avoid declaring it.
+        object CreateTimer();
+
+        bool TryEnqueue(DispatcherQueueHandler callback);
+
+        bool TryEnqueue(DispatcherQueuePriority priority, DispatcherQueueHandler callback);
+    }
+
     #region class WinRTSynchronizationContextFactory
 
     [FriendAccessAllowed]
@@ -32,28 +58,47 @@ namespace System.Threading
         // To accomplish this, we use a ConditionalWeakTable to track which instances of WinRTSynchronizationContext are bound
         // to each ICoreDispatcher instance.
         //
-        private static readonly ConditionalWeakTable<CoreDispatcher, WinRTSynchronizationContext> s_contextCache =
-            new ConditionalWeakTable<CoreDispatcher, WinRTSynchronizationContext>();
+        private static readonly ConditionalWeakTable<CoreDispatcher, WinRTCoreDispatcherBasedSynchronizationContext> s_coreDispatcherContextCache =
+            new ConditionalWeakTable<CoreDispatcher, WinRTCoreDispatcherBasedSynchronizationContext>();
+
+        private static readonly ConditionalWeakTable<IDispatcherQueue, WinRTDispatcherQueueBasedSynchronizationContext> s_dispatcherQueueContextCache =
+            new ConditionalWeakTable<IDispatcherQueue, WinRTDispatcherQueueBasedSynchronizationContext>();
 
         public override SynchronizationContext Create(object dispatcherObj)
         {
             Debug.Assert(dispatcherObj != null);
+            Debug.Assert(dispatcherObj is CoreDispatcher || dispatcherObj is IDispatcherQueue);
 
-            //
-            // Get the RCW for the dispatcher
-            //
-            CoreDispatcher dispatcher = (CoreDispatcher)dispatcherObj;
+            if (dispatcherObj is CoreDispatcher)
+            {
+                //
+                // Get the RCW for the dispatcher
+                //
+                CoreDispatcher dispatcher = (CoreDispatcher)dispatcherObj;
 
-            //
-            // The dispatcher is supposed to belong to this thread
-            //
-            Debug.Assert(dispatcher == CoreWindow.GetForCurrentThread().Dispatcher);
-            Debug.Assert(dispatcher.HasThreadAccess);
+                //
+                // The dispatcher is supposed to belong to this thread
+                //
+                Debug.Assert(dispatcher == CoreWindow.GetForCurrentThread().Dispatcher);
+                Debug.Assert(dispatcher.HasThreadAccess);
 
-            //
-            // Get the WinRTSynchronizationContext instance that represents this CoreDispatcher.
-            //
-            return s_contextCache.GetValue(dispatcher, _dispatcher => new WinRTSynchronizationContext(_dispatcher));
+                //
+                // Get the WinRTSynchronizationContext instance that represents this CoreDispatcher.
+                //
+                return s_coreDispatcherContextCache.GetValue(dispatcher, _dispatcher => new WinRTCoreDispatcherBasedSynchronizationContext(_dispatcher));
+            }
+            else // dispatcherObj is IDispatcherQueue
+            {
+                //
+                // Get the RCW for the dispatcher
+                //
+                IDispatcherQueue dispatcherQueue = (IDispatcherQueue)dispatcherObj;
+
+                //
+                // Get the WinRTSynchronizationContext instance that represents this IDispatcherQueue.
+                //
+                return s_dispatcherQueueContextCache.GetValue(dispatcherQueue, _dispatcherQueue => new WinRTDispatcherQueueBasedSynchronizationContext(_dispatcherQueue));
+            }
         }
     }
 
@@ -62,18 +107,62 @@ namespace System.Threading
 
     #region class WinRTSynchronizationContext
 
-    internal sealed class WinRTSynchronizationContext : SynchronizationContext
+    internal sealed class WinRTCoreDispatcherBasedSynchronizationContext : WinRTSynchronizationContextBase
     {
         private readonly CoreDispatcher _dispatcher;
-
-        internal WinRTSynchronizationContext(CoreDispatcher dispatcher)
+        internal WinRTCoreDispatcherBasedSynchronizationContext(CoreDispatcher dispatcher)
         {
             _dispatcher = dispatcher;
         }
 
+        [SecuritySafeCritical]
+        public override void Post(SendOrPostCallback d, object state)
+        {
+            if (d == null)
+                throw new ArgumentNullException("d");
+            Contract.EndContractBlock();
+
+            var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
+        }
+
+        public override SynchronizationContext CreateCopy()
+        {
+            return new WinRTCoreDispatcherBasedSynchronizationContext(_dispatcher);
+        }
+    }
+
+    internal sealed class WinRTDispatcherQueueBasedSynchronizationContext : WinRTSynchronizationContextBase
+    {
+        private readonly IDispatcherQueue _dispatcherQueue;
+        internal WinRTDispatcherQueueBasedSynchronizationContext(IDispatcherQueue dispatcherQueue)
+        {
+            _dispatcherQueue = dispatcherQueue;
+        }
+
+        [SecuritySafeCritical]
+        public override void Post(SendOrPostCallback d, object state)
+        {
+            if (d == null)
+                throw new ArgumentNullException("d");
+            Contract.EndContractBlock();
+
+            // We explicitly choose to ignore the return value here. This enqueue operation might fail if the 
+            // dispatcher queue was shut down before we got here. In that case, we choose to just move on and
+            // pretend nothing happened.
+            var ignored = _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, new Invoker(d, state).Invoke);
+        }
+
+        public override SynchronizationContext CreateCopy()
+        {
+            return new WinRTDispatcherQueueBasedSynchronizationContext(_dispatcherQueue);
+        }
+    }
+
+    internal abstract class WinRTSynchronizationContextBase : SynchronizationContext
+    {
         #region class WinRTSynchronizationContext.Invoker
 
-        private class Invoker
+        protected class Invoker
         {
             private readonly ExecutionContext _executionContext;
             private readonly SendOrPostCallback _callback;
@@ -193,24 +282,9 @@ namespace System.Threading
         #endregion class WinRTSynchronizationContext.Invoker
 
         [SecuritySafeCritical]
-        public override void Post(SendOrPostCallback d, object state)
-        {
-            if (d == null)
-                throw new ArgumentNullException("d");
-            Contract.EndContractBlock();
-
-            var ignored = _dispatcher.RunAsync(CoreDispatcherPriority.Normal, new Invoker(d, state).Invoke);
-        }
-
-        [SecuritySafeCritical]
         public override void Send(SendOrPostCallback d, object state)
         {
             throw new NotSupportedException(SR.InvalidOperation_SendNotSupportedOnWindowsRTSynchronizationContext);
-        }
-
-        public override SynchronizationContext CreateCopy()
-        {
-            return new WinRTSynchronizationContext(_dispatcher);
         }
     }
     #endregion class WinRTSynchronizationContext
