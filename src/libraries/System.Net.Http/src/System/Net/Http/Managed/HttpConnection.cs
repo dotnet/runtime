@@ -579,21 +579,17 @@ namespace System.Net.Http
                 await WriteAsciiStringAsync(header.Key, cancellationToken).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ', cancellationToken).ConfigureAwait(false);
 
-                bool first = true;
-                foreach (string headerValue in header.Value)
+                var values = (string[])header.Value; // typed as IEnumerable<string>, but always a string[]
+                Debug.Assert(values.Length > 0, "No values for header??");
+                if (values.Length > 0)
                 {
-                    if (first)
-                    {
-                        first = false;
-                    }
-                    else
+                    await WriteStringAsync(values[0], cancellationToken).ConfigureAwait(false);
+                    for (int i = 1; i < values.Length; i++)
                     {
                         await WriteTwoBytesAsync((byte)',', (byte)' ', cancellationToken).ConfigureAwait(false);
+                        await WriteStringAsync(values[i], cancellationToken).ConfigureAwait(false);
                     }
-                    await WriteStringAsync(headerValue, cancellationToken).ConfigureAwait(false);
                 }
-
-                Debug.Assert(!first, "No values for header??");
 
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
             }
