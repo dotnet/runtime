@@ -4,24 +4,39 @@
 
 namespace System.Drawing.Text
 {
+    /// <summary>
+    /// Specifies the quality of text rendering.
+    /// </summary>
     public enum TextRenderingHint
     {
-        // Glyph with system default rendering hint
+        /// <summary>
+        /// Glyph with system default rendering hint.
+        /// </summary>
         SystemDefault = 0,
 
-        // Glyph bitmap with hinting
+        /// <summary>
+        /// Glyph bitmap with hinting.
+        /// </summary>
         SingleBitPerPixelGridFit,
 
-        // Glyph bitmap without hinting
+        /// <summary>
+        /// Glyph bitmap without hinting.
+        /// </summary>
         SingleBitPerPixel,
 
-        //Anti-aliasing with hinting
+        /// <summary>
+        /// Anti-aliasing with hinting.
+        /// </summary>
         AntiAliasGridFit,
 
-        // Glyph anti-alias bitmap without hinting
+        /// <summary>
+        /// Glyph anti-alias bitmap without hinting.
+        /// </summary>
         AntiAlias,
 
-        // Glyph CT bitmap with hinting
+        /// <summary>
+        /// Glyph CT bitmap with hinting.
+        /// </summary>
         ClearTypeGridFit
     }
 }

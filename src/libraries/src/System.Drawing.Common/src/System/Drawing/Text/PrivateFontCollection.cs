@@ -8,14 +8,23 @@ using System.Globalization;
 
 namespace System.Drawing.Text
 {
+    /// <summary>
+    /// Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
+    /// </summary>
     public sealed class PrivateFontCollection : FontCollection
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.Drawing.Text.PrivateFontCollection'/> class.
+        /// </summary>
         public PrivateFontCollection() : base()
         {
             int status = SafeNativeMethods.Gdip.GdipNewPrivateFontCollection(out _nativeFontCollection);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
+        /// <summary>
+        /// Cleans up Windows resources for this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
+        /// </summary>
         protected override void Dispose(bool disposing)
         {
             if (_nativeFontCollection != IntPtr.Zero)
@@ -42,6 +51,9 @@ namespace System.Drawing.Text
             base.Dispose(disposing);
         }
 
+        /// <summary>
+        /// Adds a font from the specified file to this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
+        /// </summary>
         public void AddFontFile(string filename)
         {
             int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), filename);
@@ -51,6 +63,9 @@ namespace System.Drawing.Text
             SafeNativeMethods.AddFontFile(filename);
         }
 
+        /// <summary>
+        /// Adds a font contained in system memory to this <see cref='System.Drawing.Text.PrivateFontCollection'/>.
+        /// </summary>
         public void AddMemoryFont(IntPtr memory, int length)
         {
             int status = SafeNativeMethods.Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, _nativeFontCollection), new HandleRef(null, memory), length);
