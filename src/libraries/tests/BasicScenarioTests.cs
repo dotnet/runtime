@@ -221,19 +221,20 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             XmlReaderSettings setting = new XmlReaderSettings();
             setting.Async = true;
             XmlReader reader = null;
+            Task<SyndicationFeed> rss = null;
             try
             {
                 // *** EXECUTE *** \\
                 reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
-                Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(reader);
+                rss = SyndicationFeed.LoadAsync(reader);
                 await Task.WhenAll(rss);
 
                 // *** ASSERT *** \\
-                Assert.True(rss.Result.Items != null);
             }
-            catch
+            finally
             {
                 // *** CLEANUP *** \\
+                Assert.True(rss.Result.Items != null);
                 reader.Close();
             }
         }
@@ -249,7 +250,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
             try
             {
-                reader = XmlReader.Create(@"TestFeeds\atom_complex_example.xml", setting);
+                reader = XmlReader.Create(@"TestFeeds\atom_spec_example.xml", setting);
                 // *** EXECUTE *** \\
                 Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
                 await Task.WhenAll(atom);
@@ -316,10 +317,143 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 // *** CLEANUP *** \\
                 reader.Close();
             }
-
-
-
         }
+
+        [Fact]
+        public static async Task SyndicationFeed_RSS_Optional_Documentation()
+        {
+            // *** SETUP *** \\
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = null;
+            Task<SyndicationFeed> rss = null;
+            try
+            {
+                // *** EXECUTE *** \\
+                reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+                rss = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(rss);
+
+                // *** ASSERT *** \\
+                Assert.True(rss.Result.Documentation.GetAbsoluteUri().ToString() == "http://blogs.law.harvard.edu/tech/rss");
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                Assert.True(rss.Result.Items != null);
+                reader.Close();
+            }
+        }
+
+        [Fact]
+        public static async Task SyndicationFeed_RSS_Optional_TimeToLiveTag()
+        {
+            // *** SETUP *** \\
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = null;
+            Task<SyndicationFeed> rss = null;
+            try
+            {
+                // *** EXECUTE *** \\
+                reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+                rss = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(rss);
+
+                // *** ASSERT *** \\
+                Assert.True(rss.Result.TimeToLive == 60);
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                Assert.True(rss.Result.Items != null);
+                reader.Close();
+            }
+        }
+
+        [Fact]
+        public static async Task SyndicationFeed_RSS_Optional_SkipHours()
+        {
+            // *** SETUP *** \\
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = null;
+            Task<SyndicationFeed> rss = null;
+            try
+            {
+                // *** EXECUTE *** \\
+                reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+                rss = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(rss);
+
+                // *** ASSERT *** \\
+                Assert.True(rss.Result.SkipHours.Count == 3);
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                Assert.True(rss.Result.Items != null);
+                reader.Close();
+            }
+        }
+
+        [Fact]
+        public static async Task SyndicationFeed_RSS_Optional_SkipDays()
+        {
+            // *** SETUP *** \\
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = null;
+            Task<SyndicationFeed> rss = null;
+            try
+            {
+                // *** EXECUTE *** \\
+                reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+                rss = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(rss);
+
+                // *** ASSERT *** \\
+                Assert.True(rss.Result.SkipDays.Count == 2);
+                Assert.True(rss.Result.SkipDays[0] == "Saturday");
+                Assert.True(rss.Result.SkipDays[1] == "Sunday");
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                Assert.True(rss.Result.Items != null);
+                reader.Close();
+            }
+        }
+
+        [Fact]
+        public static async Task SyndicationFeed_RSS_Optional_TextInput()
+        {
+            // *** SETUP *** \\
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = null;
+            Task<SyndicationFeed> rss = null;
+            try
+            {
+                // *** EXECUTE *** \\
+                reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml", setting);
+                rss = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(rss);
+
+                // *** ASSERT *** \\
+                Assert.True(rss.Result.TextInput.Description == "Search Online");
+                Assert.True(rss.Result.TextInput.title == "Search");
+                Assert.True(rss.Result.TextInput.name == "q");
+                Assert.True(rss.Result.TextInput.link.GetAbsoluteUri().ToString() == "http://www.contoso.no/search?");
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                Assert.True(rss.Result.Items != null);
+                reader.Close();
+            }
+        }
+
     }
 }
 

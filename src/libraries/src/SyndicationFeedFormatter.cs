@@ -388,7 +388,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
         {
-            //JERRY REMOVE THIS METHOD AND USE THE NEW CloseBufferAsync
+            
             if (buffer == null)
             {
                 return;
@@ -398,17 +398,7 @@ namespace Microsoft.ServiceModel.Syndication
             buffer.Close();
         }
 
-        //internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlReaderWrapper reader, int maxExtensionSize)
-        //{
-        //    //JERRY REMOVE THIS METHOD AND USE PATTERN THAT I USED IN Rss20FeedFormatter.
-        //    if (buffer == null)
-        //    {
-        //        buffer = new XmlBuffer(maxExtensionSize);
-        //        extWriter = buffer.OpenSection(XmlDictionaryReaderQuotas.Max);
-        //        extWriter.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-        //    }
-        //    extWriter.WriteNode(reader, false);
-        //}
+        
 
         internal static SyndicationFeed CreateFeedInstance(Type feedType)
         {
@@ -421,24 +411,10 @@ namespace Microsoft.ServiceModel.Syndication
                 return (SyndicationFeed)Activator.CreateInstance(feedType);
             }
         }
-
-        //internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationFeed feed)
-        //{
-        //    //JERRY MAKE THIS METHOD FULLY ASYNC AND TEST IT OUT.  Rename and add Async postfix.
-        //    if (feed == null)
-        //    {
-        //        throw new ArgumentNullException("feed");
-        //    }
-
-        //    CloseBuffer(buffer, writer);
-        //    feed.LoadElementExtensions(buffer);
-        //}
-
-
+        
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationFeed feed)
         {
-            //JERRY MAKE THIS METHOD FULLY ASYNC AND TEST IT OUT.  Rename and add Async postfix. --- ??
             if (feed == null)
             {
                 throw new ArgumentNullException("feed");
@@ -451,7 +427,6 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationItem item)
         {
-            //JERRY MAKE THIS METHOD FULLY ASYNC AND TEST IT OUT.  Rename and add Async postfix.
 
             if (item == null)
             {
@@ -463,7 +438,6 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationCategory category)
         {
-            //JERRY MAKE THIS METHOD FULLY ASYNC AND TEST IT OUT.  Rename and add Async postfix.
 
             if (category == null)
             {
@@ -475,7 +449,6 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationLink link)
         {
-            //JERRY MAKE THIS METHOD FULLY ASYNC AND TEST IT OUT.  Rename and add Async postfix.
 
             if (link == null)
             {
@@ -503,7 +476,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        internal static void MoveToStartElement(XmlReader reader)//JERRY REMOVE ======== used in constructor and out
+        internal static void MoveToStartElement(XmlReader reader)
         {
             if (!reader.IsStartElement())
             {

@@ -27,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="TestFeeds\atom_complex_example.xml">
+    <None Update="TestFeeds\atom_spec_example.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="TestFeeds\AtomDisjointItems.xml">

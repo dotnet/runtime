@@ -375,7 +375,6 @@ namespace Microsoft.ServiceModel.Syndication
 
             if(ns == Atom10Constants.Atom10Namespace)
             {
-
                 switch (name)
                 {
                     case Atom10Constants.AuthorTag:
@@ -578,27 +577,33 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 writer.WriteAttributeString("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
+
             link.WriteAttributeExtensions(writer, SyndicationVersions.Atom10);
             if (!string.IsNullOrEmpty(link.RelationshipType) && !link.AttributeExtensions.ContainsKey(s_atom10Relative))
             {
                 writer.WriteAttributeString(Atom10Constants.RelativeTag, link.RelationshipType);
             }
+
             if (!string.IsNullOrEmpty(link.MediaType) && !link.AttributeExtensions.ContainsKey(s_atom10Type))
             {
                 writer.WriteAttributeString(Atom10Constants.TypeTag, link.MediaType);
             }
+
             if (!string.IsNullOrEmpty(link.Title) && !link.AttributeExtensions.ContainsKey(s_atom10Title))
             {
                 writer.WriteAttributeString(Atom10Constants.TitleTag, link.Title);
             }
+
             if (link.Length != 0 && !link.AttributeExtensions.ContainsKey(s_atom10Length))
             {
                 writer.WriteAttributeString(Atom10Constants.LengthTag, Convert.ToString(link.Length, CultureInfo.InvariantCulture));
             }
+
             if (!link.AttributeExtensions.ContainsKey(s_atom10Href))
             {
                 writer.WriteAttributeString(Atom10Constants.HrefTag, FeedUtils.GetUriString(link.Uri));
             }
+
             link.WriteElementExtensions(writer, SyndicationVersions.Atom10);
             writer.WriteEndElement();
         }
@@ -614,10 +619,12 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("feed");
             }
+
             if (reader == null)
             {
                 throw new ArgumentNullException("reader");
             }
+
             SyndicationItem item = CreateItem(feed);
 
             XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
@@ -626,6 +633,7 @@ namespace Microsoft.ServiceModel.Syndication
             return item;
         }
 
+        //not referenced anymore
         protected virtual async Task<IEnumerable<SyndicationItem>> ReadItemsAsync(XmlReader reader, SyndicationFeed feed)
         {
             if (feed == null)
@@ -921,21 +929,18 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     while (await reader.IsStartElementAsync())
                     {
-                        if (await TryParseFeedElementFromAsync(reader, result))  //JERRY MAKE THIS ASYNC
+                        if (await TryParseFeedElementFromAsync(reader, result))  
                         {
                             // nothing, we parsed something, great
                         }
                         else if (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
                         {
-                            //if (readItemsAtLeastOnce)
-                            //{
-                            //    throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
-                            //}
+                            if (readItemsAtLeastOnce)
+                            {
+                                //throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
+                                //Log we have disjoint items
+                            }
 
-                            //result.Items = await ReadItemsAsync(reader, result); ;  // JERRY MAKE THIS ASYNC
-
-
-                            //XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
 
                             while (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
                             {
@@ -975,7 +980,7 @@ namespace Microsoft.ServiceModel.Syndication
                     }
                     //Add all read items to the feed
                     result.Items = feedItems;
-                    LoadElementExtensions(buffer, extWriter, result);  // JERRY MAKE THIS ASYNC
+                    LoadElementExtensions(buffer, extWriter, result);  
                 }
                 finally
                 {
@@ -993,131 +998,7 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private async Task<SyndicationFeed> ReadFeedFrom(XmlReaderWrapper reader, SyndicationFeed result, bool isSourceFeed)  //JERRY REMOVE THIS METHOD AND USE THE ONE ABOVE
-        {
-            await reader.MoveToContentAsync();
-
-            try
-            {
-                bool elementIsEmpty = false;
-                if (!isSourceFeed)
-                {
-                    await MoveToStartElementAsync(reader);
-                    elementIsEmpty = reader.IsEmptyElement;
-                    if (reader.HasAttributes)
-                    {
-                        while (reader.MoveToNextAttribute())
-                        {
-                            if (reader.LocalName == "lang" && reader.NamespaceURI == XmlNs)
-                            {
-                                result.Language = await reader.GetValueAsync();
-                            }
-                            else if (reader.LocalName == "base" && reader.NamespaceURI == XmlNs)
-                            {
-                                result.BaseUri = FeedUtils.CombineXmlBase(result.BaseUri, await reader.GetValueAsync());
-                            }
-                            else
-                            {
-                                string ns = reader.NamespaceURI;
-                                string name = reader.LocalName;
-                                if (FeedUtils.IsXmlns(name, ns) || FeedUtils.IsXmlSchemaType(name, ns))
-                                {
-                                    continue;
-                                }
-                                string val = await reader.GetValueAsync();
-                                if (!TryParseAttribute(name, ns, val, result, this.Version))
-                                {
-                                    if (_preserveAttributeExtensions)
-                                    {
-                                        result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    await reader.ReadStartElementAsync();
-                }
-
-                XmlBuffer buffer = null;
-                XmlDictionaryWriter extWriter = null;
-                bool areAllItemsRead = true;
-                bool readItemsAtLeastOnce = false;
-
-                if (!elementIsEmpty)
-                {
-                    try
-                    {
-                        while (await reader.IsStartElementAsync())
-                        {
-                            if (await TryParseFeedElementFromAsync(reader, result))
-                            {
-                                // nothing, we parsed something, great
-                            }
-                            else if (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
-                            {
-                                if (readItemsAtLeastOnce)
-                                {
-                                    throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
-                                }
-
-                                //result.Items = ReadItems(reader, result, out areAllItemsRead);
-                                result.Items = await ReadItemsAsync(reader, result);
-                                areAllItemsRead = true;
-                                readItemsAtLeastOnce = true;
-                                // if the derived class is reading the items lazily, then stop reading from the stream
-                                if (!areAllItemsRead)
-                                {
-                                    break;
-                                }
-                            }
-                            else
-                            {
-                                if (!TryParseElement(reader, result, this.Version))
-                                {
-                                    if (_preserveElementExtensions)
-                                    {
-                                        if (buffer == null)
-                                        {
-                                            buffer = new XmlBuffer(_maxExtensionSize);
-                                            extWriter = buffer.OpenSection(XmlDictionaryReaderQuotas.Max);
-                                            extWriter.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                                        }
-
-                                        await XmlReaderWrapper.WriteNodeAsync(extWriter, reader, false);
-                                    }
-                                    else
-                                    {
-                                        await reader.SkipAsync();
-                                    }
-                                }
-                            }
-                        }
-                        LoadElementExtensions(buffer, extWriter, result);
-                    }
-                    finally
-                    {
-                        if (extWriter != null)
-                        {
-                            ((IDisposable)extWriter).Dispose();
-                        }
-                    }
-                }
-                if (!isSourceFeed && areAllItemsRead)
-                {
-                    await reader.ReadEndElementAsync(); // feed
-                }
-            }
-            catch (FormatException e)
-            {
-                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
-            }
-            catch (ArgumentException e)
-            {
-                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
-            }
-            return result;
-        }
-
+        
         private async Task ReadItemFromAsync(XmlReaderWrapper reader, SyndicationItem result, Uri feedBaseUri)
         {
             try
