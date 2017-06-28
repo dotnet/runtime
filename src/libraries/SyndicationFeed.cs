@@ -44,6 +44,9 @@ namespace Microsoft.ServiceModel.Syndication
         private Collection<int> _skipHours;
         private Collection<string> _skipDays;
         private SyndicationTextInput _textInput;
+        private Uri _iconUrl;
+
+        public Uri IconUrl{ get;set; } 
 
         public SyndicationTextInput TextInput
         {
