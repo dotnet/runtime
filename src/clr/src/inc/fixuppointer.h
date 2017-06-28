@@ -249,6 +249,15 @@ public:
     static constexpr bool isRelative = true;
     typedef PTR_TYPE type;
 
+#ifndef DACCESS_COMPILE
+    RelativeFixupPointer()
+    {
+        SetValueMaybeNull(NULL);
+    }
+#else // DACCESS_COMPILE
+    RelativeFixupPointer() =delete;
+#endif // DACCESS_COMPILE
+
     // Implicit copy/move is not allowed
     RelativeFixupPointer<PTR_TYPE>(const RelativeFixupPointer<PTR_TYPE> &) =delete;
     RelativeFixupPointer<PTR_TYPE>(RelativeFixupPointer<PTR_TYPE> &&) =delete;
@@ -272,6 +281,15 @@ public:
              return (*PTR_TADDR(addr - FIXUP_POINTER_INDIRECTION) & 1) != 0;
         return FALSE;
     }
+
+#ifndef DACCESS_COMPILE
+    FORCEINLINE BOOL IsTagged() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        TADDR base = (TADDR) this;
+        return IsTagged(base);
+    }
+#endif // !DACCESS_COMPILE
 
     // Returns value of the encoded pointer. Assumes that the pointer is not NULL.
     FORCEINLINE PTR_TYPE GetValue(TADDR base) const
@@ -343,7 +361,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         PRECONDITION(addr != NULL);
-        m_delta = (TADDR)addr - (TADDR)this;
+        m_delta = dac_cast<TADDR>(addr) - (TADDR)this;
     }
 
     // Set encoded value of the pointer. The value can be NULL.
@@ -353,7 +371,7 @@ public:
         if (addr == NULL)
             m_delta = NULL;
         else
-            m_delta = (TADDR)addr - (TADDR)base;
+            m_delta = dac_cast<TADDR>(addr) - (TADDR)base;
     }
 
     // Set encoded value of the pointer. The value can be NULL.
@@ -372,6 +390,15 @@ public:
         _ASSERTE((addr & FIXUP_POINTER_INDIRECTION) != 0);
         return dac_cast<DPTR(PTR_TYPE)>(addr - FIXUP_POINTER_INDIRECTION);
     }
+
+#ifndef DACCESS_COMPILE
+    PTR_TYPE * GetValuePtr() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        TADDR base = (TADDR) this;
+        return GetValuePtr(base);
+    }
+#endif // !DACCESS_COMPILE
 
     // Returns value of the encoded pointer. Assumes that the pointer is not NULL. 
     // Allows the value to be tagged.

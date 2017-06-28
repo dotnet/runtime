@@ -4142,11 +4142,11 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             {
                 if (pwalk->m_MD == bmtMetaData->pFields[i])
                 {
-
                     pLayoutFieldInfo = pwalk;
-                    CopyMemory(pNextFieldMarshaler,
-                               &(pwalk->m_FieldMarshaler),
-                               MAXFIELDMARSHALERSIZE);
+
+                    const FieldMarshaler *pSrcFieldMarshaler = (const FieldMarshaler *) &pwalk->m_FieldMarshaler;
+
+                    pSrcFieldMarshaler->CopyTo(pNextFieldMarshaler, MAXFIELDMARSHALERSIZE);
 
                     pNextFieldMarshaler->SetFieldDesc(pFD);
                     pNextFieldMarshaler->SetExternalOffset(pwalk->m_offset);
