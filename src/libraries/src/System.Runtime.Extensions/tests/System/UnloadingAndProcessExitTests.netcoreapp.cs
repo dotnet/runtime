@@ -27,7 +27,7 @@ namespace System.Tests
                 return SuccessExitCode;
             };
 
-            using (var remote = RemoteInvoke(otherProcess, $"\"{fileName}\""))
+            using (var remote = RemoteInvoke(otherProcess, fileName))
             {
             }
 

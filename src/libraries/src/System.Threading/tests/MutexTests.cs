@@ -245,7 +245,7 @@ namespace System.Threading.Tests
                 };
 
                 using (var mutex = new Mutex(false, mutexName))
-                using (var remote = RemoteInvoke(otherProcess, mutexName, $"\"{fileName}\""))
+                using (var remote = RemoteInvoke(otherProcess, mutexName, fileName))
                 {
                     SpinWait.SpinUntil(() => File.Exists(fileName));
 

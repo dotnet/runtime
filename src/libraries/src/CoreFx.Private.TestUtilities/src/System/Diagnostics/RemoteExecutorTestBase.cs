@@ -113,14 +113,14 @@ namespace System.Diagnostics
             return RemoteInvoke(GetMethodInfo(method), new[] { arg1, arg2, arg3, arg4, arg5 }, options);
         }
 
-        /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
+        /// <summary>Invokes the method from this assembly in another process using the specified arguments without performing any modifications to the arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="args">The arguments to pass to the method.</param>
         /// <param name="options">Options to use for the invocation.</param>
         public static RemoteInvokeHandle RemoteInvokeRaw(Delegate method, string unparsedArg,
             RemoteInvokeOptions options = null)
         {
-            return RemoteInvoke(GetMethodInfo(method), new[] { unparsedArg }, options);
+            return RemoteInvoke(GetMethodInfo(method), new[] { unparsedArg }, options, pasteArguments: false);
         }
 
         private static MethodInfo GetMethodInfo(Delegate d)
@@ -193,7 +193,7 @@ namespace System.Diagnostics
         public bool Start { get; set; } = true;
         public ProcessStartInfo StartInfo { get; set; } = new ProcessStartInfo();
         public bool EnableProfiling { get; set; } = true;
-        public bool CheckExitCode {get; set; } = true;
+        public bool CheckExitCode { get; set; } = true;
 
         public int TimeOut {get; set; } = RemoteExecutorTestBase.FailWaitTimeoutMilliseconds;
     }

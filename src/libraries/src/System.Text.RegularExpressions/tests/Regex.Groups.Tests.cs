@@ -625,13 +625,13 @@ namespace System.Text.RegularExpressions.Tests
         public void Groups(string pattern, string input, RegexOptions options, CultureInfo cultureInfo, string[] expectedGroups)
         {
             const string EmptyPlaceholder = "-";
-            const char Seperator = ';';
+            const char Separator = ';';
 
             string outerPattern = Convert.ToBase64String(Encoding.UTF8.GetBytes(pattern));
             string outerInput = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
             string outerOptions = ((int)options).ToString();
             string outerCultureInfo = cultureInfo != null ? cultureInfo.ToString() : EmptyPlaceholder;
-            string outerExpectedGroups = expectedGroups != null && expectedGroups.Length > 0 ? "\"" + Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(Seperator.ToString(), expectedGroups.Select(s => s == string.Empty ? EmptyPlaceholder : s).ToArray()))) + "\"" : EmptyPlaceholder;
+            string outerExpectedGroups = expectedGroups != null && expectedGroups.Length > 0 ? Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(Separator.ToString(), expectedGroups.Select(s => s == string.Empty ? EmptyPlaceholder : s).ToArray()))) : EmptyPlaceholder;
 
             RemoteInvoke((innerPatternEnc, innerInputEnc, innerOptionsEnc, innerCultureInfoEnc, innerExpectedGroupsEnc) =>
             {
@@ -639,7 +639,7 @@ namespace System.Text.RegularExpressions.Tests
                 string innerInput = Encoding.UTF8.GetString(Convert.FromBase64String(innerInputEnc));
                 RegexOptions innerOptions = (RegexOptions)int.Parse(innerOptionsEnc);
                 CultureInfo innerCultureInfo = innerCultureInfoEnc != EmptyPlaceholder ? new CultureInfo(innerCultureInfoEnc) : null;
-                string[] innerExpectedGroups = innerExpectedGroupsEnc != EmptyPlaceholder ? Encoding.UTF8.GetString(Convert.FromBase64String(innerExpectedGroupsEnc.Trim('"'))).Split(Seperator).Select(s => s == EmptyPlaceholder ? string.Empty : s).ToArray() : new string[] { };
+                string[] innerExpectedGroups = innerExpectedGroupsEnc != EmptyPlaceholder ? Encoding.UTF8.GetString(Convert.FromBase64String(innerExpectedGroupsEnc)).Split(Separator).Select(s => s == EmptyPlaceholder ? string.Empty : s).ToArray() : new string[] { };
 
                 // In invariant culture, the unicode char matches differ from expected values provided.
                 if (CultureInfo.CurrentCulture.Equals(CultureInfo.InvariantCulture))

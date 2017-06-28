@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -18,7 +19,8 @@ namespace System.Diagnostics
         /// <param name="args">The arguments to pass to the method.</param>
         /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
         /// <param name="psi">The ProcessStartInfo to use, or null for a default.</param>
-        private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, RemoteInvokeOptions options)
+        /// <param name="pasteArguments">true if this function should paste the arguments (e.g. surrounding with quotes); false if that reponsibility is left up to the caller.</param>
+        private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, RemoteInvokeOptions options, bool pasteArguments = true)
         {
             options = options ?? new RemoteInvokeOptions();
 
@@ -49,13 +51,15 @@ namespace System.Diagnostics
             }
 
             // If we need the host (if it exists), use it, otherwise target the console app directly.
-            string testConsoleAppArgs = "\"" + a.FullName + "\" " + t.FullName + " " + method.Name + " " + string.Join(" ", args);
+            string metadataArgs = PasteArguments.Paste(new string[] { a.FullName, t.FullName, method.Name }, pasteFirstArgumentUsingArgV0Rules: false);
+            string passedArgs = pasteArguments ? PasteArguments.Paste(args, pasteFirstArgumentUsingArgV0Rules: false) : string.Join(" ", args);
+            string testConsoleAppArgs = ExtraParameter + " " + metadataArgs + " " + passedArgs;
 
             if (!File.Exists(TestConsoleApp))
                 throw new IOException("RemoteExecutorConsoleApp test app isn't present in the test runtime directory.");
 
             psi.FileName = HostRunner;
-            psi.Arguments = ExtraParameter + testConsoleAppArgs;
+            psi.Arguments = testConsoleAppArgs;
 
             // Return the handle to the process, which may or not be started
             return new RemoteInvokeHandle(options.Start ?
