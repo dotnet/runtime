@@ -46,6 +46,8 @@ namespace System.Net.Http
         private CookieContainer _cookieContainer;
         private bool _useCookies;
         private DecompressionMethods _automaticDecompression;
+        private ICredentials _defaultProxyCredentials;
+        private ICredentials _credentials;
         private IWebProxy _proxy;
         private X509Certificate2Collection _clientCertificates;
         private IDictionary<String, Object> _properties; // Only create dictionary when required.
@@ -152,7 +154,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _proxy = value;
-                SetProxyCredential(_proxy);
             }
         }
 
@@ -167,21 +168,10 @@ namespace System.Net.Http
 
         public bool UseDefaultCredentials
         {
-            get { return Credentials == null; }
+            get { return false; }
             set
             {
                 CheckDisposedOrStarted();
-                if (value)
-                {
-                    // System managed
-                    _rtFilter.ServerCredential = null;
-                }
-                else if (_rtFilter.ServerCredential == null)
-                {
-                    // The only way to disable default credentials is to provide credentials.
-                    // Do not overwrite credentials if they were already assigned.
-                    _rtFilter.ServerCredential = new RTPasswordCredential();
-                }
             }
         }
 
@@ -189,38 +179,18 @@ namespace System.Net.Http
         {
             get
             {
-                RTPasswordCredential rtCreds = _rtFilter.ServerCredential;
-                if (rtCreds == null)
-                {
-                    return null;
-                }
-
-                NetworkCredential creds = new NetworkCredential(rtCreds.UserName, rtCreds.Password);
-                return creds;
+                return _credentials;
             }
             set
             {
-                if (value == null)
-                {
-                    CheckDisposedOrStarted();
-                    _rtFilter.ServerCredential = null;
-                }
-                else if (value == CredentialCache.DefaultCredentials)
-                {
-                    CheckDisposedOrStarted();
-                    // System managed
-                    _rtFilter.ServerCredential = null;
-                }
-                else if (value is NetworkCredential)
-                {
-                    CheckDisposedOrStarted();
-                    _rtFilter.ServerCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
-                }
-                else
+                CheckDisposedOrStarted();
+                if (value != null && value != CredentialCache.DefaultCredentials && !(value is NetworkCredential))
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(Credentials)));
                 }
+                
+                _credentials = value;
             }
         }
 
@@ -228,38 +198,18 @@ namespace System.Net.Http
         {
             get
             {
-                RTPasswordCredential rtCreds = _rtFilter.ProxyCredential;
-                if (rtCreds == null)
-                {
-                    return null;
-                }
-
-                NetworkCredential creds = new NetworkCredential(rtCreds.UserName, rtCreds.Password);
-                return creds;
+                return _defaultProxyCredentials;
             }
             set
             {
-                if (value == null)
-                {
-                    CheckDisposedOrStarted();
-                    _rtFilter.ProxyCredential = null;
-                }
-                else if (value == CredentialCache.DefaultCredentials)
-                {
-                    CheckDisposedOrStarted();
-                    // System managed
-                    _rtFilter.ProxyCredential = null;
-                }
-                else if (value is NetworkCredential)
-                {
-                    CheckDisposedOrStarted();
-                    _rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)value);
-                }
-                else
+                CheckDisposedOrStarted();
+                if (value != null && value != CredentialCache.DefaultCredentials && !(value is NetworkCredential))
                 {
                     throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(DefaultProxyCredentials)));
                 }
+                
+                _defaultProxyCredentials = value;;
             }
         }
 
@@ -416,9 +366,6 @@ namespace System.Net.Http
             _rtFilter.AutomaticDecompression = false;
             _automaticDecompression = DecompressionMethods.None;
 
-            // Set initial proxy credentials based on default system proxy.
-            SetProxyCredential(null);
-
             // We don't support using the UI model in HttpBaseProtocolFilter() especially for auto-handling 401 responses.
             _rtFilter.AllowUI = false;
             
@@ -522,6 +469,82 @@ namespace System.Net.Http
                 _rtFilter.ClientCertificate = clientCertificates[0];
             }
         }
+
+        private RTPasswordCredential RTPasswordCredentialFromICredentials(ICredentials creds)
+        {
+            // The WinRT PasswordCredential object does not have a special credentials value for "default credentials".
+            // In general, the UWP HTTP platform automatically manages sending default credentials, if no explicit
+            // credential was specificed, based on if the app has EnterpriseAuthentication capability and if the endpoint
+            // is listed in an intranet zone.
+            //
+            // A WinRT PasswordCredential object that is either null or created with the default constructor (i.e. with
+            // empty values for username and password) indicates that there is no explicit credential. And that means
+            // that the default logged-on credentials might be sent to the endpoint.
+            //
+            // There is currently no WinRT API to turn off sending default credentials other than the capability
+            // and intranet zone checks described above. In general, the UWP HTTP model for specifying default
+            // credentials is orthogonal to how the .NET System.Net APIs have been designed.
+            if (creds == null || creds == CredentialCache.DefaultCredentials)
+            {
+                return null;
+            }
+            else
+            {
+                Debug.Assert(creds is NetworkCredential);
+
+                NetworkCredential networkCred = (NetworkCredential)creds;
+
+                // Creating a new WinRT PasswordCredential object with the default constructor ends up
+                // with empty strings for username and password inside the object. However, one can't assign
+                // empty strings to those properties; otherwise, it will throw an error.
+                RTPasswordCredential rtCreds = new RTPasswordCredential();
+                if (!string.IsNullOrEmpty(networkCred.UserName))
+                {
+                    if (!string.IsNullOrEmpty(networkCred.Domain))
+                    {
+                        rtCreds.UserName = networkCred.Domain + "\\" + networkCred.UserName;
+                    }
+                    else
+                    {
+                        rtCreds.UserName = networkCred.UserName;
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(networkCred.Password))
+                {
+                    rtCreds.Password = networkCred.Password;
+                }
+
+                return rtCreds;
+            }
+        }
+
+        private void SetFilterProxyCredential()
+        {
+            // We don't support changing the proxy settings in the NETNative version of HttpClient since it's layered on
+            // WinRT HttpClient. But we do support passing in explicit proxy credentials, if specified, which we can
+            // get from the specified or default proxy.
+            ICredentials proxyCredentials = null;
+            if (UseProxy)
+            {
+                if (_proxy != null)
+                {
+                    proxyCredentials = _proxy.Credentials;
+                }
+                else
+                {
+                    proxyCredentials = _defaultProxyCredentials;
+                }
+            }
+
+            _rtFilter.ProxyCredential = RTPasswordCredentialFromICredentials(proxyCredentials);
+        }
+
+        private void SetFilterServerCredential()
+        {
+            _rtFilter.ServerCredential = RTPasswordCredentialFromICredentials(_credentials);
+        }
+
         #endregion Request Setup
 
         #region Request Execution
@@ -621,6 +644,10 @@ namespace System.Net.Http
         {
             if (!_operationStarted)
             {
+                // Since this is the first operation, we set the proxy and server credentials on the
+                // WinRT filter based on the .NET handler's property settings.
+                SetFilterProxyCredential();
+                SetFilterServerCredential();
                 _operationStarted = true;
             }
         }
@@ -639,46 +666,6 @@ namespace System.Net.Http
             if (_operationStarted)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
-            }
-        }
-
-        private RTPasswordCredential RTPasswordCredentialFromNetworkCredential(NetworkCredential creds)
-        {
-            // RTPasswordCredential doesn't allow assigning string.Empty values, but those are the default values.
-            RTPasswordCredential rtCreds = new RTPasswordCredential();
-            if (!string.IsNullOrEmpty(creds.UserName))
-            {
-                if (!string.IsNullOrEmpty(creds.Domain))
-                {
-                    rtCreds.UserName = creds.Domain + "\\" + creds.UserName;
-                }
-                else
-                {
-                    rtCreds.UserName = creds.UserName;
-                }
-            }
-            if (!string.IsNullOrEmpty(creds.Password))
-            {
-                rtCreds.Password = creds.Password;
-            }
-
-            return rtCreds;
-        }
-        
-        private void SetProxyCredential(IWebProxy proxy)
-        {
-            // We don't support changing the proxy settings in the NETNative version of HttpClient since it's layered on
-            // WinRT HttpClient. But we do support passing in explicit proxy credentials, if specified, which we can
-            // get from the specified or default proxy.
-            ICredentials proxyCredentials = null;
-            if (_proxy != null)
-            {
-                proxyCredentials = _proxy.Credentials;
-            }
-
-            if (proxyCredentials != CredentialCache.DefaultCredentials && proxyCredentials is NetworkCredential)
-            {
-                _rtFilter.ProxyCredential = RTPasswordCredentialFromNetworkCredential((NetworkCredential)proxyCredentials);
             }
         }
 
