@@ -2,19 +2,23 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <ProjectGuid>{297A9116-1005-499D-A895-2063D03E4C94}</ProjectGuid>
+    <ProjectGuid>{B0EE498E-4BD8-4A39-89EB-7F2FC880B61F}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
     <Compile Include="ComputerPrincipalTest.cs" />
     <Compile Include="ExtendedUserPrincipal.cs" />
     <Compile Include="GroupPrincipalTest.cs" />
     <Compile Include="PrincipalTest.cs" />
+    <Compile Include="PrincipalContextTests.cs" />
     <Compile Include="UserPrincipalTest.cs" />
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

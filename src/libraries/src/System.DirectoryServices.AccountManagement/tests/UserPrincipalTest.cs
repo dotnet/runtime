@@ -9,17 +9,17 @@ namespace System.DirectoryServices.AccountManagement.Tests
 {
     public class UserPrincipalTest : PrincipalTest
     {
-        internal override Principal CreatePrincipal(PrincipalContext context, string name)
+        public override Principal CreatePrincipal(PrincipalContext context, string name)
         {
             return new UserPrincipal(context) { Name = name };
         }
 
-        internal override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
+        public override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
         {
             return new ExtendedUserPrincipal(context) { Name = name };
         }
 
-        internal override Principal FindExtendedPrincipal(PrincipalContext context, string name)
+        public override Principal FindExtendedPrincipal(PrincipalContext context, string name)
         {
             return ExtendedUserPrincipal.FindByIdentity(context, name);
         }

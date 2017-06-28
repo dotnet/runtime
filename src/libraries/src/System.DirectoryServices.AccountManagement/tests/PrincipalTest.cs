@@ -9,25 +9,27 @@ namespace System.DirectoryServices.AccountManagement.Tests
 {
     public abstract class PrincipalTest : IDisposable
     {
-        protected PrincipalContext DomainContext { get; private set; }
-        
-        public PrincipalTest()
-        {
-            RefreshContext();
-        }
+        public PrincipalContext DomainContext { get; private set; }
+
+        public PrincipalTest() => RefreshContext();
 
         private void RefreshContext()
         {
             string username = "Administrator";
             string password = "Adrumble@6";
-            
+
             string OU = "Tests";
             string baseDomain = WindowsIdentity.GetCurrent().Name.Split(new char[] { '\\' })[1] + "-TEST";
             string domain = $"{baseDomain}.nttest.microsoft.com";
             string container = $"ou={OU},dc={baseDomain},dc=nttest,dc=microsoft,dc=com";
-
             DomainContext?.Dispose();
-            DomainContext = new PrincipalContext(ContextType.Domain, domain, container, username, password);
+            try
+            {
+                DomainContext = new PrincipalContext(ContextType.Domain, domain, container, username, password);
+            }
+            catch
+            {
+            }
         }
 
         public void Dispose() => DomainContext?.Dispose();
@@ -35,6 +37,11 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [Fact]
         public void AddExistingPrincipal()
         {
+            if (DomainContext == null)
+            {
+                return;
+            }
+            
             // use new GUID for the user name so we be sure this user does not exist yet
             string name = Guid.NewGuid().ToString();
             using (Principal principal = CreatePrincipal(DomainContext, name))
@@ -77,10 +84,13 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [Fact]
         public void TestExtendedPrincipal()
         {
-            byte[] writtenArray = { 10, 20, 30 };
-            byte[] readArray;
+            if (DomainContext == null)
+            {
+                return;
+            }
 
             string name = Guid.NewGuid().ToString();
+            byte[] writtenArray = new byte[] { 10, 20, 30 };
             using (Principal principal = CreateExtendedPrincipal(DomainContext, name))
             {
                 IExtendedPrincipalTest extendedPrincipal = (IExtendedPrincipalTest)principal;
@@ -89,25 +99,22 @@ namespace System.DirectoryServices.AccountManagement.Tests
             }
 
             RefreshContext();
-
             using (Principal principal = FindExtendedPrincipal(DomainContext, name))
             {
                 IExtendedPrincipalTest extendedPrincipal = (IExtendedPrincipalTest)principal;
-                readArray = extendedPrincipal.ByteArrayExtension;
+                byte[] readArray = extendedPrincipal.ByteArrayExtension;
                 principal.Delete();
             }
         }
 
-        private void RefreshDomainContext() => DomainContext.Dispose();
+        public abstract Principal CreatePrincipal(PrincipalContext context, string name);
 
-        internal abstract Principal CreatePrincipal(PrincipalContext context, string name);
+        public abstract Principal CreateExtendedPrincipal(PrincipalContext context, string name);
 
-        internal abstract Principal CreateExtendedPrincipal(PrincipalContext context, string name);
-
-        internal abstract Principal FindExtendedPrincipal(PrincipalContext context, string name);
+        public abstract Principal FindExtendedPrincipal(PrincipalContext context, string name);
     }
 
-    internal interface IExtendedPrincipalTest
+    public interface IExtendedPrincipalTest
     {
         object ObjectExtension { get; set; }
         byte[] ByteArrayExtension { get; set; }

@@ -9,25 +9,72 @@ namespace System.DirectoryServices.AccountManagement.Tests
     public class ComputerPrincipalTest : PrincipalTest
     {
         [Fact]
+        public void Ctor_Context()
+        {
+            var context = new PrincipalContext(ContextType.Machine);
+            var principal = new ComputerPrincipal(context);
+            Assert.Same(context, principal.Context);
+            Assert.Empty(principal.ServicePrincipalNames);
+        }
+
+        [Fact]
+        public void Ctor_NullContext_ThrowsArgumentException()
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(null));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(null, "samAcountName", "password", enabled: true));
+        }
+
+        [Fact]
+        public void Ctor_NullSamAccountName_ThrowsArgumentException()
+        {
+            var context = new PrincipalContext(ContextType.Machine);
+            AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(context, null, "password", enabled: true));
+        }
+
+        [Fact]
+        public void Ctor_EmptySamAccountName_ThrowsArgumentNullException()
+        {
+            var context = new PrincipalContext(ContextType.Machine);
+            AssertExtensions.Throws<ArgumentNullException>("Principal.SamAccountName cannot be null or empty.", () => new ComputerPrincipal(context, string.Empty, "password", enabled: true));
+        }
+
+        [Fact]
+        public void Ctor_NullPassword_ThrowsArgumentException()
+        {
+            var context = new PrincipalContext(ContextType.Machine);
+            AssertExtensions.Throws<ArgumentException>(null, () => new ComputerPrincipal(context, "samAccountName", null, enabled: true));
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Ctor_MachineContext_ThrowsInvalidCastException()
+        {
+            var context = new PrincipalContext(ContextType.Machine);
+            Assert.Throws<InvalidCastException>(() => new ComputerPrincipal(context, "samAccountName", "password", enabled: true));
+        }
+
+        [Fact]
         public void ComputerPrincipalConstructorTest()
         {
+            if (DomainContext == null)
+            {
+                return;
+            }
+
             ComputerPrincipal computer = new ComputerPrincipal(DomainContext);
             computer.Dispose();
         }
 
-        internal override Principal CreatePrincipal(PrincipalContext context, string name)
+        public override Principal CreatePrincipal(PrincipalContext context, string name)
         {
-            ComputerPrincipal computer = new ComputerPrincipal(context);
-            computer.Name = name;
-            return computer;
+            return new ComputerPrincipal(context) { Name = name };
         }
 
-        internal override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
+        public override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
         {
             throw new NotImplementedException();
         }
 
-        internal override Principal FindExtendedPrincipal(PrincipalContext context, string name)
+        public override Principal FindExtendedPrincipal(PrincipalContext context, string name)
         {
             throw new NotImplementedException();
         }

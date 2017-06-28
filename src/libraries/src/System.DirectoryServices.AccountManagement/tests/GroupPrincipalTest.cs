@@ -11,11 +11,16 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [Fact]
         public void GroupPrincipalConstructorTest()
         {
+            if (DomainContext == null)
+            {
+                return;
+            }
+
             GroupPrincipal group = new GroupPrincipal(DomainContext);
             group.Dispose();
         }
 
-        internal override Principal CreatePrincipal(PrincipalContext context, string name)
+        public override Principal CreatePrincipal(PrincipalContext context, string name)
         {
             return new GroupPrincipal(context, name);
         }
@@ -23,6 +28,11 @@ namespace System.DirectoryServices.AccountManagement.Tests
         [Fact]
         public void IsMemberOfTest()
         {
+            if (DomainContext == null)
+            {
+                return;
+            }
+
             using (GroupPrincipal group = GroupPrincipal.FindByIdentity(DomainContext, "TestLargeGroup"))
             {
                 Assert.True(UserPrincipal.FindByIdentity(DomainContext, "user1499-LargeGroup").IsMemberOf(group));
@@ -46,12 +56,12 @@ namespace System.DirectoryServices.AccountManagement.Tests
             group.Save();
         }
 
-        internal override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
+        public override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
         {
             throw new NotImplementedException();
         }
 
-        internal override Principal FindExtendedPrincipal(PrincipalContext context, string name)
+        public override Principal FindExtendedPrincipal(PrincipalContext context, string name)
         {
             throw new NotImplementedException();
         }
