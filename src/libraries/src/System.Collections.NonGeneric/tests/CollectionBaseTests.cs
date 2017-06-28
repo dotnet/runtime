@@ -90,7 +90,7 @@ namespace System.Collections.Tests
         public static void Remove_Invalid()
         {
             MyCollection collBase = CreateCollection(100);
-            Assert.Throws<ArgumentException>(null, () => collBase.Remove(new Foo())); // Non existent object
+            AssertExtensions.Throws<ArgumentException>(null, () => collBase.Remove(new Foo())); // Non existent object
             Assert.Equal(100, collBase.Count);
         }
 

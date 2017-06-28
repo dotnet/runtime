@@ -212,7 +212,7 @@ namespace System.Collections.Immutable.Tests
             // Now check where collisions have conflicting values.
             builder = ImmutableDictionary.Create<string, string>()
                 .Add("a", "1").Add("A", "2").Add("b", "3").ToBuilder();
-            Assert.Throws<ArgumentException>(null, () => builder.KeyComparer = StringComparer.OrdinalIgnoreCase);
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.KeyComparer = StringComparer.OrdinalIgnoreCase);
 
             // Force all values to be considered equal.
             builder.ValueComparer = EverythingEqual<string>.Default;

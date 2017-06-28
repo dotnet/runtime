@@ -29,8 +29,7 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         {
             using (SHA1 sha1 = SHA1.Create())
             {
-                Assert.Throws<ArgumentException>(
-                    () => sha1.ComputeHash(new BadReadStream(BadReadStream.ErrorCondition.TooLargeValueFromRead)));
+                AssertExtensions.Throws<ArgumentException>(null, () => sha1.ComputeHash(new BadReadStream(BadReadStream.ErrorCondition.TooLargeValueFromRead)));
                 sha1.ComputeHash(new BadReadStream(BadReadStream.ErrorCondition.NegativeValueFromRead));
             }
         }

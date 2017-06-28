@@ -63,11 +63,11 @@ namespace System.Collections.Specialized.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => nameValueCollection.CopyTo(new string[count], -1));
 
-            Assert.Throws<ArgumentException>(null, () => nameValueCollection.CopyTo(new string[count], 1));
-            Assert.Throws<ArgumentException>(null, () => nameValueCollection.CopyTo(new string[count], count + 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => nameValueCollection.CopyTo(new string[count], 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => nameValueCollection.CopyTo(new string[count], count + 1));
             if (count > 0)
             {
-                Assert.Throws<ArgumentException>(null, () => nameValueCollection.CopyTo(new string[count], count));
+                AssertExtensions.Throws<ArgumentException>(null, () => nameValueCollection.CopyTo(new string[count], count));
                 Assert.Throws<InvalidCastException>(() => nameValueCollection.CopyTo(new DictionaryEntry[count], 0));
             }
             else

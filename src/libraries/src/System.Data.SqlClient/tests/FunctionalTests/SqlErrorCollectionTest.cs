@@ -81,7 +81,7 @@ namespace System.Data.SqlClient.Tests
             ValidateCopyToThrows((collection, array, index) => ((ICollection)collection).CopyTo(array, index), c =>
             {
                 ICollection ic = c;
-                Assert.Throws<ArgumentException>(null, () => ic.CopyTo(new SqlError[4, 3], 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => ic.CopyTo(new SqlError[4, 3], 0));
                 Assert.Throws<InvalidCastException>(() => ic.CopyTo(new string[10], 0));
             });
         }

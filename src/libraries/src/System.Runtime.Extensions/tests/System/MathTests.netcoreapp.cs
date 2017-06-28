@@ -135,18 +135,18 @@ namespace System.Tests
         [Fact]
         public static void Clamp_MinGreaterThanMax_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((sbyte)1, (sbyte)2, (sbyte)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((byte)1, (byte)2, (byte)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((short)1, (short)2, (short)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((ushort)1, (ushort)2, (ushort)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((int)1, (int)2, (int)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((uint)1, (uint)2, (uint)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((long)1, (long)2, (long)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((ulong)1, (ulong)2, (ulong)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((sbyte)1, (sbyte)2, (sbyte)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((byte)1, (byte)2, (byte)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((short)1, (short)2, (short)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((ushort)1, (ushort)2, (ushort)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((int)1, (int)2, (int)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((uint)1, (uint)2, (uint)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((long)1, (long)2, (long)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((ulong)1, (ulong)2, (ulong)1));
 
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((float)1, (float)2, (float)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((double)1, (double)2, (double)1));
-            Assert.Throws<ArgumentException>(null, () => Math.Clamp((decimal)1, (decimal)2, (decimal)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((float)1, (float)2, (float)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((double)1, (double)2, (double)1));
+            AssertExtensions.Throws<ArgumentException>(null, () => Math.Clamp((decimal)1, (decimal)2, (decimal)1));
         }
     }
 }

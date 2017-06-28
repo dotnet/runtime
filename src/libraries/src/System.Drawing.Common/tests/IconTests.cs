@@ -248,7 +248,7 @@ namespace System.Drawing.Tests
                 Exception ex = Assert.ThrowsAny<Exception>(() => icon.Save(stream));
                 Assert.True(ex is COMException || ex is ObjectDisposedException, $"{ex.GetType().ToString()} was thrown.");
 
-                Assert.Throws<ArgumentException>(null, () => icon.ToBitmap());
+                AssertExtensions.Throws<ArgumentException>(null, () => icon.ToBitmap());
                 Assert.Equal(Size.Empty, icon.Size);
 
                 using (var newIcon = new Icon(icon, 10, 10))
@@ -281,7 +281,7 @@ namespace System.Drawing.Tests
         [InlineData(typeof(IconTests), "48x48_MULTIPLE_entries_4bit.ico")]
         public void Ctor_InvalidResource_ThrowsArgumentException(Type type, string resource)
         {
-            Assert.Throws<ArgumentException>(null, () => new Icon(type, resource));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Icon(type, resource));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -704,7 +704,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void FromHandle_Zero_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Icon.FromHandle(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentException>(null, () => Icon.FromHandle(IntPtr.Zero));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

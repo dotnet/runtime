@@ -24,7 +24,7 @@ namespace System.ConfigurationTests
             }
             else
             {
-                Assert.Throws<ArgumentException>(action);
+                AssertExtensions.Throws<ArgumentException>("", action);
             }
         }
 
@@ -57,7 +57,7 @@ namespace System.ConfigurationTests
             {
                 Assert.Equal(
                     string.Format(SR.GetResourceString(message, null), min, max),
-                    Assert.Throws<ArgumentException>(action).Message);
+                    AssertExtensions.Throws<ArgumentException>(null, action).Message);
             }
         }
 
@@ -76,7 +76,7 @@ namespace System.ConfigurationTests
             {
                 Assert.Equal(
                     string.Format(SR.GetResourceString(message, null), resolution),
-                    Assert.Throws<ArgumentException>(action).Message);
+                    AssertExtensions.Throws<ArgumentException>(null, action).Message);
             }
         }
     }

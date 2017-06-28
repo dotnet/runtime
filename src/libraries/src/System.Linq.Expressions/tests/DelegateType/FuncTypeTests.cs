@@ -66,7 +66,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(VoidTypeArgs), true)]
         public void UnsuccessfulGetFuncType(Type[] typeArgs)
         {
-            Assert.Throws<ArgumentException>(() => Expression.GetFuncType(typeArgs));
+            string paramName = typeArgs.Any(t => t == typeof(void)) || typeArgs.Count(t => t.IsPointer) == 1 ? null : "typeArgs";
+            AssertExtensions.Throws<ArgumentException>(paramName, () => Expression.GetFuncType(typeArgs));
         }
 
         [Theory]

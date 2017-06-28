@@ -31,14 +31,11 @@ namespace System.Threading.Tasks.Tests
         public static void ConstructorInvalidArguments()
         {
             AggregateException ex = new AggregateException();
-            Assert.Throws<ArgumentNullException>(
-               () => ex = new AggregateException("message", (Exception)null));
+            Assert.Throws<ArgumentNullException>(() => new AggregateException("message", (Exception)null));
 
-            Assert.Throws<ArgumentNullException>(
-               () => ex = new AggregateException("message", (IEnumerable<Exception>)null));
+            Assert.Throws<ArgumentNullException>(() => new AggregateException("message", (IEnumerable<Exception>)null));
 
-            Assert.Throws<ArgumentException>(
-               () => ex = new AggregateException("message", new[] { new Exception(), null }));
+            AssertExtensions.Throws<ArgumentException>(null, () => ex = new AggregateException("message", new[] { new Exception(), null }));
         }
 
         [Fact]

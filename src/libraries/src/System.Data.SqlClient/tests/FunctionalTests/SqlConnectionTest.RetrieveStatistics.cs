@@ -131,7 +131,7 @@ namespace System.Data.SqlClient.Tests
         {
             IDictionary d = new SqlConnection().RetrieveStatistics();
             string key = s_retrieveStatisticsKeys[0];
-            Assert.Throws<ArgumentException>(null, () => d.Add(key, 100L));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.Add(key, 100L));
         }
 
         [Fact]
@@ -271,9 +271,9 @@ namespace System.Data.SqlClient.Tests
             AssertExtensions.Throws<ArgumentNullException>("array", () => d.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("array", () => d.CopyTo(null, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => d.CopyTo(new DictionaryEntry[20], -1));
-            Assert.Throws<ArgumentException>(null, () => d.CopyTo(new DictionaryEntry[20], 18));
-            Assert.Throws<ArgumentException>(null, () => d.CopyTo(new DictionaryEntry[20], 1000));
-            Assert.Throws<ArgumentException>(null, () => d.CopyTo(new DictionaryEntry[4, 3], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.CopyTo(new DictionaryEntry[20], 18));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.CopyTo(new DictionaryEntry[20], 1000));
+            AssertExtensions.Throws<ArgumentException>(null, () => d.CopyTo(new DictionaryEntry[4, 3], 0));
             Assert.Throws<InvalidCastException>(() => d.CopyTo(new string[20], 0));
         }
 
@@ -436,9 +436,9 @@ namespace System.Data.SqlClient.Tests
             AssertExtensions.Throws<ArgumentNullException>("array", () => c.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("array", () => c.CopyTo(null, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => c.CopyTo(new string[20], -1));
-            Assert.Throws<ArgumentException>(null, () => c.CopyTo(new string[20], 18));
-            Assert.Throws<ArgumentException>(null, () => c.CopyTo(new string[20], 1000));
-            Assert.Throws<ArgumentException>(null, () => c.CopyTo(new string[4, 3], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new string[20], 18));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new string[20], 1000));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new string[4, 3], 0));
             Assert.Throws<InvalidCastException>(() => c.CopyTo(new Version[20], 0));
         }
 
@@ -546,9 +546,9 @@ namespace System.Data.SqlClient.Tests
             AssertExtensions.Throws<ArgumentNullException>("array", () => c.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentNullException>("array", () => c.CopyTo(null, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => c.CopyTo(new long[20], -1));
-            Assert.Throws<ArgumentException>(null, () => c.CopyTo(new long[20], 18));
-            Assert.Throws<ArgumentException>(null, () => c.CopyTo(new long[20], 1000));
-            Assert.Throws<ArgumentException>(null, () => c.CopyTo(new long[4, 3], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new long[20], 18));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new long[20], 1000));
+            AssertExtensions.Throws<ArgumentException>(null, () => c.CopyTo(new long[4, 3], 0));
             Assert.Throws<InvalidCastException>(() => c.CopyTo(new Version[20], 0));
         }
 

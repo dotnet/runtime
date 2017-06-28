@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -82,8 +82,7 @@ namespace System.Linq.Expressions.Tests
         public void GenericThrowType()
         {
             Type listType = typeof(List<>);
-            AssertExtensions.Throws<ArgumentException>(
-                "type", () => Expression.Throw(Expression.Constant(new TestException()), listType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Throw(Expression.Constant(new TestException()), listType));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(listType));
         }
 
@@ -92,8 +91,7 @@ namespace System.Linq.Expressions.Tests
         {
             Type listType = typeof(List<>);
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));
-            AssertExtensions.Throws<ArgumentException>(
-                "type", () => Expression.Throw(Expression.Constant(new TestException()), listListListType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Throw(Expression.Constant(new TestException()), listListListType));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(listListListType));
         }
 
@@ -101,8 +99,7 @@ namespace System.Linq.Expressions.Tests
         public void PointerThrowType()
         {
             Type pointer = typeof(int).MakeByRefType();
-            AssertExtensions.Throws<ArgumentException>(
-                "type", () => Expression.Throw(Expression.Constant(new TestException()), pointer));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Throw(Expression.Constant(new TestException()), pointer));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(pointer));
         }
 
@@ -110,8 +107,7 @@ namespace System.Linq.Expressions.Tests
         public void ByRefThrowType()
         {
             Type byRefType = typeof(int).MakeByRefType();
-            AssertExtensions.Throws<ArgumentException>(
-                "type", () => Expression.Throw(Expression.Constant(new TestException()), byRefType));
+            AssertExtensions.Throws<ArgumentException>("type", () => Expression.Throw(Expression.Constant(new TestException()), byRefType));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(byRefType));
         }
 
@@ -1315,13 +1311,13 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void CatchesMustReturnVoidWithVoidBody()
         {
-            Assert.Throws<ArgumentException>(
-                () => Expression.TryCatch(
+            Assert.Throws<ArgumentException>(null, () => 
+                Expression.TryCatch(
                     Expression.Empty(),
                     Expression.Catch(typeof(InvocationExpression), Expression.Constant("hello")),
                     Expression.Catch(typeof(Exception), Expression.Constant(2.2))
-                    )
-                 );
+                )
+            );
         }
 
         [Fact]

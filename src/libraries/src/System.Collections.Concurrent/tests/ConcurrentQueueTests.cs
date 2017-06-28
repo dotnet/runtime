@@ -19,6 +19,8 @@ namespace System.Collections.Concurrent.Tests
         protected override bool ResetImplemented => false;
         protected override IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection) => new QueueOracle(collection);
 
+        protected override string CopyToNoLengthParamName => null;
+
         [Fact]
         public void Concurrent_Enqueue_TryDequeue_AllItemsReceived()
         {

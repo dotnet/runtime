@@ -20,7 +20,7 @@ namespace System.Dynamic.Runtime.Tests
         [Fact]
         public void ArgCountTooLow()
         {
-            Assert.Throws<ArgumentException>(null, () => new CallInfo(1, "a", "b"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new CallInfo(1, "a", "b"));
         }
 
         [Fact]

@@ -29,7 +29,7 @@ namespace System.Reflection.Tests
         {
             PropertyInfo property = Helpers.GetProperty(typeof(PI_SubClass), nameof(PI_BaseClass.PublicGetPrivateSetProperty));
             Assert.False(property.CanWrite);
-            Assert.Throws<ArgumentException>(null, () => property.SetValue(new PI_SubClass(), 5));
+            AssertExtensions.Throws<ArgumentException>(null, () => property.SetValue(new PI_SubClass(), 5));
         }
 
         [Theory]

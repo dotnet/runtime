@@ -261,7 +261,7 @@ namespace System.Reflection.Emit.Tests
         [MemberData(nameof(SetConstant_Invalid_TestData))]
         public void SetConstant_InvalidType_ThrowsArgumentException(FieldBuilder field, object defaultValue)
         {
-            Assert.Throws<ArgumentException>(null, () => field.SetConstant(defaultValue));
+            AssertExtensions.Throws<ArgumentException>(null, () => field.SetConstant(defaultValue));
         }
     }
 }

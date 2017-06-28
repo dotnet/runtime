@@ -273,7 +273,7 @@ namespace System.Drawing.Tests
             var path = new GraphicsPath();
             path.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Region(path));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region(path));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -302,7 +302,7 @@ namespace System.Drawing.Tests
         {
             var region = new Region();
             region.Dispose();
-            Assert.Throws<ArgumentException>(null, () => region.Clone());
+            AssertExtensions.Throws<ArgumentException>(null, () => region.Clone());
         }
 
         public static IEnumerable<object[]> Complement_TestData()
@@ -458,7 +458,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Region().Complement(region));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region().Complement(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -588,10 +588,10 @@ namespace System.Drawing.Tests
             using (var graphicPath = new GraphicsPath())
             using (var other = new Region())
             {
-                Assert.Throws<ArgumentException>(null, () => region.Complement(graphicPath));
-                Assert.Throws<ArgumentException>(null, () => region.Complement(new Rectangle()));
-                Assert.Throws<ArgumentException>(null, () => region.Complement(new RectangleF()));
-                Assert.Throws<ArgumentException>(null, () => region.Complement(region));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Complement(graphicPath));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Complement(new Rectangle()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Complement(new RectangleF()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Complement(region));
             }
         }
 
@@ -689,7 +689,7 @@ namespace System.Drawing.Tests
             {
                 var graphics = Graphics.FromImage(image);
                 graphics.Dispose();
-                Assert.Throws<ArgumentException>(null, () => region.Equals(region, graphics));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Equals(region, graphics));
             }
         }
 
@@ -699,8 +699,8 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.Equals(new Region(), s_graphic));
-            Assert.Throws<ArgumentException>(null, () => new Region().Equals(region, s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.Equals(new Region(), s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region().Equals(region, s_graphic));
         }
 
         public static IEnumerable<object[]> Exclude_TestData()
@@ -910,7 +910,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Region().Exclude(region));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region().Exclude(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1021,10 +1021,10 @@ namespace System.Drawing.Tests
             using (var graphicsPath = new GraphicsPath())
             using (var other = new Region())
             {
-                Assert.Throws<ArgumentException>(null, () => region.Exclude(graphicsPath));
-                Assert.Throws<ArgumentException>(null, () => region.Exclude(new Rectangle()));
-                Assert.Throws<ArgumentException>(null, () => region.Exclude(new RectangleF()));
-                Assert.Throws<ArgumentException>(null, () => region.Exclude(other));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Exclude(graphicsPath));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Exclude(new Rectangle()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Exclude(new RectangleF()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Exclude(other));
             }
         }
 
@@ -1052,7 +1052,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void FromHrgn_ZeroHrgn_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Region.FromHrgn(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentException>(null, () => Region.FromHrgn(IntPtr.Zero));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1098,7 +1098,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.GetHrgn(s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.GetHrgn(s_graphic));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1127,7 +1127,7 @@ namespace System.Drawing.Tests
             {
                 var graphics = Graphics.FromImage(image);
                 graphics.Dispose();
-                Assert.Throws<ArgumentException>(null, () => region.GetBounds(graphics));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.GetBounds(graphics));
             }
         }
 
@@ -1137,7 +1137,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.GetBounds(s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.GetBounds(s_graphic));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1146,7 +1146,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.GetRegionData());
+            AssertExtensions.Throws<ArgumentException>(null, () => region.GetRegionData());
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1181,7 +1181,7 @@ namespace System.Drawing.Tests
 
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
             }
         }
 
@@ -1192,7 +1192,7 @@ namespace System.Drawing.Tests
             {
                 var matrix = new Matrix();
                 matrix.Dispose();
-                Assert.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.GetRegionScans(matrix));
             }
         }
 
@@ -1319,7 +1319,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Region().Intersect(region));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region().Intersect(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1458,10 +1458,10 @@ namespace System.Drawing.Tests
             using (var graphicsPath = new GraphicsPath())
             using (var other = new Region())
             {
-                Assert.Throws<ArgumentException>(null, () => region.Intersect(graphicsPath));
-                Assert.Throws<ArgumentException>(null, () => region.Intersect(new Rectangle()));
-                Assert.Throws<ArgumentException>(null, () => region.Intersect(new RectangleF()));
-                Assert.Throws<ArgumentException>(null, () => region.Intersect(other));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Intersect(graphicsPath));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Intersect(new Rectangle()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Intersect(new RectangleF()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Intersect(other));
             }
         }
 
@@ -1480,7 +1480,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.IsEmpty(s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsEmpty(s_graphic));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1500,7 +1500,7 @@ namespace System.Drawing.Tests
             {
                 var graphics = Graphics.FromImage(image);
                 graphics.Dispose();
-                Assert.Throws<ArgumentException>(null, () => region.IsInfinite(graphics));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.IsInfinite(graphics));
             }
         }
 
@@ -1510,7 +1510,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.IsInfinite(s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsInfinite(s_graphic));
         }
 
         public static IEnumerable<object[]> IsVisible_Rectangle_TestData()
@@ -1640,25 +1640,25 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new PointF(1, 2)));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new Point(1, 2)));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new PointF(1, 2)));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new Point(1, 2)));
 
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f, s_graphic));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new PointF(1, 2), s_graphic));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new Point(1, 2), s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f, s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new PointF(1, 2), s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new Point(1, 2), s_graphic));
 
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f, 3f, 4f));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new Rectangle(1, 2, 3, 4)));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new RectangleF(1, 2, 3, 4)));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f, 3f, 4f));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new Rectangle(1, 2, 3, 4)));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new RectangleF(1, 2, 3, 4)));
 
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f, 3f, 4f, s_graphic));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new Rectangle(1, 2, 3, 4), s_graphic));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(new RectangleF(1, 2, 3, 4), s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1f, 2f, 3f, 4f, s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new Rectangle(1, 2, 3, 4), s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(new RectangleF(1, 2, 3, 4), s_graphic));
 
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, s_graphic));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, 3, 4));
-            Assert.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, 3, 4, s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, s_graphic));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, 3, 4));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.IsVisible(1, 2, 3, 4, s_graphic));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1692,7 +1692,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.MakeEmpty());
+            AssertExtensions.Throws<ArgumentException>(null, () => region.MakeEmpty());
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -1722,7 +1722,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.MakeInfinite());
+            AssertExtensions.Throws<ArgumentException>(null, () => region.MakeInfinite());
         }
 
         public static IEnumerable<object[]> Union_TestData()
@@ -1968,7 +1968,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Region().Union(region));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region().Union(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -2079,10 +2079,10 @@ namespace System.Drawing.Tests
             using (var graphicsPath = new GraphicsPath())
             using (var other = new Region())
             {
-                Assert.Throws<ArgumentException>(null, () => region.Union(graphicsPath));
-                Assert.Throws<ArgumentException>(null, () => region.Union(new Rectangle()));
-                Assert.Throws<ArgumentException>(null, () => region.Union(new RectangleF()));
-                Assert.Throws<ArgumentException>(null, () => region.Union(region));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Union(graphicsPath));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Union(new Rectangle()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Union(new RectangleF()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Union(region));
             }
         }
 
@@ -2181,7 +2181,7 @@ namespace System.Drawing.Tests
 
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => region.Transform(matrix));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Transform(matrix));
             }
         }
 
@@ -2279,8 +2279,8 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => region.Translate(1, 2));
-            Assert.Throws<ArgumentException>(null, () => region.Translate(1f, 2f));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.Translate(1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => region.Translate(1f, 2f));
         }
 
         public static IEnumerable<object[]> Xor_TestData()
@@ -2399,7 +2399,7 @@ namespace System.Drawing.Tests
             var region = new Region();
             region.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Region().Xor(region));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Region().Xor(region));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -2510,10 +2510,10 @@ namespace System.Drawing.Tests
             using (var graphicsPath = new GraphicsPath())
             using (var other = new Region())
             {
-                Assert.Throws<ArgumentException>(null, () => region.Xor(graphicsPath));
-                Assert.Throws<ArgumentException>(null, () => region.Xor(new Rectangle()));
-                Assert.Throws<ArgumentException>(null, () => region.Xor(new RectangleF()));
-                Assert.Throws<ArgumentException>(null, () => region.Xor(other));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Xor(graphicsPath));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Xor(new Rectangle()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Xor(new RectangleF()));
+                AssertExtensions.Throws<ArgumentException>(null, () => region.Xor(other));
             }
         }
     }

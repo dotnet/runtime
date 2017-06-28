@@ -87,11 +87,11 @@ namespace System.Collections.Tests
         public static void DefaultInvariant_Compare_Invalid()
         {
             Comparer comp = Comparer.Default;
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(new object(), 1)); // One object doesn't implement IComparable
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(1, new object())); // One object doesn't implement IComparable
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(new object(), new object())); // Both objects don't implement IComparable
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(new object(), 1)); // One object doesn't implement IComparable
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(1, new object())); // One object doesn't implement IComparable
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(new object(), new object())); // Both objects don't implement IComparable
 
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(1, 1L)); // Different types
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(1, 1L)); // Different types
         }
 
         public static IEnumerable<object[]> CompareTestData()
@@ -124,11 +124,11 @@ namespace System.Collections.Tests
         public static void Default_Compare_Invalid()
         {
             Comparer comp = Comparer.Default;
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(new object(), 1)); // One object doesn't implement IComparable
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(1, new object())); // One object doesn't implement IComparable
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(new object(), new object())); // Both objects don't implement IComparable
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(new object(), 1)); // One object doesn't implement IComparable
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(1, new object())); // One object doesn't implement IComparable
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(new object(), new object())); // Both objects don't implement IComparable
 
-            Assert.Throws<ArgumentException>(null, () => comp.Compare(1, 1L)); // Different types
+            AssertExtensions.Throws<ArgumentException>(null, () => comp.Compare(1, 1L)); // Different types
         }
 
         private class Foo : IComparable

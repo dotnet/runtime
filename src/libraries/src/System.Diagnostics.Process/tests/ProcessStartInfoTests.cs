@@ -471,7 +471,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(2, psi.EnvironmentVariables.Count);
             Assert.Equal(psi.Environment.Count, psi.EnvironmentVariables.Count);
 
-            Assert.Throws<ArgumentException>(null, () => psi.EnvironmentVariables.Add("NewKey2", "NewValue2"));
+            AssertExtensions.Throws<ArgumentException>(null, () => psi.EnvironmentVariables.Add("NewKey2", "NewValue2"));
             psi.EnvironmentVariables.Add("NewKey3", "NewValue3");
 
             psi.Environment.Add("NewKey3", "NewValue3Overridden");

@@ -43,7 +43,7 @@ namespace System.Collections.Immutable.Tests
         {
             var builder = this.GetBuilder<string, int>();
             builder.Add("five", 5);
-            Assert.Throws<ArgumentException>(null, () => builder.Add("five", 6));
+            AssertExtensions.Throws<ArgumentException>(null, () => builder.Add("five", 6));
         }
 
         [Fact]

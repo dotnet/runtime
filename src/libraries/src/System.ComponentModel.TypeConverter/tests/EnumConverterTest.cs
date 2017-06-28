@@ -91,11 +91,8 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext_Negative()
         {
-            Assert.Throws<ArgumentException>(
-                () => EnumConverterTests.s_someEnumConverter.ConvertTo(TypeConverterTests.s_context, null, 3, typeof(string)));
-
-            Assert.Throws<ArgumentException>(
-                () => new EnumConverter(typeof(Enum)).ConvertTo(TypeConverterTests.s_context, null, SomeFlagsEnum.Option1, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => EnumConverterTests.s_someEnumConverter.ConvertTo(TypeConverterTests.s_context, null, 3, typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, "enumType", () => new EnumConverter(typeof(Enum)).ConvertTo(TypeConverterTests.s_context, null, SomeFlagsEnum.Option1, typeof(string)));
         }
 
         [Fact]

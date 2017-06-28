@@ -20,7 +20,7 @@ namespace System.Timers.Tests
         [InlineData(double.MaxValue)]
         public void NegativeTests(double interval)
         {
-            Assert.Throws<ArgumentException>(null, () => new TestTimer(interval));
+            AssertExtensions.Throws<ArgumentException>(null, () => new TestTimer(interval));
         }
 
         [Fact]

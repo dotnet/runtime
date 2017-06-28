@@ -104,7 +104,7 @@ namespace System.Reflection.Emit.Tests
         public void GetArrayMethod_ArrayClassNotArray_ThrowsArgumentException(Type arrayClass)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>(null, () => module.GetArrayMethod(arrayClass, "TestMethod", CallingConventions.Standard, typeof(void), new Type[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => module.GetArrayMethod(arrayClass, "TestMethod", CallingConventions.Standard, typeof(void), new Type[0]));
         }
 
         [Fact]

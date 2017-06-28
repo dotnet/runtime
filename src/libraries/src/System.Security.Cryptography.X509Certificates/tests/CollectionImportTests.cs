@@ -332,11 +332,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X509Certificate2Collection coll = new X509Certificate2Collection();
             byte[] nonEmptyBytes = new byte[1];
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => coll.Import(nonEmptyBytes, string.Empty, (X509KeyStorageFlags)0xFF));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => coll.Import(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
             
@@ -354,11 +354,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             byte[] nonEmptyBytes = new byte[1];
             X509Certificate2Collection coll = new X509Certificate2Collection();
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => coll.Import(nonEmptyBytes, string.Empty, PersistedEphemeral));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => coll.Import(string.Empty, string.Empty, PersistedEphemeral));
         }

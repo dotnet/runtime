@@ -169,7 +169,7 @@ namespace System.Collections.Immutable.Tests
             };
 
             var map = Empty<string, string>(StringComparer.Ordinal, StringComparer.Ordinal);
-            Assert.Throws<ArgumentException>(null, () => map.AddRange(uniqueEntries));
+            AssertExtensions.Throws<ArgumentException>(null, () => map.AddRange(uniqueEntries));
         }
 
         [Fact]
@@ -294,7 +294,7 @@ namespace System.Collections.Immutable.Tests
             // Now check where collisions have conflicting values.
             map = ImmutableSortedDictionary.Create<string, string>()
               .Add("a", "1").Add("A", "2").Add("b", "3");
-            Assert.Throws<ArgumentException>(null, () => map.WithComparers(StringComparer.OrdinalIgnoreCase));
+            AssertExtensions.Throws<ArgumentException>(null, () => map.WithComparers(StringComparer.OrdinalIgnoreCase));
 
             // Force all values to be considered equal.
             map = map.WithComparers(StringComparer.OrdinalIgnoreCase, EverythingEqual<string>.Default);
@@ -310,7 +310,7 @@ namespace System.Collections.Immutable.Tests
         {
             var map = ImmutableSortedDictionary.Create<string, string>()
                 .Add("firstKey", "1").Add("secondKey", "2");
-            var exception = Assert.Throws<ArgumentException>(null, () => map.Add("firstKey", "3"));
+            var exception = AssertExtensions.Throws<ArgumentException>(null, () => map.Add("firstKey", "3"));
             if (!PlatformDetection.IsNetNative) //.Net Native toolchain removes exception messages.
             {
                 Assert.Contains("firstKey", exception.Message);

@@ -377,16 +377,10 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void IncorrectParameterTypes()
         {
-            Assert.Throws<ArgumentException>(
-                () => Expression.Lambda<Action<int>>(Expression.Empty(), Expression.Parameter(typeof(long))));
-            Assert.Throws<ArgumentException>(
-                () => Expression.Lambda(typeof(Action<int>), Expression.Empty(), Expression.Parameter(typeof(long))));
-            Assert.Throws<ArgumentException>(
-                () => Expression.Lambda<Func<Uri, int>>(Expression.Constant(1), Expression.Parameter(typeof(string)))
-                );
-            Assert.Throws<ArgumentException>(
-                () => Expression.Lambda(typeof(Func<Uri, int>), Expression.Constant(1), Expression.Parameter(typeof(string)))
-                );
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Lambda<Action<int>>(Expression.Empty(), Expression.Parameter(typeof(long))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Action<int>), Expression.Empty(), Expression.Parameter(typeof(long))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Lambda<Func<Uri, int>>(Expression.Constant(1), Expression.Parameter(typeof(string))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Lambda(typeof(Func<Uri, int>), Expression.Constant(1), Expression.Parameter(typeof(string))));
         }
 
         [Fact]

@@ -188,8 +188,8 @@ namespace System.Collections.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => dictBase.CopyTo(new DictionaryEntry[100], -1)); // Index < 0
 
-            Assert.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 100)); // Index >= count
-            Assert.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 50)); // Index + array.Count >= count
+            AssertExtensions.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 100)); // Index >= count
+            AssertExtensions.Throws<ArgumentException>(null, () => dictBase.CopyTo(new DictionaryEntry[100], 50)); // Index + array.Count >= count
         }
 
         [Fact]

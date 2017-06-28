@@ -92,7 +92,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [MemberData(nameof(Encode_Invalid_TestData))]
         public void Encode_Invalid_ThrowsArgumentException(string format, object[] values)
         {
-            Assert.Throws<ArgumentException>(null, () => BerConverter.Encode(format, values));
+            AssertExtensions.Throws<ArgumentException>(null, () => BerConverter.Encode(format, values));
         }
 
         [Theory]

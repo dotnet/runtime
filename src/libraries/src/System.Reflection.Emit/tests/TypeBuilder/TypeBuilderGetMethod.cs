@@ -44,7 +44,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetMethod_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => TypeBuilder.GetMethod(typeof(int), typeof(int).GetMethod("Parse", new Type[] { typeof(string) })));
+            AssertExtensions.Throws<ArgumentException>(null, () => TypeBuilder.GetMethod(typeof(int), typeof(int).GetMethod("Parse", new Type[] { typeof(string) })));
         }
 
         [Fact]

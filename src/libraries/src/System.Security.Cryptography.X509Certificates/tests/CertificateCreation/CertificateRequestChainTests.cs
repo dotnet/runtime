@@ -162,7 +162,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 if (!expectSuccess)
                 {
-                    Assert.Throws<ArgumentException>(
+                    AssertExtensions.Throws<ArgumentException>(
                         "issuerCertificate",
                         () =>
                         {

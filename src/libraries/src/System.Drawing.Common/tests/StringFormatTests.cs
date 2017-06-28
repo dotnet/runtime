@@ -96,7 +96,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new StringFormat(format));
+            AssertExtensions.Throws<ArgumentException>(null, () => new StringFormat(format));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -133,7 +133,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.Clone());
+            AssertExtensions.Throws<ArgumentException>(null, () => format.Clone());
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -157,7 +157,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.SetDigitSubstitution(0, StringDigitSubstitute.None));
+            AssertExtensions.Throws<ArgumentException>(null, () => format.SetDigitSubstitution(0, StringDigitSubstitute.None));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -188,7 +188,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                Assert.Throws<ArgumentException>(null, () => format.SetTabStops(-1, new float[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => format.SetTabStops(-1, new float[0]));
             }
         }
 
@@ -207,7 +207,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.SetTabStops(0, new float[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => format.SetTabStops(0, new float[0]));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -216,7 +216,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.GetTabStops(out float firstTabOffset));
+            AssertExtensions.Throws<ArgumentException>(null, () => format.GetTabStops(out float firstTabOffset));
         }
 
         public static IEnumerable<object[]> SetMeasurableCharacterRanges_TestData()
@@ -261,7 +261,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.SetMeasurableCharacterRanges(new CharacterRange[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => format.SetMeasurableCharacterRanges(new CharacterRange[0]));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -293,8 +293,8 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.Alignment);
-            Assert.Throws<ArgumentException>(null, () => format.Alignment = StringAlignment.Center);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.Alignment);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.Alignment = StringAlignment.Center);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -303,7 +303,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.DigitSubstitutionMethod);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.DigitSubstitutionMethod);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -312,7 +312,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.DigitSubstitutionLanguage);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.DigitSubstitutionLanguage);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -333,8 +333,8 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.FormatFlags);
-            Assert.Throws<ArgumentException>(null, () => format.FormatFlags = StringFormatFlags.NoClip);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.FormatFlags);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.FormatFlags = StringFormatFlags.NoClip);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -366,8 +366,8 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.LineAlignment);
-            Assert.Throws<ArgumentException>(null, () => format.LineAlignment = StringAlignment.Center);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.LineAlignment);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.LineAlignment = StringAlignment.Center);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -399,8 +399,8 @@ namespace System.Drawing.Tests
             var format = new StringFormat();
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.HotkeyPrefix);
-            Assert.Throws<ArgumentException>(null, () => format.HotkeyPrefix = HotkeyPrefix.Hide);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.HotkeyPrefix);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.HotkeyPrefix = HotkeyPrefix.Hide);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -431,8 +431,8 @@ namespace System.Drawing.Tests
             format.Dispose();
 
 
-            Assert.Throws<ArgumentException>(null, () => format.Trimming);
-            Assert.Throws<ArgumentException>(null, () => format.Trimming = StringTrimming.Word);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.Trimming);
+            AssertExtensions.Throws<ArgumentException>(null, () => format.Trimming = StringTrimming.Word);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -480,7 +480,7 @@ namespace System.Drawing.Tests
             var format = new StringFormat(StringFormatFlags.DirectionVertical);
             format.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => format.ToString());
+            AssertExtensions.Throws<ArgumentException>(null, () => format.ToString());
         }
     }
 }

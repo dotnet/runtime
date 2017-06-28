@@ -160,7 +160,7 @@ namespace System.Reflection.Emit.Tests
             AssemblyBuilder assembly = Helpers.DynamicAssembly();
             assembly.DefineDynamicModule("module1");
             assembly.DefineDynamicModule("module2");
-            Assert.Throws<ArgumentException>(null, () => assembly.DefineDynamicModule("module1"));
+            AssertExtensions.Throws<ArgumentException>(null, () => assembly.DefineDynamicModule("module1"));
         }
 
         [Fact]

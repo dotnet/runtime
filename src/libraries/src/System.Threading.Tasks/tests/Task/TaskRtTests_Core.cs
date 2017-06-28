@@ -1160,8 +1160,7 @@ namespace System.Threading.Tasks.Tests
             // test exceptions
             Assert.Throws<ArgumentNullException>(
                () => Task.WaitAny((Task[])null));
-            Assert.Throws<ArgumentException>(
-               () => Task.WaitAny(new Task[] { null }));
+            AssertExtensions.Throws<ArgumentException>("tasks", () => Task.WaitAny(new Task[] { null }));
             Assert.Throws<ArgumentOutOfRangeException>(
                () => Task.WaitAny(new Task[] { Task.Factory.StartNew(() => { }) }, -2));
             Assert.Throws<ArgumentOutOfRangeException>(

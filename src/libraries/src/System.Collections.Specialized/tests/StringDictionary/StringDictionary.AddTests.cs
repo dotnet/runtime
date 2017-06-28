@@ -44,9 +44,9 @@ namespace System.Collections.Specialized.Tests
             AssertExtensions.Throws<ArgumentNullException>("key", () => stringDictionary.Add(null, "value"));
 
             // Duplicate key
-            Assert.Throws<ArgumentException>(null, () => stringDictionary.Add("Key", "value"));
-            Assert.Throws<ArgumentException>(null, () => stringDictionary.Add("KEY", "value"));
-            Assert.Throws<ArgumentException>(null, () => stringDictionary.Add("key", "value"));
+            AssertExtensions.Throws<ArgumentException>(null, () => stringDictionary.Add("Key", "value"));
+            AssertExtensions.Throws<ArgumentException>(null, () => stringDictionary.Add("KEY", "value"));
+            AssertExtensions.Throws<ArgumentException>(null, () => stringDictionary.Add("key", "value"));
         }
     }
 }

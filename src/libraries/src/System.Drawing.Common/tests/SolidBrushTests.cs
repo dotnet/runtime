@@ -56,7 +56,7 @@ namespace System.Drawing.Tests
             var brush = new SolidBrush(Color.LavenderBlush);
             brush.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => brush.Clone());
+            AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -65,7 +65,7 @@ namespace System.Drawing.Tests
             var brush = new SolidBrush(new Color());
             brush.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => brush.Color);
+            AssertExtensions.Throws<ArgumentException>(null, () => brush.Color);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -90,14 +90,14 @@ namespace System.Drawing.Tests
             var brush = new SolidBrush(new Color());
             brush.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => brush.Color = Color.WhiteSmoke);
+            AssertExtensions.Throws<ArgumentException>(null, () => brush.Color = Color.WhiteSmoke);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Color_SetImmutable_ThrowsArgumentException()
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(SystemBrushes.ActiveBorder);
-            Assert.Throws<ArgumentException>(null, () => brush.Color = Color.AntiqueWhite);
+            AssertExtensions.Throws<ArgumentException>(null, () => brush.Color = Color.AntiqueWhite);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -112,7 +112,7 @@ namespace System.Drawing.Tests
         public void Dispose_SetImmutable_ThrowsArgumentException()
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(SystemBrushes.ActiveBorder);
-            Assert.Throws<ArgumentException>(null, () => brush.Dispose());
+            AssertExtensions.Throws<ArgumentException>(null, () => brush.Dispose());
         }
     }
 }

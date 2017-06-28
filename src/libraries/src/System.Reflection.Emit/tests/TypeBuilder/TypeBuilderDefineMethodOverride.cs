@@ -122,7 +122,7 @@ namespace System.Reflection.Emit.Tests
             MethodInfo body = typeof(DefineMethodOverrideInterface).GetMethod("M");
             MethodInfo decleration = typeof(DefineMethodOverrideClass).GetMethod("M");
 
-            Assert.Throws<ArgumentException>(null, () => type.DefineMethodOverride(body, decleration));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineMethodOverride(body, decleration));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace System.Reflection.Emit.Tests
             globalMethod.GetILGenerator().Emit(OpCodes.Ret);
 
             TypeBuilder type = module.DefineType("Name");
-            Assert.Throws<ArgumentException>(null, () => type.DefineMethodOverride(globalMethod, typeof(DefineMethodOverrideInterface).GetMethod(nameof(DefineMethodOverrideInterface.M))));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineMethodOverride(globalMethod, typeof(DefineMethodOverrideInterface).GetMethod(nameof(DefineMethodOverrideInterface.M))));
         }
 
         [Fact]

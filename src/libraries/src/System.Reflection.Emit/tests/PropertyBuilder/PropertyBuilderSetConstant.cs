@@ -88,7 +88,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
             PropertyBuilder property = type.DefineProperty("TestProperty", PropertyAttributes.HasDefault, typeof(decimal), null);
-            Assert.Throws<ArgumentException>(null, () => property.SetConstant((decimal)10));
+            AssertExtensions.Throws<ArgumentException>(null, () => property.SetConstant((decimal)10));
         }
     }
 }

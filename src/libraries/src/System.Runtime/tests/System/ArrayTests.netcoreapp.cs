@@ -137,7 +137,7 @@ namespace System.Tests
         [InlineData(3, 0, 4)]
         public static void Reverse_Generic_InvalidOffsetPlusLength_ThrowsArgumentException(int arrayLength, int index, int length)
         {
-            Assert.Throws<ArgumentException>(null, () => Array.Reverse(new string[arrayLength], index, length));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.Reverse(new string[arrayLength], index, length));
         }
 
         [Fact]

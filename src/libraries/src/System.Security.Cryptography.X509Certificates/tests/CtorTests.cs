@@ -351,19 +351,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             byte[] nonEmptyBytes = new byte[1];
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate(nonEmptyBytes, string.Empty, (X509KeyStorageFlags)0xFF));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate2(nonEmptyBytes, string.Empty, (X509KeyStorageFlags)0xFF));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate2(string.Empty, string.Empty, (X509KeyStorageFlags)0xFF));
 
@@ -380,19 +380,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             byte[] nonEmptyBytes = new byte[1];
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate(nonEmptyBytes, string.Empty, PersistedEphemeral));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate(string.Empty, string.Empty, PersistedEphemeral));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate2(nonEmptyBytes, string.Empty, PersistedEphemeral));
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "keyStorageFlags",
                 () => new X509Certificate2(string.Empty, string.Empty, PersistedEphemeral));
         }

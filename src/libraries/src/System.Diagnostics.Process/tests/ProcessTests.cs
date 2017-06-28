@@ -771,7 +771,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void GetProcesses_EmptyMachineName_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Process.GetProcesses(""));
+            AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcesses(""));
         }
 
         [Fact]
@@ -843,7 +843,7 @@ namespace System.Diagnostics.Tests
         public void GetProcessesByName_EmptyMachineName_ThrowsArgumentException()
         {
             Process currentProcess = Process.GetCurrentProcess();
-            Assert.Throws<ArgumentException>(null, () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
+            AssertExtensions.Throws<ArgumentException>(null, () => Process.GetProcessesByName(currentProcess.ProcessName, ""));
         }
 
         [Fact]
@@ -1462,7 +1462,7 @@ namespace System.Diagnostics.Tests
             };
 
             var process = new Process() { StartInfo = startInfo };
-            Assert.Throws<ArgumentException>(null, () => process.Start());
+            AssertExtensions.Throws<ArgumentException>(null, () => process.Start());
         }
 
         private string GetCurrentProcessName()

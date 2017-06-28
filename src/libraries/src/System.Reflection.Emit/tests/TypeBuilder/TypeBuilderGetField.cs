@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetField_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")));
+            AssertExtensions.Throws<ArgumentException>(null, () => TypeBuilder.GetField(typeof(int), typeof(int).GetField("MaxValue")));
         }
 
         [Fact]

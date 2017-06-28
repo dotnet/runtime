@@ -55,7 +55,7 @@ namespace System.Drawing.Tests
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(brushThunk());
             Assert.Equal(expectedColor, brush.Color);
-            Assert.Throws<ArgumentException>(null, () => brush.Color = Color.Red);
+            AssertExtensions.Throws<ArgumentException>(null, () => brush.Color = Color.Red);
 
             Assert.Same(brush, brushThunk());
         }
@@ -63,7 +63,7 @@ namespace System.Drawing.Tests
         [Fact]
         public void FromSystemColor_NotSystemColor_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => SystemBrushes.FromSystemColor(Color.Blue));
+            AssertExtensions.Throws<ArgumentException>(null, () => SystemBrushes.FromSystemColor(Color.Blue));
         }
     }
 }

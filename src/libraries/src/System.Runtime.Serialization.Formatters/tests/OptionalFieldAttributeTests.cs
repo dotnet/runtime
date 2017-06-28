@@ -12,8 +12,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void VersionAdded_InvalidArgument_ThrowsException()
         {
             var ofa = new OptionalFieldAttribute();
-            Assert.Throws<ArgumentException>(null, () => ofa.VersionAdded = 0);
-            Assert.Throws<ArgumentException>(null, () => ofa.VersionAdded = -1);
+            AssertExtensions.Throws<ArgumentException>(null, () => ofa.VersionAdded = 0);
+            AssertExtensions.Throws<ArgumentException>(null, () => ofa.VersionAdded = -1);
         }
 
         [Fact]

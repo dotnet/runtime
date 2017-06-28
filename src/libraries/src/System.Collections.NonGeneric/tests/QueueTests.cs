@@ -383,7 +383,7 @@ namespace System.Collections.Tests
 
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => queue2.CopyTo(new object[150], -1)); // Index < 0
 
-                Assert.Throws<ArgumentException>(null, () => queue2.CopyTo(new object[150], 51)); // Index + queue.Count > array.Length
+                AssertExtensions.Throws<ArgumentException>(null, () => queue2.CopyTo(new object[150], 51)); // Index + queue.Count > array.Length
             });
         }
 

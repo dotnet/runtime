@@ -84,7 +84,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(VoidTypeArgs), true)]
         public void UnsuccessfulGetActionType(Type[] typeArgs)
         {
-            Assert.Throws<ArgumentException>(() => Expression.GetActionType(typeArgs));
+            string paramName = typeArgs.Any(t => t == typeof(void)) || typeArgs.Count(t => t.IsPointer) == 1 ? null : "typeArgs";
+            AssertExtensions.Throws<ArgumentException>(paramName, () => Expression.GetActionType(typeArgs));
         }
 
         [Theory]

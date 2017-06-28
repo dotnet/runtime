@@ -174,7 +174,7 @@ namespace System.Linq.Parallel.Tests
         {
             ParallelQuery<int> query = labeled.Item;
 
-            Assert.Throws<ArgumentException>(null, () => query.WithMergeOptions((ParallelMergeOptions)4));
+            AssertExtensions.Throws<ArgumentException>(null, () => query.WithMergeOptions((ParallelMergeOptions)4));
         }
 
         [Theory]

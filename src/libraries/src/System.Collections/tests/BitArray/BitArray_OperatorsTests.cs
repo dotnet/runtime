@@ -156,8 +156,8 @@ namespace System.Collections.Tests
             BitArray bitArray2 = new BitArray(6, false);
 
             // Different lengths
-            Assert.Throws<ArgumentException>(null, () => bitArray1.And(bitArray2));
-            Assert.Throws<ArgumentException>(null, () => bitArray2.And(bitArray1));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray1.And(bitArray2));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray2.And(bitArray1));
 
             AssertExtensions.Throws<ArgumentNullException>("value", () => bitArray1.And(null));
         }
@@ -169,8 +169,8 @@ namespace System.Collections.Tests
             BitArray bitArray2 = new BitArray(6, false);
 
             // Different lengths
-            Assert.Throws<ArgumentException>(null, () => bitArray1.Or(bitArray2));
-            Assert.Throws<ArgumentException>(null, () => bitArray2.Or(bitArray1));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray1.Or(bitArray2));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray2.Or(bitArray1));
 
             AssertExtensions.Throws<ArgumentNullException>("value", () => bitArray1.Or(null));
         }
@@ -182,8 +182,8 @@ namespace System.Collections.Tests
             BitArray bitArray2 = new BitArray(6, false);
 
             // Different lengths
-            Assert.Throws<ArgumentException>(null, () => bitArray1.Xor(bitArray2));
-            Assert.Throws<ArgumentException>(null, () => bitArray2.Xor(bitArray1));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray1.Xor(bitArray2));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitArray2.Xor(bitArray1));
 
             AssertExtensions.Throws<ArgumentNullException>("value", () => bitArray1.Xor(null));
         }

@@ -22,7 +22,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         [InlineData(" \t\r\n")]
         public static void Ctor_String_NullOrWhitespaceName_ThrowsArgumentException(string name)
         {
-            Assert.Throws<ArgumentException>(null, () => new ForeignKeyAttribute(name));
+            AssertExtensions.Throws<ArgumentException>(null, () => new ForeignKeyAttribute(name));
         }
     }
 }

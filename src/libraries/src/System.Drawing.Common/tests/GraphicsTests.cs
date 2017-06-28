@@ -79,7 +79,7 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(bitmap);
                 graphics.Dispose();
 
-                Assert.Throws<ArgumentException>(null, () => graphics.GetHdc());
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.GetHdc());
             }
         }
 
@@ -158,18 +158,18 @@ namespace System.Drawing.Tests
             {
                 IntPtr hdc = graphics.GetHdc();
                 graphics.ReleaseHdc();
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(hdc));
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(hdc));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(hdc));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(hdc));
 
                 hdc = graphics.GetHdc();
                 graphics.ReleaseHdc(hdc);
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(hdc));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(hdc));
 
                 hdc = graphics.GetHdc();
                 graphics.ReleaseHdcInternal(hdc);
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(hdc));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(hdc));
             }
         }
 
@@ -181,11 +181,11 @@ namespace System.Drawing.Tests
             {
                 IntPtr hdc = graphics.GetHdc();
                 graphics.ReleaseHdc((IntPtr)10);
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal((IntPtr)10));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal((IntPtr)10));
 
                 hdc = graphics.GetHdc();
                 graphics.ReleaseHdcInternal((IntPtr)10);
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc((IntPtr)10));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc((IntPtr)10));
             }
         }
 
@@ -202,10 +202,10 @@ namespace System.Drawing.Tests
                 Assert.NotEqual(hdc1, hdc2);
 
                 graphics1.ReleaseHdc(hdc2);
-                Assert.Throws<ArgumentException>(null, () => graphics1.ReleaseHdc(hdc1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics1.ReleaseHdc(hdc1));
 
                 graphics2.ReleaseHdc(hdc1);
-                Assert.Throws<ArgumentException>(null, () => graphics2.ReleaseHdc(hdc2));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics2.ReleaseHdc(hdc2));
             }
         }
 
@@ -215,9 +215,9 @@ namespace System.Drawing.Tests
             using (var bitmap = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(bitmap))
             {
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(IntPtr.Zero));
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(IntPtr.Zero));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(IntPtr.Zero));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(IntPtr.Zero));
             }
         }
 
@@ -229,9 +229,9 @@ namespace System.Drawing.Tests
                 Graphics graphics = Graphics.FromImage(bitmap);
                 graphics.Dispose();
 
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(IntPtr.Zero));
-                Assert.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(IntPtr.Zero));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc());
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdc(IntPtr.Zero));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.ReleaseHdcInternal(IntPtr.Zero));
             }
         }
 
@@ -313,7 +313,7 @@ namespace System.Drawing.Tests
             var image = new Bitmap(10, 10);
             image.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => Graphics.FromImage(image));
+            AssertExtensions.Throws<ArgumentException>(null, () => Graphics.FromImage(image));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

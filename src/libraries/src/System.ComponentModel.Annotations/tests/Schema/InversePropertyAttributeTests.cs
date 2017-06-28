@@ -22,7 +22,7 @@ namespace System.ComponentModel.DataAnnotations.Schema.Tests
         [InlineData(" \t\r\n")]
         public static void Ctor_String_NullOrWhitespaceProperty_ThrowsArgumentException(string property)
         {
-            Assert.Throws<ArgumentException>(null, () => new InversePropertyAttribute(property));
+            AssertExtensions.Throws<ArgumentException>(null, () => new InversePropertyAttribute(property));
         }
     }
 }
