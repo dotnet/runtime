@@ -73,7 +73,7 @@
       </_FilesToPackage>
       <_FilesToPackage>
         <TargetPath Condition="'%(_FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
-        <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
+        <TargetPath Condition="'%(_FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/nativeassets/$(PackageTargetFramework)</TargetPath>
       </_FilesToPackage>
     </ItemGroup>
 
