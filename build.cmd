@@ -624,7 +624,7 @@ echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
 echo     respectively^).
 echo     add nativemscorlib to go further and build the native image for designated mscorlib.
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
-echo nopgooptimize - do not use profile guided optimizations.
+echo nopgooptimize: do not use profile guided optimizations.
 echo pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
 echo configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
