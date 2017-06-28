@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -50,5 +52,9 @@ namespace System.Net.Http
 
             return encoding.GetBytes(content);
         }
+
+        internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
+            GetType() == typeof(StringContent) ? new ValueTask<Stream>(CreateMemoryStreamForByteArray()) :
+            base.CreateContentReadStreamValueAsync();
     }
 }

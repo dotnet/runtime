@@ -62,9 +62,13 @@ namespace System.Net.Http
             return true;
         }
 
-        protected override Task<Stream> CreateContentReadStreamAsync()
-        {
-            return Task.FromResult<Stream>(new MemoryStream(_content, _offset, _count, writable: false));
-        }
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
+
+        internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
+            GetType() == typeof(ByteArrayContent) ? new ValueTask<Stream>(CreateMemoryStreamForByteArray()) :
+            base.CreateContentReadStreamValueAsync();
+
+        internal MemoryStream CreateMemoryStreamForByteArray() => new MemoryStream(_content, _offset, _count, writable: false);
     }
 }

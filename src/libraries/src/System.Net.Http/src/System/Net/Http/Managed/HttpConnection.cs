@@ -93,6 +93,9 @@ namespace System.Net.Http
             protected override Task<Stream> CreateContentReadStreamAsync() =>
                 Task.FromResult<Stream>(ConsumeStream());
 
+            internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
+                new ValueTask<Stream>(ConsumeStream());
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)

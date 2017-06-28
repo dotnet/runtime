@@ -93,6 +93,10 @@ namespace System.Net.Http
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
 
+        internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
+            GetType() == typeof(StreamContent) ? new ValueTask<Stream>(new ReadOnlyStream(_content)) :
+            base.CreateContentReadStreamValueAsync();
+
         private void PrepareContent()
         {
             if (_contentConsumed)
