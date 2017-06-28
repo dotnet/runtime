@@ -49,7 +49,6 @@ namespace System.Data.Tests.SqlTypes
         // Test constructor
         [Fact] // .ctor (Stream)
                //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void Constructor2_Stream_Unicode()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -60,7 +59,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact] // .ctor (Stream)
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void Constructor2_Stream_Empty()
         {
             MemoryStream ms = new MemoryStream();
@@ -86,7 +84,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact] // .ctor (XmlReader)
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void Constructor3()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -97,7 +94,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact] // .ctor (XmlReader)
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void Constructor3_XmlReader_Empty()
         {
             XmlReaderSettings xs = new XmlReaderSettings();
@@ -126,7 +122,6 @@ namespace System.Data.Tests.SqlTypes
 
         [Fact]
         //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void CreateReader_Stream_Unicode()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -140,7 +135,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void SqlXml_fromXmlReader_CreateReaderTest()
         {
             string xmlStr = "<Employee><FirstName>Varadhan</FirstName><LastName>Veerapuram</LastName></Employee>";
@@ -154,7 +148,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void SqlXml_fromZeroLengthStream_CreateReaderTest()
         {
             MemoryStream stream = new MemoryStream();
@@ -166,7 +159,6 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/19202", TargetFrameworkMonikers.UapAot)]
         public void SqlXml_fromZeroLengthXmlReader_CreateReaderTest_withFragment()
         {
             XmlReaderSettings xs = new XmlReaderSettings();
