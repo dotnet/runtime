@@ -11,6 +11,9 @@ using System.Text;
 
 namespace System.Drawing
 {
+    /// <summary>
+    /// Abstracts a group of type faces having a similar basic design but having certain variation in styles.
+    /// </summary>
     public sealed class FontFamily : MarshalByRefObject, IDisposable
     {
         private const int NeutralLanguage = 0;
@@ -40,18 +43,28 @@ namespace System.Drawing
 
         internal FontFamily(IntPtr family) => SetNativeFamily(family);
 
-        // The createDefaultOnFail parameter determines how errors are
-        // handled when creating a font based on a font family that does not exist on the
-        // end user's system at run time. If this parameter is true, then a fall-back font
-        // will always be used instead. If this parameter is false, an exception will be thrown.
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class with the specified name.
+        ///
+        /// The <paramref name="createDefaultOnFail"/> parameter determines how errors are handled when creating a
+        /// font based on a font family that does not exist on the end user's system at run time. If this parameter is
+        /// true, then a fall-back fontwill always be used instead. If this parameter is false, an exception will be thrown.
+        /// </summary>
         internal FontFamily(string name, bool createDefaultOnFail)
         {
             _createDefaultOnFail = createDefaultOnFail;
             CreateFontFamily(name, null);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class with the specified name.
+        /// </summary>
         public FontFamily(string name) => CreateFontFamily(name, null);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class in the specified
+        /// <see cref='FontCollection'/> and with the specified name.
+        /// </summary>
         public FontFamily(string name, FontCollection fontCollection) => CreateFontFamily(name, fontCollection);
 
         // Creates the native font family object.  
@@ -90,6 +103,9 @@ namespace System.Drawing
             SetNativeFamily(fontfamily);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref='FontFamily'/> class from the specified generic font family.
+        /// </summary>
         public FontFamily(GenericFontFamilies genericFamily)
         {
             IntPtr nativeFamily = IntPtr.Zero;
@@ -134,12 +150,21 @@ namespace System.Drawing
             return otherFamily.NativeFamily == NativeFamily;
         }
 
+        /// <summary>
+        /// Converts this <see cref='FontFamily'/> to a human-readable string.
+        /// </summary>
         public override string ToString() => $"[{GetType().Name}: Name={Name}]";
 
+        /// <summary>
+        /// Gets a hash code for this <see cref='FontFamily'/>.
+        /// </summary>
         public override int GetHashCode() => GetName(NeutralLanguage).GetHashCode();
 
         private static int CurrentLanguage => CultureInfo.CurrentUICulture.LCID;
 
+        /// <summary>
+        /// Disposes of this <see cref='FontFamily'/>.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -170,8 +195,14 @@ namespace System.Drawing
             }
         }
 
+        /// <summary>
+        /// Gets the name of this <see cref='FontFamily'/>.
+        /// </summary>
         public string Name => GetName(CurrentLanguage);
 
+        /// <summary>
+        /// Retuns the name of this <see cref='FontFamily'/> in the specified language.
+        /// </summary>
         public string GetName(int language)
         {
             // LF_FACESIZE is 32
@@ -183,8 +214,15 @@ namespace System.Drawing
             return name.ToString();
         }
 
+        /// <summary>
+        /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the current
+        /// graphics context.
+        /// </summary>
         public static FontFamily[] Families => new InstalledFontCollection().Families;
 
+        /// <summary>
+        /// Gets a generic SansSerif <see cref='FontFamily'/>.
+        /// </summary>
         public static FontFamily GenericSansSerif => new FontFamily(GetGdipGenericSansSerif());
 
         private static IntPtr GetGdipGenericSansSerif()
@@ -196,10 +234,19 @@ namespace System.Drawing
             return nativeFamily;
         }
 
+        /// <summary>
+        /// Gets a generic Serif <see cref='FontFamily'/>.
+        /// </summary>
         public static FontFamily GenericSerif => new FontFamily(GenericFontFamilies.Serif);
 
+        /// <summary>
+        /// Gets a generic monospace <see cref='FontFamily'/>.
+        /// </summary>
         public static FontFamily GenericMonospace => new FontFamily(GenericFontFamilies.Monospace);
 
+        /// <summary>
+        /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the specified
+        /// graphics context.
         [Obsolete("Do not use method GetFamilies, use property Families instead")]
         public static FontFamily[] GetFamilies(Graphics graphics)
         {
@@ -211,6 +258,9 @@ namespace System.Drawing
             return new InstalledFontCollection().Families;
         }
 
+        /// <summary>
+        /// Indicates whether the specified <see cref='FontStyle'/> is available.
+        /// </summary>
         public bool IsStyleAvailable(FontStyle style)
         {
             int bresult;
@@ -220,6 +270,9 @@ namespace System.Drawing
             return bresult != 0;
         }
 
+        /// <summary>
+        /// Gets the size of the Em square for the specified style in font design units.
+        /// </summary>
         public int GetEmHeight(FontStyle style)
         {
             int result = 0;
@@ -229,6 +282,9 @@ namespace System.Drawing
             return result;
         }
 
+        /// <summary>
+        /// Returns the ascender metric for Windows.
+        /// </summary>
         public int GetCellAscent(FontStyle style)
         {
             int result = 0;
@@ -237,7 +293,10 @@ namespace System.Drawing
 
             return result;
         }
-        
+
+        /// <summary>
+        /// Returns the descender metric for Windows.
+        /// </summary>
         public int GetCellDescent(FontStyle style)
         {
             int result = 0;
@@ -247,6 +306,10 @@ namespace System.Drawing
             return result;
         }
 
+        /// <summary>
+        /// Returns the distance between two consecutive lines of text for this <see cref='FontFamily'/> with the
+        /// specified <see cref='FontStyle'/>.
+        /// </summary>
         public int GetLineSpacing(FontStyle style)
         {
             int result = 0;

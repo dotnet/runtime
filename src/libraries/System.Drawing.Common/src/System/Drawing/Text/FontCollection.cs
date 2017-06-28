@@ -7,12 +7,18 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing.Text
 {
+    /// <summary>
+    /// When inherited, enumerates the FontFamily objects in a collection of fonts.
+    /// </summary>
     public abstract class FontCollection : IDisposable
     {
         internal IntPtr _nativeFontCollection;
 
         internal FontCollection() => _nativeFontCollection = IntPtr.Zero;
 
+        /// <summary>
+        /// Disposes of this <see cref='System.Drawing.Text.FontCollection'/>
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -24,6 +30,10 @@ namespace System.Drawing.Text
             // Nop.
         }
 
+        /// <summary>
+        /// Gets the array of <see cref='System.Drawing.FontFamily'/> objects associated
+        /// with this <see cref='System.Drawing.Text.FontCollection'/>.
+        /// </summary>
         public FontFamily[] Families
         {
             get
