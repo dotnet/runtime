@@ -5014,7 +5014,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
         }
         else
         {
-            gtOtherRegs[idx - 1] = reg;
+            gtOtherRegs[idx - 1] = (regNumberSmall)reg;
             assert(gtOtherRegs[idx - 1] == reg);
         }
     }
@@ -5090,7 +5090,7 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
         }
 
         // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
-        gtSpillFlags = (gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2));
+        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2)));
     }
 
     //--------------------------------------------------------------------------
