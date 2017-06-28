@@ -10,7 +10,10 @@ namespace System.Drawing.Tests
 {
     public static class Helpers
     {
-        public static string GetTestBitmapPath(string name) => Path.Combine(AppContext.BaseDirectory, "bitmaps", name);
+        public static string GetTestBitmapPath(string fileName) => GetTestPath("bitmaps", fileName);
+        public static string GetTestFontPath(string fileName) => GetTestPath("fonts", fileName);
+
+        private static string GetTestPath(string directoryName, string fileName) => Path.Combine(AppContext.BaseDirectory, directoryName, fileName);
 
         public static void VerifyBitmap(Bitmap bitmap, Color[][] colors)
         {

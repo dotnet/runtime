@@ -13,6 +13,8 @@
     <Compile Include="BrushesTests.cs" />
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
+    <Compile Include="FontTests.cs" />
+    <Compile Include="FontFamilyTests.cs" />
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
@@ -33,11 +35,14 @@
     <Compile Include="SystemIconsTests.cs" />
     <Compile Include="TextureBrushTests.cs" />
     <Compile Include="SystemPensTest.cs" />
+    <Compile Include="Design\CategoryNameCollectionTests.cs" />
     <Compile Include="Drawing2D\BlendTests.cs" />
     <Compile Include="Drawing2D\ColorBlendTests.cs" />
     <Compile Include="Drawing2D\HatchBrushTests.cs" />
     <Compile Include="Drawing2D\LinearGradientBrushTests.cs" />
     <Compile Include="Drawing2D\MatrixTests.cs" />
+    <Compile Include="Text\InstalledFontCollectionTests.cs" />
+    <Compile Include="Text\PrivateFontCollectionTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
@@ -52,17 +57,20 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\bitmaps\48x48_multiple_entries_4bit.ico">
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\48x48_multiple_entries_4bit.ico">
       <LogicalName>System.Drawing.Tests.48x48_multiple_entries_4bit.ico</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\bitmaps\173x183_indexed_8bit.bmp">
-      <LogicalName>System.Drawing.Tests.173x183_indexed_8bit.bmp</LogicalName>
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\bitmap_173x183_indexed_8bit.bmp">
+      <LogicalName>System.Drawing.Tests.bitmap_173x183_indexed_8bit.bmp</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.0\content\bitmaps\empty.file">
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\empty.file">
       <LogicalName>System.Drawing.Tests.empty.file</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\1.0.2\content\bitmaps\invalid.ico">
+      <LogicalName>System.Drawing.Tests.invalid.ico</LogicalName>
     </EmbeddedResource>
     <Compile Include="Printing\MarginsTests.cs" />
     <Compile Include="Printing\PrinterResolutionTests.cs" />

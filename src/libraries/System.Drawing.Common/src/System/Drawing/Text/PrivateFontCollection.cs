@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Globalization;
+
 namespace System.Drawing.Text
 {
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.Globalization;
-
     /// <summary>
     /// Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
     /// </summary>
@@ -16,14 +16,10 @@ namespace System.Drawing.Text
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Drawing.Text.PrivateFontCollection'/> class.
         /// </summary>
-        public PrivateFontCollection()
+        public PrivateFontCollection() : base()
         {
-            nativeFontCollection = IntPtr.Zero;
-
-            int status = SafeNativeMethods.Gdip.GdipNewPrivateFontCollection(out nativeFontCollection);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            int status = SafeNativeMethods.Gdip.GdipNewPrivateFontCollection(out _nativeFontCollection);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -31,30 +27,24 @@ namespace System.Drawing.Text
         /// </summary>
         protected override void Dispose(bool disposing)
         {
-            if (nativeFontCollection != IntPtr.Zero)
+            if (_nativeFontCollection != IntPtr.Zero)
             {
                 try
                 {
 #if DEBUG
                     int status =
 #endif
-                    SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(out nativeFontCollection);
+                    SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(out _nativeFontCollection);
 #if DEBUG
                     Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif        
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
                 {
-                    if (ClientUtils.IsSecurityOrCriticalException(ex))
-                    {
-                        throw;
-                    }
-
-                    Debug.Fail("Exception thrown during Dispose: " + ex.ToString());
                 }
                 finally
                 {
-                    nativeFontCollection = IntPtr.Zero;
+                    _nativeFontCollection = IntPtr.Zero;
                 }
             }
 
@@ -66,10 +56,8 @@ namespace System.Drawing.Text
         /// </summary>
         public void AddFontFile(string filename)
         {
-            int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, nativeFontCollection), filename);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), filename);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             // Register private font with GDI as well so pure GDI-based controls (TextBox, Button for instance) can access it.
             SafeNativeMethods.AddFontFile(filename);
@@ -80,11 +68,8 @@ namespace System.Drawing.Text
         /// </summary>
         public void AddMemoryFont(IntPtr memory, int length)
         {
-            int status = SafeNativeMethods.Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, nativeFontCollection), new HandleRef(null, memory), length);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            int status = SafeNativeMethods.Gdip.GdipPrivateAddMemoryFont(new HandleRef(this, _nativeFontCollection), new HandleRef(null, memory), length);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
     }
 }
-
