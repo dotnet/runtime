@@ -651,7 +651,7 @@ namespace System.Net.Http
 
             // Add headers to define content transfer, if not present
             if (requestContent != null &&
-                request.Headers.TransferEncodingChunked != true &&
+                (!request.HasHeaders || request.Headers.TransferEncodingChunked != true) &&
                 requestContent.Headers.ContentLength == null)
             {
                 // We have content, but neither Transfer-Encoding or Content-Length is set.
@@ -716,7 +716,7 @@ namespace System.Net.Http
             // Write body, if any
             if (requestContent != null)
             {
-                HttpContentWriteStream stream = (request.Headers.TransferEncodingChunked == true ?
+                HttpContentWriteStream stream = (request.HasHeaders && request.Headers.TransferEncodingChunked == true ?
                     (HttpContentWriteStream)new ChunkedEncodingWriteStream(this) : 
                     (HttpContentWriteStream)new ContentLengthWriteStream(this));
 
