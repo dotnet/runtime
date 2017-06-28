@@ -15,73 +15,49 @@ namespace System.Net.Http.Headers
         private static readonly Dictionary<string, HttpHeaderParser> s_parserStore = CreateParserStore();
         private static readonly HashSet<string> s_invalidHeaders = CreateInvalidHeaders();
 
+        private const int AcceptSlot = 0;
+        private const int ExpectSlot = 1;
+        private const int IfMatchSlot = 2;
+        private const int IfNoneMatchSlot = 3;
+        private const int TransferEncodingSlot = 4;
+        private const int UserAgentSlot = 5;
+        private const int AcceptCharsetSlot = 6;
+        private const int AcceptEncodingSlot = 7;
+        private const int AcceptLanguageSlot = 8;
+        private const int NumCollectionsSlots = 9;
+
+        private object[] _specialCollectionsSlots;
         private HttpGeneralHeaders _generalHeaders;
-        private HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> _accept;
-        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> _expect;
         private bool _expectContinueSet;
-        private HttpHeaderValueCollection<EntityTagHeaderValue> _ifMatch;
-        private HttpHeaderValueCollection<EntityTagHeaderValue> _ifNoneMatch;
-        private HttpHeaderValueCollection<TransferCodingWithQualityHeaderValue> _te;
-        private HttpHeaderValueCollection<ProductInfoHeaderValue> _userAgent;
-        private HttpHeaderValueCollection<StringWithQualityHeaderValue> _acceptCharset;
-        private HttpHeaderValueCollection<StringWithQualityHeaderValue> _acceptEncoding;
-        private HttpHeaderValueCollection<StringWithQualityHeaderValue> _acceptLanguage;
 
         #region Request Headers
 
-        public HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> Accept
+        private T GetSpecializedCollection<T>(int slot, Func<HttpRequestHeaders, T> creationFunc)
         {
-            get
+            // 9 properties each lazily allocate a collection to store the value(s) for that property.
+            // Rather than having a field for each of these, store them untyped in an array that's lazily
+            // allocated.  Then we only pay for the 72 bytes for those fields when any is actually accessed.
+            object[] collections = _specialCollectionsSlots ?? (_specialCollectionsSlots = new object[NumCollectionsSlots]);
+            object result = collections[slot];
+            if (result == null)
             {
-                if (_accept == null)
-                {
-                    _accept = new HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue>(
-                        HttpKnownHeaderNames.Accept, this);
-                }
-                return _accept;
+                collections[slot] = result = creationFunc(this);
             }
+            return (T)result;
         }
 
-        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Charset",
-            Justification = "The HTTP header name is 'Accept-Charset'.")]
-        public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptCharset
-        {
-            get
-            {
-                if (_acceptCharset == null)
-                {
-                    _acceptCharset = new HttpHeaderValueCollection<StringWithQualityHeaderValue>(
-                        HttpKnownHeaderNames.AcceptCharset, this);
-                }
-                return _acceptCharset;
-            }
-        }
+        public HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue> Accept =>
+            GetSpecializedCollection(AcceptSlot, thisRef => new HttpHeaderValueCollection<MediaTypeWithQualityHeaderValue>(HttpKnownHeaderNames.Accept, thisRef));
 
-        public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptEncoding
-        {
-            get
-            {
-                if (_acceptEncoding == null)
-                {
-                    _acceptEncoding = new HttpHeaderValueCollection<StringWithQualityHeaderValue>(
-                        HttpKnownHeaderNames.AcceptEncoding, this);
-                }
-                return _acceptEncoding;
-            }
-        }
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Charset", Justification = "The HTTP header name is 'Accept-Charset'.")]
+        public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptCharset =>
+            GetSpecializedCollection(AcceptCharsetSlot, thisRef => new HttpHeaderValueCollection<StringWithQualityHeaderValue>(HttpKnownHeaderNames.AcceptCharset, thisRef));
 
-        public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptLanguage
-        {
-            get
-            {
-                if (_acceptLanguage == null)
-                {
-                    _acceptLanguage = new HttpHeaderValueCollection<StringWithQualityHeaderValue>(
-                        HttpKnownHeaderNames.AcceptLanguage, this);
-                }
-                return _acceptLanguage;
-            }
-        }
+        public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptEncoding =>
+            GetSpecializedCollection(AcceptEncodingSlot, thisRef => new HttpHeaderValueCollection<StringWithQualityHeaderValue>(HttpKnownHeaderNames.AcceptEncoding, thisRef));
+
+        public HttpHeaderValueCollection<StringWithQualityHeaderValue> AcceptLanguage =>
+            GetSpecializedCollection(AcceptLanguageSlot, thisRef => new HttpHeaderValueCollection<StringWithQualityHeaderValue>(HttpKnownHeaderNames.AcceptLanguage, thisRef));
 
         public AuthenticationHeaderValue Authorization
         {
@@ -162,18 +138,8 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public HttpHeaderValueCollection<EntityTagHeaderValue> IfMatch
-        {
-            get
-            {
-                if (_ifMatch == null)
-                {
-                    _ifMatch = new HttpHeaderValueCollection<EntityTagHeaderValue>(
-                        HttpKnownHeaderNames.IfMatch, this);
-                }
-                return _ifMatch;
-            }
-        }
+        public HttpHeaderValueCollection<EntityTagHeaderValue> IfMatch =>
+            GetSpecializedCollection(IfMatchSlot, thisRef => new HttpHeaderValueCollection<EntityTagHeaderValue>(HttpKnownHeaderNames.IfMatch, thisRef));
 
         public DateTimeOffset? IfModifiedSince
         {
@@ -181,18 +147,8 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(HttpKnownHeaderNames.IfModifiedSince, value); }
         }
 
-        public HttpHeaderValueCollection<EntityTagHeaderValue> IfNoneMatch
-        {
-            get
-            {
-                if (_ifNoneMatch == null)
-                {
-                    _ifNoneMatch = new HttpHeaderValueCollection<EntityTagHeaderValue>(
-                        HttpKnownHeaderNames.IfNoneMatch, this);
-                }
-                return _ifNoneMatch;
-            }
-        }
+        public HttpHeaderValueCollection<EntityTagHeaderValue> IfNoneMatch =>
+            GetSpecializedCollection(IfNoneMatchSlot, thisRef => new HttpHeaderValueCollection<EntityTagHeaderValue>(HttpKnownHeaderNames.IfNoneMatch, thisRef));
 
         public RangeConditionHeaderValue IfRange
         {
@@ -239,44 +195,14 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(HttpKnownHeaderNames.Referer, value); }
         }
 
-        public HttpHeaderValueCollection<TransferCodingWithQualityHeaderValue> TE
-        {
-            get
-            {
-                if (_te == null)
-                {
-                    _te = new HttpHeaderValueCollection<TransferCodingWithQualityHeaderValue>(
-                        HttpKnownHeaderNames.TE, this);
-                }
-                return _te;
-            }
-        }
+        public HttpHeaderValueCollection<TransferCodingWithQualityHeaderValue> TE =>
+            GetSpecializedCollection(TransferEncodingSlot, thisRef => new HttpHeaderValueCollection<TransferCodingWithQualityHeaderValue>(HttpKnownHeaderNames.TE, thisRef));
 
-        public HttpHeaderValueCollection<ProductInfoHeaderValue> UserAgent
-        {
-            get
-            {
-                if (_userAgent == null)
-                {
-                    _userAgent = new HttpHeaderValueCollection<ProductInfoHeaderValue>(HttpKnownHeaderNames.UserAgent,
-                        this);
-                }
-                return _userAgent;
-            }
-        }
+        public HttpHeaderValueCollection<ProductInfoHeaderValue> UserAgent =>
+            GetSpecializedCollection(UserAgentSlot, thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(HttpKnownHeaderNames.UserAgent, thisRef));
 
-        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> ExpectCore
-        {
-            get
-            {
-                if (_expect == null)
-                {
-                    _expect = new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(
-                        HttpKnownHeaderNames.Expect, this, HeaderUtilities.ExpectContinue);
-                }
-                return _expect;
-            }
-        }
+        private HttpHeaderValueCollection<NameValueWithParametersHeaderValue> ExpectCore =>
+            GetSpecializedCollection(ExpectSlot, thisRef => new HttpHeaderValueCollection<NameValueWithParametersHeaderValue>(HttpKnownHeaderNames.Expect, thisRef, HeaderUtilities.ExpectContinue));
 
         #endregion
 
