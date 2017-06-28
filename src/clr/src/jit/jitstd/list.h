@@ -639,11 +639,15 @@ typename list<T, Allocator>::const_reverse_iterator
 template <typename T, typename Allocator>
 void list<T, Allocator>::remove(const T& val)
 {
-    for (iterator i = begin(); i != end(); ++i)
+    for (iterator i = begin(); i != end();)
     {
         if (*i == val)
         {
             i = erase(i);
+        }
+        else
+        {
+            ++i;
         }
     }
 }
@@ -652,11 +656,15 @@ template <typename T, typename Allocator>
 template <class Predicate>
 void list<T, Allocator>::remove_if(Predicate pred)
 {
-    for (iterator i = begin(); i != end(); ++i)
+    for (iterator i = begin(); i != end();)
     {
         if (pred(*i))
         {
             i = erase(i);
+        }
+        else
+        {
+            ++i;
         }
     }
 }
