@@ -3171,9 +3171,8 @@ init_sgen_mode (SgenMode mode)
 		/*
 		 * Use concurrent major and dynamic nursery with a more
 		 * aggressive shrinking relative to pause times.
-		 * FIXME use parallel minors
 		 */
-		minor = SGEN_MINOR_SIMPLE;
+		minor = SGEN_MINOR_SIMPLE_PARALLEL;
 		major = SGEN_MAJOR_CONCURRENT;
 		dynamic_nursery = TRUE;
 		sgen_max_pause_margin = SGEN_PAUSE_MODE_MAX_PAUSE_MARGIN;
