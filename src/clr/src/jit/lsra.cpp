@@ -140,6 +140,11 @@ void lsraAssignRegToTree(GenTreePtr tree, regNumber reg, unsigned regIdx)
         GenTreeMulLong* mul = tree->AsMulLong();
         mul->gtOtherReg     = reg;
     }
+    else if (tree->OperGet() == GT_PUTARG_SPLIT)
+    {
+        GenTreePutArgSplit* putArg = tree->AsPutArgSplit();
+        putArg->SetRegNumByIdx(reg, regIdx);
+    }
 #endif // _TARGET_ARM_
     else
     {
@@ -4147,6 +4152,15 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             currCandidates = genRegMask(retTypeDesc->GetABIReturnReg(i));
             useCandidates  = allRegs(registerType);
         }
+
+#ifdef _TARGET_ARM_
+        if (tree->OperIsPutArgSplit())
+        {
+            // get i-th candidate
+            currCandidates = genFindLowestReg(candidates);
+            candidates &= ~currCandidates;
+        }
+#endif
 
         if (interval == nullptr)
         {
@@ -9032,6 +9046,13 @@ void LinearScan::resolveRegisters()
                                 GenTreeCall* call = treeNode->AsCall();
                                 call->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
+#ifdef _TARGET_ARM_
+                            else if (treeNode->OperIsPutArgSplit())
+                            {
+                                GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
+                                splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                            }
+#endif
                         }
 
                         // If the value is reloaded or moved to a different register, we need to insert

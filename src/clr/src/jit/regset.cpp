@@ -1527,6 +1527,9 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
 
     GenTreeCall* call = nullptr;
     var_types    treeType;
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    GenTreePutArgSplit* splitArg = nullptr;
+#endif
 
 #ifndef LEGACY_BACKEND
     if (tree->IsMultiRegCall())
@@ -1535,8 +1538,15 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
         treeType                    = retTypeDesc->GetReturnRegType(regIdx);
     }
+#ifdef _TARGET_ARM_
+    else if (tree->OperIsPutArgSplit())
+    {
+        splitArg = tree->AsPutArgSplit();
+        treeType = splitArg->GetRegType(regIdx);
+    }
+#endif // _TARGET_ARM_
     else
-#endif
+#endif // !LEGACY_BACKEND
     {
         treeType = tree->TypeGet();
     }
@@ -1584,6 +1594,14 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         assert((regFlags & GTF_SPILL) != 0);
         regFlags &= ~GTF_SPILL;
     }
+#ifdef _TARGET_ARM_
+    else if (splitArg != nullptr)
+    {
+        regFlags = splitArg->GetRegSpillFlagByIdx(regIdx);
+        assert((regFlags & GTF_SPILL) != 0);
+        regFlags &= ~GTF_SPILL;
+    }
+#endif // _TARGET_ARM_
     else
     {
         assert(!varTypeIsMultiReg(tree));
@@ -1603,9 +1621,12 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         assert(tree->InReg());
         assert(tree->gtRegNum == reg);
     }
+#elif defined(_TARGET_ARM_)
+    assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
+           (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg));
 #else
     assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
-#endif // CPU_LONG_USES_REGPAIR
+#endif // !CPU_LONG_USES_REGPAIR && !_TARGET_ARM_
 
     // Are any registers free for spillage?
     SpillDsc* spill = SpillDsc::alloc(m_rsCompiler, this, tempType);
@@ -1726,6 +1747,13 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         regFlags |= GTF_SPILLED;
         call->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
+#ifdef _TARGET_ARM_
+    else if (splitArg != nullptr)
+    {
+        regFlags |= GTF_SPILLED;
+        splitArg->SetRegSpillFlagByIdx(regFlags, regIdx);
+    }
+#endif // _TARGET_ARM_
 #endif //! LEGACY_BACKEND
 }
 
@@ -2355,6 +2383,15 @@ TempDsc* RegSet::rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned re
         flags &= ~GTF_SPILLED;
         call->SetRegSpillFlagByIdx(flags, regIdx);
     }
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    else if (tree->OperIsPutArgSplit())
+    {
+        GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
+        unsigned            flags    = splitArg->GetRegSpillFlagByIdx(regIdx);
+        flags &= ~GTF_SPILLED;
+        splitArg->SetRegSpillFlagByIdx(flags, regIdx);
+    }
+#endif // !LEGACY_BACKEND && _TARGET_ARM_
     else
     {
         tree->gtFlags &= ~GTF_SPILLED;
