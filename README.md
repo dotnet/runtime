@@ -90,7 +90,7 @@ you use `dotnet.exe` for this).
 
 These extra pieces are not defined here, however you don't need to build them in order to use the CoreCLR 
 Nuget package you create here.   There are already versions of the CoreFX packages published on 
-https://www.nuget.org/ so you can have your test application's project.json specify the CoreCLR you 
+https://www.nuget.org/ so you can have your test application's project file specify the CoreCLR you 
 built and it will naturally pull anything else it needs from the official location https://www.nuget.org/ to 
 make a complete application.  More on this in the [Using Your Build](Documentation/workflow/UsingYourBuild.md) page.
 
