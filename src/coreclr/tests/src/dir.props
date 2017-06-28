@@ -34,7 +34,7 @@
     <When Condition="'$(OSGroup)'=='Windows_NT'">
       <PropertyGroup>
         <TargetsWindows>true</TargetsWindows>
-        <TestNugetRuntimeId>win7-$(__BuildArch)</TestNugetRuntimeId>
+        <TestNugetRuntimeId>win-$(__BuildArch)</TestNugetRuntimeId>
       </PropertyGroup>
     </When>
     <When Condition="'$(OSGroup)'=='Linux'">
