@@ -4745,7 +4745,7 @@ void NativeImageDumper::TraverseTypeHashEntry(void *pContext, PTR_EETypeHashEntr
              * all that much harm here (bloats m_discoveredMTs though,
              * but not by a huge amount.
              */
-            PTR_MethodTable mt(ptd->m_TemplateMT.GetValue());
+            PTR_MethodTable mt(ptd->GetTemplateMethodTableInternal());
             if (isInRange(PTR_TO_TADDR(mt)))
             {
                 m_discoveredMTs.AppendEx(mt);
@@ -6201,7 +6201,7 @@ void NativeImageDumper::TypeDescToString( PTR_TypeDesc td, SString& buf )
         if( td->IsArray()  )
         {
             //td->HasTypeParam() may also be true.
-            PTR_MethodTable mt = ptd->m_TemplateMT.GetValue();
+            PTR_MethodTable mt = ptd->GetTemplateMethodTableInternal();
             _ASSERTE( PTR_TO_TADDR(mt) );
             if( CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(mt)) )
             {
@@ -8451,7 +8451,7 @@ NativeImageDumper::DumpEEClassForMethodTable( PTR_MethodTable mt )
                                      VERBOSE_TYPES );
         DisplayWriteFieldInt( m_numCTMFields, eecli->m_numCTMFields,
                               EEClassLayoutInfo, VERBOSE_TYPES );
-        PTR_FieldMarshaler fmArray( TO_TADDR(eecli->m_pFieldMarshalers) );
+        PTR_FieldMarshaler fmArray = eecli->GetFieldMarshalers();
         DisplayWriteFieldAddress( m_pFieldMarshalers,
                                   DPtrToPreferredAddr(fmArray),
                                   eecli->m_numCTMFields
@@ -8793,7 +8793,7 @@ void NativeImageDumper::DumpTypeDesc( PTR_TypeDesc td )
     {
         PTR_ParamTypeDesc ptd(td);
         DisplayStartVStructure( "ParamTypeDesc", TYPEDESCS );
-        WriteFieldMethodTable( m_TemplateMT, ptd->m_TemplateMT.GetValue(), 
+        WriteFieldMethodTable( m_TemplateMT, ptd->GetTemplateMethodTableInternal(),
                                ParamTypeDesc, TYPEDESCS );
         WriteFieldTypeHandle( m_Arg, ptd->m_Arg, 
                               ParamTypeDesc, TYPEDESCS );
