@@ -1244,7 +1244,6 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                Debug.Assert(storeType == ContextType.Domain || storeType == ContextType.ApplicationDirectory);
                 return DefaultContextOptions.ADDefaultContextOption;
             }
         }

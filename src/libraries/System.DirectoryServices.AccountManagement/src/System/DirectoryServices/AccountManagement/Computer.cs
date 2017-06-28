@@ -20,9 +20,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         public ComputerPrincipal(PrincipalContext context) : base(context)
         {
-            if (context == null)
-                throw new ArgumentException(SR.NullArguments);
-
             if (Context.ContextType == ContextType.ApplicationDirectory && this.GetType() == typeof(ComputerPrincipal))
                 throw new InvalidOperationException(SR.ComputerInvalidForAppDirectoryStore);
 
