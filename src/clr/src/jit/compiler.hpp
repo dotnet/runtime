@@ -4711,6 +4711,287 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTreePtr lcl)
     }
 }
 
+template <typename TVisitor>
+void GenTree::VisitOperands(TVisitor visitor)
+{
+    switch (OperGet())
+    {
+        // Leaf nodes
+        case GT_LCL_VAR:
+        case GT_LCL_FLD:
+        case GT_LCL_VAR_ADDR:
+        case GT_LCL_FLD_ADDR:
+        case GT_CATCH_ARG:
+        case GT_LABEL:
+        case GT_FTN_ADDR:
+        case GT_RET_EXPR:
+        case GT_CNS_INT:
+        case GT_CNS_LNG:
+        case GT_CNS_DBL:
+        case GT_CNS_STR:
+        case GT_MEMORYBARRIER:
+        case GT_JMP:
+        case GT_JCC:
+        case GT_SETCC:
+        case GT_NO_OP:
+        case GT_START_NONGC:
+        case GT_PROF_HOOK:
+#if !FEATURE_EH_FUNCLETS
+        case GT_END_LFIN:
+#endif // !FEATURE_EH_FUNCLETS
+        case GT_PHI_ARG:
+#ifndef LEGACY_BACKEND
+        case GT_JMPTABLE:
+#endif // LEGACY_BACKEND
+        case GT_REG_VAR:
+        case GT_CLS_VAR:
+        case GT_CLS_VAR_ADDR:
+        case GT_ARGPLACE:
+        case GT_PHYSREG:
+        case GT_EMITNOP:
+        case GT_PINVOKE_PROLOG:
+        case GT_PINVOKE_EPILOG:
+        case GT_IL_OFFSET:
+            return;
+
+        // Standard unary operators
+        case GT_NOP:
+        case GT_RETURN:
+        case GT_RETFILT:
+            if (this->AsUnOp()->gtOp1 == nullptr)
+            {
+                return;
+            }
+            __fallthrough;
+
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+        case GT_NOT:
+        case GT_NEG:
+        case GT_COPY:
+        case GT_RELOAD:
+        case GT_ARR_LENGTH:
+        case GT_CAST:
+        case GT_CKFINITE:
+        case GT_LCLHEAP:
+        case GT_ADDR:
+        case GT_IND:
+        case GT_OBJ:
+        case GT_BLK:
+        case GT_BOX:
+        case GT_ALLOCOBJ:
+        case GT_INIT_VAL:
+        case GT_JTRUE:
+        case GT_SWITCH:
+        case GT_NULLCHECK:
+        case GT_PHYSREGDST:
+        case GT_PUTARG_REG:
+        case GT_PUTARG_STK:
+        case GT_RETURNTRAP:
+            visitor(this->AsUnOp()->gtOp1);
+            return;
+
+        // Variadic nodes
+        case GT_PHI:
+            assert(this->AsUnOp()->gtOp1 != nullptr);
+            this->AsUnOp()->gtOp1->VisitListOperands(visitor);
+            return;
+
+        case GT_FIELD_LIST:
+            VisitListOperands(visitor);
+            return;
+
+#ifdef FEATURE_SIMD
+        case GT_SIMD:
+            if (this->AsSIMD()->gtSIMDIntrinsicID == SIMDIntrinsicInitN)
+            {
+                assert(this->AsSIMD()->gtOp1 != nullptr);
+                this->AsSIMD()->gtOp1->VisitListOperands(visitor);
+            }
+            else
+            {
+                VisitBinOpOperands<TVisitor>(visitor);
+            }
+            return;
+#endif // FEATURE_SIMD
+
+        // Special nodes
+        case GT_CMPXCHG:
+        {
+            GenTreeCmpXchg* const cmpXchg = this->AsCmpXchg();
+            if (visitor(cmpXchg->gtOpLocation) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(cmpXchg->gtOpValue) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(cmpXchg->gtOpComparand);
+            return;
+        }
+
+        case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+        {
+            GenTreeBoundsChk* const boundsChk = this->AsBoundsChk();
+            if (visitor(boundsChk->gtIndex) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(boundsChk->gtArrLen);
+            return;
+        }
+
+        case GT_FIELD:
+            if (this->AsField()->gtFldObj != nullptr)
+            {
+                visitor(this->AsField()->gtFldObj);
+            }
+            return;
+
+        case GT_STMT:
+            if (this->AsStmt()->gtStmtExpr != nullptr)
+            {
+                visitor(this->AsStmt()->gtStmtExpr);
+            }
+            return;
+
+        case GT_ARR_ELEM:
+        {
+            GenTreeArrElem* const arrElem = this->AsArrElem();
+            if (visitor(arrElem->gtArrObj) == VisitResult::Abort)
+            {
+                return;
+            }
+            for (unsigned i = 0; i < arrElem->gtArrRank; i++)
+            {
+                if (visitor(arrElem->gtArrInds[i]) == VisitResult::Abort)
+                {
+                    return;
+                }
+            }
+            return;
+        }
+
+        case GT_ARR_OFFSET:
+        {
+            GenTreeArrOffs* const arrOffs = this->AsArrOffs();
+            if (visitor(arrOffs->gtOffset) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(arrOffs->gtIndex) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(arrOffs->gtArrObj);
+            return;
+        }
+
+        case GT_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(dynBlock->gtDynamicSize);
+            return;
+        }
+
+        case GT_STORE_DYN_BLK:
+        {
+            GenTreeDynBlk* const dynBlock = this->AsDynBlk();
+            if (visitor(dynBlock->gtOp1) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(dynBlock->gtOp2) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(dynBlock->gtDynamicSize);
+            return;
+        }
+
+        case GT_CALL:
+        {
+            GenTreeCall* const call = this->AsCall();
+            if ((call->gtCallObjp != nullptr) && (visitor(call->gtCallObjp) == VisitResult::Abort))
+            {
+                return;
+            }
+            if ((call->gtCallArgs != nullptr) && (call->gtCallArgs->VisitListOperands(visitor) == VisitResult::Abort))
+            {
+                return;
+            }
+            if ((call->gtCallLateArgs != nullptr) && (call->gtCallLateArgs->VisitListOperands(visitor)) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (call->gtCallType == CT_INDIRECT)
+            {
+                if ((call->gtCallCookie != nullptr) && (visitor(call->gtCallCookie) == VisitResult::Abort))
+                {
+                    return;
+                }
+                if ((call->gtCallAddr != nullptr) && (visitor(call->gtCallAddr) == VisitResult::Abort))
+                {
+                    return;
+                }
+            }
+            if ((call->gtControlExpr != nullptr))
+            {
+                visitor(call->gtControlExpr);
+            }
+            return;
+        }
+
+        // Binary nodes
+        default:
+            assert(this->OperIsBinary());
+            VisitBinOpOperands<TVisitor>(visitor);
+            return;
+    }
+}
+
+template <typename TVisitor>
+GenTree::VisitResult GenTree::VisitListOperands(TVisitor visitor)
+{
+    for (GenTreeArgList* node = this->AsArgList(); node != nullptr; node = node->Rest())
+    {
+        if (visitor(node->gtOp1) == VisitResult::Abort)
+        {
+            return VisitResult::Abort;
+        }
+    }
+
+    return VisitResult::Continue;
+}
+
+template <typename TVisitor>
+void GenTree::VisitBinOpOperands(TVisitor visitor)
+{
+    assert(this->OperIsBinary());
+
+    GenTreeOp* const op = this->AsOp();
+
+    GenTree* const op1 = op->gtOp1;
+    if ((op1 != nullptr) && (visitor(op1) == VisitResult::Abort))
+    {
+        return;
+    }
+
+    GenTree* const op2 = op->gtOp2;
+    if (op2 != nullptr)
+    {
+        visitor(op2);
+    }
+}
+
 /*****************************************************************************
  *  operator new
  *
