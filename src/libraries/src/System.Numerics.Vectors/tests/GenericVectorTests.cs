@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Numerics.Tests
 {
@@ -1880,26 +1881,26 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void SquareRootByte() { TestSquareRoot<Byte>(); }
+        public void SquareRootByte() { TestSquareRoot<Byte>(-1); }
         [Fact]
-        public void SquareRootSByte() { TestSquareRoot<SByte>(); }
+        public void SquareRootSByte() { TestSquareRoot<SByte>(-1); }
         [Fact]
-        public void SquareRootUInt16() { TestSquareRoot<UInt16>(); }
+        public void SquareRootUInt16() { TestSquareRoot<UInt16>(-1); }
         [Fact]
-        public void SquareRootInt16() { TestSquareRoot<Int16>(); }
+        public void SquareRootInt16() { TestSquareRoot<Int16>(-1); }
         [Fact]
-        public void SquareRootUInt32() { TestSquareRoot<UInt32>(); }
+        public void SquareRootUInt32() { TestSquareRoot<UInt32>(-1); }
         [Fact]
-        public void SquareRootInt32() { TestSquareRoot<Int32>(); }
+        public void SquareRootInt32() { TestSquareRoot<Int32>(-1); }
         [Fact]
-        public void SquareRootUInt64() { TestSquareRoot<UInt64>(); }
+        public void SquareRootUInt64() { TestSquareRoot<UInt64>(-1); }
         [Fact]
-        public void SquareRootInt64() { TestSquareRoot<Int64>(); }
+        public void SquareRootInt64() { TestSquareRoot<Int64>(-1); }
         [Fact]
-        public void SquareRootSingle() { TestSquareRoot<Single>(); }
+        public void SquareRootSingle() { TestSquareRoot<Single>(6); }
         [Fact]
-        public void SquareRootDouble() { TestSquareRoot<Double>(); }
-        private void TestSquareRoot<T>() where T : struct
+        public void SquareRootDouble() { TestSquareRoot<Double>(15); }
+        private void TestSquareRoot<T>(int precision = -1) where T : struct, IEquatable<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
@@ -1909,7 +1910,7 @@ namespace System.Numerics.Tests
                 (index, val) =>
                 {
                     T expected = Util.Sqrt(values[index]);
-                    Assert.Equal(expected, val);
+                    AssertEqual(expected, val, $"SquareRoot( {values[index]} )", precision);
                 });
         }
 
@@ -2610,6 +2611,76 @@ namespace System.Numerics.Tests
         #endregion Narrow / Widen
 
         #region Helper Methods
+        private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(float))
+            {
+                if (!IsDiffTolerable((float)(object)expected, (float)(object)actual, precision))
+                {
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected}, Actual: {actual}.");
+                }
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                if (!IsDiffTolerable((double)(object)expected, (double)(object)actual, precision))
+                {
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected}, Actual: {actual}.");
+                }
+            }
+            else
+            {
+                if (!expected.Equals(actual))
+                {
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected}, Actual: {actual}.");
+                }
+            }
+        }
+
+        private static bool IsDiffTolerable(double d1, double d2, int precision)
+        {
+            if (double.IsNaN(d1))
+            {
+                return double.IsNaN(d2);
+            }
+            if (double.IsInfinity(d1))
+            {
+                return AreSameInfinity(d1, d2 * 10);
+            }
+            if (double.IsInfinity(d2))
+            {
+                return AreSameInfinity(d1 * 10, d2);
+            }
+            double diffRatio = (d1 - d2) / d1;
+            diffRatio *= Math.Pow(10, precision);
+            return Math.Abs(diffRatio) < 1;
+        }
+
+        private static bool IsDiffTolerable(float f1, float f2, int precision)
+        {
+            if (float.IsNaN(f1))
+            {
+                return float.IsNaN(f2);
+            }
+            if (float.IsInfinity(f1))
+            {
+                return AreSameInfinity(f1, f2 * 10);
+            }
+            if (float.IsInfinity(f2))
+            {
+                return AreSameInfinity(f1 * 10, f2);
+            }
+            float diffRatio = (f1 - f2) / f1;
+            diffRatio *= MathF.Pow(10, precision);
+            return Math.Abs(diffRatio) < 1;
+        }
+
+        private static bool AreSameInfinity(double d1, double d2)
+        {
+            return
+                double.IsNegativeInfinity(d1) == double.IsNegativeInfinity(d2) &&
+                double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
+        }
+
         private static void ValidateVector<T>(Vector<T> vector, Action<int, T> indexValidationFunc) where T : struct
         {
             for (int g = 0; g < Vector<T>.Count; g++)
