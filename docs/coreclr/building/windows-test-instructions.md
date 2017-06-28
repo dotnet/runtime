@@ -98,12 +98,12 @@ Note:
 
 1. You can disable building of a test per architecture or configuration by using DisableProjectBuild tag in the project. for example:
 
-  ``<PropertyGroup>``
+  ```xml
+  <PropertyGroup>
+    <DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>
+  </PropertyGroup>
+  ```
 
-     ``<DisableProjectBuild Condition=" '$(Platform)' == 'arm64' ">true</DisableProjectBuild>``
+2. To add Nuget/MyGet references use this (project file)[https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/test_dependencies.csproj].
 
-  ``</PropertyGroup>``
-
-2. To Add Nuget\MyGet Refernces use this (project.json)[https://github.com/dotnet/coreclr/blob/master/tests/src/Common/test_dependencies/project.json]
-
-3. To Build against the mscorlib facade add  ``<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>`` to your project
+3. To build against the mscorlib facade add `<ReferenceLocalMscorlib>true</ReferenceLocalMscorlib>` to your project.
